@@ -1,4 +1,7 @@
 import * as bootstrap from "bootstrap";
 import "./bootstrap";
 
-document.getElementById("current-year").textContent = new Date().getFullYear();
+let currentYear = document.getElementById("current-year");
+if (currentYear) {
+    currentYear.textContent = new Date().getFullYear();
+}
