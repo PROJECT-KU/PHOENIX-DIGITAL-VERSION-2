@@ -34,7 +34,7 @@ new #[Layout('layouts.authentication')] class extends Component {
 }; ?>
 
 <div class="w-50">
-    <div class="mb-4 fs-5 text-black">
+    <div class="mb-4 fs-5">
         {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
     </div>
 

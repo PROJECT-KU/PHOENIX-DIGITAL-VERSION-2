@@ -15,15 +15,23 @@ new #[Layout('layouts.authentication')] class extends Component {
     {
         $this->validate();
 
-        $this->form->authenticate();
+        try {
+            $this->form->authenticate();
 
-        Session::regenerate();
+            Session::regenerate();
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+            $this->redirectIntended(default: route('admin.dashboard', absolute: false), navigate: true);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Kirim event ke frontend
+            $this->dispatch('login-error', message: __('auth.failed'));
+
+            // Tetap lempar error agar validasi form tetap jalan (highlight input)
+            throw $e;
+        }
     }
 }; ?>
 
-<div class="bg-white shadow-lg rounded-3 overflow-hidden" style="width: 32rem;">
+<div class="shadow-lg rounded-3 overflow-hidden" style="width: 32rem;">
     <div class="mb-1 bg-dark py-4 d-flex flex-column align-items-center justify-content-center">
         <div class="w-50 overflow-hidden">
             <img src="{{ asset('global/assets/img/logophoenix.png') }}" alt="" class="h-100 w-100">
@@ -34,7 +42,7 @@ new #[Layout('layouts.authentication')] class extends Component {
 
     <div class="p-5">
         <h3>Login Admin</h3>
-        <form wire:submit="login" class="my-3">
+        <form wire:submit="login" class="my-5">
             <!-- Email Address -->
             <div class="mb-3">
                 <x-input-label for="email" :value="__('Email')" />
@@ -47,8 +55,16 @@ new #[Layout('layouts.authentication')] class extends Component {
             <div class="mb-3">
                 <x-input-label for="password" :value="__('Password')" />
 
-                <x-text-input wire:model="form.password" id="password" placeholder="******" type="password"
-                    name="password" required autocomplete="current-password" />
+                <div class="form-group position-relative has-icon-right" x-data="{ show: false }">
+                    <x-text-input wire:model="form.password" id="password" placeholder="******"
+                        x-bind:type="show ? 'text' : 'password'" name="password" required
+                        autocomplete="current-password" />
+                    <div class="form-control-icon">
+                        <i :class="show ? 'bi bi-eye' : 'bi bi-eye-slash'" @click="show = !show">
+                        </i>
+                    </div>
+                </div>
+
 
                 <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
             </div>
