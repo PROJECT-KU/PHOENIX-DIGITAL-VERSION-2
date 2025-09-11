@@ -31,57 +31,67 @@ new #[Layout('layouts.authentication')] class extends Component {
 
         Auth::login($user);
 
-        $this->redirect(route('dashboard', absolute: false), navigate: true);
+        $this->redirect(route('admin.dashboard', absolute: false), navigate: true);
     }
 }; ?>
 
-<div class="bg-white shadow-lg rounded-3 overflow-hidden" style="width: 32rem">
+<div class="shadow-lg rounded-3 overflow-hidden" style="width: 32rem">
     <div class="mb-1 bg-dark py-4 d-flex flex-column align-items-center justify-content-center">
         <div class="w-50 overflow-hidden">
             <img src="{{ asset('global/assets/img/logophoenix.png') }}" alt="" class="h-100 w-100">
         </div>
     </div>
-    <div class="p-4">
-        <form wire:submit="register">
+    <div class="p-5">
+        <h2>Daftar Akun</h2>
+        <form wire:submit="register" class="my-5">
             <!-- Name -->
             <div class="mb-3">
                 <x-input-label for="name" :value="__('Name')" />
-                <x-text-input wire:model="name" id="name" class="block mt-1 w-full" type="text" name="name"
-                    required autofocus autocomplete="name" />
+                <x-text-input wire:model="name" id="name" placeholder="nama kamu" class="block mt-1 w-full"
+                    type="text" name="name" required autofocus autocomplete="name" />
                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
             </div>
 
             <!-- Email Address -->
             <div class="mb-3">
                 <x-input-label for="email" :value="__('Email')" />
-                <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" name="email"
-                    required autocomplete="username" />
+                <x-text-input wire:model="email" placeholder="contoh@email.com" id="email" class="block mt-1 w-full"
+                    type="email" name="email" required autocomplete="username" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 
             <!-- Password -->
             <div class="mb-3">
                 <x-input-label for="password" :value="__('Password')" />
-
-                <x-text-input wire:model="password" id="password" class="block mt-1 w-full" type="password"
-                    name="password" required autocomplete="new-password" />
-
+                <div class="form-group position-relative has-icon-right" x-data="{ show: false }">
+                    <x-text-input wire:model="password" id="password" placeholder="******"
+                        x-bind:type="show ? 'text' : 'password'" name="password" required autocomplete="new-password" />
+                    <div class="form-control-icon">
+                        <i :class="show ? 'bi bi-eye' : 'bi bi-eye-slash'" @click="show = !show">
+                        </i>
+                    </div>
+                </div>
                 <x-input-error :messages="$errors->get('password')" class="mt-2" />
             </div>
 
             <!-- Confirm Password -->
             <div class="mb-3">
                 <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
-
-                <x-text-input wire:model="password_confirmation" id="password_confirmation" class="block mt-1 w-full"
-                    type="password" name="password_confirmation" required autocomplete="new-password" />
-
+                <div class="form-group position-relative has-icon-right" x-data="{ show: false }">
+                    <x-text-input wire:model="password_confirmation" id="password_confirmation" placeholder="******"
+                        x-bind:type="show ? 'text' : 'password'" name="password_confirmation" required
+                        autocomplete="new-password" />
+                    <div class="form-control-icon">
+                        <i :class="show ? 'bi bi-eye' : 'bi bi-eye-slash'" @click="show = !show">
+                        </i>
+                    </div>
+                </div>
                 <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
             </div>
 
             <div class="d-flex align-items-center gap-3 justify-content-end mt-4">
                 <a class="text-muted" href="{{ route('login') }}" wire:navigate>
-                    {{ __('Already registered?') }}
+                    {{ __('Sudah Mendaftar?') }}
                 </a>
 
                 <button class="btn btn-primary" type="submit">Daftar</button>
