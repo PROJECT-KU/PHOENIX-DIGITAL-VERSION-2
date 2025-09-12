@@ -40,9 +40,9 @@ new #[Layout('layouts.authentication')] class extends Component {
     </div>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 fs-5 text-success">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-        </div>
+    <div class="mb-4 fs-5 text-success">
+        {{ __('A new verification link has been sent to the email address you provided during registration.') }}
+    </div>
     @endif
 
     <div class="mt-4 d-flex align-items-center justify-content-between">
