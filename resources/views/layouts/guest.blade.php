@@ -110,7 +110,7 @@
           <a href="index.html" class="logo d-flex align-items-center">
             <!-- Uncomment the line below if you also wish to use an image logo -->
             <!-- <img src="assets/img/logo.webp" alt=""> -->
-            <h1 class="sitename">NiceShop</h1>
+            <h1 class="sitename">Phoenix</h1>
           </a>
 
           <!-- Search -->
