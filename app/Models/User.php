@@ -44,6 +44,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_seen_at' => 'datetime',
         ];
     }
 
@@ -58,7 +59,19 @@ class User extends Authenticatable
             return false;
         }
 
-        // Anggap user online jika aktif < 5 menit lalu
-        return Carbon::createFromTimestamp($lastActivity)->gt(Carbon::now()->subMinutes(5));
+        return Carbon::createFromTimestamp($lastActivity)
+            ->gt(Carbon::now()->subMinutes(1));
+    }
+
+    public function lastSeen(): ?Carbon
+    {
+        $lastActivity = DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->orderBy('last_activity', 'desc')
+            ->value('last_activity');
+
+        return $lastActivity
+            ? Carbon::createFromTimestamp($lastActivity)
+            : null;
     }
 }
