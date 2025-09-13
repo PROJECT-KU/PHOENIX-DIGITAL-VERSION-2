@@ -1,3 +1,21 @@
+<?php
+
+use App\Livewire\Actions\Logout;
+use Livewire\Volt\Component;
+
+new class extends Component {
+    public function logout(Logout $logout): void
+    {
+        $logout();
+
+        $this->redirect('/');
+    }
+}; ?>
+
+@section('title')
+Dashboard || Phoenix Digital
+@stop
+
 <div>
     <header class="mb-3">
         <a href="#" class="burger-btn d-block d-xl-none">
@@ -6,7 +24,7 @@
     </header>
 
     <div class="page-heading">
-        <h3>dashboard admin livewire</h3>
+        <h3>Dashboard</h3>
     </div>
     <div class="page-content">
         <section class="row">
@@ -18,12 +36,12 @@
                                 <div class="row">
                                     <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
                                         <div class="stats-icon purple mb-2">
-                                            <i class="iconly-boldShow"></i>
+                                            <i class="iconly-boldWallet"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
-                                        <h6 class="text-muted font-semibold">Profile Views</h6>
-                                        <h6 class="font-extrabold mb-0">112.000</h6>
+                                        <h6 class="text-muted font-semibold">Total Pemasukan Umum</h6>
+                                        <h6 class="font-extrabold mb-0">Rp. 112.000</h6>
                                     </div>
                                 </div>
                             </div>
@@ -35,12 +53,12 @@
                                 <div class="row">
                                     <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
                                         <div class="stats-icon blue mb-2">
-                                            <i class="iconly-boldProfile"></i>
+                                            <i class="iconly-boldWork"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
-                                        <h6 class="text-muted font-semibold">Followers</h6>
-                                        <h6 class="font-extrabold mb-0">183.000</h6>
+                                        <h6 class="text-muted font-semibold">Total Pemasukan RSc</h6>
+                                        <h6 class="font-extrabold mb-0">Rp. 183.000</h6>
                                     </div>
                                 </div>
                             </div>
@@ -52,12 +70,12 @@
                                 <div class="row">
                                     <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
                                         <div class="stats-icon green mb-2">
-                                            <i class="iconly-boldAdd-User"></i>
+                                            <i class="iconly-boldBuy"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
-                                        <h6 class="text-muted font-semibold">Following</h6>
-                                        <h6 class="font-extrabold mb-0">80.000</h6>
+                                        <h6 class="text-muted font-semibold">Total Pengeluaran Keseluruhan</h6>
+                                        <h6 class="font-extrabold mb-0">Rp. 80.000</h6>
                                     </div>
                                 </div>
                             </div>
@@ -69,12 +87,12 @@
                                 <div class="row">
                                     <div class="col-md-4 col-lg-12 col-xl-12 col-xxl-5 d-flex justify-content-start ">
                                         <div class="stats-icon red mb-2">
-                                            <i class="iconly-boldBookmark"></i>
+                                            <i class="iconly-boldUser"></i>
                                         </div>
                                     </div>
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
-                                        <h6 class="text-muted font-semibold">Saved Post</h6>
-                                        <h6 class="font-extrabold mb-0">112</h6>
+                                        <h6 class="text-muted font-semibold">Total Pengeluaran Gaji</h6>
+                                        <h6 class="font-extrabold mb-0">Rp. 112</h6>
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +103,7 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h4>Profile Visit</h4>
+                                <h4>Grafik Pemasukan & Pengeluaran</h4>
                             </div>
                             <div class="card-body">
                                 <div id="chart-profile-visit"></div>
@@ -178,7 +196,7 @@
                     <div class="col-12 col-xl-8">
                         <div class="card">
                             <div class="card-header">
-                                <h4>Latest Comments</h4>
+                                <h4>Pembeli Terbaru</h4>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -233,16 +251,35 @@
                             <div class="avatar avatar-xl">
                                 <img src="{{ asset('mazer/compiled/jpg/1.jpg') }}" alt="Face 1">
                             </div>
+
                             <div class="ms-3 name">
-                                <h5 class="font-bold">John Duck</h5>
-                                <h6 class="text-muted mb-0">@johnducky</h6>
+                                <span id="greeting" class="text-dark font-weight-bold d-block" style="font-size:13px;"></span>
+                                <h5 class="font-bold">{{ Auth::user()->name }}</h5>
+                                <h6 class="text-muted mb-0">
+                                    @if(Auth::user()->isOnline())
+                                    <span class="text-success">🟢 Online</span>
+                                    @else
+                                    <span class="text-danger">🔴 Offline</span>
+                                    @endif
+                                </h6>
                             </div>
                         </div>
+                    </div>
+                    <div class="d-flex p-0 border-0" style="border-top:1px;">
+                        <button class="btn btn-outline-primary font-bold w-50 d-flex justify-content-center align-items-center me-1 mb-2 ms-2">
+                            <i class="iconly-boldUser"></i>
+                            <span>Detail Profile</span>
+                        </button>
+
+                        <button wire:click="logout" class="btn btn-outline-danger font-bold w-50 d-flex justify-content-center align-items-center ms-1 mb-2 me-2">
+                            <i class="iconly-boldLogout"></i>
+                            <span>Logout</span>
+                        </button>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-header">
-                        <h4>Recent Messages</h4>
+                        <h4>Karyawan Online</h4>
                     </div>
                     <div class="card-content pb-4">
                         <div class="recent-message d-flex px-4 py-3">
@@ -281,3 +318,30 @@
         </section>
     </div>
 </div>
+
+<!--================== UCAPAN SELAMAT ==================-->
+<script>
+    function getGreeting() {
+        const currentTime = new Date();
+        const currentHour = currentTime.getHours();
+        let greeting;
+
+        if (currentHour >= 5 && currentHour < 11) {
+            greeting = "Selamat Pagi ";
+        } else if (currentHour >= 11 && currentHour < 15) {
+            greeting = "Selamat Siang ";
+        } else if (currentHour >= 15 && currentHour < 18) {
+            greeting = "Selamat Sore ";
+        } else if (currentHour >= 1 && currentHour < 5) {
+            greeting = "Selamat Dini Hari ";
+        } else {
+            greeting = "Selamat Malam ";
+        }
+
+        return greeting;
+    }
+
+    const greetingElement = document.getElementById("greeting");
+    greetingElement.innerText = getGreeting();
+</script>
+<!--================== END ==================-->
