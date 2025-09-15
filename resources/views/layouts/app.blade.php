@@ -25,11 +25,11 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
 
     <!-- Scripts -->
-    <script src="{{ asset('mazer/static/js/initTheme.js') }}"></script>
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
 </head>
 
 <body class="font-sans antialiased" id="app">
+    <script src="{{ asset('mazer/static/js/initTheme.js') }}"></script>
     <livewire:layout.sidebar />
 
     <main id="main">
