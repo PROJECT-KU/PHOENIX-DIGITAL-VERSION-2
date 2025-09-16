@@ -1,19 +1,24 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and assigned to the "api"
-| middleware group. Make something great!
-|
-*/
+Route::middleware('auth:sanctum')->get('/online-users', function () {
+    $authUser = Auth::user();
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+    // ambil user aktif (1 menit terakhir)
+    $onlineUserIds = DB::table('sessions')
+        ->where('last_activity', '>=', now()->subMinutes(1)->timestamp)
+        ->whereNotNull('user_id')
+        ->pluck('user_id')
+        ->unique()
+        ->toArray();
+
+    $users = User::whereIn('id', $onlineUserIds)
+        ->where('id', '!=', $authUser->id)
+        ->get(['id', 'name', 'last_seen_at']); // ambil field penting saja
+
+    return response()->json($users);
 });

@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-    Dashboard || Phoenix Digital
+Dashboard || Phoenix Digital
 @stop
 
 <div>
@@ -271,9 +271,9 @@ new class extends Component {
                                 <h5 class="font-bold">{{ Auth::user()->name }}</h5>
                                 <h6 class="text-muted mb-0">
                                     @if (Auth::user()->isOnline())
-                                        <span class="text-success">🟢 Online</span>
+                                    <span class="text-success">🟢 Online</span>
                                     @else
-                                        <span class="text-danger">🔴 Offline</span>
+                                    <span class="text-danger">🔴 Offline</span>
                                     @endif
                                 </h6>
                             </div>
@@ -297,66 +297,7 @@ new class extends Component {
                 <!--================== END ==================-->
 
                 <!--================== MENAMPILKAN DATA KARYAWAN ONLINE ==================-->
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Karyawan Online</h4>
-                    </div>
-
-                    <div class="card-content pb-4" id="online-users-container">
-                        @foreach($onlineUsers as $online)
-                        <div class="recent-message d-flex px-4 py-3" id="user-{{ $online->id }}">
-                            <div class="avatar avatar-lg">
-                                <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
-                            </div>
-                            <div class="name ms-4">
-                                <h5 class="mb-1">{{ $online->name }}</h5>
-                                <span class="{{ $online->online ? 'text-success' : 'text-danger' }}">
-                                    {{ $online->online ? '🟢 Online' : '🔴 Offline' }}
-                                    @if(!$online->online && $online->lastSeen())
-                                    (Terakhir online {{ $online->lastSeen()->diffForHumans() }})
-                                    @endif
-                                </span>
-                            </div>
-                        </div>
-                        @endforeach
-
-                    <div class="card-content pb-4">
-                        @forelse($onlineUsers as $online)
-                            <div class="recent-message d-flex px-4 py-3">
-                                <div class="avatar avatar-lg">
-                                    <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face 1">
-                                </div>
-                                <div class="name ms-4">
-                                    <h5 class="mb-1">{{ $online->name }}</h5>
-                                    <h6 class="text-muted mb-0">
-                                        {{ '@' . Str::slug($online->name) }}
-                                    </h6>
-
-                                    {{-- Status Online / Offline --}}
-                                    @if ($online->online)
-                                        <span class="text-success">🟢 Online</span>
-                                    @else
-                                        <span class="text-danger">
-                                            🔴 Offline
-                                            @if ($online->last_seen_at)
-                                                (Terakhir online {{ $online->last_seen_at->diffForHumans() }})
-                                            @endif
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-muted px-4 py-3">Tidak ada karyawan yang tercatat.</p>
-                        @endforelse
-
-                        <div class="px-4">
-                            <button class='btn btn-block btn-xl btn-outline-primary font-bold mt-3'>
-                                Start Conversation
-                            </button>
-                        </div>
-
-                    </div>
-                </div>
+                @livewire('pages.admin.online-users')
                 <!--================== END ==================-->
 
                 <div class="card">
@@ -372,51 +313,10 @@ new class extends Component {
     </div>
 </div>
 
-
-<!--================== PUSHER REAL TIME ONLINE/OFFLINE ==================-->
-<script>
-    Echo.channel('online-users')
-        .listen('.UserOnlineStatusChanged', (e) => {
-            console.log("Realtime data:", e);
-            const user = e.user;
-            const container = document.getElementById(`user-${user.id}`);
-
-            if (container) {
-                let span = container.querySelector('span');
-                if (span) {
-                    span.innerHTML = user.online ?
-                        '🟢 Online' :
-                        `🔴 Offline (Terakhir online ${user.last_seen_at})`;
-
-                    span.className = user.online ? 'text-success' : 'text-danger';
-                }
-            } else {
-                // Jika user baru, tambahkan ke daftar
-                let newUser = document.createElement('div');
-                newUser.classList.add('recent-message', 'd-flex', 'px-4', 'py-3');
-                newUser.id = `user-${user.id}`;
-                newUser.innerHTML = `
-                <div class="avatar avatar-lg">
-                    <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
-                </div>
-                <div class="name ms-4">
-                    <h5 class="mb-1">${user.name}</h5>
-                    <span class="${user.online ? 'text-success' : 'text-danger'}">
-                        ${user.online ? '🟢 Online' : '🔴 Offline (Terakhir online ' + user.last_seen_at + ')'}
-                    </span>
-                </div>
-            `;
-                document.getElementById('online-users-container').appendChild(newUser);
-            }
-        });
-</script>
-<!--================== END ==================-->
-
-
 @push('scripts')
-    <!-- Need: Apexcharts -->
-    <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
-    <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
+<!-- Need: Apexcharts -->
+<script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
+<script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
 @endpush
 
 <!--================== UCAPAN SELAMAT ==================-->
