@@ -101,7 +101,7 @@ new class extends Component {
                     </ul>
                 </li>
 
-                <li class="sidebar-item  has-sub">
+                <li class="sidebar-item  has-sub {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-person-circle"></i>
                         <span>Akun</span>
@@ -109,7 +109,10 @@ new class extends Component {
 
                     <ul class="submenu ">
                         <li class="submenu-item  ">
-                            <a href="{{ route('admin.profile') }}" class="submenu-link">Profil</a>
+                            <a href="{{ route('admin.account.profile') }}" class="submenu-link">Profil Akun</a>
+                        </li>
+                        <li class="submenu-item  ">
+                            <a href="{{ route('admin.account.role') }}" class="submenu-link">Role Akun</a>
                         </li>
                     </ul>
                 </li>
