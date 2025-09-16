@@ -24,3 +24,4 @@ document.addEventListener("livewire:init", () => {
         });
     });
 });
+
