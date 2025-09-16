@@ -303,99 +303,100 @@ new class extends Component {
                     </div>
 
                     <div class="card-content pb-4" id="online-users-container">
-                        @foreach($onlineUsers as $online)
-                        <div class="recent-message d-flex px-4 py-3" id="user-{{ $online->id }}">
-                            <div class="avatar avatar-lg">
-                                <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
-                            </div>
-                            <div class="name ms-4">
-                                <h5 class="mb-1">{{ $online->name }}</h5>
-                                <span class="{{ $online->online ? 'text-success' : 'text-danger' }}">
-                                    {{ $online->online ? '🟢 Online' : '🔴 Offline' }}
-                                    @if(!$online->online && $online->lastSeen())
-                                    (Terakhir online {{ $online->lastSeen()->diffForHumans() }})
-                                    @endif
-                                </span>
-                            </div>
-                        </div>
-                        @endforeach
-
-                    <div class="card-content pb-4">
-                        @forelse($onlineUsers as $online)
-                            <div class="recent-message d-flex px-4 py-3">
+                        @foreach ($onlineUsers as $online)
+                            <div class="recent-message d-flex px-4 py-3" id="user-{{ $online->id }}">
                                 <div class="avatar avatar-lg">
-                                    <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face 1">
+                                    <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
                                 </div>
                                 <div class="name ms-4">
                                     <h5 class="mb-1">{{ $online->name }}</h5>
-                                    <h6 class="text-muted mb-0">
-                                        {{ '@' . Str::slug($online->name) }}
-                                    </h6>
-
-                                    {{-- Status Online / Offline --}}
-                                    @if ($online->online)
-                                        <span class="text-success">🟢 Online</span>
-                                    @else
-                                        <span class="text-danger">
-                                            🔴 Offline
-                                            @if ($online->last_seen_at)
-                                                (Terakhir online {{ $online->last_seen_at->diffForHumans() }})
-                                            @endif
-                                        </span>
-                                    @endif
+                                    <span class="{{ $online->online ? 'text-success' : 'text-danger' }}">
+                                        {{ $online->online ? '🟢 Online' : '🔴 Offline' }}
+                                        @if (!$online->online && $online->lastSeen())
+                                            (Terakhir online {{ $online->lastSeen()->diffForHumans() }})
+                                        @endif
+                                    </span>
                                 </div>
                             </div>
-                        @empty
-                            <p class="text-muted px-4 py-3">Tidak ada karyawan yang tercatat.</p>
-                        @endforelse
+                        @endforeach
 
-                        <div class="px-4">
-                            <button class='btn btn-block btn-xl btn-outline-primary font-bold mt-3'>
-                                Start Conversation
-                            </button>
+                        <div class="card-content pb-4">
+                            @forelse($onlineUsers as $online)
+                                <div class="recent-message d-flex px-4 py-3">
+                                    <div class="avatar avatar-lg">
+                                        <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face 1">
+                                    </div>
+                                    <div class="name ms-4">
+                                        <h5 class="mb-1">{{ $online->name }}</h5>
+                                        <h6 class="text-muted mb-0">
+                                            {{ '@' . Str::slug($online->name) }}
+                                        </h6>
+
+                                        {{-- Status Online / Offline --}}
+                                        @if ($online->online)
+                                            <span class="text-success">🟢 Online</span>
+                                        @else
+                                            <span class="text-danger">
+                                                🔴 Offline
+                                                @if ($online->last_seen_at)
+                                                    (Terakhir online {{ $online->last_seen_at->diffForHumans() }})
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-muted px-4 py-3">Tidak ada karyawan yang tercatat.</p>
+                            @endforelse
+
+                            <div class="px-4">
+                                <button class='btn btn-block btn-xl btn-outline-primary font-bold mt-3'>
+                                    Start Conversation
+                                </button>
+                            </div>
+
                         </div>
+                    </div>
+                    <!--================== END ==================-->
 
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Visitors Profile</h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="chart-visitors-profile"></div>
+                        </div>
                     </div>
                 </div>
-                <!--================== END ==================-->
-
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Visitors Profile</h4>
-                    </div>
-                    <div class="card-body">
-                        <div id="chart-visitors-profile"></div>
-                    </div>
-                </div>
-            </div>
         </section>
     </div>
 </div>
 
 
-<!--================== PUSHER REAL TIME ONLINE/OFFLINE ==================-->
-<script>
-    Echo.channel('online-users')
-        .listen('.UserOnlineStatusChanged', (e) => {
-            console.log("Realtime data:", e);
-            const user = e.user;
-            const container = document.getElementById(`user-${user.id}`);
+@push('scripts')
+    <!--================== PUSHER REAL TIME ONLINE/OFFLINE ==================-->
+    <script>
+        Echo.channel('online-users')
+            .listen('.UserOnlineStatusChanged', (e) => {
+                console.log("Realtime data:", e);
+                const user = e.user;
+                const container = document.getElementById(`user-${user.id}`);
 
-            if (container) {
-                let span = container.querySelector('span');
-                if (span) {
-                    span.innerHTML = user.online ?
-                        '🟢 Online' :
-                        `🔴 Offline (Terakhir online ${user.last_seen_at})`;
+                if (container) {
+                    let span = container.querySelector('span');
+                    if (span) {
+                        span.innerHTML = user.online ?
+                            '🟢 Online' :
+                            `🔴 Offline (Terakhir online ${user.last_seen_at})`;
 
-                    span.className = user.online ? 'text-success' : 'text-danger';
-                }
-            } else {
-                // Jika user baru, tambahkan ke daftar
-                let newUser = document.createElement('div');
-                newUser.classList.add('recent-message', 'd-flex', 'px-4', 'py-3');
-                newUser.id = `user-${user.id}`;
-                newUser.innerHTML = `
+                        span.className = user.online ? 'text-success' : 'text-danger';
+                    }
+                } else {
+                    // Jika user baru, tambahkan ke daftar
+                    let newUser = document.createElement('div');
+                    newUser.classList.add('recent-message', 'd-flex', 'px-4', 'py-3');
+                    newUser.id = `user-${user.id}`;
+                    newUser.innerHTML = `
                 <div class="avatar avatar-lg">
                     <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
                 </div>
@@ -406,42 +407,41 @@ new class extends Component {
                     </span>
                 </div>
             `;
-                document.getElementById('online-users-container').appendChild(newUser);
-            }
-        });
-</script>
-<!--================== END ==================-->
+                    document.getElementById('online-users-container').appendChild(newUser);
+                }
+            });
+    </script>
+    <!--================== END ==================-->
 
 
-@push('scripts')
     <!-- Need: Apexcharts -->
     <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
     <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
-@endpush
 
-<!--================== UCAPAN SELAMAT ==================-->
-<script>
-    function getGreeting() {
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        let greeting;
+    <!--================== UCAPAN SELAMAT ==================-->
+    <script>
+        function getGreeting() {
+            const currentTime = new Date();
+            const currentHour = currentTime.getHours();
+            let greeting;
 
-        if (currentHour >= 5 && currentHour < 11) {
-            greeting = "Selamat Pagi ";
-        } else if (currentHour >= 11 && currentHour < 15) {
-            greeting = "Selamat Siang ";
-        } else if (currentHour >= 15 && currentHour < 18) {
-            greeting = "Selamat Sore ";
-        } else if (currentHour >= 1 && currentHour < 5) {
-            greeting = "Selamat Dini Hari ";
-        } else {
-            greeting = "Selamat Malam ";
+            if (currentHour >= 5 && currentHour < 11) {
+                greeting = "Selamat Pagi ";
+            } else if (currentHour >= 11 && currentHour < 15) {
+                greeting = "Selamat Siang ";
+            } else if (currentHour >= 15 && currentHour < 18) {
+                greeting = "Selamat Sore ";
+            } else if (currentHour >= 1 && currentHour < 5) {
+                greeting = "Selamat Dini Hari ";
+            } else {
+                greeting = "Selamat Malam ";
+            }
+
+            return greeting;
         }
 
-        return greeting;
-    }
-
-    const greetingElement = document.getElementById("greeting");
-    greetingElement.innerText = getGreeting();
-</script>
-<!--================== END ==================-->
+        const greetingElement = document.getElementById("greeting");
+        greetingElement.innerText = getGreeting();
+    </script>
+    <!--================== END ==================-->
+@endpush
