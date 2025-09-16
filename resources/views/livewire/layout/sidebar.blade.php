@@ -109,7 +109,7 @@ new class extends Component {
 
                     <ul class="submenu ">
                         <li class="submenu-item  ">
-                            <a wire:navigate href="{{ route('admin.profile') }}" class="submenu-link">Profil</a>
+                            <a href="{{ route('admin.profile') }}" class="submenu-link">Profil</a>
                         </li>
                     </ul>
                 </li>

@@ -34,7 +34,7 @@ new #[Layout('layouts.authentication')] class extends Component {
 <div class="shadow-lg rounded-3 overflow-hidden" style="width: 32rem;">
     <div class="mb-1 bg-dark py-4 d-flex flex-column align-items-center justify-content-center">
         <div class="w-50 overflow-hidden">
-            <img src="{{ asset('global/assets/img/logophoenix.png') }}" alt="" class="h-100 w-100">
+            <img src="{{ asset('assets/img/logophoenix.png') }}" alt="" class="h-100 w-100">
         </div>
     </div>
     <!-- Session Status -->
