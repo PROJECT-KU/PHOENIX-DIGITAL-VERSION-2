@@ -32,7 +32,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
 
-            // ⬅️ pasang disini biar jalan di semua request web
             \App\Http\Middleware\LastUserActivity::class,
         ]);
 

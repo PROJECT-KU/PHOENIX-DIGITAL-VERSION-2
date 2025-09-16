@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-    Dashboard || Phoenix Digital
+Dashboard || Phoenix Digital
 @stop
 
 <div>
@@ -271,9 +271,9 @@ new class extends Component {
                                 <h5 class="font-bold">{{ Auth::user()->name }}</h5>
                                 <h6 class="text-muted mb-0">
                                     @if (Auth::user()->isOnline())
-                                        <span class="text-success">🟢 Online</span>
+                                    <span class="text-success">🟢 Online</span>
                                     @else
-                                        <span class="text-danger">🔴 Offline</span>
+                                    <span class="text-danger">🔴 Offline</span>
                                     @endif
                                 </h6>
                             </div>
@@ -297,6 +297,7 @@ new class extends Component {
                 <!--================== END ==================-->
 
                 <!--================== MENAMPILKAN DATA KARYAWAN ONLINE ==================-->
+
                 <div class="card">
                     <div class="card-header">
                         <h4>Karyawan Online</h4>
@@ -359,6 +360,10 @@ new class extends Component {
                     </div>
                     <!--================== END ==================-->
 
+                @livewire('pages.admin.online-users')
+                <!--================== END ==================-->
+
+
                     <div class="card">
                         <div class="card-header">
                             <h4>Visitors Profile</h4>
@@ -371,6 +376,7 @@ new class extends Component {
         </section>
     </div>
 </div>
+
 
 
 @push('scripts')
@@ -418,6 +424,13 @@ new class extends Component {
     <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
     <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
 
+@push('scripts')
+<!-- Need: Apexcharts -->
+<script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
+<script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
+@endpush
+
+
     <!--================== UCAPAN SELAMAT ==================-->
     <script>
         function getGreeting() {
@@ -440,8 +453,15 @@ new class extends Component {
             return greeting;
         }
 
+
         const greetingElement = document.getElementById("greeting");
         greetingElement.innerText = getGreeting();
     </script>
     <!--================== END ==================-->
 @endpush
+
+    const greetingElement = document.getElementById("greeting");
+    greetingElement.innerText = getGreeting();
+</script>
+<!--================== END ==================-->
+
