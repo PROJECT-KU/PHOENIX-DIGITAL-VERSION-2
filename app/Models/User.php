@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -15,11 +14,6 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -28,15 +22,11 @@ class User extends Authenticatable
         'profile_photo'
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
 
     // relation role user
     public function role(): BelongsTo
@@ -67,6 +57,7 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+
     protected function casts(): array
     {
         return [
@@ -76,6 +67,17 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Accessor: $user->online
+     */
+    public function getOnlineAttribute()
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(1));
+    }
+
+    /**
+     * Fallback: Cek dari tabel sessions
+     */
     public function isOnline()
     {
         $lastActivity = DB::table('sessions')
@@ -93,13 +95,6 @@ class User extends Authenticatable
 
     public function lastSeen(): ?Carbon
     {
-        $lastActivity = DB::table('sessions')
-            ->where('user_id', $this->id)
-            ->orderBy('last_activity', 'desc')
-            ->value('last_activity');
-
-        return $lastActivity
-            ? Carbon::createFromTimestamp($lastActivity)
-            : null;
+        return $this->last_seen_at;
     }
 }
