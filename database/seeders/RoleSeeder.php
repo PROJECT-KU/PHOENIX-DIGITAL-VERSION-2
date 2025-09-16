@@ -16,17 +16,14 @@ class RoleSeeder extends Seeder
         $roles = [
             [
                 'name' => 'admin',
-                'display_name' => 'Administrator',
                 'description' => 'Full system access'
             ],
             [
                 'name' => 'finance',
-                'display_name' => 'Finance',
                 'description' => 'Finance department access'
             ],
             [
                 'name' => 'user',
-                'display_name' => 'User',
                 'description' => 'Regular user access'
             ]
         ];

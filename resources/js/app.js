@@ -41,5 +41,32 @@ document.addEventListener("livewire:init", () => {
             title: data.message || "Berhasil update foto profil",
         });
     });
+    Livewire.on("added-role", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil tambah role baru",
+        });
+    });
+    Livewire.on("updated-role", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil update data role",
+        });
+    });
+    Livewire.on("deleted-role", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil hapus role",
+        });
+    });
+    Livewire.on("failed-add-role", (data) => {
+        Toast.fire({
+            icon: "error",
+            title: data.message || "gagal menambahkan role",
+        });
+    });
+    Livewire.on("focus-input", () => {
+        document.getElementById("name").focus();
+    });
 });
 

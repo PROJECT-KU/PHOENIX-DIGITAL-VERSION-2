@@ -1,9 +1,9 @@
 <div>
-    <h2 class="h3 fw-bold mb-4">Profile Settings</h2>
+    <h2 class="h3 fw-bold mb-4">Pengaturan Profil</h2>
     <div class="row gap-5">
         <!-- Profile Information Section -->
         <div class="col-12 col-lg-6">
-            <div class="card border-none">
+            <div class="card">
                 <div class="card-body">
                     <h3 class="card-title mb-4">Informasi Akun</h3>
                     <!-- Profile Photo -->
