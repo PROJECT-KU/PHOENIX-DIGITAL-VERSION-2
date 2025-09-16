@@ -67,17 +67,6 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Accessor: $user->online
-     */
-    public function getOnlineAttribute()
-    {
-        return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(1));
-    }
-
-    /**
-     * Fallback: Cek dari tabel sessions
-     */
     public function isOnline()
     {
         $lastActivity = DB::table('sessions')
@@ -96,5 +85,17 @@ class User extends Authenticatable
     public function lastSeen(): ?Carbon
     {
         return $this->last_seen_at;
+    }
+
+    public function getOnlineAttribute(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subSeconds(10));
+    }
+
+    public function getLastSeenDiffAttribute(): ?string
+    {
+        return $this->last_seen_at
+            ? $this->last_seen_at->diffForHumans()
+            : null;
     }
 }
