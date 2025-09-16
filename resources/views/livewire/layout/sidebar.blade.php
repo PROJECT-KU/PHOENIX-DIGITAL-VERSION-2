@@ -101,6 +101,19 @@ new class extends Component {
                     </ul>
                 </li>
 
+                <li class="sidebar-item  has-sub">
+                    <a href="#" class='sidebar-link'>
+                        <i class="bi bi-person-circle"></i>
+                        <span>Akun</span>
+                    </a>
+
+                    <ul class="submenu ">
+                        <li class="submenu-item  ">
+                            <a href="{{ route('admin.profile') }}" class="submenu-link">Profil</a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li class="sidebar-item">
                     <button wire:click="logout" class="sidebar-link btn btn-link w-100 text-start">
                         <i class="bi bi-box-arrow-right"></i>
