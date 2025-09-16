@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-Dashboard || Phoenix Digital
+    Dashboard || Phoenix Digital
 @stop
 
 <div>
@@ -266,13 +266,14 @@ Dashboard || Phoenix Digital
                             </div>
 
                             <div class="ms-3 name">
-                                <span id="greeting" class="text-dark font-weight-bold d-block" style="font-size:13px;"></span>
+                                <span id="greeting" class="text-dark font-weight-bold d-block"
+                                    style="font-size:13px;"></span>
                                 <h5 class="font-bold">{{ Auth::user()->name }}</h5>
                                 <h6 class="text-muted mb-0">
-                                    @if(Auth::user()->isOnline())
-                                    <span class="text-success">🟢 Online</span>
+                                    @if (Auth::user()->isOnline())
+                                        <span class="text-success">🟢 Online</span>
                                     @else
-                                    <span class="text-danger">🔴 Offline</span>
+                                        <span class="text-danger">🔴 Offline</span>
                                     @endif
                                 </h6>
                             </div>
@@ -280,12 +281,14 @@ Dashboard || Phoenix Digital
                     </div>
 
                     <div class="d-flex p-0 border-0" style="border-top:1px;">
-                        <button class="btn btn-outline-primary font-bold w-50 d-flex justify-content-center align-items-center me-1 mb-2 ms-2">
+                        <button
+                            class="btn btn-outline-primary font-bold w-50 d-flex justify-content-center align-items-center me-1 mb-2 ms-2">
                             <i class="iconly-boldUser"></i>
                             <span>Detail Profile</span>
                         </button>
 
-                        <button wire:click="logout" class="btn btn-outline-danger font-bold w-50 d-flex justify-content-center align-items-center ms-1 mb-2 me-2">
+                        <button wire:click="logout"
+                            class="btn btn-outline-danger font-bold w-50 d-flex justify-content-center align-items-center ms-1 mb-2 me-2">
                             <i class="iconly-boldLogout"></i>
                             <span>Logout</span>
                         </button>
@@ -300,31 +303,31 @@ Dashboard || Phoenix Digital
                     </div>
                     <div class="card-content pb-4">
                         @forelse($onlineUsers as $online)
-                        <div class="recent-message d-flex px-4 py-3">
-                            <div class="avatar avatar-lg">
-                                <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face 1">
-                            </div>
-                            <div class="name ms-4">
-                                <h5 class="mb-1">{{ $online->name }}</h5>
-                                <h6 class="text-muted mb-0">
-                                    {{ '@' . Str::slug($online->name) }}
-                                </h6>
+                            <div class="recent-message d-flex px-4 py-3">
+                                <div class="avatar avatar-lg">
+                                    <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face 1">
+                                </div>
+                                <div class="name ms-4">
+                                    <h5 class="mb-1">{{ $online->name }}</h5>
+                                    <h6 class="text-muted mb-0">
+                                        {{ '@' . Str::slug($online->name) }}
+                                    </h6>
 
-                                {{-- Status Online / Offline --}}
-                                @if($online->online)
-                                <span class="text-success">🟢 Online</span>
-                                @else
-                                <span class="text-danger">
-                                    🔴 Offline
-                                    @if($online->last_seen_at)
-                                    (Terakhir online {{ $online->last_seen_at->diffForHumans() }})
+                                    {{-- Status Online / Offline --}}
+                                    @if ($online->online)
+                                        <span class="text-success">🟢 Online</span>
+                                    @else
+                                        <span class="text-danger">
+                                            🔴 Offline
+                                            @if ($online->last_seen_at)
+                                                (Terakhir online {{ $online->last_seen_at->diffForHumans() }})
+                                            @endif
+                                        </span>
                                     @endif
-                                </span>
-                                @endif
+                                </div>
                             </div>
-                        </div>
                         @empty
-                        <p class="text-muted px-4 py-3">Tidak ada karyawan yang tercatat.</p>
+                            <p class="text-muted px-4 py-3">Tidak ada karyawan yang tercatat.</p>
                         @endforelse
 
                         <div class="px-4">
@@ -349,6 +352,11 @@ Dashboard || Phoenix Digital
     </div>
 </div>
 
+@push('scripts')
+    <!-- Need: Apexcharts -->
+    <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
+    <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
+@endpush
 <!--================== UCAPAN SELAMAT ==================-->
 <script>
     function getGreeting() {

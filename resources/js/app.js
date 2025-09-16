@@ -1,9 +1,7 @@
-import bootstrapBundle from "bootstrap/dist/js/bootstrap.bundle";
-window.bootstrap = bootstrapBundle;
 import "./bootstrap";
 import Swal from "sweetalert2";
-import featherIcons from "feather-icons";
-featherIcons.replace();
+// import featherIcons from "feather-icons";
+// featherIcons.replace();
 
 let currentYear = document.getElementById("current-year");
 if (currentYear) {
@@ -18,7 +16,6 @@ const Toast = Swal.mixin({
     timer: 3000,
     timerProgressBar: true,
 });
-
 document.addEventListener("livewire:init", () => {
     Livewire.on("login-error", (data) => {
         Toast.fire({
