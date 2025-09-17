@@ -1545,7 +1545,8 @@ h6 {
 
 .footer .footer-main .app-buttons .app-btn:hover {
   background-color: var(--accent-color);
-  color: var(--contrast-color);
+  /* color: var(--contrast-color); */
+  color: black;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -1578,7 +1579,8 @@ h6 {
 
 .footer .footer-main .social-links .social-icons a:hover {
   background-color: var(--accent-color);
-  color: var(--contrast-color);
+  /* color: var(--contrast-color); */
+  color: black;
   transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
@@ -1736,6 +1738,7 @@ h6 {
   height: 40px;
   border-radius: 4px;
   transition: all 0.4s;
+  display: none !important;
 }
 
 .scroll-top i {
@@ -9196,12 +9199,14 @@ section,
   margin-bottom: 1.5rem;
   line-height: 1.2;
   font-weight: 700;
+  text-align: center;
 }
 
 .about-2 .about-description,
 .about-2 .section-text {
   color: color-mix(in srgb, var(--default-color) 80%, transparent);
   line-height: 1.6;
+  text-align: center;
 }
 
 .about-2 .features-boxes .feature-box {

@@ -7,6 +7,7 @@ use App\Livewire\Pages\Admin\Role;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'pages.homepage')->name('home');
+Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])

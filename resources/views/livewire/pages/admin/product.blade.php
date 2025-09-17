@@ -15,7 +15,7 @@
                     </ol>
                 </nav>
 
-                <a href="#" class="btn icon icon-left btn-success mt-3">
+                <a href="{{ route('admin.product.create') }}" class="btn icon icon-left btn-success mt-3">
                     <i data-feather="check-circle"></i> Tambah Product
                 </a>
             </div>

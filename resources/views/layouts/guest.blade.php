@@ -27,6 +27,9 @@
   <!-- Main CSS File -->
   <link href="{{ 'niceshop/assets/css/main.css' }}" rel="stylesheet">
 
+  <link href="{{ 'niceshop/assets/css/custom.css' }}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
   <!-- =======================================================
   * Template Name: NiceShop
   * Template URL: https://bootstrapmade.com/niceshop-bootstrap-ecommerce-template/
@@ -42,15 +45,8 @@
     <div class="top-bar py-2">
       <div class="container-fluid container-xl">
         <div class="row align-items-center">
-          <div class="col-lg-4 d-none d-lg-flex">
-            <div class="top-bar-item">
-              <i class="bi bi-telephone-fill me-2"></i>
-              <span>Need help? Call us: </span>
-              <a href="tel:+1234567890">+1 (234) 567-890</a>
-            </div>
-          </div>
 
-          <div class="col-lg-4 col-md-12 text-center">
+          <div class="col-lg-4 col-lg-12 text-center">
             <div class="announcement-slider swiper init-swiper">
               <script type="application/json" class="swiper-config">
                 {
@@ -72,31 +68,6 @@
             </div>
           </div>
 
-          <div class="col-lg-4 d-none d-lg-block">
-            <div class="d-flex justify-content-end">
-              <div class="top-bar-item dropdown me-3">
-                <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
-                  <i class="bi bi-translate me-2"></i>EN
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="#"><i class="bi bi-check2 me-2 selected-icon"></i>English</a></li>
-                  <li><a class="dropdown-item" href="#">Español</a></li>
-                  <li><a class="dropdown-item" href="#">Français</a></li>
-                  <li><a class="dropdown-item" href="#">Deutsch</a></li>
-                </ul>
-              </div>
-              <div class="top-bar-item dropdown">
-                <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">
-                  <i class="bi bi-currency-dollar me-2"></i>USD
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="#"><i class="bi bi-check2 me-2 selected-icon"></i>USD</a></li>
-                  <li><a class="dropdown-item" href="#">EUR</a></li>
-                  <li><a class="dropdown-item" href="#">GBP</a></li>
-                </ul>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -107,7 +78,7 @@
         <div class="d-flex py-3 align-items-center justify-content-between">
 
           <!-- Logo -->
-          <a href="index.html" class="logo d-flex align-items-center">
+          <a href="/" class="logo d-flex align-items-center">
             <!-- Uncomment the line below if you also wish to use an image logo -->
             <!-- <img src="assets/img/logo.webp" alt=""> -->
             <h1 class="sitename">Phoenix</h1>
@@ -191,10 +162,10 @@
       <div class="container-fluid container-xl position-relative">
         <nav id="navmenu" class="navmenu">
           <ul>
-            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="/" class="active">Home</a></li>
             <li><a href="about.html">About</a></li>
             <li><a href="category.html">Category</a></li>
-            <li><a href="product-details.html">Product Details</a></li>
+            <li><a href="/homeproduct">Product Details</a></li>
             <li><a href="cart.html">Cart</a></li>
             <li><a href="checkout.html">Checkout</a></li>
             <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
@@ -799,10 +770,10 @@
     <div class="footer-main">
       <div class="container">
         <div class="row gy-4">
-          <div class="col-lg-4 col-md-6">
+          <div class="col-lg-6 col-md-8">
             <div class="footer-widget footer-about">
               <a href="index.html" class="logo">
-                <span class="sitename">NiceShop</span>
+                <span class="sitename">Phoenix</span>
               </a>
               <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in nibh vehicula, facilisis magna ut, consectetur lorem. Proin eget tortor risus.</p>
 
@@ -822,7 +793,7 @@
 
           <div class="col-lg-2 col-md-6 col-sm-6">
             <div class="footer-widget">
-              <h4>Shop</h4>
+              <h4>Product</h4>
               <ul class="footer-links">
                 <li><a href="category.html">New Arrivals</a></li>
                 <li><a href="category.html">Bestsellers</a></li>
@@ -830,20 +801,6 @@
                 <li><a href="category.html">Men's Clothing</a></li>
                 <li><a href="category.html">Accessories</a></li>
                 <li><a href="category.html">Sale</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="col-lg-2 col-md-6 col-sm-6">
-            <div class="footer-widget">
-              <h4>Support</h4>
-              <ul class="footer-links">
-                <li><a href="support.html">Help Center</a></li>
-                <li><a href="account.html">Order Status</a></li>
-                <li><a href="shiping-info.html">Shipping Info</a></li>
-                <li><a href="return-policy.html">Returns &amp; Exchanges</a></li>
-                <li><a href="#">Size Guide</a></li>
-                <li><a href="contact.html">Contact Us</a></li>
               </ul>
             </div>
           </div>
@@ -891,14 +848,14 @@
         <div class="row gy-3 align-items-center">
           <div class="col-lg-6 col-md-12">
             <div class="copyright">
-              <p>© <span>Copyright</span> <strong class="sitename">NiceShop</strong>. All Rights Reserved.</p>
+              <p>© <span>Copyright</span> <strong class="sitename">Phoenix</strong>. All Rights Reserved.</p>
             </div>
             <div class="credits mt-1">
               <!-- All the links in the footer should remain intact. -->
               <!-- You can delete the links only if you've purchased the pro version. -->
               <!-- Licensing information: https://bootstrapmade.com/license/ -->
               <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
-              Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
+              Designed by <a href="https://phoenix.com/">Phoenix</a>
             </div>
           </div>
 
@@ -930,6 +887,10 @@
 
   <!-- Scroll Top -->
   <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <a href="https://wa.me/6281234567890" target="_blank" id="wa-button" class="wa-button d-flex align-items-center justify-content-center">
+    <i class="bi bi-whatsapp"></i>
+  </a>
 
   <!-- Preloader -->
   <div id="preloader"></div>
