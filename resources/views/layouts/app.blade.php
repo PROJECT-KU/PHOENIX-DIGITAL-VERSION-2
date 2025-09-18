@@ -18,7 +18,7 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
 
     <!-- Scripts -->
-    @vite(['resources/js/app.js'])
+    @vite(['resources/css/app.scss', 'resources/js/app.js'])
 </head>
 
 <body>
