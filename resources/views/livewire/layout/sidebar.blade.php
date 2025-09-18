@@ -109,11 +109,13 @@ new class extends Component {
 
                     <ul class="submenu ">
                         <li class="submenu-item  ">
-                            <a href="{{ route('admin.account.profile') }}" class="submenu-link">Profil Akun</a>
+                            <a href="{{ route('admin.account.profile') }}" class="submenu-link">Profil Settings</a>
                         </li>
-                        <li class="submenu-item  ">
-                            <a href="{{ route('admin.account.role') }}" class="submenu-link">Role Akun</a>
-                        </li>
+                        @if (auth()->user()->hasRole('admin'))
+                            <li class="submenu-item  ">
+                                <a href="{{ route('admin.account.role') }}" class="submenu-link">Role Akun</a>
+                            </li>
+                        @endif
                     </ul>
                 </li>
 

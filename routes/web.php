@@ -12,11 +12,14 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
+Route::middleware(['checkrole:admin'])->group(function () {
+    Route::get('/admin/role', Role::class)->name('admin.account.role');
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/product', Product::class)->name('admin.product.index');
     Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
     Route::get('/admin/profile', Profile::class)->name('admin.account.profile');
-    Route::get('/admin/role', Role::class)->name('admin.account.role');
 });
 
 require __DIR__ . '/auth.php';

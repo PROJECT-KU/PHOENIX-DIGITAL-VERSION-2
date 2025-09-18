@@ -61,11 +61,14 @@
                                     <div class="text-danger small mt-2">{{ $message }}</div>
                                 @enderror
                             </div>
-                        </div>
-                        <div class="mb-4">
-                            <p class="mb-0 text-muted">
-                                <strong>Role:</strong> {{ auth()->user()->role->display_name }}
-                            </p>
+                            <div class="mb-3">
+                                <label for="role" class="form-label fw-medium">Role Akun</label>
+                                <input type="role" disabled id="role" class="form-control"
+                                    value="{{ auth()->user()->role->name }}">
+                                @error('role')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
                         </div>
                         <div class="mb-3">
                             <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
