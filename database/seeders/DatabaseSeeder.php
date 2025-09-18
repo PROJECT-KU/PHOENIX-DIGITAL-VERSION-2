@@ -16,44 +16,55 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // seeder role
+        $this->call([
+            RoleSeeder::class,
+        ]);
+
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $financeRole = Role::firstOrCreate(['name' => 'finance']);
+        $managerRole = Role::firstOrCreate(['name' => 'manager']);
+        $userRole = Role::firstOrCreate(['name' => 'user']);
+        $supervisorRole = Role::firstOrCreate(['name' => 'supervisor']);
+
         // User default (admin)
         User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@example.com',
-            'password' => Hash::make('admin'), // pakai hash
+            'password' => Hash::make('admin123'),
+            'role_id' => $adminRole->id
         ]);
 
-        // Tambahan pengguna lain
         User::factory()->create([
-            'name' => 'Kasir',
-            'email' => 'kasir@example.com',
-            'password' => Hash::make('kasir123'),
+            'name' => 'Finance',
+            'email' => 'finance@example.com',
+            'password' => Hash::make('finance123'),
+            'role_id' => $financeRole->id
         ]);
 
         User::factory()->create([
             'name' => 'Manager',
             'email' => 'manager@example.com',
             'password' => Hash::make('manager123'),
+            'role_id' => $managerRole->id
         ]);
 
         User::factory()->create([
             'name' => 'Supervisor',
             'email' => 'supervisor@example.com',
             'password' => Hash::make('supervisor123'),
+            'role_id' => $supervisorRole->id
         ]);
 
         // Generate dummy users tambahan
-        User::factory(10)->create();
+        User::factory(10)->create([
+            'role_id' => $userRole->id
+        ]);
 
         // Generate 100 Product
         Product::factory()->count(100)->create();
 
         // Generate 1000 Customer
         Customer::factory()->count(1000)->create();
-
-        // seeder role
-        $this->call([
-            RoleSeeder::class,
-        ]);
     }
 }
