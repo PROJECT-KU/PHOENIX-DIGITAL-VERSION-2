@@ -1,11 +1,18 @@
 <div>
-    <header class="header-content">
-        <h3>Role User</h3>
-    </header>
-    <section class="card mt-4">
+    <div class="d-flex mb-2 align-items-center justify-content-between">
+        <h3>Manajemen Role & Akun</h3>
+        @php
+            $breadcrumbs = [
+                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
+                ['name' => 'Manajemen Role & Akun'],
+            ];
+        @endphp
+        <x-breadcrumb :items="$breadcrumbs" />
+    </div>
+    <section class="card">
         <div class="card-content">
             <div class="card-body">
-                <h4 class="card-title">Manajemen Role</h4>
+                <h5 class="card-title">Manajemen Role</h5>
                 <div class="row mt-4">
                     <div class="col-12 col-lg-6">
                         <form wire:submit="{{ $roleIdBeingEdited ? 'updateRole' : 'addRole' }}">
@@ -77,7 +84,7 @@
     <section class="card">
         <div class="card-content">
             <div class="card-body">
-                <h4 class="card-title">Manajemen User Role</h4>
+                <h5 class="card-title">Manajemen User Role</h5>
                 <div class="row mt-4">
                     <div class="col-12 ">
                         <div class="w-25 mb-2">
