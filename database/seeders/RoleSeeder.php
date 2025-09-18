@@ -23,8 +23,16 @@ class RoleSeeder extends Seeder
                 'description' => 'Finance department access'
             ],
             [
+                'name' => 'manager',
+                'description' => 'manager role'
+            ],
+            [
+                'name' => 'supervisor',
+                'description' => 'supervisor role'
+            ],
+            [
                 'name' => 'user',
-                'description' => 'Regular user access'
+                'description' => 'user public'
             ]
         ];
 
