@@ -66,14 +66,15 @@ new class extends Component {
                     </a>
                 </li>
 
+                <li class="sidebar-title mt-4">E Commerce</li>
                 <li class="sidebar-item  has-sub {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-stack"></i>
                         <span>Produk</span>
                     </a>
 
-                    <ul class="submenu ">
-                        <li class="submenu-item  ">
+                    <ul class="submenu">
+                        <li class="submenu-item">
                             <a href="{{ route('admin.product.index') }}" class="submenu-link">List
                                 Produk</a>
                         </li>
@@ -82,9 +83,20 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
+                    <a href="#" class="sidebar-link">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Pelanggan</span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item">
+                            <a href="{{ route('admin.customer.index') }}" class="submenu-link">Data Pelanggan</a>
+                        </li>
+                    </ul>
+                </li>
 
                 <!-- section menu data dan laporan -->
-                <li class="sidebar-title">Data &amp; Laporan</li>
+                <li class="sidebar-title mt-4">Data &amp; Laporan</li>
                 <li class="sidebar-item  has-sub">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-hexagon-fill"></i>
@@ -109,11 +121,11 @@ new class extends Component {
 
                     <ul class="submenu ">
                         <li class="submenu-item  ">
-                            <a href="{{ route('admin.account.profile') }}" class="submenu-link">Profil Settings</a>
+                            <a href="{{ route('admin.account.profile') }}" class="submenu-link">Pengaturan Profil</a>
                         </li>
                         @if (auth()->user()->hasRole('admin'))
                             <li class="submenu-item  ">
-                                <a href="{{ route('admin.account.role') }}" class="submenu-link">Role Akun</a>
+                                <a href="{{ route('admin.account.role') }}" class="submenu-link">Pengaturan Role</a>
                             </li>
                         @endif
                     </ul>
