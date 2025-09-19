@@ -1,7 +1,5 @@
 import "./bootstrap";
 import Swal from "sweetalert2";
-// import featherIcons from "feather-icons";
-// featherIcons.replace();
 
 let currentYear = document.getElementById("current-year");
 if (currentYear) {
@@ -16,6 +14,7 @@ const Toast = Swal.mixin({
     timer: 3000,
     timerProgressBar: true,
 });
+
 document.addEventListener("livewire:init", () => {
     Livewire.on("login-error", (data) => {
         Toast.fire({
@@ -68,5 +67,28 @@ document.addEventListener("livewire:init", () => {
     Livewire.on("focus-input", () => {
         document.getElementById("name").focus();
     });
+    Livewire.on("deleted-user", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil hapus data user",
+        });
+    });
+    Livewire.on("user-role-updated", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil mengubah role user",
+        });
+    });
+    Livewire.on("customer-created", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil menambah data pelanggan",
+        });
+    });
+    Livewire.on("customer-updated", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil mengubah data pelanggan",
+        });
+    });
 });
-
