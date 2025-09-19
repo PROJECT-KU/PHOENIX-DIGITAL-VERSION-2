@@ -10,7 +10,7 @@
       <div class="hero-container">
         <div class="hero-content">
           <div class="content-wrapper" data-aos="fade-up" data-aos-delay="100">
-            <h1 class="hero-title">Discover Amazing Products</h1>
+            <h1 class="hero-title">Promo Specials</h1>
             <p class="hero-description">Explore our curated collection of premium items designed to enhance your lifestyle. From fashion to tech, find everything you need with exclusive deals and fast shipping.</p>
             <div class="hero-actions" data-aos="fade-up" data-aos-delay="200">
               <a href="#products" class="btn-primary">Shop Now</a>

@@ -1,0 +1,93 @@
+<div>
+    <form wire:submit.prevent="save" class="p-3">
+
+    <div class="row g-3">
+        <!-- Nama Akun -->
+        <div class="col-md-6">
+            <label for="namaAkun" class="form-label">Nama Akun</label>
+            <input type="text" id="namaAkun" wire:model.defer="nama_akun"
+                   class="form-control @error('nama_akun') is-invalid @enderror"
+                   placeholder="Masukkan nama akun">
+            @error('nama_akun')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Username -->
+        <div class="col-md-6">
+            <label for="username" class="form-label">Username Akun</label>
+            <input type="text" id="username" wire:model.defer="username_akun"
+                   class="form-control @error('username_akun') is-invalid @enderror"
+                   placeholder="Masukkan username">
+            @error('username_akun')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Password -->
+        <div class="col-md-6">
+            <label for="password" class="form-label">Password</label>
+            <input type="text" id="password" wire:model.defer="password_akun"
+                   class="form-control @error('password_akun') is-invalid @enderror"
+                   placeholder="Masukkan password">
+            @error('password_akun')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Link Login -->
+        <div class="col-md-6">
+            <label for="linkLogin" class="form-label">Link Login Akun</label>
+            <input type="url" id="linkLogin" wire:model.defer="link_login_akun"
+                   class="form-control @error('link_login_akun') is-invalid @enderror"
+                   placeholder="https://example.com/login">
+            @error('link_login_akun')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- PJ Akun -->
+        <div class="col-md-6">
+            <label for="pjAkun" class="form-label">PJ Akun</label>
+            <input type="text" id="pjAkun" wire:model.defer="pj_akun"
+                   class="form-control @error('pj_akun') is-invalid @enderror"
+                   placeholder="Penanggung jawab akun">
+            @error('pj_akun')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Harga -->
+        <div class="col-md-6">
+            <label for="harga" class="form-label">Harga Satuan</label>
+            <input type="number" id="harga" wire:model.defer="harga_satuan"
+                   class="form-control @error('harga_satuan') is-invalid @enderror"
+                   placeholder="Masukkan harga">
+            @error('harga_satuan')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <!-- Deskripsi -->
+        <div class="col-12">
+            <label for="deskripsi" class="form-label">Deskripsi</label>
+            <textarea id="deskripsi" wire:model.defer="deskripsi" rows="3"
+                      class="form-control @error('deskripsi') is-invalid @enderror"
+                      placeholder="Masukkan deskripsi produk"></textarea>
+            @error('deskripsi')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
+
+    <!-- Tombol -->
+    <div class="mt-4 text-end">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save me-1"></i>
+            {{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}
+        </button>
+    </div>
+
+</form>
+
+</div>
