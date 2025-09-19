@@ -22,15 +22,15 @@ class Customer extends Model
         'status_member'
     ];
 
-    // protected $cast = [
-    //     'status_member' => 'string',
-    //     'created_at' => 'datetime',
-    //     'updated_at' => 'datetime'
-    // ];
+    protected $cast = [
+        'status_member' => 'string',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 
-    // protected $attributes = [
-    //     'status_member' => self::STATUS_MEMBER_NONACTIVE
-    // ];
+    protected $attributes = [
+        'status_member' => self::STATUS_MEMBER_NONACTIVE
+    ];
 
     /**
      * Format nomor HP dengan format Indonesia
@@ -73,6 +73,10 @@ class Customer extends Model
         }
     }
 
+    public function getCreatedAtAttribute($value)
+    {
+        return \Carbon\Carbon::parse($value)->timezone('Asia/Jakarta');
+    }
     /**
      * Scope untuk searching berdasarkan nama atau email
      */

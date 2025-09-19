@@ -14,8 +14,10 @@ const Toast = Swal.mixin({
     timer: 3000,
     timerProgressBar: true,
 });
+const Swal2 = Swal.mixin({});
 
 document.addEventListener("livewire:init", () => {
+    // profile dan role event
     Livewire.on("login-error", (data) => {
         Toast.fire({
             icon: "error",
@@ -79,6 +81,8 @@ document.addEventListener("livewire:init", () => {
             title: data.message || "Berhasil mengubah role user",
         });
     });
+
+    // customer event
     Livewire.on("customer-created", (data) => {
         Toast.fire({
             icon: "success",
@@ -89,6 +93,25 @@ document.addEventListener("livewire:init", () => {
         Toast.fire({
             icon: "success",
             title: data.message || "Berhasil mengubah data pelanggan",
+        });
+    });
+    Livewire.on("customer-deleted", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil menghapus data pelanggan",
+        });
+    });
+    Livewire.on("will-delete-customer-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data pelanggan " + data["nama"] + " ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-customer", { id: data["id"] });
+            }
         });
     });
 });

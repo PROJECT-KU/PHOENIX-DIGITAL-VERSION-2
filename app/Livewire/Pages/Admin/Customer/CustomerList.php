@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -12,9 +13,13 @@ class CustomerList extends Component
     use WithPagination;
     public $searchCustomer = '';
 
-    public function updatedSearchCustomer()
+    #[On('delete-customer')]
+    public function deleteCustomer($id)
     {
-        $this->resetPage();
+        Customer::findOrFail($id)->delete();
+
+        // event ke browser (misalnya untuk toast notifikasi)
+        $this->dispatch('customer-deleted');
     }
 
     #[Layout('layouts.app')]
