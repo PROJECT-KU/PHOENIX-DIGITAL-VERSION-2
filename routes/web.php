@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\Pages\Admin\Customer\CustomerCreate;
+use App\Livewire\Pages\Admin\Customer\CustomerEdit;
 use App\Livewire\Pages\Admin\Customer\CustomerList;
 use App\Livewire\Pages\Admin\Dashboard;
 use App\Livewire\Pages\Admin\Product;
@@ -24,8 +26,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     //customer route
     Route::get('/admin/customer', CustomerList::class)->name('admin.customer.index');
-    Route::get('/admin/customer/{idcustomer}/edit', CustomerList::class)->name('admin.customer.edit');
-    Route::get('/admin/customer/create', CustomerList::class)->name('admin.customer.create');
+    Route::get('/admin/customer/create', CustomerCreate::class)->name('admin.customer.create');
+    Route::get('/admin/customer/{customer}', CustomerEdit::class)->name('admin.customer.show');
+    Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->name('admin.customer.edit');
 });
 
 require __DIR__ . '/auth.php';

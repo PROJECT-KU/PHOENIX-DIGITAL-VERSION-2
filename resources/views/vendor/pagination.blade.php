@@ -8,7 +8,7 @@
             <span class="fw-semibold">{{ $paginator->lastItem() }}</span>
             dari
             <span class="fw-semibold">{{ $paginator->total() }}</span>
-            artikel
+            data
         </div>
 
         {{-- Link Pagination --}}
@@ -27,7 +27,6 @@
                 </li>
             @endif
 
-            {{-- Pagination Elements --}}
             {{-- Pagination Elements --}}
             @php
                 $totalPages = $paginator->lastPage();

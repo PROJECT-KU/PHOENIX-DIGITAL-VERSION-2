@@ -16,7 +16,7 @@
                         <i class="bi bi-search" style="font-size: 14px;"></i>
                     </div>
                 </div>
-                <a href="{{ route('admin.customer.create') }}" class="btn btn-primary">
+                <a wire:navigate href="{{ route('admin.customer.create') }}" class="btn btn-primary">
                     <i class="bi bi-plus-lg"></i>
                     <span>Tambah Data Pelanggan</span>
                 </a>
@@ -41,8 +41,12 @@
                             <td>{{ $customer->status_member }}</td>
                             <td>{{ $customer->created_at }}</td>
                             <td>
-                                <button class="btn btn-outline-secondary btn-sm">
+                                <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
+                                    class="btn btn-outline-secondary btn-sm me-2">
                                     <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>
