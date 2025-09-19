@@ -4,8 +4,8 @@
         @php
             $breadcrumbs = [
                 ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                ['name' => 'Data Pelanggan', 'url' => route('admin.customer.index')],
-                ['name' => 'Tambah Data Pelanggan'],
+                ['name' => 'Data Pelanggan', 'url' => route('admin.product.index')],
+                ['name' => 'Tambah Data Product'],
             ];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
