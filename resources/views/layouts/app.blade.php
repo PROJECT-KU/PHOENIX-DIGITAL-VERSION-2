@@ -37,7 +37,10 @@
 
     <script src="{{ asset('mazer/compiled/js/app.js') }}"></script>
     <script src="{{ asset('mazer/compiled/js/custom.js') }}"></script>
+    <script src="{{ asset('mazer/compiled/js/product-delete.js') }}"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     @stack('scripts')
 </body>
 

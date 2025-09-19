@@ -17,6 +17,21 @@ class ProductList extends Component
         $this->resetPage();
     }
 
+    public function deleteProduct($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            $this->dispatch('delete-error', ['message' => 'Produk tidak ditemukan!'], browserEvent: true);
+            return;
+        }
+
+        $product->delete();
+
+        $this->dispatch('product-deleted', ['id' => $id], browserEvent: true);
+    }
+
+
     #[Layout('layouts.app')]
     public function render()
     {

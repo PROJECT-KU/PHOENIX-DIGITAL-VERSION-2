@@ -104,8 +104,11 @@ class ProductForm extends Component
         $this->deskripsi      = '';
         $this->harga_satuan   = '';
     }
+
     public function render()
     {
-        return view('livewire.pages.admin.product.product-form');
+        return view('livewire.pages.admin.product.product-form', [
+            'product' => $this->product
+        ]);
     }
 }

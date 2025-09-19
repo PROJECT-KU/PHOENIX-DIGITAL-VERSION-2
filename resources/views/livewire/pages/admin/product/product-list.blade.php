@@ -66,9 +66,17 @@
                                     title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <button class="btn btn-outline-danger btn-sm" title="Hapus">
+                                    {{-- <button wire:click="deleteProduct('{{ $item->id }}')"
+                                            class="btn btn-outline-danger btn-sm"
+                                            title="Hapus">
+                                        <i class="bi bi-trash"></i>
+                                    </button> --}}
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm delete-product-btn"
+                                            data-id="{{ $item->id }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
+
                                 </td>
                             </tr>
                         @empty
