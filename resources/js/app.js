@@ -79,4 +79,16 @@ document.addEventListener("livewire:init", () => {
             title: data.message || "Berhasil mengubah role user",
         });
     });
+    Livewire.on("customer-created", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil menambah data pelanggan",
+        });
+    });
+    Livewire.on("customer-updated", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil mengubah data pelanggan",
+        });
+    });
 });
