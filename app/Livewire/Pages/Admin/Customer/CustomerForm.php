@@ -53,7 +53,7 @@ class CustomerForm extends Component
 
             $this->dispatch('customer-created');
             $this->resetForm();
-            redirect()->route('admin.customer.index');
+            $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menambahkan customer: ' . $e->getMessage());
             $this->dispatch('failed-create-data-customer');
@@ -67,12 +67,12 @@ class CustomerForm extends Component
                 'nama' => $this->name,
                 'email' => $this->email,
                 'no_hp' => $this->phone,
-                'statusMember' => $this->statusMember
+                'status_member' => $this->statusMember
             ]);
 
-            $this->dispatch('customer-updated');
             $this->resetForm();
-            redirect()->route('admin.customer.index');
+            $this->dispatch('customer-updated');
+            $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate customer: ' . $e->getMessage());
             $this->dispatch('failed-update-data-customer');

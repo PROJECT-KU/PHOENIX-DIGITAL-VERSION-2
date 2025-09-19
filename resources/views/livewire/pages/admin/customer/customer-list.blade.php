@@ -39,13 +39,15 @@
                             <td>{{ $customer->email }}</td>
                             <td>{{ $customer->no_hp }}</td>
                             <td>{{ $customer->status_member }}</td>
-                            <td>{{ $customer->created_at }}</td>
+                            <td>{{ $customer->created_at->translatedFormat('d F Y, H:i') }}</td>
                             <td>
                                 <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
                                     class="btn btn-outline-secondary btn-sm me-2">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <button class="btn btn-outline-danger btn-sm">
+                                <button type="button"
+                                    wire:click="$dispatch('will-delete-customer-data', {{ $customer }})"
+                                    class="btn btn-outline-danger btn-sm">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
