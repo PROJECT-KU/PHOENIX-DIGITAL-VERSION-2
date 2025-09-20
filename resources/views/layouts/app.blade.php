@@ -16,6 +16,7 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app-dark.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
+    <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/custom.css') }}">
 
     <!-- Scripts -->
     @vite(['resources/css/app.scss', 'resources/js/app.js'])

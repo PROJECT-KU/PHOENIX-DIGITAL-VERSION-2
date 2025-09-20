@@ -15,6 +15,8 @@ class ProductForm extends Component
     public $pj_akun = '';
     public $deskripsi = '';
     public $harga_satuan = '';
+    public $periode = 'bulan';
+    public $status = 'active';
 
     public $mode = 'create';
 
@@ -29,6 +31,8 @@ class ProductForm extends Component
             $this->pj_akun = $this->product->pj_akun;
             $this->harga_satuan = $this->product->harga_satuan;
             $this->deskripsi = $this->product->deskripsi;
+            $this->periode = $product->periode;
+            $this->status = $product->status;
             $this->mode = 'edit';
         }
     }
@@ -43,6 +47,8 @@ class ProductForm extends Component
             'pj_akun'        => 'required',
             'deskripsi'      => 'nullable|string',
             'harga_satuan'   => 'required|numeric|min:1000',
+            'periode'         => 'required|in:bulan,10_bulan,tahun',
+            'status'          => 'required|in:active,nonactive',
         ]);
         if ($this->mode === 'create') {
             $this->createProduct();
@@ -61,6 +67,8 @@ class ProductForm extends Component
                 'pj_akun'        => $this->pj_akun,
                 'deskripsi'      => $this->deskripsi,
                 'harga_satuan'   => $this->harga_satuan,
+                'periode'         => $this->periode,
+                'status'          => $this->status,
             ]);
 
             $this->dispatch('product-created');
@@ -83,6 +91,8 @@ class ProductForm extends Component
                 'pj_akun'        => $this->pj_akun,
                 'deskripsi'      => $this->deskripsi,
                 'harga_satuan'   => $this->harga_satuan,
+                'periode'         => $this->periode,
+                'status'          => $this->status,
             ]);
 
             $this->dispatch('product-updated');
@@ -103,6 +113,8 @@ class ProductForm extends Component
         $this->pj_akun        = '';
         $this->deskripsi      = '';
         $this->harga_satuan   = '';
+        $this->periode       = 'bulan';
+        $this->status        = 'active';
     }
 
     public function render()

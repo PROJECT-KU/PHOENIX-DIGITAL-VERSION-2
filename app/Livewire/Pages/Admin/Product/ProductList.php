@@ -42,6 +42,8 @@ class ProductList extends Component
             ->orWhere('pj_akun', 'like', "%{$this->searchProduct}%")
             ->orWhere('deskripsi', 'like', "%{$this->searchProduct}%")
             ->orWhere('harga_satuan', 'like', "%{$this->searchProduct}%")
+            ->orWhere('periode', 'like', "%{$this->searchProduct}%")
+            ->orWhere('status', 'like', "%{$this->searchProduct}%")
             ->paginate(10);
 
         return view('livewire.pages.admin.product.product-list', [
