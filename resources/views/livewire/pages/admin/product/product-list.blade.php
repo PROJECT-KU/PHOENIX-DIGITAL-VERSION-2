@@ -22,12 +22,12 @@
                 </a>
             </div>
             <div class="table-responsive">
-                <table id="productTable" class="table table-striped table-bordered align-middle nowrap" style="width:100%">
+                <table id="productTable" class="table table-striped align-middle nowrap" style="width:100%">
                     <thead class="table-light text-center">
                         <tr>
                             <th>Name Akun</th>
                             <th>User Name</th>
-                            <th style="width: 100px;">Password</th> <!-- kasih width -->
+                            <th style="width: 100px;">Password</th>
                             <th>Link Login</th>
                             <th>PJ Akun</th>
                             <th>Deskripsi</th>
@@ -58,17 +58,26 @@
                                 <td class="text-truncate" style="max-width: 200px;">
                                     {{ $item->deskripsi }}
                                 </td>
-                                <td>{{ number_format($item->harga_satuan, 0, ',', '.') }}</td>
-                                <td>{{ $item->created_at->format('d-m-Y') }}</td>
+                                <td>
+                                    Rp {{ number_format($item->harga_satuan, 0, ',', '.') }} {{ $item->periode == 'bulan' ? '/ Bulan' : ($item->periode == '10_bulan' ? '/ 10 Bulan' : '/ Tahun') }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
+                                        {{ ucfirst($item->status) }}
+                                    </span>
+                                </td>
                                 <td class="text-center">
                                     <a wire:navigate href="{{ route('admin.product.edit', $item) }}"
                                     class="btn btn-outline-secondary btn-sm me-1"
                                     title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <button class="btn btn-outline-danger btn-sm" title="Hapus">
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm delete-product-btn"
+                                            data-id="{{ $item->id }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
+
                                 </td>
                             </tr>
                         @empty

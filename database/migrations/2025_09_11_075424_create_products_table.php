@@ -19,7 +19,10 @@ return new class extends Migration
             $table->string('link_login_akun')->nullable();
             $table->string('pj_akun')->nullable(); // Penanggung Jawab
             $table->text('deskripsi')->nullable();
-            $table->decimal('harga_satuan', 15, 2);
+            // $table->decimal('harga_satuan', 15, 2);
+            $table->decimal('harga_satuan', 15, 2); // harga dasar
+            $table->enum('periode', ['bulan', '10_bulan', 'tahun'])->default('bulan');
+            $table->enum('status', ['active', 'nonactive'])->default('active');
             $table->timestamps();
         });
     }

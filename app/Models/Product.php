@@ -18,6 +18,8 @@ class Product extends Model
         'pj_akun',
         'deskripsi',
         'harga_satuan',
+        'periode',
+        'status'
     ];
 
     protected $casts = [

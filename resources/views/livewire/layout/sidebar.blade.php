@@ -67,34 +67,37 @@ new class extends Component {
                 </li>
 
                 <li class="sidebar-title mt-4">E Commerce</li>
-                <li class="sidebar-item  has-sub {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-stack"></i>
-                        <span>Produk</span>
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
+                    <a href="#" class="sidebar-link {{ request()->routeIs('admin.product.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-stack {{ request()->routeIs('admin.product.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.product.*') ? 'text-primary' : '' }}">
+                            Produk
+                        </span>
                     </a>
-
                     <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="{{ route('admin.product.index') }}" class="submenu-link">List
-                                Produk</a>
+                        <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
+                            <a href="{{ route('admin.product.index') }}" class="submenu-link">List Produk</a>
                         </li>
-                        <li class="submenu-item  ">
-                            <a href="#" class="submenu-link">Promo Produk</a>
+                        <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
+                            <a href="" class="submenu-link">Promo Produk</a>
                         </li>
                     </ul>
                 </li>
+
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-people-fill"></i>
-                        <span>Pelanggan</span>
+                    <a href="#" class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-people-fill {{ request()->routeIs('admin.customer.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.customer.*') ? 'text-primary' : '' }}">
+                            Pelanggan
+                        </span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item">
+                        <li class="submenu-item {{ request()->routeIs('admin.customer.index') ? 'active' : '' }}">
                             <a href="{{ route('admin.customer.index') }}" class="submenu-link">Data Pelanggan</a>
                         </li>
                     </ul>
                 </li>
-
+                
                 <!-- section menu data dan laporan -->
                 <li class="sidebar-title mt-4">Data &amp; Laporan</li>
                 <li class="sidebar-item  has-sub">

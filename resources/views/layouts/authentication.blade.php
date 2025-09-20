@@ -15,6 +15,7 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app-dark.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
+    <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/custom.css') }}">
 
     <!-- Scripts -->
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
@@ -28,6 +29,10 @@
     <script src="{{ asset('mazer/static/js/components/dark.js') }}"></script>
     <script src="{{ asset('mazer/compiled/js/app.js') }}"></script>
     <script src="{{ asset('mazer/compiled/js/custom.js') }}"></script>
+    <script src="{{ asset('mazer/compiled/js/product-delete.js') }}"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 
 </html>

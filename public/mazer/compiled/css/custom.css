@@ -1,0 +1,28 @@
+.status-active {
+    color: #fff;
+    background-color: #28a745;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-nonactive {
+    color: #fff;
+    background-color: #dc3545;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.sidebar-item.has-sub.active > .sidebar-link {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+.submenu-item.active > .submenu-link {
+    background-color: var(--bs-primary) !important;
+    color: #fff !important;
+    border-radius: 0.375rem;
+}

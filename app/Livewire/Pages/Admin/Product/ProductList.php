@@ -17,6 +17,21 @@ class ProductList extends Component
         $this->resetPage();
     }
 
+    public function deleteProduct($id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            $this->dispatch('delete-error', ['message' => 'Produk tidak ditemukan!'], browserEvent: true);
+            return;
+        }
+
+        $product->delete();
+
+        $this->dispatch('product-deleted', ['id' => $id], browserEvent: true);
+    }
+
+
     #[Layout('layouts.app')]
     public function render()
     {
@@ -27,6 +42,8 @@ class ProductList extends Component
             ->orWhere('pj_akun', 'like', "%{$this->searchProduct}%")
             ->orWhere('deskripsi', 'like', "%{$this->searchProduct}%")
             ->orWhere('harga_satuan', 'like', "%{$this->searchProduct}%")
+            ->orWhere('periode', 'like', "%{$this->searchProduct}%")
+            ->orWhere('status', 'like', "%{$this->searchProduct}%")
             ->paginate(10);
 
         return view('livewire.pages.admin.product.product-list', [
