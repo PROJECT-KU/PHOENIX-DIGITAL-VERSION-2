@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'pages.homepage')->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
+Route::view('/about', 'pages.about')->name('about');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
