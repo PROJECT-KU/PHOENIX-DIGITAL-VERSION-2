@@ -144,7 +144,7 @@
             </a>
 
             <!-- Cart -->
-            <a href="cart.html" class="header-action-btn">
+            <a href="/cekout" class="header-action-btn">
               <i class="bi bi-cart3"></i>
               <span class="badge">3</span>
             </a>
@@ -163,11 +163,8 @@
         <nav id="navmenu" class="navmenu">
           <ul>
             <li><a href="/" class="active">Home</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="category.html">Category</a></li>
+            <li><a href="/about">About</a></li>
             <li><a href="/homeproduct">Product Details</a></li>
-            <li><a href="cart.html">Cart</a></li>
-            <li><a href="checkout.html">Checkout</a></li>
             <li><a href="contact.html">Contact</a></li>
 
           </ul>
