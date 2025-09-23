@@ -32,17 +32,44 @@
         </div>
     </div>
 
+    @push('scripts')
+    <script>
+        window.addEventListener("load", function() {
+            @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: '{{ session("success") }}',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            @endif
+
+            @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: '{{ session("error") }}'
+            });
+            @endif
+        });
+    </script>
+    @endpush
+
     <!-- script kebutuhan template -->
     <script src="{{ asset('mazer/static/js/components/dark.js') }}"></script>
     <script src="{{ asset('mazer/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
 
     <script src="{{ asset('mazer/compiled/js/app.js') }}"></script>
     <script src="{{ asset('mazer/compiled/js/custom.js') }}"></script>
-    <script src="{{ asset('mazer/compiled/js/product-delete.js') }}"></script>
+    <script src="{{ asset('mazer/compiled/js/DataAkun-delete.js') }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     @stack('scripts')
 </body>
+
+
+
 
 </html>

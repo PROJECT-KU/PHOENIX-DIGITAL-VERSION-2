@@ -292,6 +292,7 @@ Dashboard || Phoenix Digital
                             <i class="iconly-boldLogout"></i>
                             <span>Logout</span>
                         </button>
+
                     </div>
                 </div>
                 <!--================== END ==================-->

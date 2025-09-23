@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('data_akuns', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('nama_akun');
             $table->string('username_akun');
             $table->string('password_akun');
             $table->string('link_login_akun')->nullable();
-            $table->string('pj_akun')->nullable(); // Penanggung Jawab
+            $table->string('pj_akun')->nullable();
             $table->text('deskripsi')->nullable();
-            // $table->decimal('harga_satuan', 15, 2);
-            $table->decimal('harga_satuan', 15, 2); // harga dasar
-            $table->enum('periode', ['bulan', '10_bulan', 'tahun'])->default('bulan');
             $table->enum('status', ['active', 'nonactive'])->default('active');
             $table->timestamps();
         });
@@ -32,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
+        Schema::dropIfExists('data_akuns');
     }
 };

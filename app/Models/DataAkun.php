@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Product extends Model
+class DataAkun extends Model
 {
     use HasFactory, HasUuids;
 
@@ -17,13 +17,10 @@ class Product extends Model
         'link_login_akun',
         'pj_akun',
         'deskripsi',
-        'harga_satuan',
-        'periode',
         'status'
     ];
 
     protected $casts = [
-        'harga_satuan' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
