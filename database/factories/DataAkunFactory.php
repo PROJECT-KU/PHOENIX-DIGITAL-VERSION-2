@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
  */
-class ProductFactory extends Factory
+class DataAkunFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -25,7 +25,6 @@ class ProductFactory extends Factory
             'link_login_akun' => $this->faker->url(),
             'pj_akun' => $this->faker->name(),
             'deskripsi' => $this->faker->sentence(),
-            'harga_satuan' => $this->faker->numberBetween(10000, 1000000),
         ];
     }
 }

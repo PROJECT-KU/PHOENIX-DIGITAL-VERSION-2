@@ -67,16 +67,16 @@ new class extends Component {
                 </li>
 
                 <li class="sidebar-title mt-4">E Commerce</li>
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
-                    <a href="#" class="sidebar-link {{ request()->routeIs('admin.product.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-stack {{ request()->routeIs('admin.product.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.product.*') ? 'text-primary' : '' }}">
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
+                    <a href="#" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-stack {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
-                            <a href="{{ route('admin.product.index') }}" class="submenu-link">List Produk</a>
+                        <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
                             <a href="" class="submenu-link">Promo Produk</a>
@@ -97,7 +97,7 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
-                
+
                 <!-- section menu data dan laporan -->
                 <li class="sidebar-title mt-4">Data &amp; Laporan</li>
                 <li class="sidebar-item  has-sub">
@@ -127,9 +127,9 @@ new class extends Component {
                             <a href="{{ route('admin.account.profile') }}" class="submenu-link">Pengaturan Profil</a>
                         </li>
                         @if (auth()->user()->hasRole('admin'))
-                            <li class="submenu-item  ">
-                                <a href="{{ route('admin.account.role') }}" class="submenu-link">Pengaturan Role</a>
-                            </li>
+                        <li class="submenu-item  ">
+                            <a href="{{ route('admin.account.role') }}" class="submenu-link">Pengaturan Role</a>
+                        </li>
                         @endif
                     </ul>
                 </li>

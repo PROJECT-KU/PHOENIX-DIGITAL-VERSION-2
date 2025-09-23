@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Customer;
-use App\Models\Product;
+use App\Models\DataAkun;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -62,7 +62,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Generate 100 Product
-        Product::factory()->count(100)->create();
+        DataAkun::factory()->count(100)->create();
 
         // Generate 1000 Customer
         Customer::factory()->count(1000)->create();

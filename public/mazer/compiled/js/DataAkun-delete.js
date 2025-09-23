@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    document.querySelectorAll('.delete-product-btn').forEach(button => {
+    document.querySelectorAll('.delete-DataAkun-btn').forEach(button => {
         button.addEventListener('click', function (event) {
             event.preventDefault();
-            const productId = button.getAttribute('data-id');
+            const DataAkunId = button.getAttribute('data-id');
 
             Swal.fire({
-                title: 'Yakin hapus produk?',
+                title: 'Yakin hapus Data Akun?',
                 text: "Data tidak bisa dikembalikan!",
                 icon: 'warning',
                 showCancelButton: true,
@@ -15,16 +15,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }).then((result) => {
                 if (result.isConfirmed) {
                     const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
-                    Livewire.find(livewireComponentId).call('deleteProduct', productId);
+                    Livewire.find(livewireComponentId).call('deleteDataAkun', DataAkunId);
                 }
             });
         });
     });
 
-    window.addEventListener('product-deleted', () => {
+    window.addEventListener('DataAkun-deleted', () => {
         Swal.fire({
             title: 'Terhapus!',
-            text: 'Produk berhasil dihapus.',
+            text: 'Data Akun berhasil dihapus.',
             icon: 'success',
             timer: 2000,
             showConfirmButton: false
