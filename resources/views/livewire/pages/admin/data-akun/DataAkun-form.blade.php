@@ -48,11 +48,17 @@
             <!-- PJ Akun -->
             <div class="col-md-6">
                 <label for="pjAkun" class="form-label">PJ Akun</label>
-                <input type="text" id="pjAkun" wire:model.defer="pj_akun"
-                    class="form-control @error('pj_akun') is-invalid @enderror"
-                    placeholder="Penanggung jawab akun">
+                <select id="pjAkun"
+                    wire:model.defer="pj_akun"
+                    class="form-select @error('pj_akun') is-invalid @enderror">
+                    <option value="">-- Pilih Penanggung Jawab --</option>
+                    @foreach($users as $user)
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    @endforeach
+                </select>
+
                 @error('pj_akun')
-                <div class="invalid-feedback">{{ $message }}</div>
+                <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
 

@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\DataAkun;
 
 use App\Models\DataAkun;
+use App\Models\User;
 use Livewire\Component;
 
 class DataAkunForm extends Component
@@ -109,8 +110,11 @@ class DataAkunForm extends Component
 
     public function render()
     {
+        $users = User::select('id', 'name')->orderBy('name')->get();
+
         return view('livewire.pages.admin.data-akun.DataAkun-form', [
-            'dataAkun' => $this->dataAkun
+            'dataAkun' => $this->dataAkun,
+            'users'    => $users,
         ]);
     }
 }

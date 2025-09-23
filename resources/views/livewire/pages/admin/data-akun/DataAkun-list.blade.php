@@ -53,7 +53,7 @@
                                     {{ $item->link_login_akun }}
                                 </a>
                             </td>
-                            <td>{{ $item->pj_akun }}</td>
+                            <td>{{ $item->pj?->name ?? '-' }}</td>
                             <td class="text-truncate" style="max-width: 200px;">
                                 {{ $item->deskripsi }}
                             </td>
