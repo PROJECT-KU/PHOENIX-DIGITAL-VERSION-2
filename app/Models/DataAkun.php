@@ -40,4 +40,9 @@ class DataAkun extends Model
     {
         $this->attributes['password_akun'] = bcrypt($value);
     }
+
+    public function pj()
+    {
+        return $this->belongsTo(User::class, 'pj_akun');
+    }
 }

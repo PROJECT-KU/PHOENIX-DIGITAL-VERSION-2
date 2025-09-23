@@ -32,6 +32,7 @@
         </div>
     </div>
 
+    <!--================== SWEET ALERT ==================-->
     @push('scripts')
     <script>
         window.addEventListener("load", function() {
@@ -55,6 +56,7 @@
         });
     </script>
     @endpush
+    <!--================== END ==================-->
 
     <!-- script kebutuhan template -->
     <script src="{{ asset('mazer/static/js/components/dark.js') }}"></script>

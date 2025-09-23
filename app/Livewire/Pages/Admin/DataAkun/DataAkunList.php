@@ -39,7 +39,9 @@ class DataAkunList extends Component
             ->where('nama_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('username_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('link_login_akun', 'like', "%{$this->searchDataAkun}%")
-            ->orWhere('pj_akun', 'like', "%{$this->searchDataAkun}%")
+            ->orWhereHas('pj', function ($query) {
+                $query->where('name', 'like', "%{$this->searchDataAkun}%");
+            })
             ->orWhere('deskripsi', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('status', 'like', "%{$this->searchDataAkun}%")
             ->paginate(10);
