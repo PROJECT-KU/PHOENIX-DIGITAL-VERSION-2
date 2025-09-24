@@ -40,3 +40,48 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.delete-DataProduct-btn').forEach(button => {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            const productId = button.getAttribute('data-id');
+
+            Swal.fire({
+                title: 'Yakin hapus Produk?',
+                text: "Data produk yang dihapus tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
+                    Livewire.find(livewireComponentId).call('deleteDataProduct', productId);
+                }
+            });
+        });
+    });
+
+    // Event sukses dari Livewire
+    window.addEventListener('DataProduct-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data produk berhasil dihapus.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    });
+
+    // Event error dari Livewire
+    window.addEventListener('delete-product-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error'
+        });
+    });
+
+});

@@ -8,6 +8,9 @@ use App\Livewire\Pages\Admin\DataAkun;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
+use App\Livewire\Pages\Admin\Product\ProductCreate;
+use App\Livewire\Pages\Admin\Product\ProductEdit;
+use App\Livewire\Pages\Admin\Product\ProductList;
 use App\Livewire\Pages\Admin\Profile;
 use App\Livewire\Pages\Admin\Role;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +42,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/customer/create', CustomerCreate::class)->name('admin.customer.create');
     Route::get('/admin/customer/{customer}', CustomerEdit::class)->name('admin.customer.show');
     Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->name('admin.customer.edit');
+
+    Route::get('/admin/product', ProductList::class)->name('admin.product.index');
+    Route::get('/admin/product/create', ProductCreate::class)->name('admin.product.create');
+    Route::get('/admin/product/{product}/edit', ProductEdit::class)->name('admin.product.edit');
 });
 
 require __DIR__ . '/auth.php';
