@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Customer;
 use App\Models\DataAkun;
+use App\Models\Product;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -66,5 +67,7 @@ class DatabaseSeeder extends Seeder
 
         // Generate 1000 Customer
         Customer::factory()->count(1000)->create();
+
+        Product::factory()->count(100)->create();
     }
 }

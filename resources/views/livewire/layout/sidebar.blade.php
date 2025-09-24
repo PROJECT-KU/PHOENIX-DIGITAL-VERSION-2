@@ -81,6 +81,9 @@ new class extends Component {
                         <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
                             <a href="" class="submenu-link">Promo Produk</a>
                         </li>
+                        <li class="submenu-item">
+                            <a href="" class="submenu-link">Produk</a>
+                        </li>
                     </ul>
                 </li>
 
