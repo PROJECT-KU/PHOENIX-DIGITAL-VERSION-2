@@ -67,7 +67,7 @@ new class extends Component {
                 </li>
 
                 <li class="sidebar-title mt-4">E Commerce</li>
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
+                {{-- <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary fw-bold' : '' }}">
                         <i class="bi bi-stack {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}"></i>
                         <span class="{{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}">
@@ -81,8 +81,31 @@ new class extends Component {
                         <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
                             <a href="" class="submenu-link">Promo Produk</a>
                         </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                        </li>
+                    </ul>
+                </li> --}}
+
+                <li class="sidebar-item has-sub 
+                    {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'active open' : '' }}">
+                    <a href="#" class="sidebar-link">
+                        <i class="bi bi-box"></i>
+                        <span>Produk</span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
+                            <a href="" class="submenu-link">Promo Produk</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
+                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                        </li>
                     </ul>
                 </li>
+
 
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
