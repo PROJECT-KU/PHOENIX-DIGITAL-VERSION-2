@@ -11,13 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('data_akuns', function (Blueprint $table) {
+        Schema::create('banners', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('nama_akun');
-            $table->string('username_akun');
-            $table->string('password_akun');
-            $table->string('link_login_akun')->nullable();
-            $table->string('pj_akun')->nullable();
+            $table->string('judul');
+            $table->string('gambar');
             $table->text('deskripsi')->nullable();
             $table->enum('status', ['active', 'non-active'])->nullable();
             $table->timestamps();
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('data_akuns');
+        Schema::dropIfExists('banners');
     }
 };

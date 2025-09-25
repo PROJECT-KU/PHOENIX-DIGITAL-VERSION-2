@@ -12,6 +12,28 @@ new class extends Component {
     }
 }; ?>
 
+<style>
+    /* posisi default sidebar (hidden, geser ke kiri) */
+    #sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 260px;
+        /* atur sesuai sidebar */
+        height: 100vh;
+        background: #fff;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1050;
+    }
+
+    /* kalau aktif, slide masuk */
+    #sidebar.active {
+        transform: translateX(0);
+    }
+</style>
+
 <div id="sidebar">
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
@@ -66,39 +88,30 @@ new class extends Component {
                     </a>
                 </li>
 
-                <li class="sidebar-title mt-4">E Commerce</li>
-                {{-- <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
-                    <a href="#" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-stack {{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.DataAkun.*') ? 'text-primary' : '' }}">
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-box {{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}">
+                            E-Commerce
+                        </span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.Banners.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.Banners.index') }}" class="submenu-link">Data Banner</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
                     <ul class="submenu">
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
-                        </li>
-                        <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
-                            <a href="" class="submenu-link">Promo Produk</a>
-                        </li>
-                        <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
-                        </li>
-                    </ul>
-                </li> --}}
-
-                <li class="sidebar-item has-sub 
-                    {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'active open' : '' }}">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-box"></i>
-                        <span>Produk</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
-                        </li>
-                        <li class="submenu-item {{ request()->routeIs('admin.product.promo') ? 'active' : '' }}">
-                            <a href="" class="submenu-link">Promo Produk</a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
                             <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
@@ -167,3 +180,15 @@ new class extends Component {
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const sidebar = document.getElementById("sidebar");
+        const toggler = document.querySelector(".sidebar-hide");
+
+        toggler.addEventListener("click", (e) => {
+            e.preventDefault();
+            sidebar.classList.toggle("active");
+        });
+    });
+</script>
