@@ -25,6 +25,7 @@ class DataAkunFactory extends Factory
             'link_login_akun' => $this->faker->url(),
             'pj_akun' => $this->faker->name(),
             'deskripsi' => $this->faker->sentence(),
+            'status' => $this->faker->randomElement(['active', 'non-active']),
         ];
     }
 }

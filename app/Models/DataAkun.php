@@ -29,12 +29,6 @@ class DataAkun extends Model
         'password_akun', // Sembunyikan password dari serialization
     ];
 
-    // Accessor untuk format harga
-    public function getFormattedHargaAttribute(): string
-    {
-        return number_format($this->harga_satuan, 2, ',', '.');
-    }
-
     // Mutator untuk enkripsi password (opsional, tergantung kebutuhan)
     public function setPasswordAkunAttribute($value): void
     {

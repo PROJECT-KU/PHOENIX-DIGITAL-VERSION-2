@@ -43,7 +43,7 @@ class DataAkunForm extends Component
             'link_login_akun' => 'nullable|url',
             'pj_akun'        => 'required',
             'deskripsi'      => 'nullable|string',
-            'status'          => 'required|in:active,nonactive',
+            'status'          => 'required|in:active,non-active',
         ]);
         if ($this->mode === 'create') {
             $this->createDataAkun();

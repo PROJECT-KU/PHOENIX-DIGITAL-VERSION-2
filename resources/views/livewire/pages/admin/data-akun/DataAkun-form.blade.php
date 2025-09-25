@@ -70,7 +70,7 @@
                     class="form-select @error('status') is-invalid @enderror">
                     <option value="">-- Pilih Status --</option>
                     <option value="active">Active</option>
-                    <option value="nonactive">Nonactive</option>
+                    <option value="non-active">Non-Active</option>
                 </select>
                 @error('status')
                 <div class="invalid-feedback d-block">{{ $message }}</div>
