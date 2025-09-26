@@ -25,14 +25,24 @@ class BannersList extends Component
         $Banners = Banners::find($id);
 
         if (!$Banners) {
-            $this->dispatchBrowserEvent('delete-error', ['message' => 'Data Banners tidak ditemukan!']);
+            $this->dispatch('delete-error', message: 'Data Banners tidak ditemukan!');
             return;
         }
 
+        // Hapus file fisik jika ada
+        if ($Banners->gambar) {
+            $filePath = storage_path('app/public/img/banners/' . $Banners->gambar);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        }
+
+        // Hapus record dari DB
         $Banners->delete();
 
-        $this->dispatchBrowserEvent('Banners-deleted', ['id' => $id]);
+        $this->dispatch('Banners-deleted', id: $id);
     }
+
 
     #[Layout('layouts.app')]
     public function render()

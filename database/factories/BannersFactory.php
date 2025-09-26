@@ -26,7 +26,7 @@ class BannersFactory extends Factory
         return [
             'id'        => Str::uuid()->toString(),
             'judul'     => $this->faker->words(2, true),
-            'gambar'    => 'assets/img/banner/' . $filename, // path fake
+            'gambar'    => 'storage/' . $filename, // simpan path relatif ke public
             'deskripsi' => $this->faker->sentence(),
             'status'    => $this->faker->randomElement(['active', 'non-active']),
         ];
