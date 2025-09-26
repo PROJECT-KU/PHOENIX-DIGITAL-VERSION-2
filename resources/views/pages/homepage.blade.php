@@ -1,6 +1,7 @@
 @section('title')
 Beranda | Phoenix Digital
 @endsection
+
 <x-guest-layout>
   <main class="main">
 
@@ -8,10 +9,11 @@ Beranda | Phoenix Digital
     <section id="hero" class="hero section">
 
       <div class="hero-container">
+        @forelse($banners as $banner)
         <div class="hero-content">
           <div class="content-wrapper" data-aos="fade-up" data-aos-delay="100">
-            <h1 class="hero-title">Promo Specials</h1>
-            <p class="hero-description">Explore our curated collection of premium items designed to enhance your lifestyle. From fashion to tech, find everything you need with exclusive deals and fast shipping.</p>
+            <h1 class="hero-title">{{ $banner->judul }}</h1>
+            <p class="hero-description">{{ $banner->deskripsi }}</p>
             <div class="hero-actions" data-aos="fade-up" data-aos-delay="200">
               <a href="#products" class="btn-primary">Shop Now</a>
               <a href="#categories" class="btn-secondary">Browse Categories</a>
@@ -32,20 +34,20 @@ Beranda | Phoenix Digital
             </div>
           </div>
         </div>
+        @endforeach
 
         <div class="hero-visuals">
           <div class="product-showcase" data-aos="fade-left" data-aos-delay="200">
+
+            @forelse($banners as $banner)
             <div class="product-card featured">
-              <img src="{{ 'niceshop/assets/img/product/product-2.webp' }}" alt="Featured Product" class="img-fluid">
-              <div class="product-badge">Best Seller</div>
-              <div class="product-info">
-                <h4>Premium Wireless Headphones</h4>
-                <div class="price">
-                  <span class="sale-price">$299</span>
-                  <span class="original-price">$399</span>
-                </div>
-              </div>
+              <img style="width: 100%;" src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
+                alt="{{ $banner->judul ?? 'Banner' }}" class="img-fluid">
+              <div class="product-badge">Promo</div>
             </div>
+            @empty
+            <p>Tidak ada banner aktif</p>
+            @endforelse
 
             <div class="product-grid">
               <div class="product-mini" data-aos="zoom-in" data-aos-delay="400">
@@ -81,15 +83,66 @@ Beranda | Phoenix Digital
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
 
+          <style>
+            @media (max-width: 767.98px) {
+              .image-scopcus {
+                margin-top: 0 !important;
+                margin-bottom: 8rem !important;
+              }
+
+              .card-scopus {
+                margin: 0 auto;
+                max-width: 80%;
+              }
+
+              /* Perbaiki tinggi di mobile */
+              .image-scopcus .d-flex {
+                min-height: auto !important;
+                /* hilangkan tinggi fix 500px */
+              }
+
+              .category-content {
+                margin-top: 1rem;
+              }
+
+              .text-scopus {
+                text-align: justify;
+
+              }
+            }
+
+            /* Tambahan: tablet 768px - 991.98px */
+            @media (min-width: 768px) and (max-width: 991.98px) {
+              .card-scopus {
+                margin: 0 auto;
+                /* center */
+                max-width: 75%;
+                /* lebih besar dari mobile */
+                float: none !important;
+              }
+
+              .text-scopus {
+                text-align: justify;
+                margin-right: 10px;
+              }
+            }
+          </style>
+
           <div class="col-lg-6">
             <div class="category-featured" data-aos="fade-right" data-aos-delay="200">
-              <div class="category-image">
-                <img src="{{ 'niceshop/assets/img/product/scopus.png' }}" alt="Women's Collection" class="img-fluid scopus">
+              <div class="category-image image-scopcus">
+                <div class="d-flex justify-content-center align-items-center" style="min-height: 500px;">
+                  <div class="card border-0 card-scopus" style="border-radius: 20px; overflow: hidden; margin: 30px; box-shadow: -8px 8px 20px rgba(255, 165, 0, 0.5);">
+                    <img src="{{ 'niceshop/assets/img/product/scopus.png' }}"
+                      alt="Scopus Lisensi & AI"
+                      class="img-fluid">
+                  </div>
+                </div>
               </div>
               <div class="category-content">
                 <span class="category-tag">Trending Now</span>
                 <h2>Scopus Lisensi & Scopus AI</h2>
-                <p>Akun Scopus Lisensi & Scopus AI memberikan akses penuh ke database jurnal
+                <p class="text-scopus" style="text-align: justify; margin-right: 5px;">Akun Scopus Lisensi & Scopus AI memberikan akses penuh ke database jurnal
                   ilmiah terbesar dan teknologi analisis berbasis kecerdasan buatan. Dengan fitur ini,
                   pengguna dapat mencari, mengakses, dan menganalisis publikasi ilmiah secara efisien,
                   menggali wawasan mendalam, serta mendapatkan rekomendasi otomatis untuk mendukung penelitian dan pengembangan.

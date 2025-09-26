@@ -4,6 +4,7 @@ use App\Livewire\Pages\Admin\Profile;
 use App\Livewire\Pages\Admin\Role;
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Pages\Admin\Dashboard;
+use App\Http\Controllers\Public\HomepageController;
 
 // Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
@@ -25,7 +26,7 @@ use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
 
-Route::view('/', 'pages.homepage')->name('home');
+Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
