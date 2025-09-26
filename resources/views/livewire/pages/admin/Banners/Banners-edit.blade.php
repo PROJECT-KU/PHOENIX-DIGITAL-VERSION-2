@@ -1,5 +1,4 @@
 <div>
-    {{-- Because she competes with no one, no one can compete with her. --}}
     <div class="d-flex mb-2 align-items-center justify-content-between">
         <h3>Edit Data Banner</h3>
         @php
@@ -10,11 +9,11 @@
         ];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
-
     </div>
+
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.Banners.Banners-form :Banners="$Banners" />
+            <livewire:pages.admin.banners.banners-form :banners="$Banners" />
         </div>
     </div>
 </div>

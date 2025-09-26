@@ -8,16 +8,18 @@ use Livewire\Attributes\Layout;
 
 class BannersEdit extends Component
 {
-    public Banners $banners;
+    public Banners $Banners;
 
-    public function mount(Banners $banners)
+    public function mount(Banners $Banners)
     {
-        $this->banners = $banners;
+        $this->Banners = $Banners;
     }
 
     #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.Banners.Banners-edit');
+        return view('livewire.pages.admin.Banners.Banners-edit', [
+            'Banners' => $this->Banners,
+        ]);
     }
 }

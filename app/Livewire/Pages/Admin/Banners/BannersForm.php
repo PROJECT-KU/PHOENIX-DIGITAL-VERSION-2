@@ -6,38 +6,48 @@ use App\Models\Banners;
 use App\Models\User;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 class BannersForm extends Component
 {
     use WithFileUploads;
-    public ?Banners $Banners = null;
+    public ?Banners $banners = null;
+
     public $judul = '';
     public $gambar;
+    public $existingImage = null; // nama file lama di DB
     public $deskripsi = '';
     public $status = '';
 
     public $mode = 'create';
 
-    public function mount($Banners = null)
+    public function mount()
     {
-        if ($Banners) {
-            $this->Banners = $Banners;
-            $this->judul = $this->Banners->judul;
-            $this->gambar = $this->Banners->gambar;
-            $this->deskripsi = $this->Banners->deskripsi;
-            $this->status = $Banners->status;
-            $this->mode = 'edit';
+        if ($this->banners) {
+            $this->judul         = $this->banners->judul;
+            $this->existingImage = $this->banners->gambar;
+            $this->deskripsi     = $this->banners->deskripsi;
+            $this->status        = $this->banners->status;
+            $this->mode          = 'edit';
         }
     }
 
     public function save()
     {
-        $this->validate([
+        $rules = [
             'judul'      => 'required|min:3',
-            'gambar'     => 'required|image|mimes:png,jpg,jpeg|max:5120',
             'deskripsi'  => 'nullable|string',
             'status'     => 'required|in:active,non-active',
-        ]);
+        ];
+
+        if ($this->mode === 'create') {
+            $rules['gambar'] = 'required|image|mimes:png,jpg,jpeg|max:5120';
+        } else {
+            $rules['gambar'] = 'nullable|image|mimes:png,jpg,jpeg|max:5120';
+        }
+
+        $this->validate($rules);
+
         if ($this->mode === 'create') {
             $this->createBanners();
         } else {
@@ -49,16 +59,16 @@ class BannersForm extends Component
     {
         try {
             // generate nama unik dengan angka random
-            $random = rand(10000, 99999);
+            $random   = rand(10000, 99999);
             $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
 
-            // simpan file fisik ke folder public/assets/img/banner
-            $this->gambar->storeAs('assets/img/banner', $filename, 'public');
+            // simpan file fisik ke folder storage/app/public/img/banners
+            $this->gambar->storeAs('img/banners', $filename, 'public');
 
-            // simpan hanya path di DB
+            // simpan hanya nama file ke DB
             Banners::create([
                 'judul'     => $this->judul,
-                'gambar'    => '/url/Banners/' . $filename, // <<=== hasil akhir di DB
+                'gambar'    => $filename, // cuma nama file
                 'deskripsi' => $this->deskripsi,
                 'status'    => $this->status,
             ]);
@@ -66,6 +76,7 @@ class BannersForm extends Component
             session()->flash('success', 'Data Banner berhasil ditambahkan!');
             $this->dispatch('Banners-created');
             $this->resetForm();
+
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menambahkan Data Banners: ' . $e->getMessage());
@@ -81,18 +92,27 @@ class BannersForm extends Component
                 'status'    => $this->status,
             ];
 
-            if ($this->gambar) {
-                $random = rand(10000, 99999);
+            if ($this->gambar && is_object($this->gambar)) {
+                // hapus file lama kalau ada
+                if ($this->existingImage && Storage::disk('public')->exists('img/banners/' . $this->existingImage)) {
+                    Storage::disk('public')->delete('img/banners/' . $this->existingImage);
+                }
+
+                // upload baru → replace
+                $random   = rand(10000, 99999);
                 $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
-                $this->gambar->storeAs('assets/img/banner', $filename, 'public');
-                $data['gambar'] = '/url/Banners/' . $filename; // simpan path baru
+                $this->gambar->storeAs('img/banners', $filename, 'public');
+                $data['gambar'] = $filename;
+            } else {
+                $data['gambar'] = $this->existingImage; // pakai gambar lama
             }
 
-            $this->Banners->update($data);
+            $this->banners->update($data);
 
             session()->flash('success', 'Perubahan Data Banners berhasil disimpan!');
             $this->dispatch('Banners-updated');
             $this->resetForm();
+
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate Data Banners: ' . $e->getMessage());
@@ -109,9 +129,6 @@ class BannersForm extends Component
 
     public function render()
     {
-
-        return view('livewire.pages.admin.Banners.Banners-form', [
-            'Banners' => $this->Banners,
-        ]);
+        return view('livewire.pages.admin.banners.banners-form');
     }
 }

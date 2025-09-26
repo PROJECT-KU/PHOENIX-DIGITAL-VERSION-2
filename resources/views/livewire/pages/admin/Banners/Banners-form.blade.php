@@ -39,16 +39,21 @@
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
 
-                <!-- Preview jika sudah pilih gambar -->
-                @if ($gambar)
+                <!-- Preview -->
+                @if ($gambar && is_object($gambar))
                 <div class="mt-3">
-                    <p>Preview:</p>
+                    <p>Preview (baru):</p>
                     <img src="{{ $gambar->temporaryUrl() }}" alt="Preview Banner"
+                        class="img-thumbnail" style="max-height: 200px;">
+                </div>
+                @elseif ($existingImage)
+                <div class="mt-3">
+                    <p>Gambar Saat Ini:</p>
+                    <img src="{{ asset('storage/img/banners/' . $existingImage) }}" alt="Banner Lama"
                         class="img-thumbnail" style="max-height: 200px;">
                 </div>
                 @endif
             </div>
-
 
             <!-- Deskripsi -->
             <div class="col-12">

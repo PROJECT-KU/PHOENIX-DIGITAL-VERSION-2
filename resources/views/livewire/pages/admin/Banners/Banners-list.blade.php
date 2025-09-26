@@ -36,23 +36,56 @@
                         @forelse ($Banners as $item)
                         <tr>
                             <td>{{ $item->judul }}</td>
-                            <td>{{ $item->gambar }}</td>
+
+                            <td class="text-center">
+                                @if ($item->gambar)
+                                <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
+                                    alt="Banner"
+                                    class="img-thumbnail"
+                                    style="width: 80px; cursor: pointer;"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#bannerModal{{ $item->id }}">
+                                @else
+                                <span class="text-muted">Tidak ada gambar</span>
+                                @endif
+
+                                <!-- Modal Bootstrap -->
+                                @if ($item->gambar)
+                                <div class="modal fade" id="bannerModal{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-body text-center p-0">
+                                                <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
+                                                    alt="Banner {{ $item->judul }}"
+                                                    class="img-fluid rounded">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
+                            </td>
+
                             <td class="text-truncate" style="max-width: 200px;">
                                 {{ $item->deskripsi }}
                             </td>
+
                             <td class="text-center">
                                 <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
                                     {{ ucfirst($item->status) }}
                                 </span>
                             </td>
+
                             <td class="text-center">
-                                <a wire:navigate href="{{ route('admin.DataAkun.edit', $item) }}"
-                                    class="btn btn-outline-secondary btn-sm me-1"
+                                <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}"
+                                    class="btn btn-warning btn-sm me-1"
                                     title="Edit">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
                                 <button type="button"
-                                    class="btn btn-outline-danger btn-sm delete-DataAkun-btn"
+                                    class="btn btn-danger btn-sm delete-Banners-btn"
                                     data-id="{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -76,3 +109,50 @@
         </div>
     </div>
 </div>
+
+<!--================== SWEET ALERT DELETE ==================-->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        document.querySelectorAll('.delete-Banners-btn').forEach(button => {
+            button.addEventListener('click', function(event) {
+                event.preventDefault();
+                const BannersId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Yakin hapus Data Akun?',
+                    text: "Data tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
+                        Livewire.find(livewireComponentId).call('deleteBanners', BannersId);
+                    }
+                });
+            });
+        });
+
+        window.addEventListener('Banners-deleted', () => {
+            Swal.fire({
+                title: 'Terhapus!',
+                text: 'Data Akun berhasil dihapus.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        });
+
+        window.addEventListener('delete-error', (e) => {
+            Swal.fire({
+                title: 'Gagal!',
+                text: e.detail.message,
+                icon: 'error'
+            });
+        });
+
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->
