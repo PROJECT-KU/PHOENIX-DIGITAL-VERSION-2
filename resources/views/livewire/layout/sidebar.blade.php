@@ -90,7 +90,7 @@ new class extends Component {
 
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-box {{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}"></i>
+                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}"></i>
                         <span class="{{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>

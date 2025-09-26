@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
 
             \App\Http\Middleware\LastUserActivity::class,
+            \App\Http\Middleware\IdleTimeout::class,
         ]);
 
         $middleware->group('api', [

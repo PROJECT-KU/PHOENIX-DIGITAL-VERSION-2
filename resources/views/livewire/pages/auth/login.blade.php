@@ -78,9 +78,9 @@ new #[Layout('layouts.authentication')] class extends Component {
 
             <div class="d-flex align-items-center justify-content-end gap-3 mt-4">
                 @if (Route::has('password.request'))
-                    <a class="text-muted" href="{{ route('password.request') }}" wire:navigate>
-                        {{ __('Forgot your password?') }}
-                    </a>
+                <a class="text-muted" href="{{ route('password.request') }}" wire:navigate>
+                    {{ __('Forgot your password?') }}
+                </a>
                 @endif
 
                 <button type="submit" class="btn btn-primary">Login</button>
@@ -88,3 +88,15 @@ new #[Layout('layouts.authentication')] class extends Component {
         </form>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@if (session('idle_timeout'))
+<script>
+    Swal.fire({
+        icon: 'warning',
+        title: 'Session Timeout',
+        text: "{{ session('idle_timeout') }}",
+        confirmButtonText: 'OK'
+    });
+</script>
+@endif

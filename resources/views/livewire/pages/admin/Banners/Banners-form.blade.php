@@ -28,32 +28,40 @@
 
 
             <!-- Gambar Banner -->
-            <div class="col-md-6">
-                <label for="gambar" class="form-label">Gambar Banner</label>
+            <div class="col-md-12">
+                <div class="row">
+                    <!-- Input -->
+                    <div class="col-md-6">
+                        <label for="gambar" class="form-label">Gambar Banner</label>
+                        <input type="file" id="gambar" wire:model="gambar"
+                            class="form-control @error('gambar') is-invalid @enderror"
+                            accept="image/png,image/jpg,image/jpeg">
+                        @error('gambar')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
 
-                <input type="file" id="gambar" wire:model="gambar"
-                    class="form-control @error('gambar') is-invalid @enderror"
-                    accept="image/png,image/jpg,image/jpeg">
+                    <!-- Preview -->
+                    <div class="col-md-6">
+                        <div class="mb-2">
+                            <label class="form-label">Preview</label>
+                        </div>
 
-                @error('gambar')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-
-                <!-- Preview -->
-                @if ($gambar && is_object($gambar))
-                <div class="mt-3">
-                    <p>Preview (baru):</p>
-                    <img src="{{ $gambar->temporaryUrl() }}" alt="Preview Banner"
-                        class="img-thumbnail" style="max-height: 200px;">
+                        @if ($gambar && is_object($gambar))
+                        <img src="{{ $gambar->temporaryUrl() }}" alt="Preview Banner"
+                            class="img-thumbnail" style="max-height: 200px;">
+                        @elseif ($existingImage)
+                        <img src="{{ asset('storage/img/banners/' . $existingImage) }}" alt="Banner Lama"
+                            class="img-thumbnail" style="max-height: 200px;">
+                        @else
+                        <!-- Placeholder ketika belum ada gambar -->
+                        <img src="https://via.placeholder.com/200x150?text=Preview+Banner"
+                            alt="Preview Banner" class="img-thumbnail" style="max-height: 200px;">
+                        @endif
+                    </div>
                 </div>
-                @elseif ($existingImage)
-                <div class="mt-3">
-                    <p>Gambar Saat Ini:</p>
-                    <img src="{{ asset('storage/img/banners/' . $existingImage) }}" alt="Banner Lama"
-                        class="img-thumbnail" style="max-height: 200px;">
-                </div>
-                @endif
             </div>
+
 
             <!-- Deskripsi -->
             <div class="col-12">
