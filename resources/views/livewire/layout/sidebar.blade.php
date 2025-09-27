@@ -108,8 +108,9 @@ new class extends Component {
                             <a wire:navigate href="{{ route('admin.spending.index') }}"
                                 class="submenu-link">Pengeluaran</a>
                         </li>
-                        <li class="submenu-item">
-                            <a wire:navigate href="#" class="submenu-link">Peminjaman</a>
+                        <li class="submenu-item {{ request()->routeIs('admin.loan.index') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.loan.index') }}"
+                                class="submenu-link">Peminjaman</a>
                         </li>
                     </ul>
                 </li>
