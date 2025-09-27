@@ -14,7 +14,6 @@
 
 
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app.css') }}">
-    <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/app-dark.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/custom.css') }}">
 
@@ -23,43 +22,46 @@
 </head>
 
 <body>
-    <script src="{{ asset('mazer/static/js/initTheme.js') }}"></script>
     <div id="app">
         <livewire:layout.sidebar />
 
         <div id="main">
+            <header class="mb-3">
+                <a href="#" class="burger-btn d-block">
+                    <i class="bi bi-list fs-3"></i>
+                </a>
+            </header>
             {{ $slot }}
         </div>
     </div>
 
     <!--================== SWEET ALERT ==================-->
     @push('scripts')
-    <script>
-        window.addEventListener("load", function() {
-            @if(session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: '{{ session("success") }}',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            @endif
+        <script>
+            window.addEventListener("load", function() {
+                @if (session('success'))
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: '{{ session('success') }}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                @endif
 
-            @if(session('error'))
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: '{{ session("error") }}'
+                @if (session('error'))
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: '{{ session('error') }}'
+                    });
+                @endif
             });
-            @endif
-        });
-    </script>
+        </script>
     @endpush
     <!--================== END ==================-->
 
     <!-- script kebutuhan template -->
-    <script src="{{ asset('mazer/static/js/components/dark.js') }}"></script>
     <script src="{{ asset('mazer/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
 
     <script src="{{ asset('mazer/compiled/js/app.js') }}"></script>

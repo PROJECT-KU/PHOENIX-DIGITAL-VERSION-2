@@ -25,6 +25,9 @@ use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
 use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
+use App\Livewire\Pages\Admin\Spending\SpendingCreate;
+use App\Livewire\Pages\Admin\Spending\SpendingEdit;
+use App\Livewire\Pages\Admin\Spending\SpendingList;
 
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
@@ -65,6 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/DataBanners/create', BannersCreate::class)->name('admin.Banners.create');
     Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->name('admin.Banners.edit');
+
+    // Data Spending
+    Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');
+    Route::get('/admin/spending/create', SpendingCreate::class)->name('admin.spending.create');
+    Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->name('admin.spending.edit');
 });
 
 require __DIR__ . '/auth.php';

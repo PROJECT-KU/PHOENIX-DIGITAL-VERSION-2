@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-Dashboard || Phoenix Digital
+    Dashboard || Phoenix Digital
 @stop
 
 <div>
@@ -271,9 +271,9 @@ Dashboard || Phoenix Digital
                                 <h5 class="font-bold">{{ Auth::user()->name }}</h5>
                                 <h6 class="text-muted mb-0">
                                     @if (Auth::user()->isOnline())
-                                    <span class="text-success">🟢 Online</span>
+                                        <span class="text-success">🟢 Online</span>
                                     @else
-                                    <span class="text-danger">🔴 Offline</span>
+                                        <span class="text-danger">🔴 Offline</span>
                                     @endif
                                 </h6>
                             </div>
@@ -319,29 +319,29 @@ Dashboard || Phoenix Digital
 
 
 @push('scripts')
-<!--================== PUSHER REAL TIME ONLINE/OFFLINE ==================-->
-<script>
-    Echo.channel('online-users')
-        .listen('.UserOnlineStatusChanged', (e) => {
-            console.log("Realtime data:", e);
-            const user = e.user;
-            const container = document.getElementById(`user-${user.id}`);
+    <!--================== PUSHER REAL TIME ONLINE/OFFLINE ==================-->
+    <script>
+        Echo.channel('online-users')
+            .listen('.UserOnlineStatusChanged', (e) => {
+                console.log("Realtime data:", e);
+                const user = e.user;
+                const container = document.getElementById(`user-${user.id}`);
 
-            if (container) {
-                let span = container.querySelector('span');
-                if (span) {
-                    span.innerHTML = user.online ?
-                        '🟢 Online' :
-                        `🔴 Offline (Terakhir online ${user.last_seen_at})`;
+                if (container) {
+                    let span = container.querySelector('span');
+                    if (span) {
+                        span.innerHTML = user.online ?
+                            '🟢 Online' :
+                            `🔴 Offline (Terakhir online ${user.last_seen_at})`;
 
-                    span.className = user.online ? 'text-success' : 'text-danger';
-                }
-            } else {
-                // Jika user baru, tambahkan ke daftar
-                let newUser = document.createElement('div');
-                newUser.classList.add('recent-message', 'd-flex', 'px-4', 'py-3');
-                newUser.id = `user-${user.id}`;
-                newUser.innerHTML = `
+                        span.className = user.online ? 'text-success' : 'text-danger';
+                    }
+                } else {
+                    // Jika user baru, tambahkan ke daftar
+                    let newUser = document.createElement('div');
+                    newUser.classList.add('recent-message', 'd-flex', 'px-4', 'py-3');
+                    newUser.id = `user-${user.id}`;
+                    newUser.innerHTML = `
                 <div class="avatar avatar-lg">
                     <img src="{{ asset('mazer/compiled/jpg/4.jpg') }}" alt="Face">
                 </div>
@@ -352,51 +352,51 @@ Dashboard || Phoenix Digital
                     </span>
                 </div>
             `;
-                document.getElementById('online-users-container').appendChild(newUser);
+                    document.getElementById('online-users-container').appendChild(newUser);
+                }
+            });
+    </script>
+    <!--================== END ==================-->
+
+
+    <!-- Need: Apexcharts -->
+    <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
+    <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
+
+    @push('scripts')
+        <!-- Need: Apexcharts -->
+        <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
+        <script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
+    @endpush
+
+
+    <!--================== UCAPAN SELAMAT ==================-->
+    <script>
+        function getGreeting() {
+            const currentTime = new Date();
+            const currentHour = currentTime.getHours();
+            let greeting;
+
+            if (currentHour >= 5 && currentHour < 11) {
+                greeting = "Selamat Pagi ";
+            } else if (currentHour >= 11 && currentHour < 15) {
+                greeting = "Selamat Siang ";
+            } else if (currentHour >= 15 && currentHour < 18) {
+                greeting = "Selamat Sore ";
+            } else if (currentHour >= 1 && currentHour < 5) {
+                greeting = "Selamat Dini Hari ";
+            } else {
+                greeting = "Selamat Malam ";
             }
-        });
-</script>
-<!--================== END ==================-->
 
-
-<!-- Need: Apexcharts -->
-<script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
-<script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
-
-@push('scripts')
-<!-- Need: Apexcharts -->
-<script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
-<script src="{{ asset('mazer/static/js/pages/dashboard.js') }}"></script>
-@endpush
-
-
-<!--================== UCAPAN SELAMAT ==================-->
-<script>
-    function getGreeting() {
-        const currentTime = new Date();
-        const currentHour = currentTime.getHours();
-        let greeting;
-
-        if (currentHour >= 5 && currentHour < 11) {
-            greeting = "Selamat Pagi ";
-        } else if (currentHour >= 11 && currentHour < 15) {
-            greeting = "Selamat Siang ";
-        } else if (currentHour >= 15 && currentHour < 18) {
-            greeting = "Selamat Sore ";
-        } else if (currentHour >= 1 && currentHour < 5) {
-            greeting = "Selamat Dini Hari ";
-        } else {
-            greeting = "Selamat Malam ";
+            return greeting;
         }
 
-        return greeting;
-    }
 
-
-    const greetingElement = document.getElementById("greeting");
-    greetingElement.innerText = getGreeting();
-</script>
-<!--================== END ==================-->
+        const greetingElement = document.getElementById("greeting");
+        greetingElement.innerText = getGreeting();
+    </script>
+    <!--================== END ==================-->
 @endpush
 
 const greetingElement = document.getElementById("greeting");
