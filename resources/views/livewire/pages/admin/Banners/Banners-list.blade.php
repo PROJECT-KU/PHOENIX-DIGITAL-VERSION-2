@@ -34,7 +34,7 @@
                     </thead>
                     <tbody>
                         @forelse ($Banners as $item)
-                        <tr>
+                        <tr style="text-align: center;">
                             <td>{{ $item->judul }}</td>
 
                             <td class="text-center">

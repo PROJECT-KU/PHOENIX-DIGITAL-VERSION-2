@@ -81,6 +81,43 @@ document.addEventListener("livewire:init", () => {
             title: data.message || "Berhasil mengubah role user",
         });
     });
+    // toast pengeluaran
+    Livewire.on("success-add-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil menambah data pengeluaran",
+        });
+    });
+    Livewire.on("failed-add-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "error",
+            title: data.message || "Gagal menambah data pengeluaran",
+        });
+    });
+    Livewire.on("success-edit-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil mengubah data pengeluaran",
+        });
+    });
+    Livewire.on("failed-edit-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "error",
+            title: data.message || "Gagal mengubah data pengeluaran",
+        });
+    });
+    Livewire.on("success-delete-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil menghapus data pengeluaran",
+        });
+    });
+    Livewire.on("failed-delete-pengeluaran", (data) => {
+        Toast.fire({
+            icon: "error",
+            title: data.message || "Gagal menghapus data pengeluaran",
+        });
+    });
 
     // customer event
     Livewire.on("customer-created", (data) => {
@@ -111,6 +148,19 @@ document.addEventListener("livewire:init", () => {
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-customer", { id: data["id"] });
+            }
+        });
+    });
+    Livewire.on("will-delete-spending-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data pengeluaran ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-spending-data", { id: data["id"] });
             }
         });
     });

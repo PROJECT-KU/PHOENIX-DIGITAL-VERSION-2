@@ -34,7 +34,7 @@
                     </thead>
                     <tbody>
                         @forelse ($ProductBundlings as $item)
-                        <tr>
+                        <tr style="text-align: center;">
                             <td>{{ $item->nama_paket }}</td>
 
                             <td class="text-center">

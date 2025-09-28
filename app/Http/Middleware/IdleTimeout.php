@@ -10,7 +10,7 @@ class IdleTimeout
     public function handle($request, Closure $next)
     {
         if (Auth::check()) {
-            $timeout = 300; // 5 menit
+            $timeout = 3000; // 5 menit
             $lastActivity = session('lastActivityTime');
 
             if ($lastActivity && (time() - $lastActivity > $timeout)) {
