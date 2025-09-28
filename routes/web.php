@@ -26,6 +26,11 @@ use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
 
+// Data Product Bundling
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
+
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
@@ -65,6 +70,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/DataBanners/create', BannersCreate::class)->name('admin.Banners.create');
     Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->name('admin.Banners.edit');
+
+    // Data Product Bundling
+    Route::get('/admin/DataBundlings', ProductBundlingsList::class)->name('admin.Bundlings.index');
+    Route::get('/admin/DataBundlings/create', ProductBundlingsCreate::class)->name('admin.Bundlings.create');
+    Route::get('/admin/DataBundlings/{ProductBundlings}', ProductBundlingsEdit::class)->name('admin.Bundlings.show');
+    Route::get('/admin/DataBundlings/{ProductBundlings}/edit', ProductBundlingsEdit::class)->name('admin.Bundlings.edit');
 });
 
 require __DIR__ . '/auth.php';

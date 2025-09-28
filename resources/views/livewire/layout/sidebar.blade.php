@@ -102,10 +102,10 @@ new class extends Component {
                     </ul>
                 </li>
 
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'active open' : '' }}">
-                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}">
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
@@ -115,6 +115,9 @@ new class extends Component {
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
                             <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
                         </li>
                     </ul>
                 </li>
