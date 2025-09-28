@@ -29,12 +29,6 @@ class DataAkun extends Model
         'password_akun', // Sembunyikan password dari serialization
     ];
 
-    // Mutator untuk enkripsi password (opsional, tergantung kebutuhan)
-    public function setPasswordAkunAttribute($value): void
-    {
-        $this->attributes['password_akun'] = bcrypt($value);
-    }
-
     public function pj()
     {
         return $this->belongsTo(User::class, 'pj_akun');

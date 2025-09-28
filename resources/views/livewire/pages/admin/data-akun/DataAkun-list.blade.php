@@ -64,12 +64,12 @@
                             </td>
                             <td>
                                 <a wire:navigate href="{{ route('admin.DataAkun.edit', $item) }}"
-                                    class="btn btn-outline-secondary btn-sm me-1"
+                                    class="btn btn-warning btn-sm me-1"
                                     title="Edit">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
                                 <button type="button"
-                                    class="btn btn-outline-danger btn-sm delete-DataAkun-btn"
+                                    class="btn btn-danger btn-sm delete-DataAkun-btn"
                                     data-id="{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
