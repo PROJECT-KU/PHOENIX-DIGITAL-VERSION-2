@@ -1,51 +1,46 @@
 <div>
     <div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            {{ $isEdit ? 'Edit' : 'Tambah' }} Peminjaman
-        </h5>
-    </div>
 
-    <div class="card-body">
-        <!-- Flash Messages -->
-        @if (session()->has('error'))
+        <div class="card-body">
+            <!-- Flash Messages -->
+            @if (session()->has('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 {{ session('error') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        @endif
+            @endif
 
-        <form wire:submit="save">
-            <div class="row">
-                <!-- Nama Peminjam -->
-                <div class="col-md-6 mb-3">
-                    <label for="nama_peminjam" class="form-label">
-                        Nama Peminjam <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" wire:model="nama_peminjam"
-                        class="form-control @error('nama_peminjam') is-invalid @enderror"
-                        id="nama_peminjam" placeholder="Masukkan nama peminjam">
-                    @error('nama_peminjam')
+            <form wire:submit="save">
+                <div class="row">
+                    <!-- Nama Peminjam -->
+                    <div class="col-md-6 mb-3">
+                        <label for="nama_peminjam" class="form-label">
+                            Nama Peminjam <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" wire:model="nama_peminjam"
+                            class="form-control @error('nama_peminjam') is-invalid @enderror"
+                            id="nama_peminjam" placeholder="Masukkan nama peminjam">
+                        @error('nama_peminjam')
                         <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                        @enderror
+                    </div>
 
-                <!-- Tanggal Peminjaman -->
-                <div class="col-md-6 mb-3">
-                    <label for="tanggal_peminjam" class="form-label">
-                        Tanggal Peminjaman <span class="text-danger">*</span>
-                    </label>
-                    <input type="date" wire:model="tanggal_peminjam"
-                        class="form-control @error('tanggal_peminjam') is-invalid @enderror"
-                        id="tanggal_peminjam">
-                    @error('tanggal_peminjam')
+                    <!-- Tanggal Peminjaman -->
+                    <div class="col-md-6 mb-3">
+                        <label for="tanggal_peminjam" class="form-label">
+                            Tanggal Peminjaman <span class="text-danger">*</span>
+                        </label>
+                        <input type="date" wire:model="tanggal_peminjam"
+                            class="form-control @error('tanggal_peminjam') is-invalid @enderror"
+                            id="tanggal_peminjam">
+                        @error('tanggal_peminjam')
                         <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+                        @enderror
+                    </div>
 
-                <!-- Nominal dengan format Rupiah -->
-                <div class="col-md-6 mb-3"
-                    x-data="{
+                    <!-- Nominal dengan format Rupiah -->
+                    <div class="col-md-6 mb-3"
+                        x-data="{
                         displayValue: @entangle('nominal').defer,
                         formatRupiah(value) {
                             if (!value) return '';
@@ -63,78 +58,75 @@
                             return rupiah ? 'Rp ' + rupiah : '';
                         }
                     }"
-                    x-init="$watch('displayValue', value => {
+                        x-init="$watch('displayValue', value => {
                         $refs.input.value = formatRupiah(value);
-                    })"
-                >
-                    <label for="nominal" class="form-label">
-                        Nominal Pinjaman <span class="text-danger">*</span>
-                    </label>
-                    <input type="text"
-                        x-ref="input"
-                        wire:model.defer="nominal"
-                        x-on:input="
+                    })">
+                        <label for="nominal" class="form-label">
+                            Nominal Pinjaman <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                            x-ref="input"
+                            wire:model.defer="nominal"
+                            x-on:input="
                             let raw = $event.target.value.replace(/[^0-9]/g, '');
                             displayValue = raw; // simpan angka murni ke Livewire
                             $event.target.value = formatRupiah(raw); // tampilkan format Rp
                         "
-                        class="form-control @error('nominal') is-invalid @enderror"
-                        id="nominal"
-                        placeholder="Rp 0">
-                    @error('nominal')
+                            class="form-control @error('nominal') is-invalid @enderror"
+                            id="nominal"
+                            placeholder="Rp 0">
+                        @error('nominal')
                         <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                        @enderror
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label">
+                            Status <span class="text-danger">*</span>
+                        </label>
+                        <select wire:model="status"
+                            class="form-select @error('status') is-invalid @enderror" id="status">
+                            <option value="">Pilih Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="berjalan">Berjalan</option>
+                            <option value="lunas">Lunas</option>
+                        </select>
+                        @error('status')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
-                <!-- Status -->
-                <div class="col-md-6 mb-3">
-                    <label for="status" class="form-label">
-                        Status <span class="text-danger">*</span>
+                <!-- Deskripsi -->
+                <div class="mb-3">
+                    <label for="deskripsi" class="form-label">
+                        Deskripsi
                     </label>
-                    <select wire:model="status"
-                        class="form-select @error('status') is-invalid @enderror" id="status">
-                        <option value="">Pilih Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="berjalan">Berjalan</option>
-                        <option value="lunas">Lunas</option>
-                    </select>
-                    @error('status')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                    <textarea wire:model="deskripsi"
+                        class="form-control @error('deskripsi') is-invalid @enderror"
+                        id="deskripsi" rows="4"
+                        placeholder="Masukkan deskripsi pinjaman..."></textarea>
+                    @error('deskripsi')
+                    <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-            </div>
 
-            <!-- Deskripsi -->
-            <div class="mb-3">
-                <label for="deskripsi" class="form-label">
-                    Deskripsi
-                </label>
-                <textarea wire:model="deskripsi"
-                    class="form-control @error('deskripsi') is-invalid @enderror"
-                    id="deskripsi" rows="4"
-                    placeholder="Masukkan deskripsi pinjaman..."></textarea>
-                @error('deskripsi')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- Buttons -->
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{{ route('admin.loan.index') }}" class="btn btn-secondary" wire:navigate>
-                    Batal
-                </a>
-                <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
-                    <span wire:loading.remove>
-                        {{ $isEdit ? 'Perbarui' : 'Simpan' }}
-                    </span>
-                    <span wire:loading>
-                        <span class="spinner-border spinner-border-sm" role="status"></span>
-                        Menyimpan...
-                    </span>
-                </button>
-            </div>
-        </form>
+                <!-- Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+                        <i class="bi bi-send me-1"></i>
+                        <span wire:loading.remove>
+                            {{ $isEdit ? 'Simpan Perubahan' : 'Simpan Data' }}
+                        </span>
+                        <span wire:loading>
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            Menyimpan...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
 </div>

@@ -14,9 +14,9 @@
                 <span>filter</span>
             </button>
         </div>
-        <a class="btn btn-primary" href="{{ route('admin.spending.create') }}" wire:navigate>
+        <a class="btn btn-primary rounded-pill" href="{{ route('admin.spending.create') }}" wire:navigate>
             <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Data</span>
+            <span class="d-none d-lg-inline">Tambah Data Pengeluaran</span>
         </a>
     </div>
     <div class="card border pt-3 pb-0 px-4" x-show="showFilter" x-transition x-transition:enter.duration.500ms
@@ -36,7 +36,7 @@
                 <select wire:model.live="statusFilter" id="statusFilter" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
                     @foreach ($statusOptions as $status)
-                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -46,8 +46,9 @@
                 <select wire:model.live="jenisPengeluaran" class="form-select form-select-sm" id="jenisPengeluaran">
                     <option value="">Semua Jenis</option>
                     @foreach ($jenisPengeluaranOptions as $jenis)
-                        <option value="{{ $jenis }}">
-                            {{ $jenis === 'pembelian_akun' ? 'Penjualan Akun' : 'Lainnya' }}</option>
+                    <option value="{{ $jenis }}">
+                        {{ $jenis === 'pembelian_akun' ? 'Penjualan Akun' : 'Lainnya' }}
+                    </option>
                     @endforeach
                 </select>
             </div>
@@ -56,7 +57,7 @@
                 <select wire:model.live="penginputFilter" class="form-select form-select-sm" id="penginputFilter">
                     <option value="">Semua Penginput</option>
                     @foreach ($users as $user)
-                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -65,7 +66,7 @@
                 <select wire:model.live="picPembeliFilter" class="form-select form-select-sm" id="picPembeliFilter">
                     <option value="">Semua PIC</option>
                     @foreach ($users as $user)
-                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
             </div>

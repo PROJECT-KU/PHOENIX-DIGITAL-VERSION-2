@@ -53,24 +53,22 @@ new class extends Component {
                     </ul>
                 </li>
 
-                <li
-                    class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'active open' : '' }}">
-                    <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary fw-bold' : '' }}">
-                        <i
-                            class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}"></i>
-                        <span
-                            class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') ? 'text-primary' : '' }}">
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
                     <ul class="submenu">
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data
-                                Akun</a>
+                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
                         </li>
                     </ul>
                 </li>
@@ -129,10 +127,10 @@ new class extends Component {
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
                         @if (auth()->user()->hasRole('admin'))
-                            <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
-                                <a wire:navigate href="{{ route('admin.account.role') }}"
-                                    class="submenu-link">Pengaturan Role</a>
-                            </li>
+                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.role') }}"
+                                class="submenu-link">Pengaturan Role</a>
+                        </li>
                         @endif
                     </ul>
                 </li>

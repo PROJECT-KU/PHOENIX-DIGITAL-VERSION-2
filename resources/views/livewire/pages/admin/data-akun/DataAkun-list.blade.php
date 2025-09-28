@@ -37,7 +37,7 @@
                     </thead>
                     <tbody>
                         @forelse ($DataAkun as $item)
-                        <tr>
+                        <tr style="text-align: center;">
                             <td>{{ $item->nama_akun }}</td>
                             <td>{{ $item->username_akun }}</td>
                             <td>

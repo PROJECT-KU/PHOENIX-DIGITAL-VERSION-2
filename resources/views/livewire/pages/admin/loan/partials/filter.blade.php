@@ -16,9 +16,9 @@
                 <span>Filter</span>
             </button>
         </div>
-        <a class="btn btn-primary" href="{{ route('admin.loan.create') }}" wire:navigate>
+        <a class="btn btn-primary rounded-pill" href="{{ route('admin.loan.create') }}" wire:navigate>
             <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Loan</span>
+            <span class="d-none d-lg-inline">Tambah Data Peminjaman</span>
         </a>
     </div>
 
@@ -37,7 +37,7 @@
                 <select wire:model.live="statusFilter" class="form-select form-select-sm">
                     <option value="">Semua</option>
                     @foreach ($statusOptions as $status)
-                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -46,7 +46,7 @@
                 <select wire:model.live="penginputFilter" class="form-select form-select-sm">
                     <option value="">Semua</option>
                     @foreach ($users as $user)
-                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
             </div>

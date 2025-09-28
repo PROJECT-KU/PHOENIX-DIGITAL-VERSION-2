@@ -37,62 +37,62 @@
                     </thead>
                     <tbody>
                         @forelse ($DataProduct as $item)
-                            <tr>
-                                <!-- Nama -->
-                                <td class="fw-semibold text-capitalize">
-                                    {{ $item->nama_akun }}
-                                </td>
+                        <tr style="text-align: center;">
+                            <!-- Nama -->
+                            <td class="fw-semibold text-capitalize">
+                                {{ $item->nama_akun }}
+                            </td>
 
-                                <!-- Image -->
-                                <td>
-                                    @if ($item->image)
-                                        <img src="{{ asset('storage/' . $item->image) }}"
-                                            alt="{{ $item->nama_akun }}"
-                                            class="rounded shadow-sm"
-                                            style="width: 60px; height: 60px; object-fit: cover;">
-                                    @else
-                                        <span class="text-muted fst-italic">No Image</span>
-                                    @endif
-                                </td>
+                            <!-- Image -->
+                            <td>
+                                @if ($item->image)
+                                <img src="{{ asset('storage/' . $item->image) }}"
+                                    alt="{{ $item->nama_akun }}"
+                                    class="rounded shadow-sm"
+                                    style="width: 60px; height: 60px; object-fit: cover;">
+                                @else
+                                <span class="text-muted fst-italic">No Image</span>
+                                @endif
+                            </td>
 
-                                <!-- Harga -->
-                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_perbulan, 0, ',', '.') }}</td>
-                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
-                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>
-                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_pertahun, 0, ',', '.') }}</td>
+                            <!-- Harga -->
+                            <td>{{ 'Rp ' . number_format($item->harga_perbulan, 0, ',', '.') }}</td>
+                            <td>{{ 'Rp ' . number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
+                            <td>{{ 'Rp ' . number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>
+                            <td>{{ 'Rp ' . number_format($item->harga_pertahun, 0, ',', '.') }}</td>
 
-                                <!-- Deskripsi -->
-                                <td class="text-truncate"
-                                    style="max-width: 200px;"
-                                    data-bs-toggle="tooltip"
-                                    title="{{ $item->deskripsi }}">
-                                    {{ $item->deskripsi ?? '-' }}
-                                </td>
+                            <!-- Deskripsi -->
+                            <td class="text-truncate"
+                                style="max-width: 200px;"
+                                data-bs-toggle="tooltip"
+                                title="{{ $item->deskripsi }}">
+                                {{ $item->deskripsi ?? '-' }}
+                            </td>
 
-                                <!-- Action -->
-                                <td>
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <a wire:navigate 
-                                            href="{{ route('admin.product.edit', $item) }}"
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger delete-DataProduct-btn"
-                                                data-id="{{ $item->id }}"
-                                                title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <!-- Action -->
+                            <td>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a wire:navigate
+                                        href="{{ route('admin.product.edit', $item) }}"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <button type="button"
+                                        class="btn btn-sm btn-outline-danger delete-DataProduct-btn"
+                                        data-id="{{ $item->id }}"
+                                        title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-3">
-                                    Belum ada data produk
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">
+                                Belum ada data produk
+                            </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>

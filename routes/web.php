@@ -26,6 +26,11 @@ use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
 
+// Data Paket Bundling
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
+
 // Data Spending
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
@@ -35,6 +40,7 @@ use App\Livewire\Pages\Admin\Spending\SpendingList;
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
+
 
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
@@ -75,6 +81,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/DataBanners/create', BannersCreate::class)->name('admin.Banners.create');
     Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->name('admin.Banners.edit');
+
+    // Data Product Bundling
+    Route::get('/admin/DataBundlings', ProductBundlingsList::class)->name('admin.Bundlings.index');
+    Route::get('/admin/DataBundlings/create', ProductBundlingsCreate::class)->name('admin.Bundlings.create');
+    Route::get('/admin/DataBundlings/{ProductBundlings}', ProductBundlingsEdit::class)->name('admin.Bundlings.show');
+    Route::get('/admin/DataBundlings/{ProductBundlings}/edit', ProductBundlingsEdit::class)->name('admin.Bundlings.edit');
 
     // Data Spending
     Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');

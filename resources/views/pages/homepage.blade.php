@@ -5,9 +5,8 @@ Beranda | Phoenix Digital
 <x-guest-layout>
   <main class="main">
 
-    <!-- Hero Section -->
+    <!--================== BANNERS ==================-->
     <section id="hero" class="hero section">
-
       <div class="hero-container">
         @forelse($banners as $banner)
         <div class="hero-content">
@@ -76,9 +75,10 @@ Beranda | Phoenix Digital
         </div>
       </div>
 
-    </section><!-- /Hero Section -->
+    </section>
+    <!--================== END ==================-->
 
-    <!-- Promo Cards Section -->
+    <!--================== PRODUK TERLARIS ==================-->
     <section id="promo-cards" class="promo-cards section">
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
@@ -142,18 +142,16 @@ Beranda | Phoenix Digital
               <div class="category-content">
                 <span class="category-tag">Trending Now</span>
                 <h2>Scopus Lisensi & Scopus AI</h2>
-                <p class="text-scopus" style="text-align: justify; margin-right: 5px;">Akun Scopus Lisensi & Scopus AI memberikan akses penuh ke database jurnal
-                  ilmiah terbesar dan teknologi analisis berbasis kecerdasan buatan. Dengan fitur ini,
-                  pengguna dapat mencari, mengakses, dan menganalisis publikasi ilmiah secara efisien,
-                  menggali wawasan mendalam, serta mendapatkan rekomendasi otomatis untuk mendukung penelitian dan pengembangan.
-                  Ideal untuk peneliti, akademisi, dan profesional yang membutuhkan sumber daya ilmiah terkini.</p>
+                <p class="text-scopus" style="text-align: justify; margin-right: 5px; font-size: 12px;">
+                  Akun Scopus Lisensi & Scopus AI memberi akses ke database jurnal ilmiah terbesar dengan
+                  dukungan AI untuk pencarian, analisis, dan rekomendasi publikasi. Solusi ideal bagi
+                  peneliti, akademisi, dan profesional yang membutuhkan sumber ilmiah terkini.</p>
                 <a href="#" class="btn-shop">Explore Products <i class="bi bi-arrow-right"></i></a>
               </div>
             </div>
           </div>
 
           <div class="col-lg-6">
-
             <div class="row gy-4">
 
               <div class="col-xl-6">
@@ -206,11 +204,155 @@ Beranda | Phoenix Digital
 
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+    <!--================== END ==================-->
 
+    <!--================== FLASH SALE ==================-->
+    <section id="call-to-action" class="call-to-action section">
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <div class="main-content text-center" data-aos="zoom-in" data-aos-delay="200">
+              <div class="offer-badge" data-aos="fade-down" data-aos-delay="250">
+                <span class="limited-time">Limited Time</span>
+                <span class="offer-text">50% OFF</span>
+              </div>
+
+              <h2 data-aos="fade-up" data-aos-delay="300">Exclusive Flash Sale</h2>
+
+              <p class="subtitle" data-aos="fade-up" data-aos-delay="350">Don't miss out on our biggest sale of the year. Premium quality products at unbeatable prices for the next 48 hours only.</p>
+
+              <div class="countdown-wrapper" data-aos="fade-up" data-aos-delay="400">
+                <div class="countdown d-flex justify-content-center" data-count="2025/12/31">
+                  <div>
+                    <h3 class="count-days"></h3>
+                    <h4>Days</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-hours"></h3>
+                    <h4>Hours</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-minutes"></h3>
+                    <h4>Minutes</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-seconds"></h3>
+                    <h4>Seconds</h4>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-buttons" data-aos="fade-up" data-aos-delay="450">
+                <a href="#" class="btn-shop-now">Shop Now</a>
+                <a href="#" class="btn-view-deals">View All Deals</a>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <div class="row featured-products-row" data-aos="fade-up" data-aos-delay="500">
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="100">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-5.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-45%</div>
+              </div>
+              <div class="product-details">
+                <h6>Premium Wireless Headphones</h6>
+                <div class="price-section">
+                  <span class="original-price">$129</span>
+                  <span class="sale-price">$71</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="rating-count">(324)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="150">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-7.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-60%</div>
+              </div>
+              <div class="product-details">
+                <h6>Smart Fitness Tracker</h6>
+                <div class="price-section">
+                  <span class="original-price">$89</span>
+                  <span class="sale-price">$36</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-half"></i>
+                  <span class="rating-count">(198)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="200">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-11.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-35%</div>
+              </div>
+              <div class="product-details">
+                <h6>Luxury Travel Backpack</h6>
+                <div class="price-section">
+                  <span class="original-price">$159</span>
+                  <span class="sale-price">$103</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="rating-count">(267)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="250">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-1.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-55%</div>
+              </div>
+              <div class="product-details">
+                <h6>Artisan Coffee Mug Set</h6>
+                <div class="price-section">
+                  <span class="original-price">$75</span>
+                  <span class="sale-price">$34</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star"></i>
+                  <span class="rating-count">(142)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </section><!-- /Promo Cards Section -->
+    </section>
+    <!--================== END ==================-->
 
     <!-- Best Sellers Section -->
     <section id="best-sellers" class="best-sellers section">
@@ -637,152 +779,8 @@ Beranda | Phoenix Digital
     </section><!-- /Cards Section -->
 
     <!-- Call To Action Section -->
-    <section id="call-to-action" class="call-to-action section">
 
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
 
-        <div class="row">
-          <div class="col-lg-8 mx-auto">
-            <div class="main-content text-center" data-aos="zoom-in" data-aos-delay="200">
-              <div class="offer-badge" data-aos="fade-down" data-aos-delay="250">
-                <span class="limited-time">Limited Time</span>
-                <span class="offer-text">50% OFF</span>
-              </div>
-
-              <h2 data-aos="fade-up" data-aos-delay="300">Exclusive Flash Sale</h2>
-
-              <p class="subtitle" data-aos="fade-up" data-aos-delay="350">Don't miss out on our biggest sale of the year. Premium quality products at unbeatable prices for the next 48 hours only.</p>
-
-              <div class="countdown-wrapper" data-aos="fade-up" data-aos-delay="400">
-                <div class="countdown d-flex justify-content-center" data-count="2025/12/31">
-                  <div>
-                    <h3 class="count-days"></h3>
-                    <h4>Days</h4>
-                  </div>
-                  <div>
-                    <h3 class="count-hours"></h3>
-                    <h4>Hours</h4>
-                  </div>
-                  <div>
-                    <h3 class="count-minutes"></h3>
-                    <h4>Minutes</h4>
-                  </div>
-                  <div>
-                    <h3 class="count-seconds"></h3>
-                    <h4>Seconds</h4>
-                  </div>
-                </div>
-              </div>
-
-              <div class="action-buttons" data-aos="fade-up" data-aos-delay="450">
-                <a href="#" class="btn-shop-now">Shop Now</a>
-                <a href="#" class="btn-view-deals">View All Deals</a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row featured-products-row" data-aos="fade-up" data-aos-delay="500">
-          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="100">
-            <div class="product-showcase">
-              <div class="product-image">
-                <img src="{{ 'niceshop/assets/img/product/product-5.webp' }}" alt="Featured Product" class="img-fluid">
-                <div class="discount-badge">-45%</div>
-              </div>
-              <div class="product-details">
-                <h6>Premium Wireless Headphones</h6>
-                <div class="price-section">
-                  <span class="original-price">$129</span>
-                  <span class="sale-price">$71</span>
-                </div>
-                <div class="rating-stars">
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <span class="rating-count">(324)</span>
-                </div>
-              </div>
-            </div>
-          </div><!-- End Product Showcase -->
-
-          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="150">
-            <div class="product-showcase">
-              <div class="product-image">
-                <img src="{{ 'niceshop/assets/img/product/product-7.webp' }}" alt="Featured Product" class="img-fluid">
-                <div class="discount-badge">-60%</div>
-              </div>
-              <div class="product-details">
-                <h6>Smart Fitness Tracker</h6>
-                <div class="price-section">
-                  <span class="original-price">$89</span>
-                  <span class="sale-price">$36</span>
-                </div>
-                <div class="rating-stars">
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-half"></i>
-                  <span class="rating-count">(198)</span>
-                </div>
-              </div>
-            </div>
-          </div><!-- End Product Showcase -->
-
-          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-            <div class="product-showcase">
-              <div class="product-image">
-                <img src="{{ 'niceshop/assets/img/product/product-11.webp' }}" alt="Featured Product" class="img-fluid">
-                <div class="discount-badge">-35%</div>
-              </div>
-              <div class="product-details">
-                <h6>Luxury Travel Backpack</h6>
-                <div class="price-section">
-                  <span class="original-price">$159</span>
-                  <span class="sale-price">$103</span>
-                </div>
-                <div class="rating-stars">
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <span class="rating-count">(267)</span>
-                </div>
-              </div>
-            </div>
-          </div><!-- End Product Showcase -->
-
-          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="250">
-            <div class="product-showcase">
-              <div class="product-image">
-                <img src="{{ 'niceshop/assets/img/product/product-1.webp' }}" alt="Featured Product" class="img-fluid">
-                <div class="discount-badge">-55%</div>
-              </div>
-              <div class="product-details">
-                <h6>Artisan Coffee Mug Set</h6>
-                <div class="price-section">
-                  <span class="original-price">$75</span>
-                  <span class="sale-price">$34</span>
-                </div>
-                <div class="rating-stars">
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star"></i>
-                  <span class="rating-count">(142)</span>
-                </div>
-              </div>
-            </div>
-          </div><!-- End Product Showcase -->
-        </div>
-
-      </div>
-
-    </section><!-- /Call To Action Section -->
 
   </main>
 </x-guest-layout>

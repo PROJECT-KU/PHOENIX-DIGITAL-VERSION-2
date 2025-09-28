@@ -2,7 +2,7 @@
     <div class="d-flex mb-2 align-items-center justify-content-between">
         <h3>Manajemen Data Pelanggan</h3>
         @php
-            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pelanggan']];
+        $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pelanggan']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
@@ -23,7 +23,7 @@
             </div>
             <table class="table table-striped">
                 <thead>
-                    <tr>
+                    <tr style="text-align: center;">
                         <th>Nama Pelanggan</th>
                         <th>Email Pelanggan</th>
                         <th>Nomor Handphone</th>
@@ -34,28 +34,32 @@
                 </thead>
                 <tbody>
                     @forelse ($customers as $customer)
-                        <tr>
-                            <td>{{ $customer->nama }}</td>
-                            <td>{{ $customer->email }}</td>
-                            <td>{{ $customer->no_hp }}</td>
-                            <td>{{ $customer->status_member }}</td>
-                            <td>{{ $customer->created_at->translatedFormat('d F Y, H:i') }}</td>
-                            <td>
-                                <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
-                                    class="btn btn-outline-secondary btn-sm me-2">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
-                                <button type="button"
-                                    wire:click="$dispatch('will-delete-customer-data', {{ $customer }})"
-                                    class="btn btn-outline-danger btn-sm">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
+                    <tr style="text-align: center;">
+                        <td>{{ $customer->nama }}</td>
+                        <td>{{ $customer->email }}</td>
+                        <td>{{ $customer->no_hp }}</td>
+                        <td>
+                            <span class="badge {{ $customer->status_member === 'active' ? 'bg-success' : 'bg-danger' }}">
+                                {{ ucfirst($customer->status_member) }}
+                            </span>
+                        </td>
+                        <td>{{ $customer->created_at->translatedFormat('d F Y, H:i') }}</td>
+                        <td>
+                            <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
+                                class="btn btn-outline-secondary btn-sm me-2">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <button type="button"
+                                wire:click="$dispatch('will-delete-customer-data', {{ $customer }})"
+                                class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="5">belum ada customer</td>
-                        </tr>
+                    <tr>
+                        <td colspan="5">belum ada customer</td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
