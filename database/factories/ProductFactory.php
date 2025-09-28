@@ -20,10 +20,10 @@ class ProductFactory extends Factory
         return [
             'nama_akun'       => $this->faker->word(),
             'image'           => $this->faker->imageUrl(640, 480, 'products', true),
-            'harga_perbulan'  => $this->faker->randomFloat(2, 20000, 100000),
-            'harga_5_perbulan' => $this->faker->randomFloat(2, 80000, 400000),
-            'harga_10_perbulan' => $this->faker->randomFloat(2, 150000, 700000),
-            'harga_pertahun'  => $this->faker->randomFloat(2, 300000, 1200000),
+            'harga_perbulan'    => $this->faker->numberBetween(20000, 100000),
+            'harga_5_perbulan'  => $this->faker->numberBetween(80000, 400000),
+            'harga_10_perbulan' => $this->faker->numberBetween(150000, 700000),
+            'harga_pertahun'    => $this->faker->numberBetween(300000, 1200000),
             'deskripsi'       => $this->faker->sentence(),
         ];
     }

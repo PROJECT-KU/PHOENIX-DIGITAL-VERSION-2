@@ -22,64 +22,83 @@
                 </a>
             </div>
             <div class="table-responsive">
-                <table id="productTable" class="table table-striped align-middle nowrap" style="width:100%">
-                    <thead class="table-light text-center">
+                <table id="productTable" class="table align-middle text-center" style="width:100%">
+                    <thead class="table-light align-middle">
                         <tr>
-                            <th>Nama Akun</th>
-                            <th>Image</th>
-                            <th>Harga / 5 Bulan</th>
-                            <th>Harga / 10 Bulan</th>
-                            <th>Harga / Tahun</th>
-                            <th>Deskripsi</th>
-                            <th class="text-center">Action</th>
+                            <th style="width: 150px;">Nama Akun</th>
+                            <th style="width: 80px;">Image</th>
+                            <th style="width: 120px;">Harga / Bulan</th>
+                            <th style="width: 120px;">Harga / 5 Bulan</th>
+                            <th style="width: 120px;">Harga / 10 Bulan</th>
+                            <th style="width: 120px;">Harga / Tahun</th>
+                            <th style="width: 220px;">Deskripsi</th>
+                            <th style="width: 100px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($DataProduct as $item)
                             <tr>
-                                <td>{{ $item->nama_akun }}</td>
-                                <td class="text-center">
+                                <!-- Nama -->
+                                <td class="fw-semibold text-capitalize">
+                                    {{ $item->nama_akun }}
+                                </td>
+
+                                <!-- Image -->
+                                <td>
                                     @if ($item->image)
-                                        <img src="{{ asset('storage/' . $item->image) }}" 
-                                            alt="{{ $item->nama_akun }}" 
-                                            class="img-thumbnail" style="max-width: 60px;">
+                                        <img src="{{ asset('storage/' . $item->image) }}"
+                                            alt="{{ $item->nama_akun }}"
+                                            class="rounded shadow-sm"
+                                            style="width: 60px; height: 60px; object-fit: cover;">
                                     @else
-                                        <span class="text-muted">No Image</span>
+                                        <span class="text-muted fst-italic">No Image</span>
                                     @endif
                                 </td>
-                                <td class="text-end">Rp {{ number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
-                                <td class="text-end">Rp {{ number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>
-                                <td class="text-end">Rp {{ number_format($item->harga_pertahun, 0, ',', '.') }}</td>
-                                <td class="text-truncate" style="max-width: 200px;">
+
+                                <!-- Harga -->
+                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_perbulan, 0, ',', '.') }}</td>
+                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
+                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>
+                                <td class="text-end">{{ 'Rp ' . number_format($item->harga_pertahun, 0, ',', '.') }}</td>
+
+                                <!-- Deskripsi -->
+                                <td class="text-truncate"
+                                    style="max-width: 200px;"
+                                    data-bs-toggle="tooltip"
+                                    title="{{ $item->deskripsi }}">
                                     {{ $item->deskripsi ?? '-' }}
                                 </td>
-                                <td class="text-center">
-                                    <a wire:navigate 
-                                    href="{{ route('admin.product.edit', $item) }}"
-                                    class="btn btn-outline-secondary btn-sm me-1"
-                                    title="Edit">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <button type="button"
-                                            class="btn btn-outline-danger btn-sm delete-DataProduct-btn"
-                                            data-id="{{ $item->id }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+
+                                <!-- Action -->
+                                <td>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <a wire:navigate 
+                                            href="{{ route('admin.product.edit', $item) }}"
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger delete-DataProduct-btn"
+                                                data-id="{{ $item->id }}"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted">
+                                <td colspan="8" class="text-center text-muted py-3">
                                     Belum ada data produk
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
-
             </div>
 
-            <div class="mt-4">
+            <div class="mt-4 ">
                 {{ $DataProduct->links('vendor.pagination') }}
             </div>
         </div>

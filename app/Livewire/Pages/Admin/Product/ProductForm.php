@@ -4,14 +4,18 @@ namespace App\Livewire\Pages\Admin\Product;
 
 use Livewire\Component;
 use App\Models\Product;
+use Livewire\WithFileUploads;
 
 
 class ProductForm extends Component
 {
+    use WithFileUploads;
+
     public ?Product $product = null;
 
     public $nama_akun = '';
-    public $image = '';
+    public $image;
+    public $oldImage;
     public $harga_perbulan = '';
     public $harga_5_perbulan = '';
     public $harga_10_perbulan = '';
@@ -23,15 +27,16 @@ class ProductForm extends Component
     public function mount($product = null)
     {
         if ($product) {
-            $this->product = $product;
-            $this->nama_akun       = $product->nama_akun;
-            $this->image           = $product->image;
-            $this->harga_perbulan  = $product->harga_perbulan;
+            $this->product          = $product;
+            $this->nama_akun        = $product->nama_akun;
+            $this->image            = null;
+            $this->oldImage         = $product->image;
+            $this->harga_perbulan   = $product->harga_perbulan;
             $this->harga_5_perbulan = $product->harga_5_perbulan;
             $this->harga_10_perbulan = $product->harga_10_perbulan;
-            $this->harga_pertahun  = $product->harga_pertahun;
-            $this->deskripsi       = $product->deskripsi;
-            $this->mode = 'edit';
+            $this->harga_pertahun   = $product->harga_pertahun;
+            $this->deskripsi        = $product->deskripsi;
+            $this->mode             = 'edit';
         }
     }
 
@@ -39,7 +44,9 @@ class ProductForm extends Component
     {
         $this->validate([
             'nama_akun'        => 'required|min:3',
-            'image'            => 'nullable|string', // bisa diubah kalau nanti upload file
+            'image'            => $this->mode === 'create'
+                ? 'required|image|max:2048'
+                : 'nullable|image|max:2048',
             'harga_perbulan'   => 'nullable|numeric',
             'harga_5_perbulan' => 'nullable|numeric',
             'harga_10_perbulan' => 'nullable|numeric',
@@ -57,9 +64,11 @@ class ProductForm extends Component
     private function createProduct()
     {
         try {
+            $imagePath = $this->image ? $this->image->store('products', 'public') : null;
+
             Product::create([
                 'nama_akun'        => $this->nama_akun,
-                'image'            => $this->image,
+                'image'            => $imagePath,
                 'harga_perbulan'   => $this->harga_perbulan,
                 'harga_5_perbulan' => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
@@ -70,6 +79,7 @@ class ProductForm extends Component
             session()->flash('success', 'Product berhasil ditambahkan!');
             $this->dispatch('product-created');
             $this->resetForm();
+
             return redirect()->route('admin.product.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menambahkan Product: ' . $e->getMessage());
@@ -80,9 +90,15 @@ class ProductForm extends Component
     private function updateProduct()
     {
         try {
+            $imagePath = $this->oldImage;
+
+            if ($this->image) {
+                $imagePath = $this->image->store('products', 'public');
+            }
+
             $this->product->update([
                 'nama_akun'        => $this->nama_akun,
-                'image'            => $this->image,
+                'image'            => $imagePath,
                 'harga_perbulan'   => $this->harga_perbulan,
                 'harga_5_perbulan' => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
@@ -93,6 +109,7 @@ class ProductForm extends Component
             session()->flash('success', 'Product berhasil diperbarui!');
             $this->dispatch('product-updated');
             $this->resetForm();
+
             return redirect()->route('admin.product.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal update Product: ' . $e->getMessage());
@@ -102,13 +119,14 @@ class ProductForm extends Component
 
     private function resetForm()
     {
-        $this->nama_akun       = '';
-        $this->image           = '';
-        $this->harga_perbulan  = '';
+        $this->nama_akun        = '';
+        $this->image            = null;
+        $this->oldImage         = null;
+        $this->harga_perbulan   = '';
         $this->harga_5_perbulan = '';
         $this->harga_10_perbulan = '';
-        $this->harga_pertahun  = '';
-        $this->deskripsi       = '';
+        $this->harga_pertahun   = '';
+        $this->deskripsi        = '';
     }
 
     public function render()

@@ -22,8 +22,8 @@
                 </a>
             </div>
             <div class="table-responsive">
-                <table id="productTable" class="table table-striped align-middle nowrap" style="width:100%">
-                    <thead class="table-light text-center">
+                <table id="productTable" class="table table-striped align-middle text-center nowrap" style="width:100%">
+                    <thead class="table-light">
                         <tr>
                             <th>Name Akun</th>
                             <th>User Name</th>
@@ -32,7 +32,7 @@
                             <th>PJ Akun</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
-                            <th class="text-center">Action</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,7 +40,7 @@
                         <tr>
                             <td>{{ $item->nama_akun }}</td>
                             <td>{{ $item->username_akun }}</td>
-                            <td class="text-center">
+                            <td>
                                 <span class="password-mask" data-password="{{ $item->password_akun }}">
                                     ••••••••
                                 </span>
@@ -57,12 +57,12 @@
                             <td class="text-truncate" style="max-width: 200px;">
                                 {{ $item->deskripsi }}
                             </td>
-                            <td class="text-center">
+                            <td>
                                 <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
                                     {{ ucfirst($item->status) }}
                                 </span>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 <a wire:navigate href="{{ route('admin.DataAkun.edit', $item) }}"
                                     class="btn btn-outline-secondary btn-sm me-1"
                                     title="Edit">
@@ -73,12 +73,11 @@
                                     data-id="{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
-
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted">
+                            <td colspan="8" class="text-center text-muted">
                                 Belum ada data akun
                             </td>
                         </tr>
@@ -86,6 +85,7 @@
                     </tbody>
                 </table>
             </div>
+
 
             <div class="mt-4">
                 {{ $DataAkun->links('vendor.pagination') }}
