@@ -9,9 +9,9 @@ use Livewire\Component;
 class LoanForm extends Component
 {
     public $loanId = null;
-    public $nama_peminjam;
+    public $user_id;
     public $tanggal_peminjam;
-    public $nominal;
+    public $nominal = ''; // simpan sementara sebagai string (angka murni)
     public $deskripsi;
     public $status = 'pending';
 
@@ -20,18 +20,19 @@ class LoanForm extends Component
     protected function rules()
     {
         return [
-            'nama_peminjam'     => 'required|string|max:255',
-            'tanggal_peminjam'  => 'required|date',
-            'nominal'           => 'required|numeric|min:0',
-            'deskripsi'         => 'nullable|string|max:1000',
-            'status'            => 'required|in:pending,berjalan,lunas',
+            'user_id'          => 'required|exists:users,id',
+            'tanggal_peminjam' => 'required|date',
+            'nominal'          => 'required|numeric|min:0',
+            'deskripsi'        => 'nullable|string|max:1000',
+            'status'           => 'required|in:pending,berjalan,lunas',
         ];
     }
 
     protected function messages()
     {
         return [
-            'nama_peminjam.required'    => 'Nama peminjam harus diisi.',
+            'user_id.required'          => 'Nama peminjam harus dipilih.',
+            'user_id.exists'            => 'Peminjam tidak ditemukan.',
             'tanggal_peminjam.required' => 'Tanggal pinjam harus diisi.',
             'tanggal_peminjam.date'     => 'Format tanggal tidak valid.',
             'nominal.required'          => 'Nominal harus diisi.',
@@ -51,55 +52,56 @@ class LoanForm extends Component
             $this->loadLoan();
         } else {
             $this->tanggal_peminjam = now()->format('Y-m-d');
+            $this->nominal = ''; // kosong saat create
         }
     }
 
-    public function loadLoan()
+    private function loadLoan()
     {
         $loan = Loan::findOrFail($this->loanId);
 
-        $this->nama_peminjam    = $loan->nama_peminjam;
+        $this->user_id          = $loan->user_id;
         $this->tanggal_peminjam = $loan->tanggal_peminjam->format('Y-m-d');
-        $this->nominal          = $loan->nominal;
-        $this->deskripsi        = $loan->deskripsi;
-        $this->status           = $loan->status;
+
+        // IMPORTANT: normalisasi nominal ke "angka bulat" string agar Alpine mudah format
+        // contoh DB: "500000.00" -> becomes "500000"
+        $this->nominal = (string) intval($loan->nominal);
+
+        $this->deskripsi = $loan->deskripsi;
+        $this->status    = $loan->status;
     }
 
     public function save()
     {
-        // Bersihkan nominal dari format Rp sebelum validasi
-        $this->nominal = preg_replace('/[^0-9]/', '', $this->nominal);
-        $this->nominal = $this->nominal ? (float) $this->nominal : 0;
+        // Pastikan nominal benar-benar angka murni (string -> integer)
+        $raw = preg_replace('/[^0-9]/', '', (string) $this->nominal);
+        $this->nominal = $raw !== '' ? (int) $raw : null;
 
-        $this->validate([
-            'nama_peminjam'    => 'required|string|max:255',
-            'tanggal_peminjam' => 'required|date',
-            'nominal'          => 'required|numeric|min:0',
-            'deskripsi'        => 'nullable|string|max:1000',
-            'status'           => 'required|in:pending,berjalan,lunas',
-        ]);
+        $this->validate();
 
         try {
+            $namaPeminjam = User::find($this->user_id)->name ?? null;
+
             if ($this->isEdit) {
                 $loan = Loan::findOrFail($this->loanId);
                 $loan->update([
-                    'nama_peminjam'    => $this->nama_peminjam,
+                    'user_id'          => $this->user_id,
+                    'nama_peminjam'    => $namaPeminjam,
                     'tanggal_peminjam' => $this->tanggal_peminjam,
                     'nominal'          => $this->nominal,
                     'deskripsi'        => $this->deskripsi,
                     'status'           => $this->status,
-                    'user_id'          => auth()->id(),
                 ]);
 
                 $this->dispatch('success-edit-loan');
             } else {
                 Loan::create([
-                    'nama_peminjam'    => $this->nama_peminjam,
+                    'user_id'          => $this->user_id,
+                    'nama_peminjam'    => $namaPeminjam,
                     'tanggal_peminjam' => $this->tanggal_peminjam,
                     'nominal'          => $this->nominal,
                     'deskripsi'        => $this->deskripsi,
                     'status'           => $this->status,
-                    'user_id'          => auth()->id(),
                 ]);
 
                 $this->dispatch('success-add-loan');
@@ -107,19 +109,14 @@ class LoanForm extends Component
 
             return redirect()->route('admin.loan.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error: ' . $e->getMessage()); // tampilkan error detail
+            session()->flash('error', 'Error: ' . $e->getMessage());
             $this->dispatch('failed-add-loan');
         }
     }
 
     public function render()
     {
-        // Ambil user untuk pilihan peminjam
-        $users = User::select('id', 'name')
-            ->orderBy('name')
-            ->get();
-
-        // Status pinjaman
+        $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = ['pending', 'berjalan', 'lunas'];
 
         return view('livewire.pages.admin.loan.loan-form', [

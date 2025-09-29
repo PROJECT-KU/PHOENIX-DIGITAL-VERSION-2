@@ -14,14 +14,22 @@
                 <div class="row">
                     <!-- Nama Peminjam -->
                     <div class="col-md-6 mb-3">
-                        <label for="nama_peminjam" class="form-label">
+                        <label for="user_id" class="form-label">
                             Nama Peminjam <span class="text-danger">*</span>
                         </label>
-                        <input type="text" wire:model="nama_peminjam"
-                            class="form-control @error('nama_peminjam') is-invalid @enderror"
-                            id="nama_peminjam" placeholder="Masukkan nama peminjam">
-                        @error('nama_peminjam')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                        <select 
+                            id="user_id" 
+                            name="user_id" 
+                            wire:model="user_id" 
+                            class="form-control @error('user_id') is-invalid @enderror"
+                        >
+                            <option value="">-- Pilih Peminjam --</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('user_id')
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -38,45 +46,54 @@
                         @enderror
                     </div>
 
-                    <!-- Nominal dengan format Rupiah -->
+                    <!-- NOMINAL (formatted input + hidden wire model) -->
                     <div class="col-md-6 mb-3"
                         x-data="{
-                        displayValue: @entangle('nominal').defer,
-                        formatRupiah(value) {
-                            if (!value) return '';
-                            let number_string = value.toString().replace(/[^,\d]/g, '');
-                            let split = number_string.split(',');
-                            let sisa = split[0].length % 3;
-                            let rupiah = split[0].substr(0, sisa);
-                            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-
-                            if (ribuan) {
-                                let separator = sisa ? '.' : '';
-                                rupiah += separator + ribuan.join('.');
+                            formatRupiah(v) {
+                                if (!v) return '';
+                                let number_string = v.toString().replace(/[^,\d]/g, '');
+                                let split = number_string.split(',');
+                                let sisa = split[0].length % 3;
+                                let rupiah = split[0].substr(0, sisa);
+                                let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+                                if (ribuan) {
+                                    let separator = sisa ? '.' : '';
+                                    rupiah += separator + ribuan.join('.');
+                                }
+                                rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+                                return rupiah ? 'Rp ' + rupiah : '';
+                            },
+                            parseRaw(v) {
+                                return (v || '').toString().replace(/[^0-9]/g, '');
                             }
-                            rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-                            return rupiah ? 'Rp ' + rupiah : '';
-                        }
-                    }"
-                        x-init="$watch('displayValue', value => {
-                        $refs.input.value = formatRupiah(value);
-                    })">
-                        <label for="nominal" class="form-label">
-                            Nominal Pinjaman <span class="text-danger">*</span>
-                        </label>
+                        }"
+                        x-init="$nextTick(() => { 
+                            // inisialisasi tampilan dari nilai Livewire (hidden.value)
+                            $refs.display.value = formatRupiah($refs.hidden.value ?? '');
+                        })"
+                    >
+                        <label for="nominal" class="form-label">Nominal Pinjaman <span class="text-danger">*</span></label>
+
+                        <!-- tampil untuk user (format Rupiah) -->
                         <input type="text"
-                            x-ref="input"
-                            wire:model.defer="nominal"
+                            x-ref="display"
                             x-on:input="
-                            let raw = $event.target.value.replace(/[^0-9]/g, '');
-                            displayValue = raw; // simpan angka murni ke Livewire
-                            $event.target.value = formatRupiah(raw); // tampilkan format Rp
-                        "
+                                let raw = parseRaw($event.target.value);
+                                // update display (tampil Rp)
+                                $event.target.value = formatRupiah(raw);
+                                // update Livewire property langsung supaya submit valid
+                                $wire.set('nominal', raw);
+                                // juga sinkron ke hidden input value agar x-init baca benar
+                                $refs.hidden.value = raw;
+                            "
                             class="form-control @error('nominal') is-invalid @enderror"
-                            id="nominal"
                             placeholder="Rp 0">
+
+                        <!-- hidden untuk Livewire binding (nilai angka murni) -->
+                        <input type="hidden" x-ref="hidden" wire:model.defer="nominal">
+
                         @error('nominal')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
