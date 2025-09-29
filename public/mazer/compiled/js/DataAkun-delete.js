@@ -131,3 +131,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.delete-Loan-btn').forEach(button => {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            const loanId = button.getAttribute('data-id');
+
+            Swal.fire({
+                title: 'Yakin hapus Loan?',
+                text: "Data loan yang dihapus tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
+                    Livewire.find(livewireComponentId).call('delete', loanId);
+                }
+            });
+        });
+    });
+
+    window.addEventListener('loan-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data loan berhasil dihapus.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    });
+
+    window.addEventListener('delete-loan-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error'
+        });
+    });
+});
+

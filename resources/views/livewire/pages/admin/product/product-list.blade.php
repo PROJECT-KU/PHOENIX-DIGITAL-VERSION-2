@@ -46,12 +46,27 @@
                             <!-- Image -->
                             <td>
                                 @if ($item->image)
-                                <img src="{{ asset('storage/' . $item->image) }}"
-                                    alt="{{ $item->nama_akun }}"
-                                    class="rounded shadow-sm"
-                                    style="width: 60px; height: 60px; object-fit: cover;">
+                                    <img src="{{ asset('storage/' . $item->image) }}"
+                                        alt="{{ $item->nama_akun }}"
+                                        class="rounded shadow-sm"
+                                        style="width: 60px; height: 60px; object-fit: cover; cursor:pointer;"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#imageModal{{ $item->id }}">
+                                    
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="imageModal{{ $item->id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ $item->id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-body text-center">
+                                                    <img src="{{ asset('storage/' . $item->image) }}" 
+                                                        alt="{{ $item->nama_akun }}" 
+                                                        class="img-fluid rounded shadow">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @else
-                                <span class="text-muted fst-italic">No Image</span>
+                                    <span class="text-muted fst-italic">No Image</span>
                                 @endif
                             </td>
 
