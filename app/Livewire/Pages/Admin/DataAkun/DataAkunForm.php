@@ -40,7 +40,7 @@ class DataAkunForm extends Component
             'nama_akun'      => 'required|min:3',
             'username_akun'  => 'required',
             'password_akun'  => 'required|min:6',
-            'link_login_akun' => 'nullable|url',
+            'link_login_akun' => 'required|nullable|url',
             'pj_akun'        => 'required',
             'deskripsi'      => 'nullable|string',
             'status'          => 'required|in:active,non-active',

@@ -3,7 +3,7 @@
         <div class="row g-3">
             <!-- Judul Banner -->
             <div class="col-md-6">
-                <label for="judul" class="form-label">Judul Banner</label>
+                <label for="judul" class="form-label">Judul Banner <span class="text-danger">*</span></label>
                 <input type="text" id="judul" wire:model.defer="judul"
                     class="form-control @error('judul') is-invalid @enderror"
                     placeholder="Masukkan Judul Banner">
@@ -14,7 +14,7 @@
 
             <!-- Status -->
             <div class="col-md-6">
-                <label for="status" class="form-label">Status</label>
+                <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
                 <select id="status" wire:model.defer="status"
                     class="form-select @error('status') is-invalid @enderror">
                     <option value="">-- Pilih Status --</option>
@@ -32,7 +32,7 @@
                 <div class="row">
                     <!-- Input -->
                     <div class="col-md-6">
-                        <label for="gambar" class="form-label">Gambar Banner</label>
+                        <label for="gambar" class="form-label">Gambar Banner <span class="text-danger">*</span></label>
                         <input type="file" id="gambar" wire:model="gambar"
                             class="form-control @error('gambar') is-invalid @enderror"
                             accept="image/png,image/jpg,image/jpeg">

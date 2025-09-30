@@ -46,27 +46,27 @@
                             <!-- Image -->
                             <td>
                                 @if ($item->image)
-                                    <img src="{{ asset('storage/' . $item->image) }}"
-                                        alt="{{ $item->nama_akun }}"
-                                        class="rounded shadow-sm"
-                                        style="width: 60px; height: 60px; object-fit: cover; cursor:pointer;"
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#imageModal{{ $item->id }}">
-                                    
-                                    <!-- Modal -->
-                                    <div class="modal fade" id="imageModal{{ $item->id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ $item->id }}" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                                            <div class="modal-content">
-                                                <div class="modal-body text-center">
-                                                    <img src="{{ asset('storage/' . $item->image) }}" 
-                                                        alt="{{ $item->nama_akun }}" 
-                                                        class="img-fluid rounded shadow">
-                                                </div>
+                                <img src="{{ asset('storage/' . $item->image) }}"
+                                    alt="{{ $item->nama_akun }}"
+                                    class="rounded shadow-sm"
+                                    style="width: 60px; height: 60px; object-fit: cover; cursor:pointer;"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#imageModal{{ $item->id }}">
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="imageModal{{ $item->id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ $item->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-body text-center">
+                                                <img src="{{ asset('storage/' . $item->image) }}"
+                                                    alt="{{ $item->nama_akun }}"
+                                                    class="img-fluid rounded shadow">
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                 @else
-                                    <span class="text-muted fst-italic">No Image</span>
+                                <span class="text-muted fst-italic">No Image</span>
                                 @endif
                             </td>
 
@@ -89,12 +89,12 @@
                                 <div class="d-flex justify-content-center gap-2">
                                     <a wire:navigate
                                         href="{{ route('admin.product.edit', $item) }}"
-                                        class="btn btn-sm btn-outline-primary"
+                                        class="btn btn-sm btn-warning"
                                         title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     <button type="button"
-                                        class="btn btn-sm btn-outline-danger delete-DataProduct-btn"
+                                        class="btn btn-sm btn-danger delete-DataProduct-btn"
                                         data-id="{{ $item->id }}"
                                         title="Delete">
                                         <i class="bi bi-trash"></i>

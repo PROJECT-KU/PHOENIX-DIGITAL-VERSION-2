@@ -3,7 +3,7 @@
         <div class="row g-3">
             <!-- Nama Akun -->
             <div class="col-md-12">
-                <label for="namaAkun" class="form-label">Nama Akun</label>
+                <label for="namaAkun" class="form-label">Nama Akun <span class="text-danger">*</span></label>
                 <input type="text" id="namaAkun" wire:model.defer="nama_akun"
                     class="form-control @error('nama_akun') is-invalid @enderror"
                     placeholder="Masukkan nama akun">
@@ -110,33 +110,33 @@
 
             <!-- Upload Gambar -->
             <div class="col-md-12">
-                <label for="image" class="form-label">Gambar Produk</label>
+                <label for="image" class="form-label">Gambar Produk <span class="text-danger">*</span></label>
                 <div class="row align-items-center">
                     <!-- Input file (kiri) -->
                     <div class="col-md-6 mb-3">
                         <input type="file" id="image" wire:model="image"
                             class="form-control @error('image') is-invalid @enderror">
                         @error('image')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <!-- Preview (kanan) -->
                     <div class="col-md-6 d-flex justify-content-center">
                         @if ($image && !$errors->has('image'))
-                            @if (is_string($image))
-                                {{-- Jika edit & image dari DB --}}
-                                <img src="{{ asset('storage/' . $image) }}" 
-                                    alt="Preview" 
-                                    class="img-fluid rounded shadow-sm border" 
-                                    style="max-width: 500px; max-height: 500px; object-fit: cover;">
-                            @else
-                                {{-- Jika upload baru --}}
-                                <img src="{{ $image->temporaryUrl() }}" 
-                                    alt="Preview" 
-                                    class="img-fluid rounded shadow-sm border" 
-                                    style="max-width: 500px; max-height: 500px; object-fit: cover;">
-                            @endif
+                        @if (is_string($image))
+                        {{-- Jika edit & image dari DB --}}
+                        <img src="{{ asset('storage/' . $image) }}"
+                            alt="Preview"
+                            class="img-fluid rounded shadow-sm border"
+                            style="max-width: 500px; max-height: 500px; object-fit: cover;">
+                        @else
+                        {{-- Jika upload baru --}}
+                        <img src="{{ $image->temporaryUrl() }}"
+                            alt="Preview"
+                            class="img-fluid rounded shadow-sm border"
+                            style="max-width: 500px; max-height: 500px; object-fit: cover;">
+                        @endif
                         @endif
                     </div>
                 </div>
@@ -163,4 +163,3 @@
         </div>
     </form>
 </div>
-

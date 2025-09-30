@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Product;
 use Livewire\Component;
 use App\Models\Product;
 use Livewire\WithFileUploads;
+use Illuminate\Support\Facades\Storage;
 
 
 class ProductForm extends Component
@@ -15,7 +16,7 @@ class ProductForm extends Component
 
     public $nama_akun = '';
     public $image;
-    public $oldImage;
+    public $existingImage = null; // nama file lama di DB
     public $harga_perbulan = '';
     public $harga_5_perbulan = '';
     public $harga_10_perbulan = '';
@@ -30,7 +31,7 @@ class ProductForm extends Component
             $this->product          = $product;
             $this->nama_akun        = $product->nama_akun;
             $this->image            = null;
-            $this->oldImage         = $product->image;
+            $this->existingImage         = $product->image;
             $this->harga_perbulan   = $product->harga_perbulan;
             $this->harga_5_perbulan = $product->harga_5_perbulan;
             $this->harga_10_perbulan = $product->harga_10_perbulan;
@@ -42,17 +43,22 @@ class ProductForm extends Component
 
     public function save()
     {
-        $this->validate([
+        $rules = [
             'nama_akun'        => 'required|min:3',
-            'image'            => $this->mode === 'create'
-                ? 'required|image|max:2048'
-                : 'nullable|image|max:2048',
             'harga_perbulan'   => 'nullable|numeric',
             'harga_5_perbulan' => 'nullable|numeric',
             'harga_10_perbulan' => 'nullable|numeric',
             'harga_pertahun'   => 'nullable|numeric',
             'deskripsi'        => 'nullable|string',
-        ]);
+        ];
+
+        if ($this->mode === 'create') {
+            $rules['image'] = 'required|image|mimes:png,jpg,jpeg|max:5120';
+        } else {
+            $rules['image'] = 'nullable|image|mimes:png,jpg,jpeg|max:5120';
+        }
+
+        $this->validate($rules);
 
         if ($this->mode === 'create') {
             $this->createProduct();
@@ -64,11 +70,15 @@ class ProductForm extends Component
     private function createProduct()
     {
         try {
-            $imagePath = $this->image ? $this->image->store('products', 'public') : null;
+            $random   = rand(10000, 99999);
+            $filename = 'Product_' . $random . '.' . $this->image->getClientOriginalExtension();
+
+            // simpan file fisik ke folder storage/app/public/img/banners
+            $this->image->storeAs('img/Product', $filename, 'public');
 
             Product::create([
                 'nama_akun'        => $this->nama_akun,
-                'image'            => $imagePath,
+                'image'            => $filename,
                 'harga_perbulan'   => $this->harga_perbulan,
                 'harga_5_perbulan' => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
@@ -90,21 +100,31 @@ class ProductForm extends Component
     private function updateProduct()
     {
         try {
-            $imagePath = $this->oldImage;
-
-            if ($this->image) {
-                $imagePath = $this->image->store('products', 'public');
-            }
-
-            $this->product->update([
+            $data = [
                 'nama_akun'        => $this->nama_akun,
-                'image'            => $imagePath,
                 'harga_perbulan'   => $this->harga_perbulan,
                 'harga_5_perbulan' => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
                 'harga_pertahun'   => $this->harga_pertahun,
                 'deskripsi'        => $this->deskripsi,
-            ]);
+            ];
+
+            if ($this->image && is_object($this->image)) {
+                // hapus file lama kalau ada
+                if ($this->existingImage && Storage::disk('public')->exists('img/Product/' . $this->existingImage)) {
+                    Storage::disk('public')->delete('img/Product/' . $this->existingImage);
+                }
+
+                // upload baru → replace
+                $random   = rand(10000, 99999);
+                $filename = 'Product_' . $random . '.' . $this->image->getClientOriginalExtension();
+                $this->image->storeAs('img/Product', $filename, 'public');
+                $data['image'] = $filename;
+            } else {
+                $data['image'] = $this->existingImage; // pakai gambar lama
+            }
+
+            $this->product->update($data);
 
             session()->flash('success', 'Product berhasil diperbarui!');
             $this->dispatch('product-updated');
@@ -121,7 +141,6 @@ class ProductForm extends Component
     {
         $this->nama_akun        = '';
         $this->image            = null;
-        $this->oldImage         = null;
         $this->harga_perbulan   = '';
         $this->harga_5_perbulan = '';
         $this->harga_10_perbulan = '';
