@@ -6,7 +6,7 @@
             <div class="col-md-6">
                 <div class="d-flex align-items-end">
                     <div class="flex-grow-1 me-2">
-                        <label for="nama_paket" class="form-label">Nama Paket</label>
+                        <label for="nama_paket" class="form-label">Nama Paket <span class="text-danger">*</span></label>
                         <input type="text" id="nama_paket" wire:model.defer="nama_paket"
                             class="form-control @error('nama_paket') is-invalid @enderror"
                             placeholder="Masukkan Nama Paket Bundling">
@@ -20,7 +20,7 @@
 
             <!-- Status -->
             <div class="col-md-6">
-                <label for="status" class="form-label">Status</label>
+                <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
                 <select id="status" wire:model.defer="status"
                     class="form-select @error('status') is-invalid @enderror">
                     <option value="">-- Pilih Status --</option>
@@ -83,7 +83,7 @@
 
             <!-- Harga Awal -->
             <div class="col-md-6">
-                <label for="harga_awal" class="form-label">Harga Awal</label>
+                <label for="harga_awal" class="form-label">Harga Awal <span class="text-danger">*</span></label>
                 <input type="text" id="harga_awal" wire:model.defer="harga_awal"
                     class="form-control @error('harga_awal') is-invalid @enderror rupiah"
                     placeholder="Masukkan Harga Awal">
@@ -93,7 +93,7 @@
             </div>
 
             <div class="col-md-6">
-                <label for="harga_bundling" class="form-label">Harga Bundling</label>
+                <label for="harga_bundling" class="form-label">Harga Bundling <span class="text-danger">*</span></label>
                 <input type="text" id="harga_bundling" wire:model.defer="harga_bundling"
                     class="form-control @error('harga_bundling') is-invalid @enderror rupiah"
                     placeholder="Masukkan Harga Bundling">
@@ -111,7 +111,7 @@
             <div class="col-md-12">
                 <div class="row">
                     <div class="col-md-6">
-                        <label for="gambar" class="form-label">Gambar Banner</label>
+                        <label for="gambar" class="form-label">Gambar Produk <span class="text-danger">*</span></label>
                         <input type="file" id="gambar" wire:model="gambar"
                             class="form-control @error('gambar') is-invalid @enderror"
                             accept="image/png,image/jpg,image/jpeg">
