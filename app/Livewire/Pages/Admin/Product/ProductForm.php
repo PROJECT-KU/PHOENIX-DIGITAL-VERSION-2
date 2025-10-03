@@ -101,27 +101,27 @@ class ProductForm extends Component
     {
         try {
             $data = [
-                'nama_akun'        => $this->nama_akun,
-                'harga_perbulan'   => $this->harga_perbulan,
-                'harga_5_perbulan' => $this->harga_5_perbulan,
+                'nama_akun'         => $this->nama_akun,
+                'harga_perbulan'    => $this->harga_perbulan,
+                'harga_5_perbulan'  => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
-                'harga_pertahun'   => $this->harga_pertahun,
-                'deskripsi'        => $this->deskripsi,
+                'harga_pertahun'    => $this->harga_pertahun,
+                'deskripsi'         => $this->deskripsi,
             ];
 
+
             if ($this->image && is_object($this->image)) {
-                // hapus file lama kalau ada
-                if ($this->existingImage && Storage::disk('public')->exists('img/Product/' . $this->existingImage)) {
+                if (!empty($this->existingImage) && Storage::disk('public')->exists('img/Product/' . $this->existingImage)) {
                     Storage::disk('public')->delete('img/Product/' . $this->existingImage);
                 }
 
-                // upload baru → replace
                 $random   = rand(10000, 99999);
                 $filename = 'Product_' . $random . '.' . $this->image->getClientOriginalExtension();
                 $this->image->storeAs('img/Product', $filename, 'public');
+
                 $data['image'] = $filename;
             } else {
-                $data['image'] = $this->existingImage; // pakai gambar lama
+                $data['image'] = $this->existingImage;
             }
 
             $this->product->update($data);

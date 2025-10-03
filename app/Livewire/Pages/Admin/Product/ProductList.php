@@ -6,6 +6,7 @@ use Livewire\Component;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Storage;
 
 class ProductList extends Component
 {
@@ -19,16 +20,19 @@ class ProductList extends Component
 
     public function deleteDataProduct($id)
     {
-        $Dataproduct = Product::find($id);
+        try {
+            $product = Product::findOrFail($id);
 
-        if (!$Dataproduct) {
-            $this->dispatch('delete-error', ['message' => 'Data Product tidak ditemukan!'], browserEvent: true);
-            return;
+            if (!empty($product->image) && Storage::disk('public')->exists('img/Product/' . $product->image)) {
+                Storage::disk('public')->delete('img/Product/' . $product->image);
+            }
+
+            $product->delete();
+
+            $this->dispatch('product-deleted');
+        } catch (\Exception $e) {
+            $this->dispatch('delete-product-error', message: 'Gagal menghapus produk!');
         }
-
-        $Dataproduct->delete();
-
-        $this->dispatch('DataProduct-deleted', ['id' => $id], browserEvent: true);
     }
 
     #[Layout('layouts.app')]

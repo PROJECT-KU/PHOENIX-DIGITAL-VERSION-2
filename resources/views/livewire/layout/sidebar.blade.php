@@ -64,7 +64,7 @@ new class extends Component {
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
-                        <li class="submenu-item {{ request()->routeIs('admin.product.index') ? 'active' : '' }}">
+                        <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
