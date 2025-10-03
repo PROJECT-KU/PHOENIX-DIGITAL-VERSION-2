@@ -93,12 +93,12 @@ new class extends Component {
                 <!-- section menu data dan laporan -->
                 <li class="sidebar-title mt-4">Data &amp; Laporan</li>
                 <li class="sidebar-item has-sub 
-                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') ? 'active' : '' }}">
-                    
+                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') ? 'active' : '' }}">
+
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') ? 'text-primary' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*')? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
@@ -112,6 +112,11 @@ new class extends Component {
                         <li class="submenu-item {{ request()->routeIs('admin.loan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.loan.index') }}" class="submenu-link">
                                 Peminjaman
+                            </a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.gajikaryawan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.gajikaryawan.index') }}" class="submenu-link">
+                                Gaji Karyawan
                             </a>
                         </li>
                     </ul>

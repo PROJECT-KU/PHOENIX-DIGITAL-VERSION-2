@@ -21,6 +21,11 @@ use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
 
+// Data Gaji Karyawan
+use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
+use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
+use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
+
 // Data Product
 use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
@@ -97,6 +102,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/loan', LoanList::class)->name('admin.loan.index');
     Route::get('/admin/loan/create', LoanCreate::class)->name('admin.loan.create');
     Route::get('/admin/loan/{id}/edit', LoanEdit::class)->name('admin.loan.edit');
+
+    // Data Gaji Karyawan
+    Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
+    Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->name('admin.gajikaryawan.create');
+    Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->name('admin.gajikaryawan.edit');
 });
 
 require __DIR__ . '/auth.php';
