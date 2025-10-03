@@ -167,6 +167,7 @@
 
 </div>
 
+<!--================== FORMAT RUPIAH ==================-->
 @push('scripts')
 <script>
     document.querySelectorAll('.rupiah').forEach(function(input) {
@@ -187,3 +188,4 @@
     });
 </script>
 @endpush
+<!--================== END ==================-->
