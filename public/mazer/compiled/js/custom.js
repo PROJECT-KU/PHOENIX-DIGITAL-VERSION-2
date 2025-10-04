@@ -35,3 +35,20 @@ function formatRupiah(value) {
     return rupiah ? 'Rp ' + rupiah : '';
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof Livewire !== "undefined") {
+        Livewire.on("swal", (data) => {
+            Swal.fire({
+                icon: data.icon,
+                title: data.title,
+                text: data.text,
+                showConfirmButton: false,
+                timer: 2000,
+            }).then(() => {
+                if (data.redirect) {
+                    window.location.href = data.redirect;
+                }
+            });
+        });
+    }
+});

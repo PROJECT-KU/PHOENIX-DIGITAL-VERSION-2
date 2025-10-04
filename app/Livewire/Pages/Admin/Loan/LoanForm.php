@@ -15,7 +15,7 @@ class LoanForm extends Component
     public $deskripsi;
     public $status = 'pending';
 
-    public $isEdit = false;
+    public $mode = 'create'; // 'create' | 'edit'
 
     protected function rules()
     {
@@ -47,7 +47,7 @@ class LoanForm extends Component
     public function mount($loanId = null)
     {
         if ($loanId) {
-            $this->isEdit = true;
+            $this->mode = 'edit';
             $this->loanId = $loanId;
             $this->loadLoan();
         } else {
@@ -62,18 +62,14 @@ class LoanForm extends Component
 
         $this->user_id          = $loan->user_id;
         $this->tanggal_peminjam = $loan->tanggal_peminjam->format('Y-m-d');
-
-        // IMPORTANT: normalisasi nominal ke "angka bulat" string agar Alpine mudah format
-        // contoh DB: "500000.00" -> becomes "500000"
-        $this->nominal = (string) intval($loan->nominal);
-
-        $this->deskripsi = $loan->deskripsi;
-        $this->status    = $loan->status;
+        $this->nominal          = (string) intval($loan->nominal);
+        $this->deskripsi        = $loan->deskripsi;
+        $this->status           = $loan->status;
     }
 
     public function save()
     {
-        // Pastikan nominal benar-benar angka murni (string -> integer)
+        // Pastikan nominal angka murni
         $raw = preg_replace('/[^0-9]/', '', (string) $this->nominal);
         $this->nominal = $raw !== '' ? (int) $raw : null;
 
@@ -82,7 +78,7 @@ class LoanForm extends Component
         try {
             $namaPeminjam = User::find($this->user_id)->name ?? null;
 
-            if ($this->isEdit) {
+            if ($this->mode === 'edit') {
                 $loan = Loan::findOrFail($this->loanId);
                 $loan->update([
                     'user_id'          => $this->user_id,
@@ -93,6 +89,7 @@ class LoanForm extends Component
                     'status'           => $this->status,
                 ]);
 
+                session()->flash('success', 'Data Peminjaman berhasil diperbarui!');
                 $this->dispatch('success-edit-loan');
             } else {
                 Loan::create([
@@ -104,14 +101,28 @@ class LoanForm extends Component
                     'status'           => $this->status,
                 ]);
 
+                session()->flash('success', 'Data Peminjaman berhasil ditambahkan!');
                 $this->dispatch('success-add-loan');
             }
 
+            $this->resetForm();
+
             return redirect()->route('admin.loan.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Error: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menambahkan data Peminjaman: ' . $e->getMessage());
             $this->dispatch('failed-add-loan');
         }
+    }
+
+    private function resetForm()
+    {
+        $this->loanId = null;
+        $this->user_id = null;
+        $this->tanggal_peminjam = now()->format('Y-m-d');
+        $this->nominal = '';
+        $this->deskripsi = null;
+        $this->status = 'pending';
+        $this->mode = 'create';
     }
 
     public function render()

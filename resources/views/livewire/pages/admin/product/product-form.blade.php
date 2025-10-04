@@ -108,7 +108,7 @@
                 @enderror
             </div>
 
-            <!-- Upload Gambar -->
+           <!-- Upload Gambar -->
             <div class="col-md-12">
                 <label for="image" class="form-label">Gambar Produk <span class="text-danger">*</span></label>
                 <div class="row align-items-center">
@@ -117,26 +117,24 @@
                         <input type="file" id="image" wire:model="image"
                             class="form-control @error('image') is-invalid @enderror">
                         @error('image')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <!-- Preview (kanan) -->
                     <div class="col-md-6 d-flex justify-content-center">
-                        @if ($image && !$errors->has('image'))
-                        @if (is_string($image))
-                        {{-- Jika edit & image dari DB --}}
-                        <img src="{{ asset('storage/' . $image) }}"
-                            alt="Preview"
-                            class="img-fluid rounded shadow-sm border"
-                            style="max-width: 500px; max-height: 500px; object-fit: cover;">
-                        @else
-                        {{-- Jika upload baru --}}
-                        <img src="{{ $image->temporaryUrl() }}"
-                            alt="Preview"
-                            class="img-fluid rounded shadow-sm border"
-                            style="max-width: 500px; max-height: 500px; object-fit: cover;">
-                        @endif
+                        @if ($image)
+                            {{-- Jika upload baru --}}
+                            <img src="{{ $image->temporaryUrl() }}"
+                                alt="Preview"
+                                class="img-fluid rounded shadow-sm border"
+                                style="max-height: 200px; object-fit: cover;">
+                        @elseif (!empty($existingImage))
+                            {{-- Jika edit & masih pakai gambar lama dari DB --}}
+                            <img src="{{ asset('storage/img/Product/' . $existingImage) }}"
+                                alt="Preview"
+                                class="img-fluid rounded shadow-sm border"
+                                style="max-height: 200px; object-fit: cover;">
                         @endif
                     </div>
                 </div>

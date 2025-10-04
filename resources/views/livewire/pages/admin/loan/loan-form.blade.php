@@ -130,16 +130,10 @@
                 </div>
 
                 <!-- Buttons -->
-                <div class="d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-send me-1"></i>
-                        <span wire:loading.remove>
-                            {{ $isEdit ? 'Simpan Perubahan' : 'Simpan Data' }}
-                        </span>
-                        <span wire:loading>
-                            <span class="spinner-border spinner-border-sm" role="status"></span>
-                            Menyimpan...
-                        </span>
+                        {{ $this->mode === 'create' ? 'Tambah peminjaman' : 'Simpan Perubahan' }}
                     </button>
                 </div>
             </form>

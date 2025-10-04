@@ -2,12 +2,13 @@
 
 namespace App\Livewire\Pages\Admin\Loan;
 
-use Livewire\Component;
-use Livewire\Attributes\Layout;
-use Livewire\WithPagination;
-use Livewire\Attributes\On;
-use App\Models\User;
 use App\Models\Loan;
+use App\Models\User;
+use Livewire\Component;
+use Livewire\Attributes\On;
+use Livewire\WithPagination;
+use Livewire\Attributes\Layout;
+use Illuminate\Support\Facades\DB;
 
 class LoanList extends Component
 {
@@ -84,12 +85,23 @@ class LoanList extends Component
 
         // Search
         if (!empty($this->search)) {
-            $query->where(function ($q) {
+            $searchDate = null;
+            if (strtotime($this->search)) {
+                $searchDate = date('Y-m-d', strtotime(str_replace('/', '-', $this->search)));
+            }
+
+            $query->where(function ($q) use ($searchDate) {
                 $q->where('nama_peminjam', 'like', '%' . $this->search . '%')
                     ->orWhere('deskripsi', 'like', '%' . $this->search . '%')
+                    ->orWhere('nominal', 'like', '%' . $this->search . '%')
+                    ->orWhere('status', 'like', '%' . $this->search . '%')
                     ->orWhereHas('penginput', function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%');
                     });
+
+                if ($searchDate) {
+                    $q->orWhereDate('tanggal_peminjam', $searchDate);
+                }
             });
         }
 
@@ -107,9 +119,14 @@ class LoanList extends Component
         $loans = $query->orderBy('tanggal_peminjam', 'desc')
             ->paginate($this->perPage);
 
+        // query total pinjaman per peminjam
+        $totalLoans = Loan::select('nama_peminjam', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_peminjam')
+            ->get();
+
         $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = [Loan::STATUS_PENDING, Loan::STATUS_BERJALAN, Loan::STATUS_LUNAS];
 
-        return view('livewire.pages.admin.loan.loan-list', compact('loans', 'users', 'statusOptions'));
+        return view('livewire.pages.admin.loan.loan-list', compact('loans', 'users', 'statusOptions', 'totalLoans'));
     }
 }
