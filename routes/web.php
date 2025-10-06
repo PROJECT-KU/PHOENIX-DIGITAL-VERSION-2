@@ -46,6 +46,10 @@ use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
 
+// Data Pemesanan RSC
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
@@ -107,6 +111,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
     Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->name('admin.gajikaryawan.create');
     Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->name('admin.gajikaryawan.edit');
+
+    // Data Pemesanan RSC
+    Route::get('/admin/PemesananRSC', PemesananrscList::class)->name('admin.pemesananrsc.index');
+    Route::get('/admin/PemesananRSC/create', PemesananrscCreate::class)->name('admin.pemesananrsc.create');
+    Route::get('/admin/PemesananRSC/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pemesananrsc.edit');
 });
 
 require __DIR__ . '/auth.php';

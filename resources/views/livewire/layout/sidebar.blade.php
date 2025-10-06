@@ -37,6 +37,23 @@ new class extends Component {
                     </a>
                 </li>
 
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.pemesananrsc.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)"
+                        class="sidebar-link {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-cart {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}">
+                            Pemesanan
+                        </span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.pemesananrsc.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.pemesananrsc.index') }}" class="submenu-link">
+                                Pemesanan RSC
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
                         class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
