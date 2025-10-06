@@ -23,7 +23,7 @@ class Spending extends Model
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
-        'nominal' => 'decimal:2',
+        'nominal' => 'decimal:0',
     ];
     const STATUS_PENDING = 'pending';
     const STATUS_COMPLETED = 'completed';

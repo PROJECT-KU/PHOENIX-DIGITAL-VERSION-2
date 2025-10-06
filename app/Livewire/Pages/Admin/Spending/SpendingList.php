@@ -84,9 +84,15 @@ class SpendingList extends Component
             $spending = Spending::findOrFail($id);
             $spending->delete();
 
-            $this->dispatch('success-delete-pengeluaran');
+            $this->dispatch('show-alert', [
+                'type' => 'success',
+                'message' => 'Berhasil menghapus data pengeluaran'
+            ]);
         } catch (\Exception $e) {
-            $this->dispatch('failed-delete-pengeluaran');
+            $this->dispatch('show-alert', [
+                'type' => 'error',
+                'message' => 'Gagal menghapus data pengeluaran'
+            ]);
         }
     }
 

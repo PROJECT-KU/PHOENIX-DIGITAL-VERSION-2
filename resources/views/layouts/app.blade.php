@@ -61,6 +61,71 @@
                     });
                 @endif
             });
+            document.addEventListener('show-alert', function(event) {
+                const detail = event.detail[0] || event.detail;
+
+                Swal.fire({
+                    icon: detail.type,
+                    title: detail.type === 'success' ? 'Berhasil!' : 'Gagal!',
+                    text: detail.message,
+                    timer: detail.type === 'success' ? 2000 : null,
+                    showConfirmButton: detail.type !== 'success'
+                });
+            });
+            document.addEventListener('alpine:init', () => {
+                Alpine.directive('currency', (el, {}, {
+                    cleanup
+                }) => {
+                    const formatRupiah = (value) => {
+                        if (!value) return '';
+                        let number = value.toString().replace(/[^0-9]/g, '');
+                        if (!number) return '';
+                        return 'Rp ' + parseInt(number).toLocaleString('id-ID');
+                    };
+
+                    const parseRupiah = (value) => {
+                        return value.replace(/[^0-9]/g, '');
+                    };
+
+                    let isFormatting = false;
+
+                    const handleInput = (e) => {
+                        if (isFormatting) return;
+
+                        isFormatting = true;
+                        const rawValue = parseRupiah(e.target.value);
+                        e.target.value = formatRupiah(rawValue);
+                        isFormatting = false;
+                    };
+
+                    // Format initial value hanya sekali
+                    const initializeValue = () => {
+                        if (el.value && !el.dataset.formatted) {
+                            // Hanya format jika belum ada prefix "Rp"
+                            if (!el.value.toString().startsWith('Rp')) {
+                                el.value = formatRupiah(el.value);
+                            }
+                            el.dataset.formatted = 'true';
+                        }
+                    };
+
+                    // Tunggu Livewire selesai render
+                    if (window.Livewire) {
+                        Livewire.hook('morph.updated', () => {
+                            initializeValue();
+                        });
+                    }
+
+                    // Untuk initial load
+                    setTimeout(initializeValue, 50);
+
+                    el.addEventListener('input', handleInput);
+
+                    cleanup(() => {
+                        el.removeEventListener('input', handleInput);
+                    });
+                });
+            });
         </script>
     @endpush
     <!--================== END ==================-->
