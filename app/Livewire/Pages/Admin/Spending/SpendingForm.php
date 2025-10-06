@@ -18,6 +18,11 @@ class SpendingForm extends Component
 
     public $isEdit = false;
 
+    public function updatedNominal($value)
+    {
+        $this->nominal = (int) preg_replace('/[^0-9]/', '', $value);
+    }
+
     protected function rules()
     {
         return [
@@ -88,8 +93,7 @@ class SpendingForm extends Component
                     'penginput_id' => auth()->id(),
                     'pic_pembeli_id' => $this->pic_pembeli_id,
                 ]);
-
-                $this->dispatch('success-edit-pengeluaran');
+                session()->flash('success', 'berhasil edit data pengeluaran');
             } else {
                 Spending::create([
                     'tanggal_transaksi' => $this->tanggal_transaksi,
@@ -101,9 +105,8 @@ class SpendingForm extends Component
                     'pic_pembeli_id' => $this->pic_pembeli_id,
                 ]);
 
-                $this->dispatch('success-add-pengeluaran');
+                session()->flash('success', 'berhasil tambah data pengeluaran');
             }
-
             return redirect()->route('admin.spending.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan saat menyimpan data.');
