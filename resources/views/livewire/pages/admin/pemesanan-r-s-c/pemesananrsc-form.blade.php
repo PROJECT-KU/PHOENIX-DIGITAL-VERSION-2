@@ -15,10 +15,10 @@
                             Nama Kategori <span class="text-danger">*</span>
                         </label>
                         <input type="text" wire:model="nama_camp"
-                            class="form-control @error('nama_camp') is-invalid @enderror"
-                            id="nama_camp" placeholder="contoh: Scopus Camp">
+                            class="form-control @error('nama_camp') is-invalid @enderror" id="nama_camp"
+                            placeholder="contoh: Scopus Camp">
                         @error('nama_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -30,10 +30,10 @@
                         <div class="input-group">
                             <span class="input-group-text">#</span>
                             <input type="number" wire:model="batch_camp"
-                                class="form-control @error('batch_camp') is-invalid @enderror"
-                                id="batch_camp" placeholder="contoh: 3">
+                                class="form-control @error('batch_camp') is-invalid @enderror" id="batch_camp"
+                                placeholder="contoh: 3">
                             @error('batch_camp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                             class="form-control @error('tanggal_mulai_camp') is-invalid @enderror"
                             id="tanggal_mulai_camp">
                         @error('tanggal_mulai_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -60,7 +60,7 @@
                             class="form-control @error('tanggal_akhir_camp') is-invalid @enderror"
                             id="tanggal_akhir_camp">
                         @error('tanggal_akhir_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -82,10 +82,10 @@
                             Nama Pembeli <span class="text-danger">*</span>
                         </label>
                         <input type="text" wire:model="nama_pembeli"
-                            class="form-control @error('nama_pembeli') is-invalid @enderror"
-                            id="nama_pembeli" placeholder="contoh: Budi Santoso">
+                            class="form-control @error('nama_pembeli') is-invalid @enderror" id="nama_pembeli"
+                            placeholder="contoh: Budi Santoso">
                         @error('nama_pembeli')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -95,10 +95,10 @@
                             Nomor Telepon <span class="text-danger">*</span>
                         </label>
                         <input type="text" wire:model="telp_pembeli"
-                            class="form-control @error('telp_pembeli') is-invalid @enderror"
-                            id="telp_pembeli" placeholder="awali dengan +62">
+                            class="form-control @error('telp_pembeli') is-invalid @enderror" id="telp_pembeli"
+                            placeholder="awali dengan +62">
                         @error('telp_pembeli')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -113,7 +113,7 @@
                                 placeholder="Masukkan jumlah dalam bulan">
                             <span class="input-group-text">Bulan</span>
                             @error('jumlah_pemesanan')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -126,7 +126,7 @@
                         <input type="date" id="tanggal_pemesanan" name="tanggal_pemesanan"
                             class="form-control @error('tanggal_pemesanan') is-invalid @enderror">
                         @error('tanggal_pemesanan')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -136,10 +136,9 @@
                             Tanggal Berakhir
                         </label>
                         <input type="date" id="tanggal_berakhir" name="tanggal_berakhir"
-                            class="form-control @error('tanggal_berakhir') is-invalid @enderror"
-                            readonly>
+                            class="form-control @error('tanggal_berakhir') is-invalid @enderror" readonly>
                         @error('tanggal_berakhir')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -168,10 +167,10 @@
                     <!-- Nama akun -->
                     <div class="mb-3">
                         <label for="akun" class="form-label">Pilih Akun</label>
-                        <select wire:model="akun" id="akun" class="form-control">
+                        <select wire:model.live="akun" id="akun" class="form-control">
                             <option value="">-- Pilih Akun --</option>
                             @foreach ($akuns as $item)
-                            <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
+                                <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
                             @endforeach
                         </select>
                     </div>
