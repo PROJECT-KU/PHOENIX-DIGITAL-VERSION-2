@@ -5,11 +5,16 @@ namespace App\Livewire\Pages\Admin\PemesananRSC;
 use App\Models\PemesananRsc;
 use App\Models\User;
 use App\Models\DataAkun;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
+use Livewire\WithPagination;
 
 class PemesananrscForm extends Component
 {
+    use WithPagination;
+
     public ?PemesananRsc $pemesananrsc = null;
     public $id_transaksi;
     public $nama_camp;
@@ -64,6 +69,32 @@ class PemesananrscForm extends Component
             $this->mode = 'create';
             $this->tanggal_pemesanan = now()->format('Y-m-d');
         }
+        $this->hitungTanggalBerakhir();
+    }
+
+    public function hitungTanggalBerakhir()
+    {
+        if ($this->jumlah_pemesanan && $this->tanggal_pemesanan) {
+            try {
+                $tanggal = Carbon::parse($this->tanggal_pemesanan);
+                $this->tanggal_berakhir = $tanggal
+                    ->addMonths((int) $this->jumlah_pemesanan)
+                    ->format('Y-m-d');
+            } catch (\Exception $e) {
+                $this->tanggal_berakhir = null;
+            }
+        } else {
+            $this->tanggal_berakhir = null;
+        }
+    }
+
+    #[Computed]
+    public function total()
+    {
+        $jumlah = (int) $this->jumlah_pemesanan;
+        $harga = $this->toNumber($this->harga_satuan);
+
+        return $jumlah * $harga;
     }
 
     private function formatRupiah($angka)
@@ -82,42 +113,22 @@ class PemesananrscForm extends Component
     public function save()
     {
 
-        // $this->validate([
-        //     'nama_camp'            => 'required',
-        //     'batch_camp'           => 'required|numeric',
-        //     'tanggal_mulai_camp'   => 'required|date',
-        //     'tanggal_akhir_camp'   => 'required|date|after_or_equal:tanggal_mulai_camp',
-        //     'nama_pembeli'         => 'required',
-        //     'telp_pembeli'         => 'required',
-        //     'tanggal_pemesanan'    => 'required|date',
-        //     'jumlah_pemesanan'     => 'required|numeric|min:0',
-        //     'harga_satuan'         => 'required|numeric|min:0',
-        //     'akun'                 => 'required',
-        //     'pic'                  => 'required',
-        //     'status'               => 'required|in:habis,pengganti,perpanjang,baru',
-        // ], $this->messages());
+        $this->validate([
+            'nama_camp'            => 'required',
+            'batch_camp'           => 'required|numeric',
+            'tanggal_mulai_camp'   => 'required|date',
+            'tanggal_akhir_camp'   => 'required|date|after_or_equal:tanggal_mulai_camp',
+            'nama_pembeli'         => 'required',
+            'telp_pembeli'         => 'required',
+            'tanggal_pemesanan'    => 'required|date',
+            'jumlah_pemesanan'     => 'required|numeric|min:0',
+            'harga_satuan'         => 'required|numeric|min:0',
+            'akun'                 => 'required',
+            'pic'                  => 'required',
+            'status'               => 'required|in:habis,pengganti,perpanjang,baru',
+        ], $this->messages());
 
-        dd([
-            'id_transaksi'          => Str::upper(Str::random(5)),
-            'nama_camp'             => $this->nama_camp,
-            'batch_camp'            => $this->batch_camp,
-            'tanggal_mulai_camp'    => $this->tanggal_mulai_camp,
-            'tanggal_akhir_camp'    => $this->tanggal_akhir_camp,
-            'nama_pembeli'          => $this->nama_pembeli,
-            'telp_pembeli'          => $this->telp_pembeli,
-            'jumlah_pemesanan'      => $this->jumlah_pemesanan,
-            'tanggal_pemesanan'     => $this->tanggal_pemesanan,
-            'tanggal_berakhir'      => $this->tanggal_berakhir,
-            'harga_satuan'          => $this->toNumber($this->harga_satuan),
-            'total'                 => $this->toNumber($this->total),
-            'akun'                  => $this->akun,
-            'username'              => $this->username,
-            'password'              => $this->password,
-            'link_akses'            => $this->link_akses,
-            'pic'                   => $this->pic,
-            'deskripsi'             => $this->deskripsi,
-            'status'                => $this->status,
-        ]);
+        $this->hitungTanggalBerakhir();
 
         if ($this->mode === 'create') {
             $this->createpemesananrsc();
@@ -177,7 +188,7 @@ class PemesananrscForm extends Component
                 'tanggal_pemesanan'     => $this->tanggal_pemesanan,
                 'tanggal_berakhir'      => $this->tanggal_berakhir,
                 'harga_satuan'          => $this->toNumber($this->harga_satuan),
-                'total'                 => $this->toNumber($this->total),
+                'total'                 => $this->total(),
                 'akun'                  => $this->akun,
                 'username'              => $this->username,
                 'password'              => $this->password,
@@ -209,7 +220,7 @@ class PemesananrscForm extends Component
                 'tanggal_pemesanan'     => $this->tanggal_pemesanan,
                 'tanggal_berakhir'      => $this->tanggal_berakhir,
                 'harga_satuan'          => $this->toNumber($this->harga_satuan),
-                'total'                 => $this->total,
+                'total'                 => $this->total(),
                 'akun'                  => $this->akun,
                 'username'              => $this->username,
                 'password'              => $this->password,
@@ -242,6 +253,9 @@ class PemesananrscForm extends Component
                 $this->link_akses = '';
                 $this->harga_satuan = '';
             }
+        }
+        if (in_array($propertyName, ['jumlah_pemesanan', 'tanggal_pemesanan'])) {
+            $this->hitungTanggalBerakhir();
         }
     }
 
