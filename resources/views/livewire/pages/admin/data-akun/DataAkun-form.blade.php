@@ -45,8 +45,19 @@
                 @enderror
             </div>
 
+            <!-- harga satuan -->
+            <div class="col-md-4">
+                <label for="harga_satuan" class="form-label">Harga Satuan <span class="text-danger">*</span></label>
+                <input type="text" id="harga_satuan" wire:model.defer="harga_satuan"
+                    class="form-control @error('harga_satuan') is-invalid @enderror rupiah"
+                    placeholder="Masukkan username">
+                @error('harga_satuan')
+                <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
             <!-- PJ Akun -->
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label for="pjAkun" class="form-label">PJ Akun <span class="text-danger">*</span></label>
                 <select id="pjAkun"
                     wire:model.defer="pj_akun"
@@ -64,7 +75,7 @@
 
 
             <!-- Status -->
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
                 <select id="status" wire:model.defer="status"
                     class="form-select @error('status') is-invalid @enderror">
@@ -98,5 +109,27 @@
             </button>
         </div>
     </form>
-
 </div>
+
+<!--================== FORMAT RUPIAH ==================-->
+@push('scripts')
+<script>
+    document.querySelectorAll('.rupiah').forEach(function(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^,\d]/g, "");
+            let numberString = value.toString();
+            let sisa = numberString.length % 3;
+            let rupiah = numberString.substr(0, sisa);
+            let ribuan = numberString.substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            e.target.value = rupiah ? 'Rp ' + rupiah : '';
+        });
+    });
+</script>
+@endpush
+<!--================== END ==================-->
