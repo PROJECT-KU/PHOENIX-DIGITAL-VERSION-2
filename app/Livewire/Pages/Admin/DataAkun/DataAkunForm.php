@@ -14,6 +14,7 @@ class DataAkunForm extends Component
     public $password_akun = '';
     public $link_login_akun = '';
     public $pj_akun = '';
+    public $harga_satuan = '';
     public $deskripsi = '';
     public $status = '';
 
@@ -28,6 +29,7 @@ class DataAkunForm extends Component
             $this->password_akun = $this->dataAkun->password_akun;
             $this->link_login_akun = $this->dataAkun->link_login_akun;
             $this->pj_akun = $this->dataAkun->pj_akun;
+            $this->harga_satuan = $this->dataAkun->harga_satuan;
             $this->deskripsi = $this->dataAkun->deskripsi;
             $this->status = $dataAkun->status;
             $this->mode = 'edit';
@@ -42,6 +44,7 @@ class DataAkunForm extends Component
             'password_akun'  => 'required|min:6',
             'link_login_akun' => 'required|nullable|url',
             'pj_akun'        => 'required',
+            'harga_satuan'        => 'required',
             'deskripsi'      => 'nullable|string',
             'status'          => 'required|in:active,non-active',
         ]);
@@ -60,6 +63,7 @@ class DataAkunForm extends Component
                 'password_akun'  => $this->password_akun,
                 'link_login_akun' => $this->link_login_akun,
                 'pj_akun'        => $this->pj_akun,
+                'harga_satuan'        => $this->harga_satuan,
                 'deskripsi'      => $this->deskripsi,
                 'status'          => $this->status,
             ]);
@@ -83,6 +87,7 @@ class DataAkunForm extends Component
                 'password_akun'  => $this->password_akun,
                 'link_login_akun' => $this->link_login_akun,
                 'pj_akun'        => $this->pj_akun,
+                'harga_satuan'        => $this->harga_satuan,
                 'deskripsi'      => $this->deskripsi,
                 'status'          => $this->status,
             ]);
@@ -104,6 +109,7 @@ class DataAkunForm extends Component
         $this->password_akun  = '';
         $this->link_login_akun = '';
         $this->pj_akun        = '';
+        $this->harga_satuan        = '';
         $this->deskripsi      = '';
         $this->status        = '';
     }

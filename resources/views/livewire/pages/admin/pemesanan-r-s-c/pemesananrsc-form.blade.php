@@ -16,9 +16,9 @@
                         </label>
                         <input type="text" wire:model="nama_camp"
                             class="form-control @error('nama_camp') is-invalid @enderror" id="nama_camp"
-                            placeholder="contoh: Scopus Camp">
+                            placeholder="contoh: Scopus Camp Yogyakarta">
                         @error('nama_camp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -33,7 +33,7 @@
                                 class="form-control @error('batch_camp') is-invalid @enderror" id="batch_camp"
                                 placeholder="contoh: 3">
                             @error('batch_camp')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                             class="form-control @error('tanggal_mulai_camp') is-invalid @enderror"
                             id="tanggal_mulai_camp">
                         @error('tanggal_mulai_camp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -60,13 +60,61 @@
                             class="form-control @error('tanggal_akhir_camp') is-invalid @enderror"
                             id="tanggal_akhir_camp">
                         @error('tanggal_akhir_camp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
             </div>
         </div>
         <!--================== End Data kategori ==================-->
+
+        <!--================== Data akun ==================-->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="mb-4 fw-bold">
+                    <i class="bi bi-person-badge me-2 text-success"></i> Data Akun
+                </h5>
+
+                <div class="row">
+                    <!-- Nama akun -->
+                    <div class="mb-3">
+                        <label for="akun" class="form-label">Pilih Akun <span class="text-danger">*</span></label>
+                        <select wire:model.live="akun" id="akun" class="form-control">
+                            <option value="">-- Pilih Akun --</option>
+                            @foreach ($akuns as $item)
+                            <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- username akun -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" wire:model="username" class="form-control" readonly>
+                    </div>
+
+                    <!-- password akun -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="text" wire:model="password" class="form-control" readonly>
+                    </div>
+
+                    <!-- link akses -->
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Link Akses</label>
+                        <input type="text" wire:model="link_akses" class="form-control" readonly>
+                    </div>
+
+                    <!-- harga satuan -->
+                    <div class="col-md-6 mb-3">
+                        <label for="harga_satuan" class="form-label">Harga Satuan</label>
+                        <input type="text" wire:model="harga_satuan" id="harga_satuan" class="form-control" readonly>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!--================== end Data akun ==================-->
 
         <!--================== Data pembeli ==================-->
         <div class="card mb-4">
@@ -85,7 +133,7 @@
                             class="form-control @error('nama_pembeli') is-invalid @enderror" id="nama_pembeli"
                             placeholder="contoh: Budi Santoso">
                         @error('nama_pembeli')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -98,7 +146,7 @@
                             class="form-control @error('telp_pembeli') is-invalid @enderror" id="telp_pembeli"
                             placeholder="awali dengan +62">
                         @error('telp_pembeli')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -108,12 +156,12 @@
                             Jumlah Pesanan <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <input type="number" id="jumlah_pemesanan" name="jumlah_pemesanan"
+                            <input type="number" id="jumlah_pemesanan" name="jumlah_pemesanan" wire:model="jumlah_pemesanan"
                                 class="form-control @error('jumlah_pemesanan') is-invalid @enderror"
                                 placeholder="Masukkan jumlah dalam bulan">
                             <span class="input-group-text">Bulan</span>
                             @error('jumlah_pemesanan')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -123,10 +171,10 @@
                         <label for="tanggal_pemesanan" class="form-label">
                             Tanggal Pemesanan <span class="text-danger">*</span>
                         </label>
-                        <input type="date" id="tanggal_pemesanan" name="tanggal_pemesanan"
+                        <input type="date" id="tanggal_pemesanan" name="tanggal_pemesanan" wire:model="tanggal_pemesanan"
                             class="form-control @error('tanggal_pemesanan') is-invalid @enderror">
                         @error('tanggal_pemesanan')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -135,10 +183,10 @@
                         <label for="tanggal_berakhir" class="form-label">
                             Tanggal Berakhir
                         </label>
-                        <input type="date" id="tanggal_berakhir" name="tanggal_berakhir"
+                        <input type="date" id="tanggal_berakhir" name="tanggal_berakhir" wire:model="tanggal_berakhir"
                             class="form-control @error('tanggal_berakhir') is-invalid @enderror" readonly>
                         @error('tanggal_berakhir')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -147,67 +195,59 @@
         </div>
         <!--================== end Data pembeli ==================-->
 
-        <!--================== Data akun ==================-->
+        <!--================== Data lainnya ==================-->
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="mb-4 fw-bold">
-                    <i class="bi bi-person-badge me-2 text-success"></i> Data Akun
+                    <i class="bi bi-person-vcard me-2 text-success"></i> Data Lainnya
                 </h5>
 
-                <div class="alert alert-info mt-3">
-                    <strong>Debug:</strong><br>
-                    Akun dipilih: {{ $akun ?? 'kosong' }}<br>
-                    Username: {{ $username ?? 'kosong' }}<br>
-                    Password: {{ $password ?? 'kosong' }}<br>
-                    Link: {{ $link_akses ?? 'kosong' }}
-                </div>
-
-
                 <div class="row">
-                    <!-- Nama akun -->
-                    <div class="mb-3">
-                        <label for="akun" class="form-label">Pilih Akun</label>
-                        <select wire:model.live="akun" id="akun" class="form-control">
-                            <option value="">-- Pilih Akun --</option>
-                            @foreach ($akuns as $item)
-                                <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
+                    <!-- Total -->
+                    <div class="col-md-12 mb-3">
+                        <label for="total" class="form-label">Total</label>
+                        <input type="text" id="total" wire:model="total" class="form-control" readonly>
+                    </div>
+
+                    <!-- PIC -->
+                    <div class="col-md-6 mb-3">
+                        <label for="pic" class="form-label">Pilih PIC</label>
+                        <select wire:model="pic" id="pic" class="form-control">
+                            <option value="">-- Pilih PIC --</option>
+                            @foreach ($users as $item)
+                            <option value="{{ $item->id }}">{{ $item->name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <!-- username akun -->
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" wire:model="username" class="form-control" readonly>
-                    </div>
 
-                    <!-- password akun -->
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Password</label>
-                        <input type="text" wire:model="password" class="form-control" readonly>
-                    </div>
-
-                    <!-- link akses -->
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Link Akses</label>
-                        <input type="text" wire:model="link_akses" class="form-control" readonly>
-                    </div>
-
-                    <!-- harga satuan -->
+                    <!-- Status -->
                     <div class="col-md-6 mb-3">
-                        <label for="harga_satuan" class="form-label">Harga Satuan</label>
-                        <input type="text" id="harga_satuan" class="form-control" readonly>
+                        <label for="status" class="form-label">Pilih Status</label>
+                        <select wire:model="status" id="status" class="form-control">
+                            <option value="">-- Pilih Status --</option>
+                            <option value="habis">Habis</option>
+                            <option value="pengganti">Pengganti</option>
+                            <option value="perpanjang">Perpanjang</option>
+                            <option value="baru">Baru</option>
+                        </select>
                     </div>
 
-                    <!-- total -->
-                    <div class="col-md-6 mb-3">
-                        <label for="total" class="form-label">Total</label>
-                        <input type="text" id="total" class="form-control" readonly>
+                    <!-- Deskripsi -->
+                    <div class="col-12">
+                        <label for="deskripsi" class="form-label">Deskripsi</label>
+                        <textarea id="deskripsi" wire:model="deskripsi" rows="3"
+                            class="form-control @error('deskripsi') is-invalid @enderror"
+                            placeholder="Masukkan deskripsi produk"></textarea>
+                        @error('deskripsi')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                     </div>
+
                 </div>
             </div>
         </div>
-        <!--================== end Data akun ==================-->
+        <!--================== end Data lainnya ==================-->
 
         <div class="text-end">
             <button type="submit" class="btn btn-primary px-4">
@@ -223,8 +263,9 @@
         const jumlahInput = document.getElementById('jumlah_pemesanan');
         const tanggalMulaiInput = document.getElementById('tanggal_pemesanan');
         const tanggalBerakhirInput = document.getElementById('tanggal_berakhir');
+        const hargaInput = document.getElementById('harga_satuan');
+        const totalInput = document.getElementById('total');
 
-        // Fungsi untuk menghitung tanggal berakhir
         function hitungTanggalBerakhir() {
             const jumlah = parseInt(jumlahInput.value);
             const tanggalMulai = tanggalMulaiInput.value;
@@ -233,25 +274,65 @@
                 let startDate = new Date(tanggalMulai);
                 startDate.setMonth(startDate.getMonth() + jumlah);
 
-                // Format ke yyyy-mm-dd
                 const year = startDate.getFullYear();
                 const month = String(startDate.getMonth() + 1).padStart(2, '0');
                 const day = String(startDate.getDate()).padStart(2, '0');
-                const formatted = `${year}-${month}-${day}`;
-
-                tanggalBerakhirInput.value = formatted;
+                tanggalBerakhirInput.value = `${year}-${month}-${day}`;
             } else {
                 tanggalBerakhirInput.value = '';
             }
         }
 
-        // Jalankan otomatis setiap kali input berubah
-        jumlahInput.addEventListener('input', hitungTanggalBerakhir);
-        tanggalMulaiInput.addEventListener('change', hitungTanggalBerakhir);
+        function hitungTotal() {
+            const jumlah = parseInt(jumlahInput.value);
+            const harga = parseInt((hargaInput.value || '').replace(/\D/g, ''));
 
-        // Set default tanggal_pemesanan ke hari ini
+            if (!isNaN(jumlah) && !isNaN(harga)) {
+                const total = jumlah * harga;
+
+                totalInput.value = total.toLocaleString('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
+            } else {
+                totalInput.value = '';
+            }
+        }
+
+        jumlahInput.addEventListener('input', () => {
+            hitungTanggalBerakhir();
+            hitungTotal();
+        });
+
+        tanggalMulaiInput.addEventListener('change', hitungTanggalBerakhir);
+        hargaInput.addEventListener('input', hitungTotal);
+
+        // Default tanggal hari ini
         const today = new Date().toISOString().split('T')[0];
         tanggalMulaiInput.value = today;
-        hitungTanggalBerakhir(); // langsung hitung saat load awal
+        hitungTanggalBerakhir();
+        hitungTotal();
+
+        // ⬇️ Perbaikan utama: trigger ulang setiap Livewire render ulang DOM
+        Livewire.hook('message.processed', (message, component) => {
+            const jumlahInput = document.getElementById('jumlah_pemesanan');
+            const hargaInput = document.getElementById('harga_satuan');
+            const totalInput = document.getElementById('total');
+
+            const jumlah = parseInt(jumlahInput.value);
+            const harga = parseInt((hargaInput.value || '').replace(/\D/g, ''));
+
+            if (!isNaN(jumlah) && !isNaN(harga)) {
+                const total = jumlah * harga;
+                totalInput.value = total.toLocaleString('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
+            }
+        });
     });
 </script>
