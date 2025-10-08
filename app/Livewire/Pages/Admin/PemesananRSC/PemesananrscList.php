@@ -94,7 +94,8 @@ class PemesananrscList extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        $query = PemesananRsc::with(['penginput', 'picPembeli']);
+        // $query = PemesananRsc::with(['penginput', 'picPembeli']);
+        $query = PemesananRsc::query();
 
         // Search filter
         if (!empty($this->search)) {
@@ -109,24 +110,25 @@ class PemesananrscList extends Component
             });
         }
 
-        if (!empty($this->statusFilter)) {
-            $query->byStatus($this->statusFilter);
-        }
-        if (!empty($this->startDate) && !empty($this->endDate)) {
-            $query->byDateRange($this->startDate, $this->endDate);
-        }
-        if (!empty($this->penginputFilter)) {
-            $query->byPenginput($this->penginputFilter);
-        }
-        if (!empty($this->picPembeliFilter)) {
-            $query->byPicPembeli($this->picPembeliFilter);
-        }
-        if (!empty($this->jenisPengeluaran)) {
-            $query->byJenisPengeluaran($this->jenisPengeluaran);
-        }
+        // if (!empty($this->statusFilter)) {
+        //     $query->byStatus($this->statusFilter);
+        // }
+        // if (!empty($this->startDate) && !empty($this->endDate)) {
+        //     $query->byDateRange($this->startDate, $this->endDate);
+        // }
+        // if (!empty($this->penginputFilter)) {
+        //     $query->byPenginput($this->penginputFilter);
+        // }
+        // if (!empty($this->picPembeliFilter)) {
+        //     $query->byPicPembeli($this->picPembeliFilter);
+        // }
+        // if (!empty($this->jenisPengeluaran)) {
+        //     $query->byJenisPengeluaran($this->jenisPengeluaran);
+        // }
 
-        $pemesananrsc = $query->orderBy('tanggal_transaksi', 'desc')
-            ->paginate($this->perPage);
+        // $pemesananrsc = $query->orderBy('tanggal_transaksi', 'desc')
+        //     ->paginate($this->perPage);
+        $pemesananrsc = $query->latest()->paginate($this->perPage);
 
         $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = ['pending', 'completed'];

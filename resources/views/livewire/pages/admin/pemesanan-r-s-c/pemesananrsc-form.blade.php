@@ -18,7 +18,7 @@
                             class="form-control @error('nama_camp') is-invalid @enderror" id="nama_camp"
                             placeholder="contoh: Scopus Camp Yogyakarta">
                         @error('nama_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -33,7 +33,7 @@
                                 class="form-control @error('batch_camp') is-invalid @enderror" id="batch_camp"
                                 placeholder="contoh: 3">
                             @error('batch_camp')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -47,7 +47,7 @@
                             class="form-control @error('tanggal_mulai_camp') is-invalid @enderror"
                             id="tanggal_mulai_camp">
                         @error('tanggal_mulai_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -60,7 +60,7 @@
                             class="form-control @error('tanggal_akhir_camp') is-invalid @enderror"
                             id="tanggal_akhir_camp">
                         @error('tanggal_akhir_camp')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -82,7 +82,7 @@
                         <select wire:model.live="akun" id="akun" class="form-control">
                             <option value="">-- Pilih Akun --</option>
                             @foreach ($akuns as $item)
-                            <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
+                                <option value="{{ $item->id }}">{{ $item->nama_akun }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -108,7 +108,8 @@
                     <!-- harga satuan -->
                     <div class="col-md-6 mb-3">
                         <label for="harga_satuan" class="form-label">Harga Satuan</label>
-                        <input type="text" wire:model="harga_satuan" id="harga_satuan" class="form-control" readonly>
+                        <input type="text" wire:model="harga_satuan" x-nominal x-currency id="harga_satuan"
+                            class="form-control" readonly>
                     </div>
 
                 </div>
@@ -133,7 +134,7 @@
                             class="form-control @error('nama_pembeli') is-invalid @enderror" id="nama_pembeli"
                             placeholder="contoh: Budi Santoso">
                         @error('nama_pembeli')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -146,7 +147,7 @@
                             class="form-control @error('telp_pembeli') is-invalid @enderror" id="telp_pembeli"
                             placeholder="awali dengan +62">
                         @error('telp_pembeli')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -156,12 +157,12 @@
                             Jumlah Pesanan <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <input type="number" id="jumlah_pemesanan" name="jumlah_pemesanan" wire:model="jumlah_pemesanan"
+                            <input type="number" id="jumlah_pemesanan" wire:model.live="jumlah_pemesanan"
                                 class="form-control @error('jumlah_pemesanan') is-invalid @enderror"
                                 placeholder="Masukkan jumlah dalam bulan">
                             <span class="input-group-text">Bulan</span>
                             @error('jumlah_pemesanan')
-                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
@@ -171,23 +172,20 @@
                         <label for="tanggal_pemesanan" class="form-label">
                             Tanggal Pemesanan <span class="text-danger">*</span>
                         </label>
-                        <input type="date" id="tanggal_pemesanan" name="tanggal_pemesanan" wire:model="tanggal_pemesanan"
+                        <input type="date" id="tanggal_pemesanan" wire:model.live="tanggal_pemesanan"
                             class="form-control @error('tanggal_pemesanan') is-invalid @enderror">
                         @error('tanggal_pemesanan')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Tanggal Berakhir -->
+                    <!-- Tanggal Berakhir (Auto calculated) -->
                     <div class="col-md-4 mb-3">
                         <label for="tanggal_berakhir" class="form-label">
                             Tanggal Berakhir
                         </label>
-                        <input type="date" id="tanggal_berakhir" name="tanggal_berakhir" wire:model="tanggal_berakhir"
-                            class="form-control @error('tanggal_berakhir') is-invalid @enderror" readonly>
-                        @error('tanggal_berakhir')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <input type="date" id="tanggal_berakhir" wire:model="tanggal_berakhir"
+                            class="form-control bg-light" readonly>
                     </div>
 
                 </div>
@@ -206,7 +204,11 @@
                     <!-- Total -->
                     <div class="col-md-12 mb-3">
                         <label for="total" class="form-label">Total</label>
-                        <input type="text" id="total" wire:model="total" class="form-control" readonly>
+                        {{-- <input type="text" id="total" wire:model="total" x-nominal x-currency
+                            class="form-control" readonly disabled> --}}
+                        <div class="form-control bg-light">
+                            Rp {{ number_format($this->total(), 0, ',', '.') }}
+                        </div>
                     </div>
 
                     <!-- PIC -->
@@ -215,7 +217,7 @@
                         <select wire:model="pic" id="pic" class="form-control">
                             <option value="">-- Pilih PIC --</option>
                             @foreach ($users as $item)
-                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -237,10 +239,9 @@
                     <div class="col-12">
                         <label for="deskripsi" class="form-label">Deskripsi</label>
                         <textarea id="deskripsi" wire:model="deskripsi" rows="3"
-                            class="form-control @error('deskripsi') is-invalid @enderror"
-                            placeholder="Masukkan deskripsi produk"></textarea>
+                            class="form-control @error('deskripsi') is-invalid @enderror" placeholder="Masukkan deskripsi produk"></textarea>
                         @error('deskripsi')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -257,82 +258,3 @@
         </div>
     </form>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const jumlahInput = document.getElementById('jumlah_pemesanan');
-        const tanggalMulaiInput = document.getElementById('tanggal_pemesanan');
-        const tanggalBerakhirInput = document.getElementById('tanggal_berakhir');
-        const hargaInput = document.getElementById('harga_satuan');
-        const totalInput = document.getElementById('total');
-
-        function hitungTanggalBerakhir() {
-            const jumlah = parseInt(jumlahInput.value);
-            const tanggalMulai = tanggalMulaiInput.value;
-
-            if (!isNaN(jumlah) && tanggalMulai) {
-                let startDate = new Date(tanggalMulai);
-                startDate.setMonth(startDate.getMonth() + jumlah);
-
-                const year = startDate.getFullYear();
-                const month = String(startDate.getMonth() + 1).padStart(2, '0');
-                const day = String(startDate.getDate()).padStart(2, '0');
-                tanggalBerakhirInput.value = `${year}-${month}-${day}`;
-            } else {
-                tanggalBerakhirInput.value = '';
-            }
-        }
-
-        function hitungTotal() {
-            const jumlah = parseInt(jumlahInput.value);
-            const harga = parseInt((hargaInput.value || '').replace(/\D/g, ''));
-
-            if (!isNaN(jumlah) && !isNaN(harga)) {
-                const total = jumlah * harga;
-
-                totalInput.value = total.toLocaleString('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                });
-            } else {
-                totalInput.value = '';
-            }
-        }
-
-        jumlahInput.addEventListener('input', () => {
-            hitungTanggalBerakhir();
-            hitungTotal();
-        });
-
-        tanggalMulaiInput.addEventListener('change', hitungTanggalBerakhir);
-        hargaInput.addEventListener('input', hitungTotal);
-
-        // Default tanggal hari ini
-        const today = new Date().toISOString().split('T')[0];
-        tanggalMulaiInput.value = today;
-        hitungTanggalBerakhir();
-        hitungTotal();
-
-        // ⬇️ Perbaikan utama: trigger ulang setiap Livewire render ulang DOM
-        Livewire.hook('message.processed', (message, component) => {
-            const jumlahInput = document.getElementById('jumlah_pemesanan');
-            const hargaInput = document.getElementById('harga_satuan');
-            const totalInput = document.getElementById('total');
-
-            const jumlah = parseInt(jumlahInput.value);
-            const harga = parseInt((hargaInput.value || '').replace(/\D/g, ''));
-
-            if (!isNaN(jumlah) && !isNaN(harga)) {
-                const total = jumlah * harga;
-                totalInput.value = total.toLocaleString('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                });
-            }
-        });
-    });
-</script>
