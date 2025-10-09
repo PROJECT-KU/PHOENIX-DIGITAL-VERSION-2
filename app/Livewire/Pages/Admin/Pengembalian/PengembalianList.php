@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Loan;
+namespace App\Livewire\Pages\Admin\Pengembalian;
 
-use App\Models\Loan;
-use App\Models\User;
+use App\Models\Pengembalian;
 use Livewire\Component;
+use App\Models\User;
 use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
 
-class LoanList extends Component
+class PengembalianList extends Component
 {
     use WithPagination;
 
@@ -30,7 +30,7 @@ class LoanList extends Component
         'page' => ['except' => 1],
     ];
 
-    // Reset pagination tiap kali filter berubah
+    // Reset pagination setiap kali filter berubah
     public function updatingSearch()
     {
         $this->resetPage();
@@ -65,23 +65,23 @@ class LoanList extends Component
     public function delete($id)
     {
         try {
-            $loan = Loan::findOrFail($id);
-            $loan->delete();
+            $pengembalian = Pengembalian::findOrFail($id);
+            $pengembalian->delete();
 
-            $this->dispatch('loan-deleted');
+            $this->dispatch('pengembalian-deleted');
         } catch (\Exception $e) {
-            $this->dispatch('delete-loan-error', message: 'Terjadi kesalahan saat menghapus loan!');
+            $this->dispatch('delete-pengembalian-error', message: 'Terjadi kesalahan saat menghapus pengembalian!');
         }
     }
 
     #[Layout('layouts.app')]
     public function render()
     {
-        $query = Loan::with('penginput')
-            ->select('loans.*')
+        $query = Pengembalian::with('penginput')
+            ->select('pengembalians.*')
             ->selectRaw('(SELECT SUM(nominal) 
-                        FROM loans l2 
-                        WHERE l2.nama_peminjam = loans.nama_peminjam) as total_borrower_loan');
+                        FROM pengembalians p2 
+                        WHERE p2.nama_pengembalian = pengembalians.nama_pengembalian) as total_borrower_loan');
 
         // Search
         if (!empty($this->search)) {
@@ -91,7 +91,7 @@ class LoanList extends Component
             }
 
             $query->where(function ($q) use ($searchDate) {
-                $q->where('nama_peminjam', 'like', '%' . $this->search . '%')
+                $q->where('nama_pengembalian', 'like', '%' . $this->search . '%')
                     ->orWhere('deskripsi', 'like', '%' . $this->search . '%')
                     ->orWhere('nominal', 'like', '%' . $this->search . '%')
                     ->orWhere('status', 'like', '%' . $this->search . '%')
@@ -100,7 +100,7 @@ class LoanList extends Component
                     });
 
                 if ($searchDate) {
-                    $q->orWhereDate('tanggal_peminjam', $searchDate);
+                    $q->orWhereDate('tanggal_pengembalian', $searchDate);
                 }
             });
         }
@@ -116,32 +116,17 @@ class LoanList extends Component
             $query->byPenginput($this->penginputFilter);
         }
 
-        $loans = $query->orderBy('tanggal_peminjam', 'desc')
+        $pengembalian = $query->orderBy('tanggal_pengembalian', 'desc')
             ->paginate($this->perPage);
 
-        // query total pinjaman per peminjam
-        // $totalLoans = Loan::select('nama_peminjam', DB::raw('SUM(nominal) as total'))
-        //     ->groupBy('nama_peminjam')
-        //     ->get();
-
-        // Gabungan total pinjaman - pengembalian
-        $totalLoans = DB::table('loans')
-            ->select('nama_peminjam',
-                DB::raw('SUM(loans.nominal) as total_pinjaman'),
-                DB::raw('(SELECT COALESCE(SUM(pengembalians.nominal), 0)
-                        FROM pengembalians
-                        WHERE pengembalians.nama_pengembalian = loans.nama_peminjam) as total_pengembalian'),
-                DB::raw('(SUM(loans.nominal) - 
-                        (SELECT COALESCE(SUM(pengembalians.nominal), 0)
-                        FROM pengembalians
-                        WHERE pengembalians.nama_pengembalian = loans.nama_peminjam)) as sisa_peminjaman')
-            )
-            ->groupBy('nama_peminjam')
+        // Total pengembalian per nama_pengembalian
+        $totalLoans = Pengembalian::select('nama_pengembalian', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_pengembalian')
             ->get();
 
         $users = User::select('id', 'name')->orderBy('name')->get();
-        $statusOptions = [Loan::STATUS_PENDING, Loan::STATUS_BERJALAN, Loan::STATUS_LUNAS];
+        $statusOptions = [Pengembalian::STATUS_PENDING, Pengembalian::STATUS_BERJALAN, Pengembalian::STATUS_LUNAS];
 
-        return view('livewire.pages.admin.loan.loan-list', compact('loans', 'users', 'statusOptions', 'totalLoans'));
+        return view('livewire.pages.admin.pengembalian.pengembalian-list', compact('pengembalian', 'users', 'statusOptions', 'totalLoans'));
     }
 }

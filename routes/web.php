@@ -46,6 +46,10 @@ use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
 
+// Data Pengembalian
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
@@ -107,6 +111,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
     Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->name('admin.gajikaryawan.create');
     Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->name('admin.gajikaryawan.edit');
+
+    // Data Pengembalian
+    Route::get('/admin/pengembalian', PengembalianList::class)->name('admin.pengembalian.index');
+    Route::get('/admin/pengembalian/create', PengembalianCreate::class)->name('admin.pengembalian.create');
+    Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->name('admin.pengembalian.edit');
 });
 
 require __DIR__ . '/auth.php';
