@@ -173,4 +173,92 @@ window.addEventListener('delete-loan-error', (e) => {
     });
 });
 
+// pengenbalian
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.delete-pengembalian-btn').forEach(button => {
+        button.addEventListener('click', function (event) {
+            event.preventDefault();
+            const pengembalianId = button.getAttribute('data-id');
+
+            Swal.fire({
+                title: 'Yakin hapus Loan?',
+                text: "Data pengembalian yang dihapus tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
+                    Livewire.find(livewireComponentId).call('delete', pengembalianId);
+                }
+            });
+        });
+    });
+
+    // Event sukses dari Livewire
+    window.addEventListener('pengembalian-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data pengembalian berhasil dihapus.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    });
+
+    // Event error dari Livewire
+    window.addEventListener('delete-pengembalian-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error'
+        });
+    });
+
+});
+
+document.addEventListener('click', function (event) {
+    const button = event.target.closest('.delete-pengembalian-btn');
+    if (!button) return; // bukan tombol hapus
+
+    event.preventDefault();
+    const pengembalianId = button.getAttribute('data-id');
+
+    Swal.fire({
+        title: 'Yakin hapus Loan?',
+        text: "Data pengembalian yang dihapus tidak bisa dikembalikan!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
+            Livewire.find(livewireComponentId).call('delete', pengembalianId);
+        }
+    });
+});
+
+// Event sukses
+window.addEventListener('pengembalian-deleted', () => {
+    Swal.fire({
+        title: 'Terhapus!',
+        text: 'Data pengembalian berhasil dihapus.',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
+    });
+});
+
+// Event gagal
+window.addEventListener('delete-pengembalian-error', (e) => {
+    Swal.fire({
+        title: 'Gagal!',
+        text: e.detail.message,
+        icon: 'error'
+    });
+});
+
 

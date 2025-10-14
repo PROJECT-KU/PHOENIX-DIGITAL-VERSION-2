@@ -19,8 +19,8 @@
             </a>
         </li>
         <li class="nav-item" role="presentation">
-            <a href=""
-            class="nav-link"
+            <a href="{{ route('admin.pengembalian.index') }}"
+            class="nav-link {{ request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}"
             id="total-loan-tab" role="tab" aria-controls="total-loan">
                 Pengembalian
             </a>
@@ -112,13 +112,21 @@
                             <tr>
                                 <th>Nama Peminjam</th>
                                 <th>Total Pinjaman</th>
+                                <th>Total Pengembalian</th>
+                                <th>Sisa Peminjaman</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($totalLoans as $item)
                                 <tr>
-                                    <td>{{ $item->nama_peminjam }}</td>
-                                    <td>Rp {{ number_format($item->total, 0, ',', '.') }}</td>
+                                     <td>{{ $item->nama_peminjam }}</td>
+                                    <td>Rp {{ number_format($item->total_pinjaman, 0, ',', '.') }}</td>
+                                    <td>Rp {{ number_format($item->total_pengembalian, 0, ',', '.') }}</td>
+                                    <td>
+                                        <strong class="{{ $item->sisa_peminjaman <= 0 ? 'text-success' : 'text-danger' }}">
+                                            Rp {{ number_format($item->sisa_peminjaman, 0, ',', '.') }}
+                                        </strong>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
