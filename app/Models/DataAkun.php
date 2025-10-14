@@ -16,6 +16,7 @@ class DataAkun extends Model
         'password_akun',
         'link_login_akun',
         'pj_akun',
+        'harga_satuan',
         'deskripsi',
         'status'
     ];

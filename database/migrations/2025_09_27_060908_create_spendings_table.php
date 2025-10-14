@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('spendings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->date('tanggal_transaksi');
-            $table->decimal('nominal', 15, 2);
+            $table->decimal('nominal', 15, 0);
             $table->text('deskripsi');
             $table->enum('status', ['pending', 'completed'])->default('pending');
             $table->enum('jenis_pengeluaran', ['pembelian_akun', 'lainnya'])->default('pembelian_akun');

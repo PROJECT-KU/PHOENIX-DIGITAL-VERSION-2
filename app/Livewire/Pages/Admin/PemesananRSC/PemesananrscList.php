@@ -1,15 +1,16 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Spending;
+namespace App\Livewire\Pages\Admin\PemesananRSC;
 
-use App\Models\Spending;
+use App\Models\PemesananRsc;
 use App\Models\User;
+use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class SpendingList extends Component
+class PemesananrscList extends Component
 {
     use WithPagination;
 
@@ -77,29 +78,24 @@ class SpendingList extends Component
         $this->resetPage();
     }
 
-    #[On('delete-spending-data')]
+    #[On('delete-pemesananrsc-data')]
     public function delete($id)
     {
         try {
-            $spending = Spending::findOrFail($id);
-            $spending->delete();
+            $pemesananrsc = PemesananRsc::findOrFail($id);
+            $pemesananrsc->delete();
 
-            $this->dispatch('show-alert', [
-                'type' => 'success',
-                'message' => 'Berhasil menghapus data pengeluaran'
-            ]);
+            $this->dispatch('success-delete-pemesanarsc');
         } catch (\Exception $e) {
-            $this->dispatch('show-alert', [
-                'type' => 'error',
-                'message' => 'Gagal menghapus data pengeluaran'
-            ]);
+            $this->dispatch('failed-delete-pemesanarsc');
         }
     }
 
     #[Layout('layouts.app')]
     public function render()
     {
-        $query = Spending::with(['penginput', 'picPembeli']);
+        // $query = PemesananRsc::with(['penginput', 'picPembeli']);
+        $query = PemesananRsc::query();
 
         // Search filter
         if (!empty($this->search)) {
@@ -114,29 +110,30 @@ class SpendingList extends Component
             });
         }
 
-        if (!empty($this->statusFilter)) {
-            $query->byStatus($this->statusFilter);
-        }
-        if (!empty($this->startDate) && !empty($this->endDate)) {
-            $query->byDateRange($this->startDate, $this->endDate);
-        }
-        if (!empty($this->penginputFilter)) {
-            $query->byPenginput($this->penginputFilter);
-        }
-        if (!empty($this->picPembeliFilter)) {
-            $query->byPicPembeli($this->picPembeliFilter);
-        }
-        if (!empty($this->jenisPengeluaran)) {
-            $query->byJenisPengeluaran($this->jenisPengeluaran);
-        }
+        // if (!empty($this->statusFilter)) {
+        //     $query->byStatus($this->statusFilter);
+        // }
+        // if (!empty($this->startDate) && !empty($this->endDate)) {
+        //     $query->byDateRange($this->startDate, $this->endDate);
+        // }
+        // if (!empty($this->penginputFilter)) {
+        //     $query->byPenginput($this->penginputFilter);
+        // }
+        // if (!empty($this->picPembeliFilter)) {
+        //     $query->byPicPembeli($this->picPembeliFilter);
+        // }
+        // if (!empty($this->jenisPengeluaran)) {
+        //     $query->byJenisPengeluaran($this->jenisPengeluaran);
+        // }
 
-        $spendings = $query->orderBy('tanggal_transaksi', 'desc')
-            ->paginate($this->perPage);
+        // $pemesananrsc = $query->orderBy('tanggal_transaksi', 'desc')
+        //     ->paginate($this->perPage);
+        $pemesananrsc = $query->latest()->paginate($this->perPage);
 
         $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = ['pending', 'completed'];
         $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
 
-        return view('livewire.pages.admin.spending.spending-list', compact('spendings', 'users', 'statusOptions', 'jenisPengeluaranOptions'));
+        return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-list', compact('pemesananrsc', 'users', 'statusOptions', 'jenisPengeluaranOptions'));
     }
 }

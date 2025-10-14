@@ -2,10 +2,10 @@
     <div class="card-body">
         <!-- Flash Messages -->
         @if (session()->has('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         @endif
 
         <form wire:submit="save" x-data="{ jenis_pengeluaran: @entangle('jenis_pengeluaran') }" x-cloak>
@@ -18,7 +18,7 @@
                     <input type="date" wire:model="tanggal_transaksi"
                         class="form-control @error('tanggal_transaksi') is-invalid @enderror" id="tanggal_transaksi">
                     @error('tanggal_transaksi')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
@@ -27,13 +27,12 @@
                     <label for="nominal" class="form-label">
                         Nominal <span class="text-danger">*</span>
                     </label>
-                    <div class="input-group">
-                        <span class="input-group-text">Rp</span>
-                        <input type="number" wire:model="nominal"
+                    <div class="input-group" wire:ignore>
+                        <input type="text" wire:model="nominal" x-data x-currency
                             class="form-control @error('nominal') is-invalid @enderror" id="nominal" step="0.01"
                             min="0" placeholder="0">
                         @error('nominal')
-                        <div class="invalid-feedback">{{ $message }}</div>
+                            <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -47,11 +46,11 @@
                         id="status">
                         <option value="">Pilih Status</option>
                         @foreach ($statusOptions as $option)
-                        <option value="{{ $option }}">{{ ucfirst($option) }}</option>
+                            <option value="{{ $option }}">{{ ucfirst($option) }}</option>
                         @endforeach
                     </select>
                     @error('status')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
@@ -64,13 +63,13 @@
                         class="form-select @error('jenis_pengeluaran') is-invalid @enderror" id="jenis_pengeluaran">
                         <option value="">Pilih Jenis Pengeluaran</option>
                         @foreach ($jenisPengeluaran as $jenis)
-                        <option value="{{ $jenis }}">
-                            {{ $jenis === 'pembelian_akun' ? 'Pembelian Akun' : 'Lainnya' }}
-                        </option>
+                            <option value="{{ $jenis }}">
+                                {{ $jenis === 'pembelian_akun' ? 'Pembelian Akun' : 'Lainnya' }}
+                            </option>
                         @endforeach
                     </select>
                     @error('jenis_pengeluaran')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -85,11 +84,11 @@
                         class="form-select @error('pic_pembeli_id') is-invalid @enderror" id="pic_pembeli_id">
                         <option value="">Pilih PIC Pembeli</option>
                         @foreach ($users as $user)
-                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
                         @endforeach
                     </select>
                     @error('pic_pembeli_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -102,7 +101,7 @@
                 <textarea wire:model="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" id="deskripsi"
                     rows="4" placeholder="Masukkan deskripsi pengeluaran..."></textarea>
                 @error('deskripsi')
-                <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
                 <div class="form-text">
                     <span class="text-muted">Maksimal 1000 karakter</span>

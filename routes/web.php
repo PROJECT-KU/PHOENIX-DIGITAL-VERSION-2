@@ -51,6 +51,11 @@ use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 
+// Data Pemesanan RSC
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
+
 Route::get('/', [HomepageController::class, 'index'])->name('home');
 Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
@@ -116,6 +121,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pengembalian', PengembalianList::class)->name('admin.pengembalian.index');
     Route::get('/admin/pengembalian/create', PengembalianCreate::class)->name('admin.pengembalian.create');
     Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->name('admin.pengembalian.edit');
+
+    // Data Pemesanan RSC
+    Route::get('/admin/PemesananRSC', PemesananrscList::class)->name('admin.pemesananrsc.index');
+    Route::get('/admin/PemesananRSC/create', PemesananrscCreate::class)->name('admin.pemesananrsc.create');
+    Route::get('/admin/PemesananRSC/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pemesananrsc.edit');
+
 });
 
 require __DIR__ . '/auth.php';

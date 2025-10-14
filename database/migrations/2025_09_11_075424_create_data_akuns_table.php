@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('password_akun');
             $table->string('link_login_akun')->nullable();
             $table->string('pj_akun')->nullable();
+            $table->string('harga_satuan')->nullable();
             $table->text('deskripsi')->nullable();
             $table->enum('status', ['active', 'non-active'])->nullable();
             $table->timestamps();

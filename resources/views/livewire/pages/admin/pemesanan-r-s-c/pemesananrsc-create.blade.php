@@ -1,0 +1,16 @@
+<div>
+    <div class="d-flex mb-2 align-items-center justify-content-between">
+        <h3>Tambah Data Pemesanan</h3>
+        @php
+        $breadcrumbs = [
+        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
+        ['name' => 'Data Pemesanan', 'url' => route('admin.pemesananrsc.index')],
+        ['name' => 'Tambah Data Pemesanan'],
+        ];
+        @endphp
+        <x-breadcrumb :items="$breadcrumbs" />
+    </div>
+
+    <livewire:pages.admin.pemesanan-r-s-c.pemesananrsc-form />
+
+</div>
