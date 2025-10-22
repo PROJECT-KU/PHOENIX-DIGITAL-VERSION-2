@@ -17,6 +17,7 @@ class ProductForm extends Component
     public $nama_akun = '';
     public $image;
     public $existingImage = null; // nama file lama di DB
+    public $harga_awal = '';
     public $harga_perbulan = '';
     public $harga_5_perbulan = '';
     public $harga_10_perbulan = '';
@@ -31,7 +32,8 @@ class ProductForm extends Component
             $this->product          = $product;
             $this->nama_akun        = $product->nama_akun;
             $this->image            = null;
-            $this->existingImage         = $product->image;
+            $this->existingImage    = $product->image;
+            $this->harga_awal   = $product->harga_awal;
             $this->harga_perbulan   = $product->harga_perbulan;
             $this->harga_5_perbulan = $product->harga_5_perbulan;
             $this->harga_10_perbulan = $product->harga_10_perbulan;
@@ -45,6 +47,7 @@ class ProductForm extends Component
     {
         $rules = [
             'nama_akun'        => 'required|min:3',
+            'harga_awal'   => 'nullable|numeric',
             'harga_perbulan'   => 'nullable|numeric',
             'harga_5_perbulan' => 'nullable|numeric',
             'harga_10_perbulan' => 'nullable|numeric',
@@ -79,6 +82,7 @@ class ProductForm extends Component
             Product::create([
                 'nama_akun'        => $this->nama_akun,
                 'image'            => $filename,
+                'harga_awal'   => $this->harga_awal,
                 'harga_perbulan'   => $this->harga_perbulan,
                 'harga_5_perbulan' => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
@@ -102,6 +106,7 @@ class ProductForm extends Component
         try {
             $data = [
                 'nama_akun'         => $this->nama_akun,
+                'harga_awal'    => $this->harga_awal,
                 'harga_perbulan'    => $this->harga_perbulan,
                 'harga_5_perbulan'  => $this->harga_5_perbulan,
                 'harga_10_perbulan' => $this->harga_10_perbulan,
@@ -141,6 +146,7 @@ class ProductForm extends Component
     {
         $this->nama_akun        = '';
         $this->image            = null;
+        $this->harga_awal   = '';
         $this->harga_perbulan   = '';
         $this->harga_5_perbulan = '';
         $this->harga_10_perbulan = '';

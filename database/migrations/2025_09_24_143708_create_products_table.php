@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id');
             $table->string('nama_akun');
             $table->string('image')->nullable();
+            $table->decimal('harga_awal', 15, 0)->nullable();
             $table->decimal('harga_perbulan', 15, 0)->nullable();
             $table->decimal('harga_5_perbulan', 15, 0)->nullable();
             $table->decimal('harga_10_perbulan', 15, 0)->nullable();

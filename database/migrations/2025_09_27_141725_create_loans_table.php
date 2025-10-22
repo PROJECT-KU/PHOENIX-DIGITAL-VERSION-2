@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('loans', function (Blueprint $table) {
             // $table->id();
             $table->uuid('id')->primary();
+            $table->string('id_transaksi')->unique();
             $table->string('nama_peminjam');             // nama peminjam
             $table->date('tanggal_peminjam');            // tanggal pinjam
             $table->decimal('nominal', 15, 2);           // jumlah nominal pinjaman

@@ -23,7 +23,7 @@ class LoanForm extends Component
             'user_id'          => 'required|exists:users,id',
             'tanggal_peminjam' => 'required|date',
             'nominal'          => 'required|numeric|min:0',
-            'deskripsi'        => 'nullable|string|max:1000',
+            'deskripsi'        => 'nullable|string',
             'status'           => 'required|in:pending,berjalan,lunas',
         ];
     }
@@ -38,7 +38,6 @@ class LoanForm extends Component
             'nominal.required'          => 'Nominal harus diisi.',
             'nominal.numeric'           => 'Nominal harus berupa angka.',
             'nominal.min'               => 'Nominal tidak boleh kurang dari 0.',
-            'deskripsi.max'             => 'Deskripsi maksimal 1000 karakter.',
             'status.required'           => 'Status harus dipilih.',
             'status.in'                 => 'Status tidak valid.',
         ];

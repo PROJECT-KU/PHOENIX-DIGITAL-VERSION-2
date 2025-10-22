@@ -8,6 +8,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
 
 class SpendingList extends Component
 {
@@ -101,10 +102,23 @@ class SpendingList extends Component
     {
         $query = Spending::with(['penginput', 'picPembeli']);
 
+        // default jenisPengeluaran kalau belum dipilih
+        if (empty($this->jenisPengeluaran)) {
+            $this->jenisPengeluaran = 'lainnya';
+        }
+
+        // Filter berdasarkan jenis pengeluaran
+        if ($this->jenisPengeluaran === 'pembelian_akun') {
+            $query->where('jenis_pengeluaran', 'pembelian_akun');
+        } else {
+            $query->where('jenis_pengeluaran', 'lainnya');
+        }
+
         // Search filter
         if (!empty($this->search)) {
             $query->where(function ($q) {
                 $q->where('deskripsi', 'like', '%' . $this->search . '%')
+                    ->orWhere('nominal', 'like', '%' . $this->search . '%')
                     ->orWhereHas('penginput', function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%');
                     })
@@ -132,11 +146,19 @@ class SpendingList extends Component
 
         $spendings = $query->orderBy('tanggal_transaksi', 'desc')
             ->paginate($this->perPage);
+        
+        // Ambil total pengeluaran per jenis
+        $totalSpendings = Spending::select(
+                'jenis_pengeluaran as jenisPengeluaran',
+                DB::raw('SUM(nominal) as total_pengeluaran')
+            )
+            ->groupBy('jenis_pengeluaran')
+            ->get();
 
         $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = ['pending', 'completed'];
         $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
 
-        return view('livewire.pages.admin.spending.spending-list', compact('spendings', 'users', 'statusOptions', 'jenisPengeluaranOptions'));
+        return view('livewire.pages.admin.spending.spending-list', compact('spendings', 'users', 'statusOptions', 'jenisPengeluaranOptions', 'totalSpendings'));
     }
 }

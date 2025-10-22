@@ -40,7 +40,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-lg-2 mb-2">
+            {{-- <div class="col-lg-2 mb-2">
                 <label for="jenisPengeluaran" style="font-size: 14px;" class="fw-semibold mb-1">Jenis
                     Pengeluaran</label>
                 <select wire:model.live="jenisPengeluaran" class="form-select form-select-sm" id="jenisPengeluaran">
@@ -51,7 +51,7 @@
                     </option>
                     @endforeach
                 </select>
-            </div>
+            </div> --}}
             <div class="col-lg-2 mb-2">
                 <label for="penginputFilter" style="font-size: 14px;" class="fw-semibold mb-1">penginput data</label>
                 <select wire:model.live="penginputFilter" class="form-select form-select-sm" id="penginputFilter">

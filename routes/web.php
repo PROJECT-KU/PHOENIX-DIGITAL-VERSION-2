@@ -126,7 +126,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/PemesananRSC', PemesananrscList::class)->name('admin.pemesananrsc.index');
     Route::get('/admin/PemesananRSC/create', PemesananrscCreate::class)->name('admin.pemesananrsc.create');
     Route::get('/admin/PemesananRSC/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pemesananrsc.edit');
-
 });
 
 require __DIR__ . '/auth.php';

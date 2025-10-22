@@ -40,6 +40,7 @@
                     <table class="table table-striped table-hover text-center">
                         <thead>
                             <tr>
+                                <th>ID Transaksi</th>
                                 <th>Nama Peminjam</th>
                                 <th>Tanggal Pinjam</th>
                                 <th>Nominal</th>
@@ -52,6 +53,7 @@
                         <tbody>
                             @forelse($loans as $loan)
                                 <tr>
+                                    <td>{{ $loan->id_transaksi }}</td>
                                     <td>{{ $loan->nama_peminjam }}</td>
                                     <td>{{ $loan->tanggal_peminjam_formatted }}</td>
                                     <td>{{ $loan->nominal_formatted }}</td>
@@ -83,7 +85,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
+                                    <td colspan="8" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-inbox mb-2 fs-1"></i>
                                             <p>Tidak ada data pinjaman.</p>
@@ -130,7 +132,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="2" class="text-center py-4">
+                                    <td colspan="4" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-inbox mb-2 fs-1"></i>
                                             <p>Tidak ada data pinjaman.</p>

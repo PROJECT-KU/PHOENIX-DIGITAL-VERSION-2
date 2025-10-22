@@ -40,6 +40,7 @@
                     <table class="table table-striped table-hover text-center">
                         <thead>
                             <tr>
+                                <th>ID Transaksi</th>
                                 <th>Nama Pengembalian</th>
                                 <th>Tanggal Pengembalian</th>
                                 <th>Nominal</th>
@@ -52,9 +53,10 @@
                         <tbody>
                             @forelse($pengembalian as $item)
                                 <tr>
+                                    <td>{{ $item->id_transaksi }}</td>
                                     <td>{{ $item->nama_pengembalian }}</td>
-                                    <td>{{ $item->tanggal_pengembalian->format('d-m-Y') }}</td>
-                                    <td>{{ 'Rp ' . number_format($item->nominal, 0, ',', '.') }}</td>
+                                    <td>{{ $item->TanggalPengembalianFormatted }}</td>
+                                    <td>{{ $item->nominal_formatted }}</td>
                                     <td>{{ Str::limit($item->deskripsi, 50) }}</td>
                                     <td>
                                         <span class="badge 
@@ -84,7 +86,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
+                                    <td colspan="8" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-inbox mb-2 fs-1"></i>
                                             <p>Tidak ada data pengembalian.</p>

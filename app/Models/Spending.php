@@ -18,7 +18,8 @@ class Spending extends Model
         'status',
         'penginput_id',
         'pic_pembeli_id',
-        'jenis_pengeluaran'
+        'jenis_pengeluaran',
+        'id_transaksi',
     ];
 
     protected $casts = [
@@ -84,5 +85,29 @@ class Spending extends Model
     {
         return $this->created_at
             ->translatedFormat('d F Y H:i');
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            // Auto generate ID transaksi jika belum ada
+            if (empty($model->id_transaksi)) {
+                $prefix = $model->jenis_pengeluaran === 'pembelian_akun' ? 'PPA' : 'PLL';
+                $model->id_transaksi = self::generateTransactionId($prefix);
+            }
+
+            // Pastikan penginput otomatis user login
+            if (auth()->check() && empty($model->penginput_id)) {
+                $model->penginput_id = auth()->id();
+            }
+        });
+    }
+
+    private static function generateTransactionId(string $prefix): string
+    {
+        $tanggal = now()->format('Ymd'); // contoh: 20251009
+        $count = self::whereDate('created_at', today())->count() + 1; // urutan harian
+        $nomorUrut = str_pad($count, 3, '0', STR_PAD_LEFT); // 001, 002, dst
+        return "{$prefix}-{$tanggal}-{$nomorUrut}";
     }
 }

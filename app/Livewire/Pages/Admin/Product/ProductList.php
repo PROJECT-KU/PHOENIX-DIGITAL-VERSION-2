@@ -40,6 +40,7 @@ class ProductList extends Component
     {
         $Dataproduct = Product::latest()
             ->where('nama_akun', 'like', "%{$this->searchDataProduct}%")
+            ->orWhere('harga_awal', 'like', "%{$this->searchDataProduct}%")
             ->orWhere('harga_perbulan', 'like', "%{$this->searchDataProduct}%")
             ->orWhere('harga_5_perbulan', 'like', "%{$this->searchDataProduct}%")
             ->orWhere('harga_10_perbulan', 'like', "%{$this->searchDataProduct}%")

@@ -18,7 +18,7 @@
         </div>
         <a class="btn btn-primary rounded-pill" href="{{ route('admin.pengembalian.create') }}" wire:navigate>
             <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Data Peminjaman</span>
+            <span class="d-none d-lg-inline">Tambah Data Pengembalian</span>
         </a>
     </div>
 

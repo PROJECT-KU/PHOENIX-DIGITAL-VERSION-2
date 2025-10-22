@@ -15,12 +15,13 @@ return new class extends Migration
             // $table->id();
             // $table->timestamps();
             $table->uuid('id')->primary();
-            $table->string('nama_pengembalian');             // nama pengembalian
-            $table->date('tanggal_pengembalian');            // tanggal pinjam
-            $table->decimal('nominal', 15, 2);           // jumlah nominal pinjaman
-            $table->text('deskripsi')->nullable();       // deskripsi
-            $table->enum('status', ['pending', 'lunas', 'berjalan'])->default('pending'); // status pinjaman
-            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // siapa yang input (auth user)
+            $table->string('id_transaksi')->unique();
+            $table->string('nama_pengembalian');
+            $table->date('tanggal_pengembalian');
+            $table->decimal('nominal', 15, 2);
+            $table->text('deskripsi')->nullable();
+            $table->enum('status', ['pending', 'lunas', 'berjalan'])->default('pending');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamps();
 
             // Indexes untuk performa
