@@ -9,6 +9,8 @@ use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
+use App\Exports\PengembalianExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PengembalianList extends Component
 {
@@ -128,5 +130,15 @@ class PengembalianList extends Component
         $statusOptions = [Pengembalian::STATUS_PENDING, Pengembalian::STATUS_BERJALAN, Pengembalian::STATUS_LUNAS];
 
         return view('livewire.pages.admin.pengembalian.pengembalian-list', compact('pengembalian', 'users', 'statusOptions', 'totalLoans'));
+    }
+
+    public function exportExcel()
+    {
+        try {
+            $filename = 'pengembalian_' . now()->format('Ymd_His') . '.xlsx';
+            return Excel::download(new PengembalianExport(), $filename);
+        } catch (\Throwable $e) {
+            session()->flash('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
     }
 }

@@ -24,22 +24,25 @@
         </li>
     </ul> --}}
 
-    <ul class="nav nav-tabs mb-3" id="loanTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'lainnya']) }}"
-                class="nav-link {{ request('jenisPengeluaran') !== 'pembelian_akun' ? 'active' : '' }}"
-                id="data-loan-tab" role="tab" aria-controls="data-loan">
-                Pengeluaran Lainnya
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'pembelian_akun']) }}"
-                class="nav-link {{ request('jenisPengeluaran') === 'pembelian_akun' ? 'active' : '' }}"
-                id="total-loan-tab" role="tab" aria-controls="total-loan">
-                Pengeluaran Pembelian Akun
-            </a>
-        </li>
-    </ul>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="loanTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'lainnya']) }}"
+                    class="nav-link {{ request('jenisPengeluaran') !== 'pembelian_akun' ? 'active' : '' }}"
+                    id="data-loan-tab" role="tab" aria-controls="data-loan">
+                    Pengeluaran Lainnya
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'pembelian_akun']) }}"
+                    class="nav-link {{ request('jenisPengeluaran') === 'pembelian_akun' ? 'active' : '' }}"
+                    id="total-loan-tab" role="tab" aria-controls="total-loan">
+                    Pengeluaran Pembelian Akun
+                </a>
+            </li>
+        </ul>
+    </div>
 
 
     <div class="row">

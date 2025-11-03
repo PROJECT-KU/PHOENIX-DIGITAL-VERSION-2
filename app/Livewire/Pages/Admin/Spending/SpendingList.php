@@ -9,6 +9,9 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
+use App\Exports\SpendingExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class SpendingList extends Component
 {
@@ -160,5 +163,23 @@ class SpendingList extends Component
         $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
 
         return view('livewire.pages.admin.spending.spending-list', compact('spendings', 'users', 'statusOptions', 'jenisPengeluaranOptions', 'totalSpendings'));
+    }
+
+    public function exportExcel()
+    {
+        try {
+            $jenis = $this->jenisPengeluaran ?? null;
+            $start = $this->startDate ?? null;
+            $end = $this->endDate ?? null;
+
+            $filename = 'pengeluaran_' . ($jenis ?? 'semua') . '_' . now()->format('Ymd_His') . '.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(new SpendingExport($jenis, $start, $end), $filename);
+        } catch (\Exception $e) {
+            $this->dispatch('show-alert', [
+                'type' => 'error',
+                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+            ]);
+        }
     }
 }
