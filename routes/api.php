@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\JobController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,4 +23,11 @@ Route::middleware('auth:sanctum')->get('/online-users', function () {
         ->get(['id', 'name', 'last_seen_at']); // ambil field penting saja
 
     return response()->json($users);
+});
+
+// Route::middleware(['verify.origin'])->group(function () {
+Route::middleware([])->group(function () {
+    Route::get('/jobs', [JobController::class, 'index']); // untuk dropdown posisi
+
+    Route::post('/applications', [JobApplicationController::class, 'store']);
 });
