@@ -21,7 +21,7 @@ new class extends Component {
                         <small>Phoenix</small>
                     </a>
                 </div>
-                <div class="sidebar-toggler  x">
+                <div class="sidebar-toggler x">
                     <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
                 </div>
             </div>
@@ -40,7 +40,8 @@ new class extends Component {
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.pemesananrsc.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
                         class="sidebar-link {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-cart {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}"></i>
+                        <i
+                            class="bi bi-cart {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}"></i>
                         <span class="{{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}">
                             Pemesanan
                         </span>
@@ -70,10 +71,14 @@ new class extends Component {
                     </ul>
                 </li>
 
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
-                    <a href="javascript:void(0)" class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}">
+                <li
+                    class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)"
+                        class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary fw-bold' : '' }}">
+                        <i
+                            class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}"></i>
+                        <span
+                            class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
@@ -93,8 +98,7 @@ new class extends Component {
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
-                        <i
-                            class="bi bi-people-fill {{ request()->routeIs('admin.customer.*') ? 'text-primary' : '' }}"></i>
+                        <i class="bi bi-people {{ request()->routeIs('admin.customer.*') ? 'text-primary' : '' }}"></i>
                         <span class="{{ request()->routeIs('admin.customer.*') ? 'text-primary' : '' }}">
                             Pelanggan
                         </span>
@@ -108,14 +112,17 @@ new class extends Component {
                 </li>
 
                 <!-- section menu data dan laporan -->
-                <li class="sidebar-title mt-4">Data &amp; Laporan</li>
-                <li class="sidebar-item has-sub 
+                <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
+                <li
+                    class="sidebar-item has-sub
                     {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
 
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
+                        <i
+                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
+                        <span
+                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
@@ -126,7 +133,8 @@ new class extends Component {
                                 Pengeluaran
                             </a>
                         </li>
-                        <li class="submenu-item {{ request()->routeIs('admin.loan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ request()->routeIs('admin.loan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.loan.index') }}" class="submenu-link">
                                 Peminjaman
                             </a>
@@ -142,8 +150,7 @@ new class extends Component {
                 <li class="sidebar-item  has-sub {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
                     <a href="#"
                         class='sidebar-link {{ request()->routeIs('admin.account.*') ? 'text-primary fw-bold' : '' }}'>
-                        <i
-                            class="bi bi-person-circle {{ request()->routeIs('admin.account.*') ? 'text-primary' : '' }}"></i>
+                        <i class="bi bi-person {{ request()->routeIs('admin.account.*') ? 'text-primary' : '' }}"></i>
                         <span class="{{ request()->routeIs('admin.account.*') ? 'text-primary' : '' }}">Akun</span>
                     </a>
 
@@ -153,11 +160,40 @@ new class extends Component {
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
                         @if (auth()->user()->hasRole('admin'))
-                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.account.role') }}"
-                                class="submenu-link">Pengaturan Role</a>
-                        </li>
+                            <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
+                                <a wire:navigate href="{{ route('admin.account.role') }}"
+                                    class="submenu-link">Pengaturan Role</a>
+                            </li>
                         @endif
+                    </ul>
+                </li>
+
+                <!-- section karir & karyawan-->
+                <li class="mt-4 sidebar-title">Karyawan & Karir</li>
+                <li
+                    class="sidebar-item has-sub
+                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
+
+                    <a href="#"
+                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary fw-bold' : '' }}">
+                        <i
+                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary' : '' }}"></i>
+                        <span
+                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary' : '' }}">
+                            karir
+                        </span>
+                    </a>
+
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.lowongan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.lowongan.index') }}" class="submenu-link">
+                                Role Pekerjaan
+                            </a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.pelamar.index') }}"
+                                class="submenu-link">Pelamar</a>
+                        </li>
                     </ul>
                 </li>
 
