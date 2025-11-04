@@ -2,81 +2,137 @@
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Data Pelamar Kerja</h3>
         @php
-        $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pelamar']];
+            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pelamar']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
     <div class="card">
         <div class="card-body">
-            <div class="mb-2 d-flex align-items-center justify-content-between">
-                <div class="form-group position-relative has-icon-left w-50 w-lg-25">
-                    <input wire:model.live.debounce.300ms="search" type="text" class="form-control"
-                        placeholder="ketik nama pelamar">
-                    <div class="form-control-icon">
-                        <i class="bi bi-search" style="font-size: 14px;"></i>
+            <!-- Filter Section -->
+            <div class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Filter Bulan</label>
+                        <select wire:model.live="filterMonth" class="form-select">
+                            <option value="">Semua Bulan</option>
+                            @foreach ($months as $month)
+                                <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Filter Posisi</label>
+                        <select wire:model.live="filterJob" class="form-select">
+                            <option value="">Semua Posisi</option>
+                            @foreach ($jobList as $job)
+                                <option value="{{ $job->id }}">{{ $job->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button wire:click="resetFilters" class="btn btn-secondary">
+                            <i class="bi bi-arrow-clockwise"></i> Reset Filter
+                        </button>
                     </div>
                 </div>
-                <a wire:navigate href="{{ route('admin.product.create') }}" class="px-4 btn btn-primary rounded-pill">
-                    <i class="bi bi-plus-lg"></i>
-                    <span>Tambah Product</span>
-                </a>
             </div>
+
             <div class="table-responsive">
-                <table id="productTable" class="table text-center align-middle" style="width:100%">
+                <table class="table text-center align-middle" style="width:100%">
                     <thead class="align-middle table-light">
                         <tr>
-                            <th style="width: 150px;">Nama</th>
-                            <th style="width: 150px;">Email</th>
-                            <th style="width: 150px;">No HP</th>
+                            <th>Posisi</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Tanggal Melamar</th>
                             <th style="width: 100px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($dataPelamar as $item)
-                        <tr style="text-align: center;">
-                            <!-- Nama -->
-                            <td class="fw-semibold text-capitalize">
-                                {{ $item->name }}
-                            </td>
-                            <td class="fw-semibold text-capitalize">
-                                {{ $item->email }}
-                            </td>
-                            <td class="fw-semibold text-capitalize">
-                                {{ $item->phone }}
-                            </td>
-
-                            <!-- Action -->
-                            <td>
-                                <div class="gap-2 d-flex justify-content-center">
-                                    <a wire:navigate
-                                        href="{{ route('admin.product.edit', $item) }}"
-                                        class="btn btn-sm btn-warning"
-                                        title="Edit">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <button type="button"
-                                        class="btn btn-sm btn-danger delete-DataProduct-btn"
-                                        data-id="{{ $item->id }}"
-                                        title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                            <tr>
+                                <td class="fw-semibold text-capitalize">
+                                    {{ $item->job->title }}
+                                </td>
+                                <td class="fw-semibold text-capitalize">
+                                    {{ $item->name }}
+                                </td>
+                                <td>
+                                    {{ $item->email }}
+                                </td>
+                                <td>
+                                    {{ $item->created_at->locale('id')->isoFormat('D MMMM YYYY') }}
+                                </td>
+                                <td>
+                                    <div class="gap-2 d-flex justify-content-center">
+                                        <a wire:navigate href="{{ route('admin.pelamar.detail', $item->id) }}"
+                                            class="text-black btn btn-sm btn-warning" title="Detail">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button" onclick="confirmDelete({{ $item->id }})"
+                                            class="btn btn-sm btn-danger" title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                         @empty
-                        <tr>
-                            <td colspan="8" class="py-3 text-center text-muted">
-                                Belum ada data lowongan
-                            </td>
-                        </tr>
+                            <tr>
+                                <td colspan="6" class="py-3 text-center text-muted">
+                                    Belum ada data pelamar
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="mt-4 ">
+            <div class="mt-4">
                 {{ $dataPelamar->links('vendor.pagination') }}
             </div>
         </div>
     </div>
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('livewire:initialized', () => {
+            @this.on('application-deleted', () => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Data pelamar berhasil dihapus',
+                    confirmButtonColor: '#435ebe'
+                });
+            });
+
+            @this.on('application-error', (data) => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: data[0].message,
+                    confirmButtonColor: '#435ebe'
+                });
+            });
+        });
+
+        function confirmDelete(id) {
+            Swal.fire({
+                title: 'Hapus Data Pelamar?',
+                text: "Data yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    @this.dispatch('confirm-delete', {
+                        id: id
+                    });
+                }
+            });
+        }
+    </script>
+@endpush
