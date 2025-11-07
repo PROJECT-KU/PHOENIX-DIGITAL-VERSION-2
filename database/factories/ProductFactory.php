@@ -20,6 +20,7 @@ class ProductFactory extends Factory
         return [
             'nama_akun'       => $this->faker->word(),
             'image'           => $this->faker->imageUrl(640, 480, 'products', true),
+            'harga_awal'    => $this->faker->numberBetween(20000, 100000),
             'harga_perbulan'    => $this->faker->numberBetween(20000, 100000),
             'harga_5_perbulan'  => $this->faker->numberBetween(80000, 400000),
             'harga_10_perbulan' => $this->faker->numberBetween(150000, 700000),

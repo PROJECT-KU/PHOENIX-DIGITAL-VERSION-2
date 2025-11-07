@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 
 class Loan extends Model
@@ -24,6 +25,7 @@ class Loan extends Model
         'deskripsi',
         'status',
         'user_id',
+        'id_transaksi',
     ];
 
     protected $casts = [
@@ -67,6 +69,9 @@ class Loan extends Model
     public function getNamaPenginputAttribute(): string
     {
         return $this->penginput->name ?? '-';
+        // return auth()->check() 
+        // ? auth()->user()->name 
+        // : '-tidak ada-';
     }
 
     public function getTanggalPeminjamFormattedAttribute(): string
@@ -86,5 +91,37 @@ class Loan extends Model
     public function getTotalBorrowerLoanFormattedAttribute()
     {
         return 'Rp ' . number_format($this->total_borrower_loan, 0, ',', '.');
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            // UUID untuk primary key
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
+
+            // Auto generate ID transaksi (misal TRX-20251009-001)
+            if (empty($model->id_transaksi)) {
+                $prefix = 'PMJ-' . now()->format('Ymd');
+                $last = static::whereDate('created_at', now()->toDateString())
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+
+                $nextNumber = 1;
+                if ($last && preg_match('/-(\d+)$/', $last->id_transaksi, $matches)) {
+                    $nextNumber = (int) $matches[1] + 1;
+                }
+
+                $model->id_transaksi = $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            }
+
+            // Pastikan user_id otomatis dari auth()
+            if (auth()->check()) {
+                $model->user_id = auth()->id();
+            }
+        });
     }
 }

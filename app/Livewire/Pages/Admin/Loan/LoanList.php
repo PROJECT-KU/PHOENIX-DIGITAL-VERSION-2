@@ -9,6 +9,8 @@ use Livewire\Attributes\On;
 use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
+use App\Exports\LoanExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LoanList extends Component
 {
@@ -143,5 +145,18 @@ class LoanList extends Component
         $statusOptions = [Loan::STATUS_PENDING, Loan::STATUS_BERJALAN, Loan::STATUS_LUNAS];
 
         return view('livewire.pages.admin.loan.loan-list', compact('loans', 'users', 'statusOptions', 'totalLoans'));
+    }
+
+    public function exportExcel()
+    {
+        try {
+            $filename = 'data_peminjaman_' . now()->format('Ymd_His') . '.xlsx';
+            return Excel::download(new LoanExport, $filename);
+        } catch (\Exception $e) {
+            $this->dispatch('show-alert', [
+                'type' => 'error',
+                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+            ]);
+        }
     }
 }

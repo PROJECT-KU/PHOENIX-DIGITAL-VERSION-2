@@ -28,7 +28,7 @@ class SpendingForm extends Component
         return [
             'tanggal_transaksi' => 'required|date',
             'nominal' => 'required|numeric|min:0',
-            'deskripsi' => 'required|string|max:1000',
+            'deskripsi' => 'required|string',
             'status' => 'required|in:pending,completed',
             'jenis_pengeluaran' => 'required|in:pembelian_akun,lainnya',
             'pic_pembeli_id' => 'nullable|exists:users,id',
@@ -44,7 +44,6 @@ class SpendingForm extends Component
             'nominal.numeric' => 'Nominal harus berupa angka.',
             'nominal.min' => 'Nominal tidak boleh kurang dari 0.',
             'deskripsi.required' => 'Deskripsi harus diisi.',
-            'deskripsi.max' => 'Deskripsi maksimal 1000 karakter.',
             'status.required' => 'Status harus dipilih.',
             'status.in' => 'Status tidak valid.',
             'jenis_pengeluaran.required' => 'jenis pengeluaran harus dipilih.',

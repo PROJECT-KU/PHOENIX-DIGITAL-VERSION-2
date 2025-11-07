@@ -23,19 +23,54 @@
                 </div>
 
                 <!-- Nominal -->
-                <div class="col-md-6 mb-3">
-                    <label for="nominal" class="form-label">
+               <div class="col-md-6 mb-3"
+                    x-data="{
+                        formatRupiah(v) {
+                            if (!v) return '';
+                            let number_string = v.toString().replace(/[^,\d]/g, '');
+                            let split = number_string.split(',');
+                            let sisa = split[0].length % 3;
+                            let rupiah = split[0].substr(0, sisa);
+                            let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+                            if (ribuan) {
+                                let separator = sisa ? '.' : '';
+                                rupiah += separator + ribuan.join('.');
+                            }
+                            rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+                            return rupiah ? 'Rp ' + rupiah : '';
+                        },
+                        parseRaw(v) {
+                            return (v || '').toString().replace(/[^0-9]/g, '');
+                        }
+                    }"
+                    x-init="$nextTick(() => {
+                        // Inisialisasi tampilan jika Livewire sudah punya nilai awal
+                        $refs.display.value = formatRupiah($wire.nominal);
+                    })"
+                >
+                    <label for="nominal_display" class="form-label">
                         Nominal <span class="text-danger">*</span>
                     </label>
-                    <div class="input-group" wire:ignore>
-                        <input type="text" wire:model="nominal" x-data x-currency
-                            class="form-control @error('nominal') is-invalid @enderror" id="nominal" step="0.01"
-                            min="0" placeholder="0">
-                        @error('nominal')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+
+                    <!-- Input tampil ke user -->
+                    <input type="text"
+                        id="nominal_display"
+                        x-ref="display"
+                        x-on:focus="$event.target.select()"
+                        x-on:input="
+                                let raw = parseRaw($event.target.value);
+                                $event.target.value = formatRupiah(raw);
+                                $wire.set('nominal', raw);
+                        "
+                        class="form-control @error('nominal') is-invalid @enderror"
+                        placeholder="Rp 0">
+
+                    <!-- Pesan error dari Livewire -->
+                    @error('nominal')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                 </div>
+
 
                 <!-- Status -->
                 <div class="col-md-6 mb-3">

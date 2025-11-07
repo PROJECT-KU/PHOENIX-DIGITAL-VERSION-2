@@ -27,6 +27,7 @@
                         <tr>
                             <th style="width: 150px;">Nama Akun</th>
                             <th style="width: 80px;">Image</th>
+                            <th style="width: 120px;">Harga Awal</th>
                             <th style="width: 120px;">Harga / Bulan</th>
                             <th style="width: 120px;">Harga / 5 Bulan</th>
                             <th style="width: 120px;">Harga / 10 Bulan</th>
@@ -72,6 +73,7 @@
                             </td>
 
                             <!-- Harga -->
+                            <td>{{ 'Rp ' . number_format($item->harga_awal, 0, ',', '.') }}</td>
                             <td>{{ 'Rp ' . number_format($item->harga_perbulan, 0, ',', '.') }}</td>
                             <td>{{ 'Rp ' . number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
                             <td>{{ 'Rp ' . number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>

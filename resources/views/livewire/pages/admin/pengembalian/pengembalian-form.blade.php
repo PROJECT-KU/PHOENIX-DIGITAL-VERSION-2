@@ -27,6 +27,14 @@
                         @error('user_id')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
+                        {{-- <label for="user_id" class="form-label">
+                            Nama Pengembalian <span class="text-danger">*</span>
+                        </label>
+                        <input type="text"
+                            id="user_id"
+                            class="form-control"
+                            value="{{ auth()->user()->name }}"
+                            readonly> --}}
                     </div>
 
                     <!-- Tanggal Pengembalian -->

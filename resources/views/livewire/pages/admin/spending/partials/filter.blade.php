@@ -14,10 +14,16 @@
                 <span>filter</span>
             </button>
         </div>
-        <a class="btn btn-primary rounded-pill" href="{{ route('admin.spending.create') }}" wire:navigate>
-            <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Data Pengeluaran</span>
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <button wire:click="exportExcel" class="btn btn-success rounded-pill">
+                <i class="bi bi-file-earmark-excel"></i> Export Excel
+            </button>
+
+            <a class="btn btn-primary rounded-pill" href="{{ route('admin.spending.create') }}" wire:navigate>
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-lg-inline">Tambah Data Pengeluaran</span>
+            </a>
+        </div>
     </div>
     <div class="card border pt-3 pb-0 px-4" x-show="showFilter" x-transition x-transition:enter.duration.500ms
         x-transition:leave.duration.400ms x-cloak>
@@ -40,7 +46,7 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-lg-2 mb-2">
+            {{-- <div class="col-lg-2 mb-2">
                 <label for="jenisPengeluaran" style="font-size: 14px;" class="fw-semibold mb-1">Jenis
                     Pengeluaran</label>
                 <select wire:model.live="jenisPengeluaran" class="form-select form-select-sm" id="jenisPengeluaran">
@@ -51,7 +57,7 @@
                     </option>
                     @endforeach
                 </select>
-            </div>
+            </div> --}}
             <div class="col-lg-2 mb-2">
                 <label for="penginputFilter" style="font-size: 14px;" class="fw-semibold mb-1">penginput data</label>
                 <select wire:model.live="penginputFilter" class="form-select form-select-sm" id="penginputFilter">

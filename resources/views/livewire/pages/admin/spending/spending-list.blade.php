@@ -6,6 +6,45 @@
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
+
+    {{-- <ul class="nav nav-tabs mb-3" id="loanTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a href="{{ route('admin.spending.index') }}"
+            class="nav-link {{ request()->routeIs('admin.spending.*') ? 'active' : '' }}"
+            id="data-loan-tab" role="tab" aria-controls="data-loan">
+                Pengeluaran lainya
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a href=""
+            class="nav-link"
+            id="total-loan-tab" role="tab" aria-controls="total-loan">
+                Pengeluaran pembelian akun
+            </a>
+        </li>
+    </ul> --}}
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="loanTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'lainnya']) }}"
+                    class="nav-link {{ request('jenisPengeluaran') !== 'pembelian_akun' ? 'active' : '' }}"
+                    id="data-loan-tab" role="tab" aria-controls="data-loan">
+                    Pengeluaran Lainnya
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a href="{{ route('admin.spending.index', ['jenisPengeluaran' => 'pembelian_akun']) }}"
+                    class="nav-link {{ request('jenisPengeluaran') === 'pembelian_akun' ? 'active' : '' }}"
+                    id="total-loan-tab" role="tab" aria-controls="total-loan">
+                    Pengeluaran Pembelian Akun
+                </a>
+            </li>
+        </ul>
+    </div>
+
+
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -21,6 +60,7 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr style="text-align: center;">
+                                    <th>ID Transaksi</th>
                                     <th>Waktu Transaksi</th>
                                     <th>Nominal</th>
                                     <th>Deskripsi</th>
@@ -34,6 +74,7 @@
                             <tbody>
                                 @forelse($spendings as $spending)
                                     <tr style="text-align: center;">
+                                        <td>{{ $spending->id_transaksi }}</td>
                                         <td>{{ $spending->tanggal_transaksi_formatted }}</td>
                                         <td>{{ $spending->nominal_formatted }}</td>
                                         <td>{{ Str::limit($spending->deskripsi, 50) }}</td>
@@ -62,7 +103,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">
+                                        <td colspan="9" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="bi bi-inbox mb-2 fs-1"></i>
                                                 <p>Tidak ada data pengeluaran yang ditemukan.</p>
@@ -77,6 +118,51 @@
                     <!-- Pagination -->
                     <div class="mt-4">
                         {{ $spendings->links('vendor.pagination') }}
+                    </div>
+                </div>
+            </div>
+
+                <!-- Table total per peminjam -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Total Pengeluaran Per Kategori</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover text-center">
+                                <thead>
+                                    <tr>
+                                        <th>Kategori Pengeluaran</th>
+                                        <th>Total pengeluaran</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($totalSpendings as $item)
+                                        <tr>
+                                            <td>
+                                                @if ($item->jenisPengeluaran === 'pembelian_akun')
+                                                    Pembelian Akun
+                                                @elseif ($item->jenisPengeluaran === 'lainnya')
+                                                    Pengeluaran Lainnya
+                                                @else
+                                                    Tidak Diketahui
+                                                @endif
+                                            </td>
+                                            <td>Rp {{ number_format($item->total_pengeluaran, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="2" class="text-center py-4">
+                                                <div class="text-muted">
+                                                    <i class="bi bi-inbox mb-2 fs-1"></i>
+                                                    <p>Tidak ada data pengeluaran.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

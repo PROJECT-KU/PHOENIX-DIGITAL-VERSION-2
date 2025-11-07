@@ -12,6 +12,30 @@
                 @enderror
             </div>
 
+            <!-- Harga Awal, -->
+            <div class="col-md-6" x-data>
+                <label for="hargaAwal" class="form-label">Harga Awal</label>
+                <input type="text" id="hargaAwal"
+                    value="{{ $harga_awal ? 'Rp ' . number_format($harga_awal, 0, ',', '.') : '' }}"
+                    class="form-control @error('harga_awal') is-invalid @enderror"
+                    placeholder="Rp 0"
+                    @input="
+                        let number = $el.value.replace(/[^0-9]/g, '');
+                        if(number){
+                            $el.value = new Intl.NumberFormat('id-ID', {
+                                style: 'currency', currency: 'IDR',
+                                minimumFractionDigits: 0, maximumFractionDigits: 0
+                            }).format(number);
+                        } else {
+                            $el.value = '';
+                        }
+                        @this.set('harga_awal', number)
+                    ">
+                @error('harga_awal')
+                <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
             <!-- Harga Perbulan -->
             <div class="col-md-6" x-data>
                 <label for="hargaPerbulan" class="form-label">Harga / Bulan</label>
