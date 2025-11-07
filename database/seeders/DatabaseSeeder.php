@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
         // seeder role
         $this->call([
             RoleSeeder::class,
+            JobSeeder::class
         ]);
 
         $adminRole = Role::firstOrCreate(['name' => 'admin']);

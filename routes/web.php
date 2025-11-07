@@ -45,7 +45,9 @@ use App\Livewire\Pages\Admin\Spending\SpendingList;
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
-
+use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
+use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Pengembalian
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
@@ -126,6 +128,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/PemesananRSC', PemesananrscList::class)->name('admin.pemesananrsc.index');
     Route::get('/admin/PemesananRSC/create', PemesananrscCreate::class)->name('admin.pemesananrsc.create');
     Route::get('/admin/PemesananRSC/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pemesananrsc.edit');
+
+    // Route Lowongan Pekerjaan
+    Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
+    Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
+    Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
 });
 
 require __DIR__ . '/auth.php';
