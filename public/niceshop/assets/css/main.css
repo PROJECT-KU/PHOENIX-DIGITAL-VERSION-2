@@ -23,7 +23,7 @@
 :root { 
   --background-color: #ffffff; /* Background color for the entire website, including individual sections */
   --default-color: #444444; /* Default color used for the majority of the text content across the entire website */
-  --heading-color: #000000; /* Color for headings, subheadings and title throughout the website */
+  --heading-color: #435EBE; /* Color for headings, subheadings and title throughout the website */
   --accent-color: #435EBE; /* Accent color that represents your brand on the website. It's used for buttons, links, and other elements that need to stand out */
   --surface-color: #ffffff; /* The surface color is used as a background of boxed elements within sections, such as cards, icon boxes, or other elements that require a visual separation from the global background. */
   --contrast-color: #ffffff; /* Contrast color for text, ensuring readability against backgrounds of accent, heading, or default colors. */
@@ -3509,7 +3509,8 @@ section,
 }
 
 .product-details .product-gallery .thumbnail-grid {
-  display: grid;
+  /* display: grid; */
+  display: none !important; 
   grid-template-columns: repeat(6, 1fr);
   gap: 0.75rem;
 }
@@ -3978,7 +3979,8 @@ section,
 }
 
 .product-details .info-tabs-container .overview-content .highlights-grid {
-  display: grid;
+  /* display: grid; */
+  display: none;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;

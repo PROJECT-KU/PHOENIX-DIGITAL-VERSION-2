@@ -58,8 +58,12 @@ use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 
-Route::get('/', [HomepageController::class, 'index'])->name('home');
-Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
+Route::get('/', [HomepageController::class, 'index'])->name('homepage');
+Route::get('/productdetail/{id}', [HomepageController::class, 'productDetail'])
+    ->name('productdetail');
+Route::get('/homeproduct', [HomepageController::class, 'allProduct'])
+    ->name('homeproduct');
+// Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
 
