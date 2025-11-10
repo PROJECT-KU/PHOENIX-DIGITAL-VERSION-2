@@ -73,11 +73,11 @@
                             </td>
 
                             <!-- Harga -->
-                            <td>{{ 'Rp ' . number_format($item->harga_awal, 0, ',', '.') }}</td>
-                            <td>{{ 'Rp ' . number_format($item->harga_perbulan, 0, ',', '.') }}</td>
-                            <td>{{ 'Rp ' . number_format($item->harga_5_perbulan, 0, ',', '.') }}</td>
-                            <td>{{ 'Rp ' . number_format($item->harga_10_perbulan, 0, ',', '.') }}</td>
-                            <td>{{ 'Rp ' . number_format($item->harga_pertahun, 0, ',', '.') }}</td>
+                            <td>{{ $item->formatted('harga_awal') }}</td>
+                            <td>{{ $item->formatted('harga_perbulan') }}</td>
+                            <td>{{ $item->formatted('harga_5_perbulan') }}</td>
+                            <td>{{ $item->formatted('harga_10_perbulan') }}</td>
+                            <td>{{ $item->formatted('harga_pertahun') }}</td>
 
                             <!-- Deskripsi -->
                             <td class="text-truncate"

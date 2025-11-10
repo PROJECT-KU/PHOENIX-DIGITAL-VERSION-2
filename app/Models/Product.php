@@ -20,4 +20,25 @@ class Product extends Model
         'harga_pertahun',
         'deskripsi',
     ];
+
+    // Helper format rupiah
+    public function numberFormatted($value)
+    {
+        return 'Rp ' . number_format($value, 0, ',', '.');
+    }
+
+    // Fungsi dinamis untuk semua harga
+    public function formatted($field)
+    {
+        if (! isset($this->{$field})) {
+            return 'Rp 0';
+        }
+
+        return $this->numberFormatted($this->{$field});
+    }
+
+    public function scopeLatestLimit($query, $limit = 4)
+    {
+        return $query->latest()->take($limit);
+    }
 }
