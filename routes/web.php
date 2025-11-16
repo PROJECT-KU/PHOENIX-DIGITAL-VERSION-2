@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PaymentCallbackController;
 use App\Livewire\Pages\Admin\Profile;
 use App\Livewire\Pages\Admin\Role;
 use Illuminate\Support\Facades\Route;
@@ -57,12 +58,27 @@ use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
+use App\Livewire\Pages\Public\Homepage\Index;
+use App\Livewire\Pages\Public\ShopPage\CartPage;
+use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
+use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
+use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
+use App\Livewire\Pages\Public\ShopPage\PaymentPage;
+use App\Livewire\Pages\Public\ShopPage\ProductDetail;
 
-Route::get('/', [HomepageController::class, 'index'])->name('homepage');
-Route::get('/productdetail/{id}', [HomepageController::class, 'productDetail'])
-    ->name('productdetail');
-Route::get('/homeproduct', [HomepageController::class, 'allProduct'])
-    ->name('homeproduct');
+Route::get('/', Index::class)->name('homepage');
+Route::get('/shop', ShopPageIndex::class)->name('shop.index');
+Route::get('/shop/product/{id}', ProductDetail::class)->name('shop.detail-product');
+Route::get('/cart', CartPage::class)->name('cart');
+Route::get('/checkout', CheckoutPage::class)->name('checkout');
+Route::get('/payment/{order}', PaymentPage::class)->name('payment');
+Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
+Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+// Route::get('/', [HomepageController::class, 'index'])->name('homepage');
+// Route::get('/productdetail/{id}', [HomepageController::class, 'productDetail'])
+//     ->name('productdetail');
+// Route::get('/homeproduct', [HomepageController::class, 'allProduct'])
+//     ->name('homeproduct');
 // Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');

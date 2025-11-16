@@ -66,9 +66,6 @@ class DatabaseSeeder extends Seeder
         // Generate 100 Product
         DataAkun::factory()->count(100)->create();
 
-        // Generate 1000 Customer
-        Customer::factory()->count(1000)->create();
-
         Product::factory()->count(100)->create();
     }
 }
