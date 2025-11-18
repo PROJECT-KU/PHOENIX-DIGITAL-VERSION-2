@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\User;
-use App\Models\Product;
+use App\Models\DataAkun;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -47,13 +47,13 @@ class PemesananRsc extends Model
      * Nama method dibuat 'nama_karyawan' supaya kompatibel dengan kode
      * yang memanggil ->nama_karyawan->name
      */
-    public function pembeli(): BelongsTo
+    public function users()
     {
-        return $this->belongsTo(User::class, 'pic');
+        return $this->belongsTo(User::class, 'pic', 'id');
     }
-    public function product()
+    public function dataakun()
     {
-        return $this->belongsTo(Product::class, 'akun', 'id');
+        return $this->belongsTo(DataAkun::class, 'akun', 'id');
     }
 
     // Helper / accessor untuk menampilkan nama karyawan

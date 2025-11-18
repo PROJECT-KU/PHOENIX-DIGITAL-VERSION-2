@@ -47,6 +47,15 @@
                 </select>
             </div>
             <div class="col-lg-2 mb-2">
+                <label for="norekFilter" style="font-size: 14px;" class="fw-semibold mb-1">Nomor Rekening</label>
+                <select wire:model.live="norekFilter" id="norekFilter" class="form-select form-select-sm">
+                    <option value="">Semua Nomor Rekening</option>
+                    @foreach ($norekOptions as $norek)
+                    <option value="{{ $norek }}">{{ $norek }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-2 mb-2">
                 <label for="statusFilter" style="font-size: 14px;" class="fw-semibold mb-1">status</label>
                 <select wire:model.live="statusFilter" id="statusFilter" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
@@ -56,16 +65,16 @@
                 </select>
             </div>
             <div class="col-lg-2 mb-2">
-                <label for="karyawanFilter" style="font-size: 14px;" class="fw-semibold mb-1">Karyawan data</label>
+                <label for="karyawanFilter" style="font-size: 14px;" class="fw-semibold mb-1">Nama Karyawan</label>
                 <select wire:model.live="karyawanFilter" class="form-select form-select-sm" id="karyawanFilter">
-                    <option value="">Nama Karyawan</option>
+                    <option value="">Semua Karyawan</option>
                     @foreach ($users as $user)
                     <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
             </div>
             <div class="col-lg-3 mb-2">
-                <label for="startDate" style="font-size: 14px;" class="fw-semibold mb-1">jarak tanggal</label>
+                <label for="startDate" style="font-size: 14px;" class="fw-semibold mb-1">Jarak Tanggal Transaksi</label>
                 <div class="d-flex gap-1">
                     <input type="date" wire:model.live="startDate" class="form-control form-control-sm"
                         id="startDate">

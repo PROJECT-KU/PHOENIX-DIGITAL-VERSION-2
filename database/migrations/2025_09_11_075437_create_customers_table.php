@@ -16,14 +16,11 @@ return new class extends Migration
             $table->string('nama', 100);
             $table->string('email', 140)->unique();
             $table->string('no_hp', 15)->nullable();
-            $table->enum('status_member', ['active', 'non-active'])->default('non-active');
             $table->timestamps();
             $table->softDeletes();
 
             $table->index('nama');
-            $table->index('status_member');
             $table->index(['nama', 'email'], 'search_name_email_idx');
-            $table->index(['status_member', 'created_at'], 'filter_status_date_idx');
         });
     }
 

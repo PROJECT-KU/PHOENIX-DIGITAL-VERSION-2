@@ -48,13 +48,23 @@ class PemesananrscForm extends Component
             $this->id_transaksi         = $this->pemesananrsc->id_transaksi;
             $this->nama_camp            = $this->pemesananrsc->nama_camp;
             $this->batch_camp           = $this->pemesananrsc->batch_camp;
-            $this->tanggal_mulai_camp   = $this->pemesananrsc->tanggal_mulai_camp?->format('Y-m-d');
-            $this->tanggal_akhir_camp   = $this->pemesananrsc->tanggal_akhir_camp?->format('Y-m-d');
+            $this->tanggal_mulai_camp = $this->pemesananrsc->tanggal_mulai_camp
+                ? Carbon::parse($this->pemesananrsc->tanggal_mulai_camp)->format('Y-m-d')
+                : null;
+
+            $this->tanggal_akhir_camp = $this->pemesananrsc->tanggal_akhir_camp
+                ? Carbon::parse($this->pemesananrsc->tanggal_akhir_camp)->format('Y-m-d')
+                : null;
             $this->nama_pembeli         = $this->pemesananrsc->getAttribute('nama_pembeli');
             $this->telp_pembeli         = $this->pemesananrsc->telp_pembeli;
             $this->jumlah_pemesanan     = $this->pemesananrsc->jumlah_pemesanan;
-            $this->tanggal_pemesanan    = $this->pemesananrsc->tanggal_pemesanan?->format('Y-m-d');
-            $this->tanggal_berakhir     = $this->pemesananrsc->tanggal_berakhir?->format('Y-m-d');
+            $this->tanggal_pemesanan = $this->pemesananrsc->tanggal_pemesanan
+                ? Carbon::parse($this->pemesananrsc->tanggal_pemesanan)->format('Y-m-d')
+                : null;
+
+            $this->tanggal_berakhir = $this->pemesananrsc->tanggal_berakhir
+                ? Carbon::parse($this->pemesananrsc->tanggal_berakhir)->format('Y-m-d')
+                : null;
             $this->harga_satuan         = $this->formatRupiah($this->pemesananrsc->harga_satuan);
             $this->total                = $this->formatRupiah($this->pemesananrsc->total);
             $this->akun                 = $this->pemesananrsc->akun;
@@ -112,7 +122,6 @@ class PemesananrscForm extends Component
 
     public function save()
     {
-
         $this->validate([
             'nama_camp'            => 'required',
             'batch_camp'           => 'required|numeric',
@@ -122,7 +131,6 @@ class PemesananrscForm extends Component
             'telp_pembeli'         => 'required',
             'tanggal_pemesanan'    => 'required|date',
             'jumlah_pemesanan'     => 'required|numeric|min:0',
-            'harga_satuan'         => 'required|numeric|min:0',
             'akun'                 => 'required',
             'pic'                  => 'required',
             'status'               => 'required|in:habis,pengganti,perpanjang,baru',
@@ -200,7 +208,7 @@ class PemesananrscForm extends Component
 
 
             session()->flash('success', 'Data Pemesanan berhasil ditambahkan!');
-            return redirect()->route('admin.pemesananrsc.index');
+            return redirect()->route('admin.pesananrsc.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menambahkan Pemesanan: ' . $e->getMessage());
         }
@@ -231,7 +239,7 @@ class PemesananrscForm extends Component
             ]);
 
             session()->flash('success', 'Perubahan Data Pemesanan berhasil disimpan!');
-            return redirect()->route('admin.pemesananrsc.index');
+            return redirect()->route('admin.pesananrsc.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate Data Pemesanan: ' . $e->getMessage());
         }
