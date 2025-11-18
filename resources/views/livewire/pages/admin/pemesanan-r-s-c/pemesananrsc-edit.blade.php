@@ -3,10 +3,14 @@
         <h3>Edit Data Pengeluaran</h3>
         @php
         $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')],
-        ['name' => 'Data Pengeluaran', 'url' => route('admin.spending.index')],
+        ['name' => 'Data Pengeluaran', 'url' => route('admin.pemesananrsc.index')],
         ['name' => 'Edit Data Pengeluaran']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
-    <livewire:pages.admin.spending.spending-form :spending-id="$spendingId" />
+    <div class="card">
+        <div class="card-body">
+            <livewire:pages.admin.pemesanan-r-s-c.pemesananrsc-form :pemesananrsc="$pemesananrsc" />
+        </div>
+    </div>
 </div>

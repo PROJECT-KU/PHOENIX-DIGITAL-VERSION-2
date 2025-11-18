@@ -12,12 +12,18 @@ class GajiKaryawansForm extends Component
     public ?GajiKaryawans $gajikaryawan = null;
     public $id_transaksi;
     public $nama_karyawan;
+    public $bank;
+    public $no_rek;
     public $tanggal_transaksi;
     public $gaji_pokok;
-    public $bonus;
-    public $tunjangan;
+    public $bonus_kinerja;
     public $bonus_lainnya;
+    public $tunjangan_kesehatan;
+    public $tunjangan_thr;
+    public $tunjangan_ketenagakerjaan;
+    public $tunjangan_lainnya;
     public $potongan;
+    public $pph21;
     public $total;
     public $deskripsi;
     public $status = 'pending';
@@ -30,19 +36,25 @@ class GajiKaryawansForm extends Component
         $this->users = User::select('id', 'name')->orderBy('name')->get();
 
         if ($this->gajikaryawan) {
-            $this->gajikaryawan = $this->gajikaryawan;
-            $this->id_transaksi = $this->gajikaryawan->id_transaksi;
-            $this->nama_karyawan = $this->gajikaryawan->getAttribute('nama_karyawan');
-            $this->tanggal_transaksi = $this->gajikaryawan->tanggal_transaksi?->format('Y-m-d');
-            $this->gaji_pokok        = $this->formatRupiah($this->gajikaryawan->gaji_pokok);
-            $this->bonus             = $this->formatRupiah($this->gajikaryawan->bonus);
-            $this->tunjangan         = $this->formatRupiah($this->gajikaryawan->tunjangan);
-            $this->bonus_lainnya     = $this->formatRupiah($this->gajikaryawan->bonus_lainnya);
-            $this->potongan          = $this->formatRupiah($this->gajikaryawan->potongan);
-            $this->total = $this->gajikaryawan->total;
-            $this->deskripsi = $this->gajikaryawan->deskripsi;
-            $this->status = $this->gajikaryawan->status;
-            $this->mode = 'edit';
+            $this->gajikaryawan                 = $this->gajikaryawan;
+            $this->id_transaksi                 = $this->gajikaryawan->id_transaksi;
+            $this->nama_karyawan                = $this->gajikaryawan->getAttribute('nama_karyawan');
+            $this->bank                         = $this->gajikaryawan->bank;
+            $this->no_rek                       = $this->gajikaryawan->no_rek;
+            $this->tanggal_transaksi            = $this->gajikaryawan->tanggal_transaksi?->format('Y-m-d');
+            $this->gaji_pokok                   = $this->formatRupiah($this->gajikaryawan->gaji_pokok);
+            $this->bonus_kinerja                = $this->formatRupiah($this->gajikaryawan->bonus_kinerja);
+            $this->bonus_lainnya                = $this->formatRupiah($this->gajikaryawan->bonus_lainnya);
+            $this->tunjangan_kesehatan          = $this->formatRupiah($this->gajikaryawan->tunjangan_kesehatan);
+            $this->tunjangan_thr                = $this->formatRupiah($this->gajikaryawan->tunjangan_thr);
+            $this->tunjangan_ketenagakerjaan    = $this->formatRupiah($this->gajikaryawan->tunjangan_ketenagakerjaan);
+            $this->tunjangan_lainnya            = $this->formatRupiah($this->gajikaryawan->tunjangan_lainnya);
+            $this->potongan                     = $this->formatRupiah($this->gajikaryawan->potongan);
+            $this->pph21                        = $this->formatRupiah($this->gajikaryawan->pph21);
+            $this->total                        = $this->gajikaryawan->total;
+            $this->deskripsi                    = $this->gajikaryawan->deskripsi;
+            $this->status                       = $this->gajikaryawan->status;
+            $this->mode                         = 'edit';
         } else {
             $this->mode = 'create';
             $this->tanggal_transaksi = now()->format('Y-m-d');
@@ -54,7 +66,17 @@ class GajiKaryawansForm extends Component
     public function updated($propertyName)
     {
         // setiap kali field berubah, hitung ulang total
-        if (in_array($propertyName, ['gaji_pokok', 'bonus', 'tunjangan', 'bonus_lainnya', 'potongan'])) {
+        if (in_array($propertyName, [
+            'gaji_pokok',
+            'bonus_kinerja',
+            'bonus_lainnya',
+            'tunjangan_kesehatan',
+            'tunjangan_thr',
+            'tunjangan_ketenagakerjaan',
+            'tunjangan_lainnya',
+            'potongan',
+            'pph21'
+        ])) {
             $this->calculateTotal();
         }
     }
@@ -63,10 +85,14 @@ class GajiKaryawansForm extends Component
     {
         $this->total =
             (int) $this->toNumber($this->gaji_pokok) +
-            (int) $this->toNumber($this->bonus) +
-            (int) $this->toNumber($this->tunjangan) +
-            (int) $this->toNumber($this->bonus_lainnya) -
-            (int) $this->toNumber($this->potongan);
+            (int) $this->toNumber($this->bonus_kinerja) +
+            (int) $this->toNumber($this->bonus_lainnya) +
+            (int) $this->toNumber($this->tunjangan_kesehatan) +
+            (int) $this->toNumber($this->tunjangan_thr) +
+            (int) $this->toNumber($this->tunjangan_ketenagakerjaan) +
+            (int) $this->toNumber($this->tunjangan_lainnya) -
+            (int) $this->toNumber($this->potongan) -
+            (int) $this->toNumber($this->pph21);
     }
 
     private function formatRupiah($angka)
@@ -116,17 +142,23 @@ class GajiKaryawansForm extends Component
     {
         try {
             GajiKaryawans::create([
-                'id_transaksi'      => Str::upper(Str::random(5)),
-                'nama_karyawan'     => $this->nama_karyawan,
-                'tanggal_transaksi' => $this->tanggal_transaksi,
-                'gaji_pokok'        => $this->toNumber($this->gaji_pokok),
-                'bonus'             => $this->toNumber($this->bonus),
-                'tunjangan'         => $this->toNumber($this->tunjangan),
-                'bonus_lainnya'     => $this->toNumber($this->bonus_lainnya),
-                'potongan'          => $this->toNumber($this->potongan),
-                'total'             => $this->total,
-                'deskripsi'         => $this->deskripsi,
-                'status'            => $this->status,
+                'id_transaksi'                  => Str::upper(Str::random(5)),
+                'nama_karyawan'                 => $this->nama_karyawan,
+                'bank'                          => $this->bank,
+                'no_rek'                        => $this->no_rek,
+                'tanggal_transaksi'             => $this->tanggal_transaksi,
+                'gaji_pokok'                    => $this->toNumber($this->gaji_pokok),
+                'bonus_kinerja'                 => $this->toNumber($this->bonus_kinerja),
+                'bonus_lainnya'                 => $this->toNumber($this->bonus_lainnya),
+                'tunjangan_kesehatan'           => $this->toNumber($this->tunjangan_kesehatan),
+                'tunjangan_thr'                 => $this->toNumber($this->tunjangan_thr),
+                'tunjangan_ketenagakerjaan'     => $this->toNumber($this->tunjangan_ketenagakerjaan),
+                'tunjangan_lainnya'             => $this->toNumber($this->tunjangan_lainnya),
+                'potongan'                      => $this->toNumber($this->potongan),
+                'pph21'                         => $this->toNumber($this->pph21),
+                'total'                         => $this->total,
+                'deskripsi'                     => $this->deskripsi,
+                'status'                        => $this->status,
             ]);
 
             session()->flash('success', 'Data Gaji Karyawan berhasil ditambahkan!');
@@ -140,17 +172,23 @@ class GajiKaryawansForm extends Component
     {
         try {
             $this->gajikaryawan->update([
-                'id_transaksi'      => $this->id_transaksi,
-                'nama_karyawan'     => $this->nama_karyawan,
-                'tanggal_transaksi' => $this->tanggal_transaksi,
-                'gaji_pokok'        => $this->toNumber($this->gaji_pokok),
-                'bonus'             => $this->toNumber($this->bonus),
-                'tunjangan'         => $this->toNumber($this->tunjangan),
-                'bonus_lainnya'     => $this->toNumber($this->bonus_lainnya),
-                'potongan'          => $this->toNumber($this->potongan),
-                'total'             => $this->total,
-                'deskripsi'         => $this->deskripsi,
-                'status'            => $this->status,
+                'id_transaksi'                  => $this->id_transaksi,
+                'nama_karyawan'                 => $this->nama_karyawan,
+                'bank'                          => $this->bank,
+                'no_rek'                        => $this->no_rek,
+                'tanggal_transaksi'             => $this->tanggal_transaksi,
+                'gaji_pokok'                    => $this->toNumber($this->gaji_pokok),
+                'bonus_kinerja'                 => $this->toNumber($this->bonus_kinerja),
+                'bonus_lainnya'                 => $this->toNumber($this->bonus_lainnya),
+                'tunjangan_kesehatan'           => $this->toNumber($this->tunjangan_kesehatan),
+                'tunjangan_thr'                 => $this->toNumber($this->tunjangan_thr),
+                'tunjangan_ketenagakerjaan'     => $this->toNumber($this->tunjangan_ketenagakerjaan),
+                'tunjangan_lainnya'             => $this->toNumber($this->tunjangan_lainnya),
+                'potongan'                      => $this->toNumber($this->potongan),
+                'pph21'                         => $this->toNumber($this->pph21),
+                'total'                         => $this->total,
+                'deskripsi'                     => $this->deskripsi,
+                'status'                        => $this->status,
             ]);
 
             session()->flash('success', 'Perubahan Data Gaji Karyawan berhasil disimpan!');
