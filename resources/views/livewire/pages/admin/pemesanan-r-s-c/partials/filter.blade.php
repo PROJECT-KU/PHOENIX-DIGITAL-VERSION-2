@@ -41,37 +41,34 @@
                 </select>
             </div>
             <div class="col-lg-2 mb-2">
-                <label for="jenisPengeluaran" style="font-size: 14px;" class="fw-semibold mb-1">Jenis
-                    Pengeluaran</label>
-                <select wire:model.live="jenisPengeluaran" class="form-select form-select-sm" id="jenisPengeluaran">
-                    <option value="">Semua Jenis</option>
-                    @foreach ($jenisPengeluaranOptions as $jenis)
-                    <option value="{{ $jenis }}">
-                        {{ $jenis === 'pembelian_akun' ? 'Penjualan Akun' : 'Lainnya' }}
-                    </option>
+                <label for="pembeliFilter" style="font-size: 14px;" class="fw-semibold mb-1">Nama Pembeli</label>
+                <select wire:model.live="pembeliFilter" class="form-select form-select-sm" id="pembeliFilter">
+                    <option value="">Semua Nama</option>
+                    @foreach ($pembeliList as $nama)
+                        <option value="{{ $nama }}">{{ $nama }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div>            
             <div class="col-lg-2 mb-2">
-                <label for="penginputFilter" style="font-size: 14px;" class="fw-semibold mb-1">penginput data</label>
-                <select wire:model.live="penginputFilter" class="form-select form-select-sm" id="penginputFilter">
-                    <option value="">Semua Penginput</option>
-                    @foreach ($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                <label for="kategoriFilter" style="font-size: 14px;" class="fw-semibold mb-1">Kategori Camp</label>
+                <select wire:model.live="kategoriFilter" class="form-select form-select-sm" id="kategoriFilter">
+                    <option value="">Semua Kategori</option>
+                    @foreach ($kategoriList as $kategori)
+                        <option value="{{ $kategori }}">{{ $kategori }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div>            
             <div class="col-lg-2 mb-2">
-                <label for="picPembeliFilter" style="font-size: 14px;" class="fw-semibold mb-1">PIC pembeli akun</label>
-                <select wire:model.live="picPembeliFilter" class="form-select form-select-sm" id="picPembeliFilter">
-                    <option value="">Semua PIC</option>
-                    @foreach ($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                <label for="batchFilter" style="font-size: 14px;" class="fw-semibold mb-1">Batch Camp</label>
+                <select wire:model.live="batchFilter" class="form-select form-select-sm" id="batchFilter">
+                    <option value="">Semua Batch</option>
+                    @foreach ($batchList as $batch)
+                        <option value="{{ $batch }}">{{ $batch }}</option>
                     @endforeach
                 </select>
-            </div>
+            </div>       
             <div class="col-lg-3 mb-2">
-                <label for="startDate" style="font-size: 14px;" class="fw-semibold mb-1">jarak tanggal</label>
+                <label for="startDate" style="font-size: 14px;" class="fw-semibold mb-1">jarak tanggal Pemesanan</label>
                 <div class="d-flex gap-1">
                     <input type="date" wire:model.live="startDate" class="form-control form-control-sm"
                         id="startDate">

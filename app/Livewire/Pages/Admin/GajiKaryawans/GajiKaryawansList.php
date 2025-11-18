@@ -21,6 +21,7 @@ class GajiKaryawansList extends Component
     public $endDate = '';
     public $karyawanFilter = '';
     public $idtransaksiFilter = '';
+    public $norekFilter = '';
     public $perPage = 10;
 
     protected $queryString = [
@@ -30,6 +31,7 @@ class GajiKaryawansList extends Component
         'endDate' => ['except' => ''],
         'karyawanFilter' => ['except' => ''],
         'idtransaksiFilter' => ['except' => ''],
+        'norekFilter' => ['except' => ''],
         'page' => ['except' => 1],
     ];
 
@@ -58,6 +60,10 @@ class GajiKaryawansList extends Component
     {
         $this->resetPage();
     }
+    public function updatingNorekFilter()
+    {
+        $this->resetPage();
+    }
     public function clearFilters()
     {
         $this->search = '';
@@ -66,6 +72,7 @@ class GajiKaryawansList extends Component
         $this->endDate = '';
         $this->karyawanFilter = '';
         $this->idtransaksiFilter = '';
+        $this->norekFilter = '';
         $this->resetPage();
     }
 
@@ -88,7 +95,6 @@ class GajiKaryawansList extends Component
         return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
     }
 
-
     #[Layout('layouts.app')]
     public function render()
     {
@@ -97,14 +103,31 @@ class GajiKaryawansList extends Component
         // Search filter
         if (!empty($this->search)) {
             $query->where(function ($q) {
-                $q->where('deskripsi', 'like', '%' . $this->search . '%')
-                    ->orWhere('id_transaksi', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('karyawan', function ($q) {
-                        $q->where('name', 'like', '%' . $this->search . '%');
-                    });
+                $search = '%' . $this->search . '%'; // ✅ definisikan variabel lokal
+                $q->where('deskripsi', 'like', $search)
+                    ->orWhere('id_transaksi', 'like', $search)
+                    ->orWhereHas('karyawan', function ($q) use ($search) {
+                        $q->where('name', 'like', $search);
+                    })
+                    ->orWhere('bank', 'like', $search)
+                    ->orWhere('no_rek', 'like', $search)
+                    ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%d %M %Y') LIKE ?", [$search])
+                    ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%M %Y') LIKE ?", [$search]) // Bisa cari "Juni 2024"
+                    ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%Y') LIKE ?", [$search])   // Bisa cari "2024"
+                    ->orWhere('gaji_pokok', 'like', $search)
+                    ->orWhere('bonus_kinerja', 'like', $search)
+                    ->orWhere('bonus_lainnya', 'like', $search)
+                    ->orWhere('tunjangan_kesehatan', 'like', $search)
+                    ->orWhere('tunjangan_thr', 'like', $search)
+                    ->orWhere('tunjangan_ketenagakerjaan', 'like', $search)
+                    ->orWhere('tunjangan_lainnya', 'like', $search)
+                    ->orWhere('potongan', 'like', $search)
+                    ->orWhere('pph21', 'like', $search)
+                    ->orWhere('total', 'like', $search)
+                    ->orWhere('deskripsi', 'like', $search)
+                    ->orWhere('status', 'like', $search);
             });
         }
-
 
         if (!empty($this->statusFilter)) {
             $query->byStatus($this->statusFilter);
@@ -118,6 +141,9 @@ class GajiKaryawansList extends Component
         if (!empty($this->idtransaksiFilter)) {
             $query->byIDTransaksi($this->idtransaksiFilter);
         }
+        if (!empty($this->norekFilter)) {
+            $query->byNorek($this->norekFilter);
+        }
 
         $gajikaryawan = $query->orderBy('tanggal_transaksi', 'desc')
             ->paginate($this->perPage);
@@ -130,11 +156,17 @@ class GajiKaryawansList extends Component
             ->orderBy('id_transaksi', 'asc')
             ->pluck('id_transaksi');
 
+        $norekOptions = GajiKaryawans::select('no_rek')
+            ->distinct()
+            ->orderBy('no_rek', 'asc')
+            ->pluck('no_rek');
+
         return view('livewire.pages.admin.gaji-karyawans.gaji-karyawans-list', [
             'gajikaryawan' => $gajikaryawan,
             'users' => $users,
             'statusOptions' => $statusOptions,
             'idTransaksiOptions' => $idTransaksiOptions,
+            'norekOptions' => $norekOptions,
         ]);
     }
 }
