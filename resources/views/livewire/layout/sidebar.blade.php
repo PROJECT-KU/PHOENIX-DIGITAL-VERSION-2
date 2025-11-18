@@ -37,20 +37,26 @@ new class extends Component {
                     </a>
                 </li>
 
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.pemesananrsc.*') ? 'active open' : '' }}">
+                <li
+                    class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cart {{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.pemesananrsc.*') ? 'text-primary' : '' }}">
-                            Pemesanan
+                            class="bi bi-cart {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary' : '' }}"></i>
+                        <span
+                            class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary' : '' }}">
+                            Pesanan
                         </span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item {{ request()->routeIs('admin.pemesananrsc.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.pemesananrsc.index') }}" class="submenu-link">
-                                Pemesanan RSC
+                        <li class="submenu-item {{ request()->routeIs('admin.pesananrsc.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.pesananrsc.index') }}" class="submenu-link">
+                                Pesanan RSC
                             </a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
+                            <a wire:navigate class="submenu-link" href="{{ route('admin.pesanantoko.index') }}">Pesanan
+                                Toko</a>
                         </li>
                     </ul>
                 </li>

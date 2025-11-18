@@ -1,25 +1,25 @@
 <div x-data="{ showFilter: $persist(false) }">
     <!-- Search Bar -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <div class="form-group mb-0 position-relative has-icon-left">
+    <div class="mb-3 d-flex align-items-center justify-content-between">
+        <div class="gap-2 d-flex align-items-center">
+            <div class="mb-0 form-group position-relative has-icon-left">
                 <input wire:model.live.debounce.300ms="search" type="text" class="form-control border-secondary"
                     placeholder="Cari berdasarkan nama penginput, deskripsi, atau nama PIC pembeli...">
                 <div class="form-control-icon">
                     <i class="bi bi-search" style="font-size: 14px;"></i>
                 </div>
             </div>
-            <button type="button" @click="showFilter = !showFilter" class="btn btn-outline-secondary d-flex gap-1">
+            <button type="button" @click="showFilter = !showFilter" class="gap-1 btn btn-outline-secondary d-flex">
                 <i class="bi bi-filter"></i>
                 <span>filter</span>
             </button>
         </div>
-        <a class="btn btn-primary rounded-pill" href="{{ route('admin.pemesananrsc.create') }}" wire:navigate>
+        <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesananrsc.create') }}" wire:navigate>
             <i class="bi bi-plus-lg"></i>
             <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
         </a>
     </div>
-    <div class="card border pt-3 pb-0 px-4" x-show="showFilter" x-transition x-transition:enter.duration.500ms
+    <div class="px-4 pt-3 pb-0 border card" x-show="showFilter" x-transition x-transition:enter.duration.500ms
         x-transition:leave.duration.400ms x-cloak>
         <div class="d-flex align-items-center justify-content-between">
             <p class="fw-semibold text-dark">filter tabel</p>
@@ -30,9 +30,9 @@
                 </button>
             </div>
         </div>
-        <div class="row mb-3">
-            <div class="col-lg-2 mb-2">
-                <label for="statusFilter" style="font-size: 14px;" class="fw-semibold mb-1">status</label>
+        <div class="mb-3 row">
+            <div class="mb-2 col-lg-2">
+                <label for="statusFilter" style="font-size: 14px;" class="mb-1 fw-semibold">status</label>
                 <select wire:model.live="statusFilter" id="statusFilter" class="form-select form-select-sm">
                     <option value="">Semua Status</option>
                     @foreach ($statusOptions as $status)
@@ -40,43 +40,46 @@
                     @endforeach
                 </select>
             </div>
-            <div class="col-lg-2 mb-2">
-                <label for="pembeliFilter" style="font-size: 14px;" class="fw-semibold mb-1">Nama Pembeli</label>
-                <select wire:model.live="pembeliFilter" class="form-select form-select-sm" id="pembeliFilter">
-                    <option value="">Semua Nama</option>
-                    @foreach ($pembeliList as $nama)
-                        <option value="{{ $nama }}">{{ $nama }}</option>
+            <div class="mb-2 col-lg-2">
+                <label for="jenisPengeluaran" style="font-size: 14px;" class="mb-1 fw-semibold">Jenis
+                    Pengeluaran</label>
+                <select wire:model.live="jenisPengeluaran" class="form-select form-select-sm" id="jenisPengeluaran">
+                    <option value="">Semua Jenis</option>
+                    @foreach ($jenisPengeluaranOptions as $jenis)
+                    <option value="{{ $jenis }}">
+                        {{ $jenis === 'pembelian_akun' ? 'Penjualan Akun' : 'Lainnya' }}
+                    </option>
                     @endforeach
                 </select>
-            </div>            
-            <div class="col-lg-2 mb-2">
-                <label for="kategoriFilter" style="font-size: 14px;" class="fw-semibold mb-1">Kategori Camp</label>
-                <select wire:model.live="kategoriFilter" class="form-select form-select-sm" id="kategoriFilter">
-                    <option value="">Semua Kategori</option>
-                    @foreach ($kategoriList as $kategori)
-                        <option value="{{ $kategori }}">{{ $kategori }}</option>
+            </div>
+            <div class="mb-2 col-lg-2">
+                <label for="penginputFilter" style="font-size: 14px;" class="mb-1 fw-semibold">penginput data</label>
+                <select wire:model.live="penginputFilter" class="form-select form-select-sm" id="penginputFilter">
+                    <option value="">Semua Penginput</option>
+                    @foreach ($users as $user)
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
-            </div>            
-            <div class="col-lg-2 mb-2">
-                <label for="batchFilter" style="font-size: 14px;" class="fw-semibold mb-1">Batch Camp</label>
-                <select wire:model.live="batchFilter" class="form-select form-select-sm" id="batchFilter">
-                    <option value="">Semua Batch</option>
-                    @foreach ($batchList as $batch)
-                        <option value="{{ $batch }}">{{ $batch }}</option>
+            </div>
+            <div class="mb-2 col-lg-2">
+                <label for="picPembeliFilter" style="font-size: 14px;" class="mb-1 fw-semibold">PIC pembeli akun</label>
+                <select wire:model.live="picPembeliFilter" class="form-select form-select-sm" id="picPembeliFilter">
+                    <option value="">Semua PIC</option>
+                    @foreach ($users as $user)
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
                     @endforeach
                 </select>
-            </div>       
-            <div class="col-lg-3 mb-2">
-                <label for="startDate" style="font-size: 14px;" class="fw-semibold mb-1">jarak tanggal Pemesanan</label>
-                <div class="d-flex gap-1">
+            </div>
+            <div class="mb-2 col-lg-3">
+                <label for="startDate" style="font-size: 14px;" class="mb-1 fw-semibold">jarak tanggal</label>
+                <div class="gap-1 d-flex">
                     <input type="date" wire:model.live="startDate" class="form-control form-control-sm"
                         id="startDate">
                     <input type="date" wire:model.live="endDate" class="form-control form-control-sm">
                 </div>
             </div>
-            <div class="col-lg-1 mb-2">
-                <label for="perPage" style="font-size: 14px;" class="fw-semibold mb-1">per page</label>
+            <div class="mb-2 col-lg-1">
+                <label for="perPage" style="font-size: 14px;" class="mb-1 fw-semibold">per page</label>
                 <select wire:model.live="perPage" class="form-select form-select-sm" id="perPage">
                     <option value="10">10</option>
                     <option value="25">25</option>

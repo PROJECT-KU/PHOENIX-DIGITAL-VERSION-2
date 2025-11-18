@@ -208,7 +208,7 @@ class PemesananrscForm extends Component
 
 
             session()->flash('success', 'Data Pemesanan berhasil ditambahkan!');
-            return redirect()->route('admin.pemesananrsc.index');
+            return redirect()->route('admin.pesananrsc.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menambahkan Pemesanan: ' . $e->getMessage());
         }
@@ -239,7 +239,7 @@ class PemesananrscForm extends Component
             ]);
 
             session()->flash('success', 'Perubahan Data Pemesanan berhasil disimpan!');
-            return redirect()->route('admin.pemesananrsc.index');
+            return redirect()->route('admin.pesananrsc.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate Data Pemesanan: ' . $e->getMessage());
         }

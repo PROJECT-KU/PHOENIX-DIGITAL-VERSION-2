@@ -1,5 +1,5 @@
 <div>
-    <div class="d-flex mb-2 align-items-center justify-content-between">
+    <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Data Pemesanan RSC</h3>
         @php
         $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pemesanan RSC']];
@@ -53,7 +53,7 @@
                                     </td>
                                     <td>
                                         <div>
-                                            <a href="{{ route('admin.pemesananrsc.edit', $item->id) }}"
+                                            <a href="{{ route('admin.pesananrsc.edit', $item->id) }}"
                                                 wire:navigate class="btn btn-sm btn-warning me-1"
                                                 title="Edit">
                                                 <i class="bi bi-pencil-square"></i>
@@ -83,9 +83,9 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="10" class="text-center py-4">
+                                    <td colspan="8" class="py-4 text-center">
                                         <div class="text-muted">
-                                            <i class="bi bi-inbox mb-2 fs-1"></i>
+                                            <i class="mb-2 bi bi-inbox fs-1"></i>
                                             <p>Tidak ada data pemesanan yang ditemukan.</p>
                                         </div>
                                     </td>
