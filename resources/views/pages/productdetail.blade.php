@@ -1,6 +1,6 @@
 <x-guest-layout>
 
-   <main class="main">
+  <main class="main">
 
     <!-- Page Title -->
     <div class="page-title light-background">
@@ -40,7 +40,7 @@
           <div class="col-lg-5" data-aos="fade-left" data-aos-delay="200">
             <div class="product-details">
               <div class="product-badge-container">
-                <span class="badge-category">Audio Equipment</span>
+                <span class="badge-category">{{ $product->nama_akun }}</span>
                 <div class="rating-group">
                   <div class="stars">
                     <i class="bi bi-star-fill"></i>
@@ -53,12 +53,14 @@
                 </div>
               </div>
 
-              <h1 class="product-name">{{ $product->nama_akun }}</h1>
+              <h1 class="product-name"></h1>
 
               <div class="pricing-section">
                 <div class="price-display">
-                  <span class="sale-price">{{ $product->formatted('harga_awal') }}</span>
-                  <span class="regular-price">$239.99</span>
+                  <span id="salePrice" class="sale-price">
+                      {{ $product->formatted('harga_awal') }}
+                  </span>
+                  <span id="regularPrice" class="regular-price" style="display:none;"></span>
                 </div>
                 <div class="savings-info">
                   {{-- <span class="save-amount">Save $50.00</span>
@@ -70,17 +72,17 @@
                 <p>{{ $product->deskripsi }}</p>
               </div>
 
-              <!-- Product Variants -->
+              <!-- Price Options -->
               <div class="price-options-card mt-4">
                   <h4 class="section-title">Pilih Paket Harga</h4>
 
                   <div class="price-select-list">
 
                       <label class="price-option selectable">
-                          <input type="radio" name="price_option" 
-                                value="perbulan"
-                                data-price="{{ $product->formatted('harga_perbulan') }}"
-                                checked>
+                          <input type="radio" name="price_option" value="perbulan"
+                            data-value="{{ $product->harga_perbulan }}"
+                            data-multiplier="1"
+                            data-regular="{{ $product->harga_awal }}">
                           <div class="option-content">
                               <div class="option-title">Per Bulan</div>
                               <div class="option-price">{{ $product->formatted('harga_perbulan') }}</div>
@@ -89,9 +91,10 @@
                       </label>
 
                       <label class="price-option selectable">
-                          <input type="radio" name="price_option" 
+                          <input type="radio" name="price_option"
                                 value="5bulan"
-                                data-price="{{ $product->formatted('harga_5_perbulan') }}">
+                                data-value="{{ $product->harga_5_perbulan }}"
+                                data-multiplier="5">
                           <div class="option-content">
                               <div class="option-title">5 Bulan</div>
                               <div class="option-price">{{ $product->formatted('harga_5_perbulan') }}</div>
@@ -100,9 +103,10 @@
                       </label>
 
                       <label class="price-option selectable">
-                          <input type="radio" name="price_option" 
+                          <input type="radio" name="price_option"
                                 value="10bulan"
-                                data-price="{{ $product->formatted('harga_10_perbulan') }}">
+                                data-value="{{ $product->harga_10_perbulan }}"
+                                data-multiplier="10">
                           <div class="option-content">
                               <div class="option-title">10 Bulan</div>
                               <div class="option-price">{{ $product->formatted('harga_10_perbulan') }}</div>
@@ -111,15 +115,17 @@
                       </label>
 
                       <label class="price-option selectable">
-                          <input type="radio" name="price_option" 
+                          <input type="radio" name="price_option"
                                 value="pertahun"
-                                data-price="{{ $product->formatted('harga_pertahun') }}">
+                                data-value="{{ $product->harga_pertahun }}"
+                                data-multiplier="12">
                           <div class="option-content">
                               <div class="option-title">Pertahun</div>
                               <div class="option-price">{{ $product->formatted('harga_pertahun') }}</div>
                           </div>
                           <i class="bi bi-check-circle-fill check-icon"></i>
                       </label>
+
                   </div>
               </div>
 

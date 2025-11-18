@@ -60,6 +60,11 @@ class Loan extends Model
         return $query->where('user_id', $userId);
     }
 
+    public function scopeByIdTransaksi($query, $transaksiId)
+    {
+        return $query->where('id_transaksi', $transaksiId);
+    }
+
     // Accessors (formatted attributes)
     public function getNominalFormattedAttribute(): string
     {

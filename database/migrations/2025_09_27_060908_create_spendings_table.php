@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('id_transaksi')->unique();
             $table->date('tanggal_transaksi');
             $table->decimal('nominal', 15, 0);
-            $table->text('deskripsi');
+            $table->text('deskripsi')->nullable();
             $table->enum('status', ['pending', 'completed'])->default('pending');
             $table->enum('jenis_pengeluaran', ['pembelian_akun', 'lainnya'])->default('pembelian_akun');
             $table->foreignId('penginput_id')->constrained('users')->onDelete('cascade'); // user yang sedang login

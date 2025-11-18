@@ -95,6 +95,7 @@ class LoanList extends Component
             $query->where(function ($q) use ($searchDate) {
                 $q->where('nama_peminjam', 'like', '%' . $this->search . '%')
                     ->orWhere('deskripsi', 'like', '%' . $this->search . '%')
+                    ->orWhere('id_transaksi', 'like', '%' . $this->search . '%')
                     ->orWhere('nominal', 'like', '%' . $this->search . '%')
                     ->orWhere('status', 'like', '%' . $this->search . '%')
                     ->orWhereHas('penginput', function ($q) {
@@ -120,12 +121,7 @@ class LoanList extends Component
 
         $loans = $query->orderBy('tanggal_peminjam', 'desc')
             ->paginate($this->perPage);
-
-        // query total pinjaman per peminjam
-        // $totalLoans = Loan::select('nama_peminjam', DB::raw('SUM(nominal) as total'))
-        //     ->groupBy('nama_peminjam')
-        //     ->get();
-
+            
         // Gabungan total pinjaman - pengembalian
         $totalLoans = DB::table('loans')
             ->select('nama_peminjam',

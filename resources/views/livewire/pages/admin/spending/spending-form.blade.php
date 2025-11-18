@@ -23,7 +23,7 @@
                 </div>
 
                 <!-- Nominal -->
-               <div class="col-md-6 mb-3"
+                <div class="col-md-6 mb-3"
                     x-data="{
                         formatRupiah(v) {
                             if (!v) return '';
@@ -111,7 +111,7 @@
 
             <div class="row">
                 <!-- PIC Pembeli -->
-                <div class="col-md-6 mb-3" x-show="jenis_pengeluaran === 'pembelian_akun'" x-transition>
+                <div class="col-md-12 mb-3" x-show="jenis_pengeluaran === 'pembelian_akun' || jenis_pengeluaran === 'lainnya'" x-transition>
                     <label for="pic_pembeli_id" class="form-label">
                         PIC Pembeli <span class="text-danger">*</span>
                     </label>
@@ -131,7 +131,7 @@
             <!-- Deskripsi -->
             <div class="mb-3">
                 <label for="deskripsi" class="form-label">
-                    Deskripsi <span class="text-danger">*</span>
+                    Deskripsi
                 </label>
                 <textarea wire:model="deskripsi" class="form-control @error('deskripsi') is-invalid @enderror" id="deskripsi"
                     rows="4" placeholder="Masukkan deskripsi pengeluaran..."></textarea>

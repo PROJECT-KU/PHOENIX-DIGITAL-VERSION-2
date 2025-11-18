@@ -14,10 +14,16 @@
                 <span>filter</span>
             </button>
         </div>
-        <a class="btn btn-primary rounded-pill" href="{{ route('admin.gajikaryawan.create') }}" wire:navigate>
-            <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Data Gaji Karyawan</span>
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <button wire:click="exportExcel" class="btn btn-success rounded-pill">
+                <i class="bi bi-file-earmark-excel"></i> 
+                <span class="d-none d-md-inline"> Export Excel
+            </button>
+            <a class="btn btn-primary rounded-pill" href="{{ route('admin.gajikaryawan.create') }}" wire:navigate>
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-lg-inline">Tambah Data Gaji Karyawan</span>
+            </a>
+        </div>
     </div>
     <div class="card border pt-3 pb-0 px-4" x-show="showFilter" x-transition x-transition:enter.duration.500ms
         x-transition:leave.duration.400ms x-cloak>

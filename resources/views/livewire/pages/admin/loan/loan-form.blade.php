@@ -1,6 +1,5 @@
 <div>
     <div class="card">
-
         <div class="card-body">
             <!-- Flash Messages -->
             @if (session()->has('error'))
@@ -88,10 +87,8 @@
                             "
                             class="form-control @error('nominal') is-invalid @enderror"
                             placeholder="Rp 0">
-
                         <!-- hidden untuk Livewire binding (nilai angka murni) -->
                         <input type="hidden" x-ref="hidden" wire:model.defer="nominal">
-
                         @error('nominal')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -139,5 +136,4 @@
             </form>
         </div>
     </div>
-
 </div>

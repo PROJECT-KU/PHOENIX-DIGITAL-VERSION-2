@@ -9,7 +9,6 @@
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
-
     <ul class="nav nav-tabs mb-3" id="loanTab" role="tablist">
         <li class="nav-item" role="presentation">
             <a href="{{ route('admin.loan.index') }}"
@@ -26,7 +25,6 @@
             </a>
         </li>
     </ul>
-
 
     <div class="row">
     <!-- Card Data Peminjaman -->
@@ -121,7 +119,7 @@
                         <tbody>
                             @forelse($totalLoans as $item)
                                 <tr>
-                                     <td>{{ $item->nama_peminjam }}</td>
+                                    <td>{{ $item->nama_peminjam }}</td>
                                     <td>Rp {{ number_format($item->total_pinjaman, 0, ',', '.') }}</td>
                                     <td>Rp {{ number_format($item->total_pengembalian, 0, ',', '.') }}</td>
                                     <td>
@@ -145,7 +143,5 @@
                 </div>
             </div>
         </div>
-
     </div>
-
 </div>

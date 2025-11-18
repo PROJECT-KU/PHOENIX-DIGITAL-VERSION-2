@@ -60,6 +60,10 @@ class Spending extends Model
     {
         return $query->where('pic_pembeli_id', $userId);
     }
+    public function scopeByIdTransaksi($query, $transaksiId)
+    {
+        return $query->where('id_transaksi', $transaksiId);
+    }
 
     //format data
     public function getNominalFormattedAttribute(): string
@@ -99,6 +103,16 @@ class Spending extends Model
             // Pastikan penginput otomatis user login
             if (auth()->check() && empty($model->penginput_id)) {
                 $model->penginput_id = auth()->id();
+            }
+        });
+
+        // Saat data di-update
+        static::updating(function ($model) {
+            // Jika jenis_pengeluaran berubah, ubah id_transaksi menyesuaikan
+            if ($model->isDirty('jenis_pengeluaran')) {
+                $newJenis = $model->jenis_pengeluaran;
+                $prefix = $newJenis === 'pembelian_akun' ? 'PPA' : 'PLL';
+                $model->id_transaksi = self::generateTransactionId($prefix);
             }
         });
     }

@@ -2,12 +2,14 @@
 
 namespace App\Livewire\Pages\Admin\GajiKaryawans;
 
+use App\Exports\GajiKaryawansExport;
 use App\Models\GajiKaryawans;
 use App\Models\User;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 class GajiKaryawansList extends Component
 {
@@ -136,5 +138,22 @@ class GajiKaryawansList extends Component
             'statusOptions' => $statusOptions,
             'idTransaksiOptions' => $idTransaksiOptions,
         ]);
+    }
+
+    public function exportExcel()
+    {
+        try {
+            $status = $this->status ?? null;
+            $start = $this->startDate ?? null;
+            $end = $this->endDate ?? null;
+
+            $filename = 'gaji_karyawan_' . ($status ?? 'semua') . '_' . now()->format('Ymd_His') . '.xlsx';
+            return Excel::download(new GajiKaryawansExport($status, $start, $end), $filename);
+        } catch (\Exception $e) {
+            $this->dispatch('show-alert', [
+                'type' => 'error',
+                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+            ]);
+        }
     }
 }

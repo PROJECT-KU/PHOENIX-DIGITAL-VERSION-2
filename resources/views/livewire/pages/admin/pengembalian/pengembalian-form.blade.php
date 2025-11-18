@@ -43,9 +43,9 @@
                             Tanggal Pengembalian <span class="text-danger">*</span>
                         </label>
                         <input type="date"
-                               id="tanggal_pengembalian"
-                               wire:model="tanggal_pengembalian"
-                               class="form-control @error('tanggal_pengembalian') is-invalid @enderror">
+                                id="tanggal_pengembalian"
+                                wire:model="tanggal_pengembalian"
+                                class="form-control @error('tanggal_pengembalian') is-invalid @enderror">
                         @error('tanggal_pengembalian')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -53,7 +53,7 @@
 
                     <!-- Nominal Pengembalian -->
                     <div class="col-md-6 mb-3"
-                         x-data="{
+                        x-data="{
                             formatRupiah(v) {
                                 if (!v) return '';
                                 let number_string = v.toString().replace(/[^,\d]/g, '');
@@ -71,10 +71,10 @@
                             parseRaw(v) {
                                 return (v || '').toString().replace(/[^0-9]/g, '');
                             }
-                         }"
-                         x-init="$nextTick(() => { 
+                        }"
+                        x-init="$nextTick(() => { 
                             $refs.display.value = formatRupiah($refs.hidden.value ?? '');
-                         })"
+                        })"
                     >
                         <label for="nominal_display" class="form-label">
                             Nominal Pengembalian <span class="text-danger">*</span>
@@ -82,17 +82,16 @@
 
                         <!-- tampil untuk user -->
                         <input type="text"
-                               id="nominal_display"
-                               x-ref="display"
-                               x-on:input="
+                            id="nominal_display"
+                            x-ref="display"
+                            x-on:input="
                                     let raw = parseRaw($event.target.value);
                                     $event.target.value = formatRupiah(raw);
                                     $wire.set('nominal', raw);
                                     $refs.hidden.value = raw;
-                               "
-                               class="form-control @error('nominal') is-invalid @enderror"
-                               placeholder="Rp 0">
-
+                            "
+                            class="form-control @error('nominal') is-invalid @enderror"
+                            placeholder="Rp 0">
                         <!-- hidden untuk Livewire -->
                         <input type="hidden" id="nominal" x-ref="hidden" wire:model.defer="nominal">
 
@@ -124,10 +123,10 @@
                 <div class="mb-3">
                     <label for="deskripsi" class="form-label">Deskripsi</label>
                     <textarea id="deskripsi"
-                              wire:model="deskripsi"
-                              class="form-control @error('deskripsi') is-invalid @enderror"
-                              rows="4"
-                              placeholder="Masukkan deskripsi pengembalian..."></textarea>
+                            wire:model="deskripsi"
+                            class="form-control @error('deskripsi') is-invalid @enderror"
+                            rows="4"
+                            placeholder="Masukkan deskripsi pengembalian..."></textarea>
                     @error('deskripsi')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror

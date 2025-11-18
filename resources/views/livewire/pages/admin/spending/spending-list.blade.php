@@ -7,23 +7,6 @@
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
 
-    {{-- <ul class="nav nav-tabs mb-3" id="loanTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a href="{{ route('admin.spending.index') }}"
-            class="nav-link {{ request()->routeIs('admin.spending.*') ? 'active' : '' }}"
-            id="data-loan-tab" role="tab" aria-controls="data-loan">
-                Pengeluaran lainya
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a href=""
-            class="nav-link"
-            id="total-loan-tab" role="tab" aria-controls="total-loan">
-                Pengeluaran pembelian akun
-            </a>
-        </li>
-    </ul> --}}
-
     <div class="d-flex justify-content-between align-items-center mb-3">
         <!-- Tabs -->
         <ul class="nav nav-tabs" id="loanTab" role="tablist">
@@ -43,7 +26,6 @@
             </li>
         </ul>
     </div>
-
 
     <div class="row">
         <div class="col-12">
@@ -114,7 +96,7 @@
                             </tbody>
                         </table>
                     </div>
-
+                    
                     <!-- Pagination -->
                     <div class="mt-4">
                         {{ $spendings->links('vendor.pagination') }}

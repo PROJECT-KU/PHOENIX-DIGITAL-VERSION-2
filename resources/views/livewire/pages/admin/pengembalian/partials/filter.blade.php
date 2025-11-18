@@ -18,9 +18,9 @@
         </div>
         <div class="d-flex align-items-center gap-2">
             <button wire:click="exportExcel" class="btn btn-success rounded-pill">
-                <i class="bi bi-file-earmark-excel"></i> Export Excel
+                <i class="bi bi-file-earmark-excel"></i> 
+                <span class="d-none d-md-inline"> Export Excel
             </button>
-
             <a class="btn btn-primary rounded-pill" href="{{ route('admin.pengembalian.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
                 <span class="d-none d-lg-inline">Tambah Data Pengembalian</span>

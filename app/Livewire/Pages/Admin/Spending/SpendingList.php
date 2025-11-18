@@ -2,14 +2,14 @@
 
 namespace App\Livewire\Pages\Admin\Spending;
 
-use App\Models\Spending;
 use App\Models\User;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\On;
 use Livewire\Component;
+use App\Models\Spending;
+use Livewire\Attributes\On;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
 use App\Exports\SpendingExport;
+use Livewire\Attributes\Layout;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 
 
@@ -122,6 +122,7 @@ class SpendingList extends Component
             $query->where(function ($q) {
                 $q->where('deskripsi', 'like', '%' . $this->search . '%')
                     ->orWhere('nominal', 'like', '%' . $this->search . '%')
+                    ->orWhere('id_transaksi', 'like', '%' . $this->search . '%')
                     ->orWhereHas('penginput', function ($q) {
                         $q->where('name', 'like', '%' . $this->search . '%');
                     })
@@ -174,7 +175,8 @@ class SpendingList extends Component
 
             $filename = 'pengeluaran_' . ($jenis ?? 'semua') . '_' . now()->format('Ymd_His') . '.xlsx';
 
-            return \Maatwebsite\Excel\Facades\Excel::download(new SpendingExport($jenis, $start, $end), $filename);
+            return Excel::download(new SpendingExport($jenis, $start, $end), $filename);
+
         } catch (\Exception $e) {
             $this->dispatch('show-alert', [
                 'type' => 'error',

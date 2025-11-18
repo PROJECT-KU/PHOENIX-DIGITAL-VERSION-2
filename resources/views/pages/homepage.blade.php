@@ -383,8 +383,6 @@ Beranda | Phoenix Digital
                   </div>
 
                   <div class="product-info">
-                      <div class="product-category">Premium Collection</div>
-
                       <h4 class="product-name">
                           <a href="{{ route('productdetail', $item->id) }}">
                               {{ $item->nama_akun }}
