@@ -15,12 +15,18 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->string('id_transaksi');
             $table->foreignId('nama_karyawan')->nullable()->constrained('users')->onDelete('cascade'); // karyawan pembeli
+            $table->string('bank')->nullable();
+            $table->string('no_rek')->nullable();
             $table->date('tanggal_transaksi');
             $table->string('gaji_pokok')->nullable();
-            $table->string('bonus')->nullable();
-            $table->string('tunjangan')->nullable();
+            $table->string('bonus_kinerja')->nullable();
             $table->string('bonus_lainnya')->nullable();
+            $table->string('tunjangan_kesehatan')->nullable();
+            $table->string('tunjangan_thr')->nullable();
+            $table->string('tunjangan_ketenagakerjaan')->nullable();
+            $table->string('tunjangan_lainnya')->nullable();
             $table->string('potongan')->nullable();
+            $table->string('pph21')->nullable();
             $table->string('total')->nullable();
             $table->text('deskripsi');
             $table->enum('status', ['pending', 'completed'])->default('pending');

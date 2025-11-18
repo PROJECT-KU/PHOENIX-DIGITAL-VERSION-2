@@ -10,7 +10,10 @@
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
-
+    <div class="card">
+        <div class="card-body">
     <livewire:pages.admin.pemesanan-r-s-c.pemesananrsc-form />
+        </div>
+    </div>
 
 </div>

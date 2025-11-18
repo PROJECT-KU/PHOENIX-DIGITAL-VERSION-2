@@ -16,12 +16,18 @@ class GajiKaryawans extends Model
     protected $fillable = [
         'id_transaksi',
         'nama_karyawan', // menyimpan user id
+        'bank',
+        'no_rek',
         'tanggal_transaksi',
         'gaji_pokok',
-        'bonus',
-        'tunjangan',
+        'bonus_kinerja',
         'bonus_lainnya',
+        'tunjangan_kesehatan',
+        'tunjangan_thr',
+        'tunjangan_ketenagakerjaan',
+        'tunjangan_lainnya',
         'potongan',
+        'pph21',
         'total',
         'deskripsi',
         'status'
@@ -50,6 +56,11 @@ class GajiKaryawans extends Model
     public function getTotalFormattedAttribute(): string
     {
         return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
+    }
+
+    public function getGajiPokokFormattedAttribute()
+    {
+        return 'Rp ' . number_format($this->gaji_pokok, 0, ',', '.');
     }
 
     public function getTanggalTransaksiFormattedAttribute(): string
@@ -84,5 +95,11 @@ class GajiKaryawans extends Model
     public function scopeByIDTransaksi($query, $idtransaksi)
     {
         return $query->where('id_transaksi', $idtransaksi);
+    }
+
+    // Scope filter nomor rekening
+    public function scopeByNorek($query, $norek)
+    {
+        return $query->where('no_rek', $norek);
     }
 }

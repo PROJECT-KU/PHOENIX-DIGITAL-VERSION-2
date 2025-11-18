@@ -24,7 +24,8 @@
                                     <th>ID Transaksi</th>
                                     <th>Nama Karyawan</th>
                                     <th>Tanggal Transaksi</th>
-                                    <th>Total</th>
+                                    <th>Gaji Pokok</th>
+                                    <th>Total Gaji</th>
                                     <th>Status</th>
                                     <th width="120">Aksi</th>
                                 </tr>
@@ -35,6 +36,7 @@
                                     <td>{{ $item->id_transaksi }}</td>
                                     <td>{{ $item->karyawan->name ?? '-' }}</td>
                                     <td>{{ $item->tanggal_transaksi_formatted }}</td>
+                                    <td>{{ $item->gaji_pokok_formatted }}</td>
                                     <td>{{ $item->total_formatted }}</td>
                                     <td>
                                         <span class="badge bg-{{ $item->status === 'completed' ? 'success' : 'warning' }}">
@@ -61,7 +63,7 @@
                                     <td colspan="8" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-inbox mb-2 fs-1"></i>
-                                            <p>Tidak ada data yang ditemukan.</p>
+                                            <p>Tidak ada data gaji yang ditemukan.</p>
                                         </div>
                                     </td>
                                 </tr>
