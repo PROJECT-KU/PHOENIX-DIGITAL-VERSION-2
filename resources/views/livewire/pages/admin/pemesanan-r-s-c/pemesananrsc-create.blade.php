@@ -1,10 +1,10 @@
 <div>
-    <div class="d-flex mb-2 align-items-center justify-content-between">
+    <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Tambah Data Pemesanan</h3>
         @php
         $breadcrumbs = [
         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-        ['name' => 'Data Pemesanan', 'url' => route('admin.pemesananrsc.index')],
+        ['name' => 'Data Pemesanan', 'url' => route('admin.pesananrsc.index')],
         ['name' => 'Tambah Data Pemesanan'],
         ];
         @endphp

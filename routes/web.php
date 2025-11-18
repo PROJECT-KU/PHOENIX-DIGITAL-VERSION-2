@@ -47,6 +47,7 @@ use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Pengembalian
@@ -144,10 +145,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pengembalian/create', PengembalianCreate::class)->name('admin.pengembalian.create');
     Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->name('admin.pengembalian.edit');
 
-    // Data Pemesanan RSC
-    Route::get('/admin/PemesananRSC', PemesananrscList::class)->name('admin.pemesananrsc.index');
-    Route::get('/admin/PemesananRSC/create', PemesananrscCreate::class)->name('admin.pemesananrsc.create');
-    Route::get('/admin/PemesananRSC/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pemesananrsc.edit');
+    // Data Pemesanan RSC dan pemesanan toko online
+    Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
+    Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
+    Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
 
     // Route Lowongan Pekerjaan
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
