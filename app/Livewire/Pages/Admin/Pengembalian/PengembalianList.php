@@ -95,6 +95,7 @@ class PengembalianList extends Component
             $query->where(function ($q) use ($searchDate) {
                 $q->where('nama_pengembalian', 'like', '%' . $this->search . '%')
                     ->orWhere('deskripsi', 'like', '%' . $this->search . '%')
+                    ->orWhere('id_transaksi', 'like', '%' . $this->search . '%')
                     ->orWhere('nominal', 'like', '%' . $this->search . '%')
                     ->orWhere('status', 'like', '%' . $this->search . '%')
                     ->orWhereHas('penginput', function ($q) {
