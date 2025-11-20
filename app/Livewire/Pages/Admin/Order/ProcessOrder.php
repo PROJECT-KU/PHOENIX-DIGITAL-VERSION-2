@@ -38,7 +38,6 @@ class ProcessOrder extends Component
 
     public $processingNotes;
 
-    // Data untuk dropdown
     public $availableAccounts = [];
 
     public $isLoadingAccounts = false;
@@ -53,10 +52,9 @@ class ProcessOrder extends Component
 
         $this->loadAvailableAccounts();
 
-        // Jika order item sudah pernah diproses, load datanya
-        // if ($this->orderItem->data_akun_id) {
-        //     $this->loadExistingData();
-        // }
+        if ($this->orderItem->data_akun_id) {
+            $this->loadExistingData();
+        }
     }
 
     public function loadAvailableAccounts()

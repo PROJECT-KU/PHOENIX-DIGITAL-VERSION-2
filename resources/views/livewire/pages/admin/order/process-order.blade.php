@@ -6,7 +6,7 @@
                 ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                 ['name' => 'Data Pesanan', 'url' => route('admin.pesanantoko.index')],
                 ['name' => 'Detail Pesanan', 'url' => route('admin.pesanantoko.detail', $order)],
-                ['name' => 'Detail Pesanan'],
+                ['name' => 'Proses Pesanan'],
             ];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />

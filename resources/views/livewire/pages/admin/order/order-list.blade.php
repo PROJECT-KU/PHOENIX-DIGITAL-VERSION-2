@@ -62,65 +62,68 @@
 
             <div class="card">
                 <div class="p-0 card-body">
-                    <table class="table mb-0 table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>Kode Pesanan</th>
-                                <th>Customer</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Tgl Pesan</th>
-                                <th class="text-end">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($orders as $order)
-                                <tr>
-                                    <td>{{ $order->order_number }}</td>
-                                    <td>{{ $order->customer->nama }}</td>
-                                    <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
-                                    <td>
-                                        @php
-                                            $color = '';
-                                            if ($order->status == 'pending') {
-                                                $color = 'warning';
-                                            }
-                                            if ($order->status == 'processing') {
-                                                $color = 'info';
-                                            }
-                                            if ($order->status == 'paid') {
-                                                $color = 'success';
-                                            }
-                                            if ($order->status == 'cancelled') {
-                                                $color = 'danger';
-                                            }
-                                            if ($order->status == 'completed') {
-                                                $color = 'primary';
-                                            }
-                                        @endphp
-                                        <span class="badge bg-{{ $color }}">
-                                            {{ strtoupper($order->status) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
-                                    <td class="text-end">
-                                        <a href="{{route('admin.pesanantoko.detail', $order)}}" title="detail pesanan" class="btn btn-sm btn-primary" wire:navigate>
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </td>
+                    <div class="table-responsive">
+                        <table class="table mb-0 align-middle table-striped nowrap" style="width: 100%;">
+                            <thead class="table-light">
+                                <tr class="text-center">
+                                    <th>Kode Pesanan</th>
+                                    <th>Customer</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Tgl Pesan</th>
+                                    <th class="text-end">Aksi</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="py-4 text-center">
-                                        <div class="text-muted">
-                                            <i class="mb-2 bi bi-inbox fs-1"></i>
-                                            <p>Tidak ada data pemesanan yang ditemukan.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @forelse ($orders as $order)
+                                    <tr class="text-center">
+                                        <td>{{ $order->order_number }}</td>
+                                        <td>{{ $order->customer->nama }}</td>
+                                        <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
+                                        <td>
+                                            @php
+                                                $color = '';
+                                                if ($order->status == 'pending') {
+                                                    $color = 'warning';
+                                                }
+                                                if ($order->status == 'processing') {
+                                                    $color = 'info';
+                                                }
+                                                if ($order->status == 'paid') {
+                                                    $color = 'success';
+                                                }
+                                                if ($order->status == 'cancelled') {
+                                                    $color = 'danger';
+                                                }
+                                                if ($order->status == 'completed') {
+                                                    $color = 'primary';
+                                                }
+                                            @endphp
+                                            <span class="badge bg-{{ $color }}">
+                                                {{ strtoupper($order->status) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                                        <td class="text-end">
+                                            <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
+                                                title="detail pesanan" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="py-4 text-center">
+                                            <div class="text-muted">
+                                                <i class="mb-2 bi bi-inbox fs-1"></i>
+                                                <p>Tidak ada data pemesanan yang ditemukan.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="card-footer">

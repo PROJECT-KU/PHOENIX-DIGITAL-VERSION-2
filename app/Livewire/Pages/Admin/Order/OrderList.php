@@ -58,13 +58,13 @@ class OrderList extends Component
                 $q->where('status', 'completed');
             })
             ->when($this->activeTab === 'neworder', function ($q) {
-                $q->where('status', 'paid');
+                $q->where('status', 'pending');
             })
             ->when($this->activeTab === 'cancelled', function ($q) {
                 $q->where('status', 'cancelled');
             })
             ->latest()
-            ->paginate(20);
+            ->paginate(10);
     }
 
     #[Layout('layouts.app')]
