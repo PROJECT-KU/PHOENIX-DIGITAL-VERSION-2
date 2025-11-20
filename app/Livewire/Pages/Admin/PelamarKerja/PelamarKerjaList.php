@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\PelamarKerja;
 
-use App\Models\Job;
 use App\Models\JobApplication;
+use App\Models\Lowongan;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -15,7 +15,9 @@ class PelamarKerjaList extends Component
     use WithPagination;
 
     public $perPage = 10;
+
     public $filterMonth = '';
+
     public $filterJob = '';
 
     #[Layout('layouts.app')]
@@ -36,7 +38,7 @@ class PelamarKerjaList extends Component
         $dataPelamar = $query->paginate($this->perPage);
 
         // Get data untuk filter dropdown
-        $jobList = Job::where('is_active', true)
+        $jobList = Lowongan::where('is_active', true)
             ->orderBy('title')
             ->get();
 
@@ -46,14 +48,14 @@ class PelamarKerjaList extends Component
             $date = now()->subMonths($i);
             $months->push([
                 'value' => $date->format('m'),
-                'label' => $date->locale('id')->isoFormat('MMMM YYYY')
+                'label' => $date->locale('id')->isoFormat('MMMM YYYY'),
             ]);
         }
 
         return view('livewire.pages.admin.pelamar-kerja.pelamar-kerja-list', [
             'dataPelamar' => $dataPelamar,
             'jobList' => $jobList,
-            'months' => $months
+            'months' => $months,
         ]);
     }
 

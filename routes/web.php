@@ -1,64 +1,59 @@
 <?php
 
 use App\Http\Controllers\PaymentCallbackController;
-use App\Livewire\Pages\Admin\Profile;
-use App\Livewire\Pages\Admin\Role;
-use Illuminate\Support\Facades\Route;
-use App\Livewire\Pages\Admin\Dashboard;
 use App\Http\Controllers\Public\HomepageController;
-
-// Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
-
-// Data Customer
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
+// Data Banners
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
 use App\Livewire\Pages\Admin\Customer\CustomerList;
-
-// Data Akun
+use App\Livewire\Pages\Admin\Dashboard;
+// Data Customer
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
-
-// Data Gaji Karyawan
+// Data Akun
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
-
-// Data Product
-use App\Livewire\Pages\Admin\Product\ProductCreate;
-use App\Livewire\Pages\Admin\Product\ProductEdit;
-use App\Livewire\Pages\Admin\Product\ProductList;
-
-// Data Paket Bundling
-use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
-use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
-use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
-
-// Data Spending
-use App\Livewire\Pages\Admin\Spending\SpendingCreate;
-use App\Livewire\Pages\Admin\Spending\SpendingEdit;
-use App\Livewire\Pages\Admin\Spending\SpendingList;
-
-// Data Loan
+// Data Gaji Karyawan
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
+// Data Product
+use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
+use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\Order\DeliverOrder;
+use App\Livewire\Pages\Admin\Order\OrderDetail;
+// Data Paket Bundling
 use App\Livewire\Pages\Admin\Order\OrderList;
+use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
-// Data Pengembalian
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
-
-// Data Pemesanan RSC
+// Data Spending
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
+// Data Loan
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+use App\Livewire\Pages\Admin\Product\ProductCreate;
+use App\Livewire\Pages\Admin\Product\ProductEdit;
+use App\Livewire\Pages\Admin\Product\ProductList;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
+use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
+// Data Pengembalian
+use App\Livewire\Pages\Admin\Profile;
+use App\Livewire\Pages\Admin\Role;
+use App\Livewire\Pages\Admin\Spending\SpendingCreate;
+// Data Pemesanan RSC
+use App\Livewire\Pages\Admin\Spending\SpendingEdit;
+use App\Livewire\Pages\Admin\Spending\SpendingList;
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
@@ -66,6 +61,7 @@ use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentPage;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', Index::class)->name('homepage');
 Route::get('/shop', ShopPageIndex::class)->name('shop.index');
@@ -150,11 +146,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
     Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
+    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}/deliver', DeliverOrder::class)->name('admin.pesanantoko.deliver');
 
     // Route Lowongan Pekerjaan
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
+    Route::get('/admin/lowongan/create', LowonganPekerjaanCreate::class)->name('admin.lowongan.create');
+    Route::get('/admin/lowongan/{lowongan}/edit', LowonganPekerjaanEdit::class)->name('admin.lowongan.edit');
+
+    // route data pelamar
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

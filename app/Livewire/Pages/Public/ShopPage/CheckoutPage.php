@@ -6,14 +6,14 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
-use Illuminate\Support\Str;
 
 class CheckoutPage extends Component
 {
-    #[Validate('required|numeric|digits_between:10,15')]
+    #[Validate('required')]
     public $no_hp = '';
 
     #[Validate('required|string|max:255')]
@@ -25,8 +25,11 @@ class CheckoutPage extends Component
     public $customer_notes = '';
 
     public $isLoadingCustomer = false;
+
     public $customerFound = false;
+
     public $cart = [];
+
     public $total = 0;
 
     public function mount()
@@ -36,6 +39,7 @@ class CheckoutPage extends Component
 
         if (empty($this->cart)) {
             session()->flash('error', 'Keranjang Anda kosong');
+
             return redirect()->route('shop.index');
         }
 
@@ -47,8 +51,33 @@ class CheckoutPage extends Component
         $this->total = array_sum(array_column($this->cart, 'subtotal'));
     }
 
+    protected function formatIndonesianPhone(string $value): string
+    {
+        // hapus spasi, titik, strip, dll
+        $value = preg_replace('/[^0-9+]/', '', $value);
+
+        // kalau sudah dalam bentuk +62...
+        if (str_starts_with($value, '+62')) {
+            return $value;
+        }
+
+        // kalau user ngetik 62xxxxxxxxxx
+        if (str_starts_with($value, '62')) {
+            return '+'.$value;
+        }
+
+        // kalau user ngetik 08xxxxxxxxx
+        if (str_starts_with($value, '0')) {
+            return '+62'.substr($value, 1);
+        }
+
+        // fallback (misal user ngetik sembarang)
+        return $value;
+    }
+
     public function updatedNoHp($value)
     {
+        $this->no_hp = $this->formatIndonesianPhone($value);
         // Auto search customer ketika no_hp diubah (minimal 10 digit)
         if (strlen($value) >= 10) {
             $this->searchCustomer();
@@ -94,6 +123,7 @@ class CheckoutPage extends Component
         // Validasi ulang cart
         if (empty($this->cart)) {
             session()->flash('error', 'Keranjang Anda kosong');
+
             return redirect()->route('shop.index');
         }
 
@@ -148,11 +178,12 @@ class CheckoutPage extends Component
 
             // 6. Redirect ke halaman payment
             session()->flash('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.');
+
             return redirect()->route('payment', ['order' => $order->id]);
         } catch (\Exception $e) {
             DB::rollBack();
 
-            session()->flash('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }
 
@@ -165,7 +196,7 @@ class CheckoutPage extends Component
 
         $increment = $lastOrder ? intval(substr($lastOrder->order_number, -4)) + 1 : 1;
 
-        return 'INV-' . $date . '-' . str_pad($increment, 4, '0', STR_PAD_LEFT);
+        return 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
     }
 
     #[Layout('layouts.guest')]

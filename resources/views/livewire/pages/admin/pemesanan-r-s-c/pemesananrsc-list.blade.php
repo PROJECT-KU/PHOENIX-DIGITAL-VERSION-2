@@ -15,8 +15,8 @@
 
                     <!-- Table -->
                     <div class="table-responsive">
-                        <table id="productTable" class="table table-striped align-middle nowrap" style="width:100%">
-                            <thead class="table-light text-center">
+                        <table id="productTable" class="table align-middle table-striped nowrap" style="width:100%">
+                            <thead class="text-center table-light">
                                 <tr style="text-align: center;">
                                     <th rowspan="2">ID Transaksi</th>
                                     <th rowspan="2">Kategori</th>
@@ -83,7 +83,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="8" class="py-4 text-center">
+                                    <td colspan="10" class="py-4 text-center">
                                         <div class="text-muted">
                                             <i class="mb-2 bi bi-inbox fs-1"></i>
                                             <p>Tidak ada data pemesanan yang ditemukan.</p>
@@ -239,8 +239,8 @@ Website: https://phoenixdigital.id/`;
         } else if (type === 'pembaharuan') {
             pesan =
                 `ID Transaksi: ${idtransaksi}
-            
-Halo ${nama}, 
+
+Halo ${nama},
 Akun ${akun} yang anda order pada tanggal ${pemesanan} dengan masa aktif sampai tanggal ${berakhir}, terdapat pembaharuan akun ${akun}.
 
 Berikut detail akun Anda:
@@ -259,8 +259,8 @@ Website: https://phoenixdigital.id/`;
         } else if (type === 'habis') {
             pesan =
                 `ID Transaksi: ${idtransaksi}
-            
-Halo ${nama}, 
+
+Halo ${nama},
 Akun ${akun} yang anda order pada tanggal ${berakhir} sudah habis. Jika Anda ingin memperpanjang akun ${akun} Anda, silakan hubungi kami.
 
 Terima kasih telah menggunakan layanan kami.

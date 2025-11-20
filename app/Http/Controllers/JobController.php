@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\ApiResponse;
-use App\Models\Job;
-use Illuminate\Http\Request;
+use App\Models\Lowongan;
 
 class JobController extends Controller
 {
@@ -12,7 +11,7 @@ class JobController extends Controller
 
     public function index()
     {
-        $jobs =  Job::query()
+        $jobs = Lowongan::query()
             ->where('is_active', true)
             ->orderBy('title')
             ->get(['id', 'title']);
