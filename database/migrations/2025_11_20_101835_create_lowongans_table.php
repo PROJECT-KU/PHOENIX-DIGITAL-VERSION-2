@@ -11,10 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tbl_jobs', function (Blueprint $table) {
+        Schema::create('lowongans', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->boolean('is_active')->default(true);
+            $table->string('slug');
+            $table->enum('is_active', ['active', 'non-active'])->default('active');
+            $table->longText('requirements')->nullable();
+            $table->longText('descriptions')->nullable();
             $table->timestamps();
         });
     }
@@ -24,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tbl_jobs');
+        Schema::dropIfExists('lowongans');
     }
 };

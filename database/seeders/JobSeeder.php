@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Job;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class JobSeeder extends Seeder
@@ -13,7 +12,7 @@ class JobSeeder extends Seeder
      */
     public function run(): void
     {
-        Job::updateOrCreate(['title' => 'Frontend Engineer']);
-        Job::updateOrCreate(['title' => 'Backend Engineer']);
+        Job::updateOrCreate(['title' => 'Frontend Engineer', 'slug' => 'frontend-engineer']);
+        Job::updateOrCreate(['title' => 'Backend Engineer', 'slug' => 'backend-engineer']);
     }
 }
