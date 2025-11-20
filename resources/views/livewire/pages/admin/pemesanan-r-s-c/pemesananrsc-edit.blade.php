@@ -1,9 +1,9 @@
 <div>
-    <div class="d-flex mb-2 align-items-center justify-content-between">
+    <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Edit Data Pengeluaran</h3>
         @php
         $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')],
-        ['name' => 'Data Pengeluaran', 'url' => route('admin.pemesananrsc.index')],
+        ['name' => 'Data Pengeluaran', 'url' => route('admin.pesananrsc.index')],
         ['name' => 'Edit Data Pengeluaran']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />

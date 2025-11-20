@@ -18,12 +18,12 @@ class DataAkun extends Model
         'pj_akun',
         'harga_satuan',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     protected $hidden = [
@@ -33,5 +33,11 @@ class DataAkun extends Model
     public function pj()
     {
         return $this->belongsTo(User::class, 'pj_akun');
+    }
+
+    // scope
+    public function scopeAvailable($query)
+    {
+        return $query->where('status', 'active');
     }
 }

@@ -104,11 +104,9 @@
                                     </td>
                                     <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
                                     <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-primary"
-                                            wire:click="$dispatch('show-order-detail', { id: {{ $order->id }} })">
+                                        <a href="{{route('admin.pesanantoko.detail', $order)}}" title="detail pesanan" class="btn btn-sm btn-primary" wire:navigate>
                                             <i class="bi bi-eye"></i>
-                                        </button>
-                                        {{-- aksi lain: ubah status, dll --}}
+                                        </a>
                                     </td>
                                 </tr>
                             @empty

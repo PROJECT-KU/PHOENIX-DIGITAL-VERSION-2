@@ -12,6 +12,7 @@ class OrderList extends Component
     use WithPagination;
 
     public string $activeTab = 'all';
+
     public string $search = '';
 
     protected $queryString = ['activeTab'];
@@ -43,7 +44,7 @@ class OrderList extends Component
     public function getOrdersProperty()
     {
         return Order::query()
-            ->with('customer')
+            ->with('customer', 'items')
             ->when($this->search, function ($q) {
                 $q->whereHas('customer', function ($q2) {
                     $q2->where('no_hp', 'like', "%{$this->search}%");
@@ -70,7 +71,7 @@ class OrderList extends Component
     public function render()
     {
         return view('livewire.pages.admin.order.order-list', [
-            'orders' => $this->orders
+            'orders' => $this->orders,
         ]);
     }
 }

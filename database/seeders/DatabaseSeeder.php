@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
         // seeder role
         $this->call([
             RoleSeeder::class,
-            JobSeeder::class,
             LowonganSeeder::class,
         ]);
 

@@ -26,8 +26,11 @@ use App\Livewire\Pages\Admin\Loan\LoanList;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\Order\DeliverOrder;
+use App\Livewire\Pages\Admin\Order\OrderDetail;
 // Data Paket Bundling
 use App\Livewire\Pages\Admin\Order\OrderList;
+use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Spending
@@ -143,6 +146,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
     Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
+    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}/deliver', DeliverOrder::class)->name('admin.pesanantoko.deliver');
 
     // Route Lowongan Pekerjaan
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
