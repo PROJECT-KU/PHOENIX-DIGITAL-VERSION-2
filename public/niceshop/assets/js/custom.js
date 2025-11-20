@@ -1,48 +1,62 @@
-// document.querySelectorAll('input[name="price_option"]').forEach(radio => {
-//     radio.addEventListener('change', function () {
-//         let selectedPrice = this.dataset.price;
-//         let salePrice = document.querySelector('.sale-price');
-
-//         if (salePrice && selectedPrice) {
-//             salePrice.textContent = selectedPrice;
-//         }
-
-//         // Update UI active class
-//         document.querySelectorAll('.price-option').forEach(opt => {
-//             opt.classList.remove('active');
-//         });
-//         this.closest('.price-option').classList.add('active');
-//     });
-// });
-
 function formatRupiah(number) {
-        return 'Rp ' + new Intl.NumberFormat('id-ID').format(number);
-    }
+    if (!number || isNaN(number)) return "Rp 0";
+    return "Rp " + new Intl.NumberFormat("id-ID").format(number);
+}
 
-    const salePrice = document.getElementById('salePrice');
-    const regularPrice = document.getElementById('regularPrice');
+document.addEventListener("DOMContentLoaded", () => {
 
-    // Default state: regular price hidden
+    const salePrice = document.getElementById("salePrice");
+    const regularPrice = document.getElementById("regularPrice");
+
+    // sembunyikan harga coret dulu
     regularPrice.style.display = "none";
 
     document.querySelectorAll('input[name="price_option"]').forEach(radio => {
-        radio.addEventListener('change', function () {
+        radio.addEventListener("change", function () {
 
-            const harga = parseInt(this.dataset.value);
-            const multiplier = parseInt(this.dataset.multiplier);
+            const harga = parseInt(this.dataset.value) || 0;
+            const multiplier = parseInt(this.dataset.multiplier) || 1;
+            const regular = parseInt(this.dataset.regular) || 0;
 
-            // Sale price = harga paket
+            // Harga utama
             salePrice.textContent = formatRupiah(harga);
 
-            // Harga coret = harga * multiplier
+            // Hitung harga coret
             let hargaCoret = harga * multiplier;
 
-            // Khusus paket per bulan → harga_awal menjadi harga coret
-            if (this.value === 'perbulan') {
-                hargaCoret = parseInt(this.dataset.regular);
+            // Jika paket perbulan, harga coret = harga awal (regular)
+            if (this.value === "perbulan" && regular > 0) {
+                hargaCoret = regular;
             }
 
+            // Tampilkan harga coret
             regularPrice.textContent = formatRupiah(hargaCoret);
-            regularPrice.style.display = "inline-block"; // show only after choosing
+            regularPrice.style.display = "inline-block";
+
+            // highlight terpilih
+            document.querySelectorAll('.price-option').forEach(el => {
+                el.classList.remove("active-option");
+            });
+            this.closest(".price-option").classList.add("active-option");
         });
     });
+});
+
+window.addEventListener('cart-success', event => {
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: event.detail.message,
+        timer: 1500,
+        showConfirmButton: false
+    });
+});
+
+window.addEventListener('cart-error', event => {
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: event.detail.message,
+        showConfirmButton: true
+    });
+});
