@@ -50,7 +50,8 @@
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-danger"
-                                            wire:click="$dispatch('will-delete-lowongan-data', {{$lowongan}})" title="Delete">
+                                            wire:click="$dispatch('will-delete-lowongan-data', {{ $lowongan }})"
+                                            title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
