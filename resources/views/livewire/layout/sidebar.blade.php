@@ -77,6 +77,22 @@ new class extends Component {
                     </ul>
                 </li>
 
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.promo.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)"
+                        class="sidebar-link {{ request()->routeIs('admin.promo.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-tag {{ request()->routeIs('admin.promo.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.promo.*') ? 'text-primary' : '' }}">
+                            Promo
+                        </span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.promo.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.promo.index') }}" class="submenu-link">Data
+                                Daftar Promo</a>
+                        </li>
+                    </ul>
+                </li>
+
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
