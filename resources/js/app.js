@@ -164,6 +164,44 @@ document.addEventListener("livewire:init", () => {
             }
         });
     });
+
+    //Promo
+    Livewire.on("DataPromo-created", () => {
+        Swal.fire({
+            icon: "success",
+            title: "Berhasil!",
+            text: "Data Promo berhasil ditambahkan!",
+            timer: 1800,
+            showConfirmButton: false
+        });
+    });
+
+    Livewire.on("DataPromo-updated", () => {
+        Swal.fire({
+            icon: "success",
+            title: "Berhasil!",
+            text: "Perubahan Data Promo berhasil disimpan!",
+            timer: 1800,
+            showConfirmButton: false
+        });
+    });
+
+    Livewire.on("failed-create-data-DataPromo", () => {
+        Swal.fire({
+            icon: "error",
+            title: "Gagal!",
+            text: "Gagal menambahkan data promo.",
+        });
+    });
+
+    Livewire.on("failed-update-data-DataPromo", () => {
+        Swal.fire({
+            icon: "error",
+            title: "Gagal!",
+            text: "Gagal mengupdate data promo.",
+        });
+    });
+
     Livewire.on("will-delete-lowongan-data", (data) => {
         Swal2.fire({
             icon: "question",

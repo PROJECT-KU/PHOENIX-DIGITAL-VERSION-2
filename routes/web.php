@@ -33,6 +33,17 @@ use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
+
+// Data Pengembalian
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
+use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
+
+// Data Promo
+use App\Livewire\Pages\Admin\Promo\PromoCreate;
+use App\Livewire\Pages\Admin\Promo\PromoEdit;
+use App\Livewire\Pages\Admin\Promo\PromoList;
+
 // Data Spending
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
@@ -158,6 +169,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // route data pelamar
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
+
+    // Route Promo
+    Route::get('admin/promo', PromoList::class)->name('admin.promo.index');
+    Route::get('/admin/promo/create', PromoCreate::class)->name('admin.promo.create');
+    Route::get('/admin/promo/{promo}/edit', PromoEdit::class)->name('admin.promo.edit');
 });
 
 require __DIR__.'/auth.php';

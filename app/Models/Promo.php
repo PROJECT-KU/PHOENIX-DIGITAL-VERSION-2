@@ -15,4 +15,28 @@ class Promo extends Model
         'diskon_rupiah',
         'diskon_persen'
     ];
+
+    public function numberFormatted($value)
+    {
+        return 'Rp ' . number_format($value, 0, ',', '.');
+    }
+
+    public function formatted($field)
+    {
+        if (! isset($this->{$field})) {
+            return '-';
+        }
+
+        return $this->numberFormatted($this->{$field});
+    }
+
+    public function percentFormatted($value)
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return '-';
+        }
+
+        $value = (float) $value;
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.') . '%';
+    }
 }
