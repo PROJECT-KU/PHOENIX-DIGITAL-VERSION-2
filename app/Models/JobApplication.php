@@ -10,13 +10,16 @@ use Illuminate\Support\Facades\Storage;
 class JobApplication extends Model
 {
     use HasFactory;
-    protected $table = "tbl_job_applications";
+
+    protected $table = 'tbl_job_applications';
+
     protected $fillable = ['job_id', 'name', 'email', 'phone', 'cv_path', 'cover_letter_path', 'ip_address'];
 
     public function job(): BelongsTo
     {
-        return $this->belongsTo(Job::class);
+        return $this->belongsTo(Lowongan::class);
     }
+
     public function getCvUrlAttribute()
     {
         return Storage::disk('public')->url($this->cv_path);

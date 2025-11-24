@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Job extends Model
+class Lowongan extends Model
 {
     use HasFactory;
-    protected $table = "tbl_jobs";
-    protected $fillable = ['title', 'is_active'];
+
+    protected $fillable = ['title', 'is_active', 'slug', 'requirements', 'descriptions'];
 
     public function applications(): HasMany
     {

@@ -202,4 +202,17 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    Livewire.on("will-delete-lowongan-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data lowongan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-lowongan-data", { id: data["id"] });
+            }
+        });
+    });
 });

@@ -18,8 +18,7 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/custom.css') }}">
 
     <!-- CSS Select2 -->
-
-
+     @stack('scripts-head')
 
     <!-- Scripts -->
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
