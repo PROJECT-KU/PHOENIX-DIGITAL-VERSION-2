@@ -173,6 +173,12 @@ class ProcessOrder extends Component
                 'status' => 'processing',
             ]);
 
+            // Hitung dan update poin jika customer adalah member aktif
+            $customer = $this->order->customer;
+            if ($customer->status_member === 'active') {
+                $customer->updatePoints();
+            }
+
             DB::commit();
 
             session()->flash('success', 'Order item berhasil diproses');

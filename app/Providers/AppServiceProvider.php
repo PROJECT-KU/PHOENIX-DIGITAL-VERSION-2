@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
+use App\Observers\OrderObserver;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -27,5 +29,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('job-applications', function ($request) {
             return [Limit::perMinute(100)->by($request->ip())];
         });
+        Order::observe(OrderObserver::class);
     }
 }

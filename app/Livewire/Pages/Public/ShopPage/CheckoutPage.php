@@ -28,13 +28,27 @@ class CheckoutPage extends Component
 
     public $customerFound = false;
 
+    public $foundCustomer = null;
+
     public $cart = [];
 
     public $total = 0;
 
+    // Properties baru untuk poin
+    public $showPointsOption = false;
+
+    public $usePoints = false;
+
+    public $availablePoints = 0;
+
+    public $pointsValue = 0;
+
+    public $discount = 0;
+
+    public $finalTotal = 0;
+
     public function mount()
     {
-        // Redirect jika cart kosong
         $this->cart = session()->get('cart', []);
 
         if (empty($this->cart)) {
@@ -46,39 +60,26 @@ class CheckoutPage extends Component
         $this->calculateTotal();
     }
 
-    private function calculateTotal()
-    {
-        $this->total = array_sum(array_column($this->cart, 'subtotal'));
-    }
-
     protected function formatIndonesianPhone(string $value): string
     {
-        // hapus spasi, titik, strip, dll
         $value = preg_replace('/[^0-9+]/', '', $value);
 
-        // kalau sudah dalam bentuk +62...
         if (str_starts_with($value, '+62')) {
             return $value;
         }
-
-        // kalau user ngetik 62xxxxxxxxxx
         if (str_starts_with($value, '62')) {
             return '+'.$value;
         }
-
-        // kalau user ngetik 08xxxxxxxxx
         if (str_starts_with($value, '0')) {
             return '+62'.substr($value, 1);
         }
 
-        // fallback (misal user ngetik sembarang)
         return $value;
     }
 
     public function updatedNoHp($value)
     {
         $this->no_hp = $this->formatIndonesianPhone($value);
-        // Auto search customer ketika no_hp diubah (minimal 10 digit)
         if (strlen($value) >= 10) {
             $this->searchCustomer();
         } else {
@@ -86,27 +87,39 @@ class CheckoutPage extends Component
         }
     }
 
+    public function updatedUsePoints()
+    {
+        $this->calculateTotal();
+    }
+
     public function searchCustomer()
     {
         $this->isLoadingCustomer = true;
 
-        // Simulasi delay (hapus di production)
-        sleep(1);
-
         $customer = Customer::where('no_hp', $this->no_hp)->first();
 
         if ($customer) {
+            $this->foundCustomer = $customer;
             $this->nama = $customer->nama;
             $this->email = $customer->email;
             $this->customerFound = true;
 
+            if ($customer->status_member === 'active' && $customer->point > 0) {
+                $this->showPointsOption = true;
+                $this->availablePoints = $customer->point;
+                $this->pointsValue = $customer->getPointValue();
+            } else {
+                $this->showPointsOption = false;
+                $this->usePoints = false;
+            }
+
             session()->flash('info', 'Data pelanggan ditemukan dan diisi otomatis');
         } else {
             $this->resetCustomerData();
-            $this->customerFound = false;
         }
 
         $this->isLoadingCustomer = false;
+        $this->calculateTotal();
     }
 
     private function resetCustomerData()
@@ -114,6 +127,72 @@ class CheckoutPage extends Component
         $this->nama = '';
         $this->email = '';
         $this->customerFound = false;
+        $this->foundCustomer = null;
+        $this->showPointsOption = false;
+        $this->usePoints = false;
+        $this->availablePoints = 0;
+        $this->pointsValue = 0;
+        $this->discount = 0;
+    }
+
+    private function calculateTotal()
+    {
+        $subtotal = 0;
+        foreach ($this->cart as $item) {
+            $subtotal += $item['subtotal'];
+        }
+
+        $this->total = $subtotal;
+
+        if ($this->usePoints && $this->pointsValue > 0) {
+            $this->discount = min($this->pointsValue, $this->total);
+        } else {
+            $this->discount = 0;
+        }
+
+        $this->finalTotal = max(0, $this->total - $this->discount);
+    }
+
+    // Method baru untuk distribute diskon ke cart items
+    private function distributeDiscountToCart()
+    {
+        if ($this->discount <= 0) {
+            return $this->cart; // Tidak ada diskon
+        }
+
+        $cartWithDiscount = [];
+        $remainingDiscount = $this->discount;
+        $totalItems = count($this->cart);
+
+        foreach ($this->cart as $index => $item) {
+            $cartItem = $item;
+
+            // Hitung proporsi diskon untuk item ini
+            if ($index === $totalItems - 1) {
+                // Item terakhir dapat sisa diskon untuk menghindari pembulatan
+                $itemDiscount = $remainingDiscount;
+            } else {
+                // Diskon proporsional berdasarkan subtotal
+                $discountRatio = $item['subtotal'] / $this->total;
+                $itemDiscount = floor($this->discount * $discountRatio);
+            }
+
+            // Hitung harga setelah diskon
+            $discountedSubtotal = max(0, $item['subtotal'] - $itemDiscount);
+            $discountedPrice = $item['quantity'] > 0 ? floor($discountedSubtotal / $item['quantity']) : 0;
+
+            // Update item dengan harga setelah diskon
+            $cartItem['original_price'] = $item['price'];
+            $cartItem['original_subtotal'] = $item['subtotal'];
+            $cartItem['price'] = $discountedPrice;
+            $cartItem['subtotal'] = $discountedSubtotal;
+            $cartItem['discount_amount'] = $itemDiscount;
+
+            $cartWithDiscount[] = $cartItem;
+            $remainingDiscount -= $itemDiscount;
+        }
+
+        return $cartWithDiscount;
     }
 
     public function checkout()
@@ -125,6 +204,13 @@ class CheckoutPage extends Component
             session()->flash('error', 'Keranjang Anda kosong');
 
             return redirect()->route('shop.index');
+        }
+
+        // Validasi jika menggunakan poin tapi total jadi 0
+        if ($this->finalTotal <= 0 && ! $this->usePoints) {
+            session()->flash('error', 'Total pembayaran tidak valid');
+
+            return;
         }
 
         try {
@@ -139,23 +225,34 @@ class CheckoutPage extends Component
                 ]
             );
 
-            // 2. Generate Order Number
+            // 2. Jika menggunakan poin, kurangi poin customer
+            if ($this->usePoints && $customer->status_member === 'active' && $customer->point > 0) {
+                $customer->usePoints();
+            }
+
+            // 3. Generate Order Number
             $orderNumber = $this->generateOrderNumber();
 
-            // 3. Create Order
+            // 4. Distribute diskon ke cart items jika menggunakan poin
+            $finalCart = $this->usePoints ? $this->distributeDiscountToCart() : $this->cart;
+
+            // 5. Create Order
             $order = Order::create([
                 'id' => Str::uuid(),
                 'order_number' => $orderNumber,
                 'customer_id' => $customer->id,
                 'subtotal' => $this->total,
-                'total' => $this->total,
+                'total' => $this->finalTotal,
                 'status' => 'pending',
                 'customer_notes' => $this->customer_notes,
-                'expired_at' => now()->addHours(24), // Expired 24 jam
+                'expired_at' => now()->addHours(24),
+                'used_points' => $this->usePoints,
+                'points_discount' => $this->discount,
+                'points_calculated' => false,
             ]);
 
-            // 4. Create Order Items
-            foreach ($this->cart as $item) {
+            // 6. Create Order Items dengan harga yang sudah didiskon
+            foreach ($finalCart as $item) {
                 OrderItem::create([
                     'id' => Str::uuid(),
                     'order_id' => $order->id,
@@ -164,25 +261,37 @@ class CheckoutPage extends Component
                     'product_image' => $item['product_image'],
                     'duration_type' => $item['duration_type'],
                     'duration_value' => $item['duration_value'],
-                    'price' => $item['price'],
+                    'price' => $item['price'], // Harga sudah terdiskon
                     'quantity' => $item['quantity'],
-                    'subtotal' => $item['subtotal'],
+                    'subtotal' => $item['subtotal'], // Subtotal sudah terdiskon
                 ]);
             }
 
             DB::commit();
 
-            // 5. Clear Cart
+            // 7. Clear Cart
             session()->forget('cart');
             $this->dispatch('cart-updated');
 
-            // 6. Redirect ke halaman payment
-            session()->flash('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.');
+            // 8. Redirect
+            if ($this->finalTotal > 0) {
+                session()->flash('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.');
 
-            return redirect()->route('payment', ['order' => $order->id]);
+                return redirect()->route('payment', ['order' => $order->id]);
+            } else {
+                $order->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'payment_method' => 'points',
+                ]);
+
+                session()->flash('success', 'Pesanan berhasil dibuat dan dibayar dengan poin!');
+
+                return redirect()->route('shop.index');
+            }
+
         } catch (\Exception $e) {
             DB::rollBack();
-
             session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
         }
     }

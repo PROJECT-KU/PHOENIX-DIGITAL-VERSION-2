@@ -33,6 +33,11 @@ return new class extends Migration
             $table->text('customer_notes')->nullable();
             $table->text('admin_notes')->nullable();
 
+            // point info
+            $table->boolean('points_calculated')->default(false);
+            $table->boolean('used_points')->default(false);
+            $table->decimal('points_discount', 15, 0)->default(0);
+
             $table->timestamps();
             $table->softDeletes();
         });
