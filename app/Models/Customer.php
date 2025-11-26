@@ -23,6 +23,7 @@ class Customer extends Model
         'kode_ref',
         'status_member',
         'point',
+        'point_balance',
     ];
 
     public function orders()
@@ -35,26 +36,29 @@ class Customer extends Model
         return $query->where('status_member', $status);
     }
 
-    public function calculateYearlyPoints()
+    public function calculateYearlyPoints(): array
     {
         if ($this->status_member !== 'active') {
-            return 0;
+            return [
+                'points' => 0,
+                'balance' => 0,
+                'total_amount' => 0,
+            ];
         }
 
         $currentYear = now()->year;
 
-        $memberSince = $this->member_since ?? now();
-
         $totalPurchases = Order::where('customer_id', $this->id)
             ->whereYear('created_at', $currentYear)
-            ->where('created_at', '>=', $memberSince)
             ->whereIn('status', ['paid', 'processing', 'completed'])
             ->where('points_calculated', false)
             ->where('used_points', false)
             ->sum('total');
 
         $totalAmount = $totalPurchases + $this->point_balance;
+
         $newPoints = floor($totalAmount / 50000);
+
         $newBalance = $totalAmount % 50000;
 
         return [
@@ -64,29 +68,31 @@ class Customer extends Model
         ];
     }
 
+    /**
+     * Update poin customer
+     */
     public function updatePoints(): void
     {
         $calculation = $this->calculateYearlyPoints();
 
-        if ($calculation['points'] > 0) {
-            $this->update([
-                'point' => $this->point + $calculation['points'],
-                'point_balance' => $calculation['balance'],
-            ]);
+        $this->update([
+            'point' => $this->point + $calculation['points'],
+            'point_balance' => $calculation['balance'],
+        ]);
 
+        if ($calculation['total_amount'] > 0) {
             Order::where('customer_id', $this->id)
                 ->whereYear('created_at', now()->year)
-                ->where('created_at', '>=', $this->member_since ?? now())
                 ->whereIn('status', ['paid', 'processing', 'completed'])
                 ->where('points_calculated', false)
+                ->where('used_points', false)
                 ->update(['points_calculated' => true]);
-        } else {
-            $this->update([
-                'point_balance' => $calculation['balance'],
-            ]);
         }
     }
 
+    /**
+     * Gunakan poin (reset ke 0)
+     */
     public function usePoints(): bool
     {
         if ($this->point <= 0) {
@@ -101,6 +107,9 @@ class Customer extends Model
         return true;
     }
 
+    /**
+     * Get nilai poin dalam rupiah
+     */
     public function getPointValue(): int
     {
         return $this->point * 500;

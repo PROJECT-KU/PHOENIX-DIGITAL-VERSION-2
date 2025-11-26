@@ -71,31 +71,23 @@ class CustomerForm extends Component
         try {
             $oldStatus = $this->customer->status_member;
 
-            $updateData = [
+            $this->customer->update([
                 'nama' => $this->name,
                 'email' => $this->email,
                 'no_hp' => $this->phone,
                 'status_member' => $this->statusMember,
-            ];
+            ]);
 
             if ($oldStatus === 'non-active' && $this->statusMember === 'active') {
-                $updateData['member_since'] = now();
-
-                $this->customer->update($updateData);
-
-                $this->calculatePointsFromLastTransaction();
+                $this->customer->updatePoints();
 
                 if ($this->customer->point > 0) {
-                    session()->flash('success', 'Customer berhasil diupdate. Poin member telah dihitung: '.number_format($this->customer->point, 0, ',', '.').' poin dari transaksi terakhir');
+                    session()->flash('success', 'Customer berhasil diupdate. Poin member telah dihitung: '.number_format($this->customer->point, 0, ',', '.').' poin dari semua transaksi tahun ini');
                 } else {
                     session()->flash('success', 'Customer berhasil diupdate sebagai member aktif');
                 }
             } else {
-                if ($oldStatus === 'active' && $this->statusMember === 'non-active') {
-                    $updateData['member_since'] = null;
-                }
-
-                $this->customer->update($updateData);
+                session()->flash('success', 'Customer berhasil diupdate');
             }
 
             $this->resetForm();
