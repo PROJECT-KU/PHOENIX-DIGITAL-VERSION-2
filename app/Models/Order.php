@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
@@ -24,6 +24,8 @@ class Order extends Model
         'expired_at',
         'customer_notes',
         'admin_notes',
+        'referral_code',
+        'referrer_id',
     ];
 
     protected $casts = [

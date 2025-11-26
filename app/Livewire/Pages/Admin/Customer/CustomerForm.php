@@ -8,9 +8,13 @@ use Livewire\Component;
 class CustomerForm extends Component
 {
     public ?Customer $customer = null;
+
     public $name = '';
+
     public $email = '';
+
     public $phone = '';
+
     public $statusMember = 'non-active';
 
     public $mode = 'create';
@@ -31,7 +35,7 @@ class CustomerForm extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:customers,email,' . ($this->customer->id ?? null),
+            'email' => 'required|email|unique:customers,email,'.($this->customer->id ?? null),
             'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:15',
             'statusMember' => 'required|string',
         ]);
@@ -41,6 +45,7 @@ class CustomerForm extends Component
             $this->updateCustomer();
         }
     }
+
     private function createCustomer()
     {
         try {
@@ -48,14 +53,14 @@ class CustomerForm extends Component
                 'nama' => $this->name,
                 'email' => $this->email,
                 'no_hp' => $this->phone,
-                'status_member' => $this->statusMember
+                'status_member' => $this->statusMember,
             ]);
 
             $this->dispatch('customer-created');
             $this->resetForm();
             $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan customer: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menambahkan customer: '.$e->getMessage());
             $this->dispatch('failed-create-data-customer');
         }
     }
@@ -63,18 +68,40 @@ class CustomerForm extends Component
     private function updateCustomer()
     {
         try {
-            $this->customer->update([
+            $oldStatus = $this->customer->status_member;
+
+            $updateData = [
                 'nama' => $this->name,
                 'email' => $this->email,
                 'no_hp' => $this->phone,
-                'status_member' => $this->statusMember
-            ]);
+                'status_member' => $this->statusMember,
+            ];
+
+            if ($this->statusMember === 'active' && empty($this->customer->kode_ref)) {
+                $updateData['kode_ref'] = Customer::generateReferralCode();
+                $updateData['member_since'] = now();
+            }
+
+            $this->customer->update($updateData);
+
+            if ($oldStatus === 'non-active' && $this->statusMember === 'active') {
+                $this->customer->updatePoints();
+
+                if ($this->customer->point > 0) {
+                    session()->flash('success', 'Customer berhasil diupdate. Poin member telah dihitung: '.number_format($this->customer->point, 0, ',', '.').' poin dari semua transaksi tahun ini');
+                } else {
+                    session()->flash('success', 'Customer berhasil diupdate sebagai member aktif');
+                }
+            } else {
+                session()->flash('success', 'Customer berhasil diupdate');
+            }
 
             $this->resetForm();
             $this->dispatch('customer-updated');
             $this->redirectRoute('admin.customer.index', navigate: true);
+
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate customer: ' . $e->getMessage());
+            session()->flash('error', 'Gagal mengupdate customer: '.$e->getMessage());
             $this->dispatch('failed-update-data-customer');
         }
     }
@@ -86,6 +113,7 @@ class CustomerForm extends Component
         $this->phone = '';
         $this->statusMember = '';
     }
+
     public function render()
     {
         return view('livewire.pages.admin.customer.customer-form');
