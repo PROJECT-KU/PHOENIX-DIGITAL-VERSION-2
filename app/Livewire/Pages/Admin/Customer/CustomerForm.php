@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
-use App\Models\Order;
 use Livewire\Component;
 
 class CustomerForm extends Component
@@ -71,12 +70,19 @@ class CustomerForm extends Component
         try {
             $oldStatus = $this->customer->status_member;
 
-            $this->customer->update([
+            $updateData = [
                 'nama' => $this->name,
                 'email' => $this->email,
                 'no_hp' => $this->phone,
                 'status_member' => $this->statusMember,
-            ]);
+            ];
+
+            if ($this->statusMember === 'active' && empty($this->customer->kode_ref)) {
+                $updateData['kode_ref'] = Customer::generateReferralCode();
+                $updateData['member_since'] = now();
+            }
+
+            $this->customer->update($updateData);
 
             if ($oldStatus === 'non-active' && $this->statusMember === 'active') {
                 $this->customer->updatePoints();
@@ -97,34 +103,6 @@ class CustomerForm extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate customer: '.$e->getMessage());
             $this->dispatch('failed-update-data-customer');
-        }
-    }
-
-    private function calculatePointsFromLastTransaction()
-    {
-        $lastOrder = Order::where('customer_id', $this->customer->id)
-            ->whereIn('status', ['paid', 'processing', 'completed'])
-            ->where('points_calculated', false)
-            ->where('used_points', false)
-            ->latest('created_at')
-            ->first();
-
-        if (! $lastOrder) {
-            return;
-        }
-
-        $totalAmount = $lastOrder->total + $this->customer->point_balance;
-
-        $newPoints = floor($totalAmount / 50000);
-        $newBalance = $totalAmount % 50000;
-
-        $this->customer->update([
-            'point' => $this->customer->point + $newPoints,
-            'point_balance' => $newBalance,
-        ]);
-
-        if ($newPoints > 0) {
-            $lastOrder->update(['points_calculated' => true]);
         }
     }
 

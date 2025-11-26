@@ -116,6 +116,43 @@ class Customer extends Model
     }
 
     /**
+     * Generate unique referral code
+     */
+    public static function generateReferralCode(): string
+    {
+        $prefix = 'PDW_';
+
+        $lastCustomer = self::whereNotNull('kode_ref')
+            ->orderBy('kode_ref', 'desc')
+            ->first();
+
+        if (! $lastCustomer || ! $lastCustomer->kode_ref) {
+            $nextNumber = 1;
+        } else {
+            $lastNumber = (int) substr($lastCustomer->kode_ref, strlen($prefix));
+            $nextNumber = $lastNumber + 1;
+        }
+
+        return $prefix.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Tambah poin referral (2 poin untuk setiap referral berhasil)
+     */
+    public function addReferralPoints(int $points = 2): void
+    {
+        $this->increment('point', $points);
+    }
+
+    /**
+     * Check apakah customer sudah pernah bertransaksi
+     */
+    public function hasTransactions(): bool
+    {
+        return $this->orders()->exists();
+    }
+
+    /**
      * Check apakah customer adalah member active atau tidak aktif (non member)
      */
     public function isMember(): bool

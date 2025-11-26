@@ -41,6 +41,7 @@
                         <th>Status Member</th>
                         <th>Tanggal Daftar</th>
                         <th>Jumlah Poin</th>
+                        <th>Kode Referral</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
@@ -58,6 +59,7 @@
                             </td>
                             <td>{{ $customer->created_at->translatedFormat('d F Y, H:i') }}</td>
                             <td>{{ $customer->point }}</td>
+                            <td>{{ $customer->kode_ref }}</td>
                             <td>
                                 <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
                                     class="btn btn-outline-secondary btn-sm me-2">

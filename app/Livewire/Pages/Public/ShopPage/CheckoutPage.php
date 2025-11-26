@@ -34,7 +34,6 @@ class CheckoutPage extends Component
 
     public $total = 0;
 
-    // Properties baru untuk poin
     public $showPointsOption = false;
 
     public $usePoints = false;
@@ -46,6 +45,19 @@ class CheckoutPage extends Component
     public $discount = 0;
 
     public $finalTotal = 0;
+
+    // Referral properties
+    public $referralCode = '';
+
+    public $referralValid = false;
+
+    public $referralMessage = '';
+
+    public $referrerId = null;
+
+    public $showReferralInput = false;
+
+    public $isCheckingReferral = false;
 
     public function mount()
     {
@@ -87,9 +99,23 @@ class CheckoutPage extends Component
         }
     }
 
+    public function updatedEmail()
+    {
+        // Cek eligibility untuk referral code saat email berubah
+        $this->checkReferralEligibility();
+    }
+
     public function updatedUsePoints()
     {
         $this->calculateTotal();
+    }
+
+    public function updatedReferralCode()
+    {
+        // Reset validasi saat kode berubah
+        $this->referralValid = false;
+        $this->referralMessage = '';
+        $this->referrerId = null;
     }
 
     public function searchCustomer()
@@ -104,6 +130,9 @@ class CheckoutPage extends Component
             $this->email = $customer->email;
             $this->customerFound = true;
 
+            // Cek eligibility referral
+            $this->checkReferralEligibility();
+
             if ($customer->status_member === 'active' && $customer->point > 0) {
                 $this->showPointsOption = true;
                 $this->availablePoints = $customer->point;
@@ -116,10 +145,122 @@ class CheckoutPage extends Component
             session()->flash('info', 'Data pelanggan ditemukan dan diisi otomatis');
         } else {
             $this->resetCustomerData();
+            // Customer baru, bisa pakai referral
+            $this->showReferralInput = true;
         }
 
         $this->isLoadingCustomer = false;
         $this->calculateTotal();
+    }
+
+    private function checkReferralEligibility()
+    {
+        // Reset referral status
+        $this->showReferralInput = false;
+        $this->referralCode = '';
+        $this->referralValid = false;
+        $this->referralMessage = '';
+        $this->referrerId = null;
+
+        if (! $this->no_hp || ! $this->email) {
+            return;
+        }
+
+        // Cek apakah customer sudah terdaftar
+        $existingCustomer = Customer::where(function ($query) {
+            $query->where('no_hp', $this->no_hp)
+                ->orWhere('email', $this->email);
+        })->first();
+
+        if ($existingCustomer) {
+            // Jika sudah member, tidak bisa pakai referral
+            if ($existingCustomer->status_member === 'active') {
+                $this->showReferralInput = false;
+
+                return;
+            }
+
+            // Jika sudah pernah transaksi, tidak bisa pakai referral
+            if ($existingCustomer->hasTransactions()) {
+                $this->showReferralInput = false;
+
+                return;
+            }
+
+            // Non-member dan belum pernah transaksi, bisa pakai referral
+            $this->showReferralInput = true;
+        } else {
+            // Customer baru, bisa pakai referral
+            $this->showReferralInput = true;
+        }
+    }
+
+    public function checkReferralCode()
+    {
+        $this->isCheckingReferral = true;
+        $this->referralValid = false;
+        $this->referralMessage = '';
+        $this->referrerId = null;
+
+        // Validasi input kosong
+        if (empty($this->referralCode)) {
+            $this->referralMessage = 'Silakan masukkan kode referral';
+            $this->isCheckingReferral = false;
+
+            return;
+        }
+
+        // Format kode ke uppercase
+        $this->referralCode = strtoupper(trim($this->referralCode));
+
+        // Validasi format kode
+        if (! preg_match('/^PDW_\d{4}$/', $this->referralCode)) {
+            $this->referralMessage = 'Format kode referral tidak valid.';
+            $this->isCheckingReferral = false;
+
+            return;
+        }
+
+        // Cek apakah kode referral ada dan aktif
+        $referrer = Customer::where('kode_ref', $this->referralCode)
+            ->where('status_member', 'active')
+            ->first();
+
+        if (! $referrer) {
+            $this->referralMessage = 'Kode referral tidak ditemukan atau sudah tidak aktif';
+            $this->isCheckingReferral = false;
+
+            return;
+        }
+
+        // Cek apakah customer masih eligible untuk pakai referral
+        if (! $this->showReferralInput) {
+            $this->referralMessage = 'Anda tidak bisa menggunakan kode referral';
+            $this->isCheckingReferral = false;
+
+            return;
+        }
+
+        // Double check: pastikan no_hp dan email belum pernah transaksi
+        $existingCustomer = Customer::where(function ($query) {
+            $query->where('no_hp', $this->no_hp)
+                ->orWhere('email', $this->email);
+        })->first();
+
+        if ($existingCustomer && $existingCustomer->hasTransactions()) {
+            $this->referralMessage = 'Kode referral hanya berlaku untuk pembelian pertama';
+            $this->showReferralInput = false;
+            $this->isCheckingReferral = false;
+
+            return;
+        }
+
+        // Validasi berhasil
+        $this->referralValid = true;
+        $this->referrerId = $referrer->id;
+        $this->referralMessage = '✓ Kode referral valid! Direferensikan oleh '.$referrer->nama;
+
+        $this->isCheckingReferral = false;
     }
 
     private function resetCustomerData()
@@ -133,6 +274,13 @@ class CheckoutPage extends Component
         $this->availablePoints = 0;
         $this->pointsValue = 0;
         $this->discount = 0;
+
+        // Reset referral
+        $this->showReferralInput = false;
+        $this->referralCode = '';
+        $this->referralValid = false;
+        $this->referralMessage = '';
+        $this->referrerId = null;
     }
 
     private function calculateTotal()
@@ -153,11 +301,10 @@ class CheckoutPage extends Component
         $this->finalTotal = max(0, $this->total - $this->discount);
     }
 
-    // Method baru untuk distribute diskon ke cart items
     private function distributeDiscountToCart()
     {
         if ($this->discount <= 0) {
-            return $this->cart; // Tidak ada diskon
+            return $this->cart;
         }
 
         $cartWithDiscount = [];
@@ -167,21 +314,16 @@ class CheckoutPage extends Component
         foreach ($this->cart as $index => $item) {
             $cartItem = $item;
 
-            // Hitung proporsi diskon untuk item ini
             if ($index === $totalItems - 1) {
-                // Item terakhir dapat sisa diskon untuk menghindari pembulatan
                 $itemDiscount = $remainingDiscount;
             } else {
-                // Diskon proporsional berdasarkan subtotal
                 $discountRatio = $item['subtotal'] / $this->total;
                 $itemDiscount = floor($this->discount * $discountRatio);
             }
 
-            // Hitung harga setelah diskon
             $discountedSubtotal = max(0, $item['subtotal'] - $itemDiscount);
             $discountedPrice = $item['quantity'] > 0 ? floor($discountedSubtotal / $item['quantity']) : 0;
 
-            // Update item dengan harga setelah diskon
             $cartItem['original_price'] = $item['price'];
             $cartItem['original_subtotal'] = $item['subtotal'];
             $cartItem['price'] = $discountedPrice;
@@ -199,14 +341,12 @@ class CheckoutPage extends Component
     {
         $this->validate();
 
-        // Validasi ulang cart
         if (empty($this->cart)) {
             session()->flash('error', 'Keranjang Anda kosong');
 
             return redirect()->route('shop.index');
         }
 
-        // Validasi jika menggunakan poin tapi total jadi 0
         if ($this->finalTotal <= 0 && ! $this->usePoints) {
             session()->flash('error', 'Total pembayaran tidak valid');
 
@@ -216,27 +356,38 @@ class CheckoutPage extends Component
         try {
             DB::beginTransaction();
 
-            // 1. Create or Update Customer
+            // Cek existing customer untuk validasi referral
+            $existingCustomer = Customer::where('no_hp', $this->no_hp)
+                ->orWhere('email', $this->email)
+                ->first();
+
+            // Tentukan apakah bisa menggunakan referral
+            $canUseReferral = false;
+            if ($this->referralCode && $this->referralValid && $this->referrerId) {
+                // Hanya bisa pakai referral jika belum pernah transaksi
+                if (! $existingCustomer || ! $existingCustomer->hasTransactions()) {
+                    $canUseReferral = true;
+                }
+            }
+
+            // Create atau update customer
             $customer = Customer::updateOrCreate(
-                ['no_hp' => $this->no_hp],
                 [
+                    'no_hp' => $this->no_hp,
                     'nama' => $this->nama,
                     'email' => $this->email,
                 ]
             );
 
-            // 2. Jika menggunakan poin, kurangi poin customer
+            // Gunakan poin jika dipilih
             if ($this->usePoints && $customer->status_member === 'active' && $customer->point > 0) {
                 $customer->usePoints();
             }
 
-            // 3. Generate Order Number
             $orderNumber = $this->generateOrderNumber();
-
-            // 4. Distribute diskon ke cart items jika menggunakan poin
             $finalCart = $this->usePoints ? $this->distributeDiscountToCart() : $this->cart;
 
-            // 5. Create Order
+            // Create order dengan data referral
             $order = Order::create([
                 'id' => Str::uuid(),
                 'order_number' => $orderNumber,
@@ -249,9 +400,11 @@ class CheckoutPage extends Component
                 'used_points' => $this->usePoints,
                 'points_discount' => $this->discount,
                 'points_calculated' => false,
+                'referral_code' => $canUseReferral ? $this->referralCode : null,
+                'referrer_id' => $canUseReferral ? $this->referrerId : null,
             ]);
 
-            // 6. Create Order Items dengan harga yang sudah didiskon
+            // Create order items
             foreach ($finalCart as $item) {
                 OrderItem::create([
                     'id' => Str::uuid(),
@@ -261,21 +414,27 @@ class CheckoutPage extends Component
                     'product_image' => $item['product_image'],
                     'duration_type' => $item['duration_type'],
                     'duration_value' => $item['duration_value'],
-                    'price' => $item['price'], // Harga sudah terdiskon
+                    'price' => $item['price'],
                     'quantity' => $item['quantity'],
-                    'subtotal' => $item['subtotal'], // Subtotal sudah terdiskon
+                    'subtotal' => $item['subtotal'],
                 ]);
             }
 
+            // Jika menggunakan referral yang valid, tidak langsung berikan poin
+            // Poin akan diberikan saat order statusnya 'paid'
+            // Ini akan ditangani oleh Observer atau saat update status order
+
             DB::commit();
 
-            // 7. Clear Cart
             session()->forget('cart');
             $this->dispatch('cart-updated');
 
-            // 8. Redirect
             if ($this->finalTotal > 0) {
-                session()->flash('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.');
+                $message = 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.';
+                if ($canUseReferral) {
+                    $message .= ' Terima kasih telah menggunakan kode referral!';
+                }
+                session()->flash('success', $message);
 
                 return redirect()->route('payment', ['order' => $order->id]);
             } else {
@@ -284,6 +443,14 @@ class CheckoutPage extends Component
                     'paid_at' => now(),
                     'payment_method' => 'points',
                 ]);
+
+                // Berikan poin referral jika order langsung paid (dibayar dengan poin)
+                if ($canUseReferral && $this->referrerId) {
+                    $referrer = Customer::find($this->referrerId);
+                    if ($referrer && $referrer->status_member === 'active') {
+                        $referrer->addReferralPoints(2);
+                    }
+                }
 
                 session()->flash('success', 'Pesanan berhasil dibuat dan dibayar dengan poin!');
 

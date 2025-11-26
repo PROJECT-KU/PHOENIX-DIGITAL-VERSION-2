@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Models\Customer;
 use App\Models\Order;
+use Illuminate\Support\Facades\Log;
 
 class OrderObserver
 {
@@ -28,6 +30,36 @@ class OrderObserver
 
             if ($customer && $customer->status_member === 'active') {
                 $customer->updatePoints();
+            }
+        }
+
+        if ($order->isDirty('status') &&
+           $order->status === 'completed' &&
+           $order->referrer_id &&
+           $order->referral_code) {
+
+            $referrer = Customer::find($order->referrer_id);
+
+            if ($referrer && $referrer->status_member === 'active') {
+                // Cek apakah customer ini sudah pernah direfer sebelumnya
+                $alreadyReferred = Order::where('referrer_id', $order->referrer_id)
+                    ->where('customer_id', $order->customer_id)
+                    ->where('status', 'paid')
+                    ->where('id', '!=', $order->id)
+                    ->exists();
+
+                // Hanya berikan poin jika ini transaksi pertama dari customer ini
+                if (! $alreadyReferred) {
+                    $referrer->addReferralPoints(2);
+
+                    Log::info('Referral points granted', [
+                        'referrer_id' => $referrer->id,
+                        'referrer_name' => $referrer->nama,
+                        'order_id' => $order->id,
+                        'customer_id' => $order->customer_id,
+                        'points_added' => 2,
+                    ]);
+                }
             }
         }
     }

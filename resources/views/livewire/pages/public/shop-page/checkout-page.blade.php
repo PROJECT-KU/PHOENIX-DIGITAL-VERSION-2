@@ -167,6 +167,54 @@
                                         </div>
                                     @endif
 
+                                    <!-- Kode Referral (Tambahkan section ini) -->
+                                    @if ($showReferralInput)
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                Kode Referral
+                                                <span class="badge bg-info text-white ms-1">Opsional</span>
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" wire:model="referralCode"
+                                                    placeholder="kode referral" maxlength="9"
+                                                    style="text-transform: uppercase;"
+                                                    {{ $referralValid ? 'readonly' : '' }}>
+
+                                                @if (!$referralValid)
+                                                    <button class="btn btn-outline-primary" type="button"
+                                                        wire:click="checkReferralCode" wire:loading.attr="disabled"
+                                                        wire:target="checkReferralCode">
+                                                        <span wire:loading.remove wire:target="checkReferralCode">
+                                                            <i class="bi bi-check-circle"></i> Validasi
+                                                        </span>
+                                                        <span wire:loading wire:target="checkReferralCode">
+                                                            <span class="spinner-border spinner-border-sm"></span>
+                                                        </span>
+                                                    </button>
+                                                @else
+                                                    <button class="btn btn-success" type="button" disabled>
+                                                        <i class="bi bi-check-circle-fill"></i> Tervalidasi
+                                                    </button>
+                                                @endif
+                                            </div>
+
+                                            @if ($referralMessage)
+                                                <small
+                                                    class="d-block mt-2 {{ $referralValid ? 'text-success' : 'text-danger' }}">
+                                                    <i
+                                                        class="bi {{ $referralValid ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                                                    {{ $referralMessage }}
+                                                </small>
+                                            @endif
+
+                                            <small class="text-muted d-block mt-2">
+                                                <i class="bi bi-info-circle"></i>
+                                                Punya kode referral dari teman? Masukkan untuk mendapat keuntungan
+                                                bersama!
+                                            </small>
+                                        </div>
+                                    @endif
+
                                     <div class="place-order-container">
                                         <button type="submit" class="btn btn-primary place-order-btn w-100"
                                             wire:loading.attr="disabled">
