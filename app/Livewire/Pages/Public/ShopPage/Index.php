@@ -119,31 +119,7 @@ class Index extends Component
 
     public function getBestDiscount($productId)
     {
-        $promos = $this->getProductPromos($productId);
-
-        if ($promos->isEmpty()) {
-            return null;
-        }
-
-        $bestPromo = $promos->sortByDesc(function ($promo) {
-            $memberValue = $promo->getDiskonValue(true); // Member
-            $nonMemberValue = $promo->getDiskonValue(false); // Non-member
-
-            return max($memberValue, $nonMemberValue);
-        })->first();
-
-        // Ambil nilai tertinggi untuk display
-        $memberValue = $bestPromo->getDiskonValue(true);
-        $nonMemberValue = $bestPromo->getDiskonValue(false);
-        $maxValue = max($memberValue, $nonMemberValue);
-
-        return [
-            'promo' => $bestPromo,
-            'value' => $maxValue,
-            'type' => $bestPromo->tipe_diskon,
-            'member_value' => $memberValue,
-            'non_member_value' => $nonMemberValue,
-        ];
+        return $this->promoService->getBestProductDiscount($productId, null);
     }
 
     #[Layout('layouts.guest')]

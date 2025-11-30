@@ -107,7 +107,7 @@ class PromoForm extends Component
     {
         $rules = [
             'nama_promo' => 'required|string|max:255',
-            'tipe_promo' => 'required|in:flash_sale,kode_promo,referral_bonus',
+            'tipe_promo' => 'required|in:flash_sale,kode_promo,referral_bonus,auto_promo',
             'tipe_diskon' => 'required|in:persen,nominal',
             'untuk_member' => 'required|in:semua,member_only,non_member_only',
             'mulai_promo' => 'required|date',
@@ -205,11 +205,10 @@ class PromoForm extends Component
                 'badge_color' => $this->badge_color,
             ];
 
-            $promo = Promo::findOrFail($this->promoId);
-            $promo->update($data);
+            $this->promo->update($data);
 
             // Sync products
-            $promo->products()->sync($this->selectedProducts);
+            $this->promo->products()->sync($this->selectedProducts);
 
             session()->flash('success', 'Promo berhasil diupdate');
 

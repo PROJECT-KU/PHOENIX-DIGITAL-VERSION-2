@@ -187,4 +187,42 @@ class Promo extends Model
         $this->increment('total_penggunaan');
         $this->increment('total_diskon_diberikan', $discountAmount);
     }
+
+    public function scopeAutoPromo($query)
+    {
+        return $query->where('tipe_promo', 'auto_promo');
+    }
+
+    // Scope untuk semua promo otomatis (flash_sale + auto_promo)
+    public function scopeAutomaticPromos($query)
+    {
+        return $query->whereIn('tipe_promo', ['flash_sale', 'auto_promo']);
+    }
+
+    // Helper method - cek apakah promo butuh kode
+    public function requiresCode(): bool
+    {
+        return $this->tipe_promo === 'kode_promo';
+    }
+
+    // Helper method - cek apakah promo otomatis
+    public function isAutomatic(): bool
+    {
+        return in_array($this->tipe_promo, ['flash_sale', 'auto_promo']);
+    }
+
+    // Helper method - untuk display badge text
+    public function getDisplayBadge(): string
+    {
+        if ($this->badge_text) {
+            return $this->badge_text;
+        }
+
+        return match ($this->tipe_promo) {
+            'flash_sale' => 'FLASH SALE',
+            'auto_promo' => 'PROMO',
+            'kode_promo' => 'KODE PROMO',
+            default => 'DISKON'
+        };
+    }
 }

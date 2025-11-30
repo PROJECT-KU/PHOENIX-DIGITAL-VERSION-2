@@ -39,7 +39,7 @@
                                         <div class="product-image">
                                             @if ($item->image)
                                                 <div>
-                                                    <img src="{{ asset('storage/img/product/' . $item->image) }}"
+                                                    <img src="{{ asset('storage/img/Product/' . $item->image) }}"
                                                         class="img-fluid" alt="{{ $item->nama_akun }}">
                                                 </div>
                                             @else
@@ -56,10 +56,10 @@
                                                     style="background: {{ $bestDiscount['promo']->badge_color ?? '#FF6B6B' }};">
                                                     @if ($bestDiscount['type'] === 'persen')
                                                         @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
-                                                            - {{ number_format($bestDiscount['non_member_value'], 0) }}-
-                                                            {{ number_format($bestDiscount['member_value'], 0) }}%
+                                                            diskon
+                                                            {{ number_format($bestDiscount['non_member_value'], 0) }}-{{ number_format($bestDiscount['member_value'], 0) }}%
                                                         @else
-                                                            -{{ number_format($bestDiscount['value'], 0) }}%
+                                                            diskon{{ number_format($bestDiscount['value'], 0) }}%
                                                         @endif
                                                     @else
                                                         diskon Rp{{ number_format($bestDiscount['value'], 0) }}
@@ -105,19 +105,17 @@
                                                                 );
                                                             }
                                                         @endphp
-                                                        <span class="text-danger small d-block">
-                                                            <del>Rp
-                                                                {{ number_format($originalPrice, 0, ',', '.') }}/bulan</del>
-                                                        </span>
-                                                        <div class="d-flex align-items-baseline gap-2">
-                                                            <span class="sale-price text-dark small fw-bold">Rp
-                                                                {{ number_format($discountedPrice, 0, ',', '.') }}/bulan
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="text-danger small d-block">
+                                                                <del>Rp
+                                                                    {{ number_format($originalPrice, 0, ',', '.') }}</del>
                                                             </span>
+                                                            <div class="d-flex align-items-baseline gap-2">
+                                                                <span class="sale-price fs-6 text-dark small fw-bold">Rp
+                                                                    {{ number_format($discountedPrice, 0, ',', '.') }}/bulan
+                                                                </span>
+                                                            </div>
                                                         </div>
-                                                        <!-- <small class="text-success d-block mt-1">
-                                                            <i class="bi bi-tag-fill"></i>
-                                                            {{ $bestDiscount['promo']->nama_promo }}
-                                                        </small> -->
                                                     </div>
                                                 @else
                                                     <div class="product-price text-muted">
@@ -135,7 +133,8 @@
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Pilih Paket {{ $item->nama_akun }}</h5>
+                                                <h5 class="modal-title text-dark">Pilih Paket {{ $item->nama_akun }}
+                                                </h5>
                                                 <button type="button" class="btn-close"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
@@ -155,24 +154,35 @@
                                                                         $price - $bestDiscount['value'],
                                                                     );
                                                                 }
+                                                                $totalSaving =
+                                                                    $item->harga_perbulan * 1 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 1)"
                                                             data-bs-dismiss="modal">
                                                             <div
                                                                 class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0">Paket 1 Bulan</p>
+                                                                <p class="mb-0 text-dark">Paket 1 Bulan</p>
                                                                 <div class="text-end">
                                                                     @if ($bestDiscount)
-                                                                        <small
-                                                                            class="d-block text-muted text-decoration-line-through">
-                                                                            Rp {{ number_format($price, 0, ',', '.') }}
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
-                                                                        <strong class="text-danger">
-                                                                            Rp
-                                                                            {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                        </strong>
                                                                     @else
                                                                         <strong>Rp
                                                                             {{ number_format($price, 0, ',', '.') }}</strong>
@@ -201,32 +211,38 @@
                                                                     $item->harga_perbulan * 5 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 5)"
                                                             data-bs-dismiss="modal">
                                                             <div
                                                                 class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0">Paket 5 Bulan</p>
+                                                                <p class="mb-0 text-dark">Paket 5 Bulan</p>
                                                                 <div class="text-end">
                                                                     @if ($bestDiscount)
-                                                                        <small
-                                                                            class="d-block text-muted text-decoration-line-through">
-                                                                            Rp {{ number_format($price, 0, ',', '.') }}
-                                                                        </small>
-                                                                        <strong class="text-danger">
-                                                                            Rp
-                                                                            {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                        </strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Total Rp
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @else
                                                                         <strong>Rp
                                                                             {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Rp
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @endif
                                                                 </div>
@@ -253,32 +269,38 @@
                                                                     $item->harga_perbulan * 10 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 10)"
                                                             data-bs-dismiss="modal">
                                                             <div
                                                                 class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0">Paket 10 Bulan</p>
+                                                                <p class="mb-0 text-dark">Paket 10 Bulan</p>
                                                                 <div class="text-end">
                                                                     @if ($bestDiscount)
-                                                                        <small
-                                                                            class="d-block text-muted text-decoration-line-through">
-                                                                            Rp {{ number_format($price, 0, ',', '.') }}
-                                                                        </small>
-                                                                        <strong class="text-danger">
-                                                                            Rp
-                                                                            {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                        </strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Total Rp
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @else
                                                                         <strong>Rp
                                                                             {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Rp
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @endif
                                                                 </div>
@@ -305,32 +327,38 @@
                                                                     $item->harga_perbulan * 12 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'tahun', 1)"
                                                             data-bs-dismiss="modal">
                                                             <div
                                                                 class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0">Paket 1 Tahun</p>
+                                                                <p class="mb-0 text-dark">Paket 1 Tahun</p>
                                                                 <div class="text-end">
                                                                     @if ($bestDiscount)
-                                                                        <small
-                                                                            class="d-block text-muted text-decoration-line-through">
-                                                                            Rp {{ number_format($price, 0, ',', '.') }}
-                                                                        </small>
-                                                                        <strong class="text-danger">
-                                                                            Rp
-                                                                            {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                        </strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Total Rp
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @else
                                                                         <strong>Rp
                                                                             {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-success">
-                                                                            Hemat Rp
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
                                                                             {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
                                                                         </small>
                                                                     @endif
                                                                 </div>

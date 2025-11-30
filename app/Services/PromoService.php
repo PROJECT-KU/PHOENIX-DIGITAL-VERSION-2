@@ -26,11 +26,11 @@ class PromoService
         $totalPromoDiscount = 0;
         $referralDiscount = 0;
 
-        // 1. Flash Sale Promos (otomatis apply untuk semua produk yang eligible)
-        $flashSaleDiscount = $this->applyFlashSalePromos($cart, $customer, $isMember);
-        if ($flashSaleDiscount['total'] > 0) {
-            $appliedPromos = array_merge($appliedPromos, $flashSaleDiscount['promos']);
-            $totalPromoDiscount += $flashSaleDiscount['total'];
+        // 1. Automatic Promos (Flash Sale + Auto Promo) - Apply otomatis tanpa kode
+        $automaticDiscount = $this->applyAutomaticPromos($cart, $customer, $isMember);
+        if ($automaticDiscount['total'] > 0) {
+            $appliedPromos = array_merge($appliedPromos, $automaticDiscount['promos']);
+            $totalPromoDiscount += $automaticDiscount['total'];
         }
 
         // 2. Kode Promo (jika ada)
@@ -55,8 +55,6 @@ class PromoService
             $referralDiscount = $this->calculateReferralDiscount($subtotal, $appliedPromos);
         }
 
-        // 4. Points Discount (dihitung terpisah, di handle di CheckoutPage)
-
         $totalDiscount = $totalPromoDiscount + $referralDiscount;
         $finalTotal = max(0, $subtotal - $totalDiscount);
 
@@ -71,28 +69,30 @@ class PromoService
     }
 
     /**
-     * Apply flash sale promos
+     * Apply automatic promos (Flash Sale + Auto Promo)
+     * Kedua tipe ini otomatis apply tanpa perlu input kode
      */
-    private function applyFlashSalePromos(array $cart, ?Customer $customer, bool $isMember): array
+    private function applyAutomaticPromos(array $cart, ?Customer $customer, bool $isMember): array
     {
         $promos = [];
         $totalDiscount = 0;
 
-        // Get all active flash sale promos
-        $flashSales = Promo::active()
-            ->flashSale()
+        // Get all active automatic promos (flash_sale + auto_promo)
+        $automaticPromos = Promo::active()
+            ->automaticPromos()
             ->orderBy('prioritas', 'desc')
+            ->orderBy('tipe_promo', 'desc') // flash_sale prioritas lebih tinggi
             ->get();
 
         foreach ($cart as $item) {
-            // Find applicable flash sales for this product
-            $productPromos = $flashSales->filter(function ($promo) use ($item, $customer) {
+            // Find applicable promos for this product
+            $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer) {
                 // Check if promo applies to this product
-                if ($promo->products->isEmpty() || $promo->products->contains('id', $item['product_id'])) {
-                    return $promo->canBeUsedBy($customer);
-                }
+                // Jika products kosong = berlaku untuk semua produk
+                $appliesToProduct = $promo->products->isEmpty()
+                    || $promo->products->contains('id', $item['product_id']);
 
-                return false;
+                return $appliesToProduct && $promo->canBeUsedBy($customer);
             });
 
             foreach ($productPromos as $promo) {
@@ -113,9 +113,11 @@ class PromoService
                         'promo_id' => $promo->id,
                         'kode_promo' => $promo->kode_promo,
                         'nama_promo' => $promo->nama_promo,
+                        'tipe_promo' => $promo->tipe_promo,
                         'tipe_diskon' => $promo->tipe_diskon,
                         'nilai_diskon' => $promo->getDiskonValue($isMember),
                         'jumlah_diskon' => $discount,
+                        'is_automatic' => true,
                     ];
 
                     // If not stackable, stop after first promo
@@ -186,9 +188,11 @@ class PromoService
                 'promo_id' => $promo->id,
                 'kode_promo' => $promo->kode_promo,
                 'nama_promo' => $promo->nama_promo,
+                'tipe_promo' => $promo->tipe_promo,
                 'tipe_diskon' => $promo->tipe_diskon,
                 'nilai_diskon' => $promo->getDiskonValue($isMember),
                 'jumlah_diskon' => $discount,
+                'is_automatic' => false,
             ],
             'message' => '✓ Kode promo berhasil diterapkan!',
         ];
@@ -271,6 +275,8 @@ class PromoService
 
     /**
      * Get active flash sales for homepage
+     *
+     * @deprecated Use getHomepagePromos() instead
      */
     public function getActiveFlashSales(): Collection
     {
@@ -282,16 +288,81 @@ class PromoService
     }
 
     /**
+     * Get all homepage promos (flash sale + auto promo)
+     */
+    public function getHomepagePromos(): array
+    {
+        $promos = Promo::active()
+            ->automaticPromos() // flash_sale + auto_promo
+            ->where('show_on_homepage', true)
+            ->orderBy('prioritas', 'desc')
+            ->orderBy('tipe_promo', 'desc')
+            ->get();
+
+        return [
+            'flash_sales' => $promos->where('tipe_promo', 'flash_sale'),
+            'auto_promos' => $promos->where('tipe_promo', 'auto_promo'),
+            'all_promos' => $promos,
+        ];
+    }
+
+    /**
      * Get applicable promos for a product
+     * Untuk display di product card
      */
     public function getProductPromos(string $productId, ?Customer $customer = null): Collection
     {
         return Promo::active()
-            ->forProduct($productId)
+            ->automaticPromos() // Hanya ambil flash_sale + auto_promo
+            ->where(function ($query) use ($productId) {
+                // Promo berlaku jika:
+                // 1. Tidak ada products attached (berlaku untuk semua)
+                // 2. Product ID ada di relation
+                $query->whereDoesntHave('products')
+                    ->orWhereHas('products', function ($q) use ($productId) {
+                        $q->where('product_id', $productId);
+                    });
+            })
+            ->orderBy('prioritas', 'desc')
             ->get()
             ->filter(function ($promo) use ($customer) {
                 return $promo->canBeUsedBy($customer);
             });
+    }
+
+    /**
+     * Get best discount untuk display di product card
+     * Support untuk guest user
+     */
+    public function getBestProductDiscount(string $productId, ?Customer $customer = null): ?array
+    {
+        $promos = $this->getProductPromos($productId, $customer);
+
+        if ($promos->isEmpty()) {
+            return null;
+        }
+
+        // Cari promo dengan nilai diskon tertinggi
+        $bestPromo = $promos->sortByDesc(function ($promo) {
+            $memberValue = $promo->getDiskonValue(true);
+            $nonMemberValue = $promo->getDiskonValue(false);
+
+            return max($memberValue, $nonMemberValue);
+        })->first();
+
+        $memberValue = $bestPromo->getDiskonValue(true);
+        $nonMemberValue = $bestPromo->getDiskonValue(false);
+        $maxValue = max($memberValue, $nonMemberValue);
+
+        return [
+            'promo' => $bestPromo,
+            'value' => $maxValue,
+            'type' => $bestPromo->tipe_diskon,
+            'member_value' => $memberValue,
+            'non_member_value' => $nonMemberValue,
+            'is_automatic' => $bestPromo->isAutomatic(),
+            'requires_code' => $bestPromo->requiresCode(),
+        ];
     }
 
     /**

@@ -37,7 +37,7 @@
                                 @foreach ($cart as $key => $item)
                                     <div class="d-flex align-items-center">
                                         @if ($item['product_image'])
-                                            <img src="{{ $item['product_image'] ? asset('storage/img/product/' . $item['product_image']) : 'https://via.placeholder.com/80' }}"
+                                            <img src="{{ $item['product_image'] ? asset('storage/img/Product/' . $item['product_image']) : 'https://via.placeholder.com/80' }}"
                                                 alt="{{ $item['product_name'] }}" class="rounded"
                                                 style="width: 80px; height: 80px; object-fit: cover;">
                                         @else

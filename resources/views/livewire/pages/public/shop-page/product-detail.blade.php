@@ -21,7 +21,7 @@
                         <div class="main-showcase">
                             <div class="image-zoom-container">
                                 @if ($product->image)
-                                    <img src="{{ asset('storage/img/product/' . $product->image) }}"
+                                    <img src="{{ asset('storage/img/Product/' . $product->image) }}"
                                         alt="{{ $product->nama_akun }}" class="img-fluid main-product-image drift-zoom">
                                 @else
                                     <img class="img-fluid main-product-image drift-zoom" style="object-fit: cover"

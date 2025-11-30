@@ -21,6 +21,7 @@
                                 <label class="form-label">Tipe Promo <span class="text-danger">*</span></label>
                                 <select class="form-select @error('tipe_promo') is-invalid @enderror"
                                     wire:model.live="tipe_promo">
+                                    <option value="auto_promo">Auto Promo</option>
                                     <option value="flash_sale">Flash Sale</option>
                                     <option value="kode_promo">Kode Promo</option>
                                     <option value="referral_bonus">Referral Bonus</option>
@@ -332,7 +333,7 @@
         <div class="mt-4 text-end">
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-send me-1"></i>
-                {{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}
+                {{ $this->mode === 'create' ? 'Tambah Promo' : 'Simpan Perubahan' }}
             </button>
         </div>
 

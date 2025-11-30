@@ -143,8 +143,8 @@
                                                                     @endif
                                                                 </small>
                                                             </div>
-                                                            <strong class="text-success">
-                                                                -Rp
+                                                            <strong class="text-danger">
+                                                                - Rp
                                                                 {{ number_format($promo['jumlah_diskon'], 0, ',', '.') }}
                                                             </strong>
                                                         </div>
@@ -226,40 +226,40 @@
 
                                     <!-- Promo Discount -->
                                     @if ($promoDiscount > 0)
-                                        <div class="d-flex justify-content-between text-success mb-2">
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>
-                                                <i class="bi bi-tag-fill"></i> Diskon Promo
+                                                Diskon Promo
                                             </span>
-                                            <strong>-Rp {{ number_format($promoDiscount, 0, ',', '.') }}</strong>
+                                            <strong class="text-danger">- Rp {{ number_format($promoDiscount, 0, ',', '.') }}</strong>
                                         </div>
                                     @endif
 
                                     <!-- Referral Discount -->
                                     @if ($referralDiscount > 0)
-                                        <div class="d-flex justify-content-between text-success mb-2">
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>
-                                                <i class="bi bi-person-plus-fill"></i> Diskon Referral
+                                                Diskon Referral
                                             </span>
-                                            <strong>-Rp {{ number_format($referralDiscount, 0, ',', '.') }}</strong>
+                                            <strong class="text-danger">- Rp {{ number_format($referralDiscount, 0, ',', '.') }}</strong>
                                         </div>
                                     @endif
 
                                     <!-- Points Discount -->
                                     @if ($pointsDiscount > 0)
-                                        <div class="d-flex justify-content-between text-success mb-2">
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>
-                                                <i class="bi bi-star-fill"></i> Diskon Poin
+                                                Diskon Poin
                                             </span>
-                                            <strong>-Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</strong>
+                                            <strong class="text-danger">- Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</strong>
                                         </div>
                                     @endif
 
                                     <!-- Total Discount -->
                                     @if ($totalDiscount > 0)
                                         <hr>
-                                        <div class="d-flex justify-content-between text-success mb-2">
+                                        <div class="d-flex justify-content-between mb-2">
                                             <strong>Total Hemat</strong>
-                                            <strong>Rp {{ number_format($totalDiscount, 0, ',', '.') }}</strong>
+                                            <strong class="text-success">Rp {{ number_format($totalDiscount, 0, ',', '.') }}</strong>
                                         </div>
                                     @endif
 
