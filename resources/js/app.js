@@ -172,7 +172,7 @@ document.addEventListener("livewire:init", () => {
             title: "Berhasil!",
             text: "Data Promo berhasil ditambahkan!",
             timer: 1800,
-            showConfirmButton: false
+            showConfirmButton: false,
         });
     });
 
@@ -182,7 +182,7 @@ document.addEventListener("livewire:init", () => {
             title: "Berhasil!",
             text: "Perubahan Data Promo berhasil disimpan!",
             timer: 1800,
-            showConfirmButton: false
+            showConfirmButton: false,
         });
     });
 
@@ -212,6 +212,19 @@ document.addEventListener("livewire:init", () => {
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-lowongan-data", { id: data["id"] });
+            }
+        });
+    });
+    Livewire.on("will-delete-promo-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data promo ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-promo-data", { id: data["id"] });
             }
         });
     });
