@@ -2,7 +2,7 @@
     <!-- Page Title -->
     <div class="page-title light-background">
         <div class="container d-lg-flex justify-content-between align-items-center">
-            <h1 class="mb-2 mb-lg-0">Keranjang</h1>
+            <h1 class="mb-2 mb-lg-0 text-muted">Keranjang</h1>
             <nav class="breadcrumbs">
                 <ol>
                     <li><a href="{{ route('shop.index') }}">Shop</a></li>
@@ -37,7 +37,7 @@
                                 @foreach ($cart as $key => $item)
                                     <div class="d-flex align-items-center">
                                         @if ($item['product_image'])
-                                            <img src="{{ $item['product_image'] ? asset('storage/img/product/' . $item['product_image']) : 'https://via.placeholder.com/80' }}"
+                                            <img src="{{ $item['product_image'] ? asset('storage/img/Product/' . $item['product_image']) : 'https://via.placeholder.com/80' }}"
                                                 alt="{{ $item['product_name'] }}" class="rounded"
                                                 style="width: 80px; height: 80px; object-fit: cover;">
                                         @else

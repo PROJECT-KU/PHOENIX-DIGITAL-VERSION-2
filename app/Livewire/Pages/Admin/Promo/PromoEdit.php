@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Pages\Admin\Promo;
 
-use Livewire\Component;
-use Livewire\Attributes\Layout;
 use App\Models\Promo;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class PromoEdit extends Component
 {

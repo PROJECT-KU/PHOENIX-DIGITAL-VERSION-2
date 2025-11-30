@@ -9,7 +9,9 @@ use Livewire\Component;
 class CartPage extends Component
 {
     public $cart = [];
+
     public $total = 0;
+
     public $totalQuantity = 0;
 
     public function mount()
@@ -33,6 +35,7 @@ class CartPage extends Component
     {
         if ($quantity < 1) {
             $this->removeItem($cartKey);
+
             return;
         }
 
@@ -61,7 +64,7 @@ class CartPage extends Component
             $this->loadCart();
             $this->dispatch('cart-updated');
 
-            $this->dispatch('success-delete-data');
+            $this->dispatch('success', 'berhasil hapus produk dari keranjang');
         }
     }
 

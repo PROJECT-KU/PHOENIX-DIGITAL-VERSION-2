@@ -2,7 +2,7 @@
     <!-- Page Title -->
     <div class="page-title light-background">
         <div class="container d-lg-flex justify-content-between align-items-center">
-            <h1 class="mb-2 mb-lg-0">Shopping</h1>
+            <h1 class="mb-2 mb-lg-0 text-muted">Shopping</h1>
             <nav class="breadcrumbs">
                 <ol>
                     <li><a href="/">Home</a></li>
@@ -31,24 +31,39 @@
                     <div class="container">
                         <div class="row g-4">
                             @forelse ($products as $item)
+                                @php
+                                    $bestDiscount = $this->getBestDiscount($item->id);
+                                @endphp
                                 <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $item->id }}">
                                     <div class="product-card">
                                         <div class="product-image">
                                             @if ($item->image)
                                                 <div>
-                                                    <img src="{{ asset('storage/img/product/' . $item->image) }}"
-                                                        class="main-image img-fluid" alt="{{ $item->nama_akun }}">
-                                                    <img src="{{ asset('storage/img/product/' . $item->image) }}"
-                                                        class="hover-image img-fluid" alt="{{ $item->nama_akun }}">
+                                                    <img src="{{ asset('storage/img/Product/' . $item->image) }}"
+                                                        class="img-fluid" alt="{{ $item->nama_akun }}">
                                                 </div>
                                             @else
                                                 <div>
-                                                    <img class="main-image img-fluid" style="object-fit: cover"
+                                                    <img class="img-fluid" style="object-fit: cover"
                                                         src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
                                                         alt="">
-                                                    <img class="hover-image img-fluid" style="object-fit: cover"
-                                                        src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                                        alt="">
+                                                </div>
+                                            @endif
+
+                                            <!-- Promo Badge -->
+                                            @if ($bestDiscount)
+                                                <div class="discount-badge"
+                                                    style="background: {{ $bestDiscount['promo']->badge_color ?? '#FF6B6B' }};">
+                                                    @if ($bestDiscount['type'] === 'persen')
+                                                        @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
+                                                            diskon
+                                                            {{ number_format($bestDiscount['non_member_value'], 0) }}-{{ number_format($bestDiscount['member_value'], 0) }}%
+                                                        @else
+                                                            diskon{{ number_format($bestDiscount['value'], 0) }}%
+                                                        @endif
+                                                    @else
+                                                        diskon Rp{{ number_format($bestDiscount['value'], 0) }}
+                                                    @endif
                                                 </div>
                                             @endif
 
@@ -75,10 +90,39 @@
                                                 </a>
                                             </h4>
                                             <div class="product-meta">
-                                                <div class="product-price">
-                                                    Mulai Rp
-                                                    {{ number_format($item->harga_perbulan, 0, ',', '.') }}/bulan
-                                                </div>
+                                                @if ($bestDiscount)
+                                                    <div class="product-price flex-column align-items-start">
+                                                        @php
+                                                            $originalPrice = $item->harga_perbulan;
+                                                            if ($bestDiscount['type'] === 'persen') {
+                                                                $discountedPrice =
+                                                                    $originalPrice -
+                                                                    ($originalPrice * $bestDiscount['value']) / 100;
+                                                            } else {
+                                                                $discountedPrice = max(
+                                                                    0,
+                                                                    $originalPrice - $bestDiscount['value'],
+                                                                );
+                                                            }
+                                                        @endphp
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="text-danger small d-block">
+                                                                <del>Rp
+                                                                    {{ number_format($originalPrice, 0, ',', '.') }}</del>
+                                                            </span>
+                                                            <div class="d-flex align-items-baseline gap-2">
+                                                                <span class="sale-price fs-6 text-dark small fw-bold">Rp
+                                                                    {{ number_format($discountedPrice, 0, ',', '.') }}/bulan
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <div class="product-price text-muted">
+                                                        Mulai Rp
+                                                        {{ number_format($item->harga_perbulan, 0, ',', '.') }}/bulan
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -89,68 +133,234 @@
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Pilih Paket {{ $item->nama_akun }}</h5>
+                                                <h5 class="modal-title text-dark">Pilih Paket {{ $item->nama_akun }}
+                                                </h5>
                                                 <button type="button" class="btn-close"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <div class="gap-2 d-flex flex-column">
                                                     @if ($item->harga_perbulan)
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        @php
+                                                            $price = $item->harga_perbulan;
+                                                            if ($bestDiscount) {
+                                                                if ($bestDiscount['type'] === 'persen') {
+                                                                    $discountedPrice =
+                                                                        $price -
+                                                                        ($price * $bestDiscount['value']) / 100;
+                                                                } else {
+                                                                    $discountedPrice = max(
+                                                                        0,
+                                                                        $price - $bestDiscount['value'],
+                                                                    );
+                                                                }
+                                                                $totalSaving =
+                                                                    $item->harga_perbulan * 1 - $discountedPrice;
+                                                            }
+                                                        @endphp
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 1)"
                                                             data-bs-dismiss="modal">
-                                                            <div class="d-flex w-100 justify-content-between">
-                                                                <p>Paket 1 Bulan</p>
-                                                                <strong>Rp
-                                                                    {{ number_format($item->harga_perbulan, 0, ',', '.') }}</strong>
+                                                            <div
+                                                                class="d-flex w-100 justify-content-between align-items-center">
+                                                                <p class="mb-0 text-dark">Paket 1 Bulan</p>
+                                                                <div class="text-end">
+                                                                    @if ($bestDiscount)
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @else
+                                                                        <strong>Rp
+                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
+                                                                    @endif
+                                                                </div>
                                                             </div>
                                                         </button>
                                                     @endif
 
                                                     @if ($item->harga_5_perbulan)
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        @php
+                                                            $price = $item->harga_5_perbulan;
+                                                            $saving = $item->harga_perbulan * 5 - $price;
+                                                            if ($bestDiscount) {
+                                                                if ($bestDiscount['type'] === 'persen') {
+                                                                    $discountedPrice =
+                                                                        $price -
+                                                                        ($price * $bestDiscount['value']) / 100;
+                                                                } else {
+                                                                    $discountedPrice = max(
+                                                                        0,
+                                                                        $price - $bestDiscount['value'],
+                                                                    );
+                                                                }
+                                                                $totalSaving =
+                                                                    $item->harga_perbulan * 5 - $discountedPrice;
+                                                            }
+                                                        @endphp
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 5)"
                                                             data-bs-dismiss="modal">
-                                                            <div class="d-flex w-100 justify-content-between">
-                                                                <p>Paket 5 Bulan</p>
-                                                                <div>
-                                                                    <strong>Rp
-                                                                        {{ number_format($item->harga_5_perbulan, 0, ',', '.') }}</strong>
-
-                                                                    <small class="d-block">Hemat
-                                                                        {{ number_format($item->harga_perbulan * 5 - $item->harga_5_perbulan, 0, ',', '.') }}</small>
+                                                            <div
+                                                                class="d-flex w-100 justify-content-between align-items-center">
+                                                                <p class="mb-0 text-dark">Paket 5 Bulan</p>
+                                                                <div class="text-end">
+                                                                    @if ($bestDiscount)
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @else
+                                                                        <strong>Rp
+                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @endif
                                                                 </div>
                                                             </div>
                                                         </button>
                                                     @endif
 
                                                     @if ($item->harga_10_perbulan)
-                                                        <button type="button" class="btn btn-outline-secondary"
+                                                        @php
+                                                            $price = $item->harga_10_perbulan;
+                                                            $saving = $item->harga_perbulan * 10 - $price;
+                                                            if ($bestDiscount) {
+                                                                if ($bestDiscount['type'] === 'persen') {
+                                                                    $discountedPrice =
+                                                                        $price -
+                                                                        ($price * $bestDiscount['value']) / 100;
+                                                                } else {
+                                                                    $discountedPrice = max(
+                                                                        0,
+                                                                        $price - $bestDiscount['value'],
+                                                                    );
+                                                                }
+                                                                $totalSaving =
+                                                                    $item->harga_perbulan * 10 - $discountedPrice;
+                                                            }
+                                                        @endphp
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 10)"
                                                             data-bs-dismiss="modal">
-                                                            <div class="d-flex w-100 justify-content-between">
-                                                                <p>Paket 10 Bulan</p>
-                                                                <div>
-                                                                    <strong>Rp
-                                                                        {{ number_format($item->harga_10_perbulan, 0, ',', '.') }}</strong>
-                                                                    <small class="d-block">Hemat
-                                                                        {{ number_format($item->harga_perbulan * 10 - $item->harga_10_perbulan, 0, ',', '.') }}</small>
+                                                            <div
+                                                                class="d-flex w-100 justify-content-between align-items-center">
+                                                                <p class="mb-0 text-dark">Paket 10 Bulan</p>
+                                                                <div class="text-end">
+                                                                    @if ($bestDiscount)
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @else
+                                                                        <strong>Rp
+                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @endif
                                                                 </div>
                                                             </div>
                                                         </button>
                                                     @endif
 
                                                     @if ($item->harga_pertahun)
-                                                        <button type="button" class="btn btn-outline-secondary w-100"
+                                                        @php
+                                                            $price = $item->harga_pertahun;
+                                                            $saving = $item->harga_perbulan * 12 - $price;
+                                                            if ($bestDiscount) {
+                                                                if ($bestDiscount['type'] === 'persen') {
+                                                                    $discountedPrice =
+                                                                        $price -
+                                                                        ($price * $bestDiscount['value']) / 100;
+                                                                } else {
+                                                                    $discountedPrice = max(
+                                                                        0,
+                                                                        $price - $bestDiscount['value'],
+                                                                    );
+                                                                }
+                                                                $totalSaving =
+                                                                    $item->harga_perbulan * 12 - $discountedPrice;
+                                                            }
+                                                        @endphp
+                                                        <button type="button" class="btn btn-outline-light w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'tahun', 1)"
                                                             data-bs-dismiss="modal">
-                                                            <div class="d-flex w-100 justify-content-between">
-                                                                <p>Paket 1 Tahun</p>
-                                                                <div>
-                                                                    <strong>Rp
-                                                                        {{ number_format($item->harga_pertahun, 0, ',', '.') }}</strong>
-                                                                    <small class="d-block">Hemat
-                                                                        {{ number_format($item->harga_perbulan * 12 - $item->harga_pertahun, 0, ',', '.') }}</small>
+                                                            <div
+                                                                class="d-flex w-100 justify-content-between align-items-center">
+                                                                <p class="mb-0 text-dark">Paket 1 Tahun</p>
+                                                                <div class="text-end">
+                                                                    @if ($bestDiscount)
+                                                                        <div
+                                                                            class="d-flex align-items-center justify-content-end gap-2">
+                                                                            <small
+                                                                                class="text-danger fs-6 text-decoration-line-through">
+                                                                                Rp
+                                                                                {{ number_format($price, 0, ',', '.') }}
+                                                                            </small>
+                                                                            <strong class="text-dark fs-5">
+                                                                                Rp
+                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @else
+                                                                        <strong>Rp
+                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
+                                                                        <small class="d-block text-muted">
+                                                                            hemat hingga Rp
+                                                                            {{ number_format($saving, 0, ',', '.') }}
+                                                                            untuk member
+                                                                        </small>
+                                                                    @endif
                                                                 </div>
                                                             </div>
                                                         </button>
@@ -179,4 +389,32 @@
         </div>
     </section>
     <!-- end list product -->
+    <style>
+        .discount-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #FF6B6B;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+    </style>
 </main>

@@ -66,5 +66,10 @@ class DatabaseSeeder extends Seeder
         DataAkun::factory()->count(100)->create();
 
         Product::factory()->count(100)->create();
+
+        // promo seeder
+        $this->call([
+            PromoSeeder::class,
+        ]);
     }
 }

@@ -72,6 +72,88 @@
                                         @enderror
                                     </div>
 
+                                    <!-- Promo -->
+                                    <div class="form-group">
+                                        <div class="card-body">
+                                            <h5 class="card-title mb-3">
+                                                <i class="bi bi-tag-fill text-primary"></i> Kode Promo
+                                            </h5>
+
+                                            <div class="row g-3">
+                                                <div class="col-md-8">
+                                                    <input type="text"
+                                                        class="form-control @error('kodePromo') is-invalid @enderror"
+                                                        wire:model="kodePromo"
+                                                        placeholder="Masukkan kode promo (opsional)"
+                                                        @if ($promoValid) disabled @endif>
+                                                    @error('kodePromo')
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
+
+                                                    @if ($promoMessage)
+                                                        <div
+                                                            class="mt-2 alert {{ $promoValid ? 'alert-success' : 'alert-danger' }} py-2 mb-0">
+                                                            <small>{{ $promoMessage }}</small>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <div class="col-md-4">
+                                                    @if ($promoValid)
+                                                        <button type="button" class="btn btn-outline-danger w-100"
+                                                            wire:click="removePromo">
+                                                            <i class="bi bi-x-circle"></i> Hapus
+                                                        </button>
+                                                    @else
+                                                        <button type="button" class="btn btn-primary w-100"
+                                                            wire:click="checkPromo" wire:loading.attr="disabled"
+                                                            wire:target="checkPromo">
+                                                            <span wire:loading.remove wire:target="checkPromo">
+                                                                <i class="bi bi-check-circle"></i> Gunakan
+                                                            </span>
+                                                            <span wire:loading wire:target="checkPromo">
+                                                                <span class="spinner-border spinner-border-sm"></span>
+                                                                Checking...
+                                                            </span>
+                                                        </button>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <!-- Display Applied Promos (Flash Sale) -->
+                                            @if (!empty($appliedPromos))
+                                                <div class="mt-3">
+                                                    <h6 class="text-muted mb-2">Promo yang Diterapkan:</h6>
+                                                    @foreach ($appliedPromos as $promo)
+                                                        <div
+                                                            class="d-flex justify-content-between align-items-center p-2 bg-light rounded mb-2">
+                                                            <div>
+                                                                <strong>{{ $promo['nama_promo'] }}</strong>
+                                                                @if ($promo['kode_promo'])
+                                                                    <span
+                                                                        class="badge bg-primary">{{ $promo['kode_promo'] }}</span>
+                                                                @endif
+                                                                <br>
+                                                                <small class="text-muted">
+                                                                    Diskon:
+                                                                    @if ($promo['tipe_diskon'] === 'persen')
+                                                                        {{ $promo['nilai_diskon'] }}%
+                                                                    @else
+                                                                        Rp
+                                                                        {{ number_format($promo['nilai_diskon'], 0, ',', '.') }}
+                                                                    @endif
+                                                                </small>
+                                                            </div>
+                                                            <strong class="text-danger">
+                                                                - Rp
+                                                                {{ number_format($promo['jumlah_diskon'], 0, ',', '.') }}
+                                                            </strong>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+
                                     <!-- Opsi Penggunaan Poin -->
                                     @if ($showPointsOption)
                                         <div class="form-group">
@@ -136,36 +218,67 @@
 
                                     <hr>
 
-                                    <div class="mb-2 d-flex justify-content-between">
+                                    <!-- Subtotal -->
+                                    <div class="d-flex justify-content-between mb-2">
                                         <span>Subtotal</span>
-                                        <strong>Rp {{ number_format($total, 0, ',', '.') }}</strong>
+                                        <strong>Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
                                     </div>
 
-                                    @if ($discount > 0)
-                                        <div class="mb-2 d-flex justify-content-between text-danger">
+                                    <!-- Promo Discount -->
+                                    @if ($promoDiscount > 0)
+                                        <div class="d-flex justify-content-between mb-2">
                                             <span>
-                                                <i class="bi bi-star-fill"></i> Diskon Poin
+                                                Diskon Promo
                                             </span>
-                                            <strong>- Rp {{ number_format($discount, 0, ',', '.') }}</strong>
+                                            <strong class="text-danger">- Rp {{ number_format($promoDiscount, 0, ',', '.') }}</strong>
                                         </div>
-                                        <hr>
                                     @endif
 
-                                    <div class="mb-3 d-flex justify-content-between">
-                                        <h6>Total Pembayaran</h6>
-                                        <h5 class="{{ $discount > 0 ? 'text-success' : '' }}">
-                                            Rp {{ number_format($finalTotal, 0, ',', '.') }}
+                                    <!-- Referral Discount -->
+                                    @if ($referralDiscount > 0)
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>
+                                                Diskon Referral
+                                            </span>
+                                            <strong class="text-danger">- Rp {{ number_format($referralDiscount, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @endif
+
+                                    <!-- Points Discount -->
+                                    @if ($pointsDiscount > 0)
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>
+                                                Diskon Poin
+                                            </span>
+                                            <strong class="text-danger">- Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @endif
+
+                                    <!-- Total Discount -->
+                                    @if ($totalDiscount > 0)
+                                        <hr>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <strong>Total Hemat</strong>
+                                            <strong class="text-success">Rp {{ number_format($totalDiscount, 0, ',', '.') }}</strong>
+                                        </div>
+                                    @endif
+
+                                    <hr>
+
+                                    <!-- Final Total -->
+                                    @if ($totalDiscount > 0)
+                                        <div class="d-flex justify-content-end">
+                                            <h5 class="text-muted">
+                                                <del>Rp {{ number_format($subtotal, 0, ',', '.') }}</del>
+                                            </h5>
+                                        </div>
+                                    @endif
+                                    <div class="d-flex justify-content-between mb-5">
+                                        <h5 class="mb-0">Total Pembayaran</h5>
+                                        <h5 class="mb-0">Rp {{ number_format($finalTotal, 0, ',', '.') }}
                                         </h5>
                                     </div>
 
-                                    @if ($finalTotal == 0 && $usePoints)
-                                        <div class="alert alert-success">
-                                            <small>
-                                                <i class="bi bi-check-circle"></i>
-                                                Pesanan Anda akan dibayar penuh dengan poin!
-                                            </small>
-                                        </div>
-                                    @endif
 
                                     <!-- Kode Referral (Tambahkan section ini) -->
                                     @if ($showReferralInput)
