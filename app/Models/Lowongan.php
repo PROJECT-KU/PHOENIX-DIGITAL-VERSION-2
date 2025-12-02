@@ -10,10 +10,26 @@ class Lowongan extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'is_active', 'slug', 'requirements', 'descriptions'];
+    protected $fillable = [
+        'title',
+        'slug',
+        'is_active',
+        'requirements',
+        'descriptions',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     public function applications(): HasMany
     {
         return $this->hasMany(JobApplication::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 'active');
     }
 }
