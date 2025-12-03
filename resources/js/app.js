@@ -228,4 +228,18 @@ document.addEventListener("livewire:init", () => {
             }
         });
     });
+
+    Livewire.on("will-delete-message-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus Pesan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-message-data", { id: data["id"] });
+            }
+        });
+    });
 });

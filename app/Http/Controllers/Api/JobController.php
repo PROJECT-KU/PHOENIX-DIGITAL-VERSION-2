@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
 use App\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Models\Lowongan;
 
 class JobController extends Controller
