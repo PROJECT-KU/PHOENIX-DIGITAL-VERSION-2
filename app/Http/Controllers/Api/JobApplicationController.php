@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreJobApplicationRequest;
 use App\Models\JobApplication;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class JobApplicationController extends Controller
 {
@@ -21,43 +20,43 @@ class JobApplicationController extends Controller
             $cl = $request->file('cover_letter');
 
             // Generate unique subdirectory
-            $subdir = now()->format('Y/m') . '/' . Str::uuid()->toString();
+            $subdir = now()->format('Y/m').'/'.Str::uuid()->toString();
 
             // Atomic transaction
             $app = DB::transaction(function () use ($request, $cv, $cl, $subdir) {
                 $cvOriginalName = pathinfo($cv->getClientOriginalName(), PATHINFO_FILENAME);
                 $clOriginalName = pathinfo($cl->getClientOriginalName(), PATHINFO_FILENAME);
-                $cvFileName = Str::slug($cvOriginalName) . '_' . Str::random(8) . '.pdf';
-                $clFileName = Str::slug($clOriginalName) . '_' . Str::random(8) . '.pdf';
+                $cvFileName = Str::slug($cvOriginalName).'_'.Str::random(8).'.pdf';
+                $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
 
                 $cvPath = $cv->storeAs("applications/{$subdir}", $cvFileName, 'public');
                 $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'public');
 
                 // Create application record
                 return JobApplication::create([
-                    'job_id'            => $request->input('job_id'),
-                    'name'              => $request->input('name'),
-                    'email'             => $request->input('email'),
-                    'phone'             => $request->input('phone'),
-                    'cv_path'           => $cvPath,
+                    'job_id' => $request->input('job_id'),
+                    'name' => $request->input('name'),
+                    'email' => $request->input('email'),
+                    'phone' => $request->input('phone'),
+                    'cv_path' => $cvPath,
                     'cover_letter_path' => $clPath,
-                    'ip_address'        => $request->ip(),
+                    'ip_address' => $request->ip(),
                 ]);
             });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Application submitted successfully',
-                'data'    => [
-                    'id'                 => $app->id,
+                'data' => [
+                    'id' => $app->id,
                     'application_number' => str_pad($app->id, 6, '0', STR_PAD_LEFT),
-                    'submitted_at'       => $app->created_at->format('Y-m-d H:i:s'),
+                    'submitted_at' => $app->created_at->format('Y-m-d H:i:s'),
                 ],
             ], 201);
         } catch (\Exception $e) {
             Log::error('Job Application Error', [
                 'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString(),
                 'request' => $request->except(['cv', 'cover_letter']), // jangan log file
             ]);
 
@@ -72,7 +71,7 @@ class JobApplicationController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to submit application. Please try again.',
-                'error'   => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
