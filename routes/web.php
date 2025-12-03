@@ -26,6 +26,8 @@ use App\Livewire\Pages\Admin\Loan\LoanList;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\Message\MessageDetail;
+use App\Livewire\Pages\Admin\Message\MessageList;
 use App\Livewire\Pages\Admin\Order\DeliverOrder;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
 // Data Paket Bundling
@@ -169,9 +171,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
 
     // Route Promo
-    Route::get('admin/promo', PromoList::class)->name('admin.promo.index');
+    Route::get('/admin/promo', PromoList::class)->name('admin.promo.index');
     Route::get('/admin/promo/create', PromoCreate::class)->name('admin.promo.create');
     Route::get('/admin/promo/{promo}/edit', PromoEdit::class)->name('admin.promo.edit');
+
+    // route pesan masuk
+    Route::get('/admin/message', MessageList::class)->name('admin.message.index');
+    Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });
 
 require __DIR__.'/auth.php';

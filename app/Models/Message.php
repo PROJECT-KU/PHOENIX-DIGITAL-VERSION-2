@@ -15,6 +15,7 @@ class Message extends Model
         'message',
         'ip_address',
         'user_agent',
+        'read_at',
     ];
 
     protected $casts = [
