@@ -31,8 +31,15 @@ class LowonganPekerjaanForm extends Component
             $this->lowongan = $lowongan;
             $this->title = $this->lowongan->title;
             $this->isActive = $this->lowongan->is_active ?? '';
+            $this->slug = $this->lowongan->slug;
             $this->descriptions = $this->lowongan->descriptions ?? '';
             $this->requirements = $this->lowongan->requirements ?? '';
+
+            $this->dispatch('load-quill-content', [
+                'descriptions' => $this->descriptions,
+                'requirements' => $this->requirements,
+            ]);
+
             $this->mode = 'edit';
         }
     }
@@ -47,9 +54,9 @@ class LowonganPekerjaanForm extends Component
         ];
 
         if ($this->mode == 'edit' && $this->lowongan) {
-            $rules['slug'] = 'required|string|max:255|unique:tbl_jobs,slug,'.$this->lowongan->id;
+            $rules['slug'] = 'required|string|max:255|unique:lowongans,slug,'.$this->lowongan->id;
         } else {
-            $rules['slug'] = 'required|string|max:255|unique:tbl_jobs,slug,';
+            $rules['slug'] = 'required|string|max:255|unique:lowongans,slug,';
         }
 
         return $rules;
