@@ -75,7 +75,7 @@
                                             class="text-black btn btn-sm btn-warning" title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <button type="button" onclick="confirmDelete({{ $item->id }})"
+                                        <button type="button" wire:click="$dispatch('will-delete-message-data', {{$item}})"
                                             class="btn btn-sm btn-danger" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>

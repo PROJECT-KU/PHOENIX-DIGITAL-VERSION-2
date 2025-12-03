@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Message;
 
 use App\Models\Message;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -31,6 +32,17 @@ class MessageList extends Component
     {
         $this->reset(['filterMonth', 'filterStatus']);
         $this->resetPage();
+    }
+
+    #[On('delete-message-data')]
+    public function delete($id)
+    {
+        try {
+            Message::findOrFail($id)->delete();
+            session()->flash('success', 'berhasil menghapus data lowongan');
+        } catch (\Exception $e) {
+            session()->flash('error', 'gagal menghapus data lowongan');
+        }
     }
 
     #[Layout('layouts.app')]

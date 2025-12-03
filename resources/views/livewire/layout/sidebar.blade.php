@@ -195,7 +195,7 @@ new class extends Component
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'active' : '' }}">
 
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary fw-bold' : '' }}">
