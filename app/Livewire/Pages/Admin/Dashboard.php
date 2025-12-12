@@ -2,10 +2,10 @@
 
 namespace App\Livewire\Pages\Admin;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
-use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 class Dashboard extends Component
 {
@@ -20,6 +20,7 @@ class Dashboard extends Component
             ->map(function ($user) {
                 // status online jika last_seen_at < 5 menit
                 $user->online = $user->last_seen_at->gt(now()->subMinutes(1));
+
                 return $user;
             })
             ->sortByDesc(function ($user) {

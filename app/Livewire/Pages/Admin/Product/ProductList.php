@@ -2,15 +2,16 @@
 
 namespace App\Livewire\Pages\Admin\Product;
 
-use Livewire\Component;
 use App\Models\Product;
-use Livewire\Attributes\Layout;
-use Livewire\WithPagination;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class ProductList extends Component
 {
     use WithPagination;
+
     public $searchDataProduct = '';
 
     public function updatedSearchDataProduct()
@@ -23,8 +24,8 @@ class ProductList extends Component
         try {
             $product = Product::findOrFail($id);
 
-            if (!empty($product->image) && Storage::disk('public')->exists('img/Product/' . $product->image)) {
-                Storage::disk('public')->delete('img/Product/' . $product->image);
+            if (! empty($product->image) && Storage::disk('public')->exists('img/Product/'.$product->image)) {
+                Storage::disk('public')->delete('img/Product/'.$product->image);
             }
 
             $product->delete();
@@ -49,7 +50,7 @@ class ProductList extends Component
             ->paginate(10);
 
         return view('livewire.pages.admin.product.product-list', [
-            'DataProduct' => $Dataproduct
+            'DataProduct' => $Dataproduct,
         ]);
     }
 }

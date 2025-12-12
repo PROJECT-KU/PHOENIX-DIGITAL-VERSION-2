@@ -183,11 +183,15 @@ new class extends Component
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
                         @if (auth()->user()->hasRole('admin'))
-                            <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
-                                <a wire:navigate href="{{ route('admin.account.role') }}"
-                                    class="submenu-link">Pengaturan Role</a>
-                            </li>
+                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.role') }}"
+                                class="submenu-link">Pengaturan Role</a>
+                        </li>
                         @endif
+                        <li class="submenu-item {{ request()->routeIs('admin.account.permission') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.permission') }}"
+                                class="submenu-link">Permission Akun</a>
+                        </li>
                     </ul>
                 </li>
 

@@ -10,7 +10,9 @@ use Illuminate\Support\Str;
 class PaymentService
 {
     protected $serverKey;
+
     protected $clientKey;
+
     protected $isProduction;
 
     public function __construct()
@@ -47,7 +49,7 @@ class PaymentService
                     'id' => $item->product_id,
                     'price' => (int) $item->price,
                     'quantity' => $item->quantity,
-                    'name' => $item->product_name . ' - ' . $item->getDurationLabel(),
+                    'name' => $item->product_name.' - '.$item->getDurationLabel(),
                 ];
             }
 
@@ -106,7 +108,7 @@ class PaymentService
                 'payment' => $payment,
             ];
         } catch (\Exception $e) {
-            Log::error('Payment creation failed: ' . $e->getMessage());
+            Log::error('Payment creation failed: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -119,7 +121,7 @@ class PaymentService
     {
         try {
             // Verify notification
-            $notif = new \Midtrans\Notification();
+            $notif = new \Midtrans\Notification;
 
             $orderNumber = $notif->order_id;
             $transactionStatus = $notif->transaction_status;
@@ -139,19 +141,20 @@ class PaymentService
                 if ($fraudStatus == 'accept') {
                     $this->markAsPaid($order, $payment);
                 }
-            } else if ($transactionStatus == 'settlement') {
+            } elseif ($transactionStatus == 'settlement') {
                 $this->markAsPaid($order, $payment);
-            } else if ($transactionStatus == 'pending') {
+            } elseif ($transactionStatus == 'pending') {
                 // Do nothing, wait for settlement
                 $payment->update(['status' => 'pending']);
-            } else if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+            } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
                 $payment->update(['status' => $transactionStatus]);
                 $order->update(['status' => 'cancelled']);
             }
 
             return ['success' => true];
         } catch (\Exception $e) {
-            Log::error('Payment callback error: ' . $e->getMessage());
+            Log::error('Payment callback error: '.$e->getMessage());
+
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }

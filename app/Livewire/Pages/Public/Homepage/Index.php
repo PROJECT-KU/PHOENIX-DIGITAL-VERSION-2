@@ -27,7 +27,7 @@ class Index extends Component
 
         return view('livewire.pages.public.homepage.index', [
             'banners' => $banners,
-            'products' => $products
+            'products' => $products,
         ]);
     }
 }

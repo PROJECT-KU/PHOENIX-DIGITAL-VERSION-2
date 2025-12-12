@@ -19,7 +19,7 @@ class GlobalSearch extends Component
         if (request()->routeIs('shop')) {
             $this->dispatch('search-updated', search: $this->searchQuery);
         } else {
-            return $this->redirect('/shop?search=' . urlencode($this->searchQuery));
+            return $this->redirect('/shop?search='.urlencode($this->searchQuery));
         }
     }
 
@@ -27,6 +27,7 @@ class GlobalSearch extends Component
     {
         $this->searchQuery = request('search', '');
     }
+
     public function render()
     {
         return view('livewire.components.global-search');

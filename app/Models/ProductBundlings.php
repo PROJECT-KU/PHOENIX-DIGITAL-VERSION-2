@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProductBundlings extends Model
 {
     use HasFactory, HasUuids;
+
     protected $table = 'product_bundlings';
 
     protected $fillable = [
@@ -22,12 +23,12 @@ class ProductBundlings extends Model
         'harga_bundling',
         'gambar',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     public function product1()

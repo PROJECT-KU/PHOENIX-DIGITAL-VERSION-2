@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\DataAkun;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class DataAkunCreate extends Component
 {

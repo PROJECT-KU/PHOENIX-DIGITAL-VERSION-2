@@ -3,9 +3,9 @@
 namespace App\Livewire\Pages\Admin\Banners;
 
 use App\Models\Banners;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 
 class BannersList extends Component
 {
@@ -24,14 +24,15 @@ class BannersList extends Component
     {
         $Banners = Banners::find($id);
 
-        if (!$Banners) {
+        if (! $Banners) {
             $this->dispatch('delete-error', message: 'Data Banners tidak ditemukan!');
+
             return;
         }
 
         // Hapus file fisik jika ada
         if ($Banners->gambar) {
-            $filePath = storage_path('app/public/img/banners/' . $Banners->gambar);
+            $filePath = storage_path('app/public/img/banners/'.$Banners->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -42,7 +43,6 @@ class BannersList extends Component
 
         $this->dispatch('Banners-deleted', id: $id);
     }
-
 
     #[Layout('layouts.app')]
     public function render()

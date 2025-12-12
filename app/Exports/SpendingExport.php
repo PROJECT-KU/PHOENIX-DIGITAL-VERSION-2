@@ -9,7 +9,9 @@ use Maatwebsite\Excel\Concerns\FromView;
 class SpendingExport implements FromView
 {
     protected $jenis;
+
     protected $start;
+
     protected $end;
 
     public function __construct($jenis = null, $start = null, $end = null)
@@ -33,7 +35,7 @@ class SpendingExport implements FromView
         $spendings = $query->orderBy('tanggal_transaksi', 'desc')->get();
 
         return view('exports.spanding', [
-            'spendings' => $spendings
+            'spendings' => $spendings,
         ]);
     }
 }

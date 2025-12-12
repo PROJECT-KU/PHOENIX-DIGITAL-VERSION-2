@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\Product;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class ProductCreate extends Component
 {

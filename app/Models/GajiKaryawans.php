@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,7 +29,7 @@ class GajiKaryawans extends Model
         'pph21',
         'total',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -55,12 +54,12 @@ class GajiKaryawans extends Model
 
     public function getTotalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
+        return 'Rp '.number_format($this->total ?? 0, 0, ',', '.');
     }
 
     public function getGajiPokokFormattedAttribute()
     {
-        return 'Rp ' . number_format($this->gaji_pokok, 0, ',', '.');
+        return 'Rp '.number_format($this->gaji_pokok, 0, ',', '.');
     }
 
     public function getTanggalTransaksiFormattedAttribute(): string

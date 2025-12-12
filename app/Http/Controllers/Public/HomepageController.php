@@ -23,11 +23,11 @@ class HomepageController extends Controller
 
         // Produk terbaru (limit 4) + support search
         $product = Product::when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama_akun', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_akun', 'like', "%{$search}%")
                     ->orWhere('deskripsi', 'like', "%{$search}%");
-                });
-            })
+            });
+        })
             ->latest()
             ->take(4)
             ->get();
@@ -48,11 +48,11 @@ class HomepageController extends Controller
         $search = $request->input('search');
 
         $product = Product::when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nama_akun', 'like', "%{$search}%")
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_akun', 'like', "%{$search}%")
                     ->orWhere('deskripsi', 'like', "%{$search}%");
-                });
-            })
+            });
+        })
             ->latest()
             ->paginate(8)
             ->withQueryString(); // <-- penting supaya search tetap ada saat pindah halaman

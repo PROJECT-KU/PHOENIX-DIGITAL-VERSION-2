@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\account;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
 
 class DashboardController extends Controller
 {
@@ -29,7 +29,7 @@ class DashboardController extends Controller
 
         // Ambil User model, kecuali user yang sedang login
         $onlineUsers = collect();
-        if (!empty($onlineUserIds)) {
+        if (! empty($onlineUserIds)) {
             $onlineUsers = User::whereIn('id', $onlineUserIds)
                 ->where('id', '!=', $authUser->id)
                 ->get();

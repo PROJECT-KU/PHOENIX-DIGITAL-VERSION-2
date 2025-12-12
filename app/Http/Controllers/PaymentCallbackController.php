@@ -9,7 +9,7 @@ class PaymentCallbackController extends Controller
 {
     public function midtrans(Request $request)
     {
-        $paymentService = new PaymentService();
+        $paymentService = new PaymentService;
         $result = $paymentService->handleCallback($request->all());
 
         return response()->json($result);

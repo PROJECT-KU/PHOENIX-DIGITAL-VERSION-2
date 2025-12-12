@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Role;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
@@ -16,24 +15,24 @@ class RoleSeeder extends Seeder
         $roles = [
             [
                 'name' => 'admin',
-                'description' => 'Full system access'
+                'description' => 'Full system access',
             ],
             [
                 'name' => 'finance',
-                'description' => 'Finance department access'
+                'description' => 'Finance department access',
             ],
             [
                 'name' => 'manager',
-                'description' => 'manager role'
+                'description' => 'manager role',
             ],
             [
                 'name' => 'supervisor',
-                'description' => 'supervisor role'
+                'description' => 'supervisor role',
             ],
             [
                 'name' => 'user',
-                'description' => 'user public'
-            ]
+                'description' => 'user public',
+            ],
         ];
 
         foreach ($roles as $role) {
