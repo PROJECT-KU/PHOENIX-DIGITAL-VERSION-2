@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\PaymentCallbackController;
-use App\Http\Controllers\Public\HomepageController;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
@@ -35,11 +34,6 @@ use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
-// Data Pengembalian
-// use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
-// use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
-// use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
-
 // Data Promo
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
@@ -58,12 +52,12 @@ use App\Livewire\Pages\Admin\Product\ProductList;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
-use App\Livewire\Pages\Admin\Profile;
+use App\Livewire\Pages\Admin\Profile\ProfileSetting;
 use App\Livewire\Pages\Admin\Promo\PromoCreate;
 use App\Livewire\Pages\Admin\Promo\PromoEdit;
 // Data Pengembalian
 use App\Livewire\Pages\Admin\Promo\PromoList;
-use App\Livewire\Pages\Admin\Role;
+use App\Livewire\Pages\Admin\RoleUser\RoleList;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
@@ -85,21 +79,13 @@ Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
-// Route::get('/', [HomepageController::class, 'index'])->name('homepage');
-// Route::get('/productdetail/{id}', [HomepageController::class, 'productDetail'])
-//     ->name('productdetail');
-// Route::get('/homeproduct', [HomepageController::class, 'allProduct'])
-//     ->name('homeproduct');
-// Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
-Route::view('/cekout', 'pages.cekout')->name('cekout');
-Route::view('/about', 'pages.about')->name('about');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
 Route::middleware(['checkrole:admin'])->group(function () {
-    Route::get('/admin/role', Role::class)->name('admin.account.role');
+    Route::get('/admin/role', RoleList::class)->name('admin.account.role');
     Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
     Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
     Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
@@ -107,7 +93,7 @@ Route::middleware(['checkrole:admin'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
-    Route::get('/admin/profile', Profile::class)->name('admin.account.profile');
+    Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
 
     // Data Akun
     Route::get('/admin/DataAkun', DataAkunList::class)->name('admin.DataAkun.index');

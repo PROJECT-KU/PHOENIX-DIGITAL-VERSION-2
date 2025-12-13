@@ -1,18 +1,21 @@
 <?php
 
-namespace App\Livewire\Pages\Admin;
+namespace App\Livewire\Pages\Admin\RoleUser;
 
 use App\Models\Role as ModelsRole;
 use App\Models\User;
 use Exception;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class Role extends Component
+class RoleList extends Component
 {
     use WithPagination;
+
+    public string $activeTab = 'tab-role';
 
     #[Rule('required|string|max:255')]
     public $name;
@@ -34,20 +37,16 @@ class Role extends Component
     // modal
     public $showEditModalStatus = false;
 
-    public $showDeleteModalStatus = false;
-
     public $selectedUser = null;
 
-    // modal method
-    public function confirmDelete($userId)
+    public function setTab(string $tab): void
     {
-        $this->selectedUser = User::find($userId);
-        $this->showDeleteModalStatus = true;
+        $this->activeTab = $tab;
+        $this->resetPage();
     }
 
     public function cancelModal()
     {
-        $this->showDeleteModalStatus = false;
         $this->showEditModalStatus = false;
         $this->selectedUser = null;
     }
@@ -75,14 +74,22 @@ class Role extends Component
         ]);
 
         $this->cancelModal();
-        $this->dispatch('user-role-updated');
+        $this->dispatch('swal-alert', [
+            'type' => 'success',
+            'title' => 'Berhasil!',
+            'message' => 'Role Pengguna berhasil diperbarui.',
+        ]);
     }
 
-    public function deleteUser($idUser)
+    #[On('delete-user-data')]
+    public function deleteUser($id)
     {
-        User::findOrFail($idUser)->delete();
-        $this->cancelModal();
-        $this->dispatch('user-deleted');
+        User::findOrFail($id)->delete();
+        $this->dispatch('swal-alert', [
+            'type' => 'success',
+            'title' => 'Berhasil!',
+            'message' => 'Data pengguna berhasil dihapus.',
+        ]);
     }
 
     public function updatedSearchUser()
@@ -100,9 +107,18 @@ class Role extends Component
                 'description' => $this->description,
             ]);
             $this->resetForm();
-            $this->dispatch('added-role');
+            session()->flash('success', 'Role berhasil ditambahkan.');
+            $this->dispatch('swal-alert', [
+                'type' => 'success',
+                'title' => 'Berhasil!',
+                'message' => 'Role berhasil ditambahkan.',
+            ]);
         } catch (Exception $e) {
-            $this->dispatch('failed-add-role');
+            $this->dispatch('swal-alert', [
+                'type' => 'error',
+                'title' => 'Gagal!',
+                'message' => 'Role gagal ditambahkan.',
+            ]);
         }
     }
 
@@ -127,14 +143,23 @@ class Role extends Component
             'description' => $this->description,
         ]);
         $this->resetForm();
-        $this->dispatch('updated-role');
+        $this->dispatch('swal-alert', [
+            'type' => 'success',
+            'title' => 'Berhasil!',
+            'message' => 'Role berhasil diperbarui.',
+        ]);
     }
 
-    public function deleteRole($idRole)
+    #[On('delete-role-data')]
+    public function deleteRole($id)
     {
-        $role = ModelsRole::findOrFail($idRole);
+        $role = ModelsRole::findOrFail($id);
         $role->delete();
-        $this->dispatch('deleted-role');
+        $this->dispatch('swal-alert', [
+            'type' => 'success',
+            'title' => 'Berhasil!',
+            'message' => 'Role berhasil dihapus.',
+        ]);
     }
 
     private function resetForm()
@@ -147,13 +172,13 @@ class Role extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        $roles = ModelsRole::all();
+        $roles = ModelsRole::latest()->get();
         $users = User::with('role')
             ->where('name', 'like', "%{$this->searchUser}%")
             ->orWhere('email', 'like', "%{$this->searchUser}%")
             ->paginate(5);
 
-        return view('livewire.pages.admin.role', [
+        return view('livewire.pages.admin.role-user.role-list', [
             'roles' => $roles,
             'users' => $users,
         ]);

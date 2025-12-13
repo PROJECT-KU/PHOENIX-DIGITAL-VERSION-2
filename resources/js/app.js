@@ -261,4 +261,31 @@ document.addEventListener("livewire:init", () => {
             }
         });
     });
+    // user account
+    Livewire.on("will-delete-user-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data user ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-user-data", { id: data["userId"] });
+            }
+        });
+    });
+    Livewire.on("will-delete-role-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data role ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-role-data", { id: data["id"] });
+            }
+        });
+    });
 });
