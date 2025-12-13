@@ -1,225 +1,794 @@
 @section('title')
-    Beranda | Phoenix Digital
+Beranda | Phoenix Digital
 @endsection
+
 <x-guest-layout>
-    <div class="main">
-        <!--================== HEADER ==================-->
-        <section id="hero" class="hero section dark-background">
-            <img src="{{ asset('global/assets/img/hero-bg-2.jpg') }}" alt="" class="hero-bg">
-            <div class="container">
-                <div class="row gy-4 justify-content-between">
-                    <div class="col-lg-4 order-lg-last hero-img" data-aos="zoom-out" data-aos-delay="100">
-                        <img src="{{ asset('global/assets/img/hero-img.png') }}" class="img-fluid animated"
-                            alt="">
+ dashjart
+  <main class="main">
+
+    <!--================== BANNERS ==================-->
+    <section id="hero" class="hero section">
+      <div class="hero-container">
+        @forelse($banners as $banner)
+        <div class="hero-content">
+          <div class="content-wrapper" data-aos="fade-up" data-aos-delay="100">
+            <h1 class="hero-title">{{ $banner->judul }}</h1>
+            <p class="hero-description">{{ $banner->deskripsi }}</p>
+            <div class="hero-actions" data-aos="fade-up" data-aos-delay="200">
+              <a href="#products" class="btn-primary">Shop Now</a>
+              <a href="#categories" class="btn-secondary">Browse Categories</a>
+            </div>
+            <div class="features-list" data-aos="fade-up" data-aos-delay="300">
+              <div class="feature-item">
+                <i class="bi bi-truck"></i>
+                <span>Free Shipping</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-award"></i>
+                <span>Quality Guarantee</span>
+              </div>
+              <div class="feature-item">
+                <i class="bi bi-headset"></i>
+                <span>24/7 Support</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        @endforeach
+
+        <div class="hero-visuals">
+          <div class="product-showcase" data-aos="fade-left" data-aos-delay="200">
+
+            @forelse($banners as $banner)
+            <div class="product-card featured">
+              <img style="width: 100%;" src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
+                alt="{{ $banner->judul ?? 'Banner' }}" class="img-fluid">
+              <div class="product-badge">Promo</div>
+            </div>
+            @empty
+            <p>Tidak ada banner aktif</p>
+            @endforelse
+
+            <div class="product-grid">
+              <div class="product-mini" data-aos="zoom-in" data-aos-delay="400">
+                <img src="{{ 'niceshop/assets/img/product/scopus.png' }}" alt="Product" class="img-fluid">
+                <span class="mini-price">$89</span>
+              </div>
+              <div class="product-mini" data-aos="zoom-in" data-aos-delay="500">
+                <img src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Product" class="img-fluid">
+                <span class="mini-price">$149</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="floating-elements">
+            <div class="floating-icon cart" data-aos="fade-up" data-aos-delay="600">
+              <i class="bi bi-cart3"></i>
+              <span class="notification-dot">3</span>
+            </div>
+            <div class="floating-icon wishlist" data-aos="fade-up" data-aos-delay="700">
+              <i class="bi bi-heart"></i>
+            </div>
+            <div class="floating-icon search" data-aos="fade-up" data-aos-delay="800">
+              <i class="bi bi-search"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+    <!--================== END ==================-->
+
+    <!--================== PRODUK TERLARIS ==================-->
+    <section id="promo-cards" class="promo-cards section">
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row gy-4">
+
+          <style>
+            @media (max-width: 767.98px) {
+              .image-scopcus {
+                margin-top: 0 !important;
+                margin-bottom: 8rem !important;
+              }
+
+              .card-scopus {
+                margin: 0 auto;
+                max-width: 80%;
+              }
+
+              /* Perbaiki tinggi di mobile */
+              .image-scopcus .d-flex {
+                min-height: auto !important;
+                /* hilangkan tinggi fix 500px */
+              }
+
+              .category-content {
+                margin-top: 1rem;
+              }
+
+              .text-scopus {
+                text-align: justify;
+
+              }
+            }
+
+            /* Tambahan: tablet 768px - 991.98px */
+            @media (min-width: 768px) and (max-width: 991.98px) {
+              .card-scopus {
+                margin: 0 auto;
+                /* center */
+                max-width: 75%;
+                /* lebih besar dari mobile */
+                float: none !important;
+              }
+
+              .text-scopus {
+                text-align: justify;
+                margin-right: 10px;
+              }
+            }
+          </style>
+
+          <div class="col-lg-6">
+            <div class="category-featured" data-aos="fade-right" data-aos-delay="200">
+              <div class="category-image image-scopcus">
+                <div class="d-flex justify-content-center align-items-center" style="min-height: 500px;">
+                  <div class="card border-0 card-scopus" style="border-radius: 20px; overflow: hidden; margin: 30px; box-shadow: -8px 8px 20px rgba(255, 165, 0, 0.5);">
+                    <img src="{{ 'niceshop/assets/img/product/scopus.png' }}"
+                      alt="Scopus Lisensi & AI"
+                      class="img-fluid">
+                  </div>
+                </div>
+              </div>
+              <div class="category-content">
+                <span class="category-tag">Trending Now</span>
+                <h2>Scopus Lisensi & Scopus AI</h2>
+                <p class="text-scopus" style="text-align: justify; margin-right: 5px; font-size: 12px;">
+                  Akun Scopus Lisensi & Scopus AI memberi akses ke database jurnal ilmiah terbesar dengan
+                  dukungan AI untuk pencarian, analisis, dan rekomendasi publikasi. Solusi ideal bagi
+                  peneliti, akademisi, dan profesional yang membutuhkan sumber ilmiah terkini.</p>
+                <a href="#" class="btn-shop">Explore Products <i class="bi bi-arrow-right"></i></a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <div class="row gy-4">
+
+              <div class="col-xl-6">
+                <div class="category-card cat-men" data-aos="fade-up" data-aos-delay="300">
+                  <div class="category-image">
+                    <img src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Men's Fashion" class="img-fluid">
+                  </div>
+                  <div class="category-content">
+                    <h4>Grammarly Premium</h4>
+                    <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-xl-6">
+                <div class="category-card cat-kids" data-aos="fade-up" data-aos-delay="400">
+                  <div class="category-image">
+                    <img src="{{ 'niceshop/assets/img/product/quillbot.png' }}" alt="Kid's Fashion" class="img-fluid">
+                  </div>
+                  <div class="category-content">
+                    <h4>Quillbot Premium</h4>
+                    <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-xl-6">
+                <div class="category-card cat-cosmetics" data-aos="fade-up" data-aos-delay="500">
+                  <div class="category-image">
+                    <img src="{{ 'niceshop/assets/img/product/consensus.png' }}" alt="Cosmetics" class="img-fluid">
+                  </div>
+                  <div class="category-content">
+                    <h4>Consensus Premium</h4>
+                    <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-xl-6">
+                <div class="category-card cat-accessories" data-aos="fade-up" data-aos-delay="600">
+                  <div class="category-image">
+                    <img src="{{ 'niceshop/assets/img/product/gamma.png' }}" alt="Accessories" class="img-fluid">
+                  </div>
+                  <div class="category-content">
+                    <h4>Gamma AI Premium</h4>
+                    <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!--================== END ==================-->
+
+    <!--================== FLASH SALE ==================-->
+    <section id="call-to-action" class="call-to-action section">
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row">
+          <div class="col-lg-8 mx-auto">
+            <div class="main-content text-center" data-aos="zoom-in" data-aos-delay="200">
+              <div class="offer-badge" data-aos="fade-down" data-aos-delay="250">
+                <span class="limited-time">Limited Time</span>
+                <span class="offer-text">50% OFF</span>
+              </div>
+
+              <h2 data-aos="fade-up" data-aos-delay="300">Exclusive Flash Sale</h2>
+
+              <p class="subtitle" data-aos="fade-up" data-aos-delay="350">Don't miss out on our biggest sale of the year. Premium quality products at unbeatable prices for the next 48 hours only.</p>
+
+              <div class="countdown-wrapper" data-aos="fade-up" data-aos-delay="400">
+                <div class="countdown d-flex justify-content-center" data-count="2025/12/31">
+                  <div>
+                    <h3 class="count-days"></h3>
+                    <h4>Days</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-hours"></h3>
+                    <h4>Hours</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-minutes"></h3>
+                    <h4>Minutes</h4>
+                  </div>
+                  <div>
+                    <h3 class="count-seconds"></h3>
+                    <h4>Seconds</h4>
+                  </div>
+                </div>
+              </div>
+
+              <div class="action-buttons" data-aos="fade-up" data-aos-delay="450">
+                <a href="#" class="btn-shop-now">Shop Now</a>
+                <a href="#" class="btn-view-deals">View All Deals</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row featured-products-row" data-aos="fade-up" data-aos-delay="500">
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="100">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-5.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-45%</div>
+              </div>
+              <div class="product-details">
+                <h6>Premium Wireless Headphones</h6>
+                <div class="price-section">
+                  <span class="original-price">$129</span>
+                  <span class="sale-price">$71</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="rating-count">(324)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="150">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-7.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-60%</div>
+              </div>
+              <div class="product-details">
+                <h6>Smart Fitness Tracker</h6>
+                <div class="price-section">
+                  <span class="original-price">$89</span>
+                  <span class="sale-price">$36</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-half"></i>
+                  <span class="rating-count">(198)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="200">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-11.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-35%</div>
+              </div>
+              <div class="product-details">
+                <h6>Luxury Travel Backpack</h6>
+                <div class="price-section">
+                  <span class="original-price">$159</span>
+                  <span class="sale-price">$103</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <span class="rating-count">(267)</span>
+                </div>
+              </div>
+            </div>
+          </div><!-- End Product Showcase -->
+
+          <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="250">
+            <div class="product-showcase">
+              <div class="product-image">
+                <img src="{{ 'niceshop/assets/img/product/product-1.webp' }}" alt="Featured Product" class="img-fluid">
+                <div class="discount-badge">-55%</div>
+              </div>
+              <div class="product-details">
+                <h6>Artisan Coffee Mug Set</h6>
+                <div class="price-section">
+                  <span class="original-price">$75</span>
+                  <span class="sale-price">$34</span>
+                </div>
+                <div class="rating-stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star"></i>
+                  <span class="rating-count">(142)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!--================== END ==================-->
+
+    <!-- Best Sellers Section -->
+    <section id="best-sellers" class="best-sellers section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Best Sellers</h2>
+        <p>Necessitatibus eius consequatur ex aliquid fuga eum quidem sint consectetur velit</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row g-5">
+
+          @foreach ($product as $item)
+          <div class="col-lg-3 col-md-6">
+              <div class="product-item">
+                  <div class="product-image">
+
+                      <img src="{{ asset('storage/img/product/' . $item->image) }}" 
+                          alt="{{ $item->nama_akun }}" 
+                          class="img-fluid" 
+                          loading="lazy">
+
+                      <a href="{{ route('productdetail', $item->id) }}" class="cart-btn">
+                          Detail Product
+                      </a>
+                  </div>
+
+                  <div class="product-info">
+                      <h4 class="product-name">
+                          <a href="{{ route('productdetail', $item->id) }}">
+                              {{ $item->nama_akun }}
+                          </a>
+                      </h4>
+
+                      <div class="product-rating">
+                          <div class="stars">
+                              <i class="bi bi-star-fill"></i>
+                              <i class="bi bi-star-fill"></i>
+                              <i class="bi bi-star-fill"></i>
+                              <i class="bi bi-star-fill"></i>
+                              <i class="bi bi-star"></i>
+                          </div>
+                          <span class="rating-count">(24)</span>
+                      </div>
+
+                      {{-- Harga (ambil harga bulanan sebagai contoh) --}}
+                      <div class="product-price">
+                          {{ $item->formatted('harga_perbulan') }}/bulan
+                      </div>
+
+                  </div>
+              </div>
+          </div>
+          @endforeach
+
+
+        </div>
+
+      </div>
+
+    </section><!-- /Best Sellers Section -->
+
+    <!-- Cards Section -->
+    <section id="cards" class="cards section">
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-4">
+          <div class="col-lg-4 col-md-6 mb-5 mb-md-0" data-aos="fade-up" data-aos-delay="200">
+            <div class="product-category">
+              <h3 class="category-title">
+                <i class="bi bi-fire"></i> Trending Now
+              </h3>
+              <div class="product-list">
+                <div class="product-card">
+                  <div class="product-image">
+                    <img src="{{ 'niceshop/assets/img/product/product-1.webp' }}" alt="Premium Leather Tote" class="img-fluid">
+                    <div class="product-badges">
+                      <span class="badge-new">New</span>
+                    </div>
+                  </div>
+                  <div class="product-info">
+                    <h4 class="product-name">Premium Leather Tote</h4>
+                    <div class="product-rating">
+                      <i class="bi bi-star-fill"></i>
+                      <i class="bi bi-star-fill"></i>
+                      <i class="bi bi-star-fill"></i>
+                      <i class="bi bi-star-fill"></i>
+                      <i class="bi bi-star-half"></i>
+                      <span>(24)</span>
+                    </div>
+                    <div class="product-price">
+                      <span class="current-price">$87.50</span>
+
+    <main class="main">
+
+        <!--================== BANNERS ==================-->
+        <section id="hero" class="hero section">
+            <div class="hero-container">
+                @forelse($banners as $banner)
+                <div class="hero-content">
+                    <div class="content-wrapper" data-aos="fade-up" data-aos-delay="100">
+                        <h1 class="hero-title">{{ $banner->judul }}</h1>
+                        <p class="hero-description">{{ $banner->deskripsi }}</p>
+                        <div class="hero-actions" data-aos="fade-up" data-aos-delay="200">
+                            <a href="#products" class="btn-primary">Shop Now</a>
+                            <a href="#categories" class="btn-secondary">Browse Categories</a>
+                        </div>
+                        <div class="features-list" data-aos="fade-up" data-aos-delay="300">
+                            <div class="feature-item">
+                                <i class="bi bi-truck"></i>
+                                <span>Free Shipping</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="bi bi-award"></i>
+                                <span>Quality Guarantee</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="bi bi-headset"></i>
+                                <span>24/7 Support</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                @endforeach
+
+                <div class="hero-visuals">
+                    <div class="product-showcase" data-aos="fade-left" data-aos-delay="200">
+
+                        @forelse($banners as $banner)
+                        <div class="product-card featured">
+                            <img style="width: 100%;" src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
+                                alt="{{ $banner->judul ?? 'Banner' }}" class="img-fluid">
+                            <!-- <div class="product-badge">Promo</div> -->
+                        </div>
+                        @empty
+                        <p>Tidak ada banner aktif</p>
+                        @endforelse
+
+                        <div class="product-grid">
+                            <div class="product-mini" data-aos="zoom-in" data-aos-delay="400">
+                                <img src="{{ 'niceshop/assets/img/product/scopus.png' }}" alt="Product" class="img-fluid">
+                                <span class="mini-price">$89</span>
+                            </div>
+                            <div class="product-mini" data-aos="zoom-in" data-aos-delay="500">
+                                <img src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Product" class="img-fluid">
+                                <span class="mini-price">$149</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="col-lg-6  d-flex flex-column justify-content-center" data-aos="fade-in">
-                        <h1>Butuh Akun Premium? <span>Dapatkan Sekarang dengan Harga Gila-Gilaan!</span></h1>
-                        <p>Paket lengkap untuk kebutuhan riset, tugas, dan produktivitas. Dijamin aktif atau uang
-                            kembali.</p>
-                        <div class="d-flex">
-                            <a href="https://wa.me/6289505967995?text=Halo%20kak%2C%20saya%20tertarik%20dengan%20promo%20akun%20premium.%20Boleh%20minta%20info%20lebih%20lanjut%3F"
-                                target="_blank" class="btn-get-started">
-                                Cek Promo Hari Ini!
-                            </a>
+                    <div class="floating-elements">
+                        <div class="floating-icon cart" data-aos="fade-up" data-aos-delay="600">
+                            <i class="bi bi-cart3"></i>
+                            <span class="notification-dot">3</span>
+                        </div>
+                        <div class="floating-icon wishlist" data-aos="fade-up" data-aos-delay="700">
+                            <i class="bi bi-heart"></i>
+                        </div>
+                        <div class="floating-icon search" data-aos="fade-up" data-aos-delay="800">
+                            <i class="bi bi-search"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <svg class="hero-waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-                viewBox="0 24 150 28 " preserveAspectRatio="none">
-                <defs>
-                    <path id="wave-path" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z">
-                    </path>
-                </defs>
-                <g class="wave1">
-                    <use xlink:href="#wave-path" x="50" y="3"></use>
-                </g>
-                <g class="wave2">
-                    <use xlink:href="#wave-path" x="50" y="0"></use>
-                </g>
-                <g class="wave3">
-                    <use xlink:href="#wave-path" x="50" y="9"></use>
-                </g>
-            </svg>
         </section>
         <!--================== END ==================-->
 
-        <!--================== PRODUK ==================-->
-        <section id="promo" class="pricing section">
-            <div class="container section-title" data-aos="fade-up">
-                <h2>Promo Akun Premium</h2>
-                <div><span>Super Murah,</span> <span class="description-title">Langsung Aktif & Terjamin Legal</span>
-                </div>
-            </div>
-
-            <div class="container">
-                <div class="row gy-4 justify-content-center">
-
-                    <!-- Paket Silaturahmi Hemat -->
-                    <div class="col-lg-4 d-flex" data-aos="zoom-in" data-aos-delay="100">
-                        <div class="pricing-item flex-fill">
-                            <h3>Paket Silaturahmi Hemat</h3>
-                            <p class="description">
-                                🌟 Cocok untuk kamu yang ingin coba dulu! <br>
-                                Dalam satu paket, kamu langsung dapat:<br>
-                                ✅ <strong>Scopus Lisensi</strong><br>
-                                ✅ <strong>Scopus AI</strong><br>
-                                ✅ <strong>DeepL Pro</strong><br>
-                                💡 Ideal untuk mahasiswa akhir, dosen, atau peneliti yang ingin hemat tapi tetap
-                                maksimal.<br>
-                                📌 Langsung aktif, tanpa ribet!<br>
-                                🎯 Harga bersahabat, kualitas profesional.
-                            </p>
-                            <h4 class="text-center">
-                                <span class="badge bg-warning text-danger fw-bold">PROMO HARI INI!</span><br><br>
-                                <span class="text-decoration-line-through text-danger">
-                                    <sup>Rp</sup>250.000
-                                </span><br>
-                                <span class="fw-bold text-success" style="font-size: 30px;">
-                                    <sup>Rp</sup>180.000
-                                </span>
-                                <span style="font-size: 0.9rem;">/ bulan</span>
-                            </h4>
-                            <a href="https://wa.me/6289505967995?text=Halo%2C%20saya%20tertarik%20dengan%20Paket%20Silaturahmi%20Hemat"
-                                class="cta-btn" target="_blank">Pesan Sekarang!</a>
-                            <p class="text-center">🎉 <strong>Jangan lewatkan kesempatan terbatas ini!</strong> Promo
-                                bisa berakhir kapan saja.</p>
-                        </div>
-                    </div>
-
-                    <!-- Paket Spesial Terbatas -->
-                    <div class="col-lg-4 d-flex" data-aos="zoom-in" data-aos-delay="200">
-                        <div class="pricing-item featured flex-fill">
-                            <p class="popular">Popular</p>
-                            <h3>Paket Spesial Terbatas</h3>
-                            <p class="description">
-                                💼 Butuh akses jangka panjang dan andalan? Ini dia jawabannya!<br>
-                                ✅ <strong>Scopus Lisensi</strong><br>
-                                ✅ <strong>Scopus AI</strong><br>
-                                ✅ <strong>SciSpace Pro</strong><br>
-                                🧠 Cocok banget buat peneliti serius, dosen, dan pejuang skripsi.<br>
-                                🕑 Promo hanya untuk hari ini — stok terbatas!<br>
-                                🔒 Aman, legal, dan dijamin aktif.
-                            </p>
-                            <h4 class="text-center">
-                                <span class="badge bg-warning text-danger fw-bold">PROMO HARI INI!</span><br><br>
-                                <span class="text-decoration-line-through text-danger">
-                                    <sup>Rp</sup>650.000
-                                </span><br>
-                                <span class="fw-bold text-success" style="font-size: 30px;">
-                                    <sup>Rp</sup>300.000
-                                </span>
-                                <span style="font-size: 0.9rem;">/ 6 bulan</span>
-                            </h4>
-                            <a href="https://wa.me/6289505967995?text=Halo%2C%20saya%20tertarik%20dengan%20Paket%20Spesial%20Terbatas"
-                                class="cta-btn" target="_blank">Pesan Sekarang!</a>
-                            <p class="text-center">🎉 <strong>Jangan lewatkan kesempatan terbatas ini!</strong> Promo
-                                bisa berakhir kapan saja.</p>
-                        </div>
-                    </div>
-
-                    <!-- Paket Sultan Edu -->
-                    <div class="col-lg-4 d-flex" data-aos="zoom-in" data-aos-delay="300">
-                        <div class="pricing-item flex-fill">
-                            <h3>Paket Sultan Edu</h3>
-                            <p class="description">
-                                🔥 Paket paling lengkap dan tahan lama, buat kamu yang nggak mau ribet setahun ke
-                                depan!<br>
-                                ✅ <strong>Scopus Lisensi 1 tahun</strong><br>
-                                ✅ <strong>Scopus AI</strong><br>
-                                ✅ <strong>Grammarly Premium</strong><br>
-                                🎁 Bonus: <strong>SciSpace 1 bulan GRATIS</strong><br>
-                                📚 Ideal untuk dosen, mahasiswa S2/S3, penulis akademik, dan profesional.<br>
-                                💰 Bayar sekali, tenang setahun!<br>
-                            </p>
-                            <h4 class="text-center">
-                                <span class="badge bg-warning text-danger fw-bold">PROMO HARI INI!</span><br><br>
-                                <span class="text-decoration-line-through text-danger">
-                                    <sup>Rp</sup>900.000
-                                </span><br>
-                                <span class="fw-bold text-success" style="font-size: 30px;">
-                                    <sup>Rp</sup>600.000
-                                </span>
-                                <span style="font-size: 0.9rem;">/ tahun</span>
-                            </h4>
-                            <a href="https://wa.me/6289505967995?text=Halo%2C%20saya%20tertarik%20dengan%20Paket%20Sultan%20Edu"
-                                class="cta-btn" target="_blank">Pesan Sekarang!</a>
-                            <p class="text-center">🎉 <strong>Jangan lewatkan kesempatan terbatas ini!</strong> Promo
-                                bisa berakhir kapan saja.</p>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-        <!--================== END ==================-->
-
-        <!--================== MENGAPA MEMILIH KAMI ==================-->
-        <section id="tentang" class="about section">
+        <!--================== PRODUK TERLARIS ==================-->
+        <section id="promo-cards" class="promo-cards section">
             <div class="container" data-aos="fade-up" data-aos-delay="100">
-                <div class="row align-items-xl-center gy-5">
+                <div class="row gy-4">
+                    <style>
+                        @media (max-width: 767.98px) {
+                            .image-scopcus {
+                                margin-top: 0 !important;
+                                margin-bottom: 8rem !important;
+                            }
 
-                    <div class="col-xl-5 content" style="margin-top: -50px;">
-                        <h3>Mengapa Memilih Kami?</h3>
-                        <h2>Solusi Akun Premium Terpercaya, Terjangkau, & Terjamin</h2>
-                        <p>
-                            Kami hadir sebagai partner digital terbaik untuk mahasiswa, dosen, dan peneliti. Dengan
-                            harga yang bersahabat dan kualitas premium, kami telah dipercaya oleh ribuan pengguna di
-                            seluruh Indonesia.
-                            <br>
-                            Pilih kami, dan rasakan kemudahan dalam riset & penulisan ilmiah tanpa hambatan!
-                        </p>
+                            .card-scopus {
+                                margin: 0 auto;
+                                max-width: 80%;
+                            }
+
+                            /* Perbaiki tinggi di mobile */
+                            .image-scopcus .d-flex {
+                                min-height: auto !important;
+                                /* hilangkan tinggi fix 500px */
+                            }
+
+                            .category-content {
+                                margin-top: 1rem;
+                            }
+
+                            .text-scopus {
+                                text-align: justify;
+
+                            }
+                        }
+
+                        /* Tambahan: tablet 768px - 991.98px */
+                        @media (min-width: 768px) and (max-width: 991.98px) {
+                            .card-scopus {
+                                margin: 0 auto;
+                                /* center */
+                                max-width: 75%;
+                                /* lebih besar dari mobile */
+                                float: none !important;
+                            }
+
+                            .text-scopus {
+                                text-align: justify;
+                                margin-right: 10px;
+                            }
+                        }
+                    </style>
+
+                    <div class="col-lg-6">
+                        <div class="category-featured" data-aos="fade-right" data-aos-delay="200">
+                            <div class="category-image image-scopcus">
+                                <div class="d-flex justify-content-center align-items-center" style="min-height: 500px;">
+                                    <div class="border-0 card card-scopus" style="border-radius: 20px; overflow: hidden; margin: 30px; box-shadow: -8px 8px 20px rgba(255, 165, 0, 0.5);">
+                                        <img src="{{ 'niceshop/assets/img/product/scopus.png' }}"
+                                            alt="Scopus Lisensi & AI"
+                                            class="img-fluid">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="category-content">
+                                <span class="category-tag">Trending Now</span>
+                                <h2>Scopus Lisensi & Scopus AI</h2>
+                                <p class="text-scopus" style="text-align: justify; margin-right: 5px; font-size: 12px;">
+                                    Akun Scopus Lisensi & Scopus AI memberi akses ke database jurnal ilmiah terbesar dengan
+                                    dukungan AI untuk pencarian, analisis, dan rekomendasi publikasi. Solusi ideal bagi
+                                    peneliti, akademisi, dan profesional yang membutuhkan sumber ilmiah terkini.</p>
+                                <a href="#" class="btn-shop">Explore Products <i class="bi bi-arrow-right"></i></a>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="col-xl-7">
-                        <div class="row gy-4 icon-boxes">
+                    <div class="col-lg-6">
+                        <div class="row gy-4">
+                            <div class="col-xl-6">
+                                <div class="category-card cat-men" data-aos="fade-up" data-aos-delay="300">
+                                    <div class="category-image">
+                                        <img src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Men's Fashion" class="img-fluid">
+                                    </div>
+                                    <div class="category-content">
+                                        <h4>Grammarly Premium</h4>
+                                        <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="category-card cat-kids" data-aos="fade-up" data-aos-delay="400">
+                                    <div class="category-image">
+                                        <img src="{{ 'niceshop/assets/img/product/quillbot.png' }}" alt="Kid's Fashion" class="img-fluid">
+                                    </div>
+                                    <div class="category-content">
+                                        <h4>Quillbot Premium</h4>
+                                        <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="category-card cat-cosmetics" data-aos="fade-up" data-aos-delay="500">
+                                    <div class="category-image">
+                                        <img src="{{ 'niceshop/assets/img/product/consensus.png' }}" alt="Cosmetics" class="img-fluid">
+                                    </div>
+                                    <div class="category-content">
+                                        <h4>Consensus Premium</h4>
+                                        <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6">
+                                <div class="category-card cat-accessories" data-aos="fade-up" data-aos-delay="600">
+                                    <div class="category-image">
+                                        <img src="{{ 'niceshop/assets/img/product/gamma.png' }}" alt="Accessories" class="img-fluid">
+                                    </div>
+                                    <div class="category-content">
+                                        <h4>Gamma AI Premium</h4>
+                                        <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!--================== END ==================-->
 
-                            <div class="col-md-6" data-aos="fade-up" data-aos-delay="200">
-                                <div class="icon-box">
-                                    <i class="bi bi-chat-dots-fill"></i>
-                                    <h3>Respon Cepat 24/7</h3>
-                                    <p>
-                                        Tim support kami siap membantu kapan pun Anda butuh. Konsultasi, bantuan teknis,
-                                        atau pertanyaan seputar akun premium—kami hadir 24 jam setiap hari.
-                                    </p>
+        <!--================== FLASH SALE ==================-->
+        <section id="call-to-action" class="call-to-action section">
+            <div class="container" data-aos="fade-up" data-aos-delay="100">
+                <div class="row">
+                    <div class="mx-auto col-lg-8">
+                        <div class="text-center main-content" data-aos="zoom-in" data-aos-delay="200">
+                            <div class="offer-badge" data-aos="fade-down" data-aos-delay="250">
+                                <span class="limited-time">Limited Time</span>
+                                <span class="offer-text">50% OFF</span>
+                            </div>
+
+                            <h2 data-aos="fade-up" data-aos-delay="300">Exclusive Flash Sale</h2>
+
+                            <p class="subtitle" data-aos="fade-up" data-aos-delay="350">Don't miss out on our biggest sale of the year. Premium quality products at unbeatable prices for the next 48 hours only.</p>
+
+                            <div class="countdown-wrapper" data-aos="fade-up" data-aos-delay="400">
+                                <div class="countdown d-flex justify-content-center" data-count="2025/12/31">
+                                    <div>
+                                        <h3 class="count-days"></h3>
+                                        <h4>Days</h4>
+                                    </div>
+                                    <div>
+                                        <h3 class="count-hours"></h3>
+                                        <h4>Hours</h4>
+                                    </div>
+                                    <div>
+                                        <h3 class="count-minutes"></h3>
+                                        <h4>Minutes</h4>
+                                    </div>
+                                    <div>
+                                        <h3 class="count-seconds"></h3>
+                                        <h4>Seconds</h4>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6" data-aos="fade-up" data-aos-delay="300">
-                                <div class="icon-box">
-                                    <i class="bi bi-tags-fill"></i>
-                                    <h3>Harga Terjangkau</h3>
-                                    <p>
-                                        Nikmati akses ke akun premium berkualitas dengan harga yang bersahabat di
-                                        kantong. Solusi hemat untuk mahasiswa, dosen, hingga profesional.
-                                    </p>
-                                </div>
+                            <div class="action-buttons" data-aos="fade-up" data-aos-delay="450">
+                                <a href="#" class="btn-shop-now">Shop Now</a>
+                                <a href="#" class="btn-view-deals">View All Deals</a>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-md-6" data-aos="fade-up" data-aos-delay="400">
-                                <div class="icon-box">
+                <div class="row featured-products-row" data-aos="fade-up" data-aos-delay="500">
+                    <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="100">
+                        <div class="product-showcase">
+                            <div class="product-image">
+                                <img src="{{ 'niceshop/assets/img/product/product-5.webp' }}" alt="Featured Product" class="img-fluid">
+                                <div class="discount-badge">-45%</div>
+                            </div>
+                            <div class="product-details">
+                                <h6>Premium Wireless Headphones</h6>
+                                <div class="price-section">
+                                    <span class="original-price">$129</span>
+                                    <span class="sale-price">$71</span>
+                                </div>
+                                <div class="rating-stars">
                                     <i class="bi bi-star-fill"></i>
-                                    <h3>Kualitas Terjamin</h3>
-                                    <p>
-                                        Kami hanya menyediakan akun premium original dan legal dengan performa terbaik.
-                                        Dapatkan pengalaman penggunaan yang lancar, aman, dan terpercaya.
-                                    </p>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <span class="rating-count">(324)</span>
                                 </div>
                             </div>
+                        </div>
+                    </div><!-- End Product Showcase -->
 
-                            <div class="col-md-6" data-aos="fade-up" data-aos-delay="500">
-                                <div class="icon-box">
-                                    <i class="bi bi-graph-up-arrow"></i>
-                                    <h3>Pemesanan Instan</h3>
-                                    <p>
-                                        Proses pemesanan cepat dan praktis! Tanpa ribet, tanpa antre – akun langsung
-                                        dikirim ke WhatsApp Anda setelah pembayaran. Hemat waktu, langsung pakai!
-                                    </p>
+                    <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="150">
+                        <div class="product-showcase">
+                            <div class="product-image">
+                                <img src="{{ 'niceshop/assets/img/product/product-7.webp' }}" alt="Featured Product" class="img-fluid">
+                                <div class="discount-badge">-60%</div>
+                            </div>
+                            <div class="product-details">
+                                <h6>Smart Fitness Tracker</h6>
+                                <div class="price-section">
+                                    <span class="original-price">$89</span>
+                                    <span class="sale-price">$36</span>
+                                </div>
+                                <div class="rating-stars">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-half"></i>
+                                    <span class="rating-count">(198)</span>
                                 </div>
                             </div>
+                        </div>
+                    </div><!-- End Product Showcase -->
 
+                    <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="200">
+                        <div class="product-showcase">
+                            <div class="product-image">
+                                <img src="{{ 'niceshop/assets/img/product/product-11.webp' }}" alt="Featured Product" class="img-fluid">
+                                <div class="discount-badge">-35%</div>
+                            </div>
+                            <div class="product-details">
+                                <h6>Luxury Travel Backpack</h6>
+                                <div class="price-section">
+                                    <span class="original-price">$159</span>
+                                    <span class="sale-price">$103</span>
+                                </div>
+                                <div class="rating-stars">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <span class="rating-count">(267)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- End Product Showcase -->
+
+                    <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="250">
+                        <div class="product-showcase">
+                            <div class="product-image">
+                                <img src="{{ 'niceshop/assets/img/product/product-1.webp' }}" alt="Featured Product" class="img-fluid">
+                                <div class="discount-badge">-55%</div>
+                            </div>
+                            <div class="product-details">
+                                <h6>Artisan Coffee Mug Set</h6>
+                                <div class="price-section">
+                                    <span class="original-price">$75</span>
+                                    <span class="sale-price">$34</span>
+                                </div>
+                                <div class="rating-stars">
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star-fill"></i>
+                                    <i class="bi bi-star"></i>
+                                    <span class="rating-count">(142)</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -227,306 +796,64 @@
         </section>
         <!--================== END ==================-->
 
-        <!--================== STATISTIK PEMBELI ==================-->
-        <section id="statistik" class="stats section light-background">
+        <!-- Best Sellers Section -->
+        <section id="best-sellers" class="best-sellers section">
+
+            <!-- Section Title -->
+            <div class="container section-title" data-aos="fade-up">
+                <h2>Best Sellers</h2>
+                <p>Necessitatibus eius consequatur ex aliquid fuga eum quidem sint consectetur velit</p>
+            </div>
+            <!-- End Section Title -->
+
             <div class="container" data-aos="fade-up" data-aos-delay="100">
-                <div class="row gy-4 text-center">
+                <div class="row g-5">
+                    @foreach ($product as $item)
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-item">
+                            <div class="product-image">
 
-                    <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                        <i class="bi bi-emoji-smile" style="font-size: 2.5rem; color: #ffc107;"></i>
-                        <div class="stats-item">
-                            <span data-purecounter-start="0" data-purecounter-end="3501"
-                                data-purecounter-duration="1" class="purecounter"></span>
-                            <p>Pelanggan Puas</p>
-                        </div>
-                    </div>
+                                <img src="{{ asset('storage/img/product/' . $item->image) }}"
+                                    alt="{{ $item->nama_akun }}"
+                                    class="img-fluid"
+                                    loading="lazy">
 
-                    <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                        <i class="bi bi-box-seam" style="font-size: 2.5rem; color: #0d6efd;"></i>
-                        <div class="stats-item">
-                            <span data-purecounter-start="0" data-purecounter-end="8059"
-                                data-purecounter-duration="1" class="purecounter"></span>
-                            <p>Paket Terjual</p>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                        <i class="bi bi-headset" style="font-size: 2.5rem; color: #28a745;"></i>
-                        <div class="stats-item">
-                            <span data-purecounter-start="0" data-purecounter-end="25989"
-                                data-purecounter-duration="1" class="purecounter"></span>
-                            <p>Jam Layanan Aktif</p>
-                        </div>
-                    </div>
-
-                    <!-- DIGANTI -->
-                    <div class="col-lg-3 col-md-6 d-flex flex-column align-items-center">
-                        <i class="bi bi-bar-chart-line-fill" style="font-size: 2.5rem; color: #17a2b8;"></i>
-                        <div class="stats-item d-flex flex-column align-items-center">
-                            <!-- Angka dan Persen dalam satu baris -->
-                            <div class="d-flex align-items-baseline">
-                                <span data-purecounter-start="0" data-purecounter-end="98"
-                                    data-purecounter-duration="1" class="purecounter"
-                                    style="font-size: 36px; font-weight: bold;"></span>
-                                <span style="font-size: 36px; margin-left: 4px;">%</span>
+                                <a href="{{ route('productdetail', $item->id) }}" class="cart-btn">
+                                    Detail Product
+                                </a>
                             </div>
-                            <p style="margin: 0; font-size: 16px;">Tingkat Kepuasan Pelanggan</p>
+
+                            <div class="product-info">
+                                <div class="product-category">Premium Collection</div>
+
+                                <h4 class="product-name">
+                                    <a href="{{ route('productdetail', $item->id) }}">
+                                        {{ $item->nama_akun }}
+                                    </a>
+                                </h4>
+
+                                <div class="product-rating">
+                                    <div class="stars">
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star-fill"></i>
+                                        <i class="bi bi-star"></i>
+                                    </div>
+                                    <span class="rating-count">(24)</span>
+                                </div>
+
+                                {{-- Harga (ambil harga bulanan sebagai contoh) --}}
+                                <div class="product-price">
+                                    {{ $item->formatted('harga_perbulan') }}/bulan
+                                </div>
+
+                            </div>
                         </div>
                     </div>
-
+                    @endforeach
                 </div>
             </div>
-        </section>
-        <!--================== END ==================-->
-
-        <!--================== PRODUK ==================-->
-        <section id="produk" class="features section">
-            <div class="container section-title" data-aos="fade-up">
-                <h2>Promo Akun Premium Terlaris</h2>
-                <div><span>Diskon Besar-besaran,</span> <span class="description-title">Akun Resmi, Langsung Aktif, &
-                        Legal</span></div>
-            </div>
-
-            <div class="container">
-                <div class="row gy-4">
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="100">
-                        <div class="features-item">
-                            <i class="bi bi-journal-text" style="color: #ffbb2c;"></i>
-                            <h3><a href="#" class="stretched-link">Scopus Lisensi + Scopus AI</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="200">
-                        <div class="features-item">
-                            <i class="bi bi-spellcheck" style="color: #5578ff;"></i>
-                            <h3><a href="#" class="stretched-link">Grammarly Premium</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="300">
-                        <div class="features-item">
-                            <i class="bi bi-chat-dots" style="color: #e80368;"></i>
-                            <h3><a href="#" class="stretched-link">ChatGPT Premium</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="400">
-                        <div class="features-item">
-                            <i class="bi bi-lightbulb" style="color: #e361ff;"></i>
-                            <h3><a href="#" class="stretched-link">SciSpace AI</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="500">
-                        <div class="features-item">
-                            <i class="bi bi-translate" style="color: #47aeff;"></i>
-                            <h3><a href="#" class="stretched-link">DeepL Pro</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="600">
-                        <div class="features-item">
-                            <i class="bi bi-pencil-square" style="color: #ffa76e;"></i>
-                            <h3><a href="#" class="stretched-link">QuillBot Premium</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="700">
-                        <div class="features-item">
-                            <i class="bi bi-graph-up-arrow" style="color: #11dbcf;"></i>
-                            <h3><a href="#" class="stretched-link">Scite.ai</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="800">
-                        <div class="features-item">
-                            <i class="bi bi-bar-chart-fill" style="color: #4233ff;"></i>
-                            <h3><a href="#" class="stretched-link">Gamma AI</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="900">
-                        <div class="features-item">
-                            <i class="bi bi-shield-check" style="color: #b2904f;"></i>
-                            <h3><a href="#" class="stretched-link">Turnitin</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="1000">
-                        <div class="features-item">
-                            <i class="bi bi-file-earmark-text" style="color: #b20969;"></i>
-                            <h3><a href="#" class="stretched-link">Paperpal</a></h3>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-3 col-md-4" data-aos="fade-up" data-aos-delay="1100">
-                        <div class="features-item">
-                            <i class="bi bi-windows" style="color: #ff5828;"></i>
-                            <h3><a href="#" class="stretched-link">Lisensi MS Office</a></h3>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-        <!--================== END ==================-->
-
-        <!--================== FAQ ==================-->
-        <section id="faq" class="faq section light-background">
-            <div class="container-fluid">
-                <div class="row gy-4">
-                    <div class="col-lg-7 d-flex flex-column justify-content-center order-2 order-lg-1">
-
-                        <div class="content px-xl-5" data-aos="fade-up" data-aos-delay="100">
-                            <h3><span>Pertanyaan yang </span><strong>Sering Diajukan</strong></h3>
-                            <p>
-                                Berikut adalah beberapa pertanyaan umum dari pelanggan kami. Jika masih ada yang ingin
-                                ditanyakan, jangan ragu untuk menghubungi kami.
-                            </p>
-                        </div>
-
-                        <div class="faq-container px-xl-5" data-aos="fade-up" data-aos-delay="200">
-
-                            <div class="faq-item faq-active">
-                                <i class="faq-icon bi bi-question-circle"></i>
-                                <h3>Apakah akun ready stock?</h3>
-                                <div class="faq-content">
-                                    <p>Ya, semua produk yang tertera di katalog kami adalah ready stock dan siap untuk
-                                        langsung dikirim setelah pemesanan dilakukan.</p>
-                                </div>
-                                <i class="faq-toggle bi bi-chevron-right"></i>
-                            </div>
-
-                            <div class="faq-item">
-                                <i class="faq-icon bi bi-question-circle"></i>
-                                <h3>Berapa lama pengiriman setelah pemesanan?</h3>
-                                <div class="faq-content">
-                                    <p>Setelah pembayaran dikonfirmasi, pesanan akan langsung kami proses dan kirim di
-                                        hari yang sama atau maksimal 1x24 jam (hari kerja).</p>
-                                </div>
-                                <i class="faq-toggle bi bi-chevron-right"></i>
-                            </div>
-
-                            <div class="faq-item">
-                                <i class="faq-icon bi bi-question-circle"></i>
-                                <h3>Apakah akun ini terpercaya dan aman?</h3>
-                                <div class="faq-content">
-                                    <p>Tentu saja! Kami sudah melayani ribuan pelanggan dengan rating kepuasan tinggi.
-                                        Semua transaksi dijamin aman dan informasi pelanggan dijaga kerahasiaannya.</p>
-                                </div>
-                                <i class="faq-toggle bi bi-chevron-right"></i>
-                            </div>
-
-                            <div class="faq-item">
-                                <i class="faq-icon bi bi-question-circle"></i>
-                                <h3>Bagaimana jika akun error atau tidak bisa digunakan?</h3>
-                                <div class="faq-content">
-                                    <p>Jika terjadi kendala pada akun yang Anda terima, kami siap bantu! Silakan
-                                        langsung hubungi tim support kami untuk panduan solusi atau penggantian.</p>
-                                </div>
-                                <i class="faq-toggle bi bi-chevron-right"></i>
-                            </div>
-
-                            <div class="faq-item">
-                                <i class="faq-icon bi bi-question-circle"></i>
-                                <h3>Apakah support tersedia 24 jam?</h3>
-                                <div class="faq-content">
-                                    <p>Ya! Tim support kami siap membantu Anda 24/7. Kapan pun Anda butuh bantuan,
-                                        langsung hubungi kami melalui chat yang tersedia.</p>
-                                </div>
-                                <i class="faq-toggle bi bi-chevron-right"></i>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div class="col-lg-5 order-1 order-lg-2">
-                        <img src="{{ asset('global/assets/img/faq.jpg') }}" class="img-fluid" alt="FAQ Image"
-                            data-aos="zoom-in" data-aos-delay="100">
-                    </div>
-
-                </div>
-            </div>
-        </section>
-        <!--================== END ==================-->
-
-        <!--================== KONTAK ==================-->
-        <section id="kontak" class="contact section">
-
-            <div class="container section-title" data-aos="fade-up">
-                <h2>Hubungi Kami</h2>
-                <div><span>Pesan Sekarang,</span> <span class="description-title">Respon Cepat & Ramah 24/7</span>
-                </div>
-            </div>
-
-            <div class="container" data-aos="fade" data-aos-delay="100">
-                <div class="row gy-4">
-
-                    <div class="col-lg-4">
-                        <!-- <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="200">
-                        <i class="bi bi-geo-alt flex-shrink-0"></i>
-                        <div>
-                            <h3>Address</h3>
-                            <p>A108 Adam Street, New York, NY 535022</p>
-                        </div>
-                    </div> -->
-
-                        <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="300">
-                            <i class="bi bi-whatsapp flex-shrink-0"></i>
-                            <div>
-                                <h3>Chat via WhatsApp</h3>
-                                <p><a href="https://wa.me/6289505967995" target="_blank">+62 895-0596-7995</a></p>
-                            </div>
-                        </div>
-
-                        <div class="info-item d-flex" data-aos="fade-up" data-aos-delay="400">
-                            <i class="bi bi-envelope flex-shrink-0"></i>
-                            <div>
-                                <h3>Email</h3>
-                                <p><a
-                                        href="mailto:phoenixdigitalwarehouse@gmail.com">phoenixdigitalwarehouse@gmail.com</a>
-                                </p>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="col-lg-8">
-                        <form action="https://formspree.io/f/xkgjkvry?language=id" method="POST"
-                            class="php-email-form" data-aos="fade-up" data-aos-delay="200">
-                            <div class="row gy-4">
-
-                                <div class="col-md-6">
-                                    <input type="text" name="name" class="form-control"
-                                        placeholder="Nama Anda" required="">
-                                </div>
-
-                                <div class="col-md-6 ">
-                                    <input type="email" class="form-control" name="email"
-                                        placeholder="Email Anda" required="">
-                                </div>
-
-                                <div class="col-md-12">
-                                    <input type="text" class="form-control" name="subject" placeholder="Subject"
-                                        required="">
-                                </div>
-
-                                <div class="col-md-12">
-                                    <textarea class="form-control" name="message" rows="6" placeholder="Pesan" required=""></textarea>
-                                </div>
-
-                                <div class="col-md-12 text-center">
-                                    <button type="submit">Kirim Pesan</button>
-                                </div>
-
-                            </div>
-                        </form>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-        <!--================== END ==================-->
-    </div>
+        </section><!-- /Best Sellers Section -->
+    </main>
 </x-guest-layout>

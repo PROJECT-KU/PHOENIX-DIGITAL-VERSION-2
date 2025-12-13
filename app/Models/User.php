@@ -2,37 +2,93 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role_id',
+        'profile_photo',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
+    // relation role user
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role->name === $role;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role->name, $roles);
+    }
+
+     // Check permission
+    public function hasPermission(string $permission): bool
+    {
+        return $this->role && $this->role->hasPermission($permission);
+    }
+
+    // Check any permission
+    public function hasAnyPermission(array $permissions): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Check all permissions
+    public function hasAllPermissions(array $permissions): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        foreach ($permissions as $permission) {
+            if (!$this->hasPermission($permission)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        if ($this->profile_photo && file_exists(public_path($this->profile_photo))) {
+            return asset($this->profile_photo);
+        }
+
+        // Default avatar using initials
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=7F9CF5&background=EBF4FF';
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -44,6 +100,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'last_seen_at' => 'datetime',
         ];
     }
 
@@ -54,11 +111,28 @@ class User extends Authenticatable
             ->orderBy('last_activity', 'desc')
             ->value('last_activity');
 
-        if (!$lastActivity) {
+        if (! $lastActivity) {
             return false;
         }
 
-        // Anggap user online jika aktif < 5 menit lalu
-        return Carbon::createFromTimestamp($lastActivity)->gt(Carbon::now()->subMinutes(5));
+        return Carbon::createFromTimestamp($lastActivity)
+            ->gt(Carbon::now()->subMinutes(1));
+    }
+
+    public function lastSeen(): ?Carbon
+    {
+        return $this->last_seen_at;
+    }
+
+    public function getOnlineAttribute(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subSeconds(10));
+    }
+
+    public function getLastSeenDiffAttribute(): ?string
+    {
+        return $this->last_seen_at
+            ? $this->last_seen_at->diffForHumans()
+            : null;
     }
 }

@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
@@ -18,14 +17,14 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::uuid(),
             'nama_akun' => $this->faker->word(),
-            'username_akun' => $this->faker->userName(),
-            'password_akun' => $this->faker->password(),
-            'link_login_akun' => $this->faker->url(),
-            'pj_akun' => $this->faker->name(),
+            'image' => null,
+            'harga_awal' => $this->faker->numberBetween(20000, 100000),
+            'harga_perbulan' => $this->faker->numberBetween(20000, 100000),
+            'harga_5_perbulan' => $this->faker->numberBetween(80000, 400000),
+            'harga_10_perbulan' => $this->faker->numberBetween(150000, 700000),
+            'harga_pertahun' => $this->faker->numberBetween(300000, 1200000),
             'deskripsi' => $this->faker->sentence(),
-            'harga_satuan' => $this->faker->numberBetween(10000, 1000000),
         ];
     }
 }
