@@ -15,11 +15,13 @@ class SpendingEdit extends Component
         $this->spendingId = $id;
 
         // Verify spending exists
-        if (!Spending::find($id)) {
+        if (! Spending::find($id)) {
             session()->flash('error', 'Data pengeluaran tidak ditemukan.');
+
             return redirect()->route('admin.spending.index');
         }
     }
+
     #[Layout('layouts.app')]
     public function render()
     {

@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -16,15 +15,21 @@ class Profile extends Component
     use WithFileUploads;
 
     public $name;
+
     public $email;
+
     public $profile_photo;
+
     public $current_profile_photo;
 
     // ubah password
     public $current_password = '';
+
     public $password = '';
+
     public $password_confirmation = '';
-    //file upload foto
+
+    // file upload foto
     public $photo;
 
     public function mount()
@@ -39,7 +44,7 @@ class Profile extends Component
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . Auth::id(),
+            'email' => 'required|string|email|max:255|unique:users,email,'.Auth::id(),
         ]);
 
         $user = Auth::user();
@@ -56,7 +61,7 @@ class Profile extends Component
         $this->validate();
 
         Auth::user()->update([
-            'password' => Hash::make($this->password)
+            'password' => Hash::make($this->password),
         ]);
 
         $this->reset(['current_password', 'password', 'password_confirmation']);
@@ -82,7 +87,7 @@ class Profile extends Component
 
         // Update database dengan path relatif
         $user->update([
-            'profile_photo' => $path
+            'profile_photo' => $path,
         ]);
 
         $this->current_profile_photo = $path;
@@ -100,7 +105,7 @@ class Profile extends Component
         }
 
         $user->update([
-            'profile_photo' => null
+            'profile_photo' => null,
         ]);
 
         $this->current_profile_photo = null;

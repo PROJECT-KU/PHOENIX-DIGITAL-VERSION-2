@@ -3,8 +3,8 @@
 namespace App\Livewire\Pages\Admin\Pengembalian;
 
 use App\Models\Pengembalian;
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class PengembalianEdit extends Component
 {
@@ -15,8 +15,9 @@ class PengembalianEdit extends Component
         $this->pengembalianId = $id;
 
         // Verify spending exists
-        if (!Pengembalian::find($id)) {
+        if (! Pengembalian::find($id)) {
             session()->flash('error', 'Data pengembalian tidak ditemukan.');
+
             return redirect()->route('admin.pengembalian.index');
         }
     }

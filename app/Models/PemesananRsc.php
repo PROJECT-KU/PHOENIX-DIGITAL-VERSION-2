@@ -2,13 +2,10 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use App\Models\DataAkun;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PemesananRsc extends Model
 {
@@ -35,7 +32,7 @@ class PemesananRsc extends Model
         'link_akses',
         'pic',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -51,6 +48,7 @@ class PemesananRsc extends Model
     {
         return $this->belongsTo(User::class, 'pic', 'id');
     }
+
     public function dataakun()
     {
         return $this->belongsTo(DataAkun::class, 'akun', 'id');
@@ -64,7 +62,7 @@ class PemesananRsc extends Model
 
     public function getTotalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
+        return 'Rp '.number_format($this->total ?? 0, 0, ',', '.');
     }
 
     public function getTanggalPemesananFormattedAttribute(): string

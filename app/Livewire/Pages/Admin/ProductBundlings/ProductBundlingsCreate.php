@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\ProductBundlings;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class ProductBundlingsCreate extends Component
 {

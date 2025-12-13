@@ -16,19 +16,26 @@ class Role extends Component
 
     #[Rule('required|string|max:255')]
     public $name;
+
     #[Rule('nullable|string|max:1000')]
     public $description;
 
     public $searchUser = '';
+
     public $roleIdBeingEdited = null;
 
     // user
     public $username = '';
+
     public $userEmail = '';
+
     public $userRole = '';
+
     // modal
     public $showEditModalStatus = false;
+
     public $showDeleteModalStatus = false;
+
     public $selectedUser = null;
 
     // modal method
@@ -37,12 +44,14 @@ class Role extends Component
         $this->selectedUser = User::find($userId);
         $this->showDeleteModalStatus = true;
     }
+
     public function cancelModal()
     {
         $this->showDeleteModalStatus = false;
         $this->showEditModalStatus = false;
         $this->selectedUser = null;
     }
+
     public function showModalEdit($id)
     {
         $this->showEditModalStatus = true;
@@ -53,6 +62,7 @@ class Role extends Component
         $this->userEmail = $user->email;
         $this->userRole = $user->role->id;
     }
+
     public function updateRoleUser()
     {
         $this->validate([
@@ -67,12 +77,14 @@ class Role extends Component
         $this->cancelModal();
         $this->dispatch('user-role-updated');
     }
+
     public function deleteUser($idUser)
     {
         User::findOrFail($idUser)->delete();
         $this->cancelModal();
         $this->dispatch('user-deleted');
     }
+
     public function updatedSearchUser()
     {
         $this->resetPage();
@@ -93,6 +105,7 @@ class Role extends Component
             $this->dispatch('failed-add-role');
         }
     }
+
     public function editRole($id)
     {
         $role = ModelsRole::findOrFail($id);
@@ -103,6 +116,7 @@ class Role extends Component
 
         $this->dispatch('focus-input');
     }
+
     public function updateRole()
     {
         $this->validate();
@@ -110,11 +124,12 @@ class Role extends Component
         $role = ModelsRole::findOrFail($this->roleIdBeingEdited);
         $role->update([
             'name' => $this->name,
-            'description' => $this->description
+            'description' => $this->description,
         ]);
         $this->resetForm();
         $this->dispatch('updated-role');
     }
+
     public function deleteRole($idRole)
     {
         $role = ModelsRole::findOrFail($idRole);
@@ -140,7 +155,7 @@ class Role extends Component
 
         return view('livewire.pages.admin.role', [
             'roles' => $roles,
-            'users' => $users
+            'users' => $users,
         ]);
     }
 }

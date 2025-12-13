@@ -3,13 +3,15 @@
 namespace App\Exports;
 
 use App\Models\GajiKaryawans;
-use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Contracts\View\View;
+use Maatwebsite\Excel\Concerns\FromView;
 
 class GajiKaryawansExport implements FromView
 {
     protected $status;
+
     protected $start;
+
     protected $end;
 
     public function __construct($status = null, $start = null, $end = null)
@@ -27,13 +29,12 @@ class GajiKaryawansExport implements FromView
             $query->whereBetween('tanggal_transaksi', [$this->start, $this->end]);
         }
 
-        if($this->status){
+        if ($this->status) {
             $query->when('status', $this->status);
         }
 
         return view('exports.gaji-karyawan', [
-            'items' => $query->orderBy('tanggal_transaksi', 'desc')->get()
+            'items' => $query->orderBy('tanggal_transaksi', 'desc')->get(),
         ]);
     }
-
 }

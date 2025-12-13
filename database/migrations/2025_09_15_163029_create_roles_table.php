@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
         });
-        //tambah kolom role_id dan profile_photo ke tabel user
+        // tambah kolom role_id dan profile_photo ke tabel user
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('role_id')->constrained('roles');
             $table->string('profile_photo')->nullable();

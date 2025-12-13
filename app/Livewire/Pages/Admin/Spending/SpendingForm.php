@@ -9,11 +9,17 @@ use Livewire\Component;
 class SpendingForm extends Component
 {
     public $spendingId = null;
+
     public $tanggal_transaksi;
+
     public $nominal;
+
     public $deskripsi;
+
     public $status = 'pending';
+
     public $jenis_pengeluaran = 'lainnya';
+
     public $pic_pembeli_id;
 
     public $isEdit = false;
@@ -105,6 +111,7 @@ class SpendingForm extends Component
 
                 session()->flash('success', 'berhasil tambah data pengeluaran');
             }
+
             return redirect()->route('admin.spending.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan saat menyimpan data.');

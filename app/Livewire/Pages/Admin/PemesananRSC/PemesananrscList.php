@@ -2,11 +2,10 @@
 
 namespace App\Livewire\Pages\Admin\PemesananRSC;
 
+use App\Models\DataAkun;
 use App\Models\PemesananRsc;
 use App\Models\User;
-use App\Models\DataAkun;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -18,11 +17,17 @@ class PemesananrscList extends Component
 
     // 🔹 State/Filter properties
     public $search = '';
+
     public $statusFilter = '';
+
     public $startDate = '';
+
     public $endDate = '';
+
     public $pembeliFilter = '';
+
     public $kategoriFilter = '';
+
     public $batchFilter = '';
 
     public $perPage = 10;
@@ -44,26 +49,32 @@ class PemesananrscList extends Component
     {
         $this->resetPage();
     }
+
     public function updatingStatusFilter()
     {
         $this->resetPage();
     }
+
     public function updatingStartDate()
     {
         $this->resetPage();
     }
+
     public function updatingEndDate()
     {
         $this->resetPage();
     }
+
     public function updatingpembeliFilter()
     {
         $this->resetPage();
     }
+
     public function updatingkategoriFilter()
     {
         $this->resetPage();
     }
+
     public function updatingbatchFilter()
     {
         $this->resetPage();
@@ -87,8 +98,9 @@ class PemesananrscList extends Component
     {
         $pemesananrsc = PemesananRsc::find($id);
 
-        if (!$pemesananrsc) {
+        if (! $pemesananrsc) {
             $this->dispatch('delete-error', ['message' => 'Data tidak ditemukan!'], browserEvent: true);
+
             return;
         }
 
@@ -97,7 +109,6 @@ class PemesananrscList extends Component
         $this->dispatch('pemesananrsc-deleted', ['id' => $id], browserEvent: true);
     }
 
-
     #[Layout('layouts.app')]
     public function render()
     {
@@ -105,9 +116,9 @@ class PemesananrscList extends Component
         $query = PemesananRsc::with(['dataakun', 'users']);
 
         // 🔍 Filter: Pencarian umum
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $query->where(function ($q) {
-                $search = '%' . $this->search . '%';
+                $search = '%'.$this->search.'%';
 
                 $q->where('deskripsi', 'like', $search)
                     ->orWhere('id_transaksi', 'like', $search)
@@ -134,42 +145,42 @@ class PemesananrscList extends Component
                     ->orWhere('harga_satuan', 'like', $search)
                     ->orWhere('total', 'like', $search)
                     ->orWhere('status', 'like', $search)
-                    ->orWhereHas('users', fn($q) => $q->where('name', 'like', $search))
-                    ->orWhereHas('dataakun', fn($q) => $q->where('nama_akun', 'like', $search));
+                    ->orWhereHas('users', fn ($q) => $q->where('name', 'like', $search))
+                    ->orWhereHas('dataakun', fn ($q) => $q->where('nama_akun', 'like', $search));
             });
         }
 
         // 🔹 Filter berdasarkan akun
-        if (!empty($this->akunFilter)) {
+        if (! empty($this->akunFilter)) {
             $query->where('akun', $this->akunFilter);
         }
 
         // 🔹 Filter berdasarkan tanggal
-        if (!empty($this->startDate) && !empty($this->endDate)) {
+        if (! empty($this->startDate) && ! empty($this->endDate)) {
             $query->whereBetween('tanggal_pemesanan', [$this->startDate, $this->endDate]);
-        } elseif (!empty($this->startDate)) {
+        } elseif (! empty($this->startDate)) {
             $query->whereDate('tanggal_pemesanan', '>=', $this->startDate);
-        } elseif (!empty($this->endDate)) {
+        } elseif (! empty($this->endDate)) {
             $query->whereDate('tanggal_berakhir', '<=', $this->endDate);
         }
 
         // 🔹 Filter status
-        if (!empty($this->statusFilter)) {
+        if (! empty($this->statusFilter)) {
             $query->where('status', $this->statusFilter);
         }
 
         // 🔹 Filter nama pembeli
-        if (!empty($this->pembeliFilter)) {
+        if (! empty($this->pembeliFilter)) {
             $query->where('nama_pembeli', $this->pembeliFilter);
         }
 
         // 🔹 Filter berdasarkan kategori
-        if (!empty($this->kategoriFilter)) {
+        if (! empty($this->kategoriFilter)) {
             $query->where('nama_camp', $this->kategoriFilter);
         }
 
         // 🔹 Filter berdasarkan batch
-        if (!empty($this->batchFilter)) {
+        if (! empty($this->batchFilter)) {
             $query->where('batch_camp', $this->batchFilter);
         }
 

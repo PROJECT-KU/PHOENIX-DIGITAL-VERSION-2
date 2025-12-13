@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -33,5 +34,20 @@ class AppServiceProvider extends ServiceProvider
             return [Limit::perMinute(100)->by($request->ip())];
         });
         Order::observe(OrderObserver::class);
+
+        // Blade directive untuk check permission
+        Blade::if('hasPermission', function ($permission) {
+            return auth()->check() && auth()->user()->hasPermission($permission);
+        });
+
+        // Blade directive untuk check any permission
+        Blade::if('hasAnyPermission', function (...$permissions) {
+            return auth()->check() && auth()->user()->hasAnyPermission($permissions);
+        });
+
+        // Blade directive untuk check role (yang sudah ada)
+        Blade::if('hasRole', function ($role) {
+            return auth()->check() && auth()->user()->hasRole($role);
+        });
     }
 }

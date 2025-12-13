@@ -9,17 +9,18 @@ use Illuminate\Database\Eloquent\Model;
 class Banners extends Model
 {
     use HasFactory, HasUuids;
+
     protected $table = 'banners';
 
     protected $fillable = [
         'judul',
         'gambar',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 }

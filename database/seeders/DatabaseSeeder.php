@@ -70,6 +70,7 @@ class DatabaseSeeder extends Seeder
         // promo seeder
         $this->call([
             PromoSeeder::class,
+            PermissionSeeder::class
         ]);
     }
 }
