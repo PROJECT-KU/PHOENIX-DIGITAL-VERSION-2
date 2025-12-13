@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
     # =============================================================================
     # PHP + Composer + Laravel
@@ -8,7 +6,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        container_name: ${APP_NAME:-laravel}_app
+        container_name: ${APP_NAME}_app
         volumes:
             - ./:/var/www/html # Mount kode Laravel
         depends_on:
@@ -21,7 +19,7 @@ services:
     # =============================================================================
     nginx:
         image: nginx:stable
-        container_name: ${APP_NAME:-laravel}_nginx
+        container_name: ${APP_NAME}_nginx
         ports:
             - "8000:80" # localhost:8000 akan serve Laravel
         volumes:
@@ -37,7 +35,7 @@ services:
     # =============================================================================
     mysql:
         image: mysql:8.0
-        container_name: ${APP_NAME:-laravel}_mysql
+        container_name: ${APP_NAME}_mysql
         restart: unless-stopped
         environment:
             MYSQL_ROOT_PASSWORD: root
@@ -56,7 +54,7 @@ services:
     # =============================================================================
     phpmyadmin:
         image: phpmyadmin/phpmyadmin
-        container_name: ${APP_NAME:-laravel}_pma
+        container_name: ${APP_NAME}_pma
         restart: unless-stopped
         ports:
             - "8080:80" # http://localhost:8080

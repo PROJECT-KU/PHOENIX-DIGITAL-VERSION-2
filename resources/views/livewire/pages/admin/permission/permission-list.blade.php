@@ -14,25 +14,44 @@
         <div class="card-body">
             <!-- Daftar Role -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Daftar Role</h5>
-                    <button wire:click="openCreateModal" class="btn btn-primary rounded-pill px-4">
-                        <div wire:target="openCreateModal" wire:loading class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                <!-- Filter Section -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="flex-fill d-flex align-items-center gap-3">
+                            <div class="form-group mb-0 position-relative has-icon-left w-50 w-lg-25">
+                                <input wire:model.live.debounce.300ms="search" type="text" class="form-control"
+                                    placeholder="ketik nama lowongan">
+                                <div class="form-control-icon">
+                                    <i class="bi bi-search" style="font-size: 14px;"></i>
+                                </div>
+                            </div>
+                            <select style="width: fit-content;" wire:model.live="filterGroup" class="form-select">
+                                <option value="">Semua Group</option>
+                                @foreach ($groups as $group)
+                                <option value="{{ $group['value'] }}">{{ $group['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <button wire:click="resetFilters" class="btn btn-secondary" style="width: fit-content;">
+                                <i class="bi bi-arrow-clockwise"></i> Reset Filter
+                            </button>
                         </div>
-                        <span wire:target="openCreateModal" wire:loading.remove>
-                            <i class="bi bi-plus-circle"></i> Tambah
-                        </span>
-                    </button>
+                        <div class="">
+                            <a wire:navigate href="{{ route('admin.account.permission.create') }}" class="px-4 btn btn-primary rounded-pill">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>Tambah Permission</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover text-center">
-                            <thead>
+                        <table class="table table-striped text-center">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Tampilan Nama</th>
-                                    <th>Group</th>
+                                    <th>Nama Permission</th>
+                                    <th>Group Permission</th>
+                                    <th>Deskripsi</th>
                                     <th width="120">Aksi</th>
                                 </tr>
                             </thead>
@@ -41,17 +60,17 @@
                                 <tr>
                                     <td>{{ $item->display_name }}</td>
                                     <td>{{ $item->group }}</td>
+                                    <td>{{ $item->description }}</td>
                                     <td>
                                         <div class="d-flex justify-content-center">
-                                            <a href="{{ route('admin.pengembalian.edit', $item->id) }}"
+                                            <a href="{{ route('admin.account.permission.edit', $item) }}"
                                                 wire:navigate
                                                 class="btn btn-sm btn-warning me-1"
                                                 title="Edit">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
-                                            <button type="button"
-                                                class="btn btn-sm btn-danger delete-pengembalian-btn"
-                                                data-id="{{ $item->id }}"
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                wire:click="$dispatch('will-delete-permission-data', {{ $item }})"
                                                 title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -72,7 +91,7 @@
                         </table>
                     </div>
                     <div class="mt-3">
-                        {{ $pengembalian->links('vendor.pagination') }}
+                        {{ $permissions->links('vendor.pagination') }}
                     </div>
                 </div>
             </div>

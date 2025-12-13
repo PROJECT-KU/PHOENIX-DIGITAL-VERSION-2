@@ -202,6 +202,7 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    // lowongan
     Livewire.on("will-delete-lowongan-data", (data) => {
         Swal2.fire({
             icon: "question",
@@ -215,6 +216,8 @@ document.addEventListener("livewire:init", () => {
             }
         });
     });
+
+    // promo
     Livewire.on("will-delete-promo-data", (data) => {
         Swal2.fire({
             icon: "question",
@@ -229,6 +232,7 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    // pesan masuk
     Livewire.on("will-delete-message-data", (data) => {
         Swal2.fire({
             icon: "question",
@@ -239,6 +243,21 @@ document.addEventListener("livewire:init", () => {
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-message-data", { id: data["id"] });
+            }
+        });
+    });
+
+    // permission
+    Livewire.on("will-delete-permission-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data permission ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-permission-data", { id: data["id"] });
             }
         });
     });

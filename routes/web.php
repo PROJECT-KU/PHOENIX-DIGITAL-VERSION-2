@@ -48,6 +48,8 @@ use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+use App\Livewire\Pages\Admin\Permission\PermissionCreate;
+use App\Livewire\Pages\Admin\Permission\PermissionEdit;
 use App\Livewire\Pages\Admin\Permission\PermissionList;
 // Data Loan
 use App\Livewire\Pages\Admin\Product\ProductCreate;
@@ -99,6 +101,8 @@ Route::view('profile', 'profile')
 Route::middleware(['checkrole:admin'])->group(function () {
     Route::get('/admin/role', Role::class)->name('admin.account.role');
     Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
+    Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
+    Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -182,4 +186,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
