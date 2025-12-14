@@ -26,7 +26,8 @@ class DatabaseSeeder extends Seeder
         $financeRole = Role::firstOrCreate(['name' => 'finance']);
         $managerRole = Role::firstOrCreate(['name' => 'manager']);
         $userRole = Role::firstOrCreate(['name' => 'user']);
-        $supervisorRole = Role::firstOrCreate(['name' => 'supervisor']);
+        $customerServiceRole = Role::firstOrCreate(['name' => 'customer-service']);
+        $mimin = Role::firstOrCreate(['name' => 'admin-mimin']);
 
         // User default (admin)
         User::factory()->create([
@@ -34,6 +35,20 @@ class DatabaseSeeder extends Seeder
             'email' => 'admin@example.com',
             'password' => Hash::make('admin123'),
             'role_id' => $adminRole->id,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Admin Mimin',
+            'email' => 'mimin@example.com',
+            'password' => Hash::make('mimin123'),
+            'role_id' => $mimin->id,
+        ]);
+
+        User::factory()->create([
+            'name' => 'customer service',
+            'email' => 'cs@example.com',
+            'password' => Hash::make('customerservice123'),
+            'role_id' => $customerServiceRole->id,
         ]);
 
         User::factory()->create([
@@ -50,13 +65,6 @@ class DatabaseSeeder extends Seeder
             'role_id' => $managerRole->id,
         ]);
 
-        User::factory()->create([
-            'name' => 'Supervisor',
-            'email' => 'supervisor@example.com',
-            'password' => Hash::make('supervisor123'),
-            'role_id' => $supervisorRole->id,
-        ]);
-
         // Generate dummy users tambahan
         User::factory(10)->create([
             'role_id' => $userRole->id,
@@ -70,7 +78,7 @@ class DatabaseSeeder extends Seeder
         // promo seeder
         $this->call([
             PromoSeeder::class,
-            PermissionSeeder::class
+            PermissionSeeder::class,
         ]);
     }
 }

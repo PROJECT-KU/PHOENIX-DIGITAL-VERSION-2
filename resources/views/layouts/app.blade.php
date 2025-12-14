@@ -51,6 +51,16 @@
             });
         });
 
+        window.addEventListener('swal-confirm', (event) => {
+            Swal.fire({
+                icon: event.detail[0].type,
+                title: event.detail[0].title,
+                text: event.detail[0].message,
+                confirmButtonText: 'OK',
+                allowOutsideClick: false
+            });
+        });
+
         function showAlertFromSession() {
             @if(session('success'))
             Swal.fire({

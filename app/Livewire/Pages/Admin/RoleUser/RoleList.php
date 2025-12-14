@@ -25,6 +25,8 @@ class RoleList extends Component
 
     public $searchUser = '';
 
+    public $searchRole = '';
+
     public $roleIdBeingEdited = null;
 
     // user
@@ -36,6 +38,8 @@ class RoleList extends Component
 
     // modal
     public $showEditModalStatus = false;
+
+    public $showCreateRoleModalStatus = false;
 
     public $selectedUser = null;
 
@@ -49,6 +53,8 @@ class RoleList extends Component
     {
         $this->showEditModalStatus = false;
         $this->selectedUser = null;
+        $this->showCreateRoleModalStatus = false;
+        $this->roleIdBeingEdited = null;
     }
 
     public function showModalEdit($id)
@@ -60,6 +66,17 @@ class RoleList extends Component
         $this->username = $user->name;
         $this->userEmail = $user->email;
         $this->userRole = $user->role->id;
+    }
+
+    public function showModalFormRole($id = null)
+    {
+        $this->showCreateRoleModalStatus = true;
+        if ($id) {
+            $this->roleIdBeingEdited = $id;
+            $role = ModelsRole::findOrFail($id);
+            $this->name = $role->name;
+            $this->description = $role->description;
+        }
     }
 
     public function updateRoleUser()
@@ -106,31 +123,22 @@ class RoleList extends Component
                 'name' => $this->name,
                 'description' => $this->description,
             ]);
+            $this->cancelModal();
             $this->resetForm();
-            session()->flash('success', 'Role berhasil ditambahkan.');
             $this->dispatch('swal-alert', [
                 'type' => 'success',
                 'title' => 'Berhasil!',
                 'message' => 'Role berhasil ditambahkan.',
             ]);
         } catch (Exception $e) {
+            $this->cancelModal();
             $this->dispatch('swal-alert', [
                 'type' => 'error',
                 'title' => 'Gagal!',
                 'message' => 'Role gagal ditambahkan.',
             ]);
+            $this->resetForm();
         }
-    }
-
-    public function editRole($id)
-    {
-        $role = ModelsRole::findOrFail($id);
-
-        $this->roleIdBeingEdited = $role->id;
-        $this->name = $role->name;
-        $this->description = $role->description;
-
-        $this->dispatch('focus-input');
     }
 
     public function updateRole()
@@ -143,6 +151,7 @@ class RoleList extends Component
             'description' => $this->description,
         ]);
         $this->resetForm();
+        $this->cancelModal();
         $this->dispatch('swal-alert', [
             'type' => 'success',
             'title' => 'Berhasil!',
@@ -172,7 +181,10 @@ class RoleList extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        $roles = ModelsRole::latest()->get();
+        $roles = ModelsRole::withCount('permissions')->latest()
+            ->where('name', 'like', "%{$this->searchRole}%")
+            ->get();
+
         $users = User::with('role')
             ->where('name', 'like', "%{$this->searchUser}%")
             ->orWhere('email', 'like', "%{$this->searchUser}%")

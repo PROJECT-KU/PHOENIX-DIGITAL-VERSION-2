@@ -58,6 +58,7 @@ use App\Livewire\Pages\Admin\Promo\PromoEdit;
 // Data Pengembalian
 use App\Livewire\Pages\Admin\Promo\PromoList;
 use App\Livewire\Pages\Admin\RoleUser\RoleList;
+use App\Livewire\Pages\Admin\RoleUser\RolePermissionEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
@@ -84,28 +85,42 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-Route::middleware(['checkrole:admin'])->group(function () {
-    Route::get('/admin/role', RoleList::class)->name('admin.account.role');
-    Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
-    Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
-    Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
-});
-
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
-    Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
-
-    // Data Akun
-    Route::get('/admin/DataAkun', DataAkunList::class)->name('admin.DataAkun.index');
-    Route::get('/admin/DataAkun/create', DataAkunCreate::class)->name('admin.DataAkun.create');
-    Route::get('/admin/DataAkun/{DataAkun}', DataAkunEdit::class)->name('admin.DataAkun.show');
-    Route::get('/admin/DataAkun/{dataAkun}/edit', DataAkunEdit::class)->name('admin.DataAkun.edit');
+Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
+    // Data Pemesanan RSC dan pemesanan toko online
+    Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
+    Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
+    Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
+    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}/deliver', DeliverOrder::class)->name('admin.pesanantoko.deliver');
 
     // Data Customer
     Route::get('/admin/customer', CustomerList::class)->name('admin.customer.index');
     Route::get('/admin/customer/create', CustomerCreate::class)->name('admin.customer.create');
     Route::get('/admin/customer/{customer}', CustomerEdit::class)->name('admin.customer.show');
     Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->name('admin.customer.edit');
+});
+
+Route::middleware(['checkrole:admin'])->group(function () {
+    Route::get('/admin/role', RoleList::class)->name('admin.account.role');
+    Route::get('/admin/role/{role}/edit', RolePermissionEdit::class)->name('admin.account.role.permission');
+    Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
+    Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
+    Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
+});
+Route::middleware(['checkrole:admin,finance,admin-mimin'])->group(function () {
+    Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
+    Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
+});
+
+Route::middleware(['checkrole:admin,finance'])->group(function () {
+
+    // Data Akun
+    Route::get('/admin/DataAkun', DataAkunList::class)->name('admin.DataAkun.index');
+    Route::get('/admin/DataAkun/create', DataAkunCreate::class)->name('admin.DataAkun.create');
+    Route::get('/admin/DataAkun/{DataAkun}', DataAkunEdit::class)->name('admin.DataAkun.show');
+    Route::get('/admin/DataAkun/{dataAkun}/edit', DataAkunEdit::class)->name('admin.DataAkun.edit');
 
     // Data Product
     Route::get('/admin/product', ProductList::class)->name('admin.product.index');
@@ -143,15 +158,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/pengembalian', PengembalianList::class)->name('admin.pengembalian.index');
     Route::get('/admin/pengembalian/create', PengembalianCreate::class)->name('admin.pengembalian.create');
     Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->name('admin.pengembalian.edit');
-
-    // Data Pemesanan RSC dan pemesanan toko online
-    Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
-    Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
-    Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
-    Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
-    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
-    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
-    Route::get('/admin/pesanantoko/{order}/deliver', DeliverOrder::class)->name('admin.pesanantoko.deliver');
 
     // Route Lowongan Pekerjaan
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
