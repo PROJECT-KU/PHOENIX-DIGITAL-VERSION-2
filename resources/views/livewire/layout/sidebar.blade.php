@@ -38,6 +38,8 @@ new class extends Component
                     </a>
                 </li>
 
+
+                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
@@ -61,7 +63,9 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
+                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
                         class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
@@ -117,7 +121,9 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
+                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
@@ -133,8 +139,10 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
                 <!-- section menu data dan laporan -->
+                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
@@ -169,6 +177,7 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
                 <li class="sidebar-item  has-sub {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
                     <a href="#"
@@ -178,24 +187,27 @@ new class extends Component
                     </a>
 
                     <ul class="submenu {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
+                        @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
                         <li class="submenu-item {{ request()->routeIs('admin.account.profile') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.profile') }}"
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
+                        @endif
                         @if (auth()->user()->hasRole('admin'))
-                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
+                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') || request()->routeIs('admin.account.role.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.role') }}"
                                 class="submenu-link">Pengaturan Role</a>
                         </li>
-                        @endif
-                        <li class="submenu-item {{ request()->routeIs('admin.account.permission') ? 'active' : '' }}">
+                        <li class="submenu-item {{ request()->routeIs('admin.account.permission') || request()->routeIs('admin.account.permission.*')? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.permission') }}"
                                 class="submenu-link">Permission Akun</a>
                         </li>
+                        @endif
                     </ul>
                 </li>
 
                 <!-- section karir & karyawan-->
+                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li
                     class="sidebar-item has-sub
@@ -227,6 +239,7 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
                 <li class="sidebar-item">
                     <button wire:click="logout" class="sidebar-link btn btn-link w-100 text-start">

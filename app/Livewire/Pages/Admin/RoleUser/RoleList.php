@@ -172,7 +172,8 @@ class RoleList extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        $roles = ModelsRole::latest()->get();
+        $roles = ModelsRole::withCount('permissions')->latest()->get();
+
         $users = User::with('role')
             ->where('name', 'like', "%{$this->searchUser}%")
             ->orWhere('email', 'like', "%{$this->searchUser}%")

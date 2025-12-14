@@ -29,7 +29,7 @@
 
             @if ($activeTab === 'tab-role')
             <div class="row mt-4">
-                <div class="col-12 col-lg-6">
+                <div class="col-12 col-lg-4">
                     <form wire:submit="{{ $roleIdBeingEdited ? 'updateRole' : 'addRole' }}">
                         <div class="mb-4">
                             <div class="mb-3">
@@ -59,12 +59,13 @@
                         </button>
                     </form>
                 </div>
-                <div class="col-12 col-lg-6">
-                    <table class="table table-striped">
-                        <thead>
+                <div class="col-12 col-lg-8">
+                    <table class="table text-center table-striped">
+                        <thead class="table-light">
                             <tr>
                                 <th>Nama Role</th>
                                 <th>Deskripsi Role</th>
+                                <th>Jumlah Permission</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -74,20 +75,37 @@
                                 <td>{{ $role->name }}</td>
                                 <td>{{ $role->description }}</td>
                                 <td>
+                                    <span class="badge bg-secondary">
+                                        {{ $role->permissions_count }} Permission
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{route('admin.account.role.permission', $role)}}"
+                                        class="btn btn-sm btn-primary"
+                                        data-bs-toggle="tooltip"
+                                        title="Kelola Permission">
+                                        <i class="bi bi-gear"></i>
+                                    </a>
                                     <button wire:click="editRole({{ $role->id }})"
-                                        class="btn btn-secondary btn-sm">
+                                        class="btn btn-warning btn-sm"
+                                        data-bs-toggle="tooltip"
+                                        title="Edit Role">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
                                     <button class="btn btn-danger btn-sm"
-                                        wire:click="$dispatch('will-delete-role-data', { id: {{ $role->id }} })">
+                                        wire:click="$dispatch('will-delete-role-data', { id: {{ $role->id }} })"
+                                        data-bs-toggle="tooltip"
+                                        title="Hapus Role">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
                             </tr>
                             @empty
-                            <div class="text-center">
-                                <p>role untuk user masih kosong!</p>
-                            </div>
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <p class="text-muted mb-0">Role untuk user masih kosong!</p>
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -107,8 +125,8 @@
                             </div>
                         </div>
                     </div>
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table text-center table-striped">
+                        <thead class="table-light">
                             <tr>
                                 <th>Nama User</th>
                                 <th>Email User</th>

@@ -42,15 +42,27 @@ class PermissionList extends Component
             $usedByRoles = $permission->roles()->count();
 
             if ($usedByRoles > 0) {
-                session()->flash('error', "Permission '{$permission->display_name}' masih digunakan oleh {$usedByRoles} role. Hapus dari role terlebih dahulu.");
+                $this->dispatch('swal-confirm', [
+                    'type' => 'error',
+                    'title' => 'Gagal!',
+                    'message' => 'Permission \''.$permission->display_name.'\' masih digunakan oleh '.$usedByRoles.' role. Hapus dari role terlebih dahulu.',
+                ]);
 
                 return;
             }
 
             $permission->delete();
-            session()->flash('success', 'Permission berhasil dihapus');
+            $this->dispatch('swal-alert', [
+                'type' => 'success',
+                'title' => 'Berhasil!',
+                'message' => 'Permission berhasil dihapus.',
+            ]);
         } catch (\Exception $e) {
-            session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
+            $this->dispatch('swal-alert', [
+                'type' => 'error',
+                'title' => 'Gagal!',
+                'message' => 'Permission gagal dihapus.',
+            ]);
         }
     }
 
