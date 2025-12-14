@@ -38,7 +38,6 @@ new class extends Component
                     </a>
                 </li>
 
-
                 @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">

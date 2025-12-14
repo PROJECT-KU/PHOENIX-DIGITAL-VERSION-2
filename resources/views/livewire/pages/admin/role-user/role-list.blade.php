@@ -11,7 +11,7 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <ul class="mb-1 nav nav-tabs">
+            <ul class="nav nav-tabs">
                 <li class="nav-item">
                     <button class="nav-link @if ($activeTab === 'tab-role') active @endif" wire:click="setTab('tab-role')">
                         <i class="bi bi-shield-lock me-1"></i>
@@ -28,88 +28,71 @@
             </ul>
 
             @if ($activeTab === 'tab-role')
-            <div class="row mt-4">
-                <div class="col-12 col-lg-4">
-                    <form wire:submit="{{ $roleIdBeingEdited ? 'updateRole' : 'addRole' }}">
-                        <div class="mb-4">
-                            <div class="mb-3">
-                                <label for="name" class="form-label fw-medium">Nama Role</label>
-                                <input type="text" id="name" wire:model="name" class="form-control">
-                                @error('name')
-                                <div class="text-danger small mt-2">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="mb-3">
-                                <label for="description" class="form-label fw-medium">Deskripsi Role</label>
-                                <input type="description" id="description" wire:model="description"
-                                    class="form-control">
-                                @error('description')
-                                <div class="text-danger small mt-2">{{ $message }}</div>
-                                @enderror
+            <div class="mt-4">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <div class="w-25">
+                        <div class="form-group position-relative has-icon-left">
+                            <input wire:model.live.debounce.300ms="searchRole" type="text" class="form-control"
+                                placeholder="masukan nama role">
+                            <div class="form-control-icon">
+                                <i class="bi bi-search" style="font-size: 14px;"></i>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
-                            <span wire:loading.remove wire:target="updateRole, addRole">
-                                {{ $roleIdBeingEdited ? 'Update Role' : 'Tambah Role' }}
-                            </span>
-                            <span wire:loading wire:target="updateRole, addRole">
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                menyimpan...
-                            </span>
-                        </button>
-                    </form>
+                    </div>
+                    <button class="btn btn-primary" wire:click="showModalFormRole">
+                        <i class="bi bi-plus"></i>
+                        <span>Tambah Role</span>
+                    </button>
                 </div>
-                <div class="col-12 col-lg-8">
-                    <table class="table text-center table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Nama Role</th>
-                                <th>Deskripsi Role</th>
-                                <th>Jumlah Permission</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($roles as $role)
-                            <tr>
-                                <td>{{ $role->name }}</td>
-                                <td>{{ $role->description }}</td>
-                                <td>
-                                    <span class="badge bg-secondary">
-                                        {{ $role->permissions_count }} Permission
-                                    </span>
-                                </td>
-                                <td>
-                                    <a href="{{route('admin.account.role.permission', $role)}}"
-                                        class="btn btn-sm btn-primary"
-                                        data-bs-toggle="tooltip"
-                                        title="Kelola Permission">
-                                        <i class="bi bi-gear"></i>
-                                    </a>
-                                    <button wire:click="editRole({{ $role->id }})"
-                                        class="btn btn-warning btn-sm"
-                                        data-bs-toggle="tooltip"
-                                        title="Edit Role">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                    <button class="btn btn-danger btn-sm"
-                                        wire:click="$dispatch('will-delete-role-data', { id: {{ $role->id }} })"
-                                        data-bs-toggle="tooltip"
-                                        title="Hapus Role">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="4" class="text-center">
-                                    <p class="text-muted mb-0">Role untuk user masih kosong!</p>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                <table class="table text-center table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama Role</th>
+                            <th>Deskripsi Role</th>
+                            <th>Jumlah Permission</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($roles as $role)
+                        <tr>
+                            <td>{{ $role->name }}</td>
+                            <td>{{ $role->description }}</td>
+                            <td>
+                                <span class="badge bg-secondary">
+                                    {{ $role->permissions_count }} Permission
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{route('admin.account.role.permission', $role)}}"
+                                    class="btn btn-sm btn-primary"
+                                    data-bs-toggle="tooltip"
+                                    title="Kelola Permission">
+                                    <i class="bi bi-gear"></i>
+                                </a>
+                                <button wire:click="showModalFormRole({{ $role->id }})"
+                                    class="btn btn-warning btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="Edit Role">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="btn btn-danger btn-sm"
+                                    wire:click="$dispatch('will-delete-role-data', { id: {{ $role->id }} })"
+                                    data-bs-toggle="tooltip"
+                                    title="Hapus Role">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <p class="text-muted mb-0">Role untuk user masih kosong!</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
             @endif
 
@@ -167,6 +150,43 @@
             @endif
         </div>
 
+        <!-- Modal Create & Edit role -->
+        @if ($this->showCreateRoleModalStatus || $this->roleIdBeingEdited !== null)
+        <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-body p-4">
+                        <div class="d-flex">
+                            <div class="flex-grow-1">
+                                <h5 class="modal-title fw-medium mb-2">{{ $roleIdBeingEdited ? 'Edit Data Role' : 'Tambah Role' }}</h5>
+                                <form>
+                                    <div class="form-group">
+                                        <label for="name">Nama Role</label>
+                                        <input type="text" id="name" class="form-control"
+                                            placeholder="nama role" wire:model="name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="description">Deskripsi Role</label>
+                                        <input type="text" id="description" class="form-control"
+                                            placeholder="deskripsi role" wire:model="description">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" wire:click="cancelModal" class="btn btn-outline-secondary">
+                            Batal
+                        </button>
+                        <button type="submit" wire:click="{{ $roleIdBeingEdited ? 'updateRole' : 'addRole' }}" class="btn btn-primary">
+                            {{ $roleIdBeingEdited ? 'Simpan Perubahan Role' : 'Tambah Role' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Modal Edit User --}}
         @if ($this->showEditModalStatus && $this->selectedUser)
         <div class="modal d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
@@ -203,7 +223,7 @@
                         <button type="button" wire:click="cancelModal" class="btn btn-outline-secondary">
                             Batal
                         </button>
-                        <button type="submit" wire:click="updateRoleUser" class="btn btn-danger">
+                        <button type="submit" wire:click="updateRoleUser" class="btn btn-primary">
                             Update Role User
                         </button>
                     </div>
