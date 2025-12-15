@@ -12,8 +12,13 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <!-- memanggil komponen PermissionForm -->
-            <livewire:pages.admin.permission.permission-form :permission="$permission" />
+            <a href="{{route('admin.account.permission')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.permission.permission-form :permission="$permission" />
+            </div>
         </div>
     </div>
 </div>

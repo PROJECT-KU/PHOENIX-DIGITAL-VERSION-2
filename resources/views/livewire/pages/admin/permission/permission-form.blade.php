@@ -111,32 +111,19 @@
         <!-- Action Buttons -->
         <div class="row mt-4">
             <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <small class="text-muted">
-                            <i class="bi bi-asterisk text-danger"></i>
-                            Field dengan tanda <span class="text-danger">*</span> wajib diisi
-                        </small>
-                    </div>
-                    <div>
-                        <a href="{{ route('admin.account.permission') }}"
-                            class="btn btn-light me-2">
-                            Batal
-                        </a>
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                            wire:loading.attr="disabled">
-                            <span wire:loading.remove>
-                                {{ $isEdit ? 'Simpan Perubahan' : 'Simpan Data' }}
-                            </span>
-                            <span wire:loading>
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                Menyimpan...
-                            </span>
-                        </button>
-                    </div>
-                </div>
+                <button
+                    type="submit"
+                    class="btn w-100 btn-primary"
+                    wire:loading.attr="disabled">
+                    <i class="bi bi-send me-1"></i>
+                    <span wire:loading.remove>
+                        {{ $isEdit ? 'Simpan Perubahan' : 'Simpan Data' }}
+                    </span>
+                    <span wire:loading>
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        Menyimpan...
+                    </span>
+                </button>
             </div>
         </div>
     </form>

@@ -2,19 +2,19 @@
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Detail Pesanan {{ $order->order_number }}</h3>
         @php
-            $breadcrumbs = [
-                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                ['name' => 'Data Pesanan Toko', 'url' => route('admin.pesanantoko.index')],
-                ['name' => 'Detail Pesanan'],
-            ];
+        $breadcrumbs = [
+        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
+        ['name' => 'Data Pesanan Toko', 'url' => route('admin.pesanantoko.index')],
+        ['name' => 'Detail Pesanan'],
+        ];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
     <div class="card">
         <div class="mb-0 card">
             <div class="card-body">
-                <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left-circle me-1"></i>
+                <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
                     <span>Kembali</span>
                 </a>
             </div>
@@ -56,50 +56,50 @@
                         </thead>
                         <tbody>
                             @forelse ($order->items as $item)
-                                <tr>
-                                    <td>{{ $item->product->nama_akun ?? '-' }}</td>
-                                    <td>{{ $item->quantity }}</td>
-                                    <td>{{ $item->duration_value }} {{ $item->duration_type }}</td>
-                                    <td>Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                                    <td>Rp {{ number_format($item->price * $item->quantity, 0, ',', '.') }}</td>
-                                    <td>{!! $item->getDeliveryStatusBadge() !!}</td>
-                                    <td>
-                                        <a wire:navigate href="{{ route('admin.pesanantoko.process', $item->id) }}"
-                                            class="btn btn-primary" title="proses pesanan">
-                                            <i class="bi bi-gear"></i></a>
-                                        @if ($item->delivery_status != 'pending')
-                                            <button class="btn btn-success send-wa-btn" title="kirim akun ke pembeli"
-                                                type="button" data-id="{{ $item->id }}"
-                                                data-idTransaksi="{{ $order->order_number }}"
-                                                data-nama="{{ $order->customer->nama }}"
-                                                data-wa="{{ $order->customer->no_hp }}"
-                                                data-akun="{{ $item->dataakun?->nama_akun ?? '-' }}"
-                                                data-pemesanan="{{ \Carbon\Carbon::parse($item->start_date)->format('d F Y') }}"
-                                                data-berakhir="{{ \Carbon\Carbon::parse($item->end_date)->format('d F Y') }}"
-                                                data-username="{{ $item->account_username }}"
-                                                data-password="{{ $item->account_password }}"
-                                                data-linkakses="{{ $item->account_link }}">
-                                                <i class="bi bi-whatsapp"></i>
-                                            </button>
-                                        @endif
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td>{{ $item->product->nama_akun ?? '-' }}</td>
+                                <td>{{ $item->quantity }}</td>
+                                <td>{{ $item->duration_value }} {{ $item->duration_type }}</td>
+                                <td>Rp {{ number_format($item->price, 0, ',', '.') }}</td>
+                                <td>Rp {{ number_format($item->price * $item->quantity, 0, ',', '.') }}</td>
+                                <td>{!! $item->getDeliveryStatusBadge() !!}</td>
+                                <td>
+                                    <a wire:navigate href="{{ route('admin.pesanantoko.process', $item->id) }}"
+                                        class="btn btn-primary" title="proses pesanan">
+                                        <i class="bi bi-gear"></i></a>
+                                    @if ($item->delivery_status != 'pending')
+                                    <button class="btn btn-success send-wa-btn" title="kirim akun ke pembeli"
+                                        type="button" data-id="{{ $item->id }}"
+                                        data-idTransaksi="{{ $order->order_number }}"
+                                        data-nama="{{ $order->customer->nama }}"
+                                        data-wa="{{ $order->customer->no_hp }}"
+                                        data-akun="{{ $item->dataakun?->nama_akun ?? '-' }}"
+                                        data-pemesanan="{{ \Carbon\Carbon::parse($item->start_date)->format('d F Y') }}"
+                                        data-berakhir="{{ \Carbon\Carbon::parse($item->end_date)->format('d F Y') }}"
+                                        data-username="{{ $item->account_username }}"
+                                        data-password="{{ $item->account_password }}"
+                                        data-linkakses="{{ $item->account_link }}">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </button>
+                                    @endif
+                                </td>
+                            </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">
-                                        Belum ada item pesanan</td>
-                                </tr>
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    Belum ada item pesanan</td>
+                            </tr>
                             @endforelse
                         </tbody>
                         @if ($order->items->count())
-                            <tfoot class="table-secondary">
-                                <tr>
-                                    <th colspan="5" class="text-end">Total</th>
-                                    <th colspan="2">Rp
-                                        {{ number_format($order->items->sum(fn($i) => $i->price * $i->quantity), 0, ',', '.') }}
-                                    </th>
-                                </tr>
-                            </tfoot>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th colspan="5" class="text-end">Total</th>
+                                <th colspan="2">Rp
+                                    {{ number_format($order->items->sum(fn($i) => $i->price * $i->quantity), 0, ',', '.') }}
+                                </th>
+                            </tr>
+                        </tfoot>
                         @endif
                     </table>
                 </div>
@@ -143,52 +143,52 @@
 </div>
 
 @push('scripts')
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('close-wa-modal', () => {
-                const modalEl = document.getElementById('modalWaOptions');
-                const modalInstance = bootstrap.Modal.getInstance(modalEl) ?? new bootstrap.Modal(modalEl);
-                modalInstance.hide();
-            });
-        });
-
-        document.addEventListener('click', function(e) {
-            const button = e.target.closest('.send-wa-btn');
-            if (!button) return;
-
-            document.getElementById('waId').value = button.dataset.id;
-            document.getElementById('waIdTransaksi').value = button.dataset.idtransaksi;
-            document.getElementById('waNumber').value = button.dataset.wa;
-            document.getElementById('waNama').value = button.dataset.nama;
-            document.getElementById('waAkun').value = button.dataset.akun;
-            document.getElementById('waPemesanan').value = button.dataset.pemesanan;
-            document.getElementById('waBerakhir').value = button.dataset.berakhir;
-            document.getElementById('waUsername').value = button.dataset.username;
-            document.getElementById('waPassword').value = button.dataset.password;
-            document.getElementById('waLinkAkses').value = button.dataset.linkakses;
-
+<script>
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('close-wa-modal', () => {
             const modalEl = document.getElementById('modalWaOptions');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
+            const modalInstance = bootstrap.Modal.getInstance(modalEl) ?? new bootstrap.Modal(modalEl);
+            modalInstance.hide();
         });
+    });
 
-        function kirimWa(type) {
-            const idItem = document.getElementById('waId').value;
-            const idtransaksi = document.getElementById('waIdTransaksi').value;
-            const nama = document.getElementById('waNama').value;
-            const noWa = document.getElementById('waNumber').value;
-            const akun = document.getElementById('waAkun').value;
-            const pemesanan = document.getElementById('waPemesanan').value;
-            const berakhir = document.getElementById('waBerakhir').value;
-            const username = document.getElementById('waUsername').value;
-            const password = document.getElementById('waPassword').value;
-            const linkakses = document.getElementById('waLinkAkses').value;
+    document.addEventListener('click', function(e) {
+        const button = e.target.closest('.send-wa-btn');
+        if (!button) return;
 
-            let pesan = '';
+        document.getElementById('waId').value = button.dataset.id;
+        document.getElementById('waIdTransaksi').value = button.dataset.idtransaksi;
+        document.getElementById('waNumber').value = button.dataset.wa;
+        document.getElementById('waNama').value = button.dataset.nama;
+        document.getElementById('waAkun').value = button.dataset.akun;
+        document.getElementById('waPemesanan').value = button.dataset.pemesanan;
+        document.getElementById('waBerakhir').value = button.dataset.berakhir;
+        document.getElementById('waUsername').value = button.dataset.username;
+        document.getElementById('waPassword').value = button.dataset.password;
+        document.getElementById('waLinkAkses').value = button.dataset.linkakses;
 
-            if (type === 'pengiriman') {
-                pesan =
-                    `ID Transaksi: ${idtransaksi}
+        const modalEl = document.getElementById('modalWaOptions');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    });
+
+    function kirimWa(type) {
+        const idItem = document.getElementById('waId').value;
+        const idtransaksi = document.getElementById('waIdTransaksi').value;
+        const nama = document.getElementById('waNama').value;
+        const noWa = document.getElementById('waNumber').value;
+        const akun = document.getElementById('waAkun').value;
+        const pemesanan = document.getElementById('waPemesanan').value;
+        const berakhir = document.getElementById('waBerakhir').value;
+        const username = document.getElementById('waUsername').value;
+        const password = document.getElementById('waPassword').value;
+        const linkakses = document.getElementById('waLinkAkses').value;
+
+        let pesan = '';
+
+        if (type === 'pengiriman') {
+            pesan =
+                `ID Transaksi: ${idtransaksi}
 
 Halo ${nama},
 Kami dari Phoenix Digital Warehouse bermaksud mengirimkan akun ${akun} yang bisa Anda gunakan mulai tanggal ${pemesanan} dengan masa aktif sampai tanggal ${berakhir}.
@@ -206,9 +206,9 @@ Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
 Website: https://phoenixdigital.id/`;
-            } else if (type === 'pembaharuan') {
-                pesan =
-                    `ID Transaksi: ${idtransaksi}
+        } else if (type === 'pembaharuan') {
+            pesan =
+                `ID Transaksi: ${idtransaksi}
 
 Halo ${nama},
 Akun ${akun} yang anda order pada tanggal ${pemesanan} dengan masa aktif sampai tanggal ${berakhir}, terdapat pembaharuan akun ${akun}.
@@ -226,9 +226,9 @@ Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
 Website: https://phoenixdigital.id/`;
-            } else if (type === 'habis') {
-                pesan =
-                    `ID Transaksi: ${idtransaksi}
+        } else if (type === 'habis') {
+            pesan =
+                `ID Transaksi: ${idtransaksi}
 
 Halo ${nama},
 Akun ${akun} yang anda order pada tanggal ${berakhir} sudah habis. Jika Anda ingin memperpanjang akun ${akun} Anda, silakan hubungi kami.
@@ -239,13 +239,13 @@ Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
 Website: https://phoenixdigital.id/`;
-            }
-
-            const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
-            window.open(url, '_blank');
-            Livewire.dispatch('sent-on-whatsapp', {
-                id: idItem
-            });
         }
-    </script>
+
+        const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+        window.open(url, '_blank');
+        Livewire.dispatch('sent-on-whatsapp', {
+            id: idItem
+        });
+    }
+</script>
 @endpush

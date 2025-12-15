@@ -14,7 +14,11 @@
     <!-- Informasi Pelamar -->
     <div class="mb-4 card">
         <div class="card-body">
-            <div class="row">
+            <a href="{{route('admin.pelamar.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="row mt-4">
                 <div class="col-md-6">
                     <table class="table table-borderless">
                         <tr>
