@@ -133,6 +133,6 @@ class BannersForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.banners.banners-form');
+        return view('livewire.pages.admin.Banners.Banners-form');
     }
 }

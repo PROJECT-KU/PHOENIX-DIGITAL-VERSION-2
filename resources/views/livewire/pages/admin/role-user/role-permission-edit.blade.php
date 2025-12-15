@@ -12,7 +12,7 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <a href="{{route('admin.account.role')}}" class="btn btn-sm btn-outline-secondary">
+            <a href="{{route('admin.account.role')}}" class="btn btn-sm btn-secondary">
                 <i class="bi bi-arrow-left me-1"></i>
                 <span>Kembali</span>
             </a>
@@ -76,7 +76,8 @@
 
                     <!-- Action Buttons -->
                     <div class="d-flex gap-2 justify-content-end">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn w-100 btn-primary">
+                            <i class="bi bi-send me-1"></i>
                             Simpan Permission
                         </button>
                     </div>

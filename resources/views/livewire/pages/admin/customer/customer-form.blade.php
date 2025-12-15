@@ -22,7 +22,10 @@
         </fieldset>
         <div class="form-group mt-4">
             <button type="submit"
-                class="btn btn-primary">{{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}</button>
+                class="btn btn-primary w-100">
+                <i class="bi bi-send me-1"></i>
+                {{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}
+            </button>
         </div>
     </form>
 </div>

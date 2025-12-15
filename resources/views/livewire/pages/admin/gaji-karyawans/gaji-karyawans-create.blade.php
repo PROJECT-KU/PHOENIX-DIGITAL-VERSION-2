@@ -13,7 +13,13 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.gaji-karyawans.gaji-karyawans-form />
+            <a href="{{route('admin.gajikaryawan.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.gaji-karyawans.gaji-karyawans-form />
+            </div>
         </div>
     </div>
 </div>

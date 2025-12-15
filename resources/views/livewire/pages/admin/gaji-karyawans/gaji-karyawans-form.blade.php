@@ -1,5 +1,5 @@
 <div>
-    <form wire:submit.prevent="save" class="p-3">
+    <form wire:submit.prevent="save">
 
         <!--================== data karyawan ==================-->
         <div class="card mb-4">
@@ -265,8 +265,8 @@
         </div>
         <!--================== END ==================-->
         <!-- Tombol -->
-        <div class="col-12">
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+        <div class="">
+            <button type="submit" class="btn w-100 btn-primary">
                 <i class="bi bi-send me-1"></i>
                 {{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}
             </button>

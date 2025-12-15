@@ -1,5 +1,5 @@
 <div>
-    <form wire:submit.prevent="save" class="p-3">
+    <form wire:submit.prevent="save">
         <div class="row g-3">
             <!-- Nama Akun -->
             <div class="col-md-12">
@@ -132,7 +132,7 @@
                 @enderror
             </div>
 
-           <!-- Upload Gambar -->
+            <!-- Upload Gambar -->
             <div class="col-md-12">
                 <label for="image" class="form-label">Gambar Produk <span class="text-danger">*</span></label>
                 <div class="row align-items-center">
@@ -141,24 +141,24 @@
                         <input type="file" id="image" wire:model="image"
                             class="form-control @error('image') is-invalid @enderror">
                         @error('image')
-                            <div class="invalid-feedback">{{ $message }}</div>
+                        <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
 
                     <!-- Preview (kanan) -->
                     <div class="col-md-6 d-flex justify-content-center">
                         @if ($image)
-                            {{-- Jika upload baru --}}
-                            <img src="{{ $image->temporaryUrl() }}"
-                                alt="Preview"
-                                class="img-fluid rounded shadow-sm border"
-                                style="max-height: 200px; object-fit: cover;">
+                        {{-- Jika upload baru --}}
+                        <img src="{{ $image->temporaryUrl() }}"
+                            alt="Preview"
+                            class="img-fluid rounded shadow-sm border"
+                            style="max-height: 200px; object-fit: cover;">
                         @elseif (!empty($existingImage))
-                            {{-- Jika edit & masih pakai gambar lama dari DB --}}
-                            <img src="{{ asset('storage/img/Product/' . $existingImage) }}"
-                                alt="Preview"
-                                class="img-fluid rounded shadow-sm border"
-                                style="max-height: 200px; object-fit: cover;">
+                        {{-- Jika edit & masih pakai gambar lama dari DB --}}
+                        <img src="{{ asset('storage/img/Product/' . $existingImage) }}"
+                            alt="Preview"
+                            class="img-fluid rounded shadow-sm border"
+                            style="max-height: 200px; object-fit: cover;">
                         @endif
                     </div>
                 </div>
@@ -177,8 +177,8 @@
         </div>
 
         <!-- Tombol -->
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn btn-primary">
+        <div class="mt-4">
+            <button type="submit" class="btn w-100 btn-primary">
                 <i class="bi bi-send me-1"></i>
                 {{ $this->mode === 'create' ? 'Tambah Produk' : 'Simpan Perubahan' }}
             </button>
