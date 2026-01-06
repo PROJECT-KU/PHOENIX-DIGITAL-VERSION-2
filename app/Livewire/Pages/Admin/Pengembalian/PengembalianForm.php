@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Pages\Admin\Pengembalian;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Pengembalian;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class PengembalianForm extends Component
@@ -71,7 +73,7 @@ class PengembalianForm extends Component
         $this->status = $pengembalian->status;
     }
 
-    public function save()
+    public function save(SyncCashFlowAction $syncCashFlow)
     {
         // pastikan nominal angka murni
         $raw = preg_replace('/[^0-9]/', '', (string) $this->nominal);
@@ -80,36 +82,46 @@ class PengembalianForm extends Component
         $this->validate();
 
         try {
-            // ambil nama user dari user_id
-            $namaUser = User::find($this->user_id)?->name;
+            DB::transaction(function () use ($syncCashFlow) {
 
-            if ($this->mode === 'edit') {
-                $pengembalian = Pengembalian::findOrFail($this->pengembalianId);
-                $pengembalian->update([
-                    'user_id' => $this->user_id,
-                    'nama_pengembalian' => $namaUser,
-                    'tanggal_pengembalian' => $this->tanggal_pengembalian,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'status' => $this->status,
+                // ambil nama user dari user_id
+                $namaUser = User::find($this->user_id)?->name;
+
+                if ($this->mode === 'edit') {
+                    $pengembalian = Pengembalian::findOrFail($this->pengembalianId);
+                    $pengembalian->update([
+                        'user_id' => $this->user_id,
+                        'nama_pengembalian' => $namaUser,
+                        'tanggal_pengembalian' => $this->tanggal_pengembalian,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+
+                    session()->flash('success', 'Data Pengembalian berhasil diperbarui!');
+                    $this->dispatch('success-edit-pengembalian');
+                } else {
+                    $pengembalian = Pengembalian::create([
+                        'user_id' => $this->user_id,
+                        'nama_pengembalian' => $namaUser,
+                        'tanggal_pengembalian' => $this->tanggal_pengembalian,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+
+                    session()->flash('success', 'Data Pengembalian berhasil ditambahkan!');
+                    $this->dispatch('success-add-pengembalian');
+                }
+                $pengembalian->refresh();
+                $syncCashFlow->execute($pengembalian, [
+                    'amount' => $pengembalian->nominal,
+                    'type' => 'income', // Pinjaman = Uang Keluar (Expense)
+                    'date' => $pengembalian->tanggal_pengembalian,
+                    'category' => 'Pinjaman',
+                    'description' => $pengembalian->deskripsi ?? 'Peminjaman Karyawan',
                 ]);
-
-                session()->flash('success', 'Data Pengembalian berhasil diperbarui!');
-                $this->dispatch('success-edit-pengembalian');
-            } else {
-                Pengembalian::create([
-                    'user_id' => $this->user_id,
-                    'nama_pengembalian' => $namaUser,
-                    'tanggal_pengembalian' => $this->tanggal_pengembalian,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'status' => $this->status,
-                ]);
-
-                session()->flash('success', 'Data Pengembalian berhasil ditambahkan!');
-                $this->dispatch('success-add-pengembalian');
-            }
-
+            });
             $this->resetForm();
 
             return redirect()->route('admin.pengembalian.index');

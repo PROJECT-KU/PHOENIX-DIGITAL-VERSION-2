@@ -145,19 +145,24 @@ new class extends Component
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
 
                     <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.cashflow.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.cashflow.index') }}" class="submenu-link">
+                                Cashflow
+                            </a>
+                        </li>
                         <li class="submenu-item {{ request()->routeIs('admin.spending.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.spending.index') }}" class="submenu-link">
                                 Pengeluaran
