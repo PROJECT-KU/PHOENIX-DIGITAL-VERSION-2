@@ -4,6 +4,8 @@ use App\Http\Controllers\PaymentCallbackController;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
+use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
+use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
 // Data Banners
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
@@ -27,7 +29,6 @@ use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
-use App\Livewire\Pages\Admin\Order\DeliverOrder;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
 // Data Paket Bundling
 use App\Livewire\Pages\Admin\Order\OrderList;
@@ -93,7 +94,6 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
-    Route::get('/admin/pesanantoko/{order}/deliver', DeliverOrder::class)->name('admin.pesanantoko.deliver');
 
     // Data Customer
     Route::get('/admin/customer', CustomerList::class)->name('admin.customer.index');
@@ -138,6 +138,10 @@ Route::middleware(['checkrole:admin,finance'])->group(function () {
     Route::get('/admin/DataBundlings/create', ProductBundlingsCreate::class)->name('admin.Bundlings.create');
     Route::get('/admin/DataBundlings/{ProductBundlings}', ProductBundlingsEdit::class)->name('admin.Bundlings.show');
     Route::get('/admin/DataBundlings/{ProductBundlings}/edit', ProductBundlingsEdit::class)->name('admin.Bundlings.edit');
+
+    // data laporan cashflow
+    Route::get('/admin/cashflow', CashFlowList::class)->name('admin.cashflow.index');
+    Route::get('/admin/cashflow/{cashflow}', CashFlowDetail::class)->name('admin.cashflow.detail');
 
     // Data Spending
     Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');

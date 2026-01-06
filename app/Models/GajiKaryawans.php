@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class GajiKaryawans extends Model
 {
@@ -35,6 +36,12 @@ class GajiKaryawans extends Model
     protected $casts = [
         'tanggal_transaksi' => 'date',
     ];
+
+    // relationship
+    public function cashFlow(): MorphTo
+    {
+        return $this->morphTo(CashFlow::class, 'sourceable');
+    }
 
     /**
      * Relasi ke tabel users.

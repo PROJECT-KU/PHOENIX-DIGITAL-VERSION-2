@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Pages\Admin\GajiKaryawans;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\GajiKaryawans;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -132,7 +134,7 @@ class GajiKaryawansForm extends Component
         return (int) preg_replace('/[^0-9]/', '', $value);
     }
 
-    public function save()
+    public function save(SyncCashFlowAction $syncCashFlow)
     {
         $this->calculateTotal();
 
@@ -144,9 +146,9 @@ class GajiKaryawansForm extends Component
         ]);
 
         if ($this->mode === 'create') {
-            $this->creategajikaryawan();
+            $this->creategajikaryawan($syncCashFlow);
         } else {
-            $this->updategajikaryawan();
+            $this->updategajikaryawan($syncCashFlow);
         }
     }
 
@@ -162,29 +164,39 @@ class GajiKaryawansForm extends Component
         ];
     }
 
-    private function creategajikaryawan()
+    private function creategajikaryawan(SyncCashFlowAction $action)
     {
         try {
-            GajiKaryawans::create([
-                'id_transaksi' => Str::upper(Str::random(5)),
-                'nama_karyawan' => $this->nama_karyawan,
-                'bank' => $this->bank,
-                'no_rek' => $this->no_rek,
-                'tanggal_transaksi' => $this->tanggal_transaksi,
-                'gaji_pokok' => $this->toNumber($this->gaji_pokok),
-                'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
-                'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
-                'tunjangan_kesehatan' => $this->toNumber($this->tunjangan_kesehatan),
-                'tunjangan_thr' => $this->toNumber($this->tunjangan_thr),
-                'tunjangan_ketenagakerjaan' => $this->toNumber($this->tunjangan_ketenagakerjaan),
-                'tunjangan_lainnya' => $this->toNumber($this->tunjangan_lainnya),
-                'potongan' => $this->toNumber($this->potongan),
-                'pph21' => $this->toNumber($this->pph21),
-                'total' => $this->total,
-                'deskripsi' => $this->deskripsi,
-                'status' => $this->status,
-            ]);
+            DB::transaction(function () use ($action) {
 
+                $gaji = GajiKaryawans::create([
+                    'id_transaksi' => Str::upper(Str::random(5)),
+                    'nama_karyawan' => $this->nama_karyawan,
+                    'bank' => $this->bank,
+                    'no_rek' => $this->no_rek,
+                    'tanggal_transaksi' => $this->tanggal_transaksi,
+                    'gaji_pokok' => $this->toNumber($this->gaji_pokok),
+                    'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
+                    'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
+                    'tunjangan_kesehatan' => $this->toNumber($this->tunjangan_kesehatan),
+                    'tunjangan_thr' => $this->toNumber($this->tunjangan_thr),
+                    'tunjangan_ketenagakerjaan' => $this->toNumber($this->tunjangan_ketenagakerjaan),
+                    'tunjangan_lainnya' => $this->toNumber($this->tunjangan_lainnya),
+                    'potongan' => $this->toNumber($this->potongan),
+                    'pph21' => $this->toNumber($this->pph21),
+                    'total' => $this->total,
+                    'deskripsi' => $this->deskripsi,
+                    'status' => $this->status,
+                ]);
+
+                $action->execute($gaji, [
+                    'amount' => $gaji->total,
+                    'type' => 'expense',
+                    'date' => $gaji->tanggal_transaksi,
+                    'category' => 'Gaji Karyawan',
+                    'description' => $gaji->deskripsi ?? 'Pembayaran gaji karyawan',
+                ]);
+            });
             session()->flash('success', 'Data Gaji Karyawan berhasil ditambahkan!');
 
             return redirect()->route('admin.gajikaryawan.index');
@@ -193,29 +205,41 @@ class GajiKaryawansForm extends Component
         }
     }
 
-    private function updategajikaryawan()
+    private function updategajikaryawan(SyncCashFlowAction $action)
     {
         try {
-            $this->gajikaryawan->update([
-                'id_transaksi' => $this->id_transaksi,
-                'nama_karyawan' => $this->nama_karyawan,
-                'bank' => $this->bank,
-                'no_rek' => $this->no_rek,
-                'tanggal_transaksi' => $this->tanggal_transaksi,
-                'gaji_pokok' => $this->toNumber($this->gaji_pokok),
-                'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
-                'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
-                'tunjangan_kesehatan' => $this->toNumber($this->tunjangan_kesehatan),
-                'tunjangan_thr' => $this->toNumber($this->tunjangan_thr),
-                'tunjangan_ketenagakerjaan' => $this->toNumber($this->tunjangan_ketenagakerjaan),
-                'tunjangan_lainnya' => $this->toNumber($this->tunjangan_lainnya),
-                'potongan' => $this->toNumber($this->potongan),
-                'pph21' => $this->toNumber($this->pph21),
-                'total' => $this->total,
-                'deskripsi' => $this->deskripsi,
-                'status' => $this->status,
-            ]);
+            DB::transaction(function () use ($action) {
 
+                $this->gajikaryawan->update([
+                    'id_transaksi' => $this->id_transaksi,
+                    'nama_karyawan' => $this->nama_karyawan,
+                    'bank' => $this->bank,
+                    'no_rek' => $this->no_rek,
+                    'tanggal_transaksi' => $this->tanggal_transaksi,
+                    'gaji_pokok' => $this->toNumber($this->gaji_pokok),
+                    'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
+                    'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
+                    'tunjangan_kesehatan' => $this->toNumber($this->tunjangan_kesehatan),
+                    'tunjangan_thr' => $this->toNumber($this->tunjangan_thr),
+                    'tunjangan_ketenagakerjaan' => $this->toNumber($this->tunjangan_ketenagakerjaan),
+                    'tunjangan_lainnya' => $this->toNumber($this->tunjangan_lainnya),
+                    'potongan' => $this->toNumber($this->potongan),
+                    'pph21' => $this->toNumber($this->pph21),
+                    'total' => $this->total,
+                    'deskripsi' => $this->deskripsi,
+                    'status' => $this->status,
+                ]);
+
+                $this->gajikaryawan->refresh();
+
+                $action->execute($this->gajikaryawan, [
+                    'amount' => $this->gajikaryawan->total,
+                    'type' => 'expense',
+                    'date' => $this->gajikaryawan->tanggal_transaksi,
+                    'category' => 'Gaji Karyawan',
+                    'description' => $this->gajikaryawan->deskripsi ?? 'Pembayaran gaji karyawan',
+                ]);
+            });
             session()->flash('success', 'Perubahan Data Gaji Karyawan berhasil disimpan!');
 
             return redirect()->route('admin.gajikaryawan.index');

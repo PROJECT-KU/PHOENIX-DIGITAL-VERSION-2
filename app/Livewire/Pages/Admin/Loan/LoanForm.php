@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Pages\Admin\Loan;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Loan;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class LoanForm extends Component
@@ -71,7 +73,7 @@ class LoanForm extends Component
         $this->status = $loan->status;
     }
 
-    public function save()
+    public function save(SyncCashFlowAction $syncCashFlow)
     {
         // Pastikan nominal angka murni
         $raw = preg_replace('/[^0-9]/', '', (string) $this->nominal);
@@ -80,34 +82,49 @@ class LoanForm extends Component
         $this->validate();
 
         try {
-            $namaPeminjam = User::find($this->user_id)->name ?? null;
+            DB::transaction(function () use ($syncCashFlow) {
+                $namaPeminjam = User::find($this->user_id)->name ?? 'Umum';
 
-            if ($this->mode === 'edit') {
-                $loan = Loan::findOrFail($this->loanId);
-                $loan->update([
-                    'user_id' => $this->user_id,
-                    'nama_peminjam' => $namaPeminjam,
-                    'tanggal_peminjam' => $this->tanggal_peminjam,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'status' => $this->status,
+                if ($this->mode === 'edit') {
+                    $loan = Loan::findOrFail($this->loanId);
+                    $loan->update([
+                        'user_id' => $this->user_id,
+                        'nama_peminjam' => $namaPeminjam,
+                        'tanggal_peminjam' => $this->tanggal_peminjam,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+                } else {
+                    // PERBAIKAN: Tambahkan id_transaksi manual
+                    $loan = Loan::create([
+                        'user_id' => $this->user_id,
+                        'nama_peminjam' => $namaPeminjam,
+                        'tanggal_peminjam' => $this->tanggal_peminjam,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+                }
+
+                // Refresh model agar data UUID & Timestamp sinkron sebelum dikirim ke Action
+                $loan->refresh();
+
+                // Panggil Action
+                $syncCashFlow->execute($loan, [
+                    'amount' => $loan->nominal,
+                    'type' => 'expense', // Pinjaman = Uang Keluar (Expense)
+                    'date' => $loan->tanggal_peminjam,
+                    'category' => 'Pinjaman',
+                    'description' => $loan->deskripsi ?? 'Peminjaman Karyawan',
                 ]);
 
-                session()->flash('success', 'Data Peminjaman berhasil diperbarui!');
-                $this->dispatch('success-edit-loan');
-            } else {
-                Loan::create([
-                    'user_id' => $this->user_id,
-                    'nama_peminjam' => $namaPeminjam,
-                    'tanggal_peminjam' => $this->tanggal_peminjam,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'status' => $this->status,
-                ]);
+                $msg = $this->mode === 'edit' ? 'diperbarui' : 'ditambahkan';
+                session()->flash('success', "Data Peminjaman berhasil $msg!");
 
-                session()->flash('success', 'Data Peminjaman berhasil ditambahkan!');
-                $this->dispatch('success-add-loan');
-            }
+                // Dispatch event untuk menutup modal (sesuaikan dengan frontend Anda)
+                $this->dispatch($this->mode === 'edit' ? 'success-edit-loan' : 'success-add-loan');
+            });
 
             $this->resetForm();
 
