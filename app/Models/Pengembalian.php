@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
 class Pengembalian extends Model
@@ -38,6 +39,12 @@ class Pengembalian extends Model
     const STATUS_BERJALAN = 'berjalan';
 
     const STATUS_LUNAS = 'lunas';
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     // Relationship ke User (siapa yang input)
     public function penginput(): BelongsTo

@@ -42,6 +42,15 @@ class SyncCashFlowAction
         if ($model instanceof \App\Models\Loan) {
             return $model->status !== 'pending';
         }
+        if ($model instanceof \App\Models\Pengembalian) {
+            return $model->status !== 'pending';
+        }
+        if ($model instanceof \App\Models\Spending) {
+            return $model->status !== 'pending';
+        }
+        if ($model instanceof \App\Models\PemesananRsc) {
+            return $model->status === 'baru';
+        }
 
         return false;
     }

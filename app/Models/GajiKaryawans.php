@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class GajiKaryawans extends Model
 {
@@ -38,9 +38,9 @@ class GajiKaryawans extends Model
     ];
 
     // relationship
-    public function cashFlow(): MorphTo
+    public function cashFlow(): MorphOne
     {
-        return $this->morphTo(CashFlow::class, 'sourceable');
+        return $this->morphOne(CashFlow::class, 'sourceable');
     }
 
     /**

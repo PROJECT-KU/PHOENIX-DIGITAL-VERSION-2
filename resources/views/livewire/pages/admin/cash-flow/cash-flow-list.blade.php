@@ -58,11 +58,17 @@
                         <td>{{ $item->description }}</td>
                         <td>
                             @if($item->sourceable_type === 'App\Models\Order')
-                            Order #{{ $item->sourceable->order_number ?? '-' }}
+                            order #{{ $item->sourceable->order_number ?? '-' }}
                             @elseif($item->sourceable_type === 'App\Models\Loan')
-                            Pinjaman: {{ $item->sourceable->nama_peminjam ?? 'User' }}
+                            Pinjaman {{ $item->sourceable->nama_peminjam ?? 'peminjam' }}
+                            @elseif($item->sourceable_type === 'App\Models\Pengembalian')
+                            pengembalian {{ $item->sourceable->nama_pengembalian }}
                             @elseif($item->sourceable_type === 'App\Models\GajiKaryawans')
-                            Gaji: {{ $item->sourceable->karyawan->name ?? 'User' }}
+                            gaji {{ $item->sourceable->karyawan->name ?? 'User' }}
+                            @elseif($item->sourceable_type === 'App\Models\Spending')
+                            pengeluaran {{ $item->sourceable->jenis_pengeluaran }}
+                            @elseif($item->sourceable_type === 'App\Models\PemesananRsc')
+                            Pesanan Rumah Scopus
                             @endif
                         </td>
                         <td class="text-end {{ $item->type == 'income' ? 'text-success' : 'text-danger' }}">
