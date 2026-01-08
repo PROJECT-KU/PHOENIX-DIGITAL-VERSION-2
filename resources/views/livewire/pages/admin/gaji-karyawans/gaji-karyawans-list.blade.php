@@ -1,6 +1,6 @@
 <div>
     <div class="d-flex mb-2 align-items-center justify-content-between">
-        <h3>Data Pengeluaran</h3>
+        <h3>Data Penggajian Karyawan</h3>
         @php
         $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Gaji Karyawan']];
         @endphp
@@ -9,18 +9,14 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Data Pengeluaran</h5>
-                </div>
-
                 <div class="card-body">
                     @include('livewire.pages.admin.gaji-karyawans.partials.filter')
 
                     <!-- Table -->
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr style="text-align: center;">
+                        <table class="table table-striped text-center">
+                            <thead class="table-light">
+                                <tr>
                                     <th>ID Transaksi</th>
                                     <th>Nama Karyawan</th>
                                     <th>Tanggal Transaksi</th>
@@ -32,7 +28,7 @@
                             </thead>
                             <tbody>
                                 @forelse($gajikaryawan as $item)
-                                <tr style="text-align: center;">
+                                <tr>
                                     <td>{{ $item->id_transaksi }}</td>
                                     <td>{{ $item->karyawan->name ?? '-' }}</td>
                                     <td>{{ $item->tanggal_transaksi_formatted }}</td>

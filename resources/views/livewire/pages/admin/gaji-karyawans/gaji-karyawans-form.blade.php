@@ -9,13 +9,12 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-
                         <!-- Nama Karyawan -->
                         <div class="col-md-12 mt-3 mb-3">
                             <label class="form-label">Nama Karyawan <span class="text-danger">*</span></label>
 
                             @if(isset($users) && $users->count())
-                            <select wire:model.defer="nama_karyawan" class="form-select @error('nama_karyawan') is-invalid @enderror">
+                            <select wire:model.live="nama_karyawan" class="form-select @error('nama_karyawan') is-invalid @enderror">
                                 <option value="">-- Pilih Nama Karyawan --</option>
                                 @foreach($users as $user)
                                 <option value="{{ $user->id }}">{{ $user->name }}</option>
@@ -33,23 +32,23 @@
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="tunjangan" class="form-label">
+                            <label for="bank" class="form-label">
                                 Nama Bank
                             </label>
-                            <input type="text" wire:model="tunjangan"
-                                class="form-control @error('tunjangan') is-invalid @enderror rupiah bg-light" id="tunjangan" readonly>
-                            @error('tunjangan')
+                            <input type="text" wire:model="bank"
+                                class="form-control @error('bank') is-invalid @enderror rupiah bg-light" id="bank" readonly>
+                            @error('bank')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label for="tunjangan" class="form-label">
+                            <label for="no_rek" class="form-label">
                                 No Rekening
                             </label>
-                            <input type="text" wire:model="tunjangan"
-                                class="form-control @error('tunjangan') is-invalid @enderror rupiah bg-light" id="tunjangan" readonly>
-                            @error('tunjangan')
+                            <input type="text" wire:model="no_rek"
+                                class="form-control @error('no_rek') is-invalid @enderror rupiah bg-light" id="no_rek" readonly>
+                            @error('no_rek')
                             <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

@@ -32,7 +32,7 @@
                     </button>
                 </li>
             </ul>
-            <table class="table table-striped mt-2 mb-0 align-middle table-striped nowrap" style="width: 100%;">
+            <table class="table table-striped mt-2 mb-0 align-middle nowrap" style="width: 100%;">
                 <thead class="table-light">
                     <tr class="text-center">
                         <th>Nama Pelanggan</th>
