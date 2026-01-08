@@ -288,4 +288,19 @@ document.addEventListener("livewire:init", () => {
             }
         });
     });
+
+    Livewire.on("will-delete-karyawan-data", (data) => {
+        console.log("data:", data);
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data karyawan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-karyawan-data", { id: data["id"] });
+            }
+        });
+    });
 });

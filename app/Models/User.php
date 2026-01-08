@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,11 @@ class User extends Authenticatable
     ];
 
     // relation role user
+    public function detail(): HasOne
+    {
+        return $this->hasOne(EmployeeDetail::class);
+    }
+
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
@@ -42,7 +48,7 @@ class User extends Authenticatable
         return in_array($this->role->name, $roles);
     }
 
-     // Check permission
+    // Check permission
     public function hasPermission(string $permission): bool
     {
         return $this->role && $this->role->hasPermission($permission);
@@ -51,7 +57,7 @@ class User extends Authenticatable
     // Check any permission
     public function hasAnyPermission(array $permissions): bool
     {
-        if (!$this->role) {
+        if (! $this->role) {
             return false;
         }
 
@@ -67,12 +73,12 @@ class User extends Authenticatable
     // Check all permissions
     public function hasAllPermissions(array $permissions): bool
     {
-        if (!$this->role) {
+        if (! $this->role) {
             return false;
         }
 
         foreach ($permissions as $permission) {
-            if (!$this->hasPermission($permission)) {
+            if (! $this->hasPermission($permission)) {
                 return false;
             }
         }

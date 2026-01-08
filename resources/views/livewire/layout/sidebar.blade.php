@@ -215,22 +215,27 @@ new class extends Component
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'active' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}">
                             karir
                         </span>
                     </a>
 
                     <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.karyawan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.karyawan.index') }}" class="submenu-link">
+                                Karyawan
+                            </a>
+                        </li>
                         <li class="submenu-item {{ request()->routeIs('admin.lowongan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.lowongan.index') }}" class="submenu-link">
-                                Role Pekerjaan
+                                Lowongan Kerja
                             </a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">

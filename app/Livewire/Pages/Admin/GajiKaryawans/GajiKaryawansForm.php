@@ -58,9 +58,14 @@ class GajiKaryawansForm extends Component
         if ($this->gajikaryawan) {
             $this->gajikaryawan = $this->gajikaryawan;
             $this->id_transaksi = $this->gajikaryawan->id_transaksi;
-            $this->nama_karyawan = $this->gajikaryawan->getAttribute('nama_karyawan');
-            $this->bank = $this->gajikaryawan->bank;
-            $this->no_rek = $this->gajikaryawan->no_rek;
+            $this->nama_karyawan = $this->gajikaryawan->user_id ?? $this->gajikaryawan->nama_karyawan;
+
+            $karyawanTerkait = User::with('detail')->find($this->nama_karyawan);
+            if ($karyawanTerkait && $karyawanTerkait->detail) {
+                $this->bank = $karyawanTerkait->detail->nama_bank;
+                $this->no_rek = $karyawanTerkait->detail->nomor_rekening;
+            }
+
             $this->tanggal_transaksi = $this->gajikaryawan->tanggal_transaksi?->format('Y-m-d');
             $this->gaji_pokok = $this->formatRupiah($this->gajikaryawan->gaji_pokok);
             $this->bonus_kinerja = $this->formatRupiah($this->gajikaryawan->bonus_kinerja);
@@ -81,6 +86,30 @@ class GajiKaryawansForm extends Component
         }
 
         $this->calculateTotal();
+    }
+
+    public function updatedNamaKaryawan($userId)
+    {
+        if (! $userId) {
+            $this->resetBankData();
+
+            return;
+        }
+
+        $user = User::with('detail')->find($userId);
+
+        if ($user && $user->detail) {
+            $this->bank = $user->detail->nama_bank ?? '-';
+            $this->no_rek = $user->detail->nomor_rekening ?? '-';
+        } else {
+            $this->resetBankData();
+        }
+    }
+
+    private function resetBankData()
+    {
+        $this->bank = '';
+        $this->no_rek = '';
     }
 
     public function updated($propertyName)

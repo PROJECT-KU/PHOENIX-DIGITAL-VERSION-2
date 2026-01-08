@@ -19,6 +19,9 @@ use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
+use App\Livewire\Pages\Admin\Karyawan\KaryawanCreate;
+use App\Livewire\Pages\Admin\Karyawan\KaryawanEdit;
+use App\Livewire\Pages\Admin\Karyawan\KaryawanList;
 // Data Gaji Karyawan
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
@@ -103,11 +106,19 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
 });
 
 Route::middleware(['checkrole:admin'])->group(function () {
+    // data role
     Route::get('/admin/role', RoleList::class)->name('admin.account.role');
     Route::get('/admin/role/{role}/edit', RolePermissionEdit::class)->name('admin.account.role.permission');
+
+    // data permission
     Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
     Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
     Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
+
+    // data karyawan
+    Route::get('/admin/karyawan', KaryawanList::class)->name('admin.karyawan.index');
+    Route::get('/admin/karyawan/create', KaryawanCreate::class)->name('admin.karyawan.create');
+    Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->name('admin.karyawan.edit');
 });
 Route::middleware(['checkrole:admin,finance,admin-mimin'])->group(function () {
     Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
