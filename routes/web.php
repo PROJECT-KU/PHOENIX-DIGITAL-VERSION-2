@@ -30,6 +30,8 @@ use App\Livewire\Pages\Admin\Loan\LoanList;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
+use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
+use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
@@ -67,6 +69,8 @@ use App\Livewire\Pages\Admin\Spending\SpendingCreate;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingList;
+use App\Livewire\Pages\Public\About\AboutPage;
+use App\Livewire\Pages\Public\Contact\Contact;
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
@@ -86,6 +90,8 @@ Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
 Route::get('/order/history', OrderHistory::class)->name('order.history');
+Route::get('/contact', Contact::class)->name('contact');
+Route::get('/about', AboutPage::class)->name('about');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
@@ -105,6 +111,10 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
     Route::get('/admin/customer/create', CustomerCreate::class)->name('admin.customer.create');
     Route::get('/admin/customer/{customer}', CustomerEdit::class)->name('admin.customer.show');
     Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->name('admin.customer.edit');
+
+    // customer message
+    Route::get('/admin/customer-message', CustomerMessageList::class)->name('admin.customer-message.index');
+    Route::get('/admin/customer-message/{message}', CustomerMessageDetail::class)->name('admin.customer-message.detail');
 });
 
 Route::middleware(['checkrole:admin'])->group(function () {

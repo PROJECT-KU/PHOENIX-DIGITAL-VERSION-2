@@ -247,6 +247,22 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    Livewire.on("will-delete-customer-message-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus Pesan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-customer-message-data", {
+                    id: data["id"],
+                });
+            }
+        });
+    });
+
     // permission
     Livewire.on("will-delete-permission-data", (data) => {
         Swal2.fire({

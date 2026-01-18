@@ -64,12 +64,12 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
+                @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>
                     </a>
@@ -77,6 +77,9 @@ new class extends Component
                         <li class="submenu-item {{ request()->routeIs('admin.Banners.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.Banners.index') }}" class="submenu-link">Data
                                 Banner</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Masuk</a>
                         </li>
                     </ul>
                 </li>
