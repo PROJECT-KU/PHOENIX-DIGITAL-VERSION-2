@@ -76,6 +76,9 @@ class CheckoutPage extends Component
 
     public $referralDiscount = 0;
 
+    // unik kode
+    public $uniqueCode = 0;
+
     // Total
     public $totalDiscount = 0;
 
@@ -343,33 +346,42 @@ class CheckoutPage extends Component
 
     private function calculateTotal()
     {
-        // Calculate subtotal
         $this->subtotal = array_sum(array_column($this->cart, 'subtotal'));
 
-        // Calculate promo discount using PromoService
         $promoResult = $this->promoService->calculateDiscount(
             $this->cart,
             $this->foundCustomer,
             $this->promoValid ? $this->kodePromo : null,
             $this->referralValid,
-            false // points handled separately
+            false
         );
 
         $this->promoDiscount = $promoResult['promo_discount'];
         $this->referralDiscount = $promoResult['referral_discount'];
         $this->appliedPromos = $promoResult['applied_promos'];
 
-        // Calculate points discount
+        $tempTotal = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
+
         if ($this->usePoints && $this->pointsValue > 0) {
-            $totalAfterPromo = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
-            $this->pointsDiscount = min($this->pointsValue, $totalAfterPromo);
+            $this->pointsDiscount = min($this->pointsValue, max(0, $tempTotal));
         } else {
             $this->pointsDiscount = 0;
         }
 
-        // Calculate total discount and final total
         $this->totalDiscount = $this->promoDiscount + $this->referralDiscount + $this->pointsDiscount;
-        $this->finalTotal = max(0, $this->subtotal - $this->totalDiscount);
+
+        $netTotal = max(0, $this->subtotal - $this->totalDiscount);
+
+        if ($netTotal > 0) {
+            if ($this->uniqueCode === 0) {
+                $this->uniqueCode = rand(500, 999);
+            }
+
+            $this->finalTotal = $netTotal + $this->uniqueCode;
+        } else {
+            $this->uniqueCode = 0;
+            $this->finalTotal = 0;
+        }
     }
 
     public function checkout()
@@ -429,6 +441,7 @@ class CheckoutPage extends Component
                 'subtotal' => $this->subtotal,
                 'guest_token' => Cookie::get('guest_token'),
                 'total' => $this->finalTotal,
+                'unique_code' => $this->uniqueCode,
                 'status' => 'pending',
                 'customer_notes' => $this->customer_notes,
                 'expired_at' => now()->addHours(24),

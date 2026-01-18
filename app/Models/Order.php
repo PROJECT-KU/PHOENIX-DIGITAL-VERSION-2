@@ -33,6 +33,7 @@ class Order extends Model
         'referral_discount',
         'total_discount',
         'guest_token',
+        'unique_code',
     ];
 
     protected $casts = [
