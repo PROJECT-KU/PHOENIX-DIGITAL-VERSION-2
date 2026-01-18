@@ -95,7 +95,12 @@
                     </div>
 
                     <!-- Cart -->
-                    <livewire:components.cart-badge />
+                    <div class="d-flex align-items-center gap-4">
+                        <a href="{{route('order.history')}}" class="text-dark">
+                            <i class="bi bi-clock-history fs-5"></i>
+                        </a>
+                        <livewire:components.cart-badge />
+                    </div>
 
                     <!-- Mobile Navigation Toggle -->
                     <i class="mobile-nav-toggle d-xl-none bi bi-list me-0"></i>

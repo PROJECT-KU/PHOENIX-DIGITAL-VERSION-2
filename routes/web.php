@@ -71,6 +71,7 @@ use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
 use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
+use App\Livewire\Pages\Public\ShopPage\OrderHistory;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentPage;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
@@ -84,6 +85,7 @@ Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+Route::get('/order/history', OrderHistory::class)->name('order.history');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])

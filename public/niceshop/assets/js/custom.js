@@ -4,16 +4,14 @@ function formatRupiah(number) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-
     const salePrice = document.getElementById("salePrice");
     const regularPrice = document.getElementById("regularPrice");
 
     // sembunyikan harga coret dulu
     regularPrice.style.display = "none";
 
-    document.querySelectorAll('input[name="price_option"]').forEach(radio => {
+    document.querySelectorAll('input[name="price_option"]').forEach((radio) => {
         radio.addEventListener("change", function () {
-
             const harga = parseInt(this.dataset.value) || 0;
             const multiplier = parseInt(this.dataset.multiplier) || 1;
             const regular = parseInt(this.dataset.regular) || 0;
@@ -34,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
             regularPrice.style.display = "inline-block";
 
             // highlight terpilih
-            document.querySelectorAll('.price-option').forEach(el => {
+            document.querySelectorAll(".price-option").forEach((el) => {
                 el.classList.remove("active-option");
             });
             this.closest(".price-option").classList.add("active-option");
@@ -42,21 +40,41 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-window.addEventListener('cart-success', event => {
+window.addEventListener("cart-success", (event) => {
     Swal.fire({
-        icon: 'success',
-        title: 'Berhasil!',
+        icon: "success",
+        title: "Berhasil!",
         text: event.detail.message,
         timer: 1500,
-        showConfirmButton: false
+        showConfirmButton: false,
     });
 });
 
-window.addEventListener('cart-error', event => {
+window.addEventListener("success", (event) => {
     Swal.fire({
-        icon: 'error',
-        title: 'Gagal!',
+        icon: "success",
+        title: "Berhasil!",
         text: event.detail.message,
-        showConfirmButton: true
+        timer: 1500,
+        showConfirmButton: false,
+    });
+});
+
+window.addEventListener("error", (event) => {
+    Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: event.detail.message,
+        timer: 1500,
+        showConfirmButton: false,
+    });
+});
+
+window.addEventListener("cart-error", (event) => {
+    Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: event.detail.message,
+        showConfirmButton: true,
     });
 });
