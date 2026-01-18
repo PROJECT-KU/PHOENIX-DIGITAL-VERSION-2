@@ -2,27 +2,28 @@
 
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\Public\HomepageController;
+// Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
-// Data Banners
+// Data Customer
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
 use App\Livewire\Pages\Admin\Customer\CustomerList;
 use App\Livewire\Pages\Admin\Dashboard;
-// Data Customer
+// Data Data Akun
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
-// Data Akun
+// Data Gajikaryawan
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
-// Data Gaji Karyawan
+// Data Loan
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
-// Data Product
+// Data Lowongan Pekerjaan
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
@@ -33,17 +34,10 @@ use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
-
-// Data Pengembalian
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
-use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
-
 // Data Promo
 use App\Livewire\Pages\Admin\Promo\PromoCreate;
 use App\Livewire\Pages\Admin\Promo\PromoEdit;
 use App\Livewire\Pages\Admin\Promo\PromoList;
-
 // Data Spending
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
@@ -52,9 +46,11 @@ use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+//Data Product Admin
 use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
+//Data Product Bundling
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
@@ -62,9 +58,10 @@ use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
 use App\Livewire\Pages\Admin\Profile;
 use App\Livewire\Pages\Admin\Role;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
-// Data Pemesanan RSC
+//Data Spending
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingList;
+// Data Pemesanan RSC
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
@@ -72,6 +69,8 @@ use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentPage;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
+use App\Livewire\Pages\Public\Bundling\ProductBundlings;
+use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Index::class)->name('homepage');
@@ -90,6 +89,8 @@ Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.succe
 // Route::view('/homeproduct', 'pages.homeproduct')->name('homeproduct');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
+Route::get('/bundling', BundlingPageIndex::class)->name('bundling.index');
+Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product-bundlings');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
@@ -176,4 +177,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/promo/{promo}/edit', PromoEdit::class)->name('admin.promo.edit');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

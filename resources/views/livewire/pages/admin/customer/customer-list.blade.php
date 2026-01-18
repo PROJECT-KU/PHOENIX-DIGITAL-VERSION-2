@@ -58,7 +58,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5">belum ada customer</td>
+                        <td colspan="6" class="text-center">belum ada customer</td>
                     </tr>
                     @endforelse
                 </tbody>

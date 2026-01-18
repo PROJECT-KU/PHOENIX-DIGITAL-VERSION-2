@@ -11,4 +11,8 @@
     {{-- flash sale --}}
     @include('livewire.pages.public.homepage.partials.flash-sale')
     {{-- end flash sale --}}
+    {{-- produk-bundling --}}
+    {{-- @include('livewire.pages.public.bundling.index') --}}
+    <livewire:pages.public.bundling.index />
+    {{-- end produk-bundling --}}
 </div>

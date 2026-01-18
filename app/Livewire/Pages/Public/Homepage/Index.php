@@ -4,8 +4,9 @@ namespace App\Livewire\Pages\Public\Homepage;
 
 use App\Models\Banners;
 use App\Models\Product;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\Attributes\Layout;
+use App\Models\ProductBundlings;
 
 class Index extends Component
 {
@@ -25,9 +26,14 @@ class Index extends Component
             ->take(4)
             ->get();
 
+        $bundlings = ProductBundlings::when($this->search, function ($query) {
+            $query->where('nama_paket', 'like', '%' . $this->search . '%');
+        })->get();
+
         return view('livewire.pages.public.homepage.index', [
             'banners' => $banners,
-            'products' => $products
+            'products' => $products,
+            'bundlings' => $bundlings
         ]);
     }
 }
