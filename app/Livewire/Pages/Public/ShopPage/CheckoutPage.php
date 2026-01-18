@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Promo;
 use App\Services\PromoService;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -426,6 +427,7 @@ class CheckoutPage extends Component
                 'order_number' => $orderNumber,
                 'customer_id' => $customer->id,
                 'subtotal' => $this->subtotal,
+                'guest_token' => Cookie::get('guest_token'),
                 'total' => $this->finalTotal,
                 'status' => 'pending',
                 'customer_notes' => $this->customer_notes,
@@ -504,7 +506,6 @@ class CheckoutPage extends Component
 
                 return redirect()->route('shop.index');
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
@@ -514,13 +515,35 @@ class CheckoutPage extends Component
     private function generateOrderNumber()
     {
         $date = now()->format('Ymd');
+
+        // Tambahkan lockForUpdate() menghindari race condition di database
         $lastOrder = Order::whereDate('created_at', now())
             ->latest()
+            ->lockForUpdate()
             ->first();
 
-        $increment = $lastOrder ? intval(substr($lastOrder->order_number, -4)) + 1 : 1;
+        if (! $lastOrder) {
+            $number = 'INV-'.$date.'-0001';
+            if (Order::where('order_number', $number)->exists()) {
+                return 'INV-'.$date.'-0002';
+            }
 
-        return 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+            return $number;
+        }
+
+        $parts = explode('-', $lastOrder->order_number);
+        $lastSequence = intval(end($parts));
+
+        $increment = $lastSequence + 1;
+
+        $newOrderNumber = 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+
+        while (Order::where('order_number', $newOrderNumber)->exists()) {
+            $increment++;
+            $newOrderNumber = 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $newOrderNumber;
     }
 
     #[Layout('layouts.guest')]
