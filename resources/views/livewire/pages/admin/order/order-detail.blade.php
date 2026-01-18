@@ -94,9 +94,33 @@
                         @if ($order->items->count())
                         <tfoot class="table-secondary">
                             <tr>
-                                <th colspan="5" class="text-end">Total</th>
-                                <th colspan="2">Rp
+                                <th colspan="4" class="text-end">Total</th>
+                                <th colspan="3">Rp
                                     {{ number_format($order->items->sum(fn($i) => $i->price * $i->quantity), 0, ',', '.') }}
+                                </th>
+                            </tr>
+                            @if($order->total_discount > 0)
+                            <tr>
+                                <th colspan="4" class="text-end">
+                                    <small>Total Diskon (Promo/Poin)</small>
+                                </th>
+                                <th colspan="3">- Rp {{ number_format($order->total_discount, 0, ',', '.') }}</th>
+                            </tr>
+                            @endif
+                            @if($order->unique_code > 0)
+                            <tr>
+                                <th colspan="4" class="text-end">
+                                    Kode Unik
+                                </th>
+                                <th colspan="3">
+                                    + Rp {{ number_format($order->unique_code, 0, ',', '.') }}
+                                </th>
+                            </tr>
+                            @endif
+                            <tr>
+                                <th colspan="4" class="text-end">TOTAL TRANSFER</th>
+                                <th colspan="3" class="fw-bolder text-success fs-5">
+                                    Rp {{ number_format($order->total, 0, ',', '.') }}
                                 </th>
                             </tr>
                         </tfoot>
