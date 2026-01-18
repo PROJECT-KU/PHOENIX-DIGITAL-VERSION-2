@@ -117,7 +117,7 @@
                         <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
                         <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
                         <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
-                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="contact.html">Contact</a></li>
+                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
 
                     </ul>
                 </nav>

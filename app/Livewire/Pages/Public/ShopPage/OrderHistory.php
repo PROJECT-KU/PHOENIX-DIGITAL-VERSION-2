@@ -70,13 +70,11 @@ class OrderHistory extends Component
         $currentToken = Cookie::get('guest_token');
 
         if ($masterToken === $currentToken) {
-            // $this->reset('phoneNumber', 'invoiceCode');
+            $this->reset('phoneNumber', 'invoiceCode');
 
             $this->dispatch('restore-success', [
                 'message' => 'Riwayat pesanan anda sudah tampil.',
             ]);
-
-            // $this->dispatch('success', message: 'Riwayat pesanan Anda sudah tampil.');
 
             return;
         }
@@ -97,8 +95,6 @@ class OrderHistory extends Component
             $this->dispatch('restore-success', [
                 'message' => 'Berhasil memulihkan riwayat pesanan!',
             ]);
-
-            // $this->dispatch('success', message: 'Berhasil memulihkan riwayat pesanan!');
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('error', message: 'Terjadi kesalahan sistem.');

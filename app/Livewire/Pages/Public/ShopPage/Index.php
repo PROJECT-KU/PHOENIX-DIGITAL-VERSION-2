@@ -13,7 +13,7 @@ class Index extends Component
 {
     use WithPagination;
 
-    public $perPage = 4;
+    public $perPage = 8;
 
     public $search = '';
 
