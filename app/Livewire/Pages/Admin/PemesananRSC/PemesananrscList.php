@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\PemesananRSC;
 use App\Models\DataAkun;
 use App\Models\PemesananRsc;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -112,39 +113,40 @@ class PemesananrscList extends Component
     #[Layout('layouts.app')]
     public function render()
     {
-        // ✅ Include relasi agar bisa panggil dataakun->nama_akun
-        $query = PemesananRsc::with(['dataakun', 'users']);
+        $query = PemesananRsc::query()
+            ->select([
+                'nama_camp',
+                'batch_camp',
+                'tanggal_mulai_camp',
+                'tanggal_akhir_camp',
+                'akun',
+                'pic',
+                'status',
+                DB::raw('MIN(id) as first_id'), // Ambil ID pertama untuk link edit
+                DB::raw('COUNT(*) as total_peserta'), // Hitung jumlah peserta
+                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'), // Optional: list nama
+                DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'), // Total harga per batch
+            ])
+            ->with(['dataakun', 'users'])
+            ->groupBy([
+                'nama_camp',
+                'batch_camp',
+                'tanggal_mulai_camp',
+                'tanggal_akhir_camp',
+                'akun',
+                'pic',
+                'status',
+            ]);
 
         // 🔍 Filter: Pencarian umum
         if (! empty($this->search)) {
             $query->where(function ($q) {
                 $search = '%'.$this->search.'%';
 
-                $q->where('deskripsi', 'like', $search)
-                    ->orWhere('id_transaksi', 'like', $search)
-                    ->orWhere('nama_camp', 'like', $search)
+                $q->where('nama_camp', 'like', $search)
                     ->orWhere('batch_camp', 'like', $search)
                     ->orWhereRaw("DATE_FORMAT(tanggal_mulai_camp, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereRaw("DATE_FORMAT(tanggal_mulai_camp, '%M %Y') LIKE ?", [$search]) // Bisa cari "Juni 2024"
-                    ->orWhereRaw("DATE_FORMAT(tanggal_mulai_camp, '%Y') LIKE ?", [$search])   // Bisa cari "2024"
                     ->orWhereRaw("DATE_FORMAT(tanggal_akhir_camp, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereRaw("DATE_FORMAT(tanggal_akhir_camp, '%M %Y') LIKE ?", [$search]) // Bisa cari "Juni 2024"
-                    ->orWhereRaw("DATE_FORMAT(tanggal_akhir_camp, '%Y') LIKE ?", [$search])   // Bisa cari "2024"
-                    ->orWhere('nama_pembeli', 'like', $search)
-                    ->orWhere('telp_pembeli', 'like', $search)
-                    ->orWhere('jumlah_pemesanan', 'like', $search)
-                    ->orWhereRaw("DATE_FORMAT(tanggal_pemesanan, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereRaw("DATE_FORMAT(tanggal_pemesanan, '%M %Y') LIKE ?", [$search]) // Bisa cari "Juni 2024"
-                    ->orWhereRaw("DATE_FORMAT(tanggal_pemesanan, '%Y') LIKE ?", [$search])   // Bisa cari "2024"
-                    ->orWhereRaw("DATE_FORMAT(tanggal_berakhir, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereRaw("DATE_FORMAT(tanggal_berakhir, '%M %Y') LIKE ?", [$search]) // Bisa cari "Juni 2024"
-                    ->orWhereRaw("DATE_FORMAT(tanggal_berakhir, '%Y') LIKE ?", [$search])   // Bisa cari "2024"
-                    ->orWhere('username', 'like', $search)
-                    ->orWhere('password', 'like', $search)
-                    ->orWhere('link_akses', 'like', $search)
-                    ->orWhere('harga_satuan', 'like', $search)
-                    ->orWhere('total', 'like', $search)
-                    ->orWhere('status', 'like', $search)
                     ->orWhereHas('users', fn ($q) => $q->where('name', 'like', $search))
                     ->orWhereHas('dataakun', fn ($q) => $q->where('nama_akun', 'like', $search));
             });
@@ -157,21 +159,16 @@ class PemesananrscList extends Component
 
         // 🔹 Filter berdasarkan tanggal
         if (! empty($this->startDate) && ! empty($this->endDate)) {
-            $query->whereBetween('tanggal_pemesanan', [$this->startDate, $this->endDate]);
+            $query->whereBetween('tanggal_mulai_camp', [$this->startDate, $this->endDate]);
         } elseif (! empty($this->startDate)) {
-            $query->whereDate('tanggal_pemesanan', '>=', $this->startDate);
+            $query->whereDate('tanggal_mulai_camp', '>=', $this->startDate);
         } elseif (! empty($this->endDate)) {
-            $query->whereDate('tanggal_berakhir', '<=', $this->endDate);
+            $query->whereDate('tanggal_akhir_camp', '<=', $this->endDate);
         }
 
         // 🔹 Filter status
         if (! empty($this->statusFilter)) {
             $query->where('status', $this->statusFilter);
-        }
-
-        // 🔹 Filter nama pembeli
-        if (! empty($this->pembeliFilter)) {
-            $query->where('nama_pembeli', $this->pembeliFilter);
         }
 
         // 🔹 Filter berdasarkan kategori
@@ -185,14 +182,13 @@ class PemesananrscList extends Component
         }
 
         // 🔹 Ambil hasil
-        $pemesananrsc = $query->latest()->paginate($this->perPage);
+        $pemesananrsc = $query->latest('tanggal_mulai_camp')->paginate($this->perPage);
 
         // 🔹 Data dropdown
         $users = User::select('id', 'name')->orderBy('name')->get();
         $dataakun = DataAkun::select('id', 'nama_akun')->orderBy('nama_akun')->get();
         $statusOptions = ['habis', 'pengganti', 'perpanjang', 'baru'];
         $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
-        $pembeliList = PemesananRsc::select('nama_pembeli')->distinct()->orderBy('nama_pembeli')->pluck('nama_pembeli');
         $kategoriList = PemesananRsc::select('nama_camp')->distinct()->whereNotNull('nama_camp')->orderBy('nama_camp')->pluck('nama_camp');
         $batchList = PemesananRsc::select('batch_camp')->distinct()->whereNotNull('batch_camp')->orderBy('batch_camp')->pluck('batch_camp');
 
@@ -202,7 +198,6 @@ class PemesananrscList extends Component
             'statusOptions',
             'jenisPengeluaranOptions',
             'dataakun',
-            'pembeliList',
             'kategoriList',
             'batchList'
         ));

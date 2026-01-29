@@ -18,14 +18,14 @@
                         <table id="productTable" class="table align-middle table-striped nowrap" style="width:100%">
                             <thead class="text-center table-light">
                                 <tr style="text-align: center;">
-                                    <th rowspan="2">ID Transaksi</th>
                                     <th rowspan="2">Kategori</th>
+                                    <th rowspan="2">Batch</th>
                                     <th rowspan="2">Akun</th>
-                                    <th rowspan="2">Nama Pembeli</th>
-                                    <th rowspan="2">Telp Pembeli</th>
+                                    <th rowspan="2">Jumlah Peserta</th>
                                     <th colspan="2">Tanggal Camp</th>
                                     <th rowspan="2">PIC</th>
                                     <th rowspan="2">Status</th>
+                                    <th rowspan="2">Total Harga</th>
                                     <th rowspan="2" width="120">Aksi</th>
                                 </tr>
                                 <tr style="text-align: center;">
@@ -37,46 +37,46 @@
                             <tbody>
                                 @forelse($pemesananrsc as $item)
                                 <tr style="text-align: center;">
-                                    <td>{{ $item->id_transaksi }}</td>
-                                    <td>{{ $item->nama_camp }} #{{ $item->batch_camp}}</td>
+                                    <td>{{ $item->nama_camp }}</td>
+                                    <td>#{{ $item->batch_camp }}</td>
                                     <td>{{ $item->dataakun?->nama_akun ?? '-' }}</td>
-                                    <td>{{ $item->nama_pembeli }}</td>
-                                    <td>{{ $item->telp_pembeli }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ $item->total_peserta }} Peserta</span>
+                                    </td>
                                     <td>{{ \Carbon\Carbon::parse($item->tanggal_mulai_camp)->format('d F Y') }}</td>
                                     <td>{{ \Carbon\Carbon::parse($item->tanggal_akhir_camp)->format('d F Y') }}</td>
                                     <td>{{ $item->users?->name ?? '-' }}</td>
                                     <td>
-                                        <span
-                                            class="badge bg-{{ $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')) }}">
+                                        <span class="badge bg-{{ $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')) }}">
                                             {{ ucfirst($item->status) }}
                                         </span>
                                     </td>
+                                    <td>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
                                     <td>
                                         <div>
-                                            <a href="{{ route('admin.pesananrsc.edit', $item->id) }}"
-                                                wire:navigate class="btn btn-sm btn-warning me-1"
-                                                title="Edit">
+                                            {{-- Edit menuju ke batch group --}}
+                                            <a href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
+                                                wire:navigate
+                                                class="btn btn-sm btn-warning me-1"
+                                                title="Edit Batch">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
 
+                                            {{-- Delete batch --}}
                                             <button type="button"
-                                                class="btn btn-danger btn-sm delete-pemesananrsc-btn"
-                                                data-id="{{ $item->id }}">
+                                                class="btn btn-danger btn-sm delete-batch-btn"
+                                                data-nama-camp="{{ $item->nama_camp }}"
+                                                data-batch-camp="{{ $item->batch_camp }}">
                                                 <i class="bi bi-trash"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-success btn-sm send-wa-btn"
-                                                data-id="{{ $item->id }}"
-                                                data-idtransaksi="{{ $item->id_transaksi }}"
-                                                data-nama="{{ $item->nama_pembeli }}"
-                                                data-wa="{{ $item->telp_pembeli }}"
-                                                data-akun="{{ $item->dataakun?->nama_akun ?? '-' }}"
-                                                data-pemesanan="{{ \Carbon\Carbon::parse($item->tanggal_pemesanan)->format('d F Y') }}"
-                                                data-berakhir="{{ \Carbon\Carbon::parse($item->tanggal_berakhir)->format('d F Y') }}"
-                                                data-username="{{ $item->username }}"
-                                                data-password="{{ $item->password }}"
-                                                data-linkakses="{{ $item->link_akses }}">
-                                                <i class="bi bi-whatsapp"></i>
+                                            {{-- Detail peserta --}}
+                                            <button type="button"
+                                                class="btn btn-info btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#detailPesertaModal{{ $loop->index }}"
+                                                title="Lihat Detail Peserta">
+                                                <i class="bi bi-eye"></i>
                                             </button>
                                         </div>
                                     </td>

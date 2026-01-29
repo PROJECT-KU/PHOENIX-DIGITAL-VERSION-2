@@ -1,6 +1,6 @@
 <div>
     <div class="mb-2 d-flex align-items-center justify-content-between">
-        <h3>Edit Data Pengeluaran</h3>
+        <h3>Edit Data Pesanan {{$nama_camp}} Batch {{$batch_camp}}</h3>
         @php
         $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')],
         ['name' => 'Data Pengeluaran', 'url' => route('admin.pesananrsc.index')],
@@ -15,7 +15,7 @@
                 <span>Kembali</span>
             </a>
             <div class="mt-4">
-                <livewire:pages.admin.pemesanan-r-s-c.pemesananrsc-form :pemesananrsc="$pemesananrsc" />
+                <livewire:pages.admin.pemesanan-r-s-c.pemesananrsc-form :pemesananBatch="$pemesananBatch" :pemesananrsc="$pemesananrsc" />
             </div>
         </div>
     </div>

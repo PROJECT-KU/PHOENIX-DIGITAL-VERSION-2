@@ -101,7 +101,8 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
     // Data Pemesanan RSC dan pemesanan toko online
     Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
     Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
-    Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
+        ->name('admin.pesananrsc.edit');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');

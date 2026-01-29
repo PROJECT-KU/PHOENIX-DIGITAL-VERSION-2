@@ -1,8 +1,21 @@
 <div>
     <form wire:submit="save" x-cloak>
-
         <!--================== Data kategori ==================-->
         <div class="card mb-4">
+            <div class="card mb-4">
+                @if($mode === 'create')
+                <div class="card-body border-top bg-light">
+                    <label class="fw-bold mb-2"><i class="bi bi-file-earmark-spreadsheet text-success"></i> Import Data Peserta (Excel)</label>
+                    <div class="input-group">
+                        <input type="file" wire:model="file_excel" class="form-control">
+                        <div wire:loading wire:target="file_excel" class="input-group-text">
+                            <span class="spinner-border spinner-border-sm" role="status"></span> Loading...
+                        </div>
+                    </div>
+                    <small class="text-muted">Format: Kolom A (Nama), Kolom B (No Telp). Row 1 dianggap header.</small>
+                </div>
+                @endif
+            </div>
             <div class="card shadow-sm border mb-4">
                 <div class="card-header bg-light fw-semibold">
                     <i class="bi bi-folder2-open me-2 text-primary"></i> Data Kategori
@@ -120,42 +133,72 @@
 
             <!--================== Data pembeli ==================-->
             <div class="card shadow-sm border mb-4">
-                <div class="card-header bg-light fw-semibold">
-                    <i class="bi bi-person-vcard me-2 text-success"></i> Data Pembeli
+                <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+                    <span class="d-flex align-items-start">
+                        <i class="bi bi-person-vcard me-2 text-success"></i>
+                        <span>Data Pembeli</span>
+                    </span>
+                    @if($mode === 'create')
+                    <button type="button" wire:click="addPeserta" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Tambah Peserta
+                    </button>
+                    @endif
                 </div>
 
-                <div class="card-body">
-                    <div class="row">
+                <div class="card-body pt-3">
+                    <div class="table-responsive" wire:loading.class="opacity-50" wire:target="removePeserta">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width=" 5%">No</th>
+                                    <th width="45%">Nama Pembeli <span class="text-danger">*</span></th>
+                                    <th width="40%">No. Telepon <span class="text-danger">*</span></th>
+                                    @if($mode === 'create')
+                                    <th width="10%">Aksi</th>
+                                    @endif
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($peserta as $tmpId => $p)
+                                <tr wire:key="row-{{$tmpId}}">
+                                    <td class="align-middle text-center">{{ $loop->iteration }}</td>
+                                    <td>
+                                        <input type="text"
+                                            wire:model.defer="peserta.{{ $tmpId }}.nama_pembeli"
+                                            class="form-control @error('peserta.'.$tmpId.'.nama_pembeli') is-invalid @enderror"
+                                            placeholder="Nama Peserta">
+                                        @error('peserta.'.$tmpId.'.nama_pembeli')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </td>
+                                    <td>
+                                        <input type="text"
+                                            wire:model.defer="peserta.{{ $tmpId }}.telp_pembeli"
+                                            class="form-control @error('peserta.'.$tmpId.'.telp_pembeli') is-invalid @enderror"
+                                            placeholder="0812..."
+                                            onkeypress="filterPhoneNumberInput(event)"> {{-- Gunakan fungsi JS Anda --}}
+                                    </td>
+                                    @if($mode === 'create')
+                                    <td class="align-middle text-center">
+                                        @if(count($peserta) > 1)
+                                        <button type="button" wire:click="removePeserta('{{ $tmpId }}')" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        @endif
+                                    </td>
+                                    @endif
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
 
-                        <!-- Nama Pembeli -->
-                        <div class="col-md-6 mb-3 mt-3">
-                            <label for="nama_pembeli" class="form-label">
-                                Nama Pembeli <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" wire:model="nama_pembeli"
-                                class="form-control @error('nama_pembeli') is-invalid @enderror" id="nama_pembeli"
-                                placeholder="contoh: Budi Santoso">
-                            @error('nama_pembeli')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                    {{-- Summary Peserta --}}
+                    <div class="p-3 bg-light text-end border-top">
+                        <strong>Total Peserta: {{ count($peserta) }} orang</strong>
+                    </div>
 
-                        <!-- Nomor Telepon -->
-                        <div class="col-md-6 mb-3 mt-3">
-                            <label for="telp_pembeli" class="form-label">
-                                Nomor Telepon <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                wire:model="telp_pembeli"
-                                class="form-control"
-                                id="telp_pembeli"
-                                placeholder="Masukan nomor telp"
-                                onkeypress="filterPhoneNumberInput(event)"
-                                oninput="formatPhoneNumber(this); validatePhoneNumber(this);">
-                            <div class="invalid-feedback" id="telp_error"></div>
-                        </div>
-
+                    <div class="row mt-3">
                         <!-- Jumlah Pesanan -->
                         <div class="col-md-4 mb-3">
                             <label for="jumlah_pemesanan" class="form-label">
@@ -192,7 +235,6 @@
                             <input type="date" id="tanggal_berakhir" wire:model="tanggal_berakhir"
                                 class="form-control bg-light" readonly>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -209,11 +251,9 @@
 
                         <!-- Total -->
                         <div class="col-md-12 mb-3 mt-3">
-                            <label for="total" class="form-label">Total</label>
-                            {{-- <input type="text" id="total" wire:model="total" x-nominal x-currency
-                            class="form-control" readonly disabled> --}}
-                            <div class="form-control bg-light">
-                                Rp {{ number_format($this->total(), 0, ',', '.') }}
+                            <label class="mb-2">Estimasi Total Pembayaran untuk <strong>{{ count($peserta) }} Peserta</label>
+                            <div class="form-control bg-success text-white fw-bold">
+                                Rp {{ number_format($this->grand_total, 0, ',', '.') }}
                             </div>
                         </div>
 

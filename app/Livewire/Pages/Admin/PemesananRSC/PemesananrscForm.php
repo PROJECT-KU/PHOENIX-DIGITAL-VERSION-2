@@ -6,18 +6,22 @@ use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\DataAkun;
 use App\Models\PemesananRsc;
 use App\Models\User;
+use Exception;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class PemesananrscForm extends Component
 {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     public ?PemesananRsc $pemesananrsc = null;
+
+    public $file_excel;
 
     public $id_transaksi;
 
@@ -61,45 +65,60 @@ class PemesananrscForm extends Component
 
     public $mode = 'create';
 
+    public $peserta = [];
+
+    public $pemesananBatch = [];
+
     public function mount()
     {
         $this->users = User::select('id', 'name')->orderBy('name')->get();
 
-        if ($this->pemesananrsc) {
-            $this->pemesananrsc = $this->pemesananrsc;
-            $this->id_transaksi = $this->pemesananrsc->id_transaksi;
-            $this->nama_camp = $this->pemesananrsc->nama_camp;
-            $this->batch_camp = $this->pemesananrsc->batch_camp;
-            $this->tanggal_mulai_camp = $this->pemesananrsc->tanggal_mulai_camp
-                ? Carbon::parse($this->pemesananrsc->tanggal_mulai_camp)->format('Y-m-d')
-                : null;
+        if ($this->pemesananrsc && ! empty($this->pemesananBatch)) {
+            $first = $this->pemesananrsc;
 
-            $this->tanggal_akhir_camp = $this->pemesananrsc->tanggal_akhir_camp
-                ? Carbon::parse($this->pemesananrsc->tanggal_akhir_camp)->format('Y-m-d')
+            $this->nama_camp = $first->nama_camp;
+            $this->batch_camp = $first->batch_camp;
+            $this->tanggal_mulai_camp = $first->tanggal_mulai_camp
+                ? Carbon::parse($first->tanggal_mulai_camp)->format('Y-m-d')
                 : null;
-            $this->nama_pembeli = $this->pemesananrsc->getAttribute('nama_pembeli');
-            $this->telp_pembeli = $this->pemesananrsc->telp_pembeli;
-            $this->jumlah_pemesanan = $this->pemesananrsc->jumlah_pemesanan;
-            $this->tanggal_pemesanan = $this->pemesananrsc->tanggal_pemesanan
-                ? Carbon::parse($this->pemesananrsc->tanggal_pemesanan)->format('Y-m-d')
+            $this->tanggal_akhir_camp = $first->tanggal_akhir_camp
+                ? Carbon::parse($first->tanggal_akhir_camp)->format('Y-m-d')
                 : null;
+            $this->jumlah_pemesanan = count($this->pemesananBatch);
+            $this->tanggal_pemesanan = $first->tanggal_pemesanan
+                ? Carbon::parse($first->tanggal_pemesanan)->format('Y-m-d')
+                : null;
+            $this->tanggal_berakhir = $first->tanggal_berakhir
+                ? Carbon::parse($first->tanggal_berakhir)->format('Y-m-d')
+                : null;
+            $this->harga_satuan = $this->formatRupiah($first->harga_satuan);
+            $this->akun = $first->akun;
+            $this->username = $first->username;
+            $this->password = $first->password;
+            $this->link_akses = $first->link_akses;
+            $this->pic = $first->pic;
+            $this->deskripsi = $first->deskripsi;
+            $this->status = $first->status;
 
-            $this->tanggal_berakhir = $this->pemesananrsc->tanggal_berakhir
-                ? Carbon::parse($this->pemesananrsc->tanggal_berakhir)->format('Y-m-d')
-                : null;
-            $this->harga_satuan = $this->formatRupiah($this->pemesananrsc->harga_satuan);
-            $this->total = $this->formatRupiah($this->pemesananrsc->total);
-            $this->akun = $this->pemesananrsc->akun;
-            $this->username = $this->pemesananrsc->username;
-            $this->password = $this->pemesananrsc->password;
-            $this->link_akses = $this->pemesananrsc->link_akses;
-            $this->pic = $this->pemesananrsc->pic;
-            $this->deskripsi = $this->pemesananrsc->deskripsi;
-            $this->status = $this->pemesananrsc->status;
+            // Load semua peserta ke array
+            $this->peserta = [];
+            foreach ($this->pemesananBatch as $p) {
+                $this->peserta[$p->id] = [
+                    'tmp_id' => $p->id, // Gunakan ID asli sebagai tmp_id
+                    'nama_pembeli' => $p->nama_pembeli,
+                    'telp_pembeli' => $p->telp_pembeli,
+                ];
+            }
             $this->mode = 'edit';
         } else {
             $this->mode = 'create';
             $this->tanggal_pemesanan = now()->format('Y-m-d');
+            $tmpId = (string) Str::uuid();
+            $this->peserta[$tmpId] = [
+                'tmp_id' => $tmpId,
+                'nama_pembeli' => '',
+                'telp_pembeli' => '',
+            ];
         }
         $this->hitungTanggalBerakhir();
     }
@@ -144,7 +163,6 @@ class PemesananrscForm extends Component
             return 0;
         }
 
-        // hilangkan format Rp / titik sebelum disimpan sebagai angka
         return (int) preg_replace('/[^0-9]/', '', $value);
     }
 
@@ -155,13 +173,13 @@ class PemesananrscForm extends Component
             'batch_camp' => 'required|numeric',
             'tanggal_mulai_camp' => 'required|date',
             'tanggal_akhir_camp' => 'required|date|after_or_equal:tanggal_mulai_camp',
-            'nama_pembeli' => 'required',
-            'telp_pembeli' => 'required',
             'tanggal_pemesanan' => 'required|date',
             'jumlah_pemesanan' => 'required|numeric|min:0',
             'akun' => 'required',
             'pic' => 'required',
             'status' => 'required|in:habis,pengganti,perpanjang,baru',
+            'peserta.*.nama_pembeli' => 'required',
+            'peserta.*.telp_pembeli' => 'required',
         ], $this->messages());
 
         $this->hitungTanggalBerakhir();
@@ -209,10 +227,37 @@ class PemesananrscForm extends Component
         ];
     }
 
+    public function addPeserta()
+    {
+        $tmpId = (string) Str::uuid();
+        $this->peserta[$tmpId] = ['tmp_id' => $tmpId, 'nama_pembeli' => '', 'telp_pembeli' => ''];
+    }
+
+    public function removePeserta($tmpId)
+    {
+        unset($this->peserta[$tmpId]);
+    }
+
+    #[Computed()]
+    public function total_per_peserta()
+    {
+        $jumlah = (int) $this->jumlah_pemesanan;
+        $harga = $this->toNumber($this->harga_satuan);
+
+        return $jumlah * $harga;
+    }
+
+    #[Computed()]
+    public function grand_total()
+    {
+        return $this->total_per_peserta() * count($this->peserta);
+    }
+
     private function createpemesananrsc(SyncCashFlowAction $action)
     {
+        DB::beginTransaction();
         try {
-            DB::transaction(function () use ($action) {
+            foreach ($this->peserta as $p) {
 
                 $pemesanan = PemesananRsc::create([
                     'id_transaksi' => Str::upper(Str::random(5)),
@@ -220,13 +265,11 @@ class PemesananrscForm extends Component
                     'batch_camp' => $this->batch_camp,
                     'tanggal_mulai_camp' => $this->tanggal_mulai_camp,
                     'tanggal_akhir_camp' => $this->tanggal_akhir_camp,
-                    'nama_pembeli' => $this->nama_pembeli,
-                    'telp_pembeli' => $this->telp_pembeli,
                     'jumlah_pemesanan' => $this->jumlah_pemesanan,
                     'tanggal_pemesanan' => $this->tanggal_pemesanan,
                     'tanggal_berakhir' => $this->tanggal_berakhir,
                     'harga_satuan' => $this->toNumber($this->harga_satuan),
-                    'total' => $this->total(),
+                    'total' => $this->total_per_peserta(),
                     'akun' => $this->akun,
                     'username' => $this->username,
                     'password' => $this->password,
@@ -234,6 +277,10 @@ class PemesananrscForm extends Component
                     'pic' => $this->pic,
                     'deskripsi' => $this->deskripsi,
                     'status' => $this->status,
+
+                    // data peserta
+                    'nama_pembeli' => $p['nama_pembeli'],
+                    'telp_pembeli' => $p['telp_pembeli'],
                 ]);
 
                 $action->execute($pemesanan, [
@@ -243,7 +290,8 @@ class PemesananrscForm extends Component
                     'category' => 'PemesananRSC',
                     'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
                 ]);
-            });
+            }
+            DB::commit();
 
             session()->flash('success', 'Data Pemesanan berhasil ditambahkan!');
 
@@ -255,21 +303,35 @@ class PemesananrscForm extends Component
 
     private function updatepemesananrsc(SyncCashFlowAction $action)
     {
-        try {
-            DB::transaction(function () use ($action) {
+        DB::beginTransaction();
 
-                $this->pemesananrsc->update([
+        try {
+            $existingIds = collect($this->peserta)
+                ->filter(fn ($p) => ! Str::isUuid($p['tmp_id']) || PemesananRsc::where('id', $p['tmp_id'])->exists())
+                ->pluck('tmp_id')
+                ->toArray();
+
+            PemesananRsc::where('nama_camp', $this->nama_camp)
+                ->where('batch_camp', $this->batch_camp)
+                ->whereNotIn('id', $existingIds)
+                ->get()
+                ->each(function ($item) use ($action) {
+                    $action->delete($item);
+                    $item->delete();
+                });
+
+            // update atau create peserta
+            foreach ($this->peserta as $tmpId => $p) {
+                $data = [
                     'nama_camp' => $this->nama_camp,
                     'batch_camp' => $this->batch_camp,
                     'tanggal_mulai_camp' => $this->tanggal_mulai_camp,
                     'tanggal_akhir_camp' => $this->tanggal_akhir_camp,
-                    'nama_pembeli' => $this->nama_pembeli,
-                    'telp_pembeli' => $this->telp_pembeli,
-                    'jumlah_pemesanan' => $this->jumlah_pemesanan,
+                    'jumlah_pemesanan' => count($this->peserta),
                     'tanggal_pemesanan' => $this->tanggal_pemesanan,
                     'tanggal_berakhir' => $this->tanggal_berakhir,
                     'harga_satuan' => $this->toNumber($this->harga_satuan),
-                    'total' => $this->total(),
+                    'total' => $this->total_per_peserta(),
                     'akun' => $this->akun,
                     'username' => $this->username,
                     'password' => $this->password,
@@ -277,22 +339,45 @@ class PemesananrscForm extends Component
                     'pic' => $this->pic,
                     'deskripsi' => $this->deskripsi,
                     'status' => $this->status,
-                ]);
+                    'nama_pembeli' => $p['nama_pembeli'],
+                    'telp_pembeli' => $p['telp_pembeli'],
+                ];
 
-                $action->execute($this->pemesananrsc, [
+                if (! Str::isUuid($tmpId) || PemesananRsc::where('id', $tmpId)->exists()) {
+                    $pemesanan = PemesananRsc::find($tmpId);
+                    if ($pemesanan) {
+                        $pemesanan->update($data);
+                    }
 
-                    'amount' => $this->pemesanan->total,
-                    'type' => 'income',
-                    'date' => $this->pemesanan->tanggal_pemesanan,
-                    'category' => 'PemesananRSC',
-                    'description' => $this->pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
-                ]);
-            });
-            session()->flash('success', 'Perubahan Data Pemesanan berhasil disimpan!');
+                    $action->execute($pemesanan, [
+                        'amount' => $pemesanan->total,
+                        'type' => 'income',
+                        'date' => $pemesanan->tanggal_pemesanan,
+                        'category' => 'PemesananRSC',
+                        'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
+
+                    ]);
+                } else {
+                    $data['id_transaksi'] = Str::upper(Str::random(5));
+                    $pemesanan = PemesananRsc::create($data);
+
+                    $action->execute($pemesanan, [
+                        'amount' => $pemesanan->total,
+                        'type' => 'income',
+                        'date' => $pemesanan->tanggal_pemesanan,
+                        'category' => 'PemesananRSC',
+                        'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
+                    ]);
+                }
+            }
+
+            DB::commit();
+            session()->flash('success', 'Berhasil Update data!');
 
             return redirect()->route('admin.pesananrsc.index');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate Data Pemesanan: '.$e->getMessage());
+        } catch (Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal update data: '.$e->getMessage());
         }
     }
 
