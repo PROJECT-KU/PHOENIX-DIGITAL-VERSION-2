@@ -28,10 +28,10 @@
             </section>
 
             <section id="best-sellers" class="best-sellers section">
-                <div class="container" data-aos="fade-up" data-aos-delay="100">
+                <div class="container" data-aos="fade-up" data-aos-delay="100" wire:ignore.self>
                     <div class="row g-5">
-                        @foreach ($bundlings as $item)
-                        <div class="col-xl-3 col-lg-3 col-md-6">
+                        @forelse ($bundlings as $item)
+                        <div class="col-xl-3 col-lg-3 col-md-6" wire:key="bundling-{{ $item->id }}">
                             <div class="product-item shadow-sm rounded-4">
                                 <div class="product-image-baru">
                                     <div class="ratio ratio-21x9">
@@ -63,7 +63,8 @@
                                     <button
                                         type="button"
                                         class="cart-btn"
-                                        wire:click="addBundlingToCart('{{ $item->id }}')"
+                                        wire:click="addToCart('{{ $item->id }}')"
+                                        wire:loading.attr="disabled"
                                     >
                                         Add to Cart
                                     </button>
@@ -75,7 +76,7 @@
                     </div>
                 </div>
 
-                <div class="mt-5">
+                <div class="mt-5" wire:ignore>
                     {{ $bundlings->links('vendor.pagination') }}
                 </div>
             </section><!-- /Best Sellers Section -->

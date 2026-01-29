@@ -12,7 +12,7 @@ class ProductBundlings extends Component
 {
     use WithPagination;
     public $perPage = 4;
-
+    protected $paginationTheme = 'bootstrap';
     public $search = '';
 
     public function mount()
@@ -23,22 +23,22 @@ class ProductBundlings extends Component
     #[On('search-updated')]
     public function updateSearch($search)
     {
-        $this->search = $search;
+        // $this->search = $search;
 
-        if (!empty(trim($search))) {
-            $this->redirect('/shop?search=' . urlencode($search));
-        } else {
-            $this->redirect('/shop', navigate: true);
-        }
+        // if (!empty(trim($search))) {
+        //     $this->redirect('/shop?search=' . urlencode($search));
+        // } else {
+        //     $this->redirect('/shop', navigate: true);
+        // }
     }
 
     public function clearSearch()
     {
-        $this->search = '';
-        $this->redirect('/shop', navigate: true);
+        // $this->search = '';
+        // $this->redirect('/shop', navigate: true);
     }
 
-    public function addBundlingToCart($bundlingId)
+    public function addToCart($bundlingId)
     {
         // dd($bundlingId);
         $bundling = ModelsProductBundlings::findOrFail($bundlingId);
@@ -68,7 +68,7 @@ class ProductBundlings extends Component
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
         $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
-        $this->dispatch('redirect-home');
+        // $this->dispatch('redirect-home');
     }
 
     private function getCartCount(): int
@@ -80,8 +80,24 @@ class ProductBundlings extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
+        $bundlings = ModelsProductBundlings::with([
+            'product1',
+            'product2',
+            'product3',
+            'product4',
+            'product5',
+        ])
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('nama_paket', 'like', "%{$this->search}%")
+                        ->orWhere('deskripsi', 'like', "%{$this->search}%");
+                });
+            })
+            ->latest()
+            ->paginate($this->perPage);
+
         return view('livewire.pages.public.bundling.product-bundlings', [
-            'bundlings' => ModelsProductBundlings::latest()->paginate(12),
+            'bundlings' => $bundlings,
         ]);
     }
 }

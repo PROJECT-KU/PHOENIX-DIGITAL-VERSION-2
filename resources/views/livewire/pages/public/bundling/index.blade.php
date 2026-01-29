@@ -1,12 +1,12 @@
 <!-- Best Sellers Section -->
 <section id="best-sellers" class="best-sellers section">
     <!-- Section Title -->
-    <div class="container section-title" data-aos="fade-up">
+    <div class="container section-title" data-aos="fade-up" wire:ignore.self>
         <h2>Paket Bundling</h2>
     </div>
     <!-- End Section Title -->
 
-    <div class="container" data-aos="fade-up" data-aos-delay="100">
+    <div class="container" data-aos="fade-up" data-aos-delay="100" wire:ignore.self>
         <div class="row g-5">
             @foreach ($bundlings as $item)
             <div class="col-lg-4 col-md-6 mb-5" wire:key="bundling-{{ $item->id }}">
@@ -38,18 +38,11 @@
                             <span class="current-price">{{ $item->harga_bundling }}</span>
                         </div>
 
-                        {{-- <button
-                            type="button"
-                            class="cart-btn"
-                            wire:click="addBundlingToCart('{{ $item->id }}')"
-                        >
-                            Add to Cart
-                        </button> --}}
-
                         <button
                             type="button"
                             class="cart-btn"
-                            wire:click="addBundlingToCart(@js($item->id))"
+                            wire:click="addToCart('{{ $item->id }}')"
+                            wire:loading.attr="disabled"
                         >
                             Add to Cart
                         </button>

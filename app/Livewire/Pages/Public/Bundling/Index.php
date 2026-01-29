@@ -11,32 +11,8 @@ use Livewire\Attributes\On;
 class Index extends Component
 {
     use WithPagination;
-    public $search = '';
 
-    public function mount()
-    {
-        $this->search = request('search', '');
-    }
-
-    #[On('search-updated')]
-    public function updateSearch($search)
-    {
-        $this->search = $search;
-
-        if (!empty(trim($search))) {
-            $this->redirect('/shop?search=' . urlencode($search));
-        } else {
-            $this->redirect('/shop', navigate: true);
-        }
-    }
-
-    public function clearSearch()
-    {
-        $this->search = '';
-        $this->redirect('/shop', navigate: true);
-    }
-
-    public function addBundlingToCart($bundlingId)
+    public function addToCart($bundlingId)
     {
         $bundling = ProductBundlings::findOrFail($bundlingId);
 
@@ -66,11 +42,16 @@ class Index extends Component
                 'subtotal' => $price
             ];
         }
+        // session()->put('cart', $cart);
+
+        // $this->dispatch('cart-updated', count: $this->getCartCount());
+        // $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
+        // $this->dispatch('redirect-home');
+
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
-        $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
-        $this->dispatch('redirect-home');
+        $this->dispatch('success-add-to-cart');
     }
 
     private function getCartCount(): int
