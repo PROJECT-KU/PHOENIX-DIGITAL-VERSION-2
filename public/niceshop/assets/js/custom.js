@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const salePrice = document.getElementById("salePrice");
     const regularPrice = document.getElementById("regularPrice");
 
-    // sembunyikan harga coret dulu
+    if (!salePrice || !regularPrice) return;
+
     regularPrice.style.display = "none";
 
     document.querySelectorAll('input[name="price_option"]').forEach((radio) => {
@@ -16,18 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const multiplier = parseInt(this.dataset.multiplier) || 1;
             const regular = parseInt(this.dataset.regular) || 0;
 
-            // Harga utama
             salePrice.textContent = formatRupiah(harga);
 
-            // Hitung harga coret
             let hargaCoret = harga * multiplier;
 
-            // Jika paket perbulan, harga coret = harga awal (regular)
             if (this.value === "perbulan" && regular > 0) {
                 hargaCoret = regular;
             }
 
-            // Tampilkan harga coret
             regularPrice.textContent = formatRupiah(hargaCoret);
             regularPrice.style.display = "inline-block";
 
@@ -50,6 +47,20 @@ window.addEventListener("cart-success", (event) => {
     });
 });
 
+window.addEventListener("cart-error", (event) => {
+    Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: event.detail.message,
+        showConfirmButton: true,
+    });
+});
+
+window.addEventListener("redirect-home", () => {
+    setTimeout(() => {
+        window.location.href = "/cart";
+    }, 1600);
+});
 window.addEventListener("success", (event) => {
     Swal.fire({
         icon: "success",

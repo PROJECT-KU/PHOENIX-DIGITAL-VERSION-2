@@ -2,24 +2,26 @@
 
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
+// Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
-// Data Banners
+// Data Customer
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
 use App\Livewire\Pages\Admin\Customer\CustomerList;
 use App\Livewire\Pages\Admin\Dashboard;
-// Data Customer
+// Data Data Akun
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
-// Data Akun
+// Data Gajikaryawan
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
+// Data Loan
 use App\Livewire\Pages\Admin\Karyawan\KaryawanCreate;
 use App\Livewire\Pages\Admin\Karyawan\KaryawanEdit;
 use App\Livewire\Pages\Admin\Karyawan\KaryawanList;
@@ -27,7 +29,7 @@ use App\Livewire\Pages\Admin\Karyawan\KaryawanList;
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
-// Data Product
+// Data Lowongan Pekerjaan
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
@@ -45,33 +47,39 @@ use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
-use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 // Data Spending
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
+// Data Spending
 use App\Livewire\Pages\Admin\Permission\PermissionCreate;
 use App\Livewire\Pages\Admin\Permission\PermissionEdit;
 use App\Livewire\Pages\Admin\Permission\PermissionList;
-// Data Loan
+// Data Product Admin
 use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
+// Data Loan
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
+// Data Product Bundling
 use App\Livewire\Pages\Admin\Profile\ProfileSetting;
 use App\Livewire\Pages\Admin\Promo\PromoCreate;
 use App\Livewire\Pages\Admin\Promo\PromoEdit;
-// Data Pengembalian
 use App\Livewire\Pages\Admin\Promo\PromoList;
+// Data Pengembalian
 use App\Livewire\Pages\Admin\RoleUser\RoleList;
 use App\Livewire\Pages\Admin\RoleUser\RolePermissionEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
-// Data Pemesanan RSC
+// Data Spending
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingList;
+// Data Pemesanan RSC
 use App\Livewire\Pages\Public\About\AboutPage;
+use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
+use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
@@ -91,6 +99,10 @@ Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+Route::view('/cekout', 'pages.cekout')->name('cekout');
+Route::view('/about', 'pages.about')->name('about');
+Route::get('/bundling', BundlingPageIndex::class)->name('bundling.index');
+Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product-bundlings');
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
