@@ -3,7 +3,8 @@
 use App\Livewire\Actions\Logout;
 use Livewire\Volt\Component;
 
-new class extends Component {
+new class extends Component
+{
     public function logout(Logout $logout): void
     {
         $logout();
@@ -37,6 +38,7 @@ new class extends Component {
                     </a>
                 </li>
 
+                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
@@ -60,12 +62,14 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
+                @endif
 
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') ? 'active open' : '' }}">
+                @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.Banners.*') ? 'text-primary' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>
                     </a>
@@ -73,6 +77,9 @@ new class extends Component {
                         <li class="submenu-item {{ request()->routeIs('admin.Banners.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.Banners.index') }}" class="submenu-link">Data
                                 Banner</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Masuk</a>
                         </li>
                     </ul>
                 </li>
@@ -116,7 +123,9 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
+                @endif
 
+                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
@@ -132,24 +141,31 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
+                @endif
 
                 <!-- section menu data dan laporan -->
+                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
 
                     <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.cashflow.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.cashflow.index') }}" class="submenu-link">
+                                Cashflow
+                            </a>
+                        </li>
                         <li class="submenu-item {{ request()->routeIs('admin.spending.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.spending.index') }}" class="submenu-link">
                                 Pengeluaran
@@ -168,6 +184,7 @@ new class extends Component {
                         </li>
                     </ul>
                 </li>
+                @endif
 
                 <li class="sidebar-item  has-sub {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
                     <a href="#"
@@ -177,47 +194,64 @@ new class extends Component {
                     </a>
 
                     <ul class="submenu {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
+                        @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
                         <li class="submenu-item {{ request()->routeIs('admin.account.profile') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.profile') }}"
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
+                        @endif
                         @if (auth()->user()->hasRole('admin'))
-                            <li class="submenu-item  {{ request()->routeIs('admin.account.role') ? 'active' : '' }}">
-                                <a wire:navigate href="{{ route('admin.account.role') }}"
-                                    class="submenu-link">Pengaturan Role</a>
-                            </li>
+                        <li class="submenu-item  {{ request()->routeIs('admin.account.role') || request()->routeIs('admin.account.role.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.role') }}"
+                                class="submenu-link">Pengaturan Role</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.account.permission') || request()->routeIs('admin.account.permission.*')? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.permission') }}"
+                                class="submenu-link">Permission Akun</a>
+                        </li>
                         @endif
                     </ul>
                 </li>
 
                 <!-- section karir & karyawan-->
+                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'active' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-briefcase {{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.pelamar.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.lowongan.*') || request()->routeIs('admin.karyawan.*') || request()->routeIs('admin.pelamar.*') || request()->routeIs('admin.message.*') ? 'text-primary' : '' }}">
                             karir
                         </span>
                     </a>
 
                     <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.karyawan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.karyawan.index') }}" class="submenu-link">
+                                Karyawan
+                            </a>
+                        </li>
                         <li class="submenu-item {{ request()->routeIs('admin.lowongan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.lowongan.index') }}" class="submenu-link">
-                                Role Pekerjaan
+                                Lowongan Kerja
                             </a>
                         </li>
                         <li class="submenu-item {{ request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.pelamar.index') }}"
                                 class="submenu-link">Pelamar</a>
                         </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.message.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.message.index') }}"
+                                class="submenu-link">Pesan Masuk</a>
+                        </li>
                     </ul>
                 </li>
+                @endif
 
                 <li class="sidebar-item">
                     <button wire:click="logout" class="sidebar-link btn btn-link w-100 text-start">

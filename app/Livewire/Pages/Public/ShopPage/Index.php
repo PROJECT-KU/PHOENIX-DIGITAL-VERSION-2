@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Public\ShopPage;
 
 use App\Models\Product;
+use App\Services\PromoService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -11,9 +12,17 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use WithPagination;
-    public $perPage = 4;
+
+    public $perPage = 8;
 
     public $search = '';
+
+    protected PromoService $promoService;
+
+    public function boot(PromoService $promoService)
+    {
+        $this->promoService = $promoService;
+    }
 
     public function mount()
     {
@@ -25,8 +34,8 @@ class Index extends Component
     {
         $this->search = $search;
 
-        if (!empty(trim($search))) {
-            $this->redirect('/shop?search=' . urlencode($search));
+        if (! empty(trim($search))) {
+            $this->redirect('/shop?search='.urlencode($search));
         } else {
             $this->redirect('/shop', navigate: true);
         }
@@ -45,8 +54,9 @@ class Index extends Component
         // Tentukan harga berdasarkan durasi
         $price = $this->getPrice($product, $durationType, $durationValue);
 
-        if (!$price) {
+        if (! $price) {
             session()->flash('error', 'Paket yang dipilih tidak tersedia');
+
             return;
         }
 
@@ -69,13 +79,14 @@ class Index extends Component
                 'duration_value' => $durationValue,
                 'price' => $price,
                 'quantity' => 1,
-                'subtotal' => $price
+                'subtotal' => $price,
             ];
         }
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
-        $this->dispatch('success-add-to-cart');
+        // $this->dispatch('success-add-to-cart');
+        $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
     }
 
     private function getPrice($product, $durationType, $durationValue)
@@ -97,7 +108,18 @@ class Index extends Component
     private function getCartCount()
     {
         $cart = session()->get('cart', []);
+
         return array_sum(array_column($cart, 'quantity'));
+    }
+
+    public function getProductPromos($productId)
+    {
+        return $this->promoService->getProductPromos($productId, null);
+    }
+
+    public function getBestDiscount($productId)
+    {
+        return $this->promoService->getBestProductDiscount($productId, null);
     }
 
     #[Layout('layouts.guest')]
@@ -113,7 +135,7 @@ class Index extends Component
             ->paginate($this->perPage);
 
         return view('livewire.pages.public.shop-page.index', [
-            'products' => $products
+            'products' => $products,
         ]);
     }
 }

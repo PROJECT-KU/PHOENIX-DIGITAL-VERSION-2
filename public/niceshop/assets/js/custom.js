@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
             regularPrice.textContent = formatRupiah(hargaCoret);
             regularPrice.style.display = "inline-block";
 
+            // highlight terpilih
             document.querySelectorAll(".price-option").forEach((el) => {
                 el.classList.remove("active-option");
             });
@@ -59,4 +60,32 @@ window.addEventListener("redirect-home", () => {
     setTimeout(() => {
         window.location.href = "/cart";
     }, 1600);
+});
+window.addEventListener("success", (event) => {
+    Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: event.detail.message,
+        timer: 1500,
+        showConfirmButton: false,
+    });
+});
+
+window.addEventListener("error", (event) => {
+    Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: event.detail.message,
+        timer: 1500,
+        showConfirmButton: false,
+    });
+});
+
+window.addEventListener("cart-error", (event) => {
+    Swal.fire({
+        icon: "error",
+        title: "Gagal!",
+        text: event.detail.message,
+        showConfirmButton: true,
+    });
 });

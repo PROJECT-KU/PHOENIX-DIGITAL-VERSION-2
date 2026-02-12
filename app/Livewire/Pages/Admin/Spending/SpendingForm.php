@@ -2,18 +2,26 @@
 
 namespace App\Livewire\Pages\Admin\Spending;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Spending;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class SpendingForm extends Component
 {
     public $spendingId = null;
+
     public $tanggal_transaksi;
+
     public $nominal;
+
     public $deskripsi;
+
     public $status = 'pending';
+
     public $jenis_pengeluaran = 'lainnya';
+
     public $pic_pembeli_id;
 
     public $isEdit = false;
@@ -75,36 +83,48 @@ class SpendingForm extends Component
         $this->pic_pembeli_id = $spending->pic_pembeli_id;
     }
 
-    public function save()
+    public function save(SyncCashFlowAction $syncCashFlow)
     {
         $this->validate();
 
         try {
-            if ($this->isEdit) {
-                $spending = Spending::findOrFail($this->spendingId);
-                $spending->update([
-                    'tanggal_transaksi' => $this->tanggal_transaksi,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'jenis_pengeluaran' => $this->jenis_pengeluaran,
-                    'status' => $this->status,
-                    'penginput_id' => auth()->id(),
-                    'pic_pembeli_id' => $this->pic_pembeli_id,
-                ]);
-                session()->flash('success', 'berhasil edit data pengeluaran');
-            } else {
-                Spending::create([
-                    'tanggal_transaksi' => $this->tanggal_transaksi,
-                    'nominal' => $this->nominal,
-                    'deskripsi' => $this->deskripsi,
-                    'status' => $this->status,
-                    'jenis_pengeluaran' => $this->jenis_pengeluaran,
-                    'penginput_id' => auth()->id(),
-                    'pic_pembeli_id' => $this->pic_pembeli_id,
-                ]);
+            DB::transaction(function () use ($syncCashFlow) {
 
-                session()->flash('success', 'berhasil tambah data pengeluaran');
-            }
+                if ($this->isEdit) {
+                    $spending = Spending::findOrFail($this->spendingId);
+                    $spending->update([
+                        'tanggal_transaksi' => $this->tanggal_transaksi,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'jenis_pengeluaran' => $this->jenis_pengeluaran,
+                        'status' => $this->status,
+                        'penginput_id' => auth()->id(),
+                        'pic_pembeli_id' => $this->pic_pembeli_id,
+                    ]);
+                    session()->flash('success', 'berhasil edit data pengeluaran');
+                } else {
+                    $spending = Spending::create([
+                        'tanggal_transaksi' => $this->tanggal_transaksi,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                        'jenis_pengeluaran' => $this->jenis_pengeluaran,
+                        'penginput_id' => auth()->id(),
+                        'pic_pembeli_id' => $this->pic_pembeli_id,
+                    ]);
+
+                    session()->flash('success', 'berhasil tambah data pengeluaran');
+                }
+
+                $syncCashFlow->execute($spending, [
+                    'amount' => $spending->nominal,
+                    'type' => 'expense', // Pinjaman = Uang Keluar (Expense)
+                    'date' => $spending->tanggal_transaksi,
+                    'category' => 'Pengeluaran',
+                    'description' => $spending->deskripsi ?? 'pengeluaran perusahaan',
+                ]);
+            });
+
             return redirect()->route('admin.spending.index');
         } catch (\Exception $e) {
             session()->flash('error', 'Terjadi kesalahan saat menyimpan data.');

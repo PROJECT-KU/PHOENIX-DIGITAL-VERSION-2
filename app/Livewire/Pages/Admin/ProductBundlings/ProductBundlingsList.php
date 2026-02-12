@@ -3,9 +3,9 @@
 namespace App\Livewire\Pages\Admin\ProductBundlings;
 
 use App\Models\ProductBundlings;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 
 class ProductBundlingsList extends Component
 {
@@ -23,14 +23,15 @@ class ProductBundlingsList extends Component
     {
         $ProductBundlings = ProductBundlings::find($id);
 
-        if (!$ProductBundlings) {
+        if (! $ProductBundlings) {
             $this->dispatch('delete-error', message: 'Data Bundling tidak ditemukan!');
+
             return;
         }
 
         // Hapus file fisik jika ada
         if ($ProductBundlings->gambar) {
-            $filePath = storage_path('app/public/img/ProductBundlings/' . $ProductBundlings->gambar);
+            $filePath = storage_path('app/public/img/ProductBundlings/'.$ProductBundlings->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -41,7 +42,6 @@ class ProductBundlingsList extends Component
 
         $this->dispatch('ProductBundlings-deleted', id: $id);
     }
-
 
     #[Layout('layouts.app')]
     public function render()

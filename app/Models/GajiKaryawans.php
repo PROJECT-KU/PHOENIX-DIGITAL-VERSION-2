@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class GajiKaryawans extends Model
 {
@@ -30,12 +30,18 @@ class GajiKaryawans extends Model
         'pph21',
         'total',
         'deskripsi',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
     ];
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     /**
      * Relasi ke tabel users.
@@ -55,12 +61,12 @@ class GajiKaryawans extends Model
 
     public function getTotalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
+        return 'Rp '.number_format($this->total ?? 0, 0, ',', '.');
     }
 
     public function getGajiPokokFormattedAttribute()
     {
-        return 'Rp ' . number_format($this->gaji_pokok, 0, ',', '.');
+        return 'Rp '.number_format($this->gaji_pokok, 0, ',', '.');
     }
 
     public function getTanggalTransaksiFormattedAttribute(): string

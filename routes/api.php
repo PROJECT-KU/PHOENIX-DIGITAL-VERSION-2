@@ -1,11 +1,12 @@
 <?php
 
-use App\Http\Controllers\JobApplicationController;
-use App\Http\Controllers\JobController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\JobApplicationController;
+use App\Http\Controllers\Api\JobController;
+use App\Http\Controllers\Api\MessageController;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/online-users', function () {
     $authUser = Auth::user();
@@ -27,7 +28,8 @@ Route::middleware('auth:sanctum')->get('/online-users', function () {
 
 // Route::middleware(['verify.origin'])->group(function () {
 Route::middleware([])->group(function () {
-    Route::get('/jobs', [JobController::class, 'index']); // untuk dropdown posisi
-
+    Route::get('/jobs', [JobController::class, 'index']);
+    Route::get('/jobs/{slug}', [JobController::class, 'show']);
     Route::post('/applications', [JobApplicationController::class, 'store']);
+    Route::post('/message', [MessageController::class, 'store']);
 });

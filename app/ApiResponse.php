@@ -41,15 +41,15 @@ trait ApiResponse
         int $status
     ): JsonResponse {
         return response()->json([
-            'success'    => $success,
-            'message'    => $message,
-            'data'       => $data,
-            'errors'     => $errors,
-            'meta'       => $meta,
-            'links'      => $links,
+            'success' => $success,
+            'message' => $message,
+            'data' => $data,
+            'errors' => $errors,
+            'meta' => $meta,
+            'links' => $links,
             'request_id' => request()->header('X-Request-ID')
                 ?? (string) request()->attributes->get('request_id', ''),
-            'timestamp'  => now()->toISOString(),
+            'timestamp' => now()->toISOString(),
         ], $status);
     }
 }

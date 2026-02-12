@@ -13,7 +13,13 @@
 
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.banners.banners-form :banners="$Banners" />
+            <a href="{{route('admin.Banners.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.banners.banners-form :banners="$Banners" />
+            </div>
         </div>
     </div>
 </div>

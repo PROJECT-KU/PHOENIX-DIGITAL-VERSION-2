@@ -150,7 +150,6 @@ class ProcessOrder extends Component
         try {
             DB::beginTransaction();
 
-            // Update order item
             $this->orderItem->update([
                 'data_akun_id' => $this->selectedDataAkunId,
                 'account_username' => $this->accountUsername,
@@ -166,18 +165,21 @@ class ProcessOrder extends Component
                 'processing_notes' => $this->processingNotes,
             ]);
 
-            // Update remaining days
             $this->orderItem->updateRemainingDays();
-            // update status order
+
             $this->order->update([
                 'status' => 'processing',
             ]);
+
+            $customer = $this->order->customer;
+            if ($customer->status_member === 'active') {
+                $customer->updatePoints();
+            }
 
             DB::commit();
 
             session()->flash('success', 'Order item berhasil diproses');
 
-            // Redirect ke halaman deliver
             return redirect()->route('admin.pesanantoko.detail', [
                 'order' => $this->order,
                 'orderItem' => $this->orderItem,

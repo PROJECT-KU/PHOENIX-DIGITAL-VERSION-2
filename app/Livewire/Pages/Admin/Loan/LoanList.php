@@ -2,14 +2,13 @@
 
 namespace App\Livewire\Pages\Admin\Loan;
 
+use App\Exports\LoanExport;
 use App\Models\Loan;
 use App\Models\User;
-use Livewire\Component;
-use Livewire\Attributes\On;
-use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\DB;
-use App\Exports\LoanExport;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 
 class LoanList extends Component
@@ -17,10 +16,15 @@ class LoanList extends Component
     use WithPagination;
 
     public $search = '';
+
     public $statusFilter = '';
+
     public $startDate = '';
+
     public $endDate = '';
+
     public $penginputFilter = '';
+
     public $perPage = 10;
 
     protected $queryString = [
@@ -37,18 +41,22 @@ class LoanList extends Component
     {
         $this->resetPage();
     }
+
     public function updatingStatusFilter()
     {
         $this->resetPage();
     }
+
     public function updatingStartDate()
     {
         $this->resetPage();
     }
+
     public function updatingEndDate()
     {
         $this->resetPage();
     }
+
     public function updatingPenginputFilter()
     {
         $this->resetPage();
@@ -86,20 +94,20 @@ class LoanList extends Component
                         WHERE l2.nama_peminjam = loans.nama_peminjam) as total_borrower_loan');
 
         // Search
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $searchDate = null;
             if (strtotime($this->search)) {
                 $searchDate = date('Y-m-d', strtotime(str_replace('/', '-', $this->search)));
             }
 
             $query->where(function ($q) use ($searchDate) {
-                $q->where('nama_peminjam', 'like', '%' . $this->search . '%')
-                    ->orWhere('deskripsi', 'like', '%' . $this->search . '%')
-                    ->orWhere('id_transaksi', 'like', '%' . $this->search . '%')
-                    ->orWhere('nominal', 'like', '%' . $this->search . '%')
-                    ->orWhere('status', 'like', '%' . $this->search . '%')
+                $q->where('nama_peminjam', 'like', '%'.$this->search.'%')
+                    ->orWhere('deskripsi', 'like', '%'.$this->search.'%')
+                    ->orWhere('id_transaksi', 'like', '%'.$this->search.'%')
+                    ->orWhere('nominal', 'like', '%'.$this->search.'%')
+                    ->orWhere('status', 'like', '%'.$this->search.'%')
                     ->orWhereHas('penginput', function ($q) {
-                        $q->where('name', 'like', '%' . $this->search . '%');
+                        $q->where('name', 'like', '%'.$this->search.'%');
                     });
 
                 if ($searchDate) {
@@ -109,19 +117,19 @@ class LoanList extends Component
         }
 
         // Filter
-        if (!empty($this->statusFilter)) {
+        if (! empty($this->statusFilter)) {
             $query->byStatus($this->statusFilter);
         }
-        if (!empty($this->startDate) && !empty($this->endDate)) {
+        if (! empty($this->startDate) && ! empty($this->endDate)) {
             $query->byDateRange($this->startDate, $this->endDate);
         }
-        if (!empty($this->penginputFilter)) {
+        if (! empty($this->penginputFilter)) {
             $query->byPenginput($this->penginputFilter);
         }
 
         $loans = $query->orderBy('tanggal_peminjam', 'desc')
             ->paginate($this->perPage);
-            
+
         // Gabungan total pinjaman - pengembalian
         $totalLoans = DB::table('loans')
             ->select('nama_peminjam',
@@ -146,12 +154,13 @@ class LoanList extends Component
     public function exportExcel()
     {
         try {
-            $filename = 'data_peminjaman_' . now()->format('Ymd_His') . '.xlsx';
+            $filename = 'data_peminjaman_'.now()->format('Ymd_His').'.xlsx';
+
             return Excel::download(new LoanExport, $filename);
         } catch (\Exception $e) {
             $this->dispatch('show-alert', [
                 'type' => 'error',
-                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+                'message' => 'Gagal mengekspor data: '.$e->getMessage(),
             ]);
         }
     }

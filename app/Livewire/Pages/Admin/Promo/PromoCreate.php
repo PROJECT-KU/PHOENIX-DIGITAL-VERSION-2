@@ -2,14 +2,13 @@
 
 namespace App\Livewire\Pages\Admin\Promo;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class PromoCreate extends Component
 {
- 
-  #[Layout('layouts.app')]
-  public function render()
+    #[Layout('layouts.app')]
+    public function render()
     {
         return view('livewire.pages.admin.promo.promo-create');
     }

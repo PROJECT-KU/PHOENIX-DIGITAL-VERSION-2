@@ -33,6 +33,17 @@ return new class extends Migration
             $table->text('customer_notes')->nullable();
             $table->text('admin_notes')->nullable();
 
+            // point info
+            $table->boolean('points_calculated')->default(false);
+            $table->boolean('used_points')->default(false);
+            $table->decimal('points_discount', 15, 0)->default(0);
+
+            $table->string('referral_code')->nullable();
+            $table->foreignUuid('referrer_id')->nullable()->constrained('customers')->onDelete('set null');
+
+            $table->index('referral_code');
+            $table->index('referrer_id');
+            $table->index('order_number');
             $table->timestamps();
             $table->softDeletes();
         });

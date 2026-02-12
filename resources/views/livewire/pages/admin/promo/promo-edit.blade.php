@@ -14,7 +14,13 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.promo.promo-form :dataPromo="$promo" />
+            <a href="{{route('admin.promo.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.promo.promo-form :promo="$promo" />
+            </div>
         </div>
     </div>
 </div>

@@ -3,8 +3,8 @@
 namespace App\Livewire\Pages\Admin\Loan;
 
 use App\Models\Loan;
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class LoanEdit extends Component
 {
@@ -15,8 +15,9 @@ class LoanEdit extends Component
         $this->loanId = $id;
 
         // Verify spending exists
-        if (!Loan::find($id)) {
+        if (! Loan::find($id)) {
             session()->flash('error', 'Data peminjaman tidak ditemukan.');
+
             return redirect()->route('admin.loan.index');
         }
     }

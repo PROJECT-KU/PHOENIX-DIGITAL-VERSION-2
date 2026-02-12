@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\Banners;
 
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class BannersCreate extends Component
 {

@@ -3,13 +3,14 @@
 namespace App\Livewire\Pages\Admin\DataAkun;
 
 use App\Models\DataAkun;
-use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 use Livewire\WithPagination;
 
 class DataAkunList extends Component
 {
     use WithPagination;
+
     public $searchDataAkun = '';
 
     public function updatedSearchDataAkun()
@@ -21,8 +22,9 @@ class DataAkunList extends Component
     {
         $DataAkun = DataAkun::find($id);
 
-        if (!$DataAkun) {
+        if (! $DataAkun) {
             $this->dispatch('delete-error', ['message' => 'Data Akun tidak ditemukan!'], browserEvent: true);
+
             return;
         }
 
@@ -30,7 +32,6 @@ class DataAkunList extends Component
 
         $this->dispatch('DataAkun-deleted', ['id' => $id], browserEvent: true);
     }
-
 
     #[Layout('layouts.app')]
     public function render()
@@ -47,7 +48,7 @@ class DataAkunList extends Component
             ->paginate(10);
 
         return view('livewire.pages.admin.data-akun.DataAkun-list', [
-            'DataAkun' => $DataAkuns
+            'DataAkun' => $DataAkuns,
         ]);
     }
 }

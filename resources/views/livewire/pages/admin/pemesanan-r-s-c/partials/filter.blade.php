@@ -14,10 +14,16 @@
                 <span>filter</span>
             </button>
         </div>
-        <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesananrsc.create') }}" wire:navigate>
-            <i class="bi bi-plus-lg"></i>
-            <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <button wire:click="openExportModal" class="btn btn-success rounded-pill">
+                <i class="bi bi-download me-1"></i>
+                <span class="d-none d-lg-inline">Download Data</span>
+            </button>
+            <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesananrsc.create') }}" wire:navigate>
+                <i class="bi bi-plus-lg"></i>
+                <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
+            </a>
+        </div>
     </div>
     <div class="px-4 pt-3 pb-0 border card" x-show="showFilter" x-transition x-transition:enter.duration.500ms
         x-transition:leave.duration.400ms x-cloak>

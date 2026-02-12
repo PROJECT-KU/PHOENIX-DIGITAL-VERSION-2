@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages\Public\ShopPage;
 
-use App\Models\Order;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -10,9 +9,11 @@ use Livewire\Component;
 class ProductDetail extends Component
 {
     public $product;
+
     public int $quantity = 1;
 
     public ?string $durationType = null;
+
     public ?int $durationValue = null;
 
     public function mount($id)
@@ -28,8 +29,9 @@ class ProductDetail extends Component
 
     public function addToCart()
     {
-        if (!$this->durationType || !$this->durationValue) {
+        if (! $this->durationType || ! $this->durationValue) {
             $this->dispatch('cart-error', message: 'Silakan pilih paket harga terlebih dahulu.');
+
             return;
         }
 
@@ -37,8 +39,9 @@ class ProductDetail extends Component
 
         $price = $this->getPrice($this->product, $this->durationType, $this->durationValue);
 
-        if (!$price) {
+        if (! $price) {
             $this->dispatch('cart-error', message: 'Paket tidak valid.');
+
             return;
         }
 
@@ -51,14 +54,14 @@ class ProductDetail extends Component
             $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
         } else {
             $cart[$cartKey] = [
-                'product_id'      => $this->product->id,
-                'product_name'    => $this->product->nama_akun,
-                'product_image'   => $imageName,
-                'duration_type'   => $this->durationType,
-                'duration_value'  => $this->durationValue,
-                'price'           => $price,
-                'quantity'        => $this->quantity,
-                'subtotal'        => $price * $this->quantity,
+                'product_id' => $this->product->id,
+                'product_name' => $this->product->nama_akun,
+                'product_image' => $imageName,
+                'duration_type' => $this->durationType,
+                'duration_value' => $this->durationValue,
+                'price' => $price,
+                'quantity' => $this->quantity,
+                'subtotal' => $price * $this->quantity,
             ];
         }
 
@@ -73,8 +76,8 @@ class ProductDetail extends Component
     {
         if ($durationType === 'bulan') {
             return match ($durationValue) {
-                1  => $product->harga_perbulan,
-                5  => $product->harga_5_perbulan,
+                1 => $product->harga_perbulan,
+                5 => $product->harga_5_perbulan,
                 10 => $product->harga_10_perbulan,
                 default => null
             };
@@ -90,6 +93,7 @@ class ProductDetail extends Component
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
+
         return array_sum(array_column($cart, 'quantity') ?: [0]);
     }
 

@@ -9,6 +9,7 @@ use Illuminate\View\Component;
 class Breadcrumb extends Component
 {
     public array $items;
+
     /**
      * Create a new component instance.
      */

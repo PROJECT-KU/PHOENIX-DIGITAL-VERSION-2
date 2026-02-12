@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
 class Pengembalian extends Model
@@ -15,6 +15,7 @@ class Pengembalian extends Model
     use HasFactory, HasUuids;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -33,9 +34,17 @@ class Pengembalian extends Model
     ];
 
     // Status constants
-    const STATUS_PENDING   = 'pending';
-    const STATUS_BERJALAN  = 'berjalan';
-    const STATUS_LUNAS     = 'lunas';
+    const STATUS_PENDING = 'pending';
+
+    const STATUS_BERJALAN = 'berjalan';
+
+    const STATUS_LUNAS = 'lunas';
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     // Relationship ke User (siapa yang input)
     public function penginput(): BelongsTo
@@ -67,7 +76,7 @@ class Pengembalian extends Model
     // === Accessors (formatted attributes) ===
     public function getNominalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->nominal, 0, ',', '.');
+        return 'Rp '.number_format($this->nominal, 0, ',', '.');
     }
 
     public function getNamaPenginputAttribute(): string
@@ -101,7 +110,7 @@ class Pengembalian extends Model
 
             // Auto generate ID transaksi (misal TRX-20251009-001)
             if (empty($model->id_transaksi)) {
-                $prefix = 'PGB-' . now()->format('Ymd');
+                $prefix = 'PGB-'.now()->format('Ymd');
                 $last = static::whereDate('created_at', now()->toDateString())
                     ->orderBy('created_at', 'desc')
                     ->first();
@@ -111,7 +120,7 @@ class Pengembalian extends Model
                     $nextNumber = (int) $matches[1] + 1;
                 }
 
-                $model->id_transaksi = $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+                $model->id_transaksi = $prefix.'-'.str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
             }
 
             // Pastikan user_id otomatis dari auth()

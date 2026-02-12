@@ -2,17 +2,24 @@
 
 namespace App\Livewire\Pages\Admin\Loan;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Loan;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class LoanForm extends Component
 {
     public $loanId = null;
+
     public $user_id;
+
     public $tanggal_peminjam;
+
     public $nominal = ''; // simpan sementara sebagai string (angka murni)
+
     public $deskripsi;
+
     public $status = 'pending';
 
     public $mode = 'create'; // 'create' | 'edit'
@@ -20,26 +27,26 @@ class LoanForm extends Component
     protected function rules()
     {
         return [
-            'user_id'          => 'required|exists:users,id',
+            'user_id' => 'required|exists:users,id',
             'tanggal_peminjam' => 'required|date',
-            'nominal'          => 'required|numeric|min:0',
-            'deskripsi'        => 'nullable|string',
-            'status'           => 'required|in:pending,berjalan,lunas',
+            'nominal' => 'required|numeric|min:0',
+            'deskripsi' => 'nullable|string',
+            'status' => 'required|in:pending,berjalan,lunas',
         ];
     }
 
     protected function messages()
     {
         return [
-            'user_id.required'          => 'Nama peminjam harus dipilih.',
-            'user_id.exists'            => 'Peminjam tidak ditemukan.',
+            'user_id.required' => 'Nama peminjam harus dipilih.',
+            'user_id.exists' => 'Peminjam tidak ditemukan.',
             'tanggal_peminjam.required' => 'Tanggal pinjam harus diisi.',
-            'tanggal_peminjam.date'     => 'Format tanggal tidak valid.',
-            'nominal.required'          => 'Nominal harus diisi.',
-            'nominal.numeric'           => 'Nominal harus berupa angka.',
-            'nominal.min'               => 'Nominal tidak boleh kurang dari 0.',
-            'status.required'           => 'Status harus dipilih.',
-            'status.in'                 => 'Status tidak valid.',
+            'tanggal_peminjam.date' => 'Format tanggal tidak valid.',
+            'nominal.required' => 'Nominal harus diisi.',
+            'nominal.numeric' => 'Nominal harus berupa angka.',
+            'nominal.min' => 'Nominal tidak boleh kurang dari 0.',
+            'status.required' => 'Status harus dipilih.',
+            'status.in' => 'Status tidak valid.',
         ];
     }
 
@@ -59,14 +66,14 @@ class LoanForm extends Component
     {
         $loan = Loan::findOrFail($this->loanId);
 
-        $this->user_id          = $loan->user_id;
+        $this->user_id = $loan->user_id;
         $this->tanggal_peminjam = $loan->tanggal_peminjam->format('Y-m-d');
-        $this->nominal          = (string) intval($loan->nominal);
-        $this->deskripsi        = $loan->deskripsi;
-        $this->status           = $loan->status;
+        $this->nominal = (string) intval($loan->nominal);
+        $this->deskripsi = $loan->deskripsi;
+        $this->status = $loan->status;
     }
 
-    public function save()
+    public function save(SyncCashFlowAction $syncCashFlow)
     {
         // Pastikan nominal angka murni
         $raw = preg_replace('/[^0-9]/', '', (string) $this->nominal);
@@ -75,40 +82,55 @@ class LoanForm extends Component
         $this->validate();
 
         try {
-            $namaPeminjam = User::find($this->user_id)->name ?? null;
+            DB::transaction(function () use ($syncCashFlow) {
+                $namaPeminjam = User::find($this->user_id)->name ?? 'Umum';
 
-            if ($this->mode === 'edit') {
-                $loan = Loan::findOrFail($this->loanId);
-                $loan->update([
-                    'user_id'          => $this->user_id,
-                    'nama_peminjam'    => $namaPeminjam,
-                    'tanggal_peminjam' => $this->tanggal_peminjam,
-                    'nominal'          => $this->nominal,
-                    'deskripsi'        => $this->deskripsi,
-                    'status'           => $this->status,
+                if ($this->mode === 'edit') {
+                    $loan = Loan::findOrFail($this->loanId);
+                    $loan->update([
+                        'user_id' => $this->user_id,
+                        'nama_peminjam' => $namaPeminjam,
+                        'tanggal_peminjam' => $this->tanggal_peminjam,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+                } else {
+                    // PERBAIKAN: Tambahkan id_transaksi manual
+                    $loan = Loan::create([
+                        'user_id' => $this->user_id,
+                        'nama_peminjam' => $namaPeminjam,
+                        'tanggal_peminjam' => $this->tanggal_peminjam,
+                        'nominal' => $this->nominal,
+                        'deskripsi' => $this->deskripsi,
+                        'status' => $this->status,
+                    ]);
+                }
+
+                // Refresh model agar data UUID & Timestamp sinkron sebelum dikirim ke Action
+                $loan->refresh();
+
+                // Panggil Action
+                $syncCashFlow->execute($loan, [
+                    'amount' => $loan->nominal,
+                    'type' => 'expense', // Pinjaman = Uang Keluar (Expense)
+                    'date' => $loan->tanggal_peminjam,
+                    'category' => 'Pinjaman',
+                    'description' => $loan->deskripsi ?? 'Peminjaman Karyawan',
                 ]);
 
-                session()->flash('success', 'Data Peminjaman berhasil diperbarui!');
-                $this->dispatch('success-edit-loan');
-            } else {
-                Loan::create([
-                    'user_id'          => $this->user_id,
-                    'nama_peminjam'    => $namaPeminjam,
-                    'tanggal_peminjam' => $this->tanggal_peminjam,
-                    'nominal'          => $this->nominal,
-                    'deskripsi'        => $this->deskripsi,
-                    'status'           => $this->status,
-                ]);
+                $msg = $this->mode === 'edit' ? 'diperbarui' : 'ditambahkan';
+                session()->flash('success', "Data Peminjaman berhasil $msg!");
 
-                session()->flash('success', 'Data Peminjaman berhasil ditambahkan!');
-                $this->dispatch('success-add-loan');
-            }
+                // Dispatch event untuk menutup modal (sesuaikan dengan frontend Anda)
+                $this->dispatch($this->mode === 'edit' ? 'success-edit-loan' : 'success-add-loan');
+            });
 
             $this->resetForm();
 
             return redirect()->route('admin.loan.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan data Peminjaman: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menambahkan data Peminjaman: '.$e->getMessage());
             $this->dispatch('failed-add-loan');
         }
     }

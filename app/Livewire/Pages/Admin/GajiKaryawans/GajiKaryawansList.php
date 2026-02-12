@@ -6,7 +6,6 @@ use App\Exports\GajiKaryawansExport;
 use App\Models\GajiKaryawans;
 use App\Models\User;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
@@ -18,12 +17,19 @@ class GajiKaryawansList extends Component
     protected $paginationTheme = 'bootstrap';
 
     public $search = '';
+
     public $statusFilter = '';
+
     public $startDate = '';
+
     public $endDate = '';
+
     public $karyawanFilter = '';
+
     public $idtransaksiFilter = '';
+
     public $norekFilter = '';
+
     public $perPage = 10;
 
     protected $queryString = [
@@ -42,30 +48,37 @@ class GajiKaryawansList extends Component
     {
         $this->resetPage();
     }
+
     public function updatingStatusFilter()
     {
         $this->resetPage();
     }
+
     public function updatingStartDate()
     {
         $this->resetPage();
     }
+
     public function updatingEndDate()
     {
         $this->resetPage();
     }
+
     public function updatingKaryawanFilter()
     {
         $this->resetPage();
     }
+
     public function updatingIDTransaksiFilter()
     {
         $this->resetPage();
     }
+
     public function updatingNorekFilter()
     {
         $this->resetPage();
     }
+
     public function clearFilters()
     {
         $this->search = '';
@@ -82,8 +95,9 @@ class GajiKaryawansList extends Component
     {
         $gajikaryawan = GajiKaryawans::find($id);
 
-        if (!$gajikaryawan) {
+        if (! $gajikaryawan) {
             $this->dispatch('delete-error', ['message' => 'Data tidak ditemukan!'], browserEvent: true);
+
             return;
         }
 
@@ -94,7 +108,7 @@ class GajiKaryawansList extends Component
 
     public function getTotalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->total ?? 0, 0, ',', '.');
+        return 'Rp '.number_format($this->total ?? 0, 0, ',', '.');
     }
 
     #[Layout('layouts.app')]
@@ -103,9 +117,9 @@ class GajiKaryawansList extends Component
         $query = GajiKaryawans::with(['karyawan']);
 
         // Search filter
-        if (!empty($this->search)) {
+        if (! empty($this->search)) {
             $query->where(function ($q) {
-                $search = '%' . $this->search . '%'; // ✅ definisikan variabel lokal
+                $search = '%'.$this->search.'%'; // ✅ definisikan variabel lokal
                 $q->where('deskripsi', 'like', $search)
                     ->orWhere('id_transaksi', 'like', $search)
                     ->orWhereHas('karyawan', function ($q) use ($search) {
@@ -131,19 +145,19 @@ class GajiKaryawansList extends Component
             });
         }
 
-        if (!empty($this->statusFilter)) {
+        if (! empty($this->statusFilter)) {
             $query->byStatus($this->statusFilter);
         }
-        if (!empty($this->startDate) && !empty($this->endDate)) {
+        if (! empty($this->startDate) && ! empty($this->endDate)) {
             $query->byDateRange($this->startDate, $this->endDate);
         }
-        if (!empty($this->karyawanFilter)) {
+        if (! empty($this->karyawanFilter)) {
             $query->byPenginput($this->karyawanFilter);
         }
-        if (!empty($this->idtransaksiFilter)) {
+        if (! empty($this->idtransaksiFilter)) {
             $query->byIDTransaksi($this->idtransaksiFilter);
         }
-        if (!empty($this->norekFilter)) {
+        if (! empty($this->norekFilter)) {
             $query->byNorek($this->norekFilter);
         }
 
@@ -179,12 +193,13 @@ class GajiKaryawansList extends Component
             $start = $this->startDate ?? null;
             $end = $this->endDate ?? null;
 
-            $filename = 'gaji_karyawan_' . ($status ?? 'semua') . '_' . now()->format('Ymd_His') . '.xlsx';
+            $filename = 'gaji_karyawan_'.($status ?? 'semua').'_'.now()->format('Ymd_His').'.xlsx';
+
             return Excel::download(new GajiKaryawansExport($status, $start, $end), $filename);
         } catch (\Exception $e) {
             $this->dispatch('show-alert', [
                 'type' => 'error',
-                'message' => 'Gagal mengekspor data: ' . $e->getMessage()
+                'message' => 'Gagal mengekspor data: '.$e->getMessage(),
             ]);
         }
     }

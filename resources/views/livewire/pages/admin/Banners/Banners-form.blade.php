@@ -1,5 +1,5 @@
 <div>
-    <form wire:submit.prevent="save" class="p-3">
+    <form wire:submit.prevent="save">
         <div class="row g-3">
             <!-- Judul Banner -->
             <div class="col-md-6">
@@ -76,8 +76,8 @@
         </div>
 
         <!-- Tombol -->
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn btn-primary">
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary w-100">
                 <i class="bi bi-send me-1"></i>
                 {{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}
             </button>

@@ -1,5 +1,5 @@
 <div>
-    <form wire:submit.prevent="save" class="p-3">
+    <form wire:submit.prevent="save">
         <div class="row g-3">
 
             <!-- Nama Paket Bundling dengan Button + -->
@@ -157,8 +157,8 @@
         </div>
 
         <!-- Tombol -->
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn btn-primary">
+        <div class="mt-4">
+            <button type="submit" class="btn w-100 btn-primary">
                 <i class="bi bi-send me-1"></i>
                 {{ $this->mode === 'create' ? 'Tambah Data' : 'Simpan Perubahan' }}
             </button>

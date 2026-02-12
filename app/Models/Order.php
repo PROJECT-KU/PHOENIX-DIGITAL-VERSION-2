@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
@@ -24,12 +26,37 @@ class Order extends Model
         'expired_at',
         'customer_notes',
         'admin_notes',
+        'referral_code',
+        'referrer_id',
+        'applied_promos',
+        'promo_discount',
+        'referral_discount',
+        'total_discount',
+        'guest_token',
+        'unique_code',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'expired_at' => 'datetime',
+        'applied_promos' => 'array',
+        'promo_discount' => 'decimal:0',
+        'referral_discount' => 'decimal:0',
+        'total_discount' => 'decimal:0',
     ];
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
+
+    public function promos(): BelongsToMany
+    {
+        return $this->belongsToMany(Promo::class, 'order_promo')
+            ->withPivot(['kode_promo', 'tipe_diskon', 'nilai_diskon', 'jumlah_diskon'])
+            ->withTimestamps();
+    }
 
     public function customer()
     {
@@ -44,6 +71,16 @@ class Order extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function hasPromo(): bool
+    {
+        return $this->promo_discount > 0 || ! empty($this->applied_promos);
+    }
+
+    public function getAppliedPromoCodes(): array
+    {
+        return $this->applied_promos ? array_column($this->applied_promos, 'kode_promo') : [];
     }
 
     // Scope untuk filter status

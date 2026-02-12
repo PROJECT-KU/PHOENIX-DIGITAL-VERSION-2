@@ -3,19 +3,19 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
-
 
 class Loan extends Model
 {
     use HasFactory, HasUuids;
 
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -34,11 +34,18 @@ class Loan extends Model
     ];
 
     // Status constants
-    const STATUS_PENDING   = 'pending';
-    const STATUS_BERJALAN  = 'berjalan';
-    const STATUS_LUNAS     = 'lunas';
+    const STATUS_PENDING = 'pending';
+
+    const STATUS_BERJALAN = 'berjalan';
+
+    const STATUS_LUNAS = 'lunas';
 
     // Relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
+
     public function penginput(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -68,14 +75,14 @@ class Loan extends Model
     // Accessors (formatted attributes)
     public function getNominalFormattedAttribute(): string
     {
-        return 'Rp ' . number_format($this->nominal, 0, ',', '.');
+        return 'Rp '.number_format($this->nominal, 0, ',', '.');
     }
 
     public function getNamaPenginputAttribute(): string
     {
         return $this->penginput->name ?? '-';
-        // return auth()->check() 
-        // ? auth()->user()->name 
+        // return auth()->check()
+        // ? auth()->user()->name
         // : '-tidak ada-';
     }
 
@@ -95,7 +102,7 @@ class Loan extends Model
 
     public function getTotalBorrowerLoanFormattedAttribute()
     {
-        return 'Rp ' . number_format($this->total_borrower_loan, 0, ',', '.');
+        return 'Rp '.number_format($this->total_borrower_loan, 0, ',', '.');
     }
 
     protected static function boot()
@@ -110,7 +117,7 @@ class Loan extends Model
 
             // Auto generate ID transaksi (misal TRX-20251009-001)
             if (empty($model->id_transaksi)) {
-                $prefix = 'PMJ-' . now()->format('Ymd');
+                $prefix = 'PMJ-'.now()->format('Ymd');
                 $last = static::whereDate('created_at', now()->toDateString())
                     ->orderBy('created_at', 'desc')
                     ->first();
@@ -120,7 +127,7 @@ class Loan extends Model
                     $nextNumber = (int) $matches[1] + 1;
                 }
 
-                $model->id_transaksi = $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+                $model->id_transaksi = $prefix.'-'.str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
             }
 
             // Pastikan user_id otomatis dari auth()
