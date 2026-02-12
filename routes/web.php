@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PaymentCallbackController;
+use App\Http\Controllers\PemesananrscController;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
@@ -42,6 +43,7 @@ use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Promo
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 // Data Spending
@@ -92,6 +94,7 @@ Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.succe
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
+Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
@@ -101,7 +104,9 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
     // Data Pemesanan RSC dan pemesanan toko online
     Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
     Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
-    Route::get('/admin/pesananrsc/{pemesananrsc}/edit', PemesananrscEdit::class)->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
+        ->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');

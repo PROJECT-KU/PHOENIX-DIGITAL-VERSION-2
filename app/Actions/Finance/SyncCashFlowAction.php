@@ -30,6 +30,28 @@ class SyncCashFlowAction
         });
     }
 
+    /**
+     * Delete cash flow record
+     */
+    public function delete(Model $model): void
+    {
+        DB::transaction(function () use ($model) {
+            $model->cashFlow()->delete();
+        });
+    }
+
+    /**
+     * Bulk delete cash flow records (optional - untuk efisiensi)
+     */
+    public function bulkDelete(iterable $models): void
+    {
+        DB::transaction(function () use ($models) {
+            foreach ($models as $model) {
+                $model->cashFlow()->delete();
+            }
+        });
+    }
+
     // logika validasi kapan uang di anggap sah masuk/keluar
     private function shouldRecord(Model $model): bool
     {

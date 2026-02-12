@@ -9,75 +9,61 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-
                 <div class="card-body">
                     @include('livewire.pages.admin.pemesanan-r-s-c.partials.filter')
-
                     <!-- Table -->
                     <div class="table-responsive">
                         <table id="productTable" class="table align-middle table-striped nowrap" style="width:100%">
                             <thead class="text-center table-light">
                                 <tr style="text-align: center;">
-                                    <th rowspan="2">ID Transaksi</th>
-                                    <th rowspan="2">Kategori</th>
-                                    <th rowspan="2">Akun</th>
-                                    <th rowspan="2">Nama Pembeli</th>
-                                    <th rowspan="2">Telp Pembeli</th>
-                                    <th colspan="2">Tanggal Camp</th>
-                                    <th rowspan="2">PIC</th>
-                                    <th rowspan="2">Status</th>
-                                    <th rowspan="2" width="120">Aksi</th>
-                                </tr>
-                                <tr style="text-align: center;">
-                                    <th>Tanggal Mulai</th>
-                                    <th>Tanggal Akhir</th>
+                                    <th>Kategori</th>
+                                    <th>Batch</th>
+                                    <th>Akun</th>
+                                    <th>Jumlah Peserta</th>
+                                    <th>Status</th>
+                                    <th>Total Harga</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 @forelse($pemesananrsc as $item)
                                 <tr style="text-align: center;">
-                                    <td>{{ $item->id_transaksi }}</td>
-                                    <td>{{ $item->nama_camp }} #{{ $item->batch_camp}}</td>
+                                    <td>{{ $item->nama_camp }}</td>
+                                    <td>#{{ $item->batch_camp }}</td>
                                     <td>{{ $item->dataakun?->nama_akun ?? '-' }}</td>
-                                    <td>{{ $item->nama_pembeli }}</td>
-                                    <td>{{ $item->telp_pembeli }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_mulai_camp)->format('d F Y') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_akhir_camp)->format('d F Y') }}</td>
-                                    <td>{{ $item->users?->name ?? '-' }}</td>
                                     <td>
-                                        <span
-                                            class="badge bg-{{ $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')) }}">
+                                        <span class="badge bg-primary">{{ $item->total_peserta }} Peserta</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')) }}">
                                             {{ ucfirst($item->status) }}
                                         </span>
                                     </td>
+                                    <td>Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
                                     <td>
                                         <div>
-                                            <a href="{{ route('admin.pesananrsc.edit', $item->id) }}"
-                                                wire:navigate class="btn btn-sm btn-warning me-1"
-                                                title="Edit">
+                                            {{-- Edit menuju ke batch group --}}
+                                            <a href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
+                                                wire:navigate
+                                                class="btn btn-sm btn-warning me-1"
+                                                title="Edit Batch">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
 
+                                            {{-- Delete batch --}}
                                             <button type="button"
-                                                class="btn btn-danger btn-sm delete-pemesananrsc-btn"
-                                                data-id="{{ $item->id }}">
+                                                class="btn btn-danger btn-sm delete-batch-btn"
+                                                wire:click="confirmDeleteBatch('{{ $item->nama_camp }}', '{{ $item->batch_camp }}', {{ $item->total_peserta }})">
                                                 <i class="bi bi-trash"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-success btn-sm send-wa-btn"
-                                                data-id="{{ $item->id }}"
-                                                data-idtransaksi="{{ $item->id_transaksi }}"
-                                                data-nama="{{ $item->nama_pembeli }}"
-                                                data-wa="{{ $item->telp_pembeli }}"
-                                                data-akun="{{ $item->dataakun?->nama_akun ?? '-' }}"
-                                                data-pemesanan="{{ \Carbon\Carbon::parse($item->tanggal_pemesanan)->format('d F Y') }}"
-                                                data-berakhir="{{ \Carbon\Carbon::parse($item->tanggal_berakhir)->format('d F Y') }}"
-                                                data-username="{{ $item->username }}"
-                                                data-password="{{ $item->password }}"
-                                                data-linkakses="{{ $item->link_akses }}">
-                                                <i class="bi bi-whatsapp"></i>
-                                            </button>
+                                            {{-- Detail peserta --}}
+                                            <a wire:navigate href="{{ route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]) }}"
+                                                class="btn btn-primary btn-sm"
+                                                title="Lihat Detail">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -131,6 +117,93 @@
                     </div>
                 </div>
             </div>
+
+            <!-- modal select batch -->
+            @if($showExportModal)
+            <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Export Data Peserta ke Excel</h5>
+                            <button type="button" class="btn-close" wire:click="closeExportModal"></button>
+                        </div>
+                        <div class="modal-body">
+
+                            {{-- Search Filter di dalam Modal --}}
+                            <div class="mb-3">
+                                <input type="text"
+                                    class="form-control"
+                                    placeholder="Cari Nama Camp atau Batch..."
+                                    wire:model.live.debounce.300ms="searchBatchExport">
+                            </div>
+
+                            {{-- List Batch (Scrollable) --}}
+                            <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
+                                @if($this->availableBatchesForExport->isEmpty())
+                                <div class="text-center text-muted py-3">Batch tidak ditemukan.</div>
+                                @else
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th width="50">#</th>
+                                                <th>Nama Camp</th>
+                                                <th>Batch</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($this->availableBatchesForExport as $batch)
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox"
+                                                        class="form-check-input"
+                                                        value="{{ $batch->key }}"
+                                                        wire:model.live="selectedBatches">
+                                                </td>
+                                                <td>{{ $batch->nama_camp }}</td>
+                                                <td>Batch {{ $batch->batch_camp }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @endif
+                            </div>
+
+                            {{-- Counter Seleksi --}}
+                            <div class="mt-2 text-end">
+                                <small class="text-muted">{{ count($selectedBatches) }} Batch dipilih</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-secondary" wire:click="closeExportModal">Batal</button>
+
+                            <div class="d-flex gap-2">
+                                <!-- preview pdf -->
+                                @if(!empty($selectedBatches))
+                                <a href="{{ route('admin.preview.invoice', ['batches' => $selectedBatches]) }}"
+                                    target="_blank"
+                                    class="btn btn-info text-white">
+                                    <i class="bi bi-eye"></i> Preview PDF
+                                </a>
+                                @endif
+                                {{-- Tombol PDF Invoice --}}
+                                <button type="button" class="btn btn-danger" wire:click="exportInvoice" wire:loading.attr="disabled">
+                                    <i class="bi bi-file-earmark-pdf"></i> Download Invoice
+                                    <span wire:loading wire:target="exportInvoice" class="spinner-border spinner-border-sm ms-1"></span>
+                                </button>
+
+                                {{-- Tombol Excel Data --}}
+                                <button type="button" class="btn btn-success" wire:click="exportExcel" wire:loading.attr="disabled">
+                                    <i class="bi bi-file-earmark-excel"></i> Download Data Excel
+                                    <span wire:loading wire:target="exportExcel" class="spinner-border spinner-border-sm ms-1"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

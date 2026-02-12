@@ -77,7 +77,7 @@
                         </td>
                         <td>
                             <button wire:click="$dispatch('openDetail', { id: '{{ $item->id }}' })"
-                                class="btn btn-sm btn-warning">
+                                class="btn btn-sm btn-primary">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </td>
