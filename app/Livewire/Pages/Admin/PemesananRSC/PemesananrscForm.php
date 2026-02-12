@@ -162,7 +162,7 @@ class PemesananrscForm extends Component
                     if (! empty($row[2])) {
                         $this->peserta[] = [
                             'nama_pembeli' => $row[2],
-                            'telp_pembeli' => $row[3] ?? '',
+                            'telp_pembeli' => $this->formatPhoneNumber($row[3]) ?? '',
                         ];
                     }
                 }
@@ -306,11 +306,26 @@ class PemesananrscForm extends Component
         return $this->total_per_peserta() * count($this->peserta);
     }
 
+    private function formatPhoneNumber($number)
+    {
+        $number = preg_replace('/[^0-9]/', '', $number);
+
+        if (substr($number, 0, 1) === '0') {
+            return '+62'.substr($number, 1);
+        } elseif (substr($number, 0, 2) === '62') {
+            return '+'.$number;
+        }
+
+        return '+62'.$number;
+    }
+
     private function createpemesananrsc(SyncCashFlowAction $action)
     {
         DB::beginTransaction();
         try {
             foreach ($this->peserta as $p) {
+
+                $formattedTelp = $this->formatPhoneNumber($p['telp_pembeli']);
 
                 $pemesanan = PemesananRsc::create([
                     'id_transaksi' => Str::upper(Str::random(5)),
@@ -333,7 +348,7 @@ class PemesananrscForm extends Component
 
                     // data peserta
                     'nama_pembeli' => $p['nama_pembeli'],
-                    'telp_pembeli' => $p['telp_pembeli'],
+                    'telp_pembeli' => $formattedTelp,
                 ]);
 
                 $action->execute($pemesanan, [
@@ -375,6 +390,7 @@ class PemesananrscForm extends Component
 
             // update atau create peserta
             foreach ($this->peserta as $tmpId => $p) {
+                $formattedTelp = $this->formatPhoneNumber($p['telp_pembeli']);
                 $data = [
                     'nama_camp' => $this->nama_camp,
                     'batch_camp' => $this->batch_camp,
@@ -393,7 +409,7 @@ class PemesananrscForm extends Component
                     'deskripsi' => $this->deskripsi,
                     'status' => $this->status,
                     'nama_pembeli' => $p['nama_pembeli'],
-                    'telp_pembeli' => $p['telp_pembeli'],
+                    'telp_pembeli' => $formattedTelp,
                 ];
 
                 if (! Str::isUuid($tmpId) || PemesananRsc::where('id', $tmpId)->exists()) {

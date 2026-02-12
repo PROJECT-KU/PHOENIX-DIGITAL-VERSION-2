@@ -3,14 +3,17 @@
 namespace App\Livewire\Pages\Admin\PemesananRSC;
 
 use App\Actions\Finance\SyncCashFlowAction;
+use App\Exports\CampBatchExport;
 use App\Models\DataAkun;
 use App\Models\PemesananRsc;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PemesananrscList extends Component
 {
@@ -34,6 +37,102 @@ class PemesananrscList extends Component
     public $batchFilter = '';
 
     public $perPage = 10;
+
+    // property export data
+    public $showExportModal = false;
+
+    public $searchBatchExport = '';
+
+    public $selectedBatches = [];
+
+    public function openExportModal()
+    {
+        $this->reset(['searchBatchExport', 'selectedBatches']);
+        $this->showExportModal = true;
+    }
+
+    public function closeExportModal()
+    {
+        $this->showExportModal = false;
+    }
+
+    public function getAvailableBatchesForExportProperty()
+    {
+        return PemesananRsc::select('nama_camp', 'batch_camp')
+            ->distinct()
+            ->when($this->searchBatchExport, function ($q) {
+                $q->where('nama_camp', 'like', '%'.$this->searchBatchExport.'%')
+                    ->orWhere('batch_camp', 'like', '%'.$this->searchBatchExport.'%');
+            })
+            ->orderBy('nama_camp')
+            ->orderBy('batch_camp', 'desc')
+            ->get()
+            ->map(function ($item) {
+                $item->key = $item->nama_camp.'|'.$item->batch_camp;
+
+                return $item;
+            });
+    }
+
+    public function exportExcel()
+    {
+        $this->validate(['selectedBatches' => 'required|array|min:1'], ['selectedBatches.required' => 'Pilih minimal satu batch untuk di export']);
+
+        $this->showExportModal = false;
+        $fileName = 'Export_Peserta_camp_'.date('Y-m-d_H-i').'.xlsx';
+
+        return Excel::download(new CampBatchExport($this->selectedBatches), $fileName);
+    }
+
+    public function exportInvoice()
+    {
+        $this->validate(['selectedBatches' => 'required|array|min:1'], ['selectedBatches.required' => 'Pilih minimal satu batch untuk di buatkan invoice']);
+
+        $this->showExportModal = false;
+
+        $conditions = collect($this->selectedBatches)->map(function ($item) {
+            [$nama, $batch] = explode('|', $item);
+
+            return ['nama_camp' => $nama, 'batch_camp' => $batch];
+        });
+
+        $invoiceItems = PemesananRsc::query()
+            ->where(function ($query) use ($conditions) {
+                foreach ($conditions as $condition) {
+                    $query->orWhere(function ($q) use ($condition) {
+                        $q->where('nama_camp', $condition['nama_camp'])
+                            ->where('batch_camp', $condition['batch_camp']);
+                    });
+                }
+            })
+            ->selectRaw('
+                nama_camp, 
+                batch_camp, 
+                MIN(tanggal_mulai_camp) as periode_mulai, 
+                MAX(tanggal_akhir_camp) as periode_akhir,
+                COUNT(id) as total_peserta, 
+                SUM(total) as total_harga,
+                MAX(harga_satuan) as harga_satuan')
+            ->groupBy('nama_camp', 'batch_camp')
+            ->orderBy('nama_camp')
+            ->orderBy('batch_camp')
+            ->get();
+
+        $data = [
+            'invoiceNumber' => 'INV-'.date('Y').'-'.rand(1000, 9999),
+            'date' => now()->translatedFormat('d F Y'),
+            'items' => $invoiceItems,
+            'grandTotal' => $invoiceItems->sum('total_harga'),
+        ];
+
+        $pdf = Pdf::loadView('exports.invoice-pdf', $data);
+
+        $pdf->setPaper('a4', 'portrait');
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'Invoice_RumahScopus_'.date('Y-m-d').'.pdf');
+    }
 
     // 🔹 URL query sync
     protected $queryString = [
@@ -152,10 +251,10 @@ class PemesananrscList extends Component
                 'akun',
                 'pic',
                 'status',
-                DB::raw('MIN(id) as first_id'), // Ambil ID pertama untuk link edit
-                DB::raw('COUNT(*) as total_peserta'), // Hitung jumlah peserta
-                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'), // Optional: list nama
-                DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'), // Total harga per batch
+                DB::raw('MIN(id) as first_id'),
+                DB::raw('COUNT(*) as total_peserta'),
+                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
+                DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
             ])
             ->with(['dataakun', 'users'])
             ->groupBy([

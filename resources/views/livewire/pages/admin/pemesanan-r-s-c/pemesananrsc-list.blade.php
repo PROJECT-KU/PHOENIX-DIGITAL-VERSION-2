@@ -9,10 +9,8 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-
                 <div class="card-body">
                     @include('livewire.pages.admin.pemesanan-r-s-c.partials.filter')
-
                     <!-- Table -->
                     <div class="table-responsive">
                         <table id="productTable" class="table align-middle table-striped nowrap" style="width:100%">
@@ -119,6 +117,93 @@
                     </div>
                 </div>
             </div>
+
+            <!-- modal select batch -->
+            @if($showExportModal)
+            <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Export Data Peserta ke Excel</h5>
+                            <button type="button" class="btn-close" wire:click="closeExportModal"></button>
+                        </div>
+                        <div class="modal-body">
+
+                            {{-- Search Filter di dalam Modal --}}
+                            <div class="mb-3">
+                                <input type="text"
+                                    class="form-control"
+                                    placeholder="Cari Nama Camp atau Batch..."
+                                    wire:model.live.debounce.300ms="searchBatchExport">
+                            </div>
+
+                            {{-- List Batch (Scrollable) --}}
+                            <div class="border rounded p-2" style="max-height: 300px; overflow-y: auto;">
+                                @if($this->availableBatchesForExport->isEmpty())
+                                <div class="text-center text-muted py-3">Batch tidak ditemukan.</div>
+                                @else
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th width="50">#</th>
+                                                <th>Nama Camp</th>
+                                                <th>Batch</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($this->availableBatchesForExport as $batch)
+                                            <tr>
+                                                <td>
+                                                    <input type="checkbox"
+                                                        class="form-check-input"
+                                                        value="{{ $batch->key }}"
+                                                        wire:model.live="selectedBatches">
+                                                </td>
+                                                <td>{{ $batch->nama_camp }}</td>
+                                                <td>Batch {{ $batch->batch_camp }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                @endif
+                            </div>
+
+                            {{-- Counter Seleksi --}}
+                            <div class="mt-2 text-end">
+                                <small class="text-muted">{{ count($selectedBatches) }} Batch dipilih</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer justify-content-between">
+                            <button type="button" class="btn btn-secondary" wire:click="closeExportModal">Batal</button>
+
+                            <div class="d-flex gap-2">
+                                <!-- preview pdf -->
+                                @if(!empty($selectedBatches))
+                                <a href="{{ route('admin.preview.invoice', ['batches' => $selectedBatches]) }}"
+                                    target="_blank"
+                                    class="btn btn-info text-white">
+                                    <i class="bi bi-eye"></i> Preview PDF
+                                </a>
+                                @endif
+                                {{-- Tombol PDF Invoice --}}
+                                <button type="button" class="btn btn-danger" wire:click="exportInvoice" wire:loading.attr="disabled">
+                                    <i class="bi bi-file-earmark-pdf"></i> Download Invoice
+                                    <span wire:loading wire:target="exportInvoice" class="spinner-border spinner-border-sm ms-1"></span>
+                                </button>
+
+                                {{-- Tombol Excel Data --}}
+                                <button type="button" class="btn btn-success" wire:click="exportExcel" wire:loading.attr="disabled">
+                                    <i class="bi bi-file-earmark-excel"></i> Download Data Excel
+                                    <span wire:loading wire:target="exportExcel" class="spinner-border spinner-border-sm ms-1"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>

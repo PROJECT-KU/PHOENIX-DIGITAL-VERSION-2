@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PaymentCallbackController;
+use App\Http\Controllers\PemesananrscController;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
@@ -93,6 +94,7 @@ Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.succe
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
+Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
