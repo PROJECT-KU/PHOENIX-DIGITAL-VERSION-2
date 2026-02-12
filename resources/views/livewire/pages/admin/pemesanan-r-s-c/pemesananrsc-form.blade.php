@@ -1,21 +1,48 @@
 <div>
     <form wire:submit="save" x-cloak>
-        <!--================== Data kategori ==================-->
         <div class="card mb-4">
+            <!--================== import excel ==================-->
             <div class="card mb-4">
                 @if($mode === 'create')
                 <div class="card-body border-top bg-light">
-                    <label class="fw-bold mb-2"><i class="bi bi-file-earmark-spreadsheet text-success"></i> Import Data Peserta (Excel)</label>
+                    <label class="fw-bold mb-2">
+                        <i class="bi bi-file-earmark-spreadsheet text-success"></i> Import Data Peserta (Excel)
+                    </label>
+
                     <div class="input-group">
-                        <input type="file" wire:model="file_excel" class="form-control">
+                        <input type="file" wire:model="file_excel" class="form-control" accept=".xlsx,.xls,.csv">
                         <div wire:loading wire:target="file_excel" class="input-group-text">
                             <span class="spinner-border spinner-border-sm" role="status"></span> Loading...
                         </div>
                     </div>
-                    <small class="text-muted">Format: Kolom A (Nama), Kolom B (No Telp). Row 1 dianggap header.</small>
+
+                    <small class="text-muted d-block mt-2">
+                        <strong>Format Excel:</strong>
+                        <ul class="d-flex gap-5">
+                            <li>
+                                Kolom A: Nama Camp
+                            </li>
+                            <li>
+                                Kolom B: Batch Camp
+                            </li>
+                            <li>
+                                Kolom C: Nama Pembeli
+                            </li>
+                            <li>
+                                Kolom D: No Telp
+                            </li>
+                            <li>
+                                Row 1: Header (akan diabaikan)
+                            </li>
+                        </ul>
+                    </small>
                 </div>
                 @endif
             </div>
+            <!--================== end import excel ==================-->
+
+
+            <!--================== Data kategori ==================-->
             <div class="card shadow-sm border mb-4">
                 <div class="card-header bg-light fw-semibold">
                     <i class="bi bi-folder2-open me-2 text-primary"></i> Data Kategori
@@ -138,11 +165,9 @@
                         <i class="bi bi-person-vcard me-2 text-success"></i>
                         <span>Data Pembeli</span>
                     </span>
-                    @if($mode === 'create')
                     <button type="button" wire:click="addPeserta" class="btn btn-sm btn-primary">
                         <i class="bi bi-plus-circle"></i> Tambah Peserta
                     </button>
-                    @endif
                 </div>
 
                 <div class="card-body pt-3">

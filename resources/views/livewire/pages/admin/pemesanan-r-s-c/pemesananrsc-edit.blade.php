@@ -10,7 +10,7 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <a href="{{route('admin.pesananrsc.index')}}" class="btn btn-sm btn-secondary">
+            <a wire:navigate href="{{route('admin.pesananrsc.index')}}" class="btn btn-sm btn-secondary">
                 <i class="bi bi-arrow-left me-1"></i>
                 <span>Kembali</span>
             </a>

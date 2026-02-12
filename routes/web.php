@@ -42,6 +42,7 @@ use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Promo
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
+use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 // Data Spending
@@ -103,6 +104,7 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
     Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
     Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
         ->name('admin.pesananrsc.edit');
+    Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');

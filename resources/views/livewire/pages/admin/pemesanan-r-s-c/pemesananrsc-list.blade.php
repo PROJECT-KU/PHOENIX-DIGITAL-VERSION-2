@@ -18,19 +18,13 @@
                         <table id="productTable" class="table align-middle table-striped nowrap" style="width:100%">
                             <thead class="text-center table-light">
                                 <tr style="text-align: center;">
-                                    <th rowspan="2">Kategori</th>
-                                    <th rowspan="2">Batch</th>
-                                    <th rowspan="2">Akun</th>
-                                    <th rowspan="2">Jumlah Peserta</th>
-                                    <th colspan="2">Tanggal Camp</th>
-                                    <th rowspan="2">PIC</th>
-                                    <th rowspan="2">Status</th>
-                                    <th rowspan="2">Total Harga</th>
-                                    <th rowspan="2" width="120">Aksi</th>
-                                </tr>
-                                <tr style="text-align: center;">
-                                    <th>Tanggal Mulai</th>
-                                    <th>Tanggal Akhir</th>
+                                    <th>Kategori</th>
+                                    <th>Batch</th>
+                                    <th>Akun</th>
+                                    <th>Jumlah Peserta</th>
+                                    <th>Status</th>
+                                    <th>Total Harga</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
 
@@ -43,9 +37,6 @@
                                     <td>
                                         <span class="badge bg-primary">{{ $item->total_peserta }} Peserta</span>
                                     </td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_mulai_camp)->format('d F Y') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_akhir_camp)->format('d F Y') }}</td>
-                                    <td>{{ $item->users?->name ?? '-' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')) }}">
                                             {{ ucfirst($item->status) }}
@@ -65,19 +56,16 @@
                                             {{-- Delete batch --}}
                                             <button type="button"
                                                 class="btn btn-danger btn-sm delete-batch-btn"
-                                                data-nama-camp="{{ $item->nama_camp }}"
-                                                data-batch-camp="{{ $item->batch_camp }}">
+                                                wire:click="confirmDeleteBatch('{{ $item->nama_camp }}', '{{ $item->batch_camp }}', {{ $item->total_peserta }})">
                                                 <i class="bi bi-trash"></i>
                                             </button>
 
                                             {{-- Detail peserta --}}
-                                            <button type="button"
-                                                class="btn btn-info btn-sm"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#detailPesertaModal{{ $loop->index }}"
-                                                title="Lihat Detail Peserta">
+                                            <a wire:navigate href="{{ route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]) }}"
+                                                class="btn btn-primary btn-sm"
+                                                title="Lihat Detail">
                                                 <i class="bi bi-eye"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

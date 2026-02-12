@@ -14,6 +14,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PemesananrscForm extends Component
 {
@@ -121,6 +122,58 @@ class PemesananrscForm extends Component
             ];
         }
         $this->hitungTanggalBerakhir();
+    }
+
+    // import excel file
+    public function updatedFileExcel()
+    {
+
+        $this->validate([
+            'file_excel' => 'required|mimes:xlsx,xls,csv|max:2048',
+        ]);
+
+        try {
+            $data = Excel::toCollection(new class implements \Maatwebsite\Excel\Concerns\ToCollection
+            {
+                public function collection(\Illuminate\Support\Collection $rows)
+                {
+                    return $rows;
+                }
+            }, $this->file_excel)->first();
+
+            if ($data->count() > 1) {
+                $this->peserta = [];
+
+                // Ambil nama_camp dan batch_camp dari baris pertama data (row 2 di Excel)
+                $firstDataRow = $data->skip(1)->first();
+
+                if (! empty($firstDataRow[0]) && ! empty($firstDataRow[1])) {
+                    $this->nama_camp = $firstDataRow[0];
+                    $this->batch_camp = $firstDataRow[1];
+                } else {
+                    session()->flash('error', 'Nama Camp dan Batch Camp tidak ditemukan di baris pertama.');
+
+                    return;
+                }
+
+                // Loop semua data untuk ambil peserta (mulai dari row 2)
+                foreach ($data->skip(1) as $row) {
+                    // Cek kolom nama pembeli (C atau index 2)
+                    if (! empty($row[2])) {
+                        $this->peserta[] = [
+                            'nama_pembeli' => $row[2],
+                            'telp_pembeli' => $row[3] ?? '',
+                        ];
+                    }
+                }
+                $this->dispatch('success-upload-excel');
+            } else {
+                session()->flash('error', 'File Excel kosong atau tidak sesuai format.');
+            }
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+            session()->flash('error', 'Gagal import file: '.$e->getMessage());
+        }
     }
 
     public function hitungTanggalBerakhir()

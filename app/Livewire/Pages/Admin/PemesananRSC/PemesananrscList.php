@@ -2,11 +2,13 @@
 
 namespace App\Livewire\Pages\Admin\PemesananRSC;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\DataAkun;
 use App\Models\PemesananRsc;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -95,19 +97,47 @@ class PemesananrscList extends Component
     }
 
     // 🔹 Hapus data
-    public function deletepemesananrsc($id)
+    public function confirmDeleteBatch($namaCamp, $batchCamp, $totalPeserta)
     {
-        $pemesananrsc = PemesananRsc::find($id);
+        $this->dispatch('will-delete-batch-pemesanan', [
+            'nama_camp' => $namaCamp,
+            'batch_camp' => $batchCamp,
+            'total_peserta' => $totalPeserta,
+        ]);
+    }
 
-        if (! $pemesananrsc) {
-            $this->dispatch('delete-error', ['message' => 'Data tidak ditemukan!'], browserEvent: true);
+    #[On('delete-batch-pemesanan')]
+    public function deleteBatch($nama_camp, $batch_camp)
+    {
+        DB::beginTransaction();
+        try {
+            $pemesananList = PemesananRsc::where('nama_camp', $nama_camp)
+                ->where('batch_camp', $batch_camp)
+                ->get();
 
-            return;
+            if ($pemesananList->isEmpty()) {
+                session()->flash('error', 'Data tidak ditemukan!');
+
+                return;
+            }
+
+            $action = new SyncCashFlowAction;
+
+            foreach ($pemesananList as $pemesanan) {
+                $action->delete($pemesanan);
+            }
+
+            PemesananRsc::where('nama_camp', $nama_camp)
+                ->where('batch_camp', $batch_camp)
+                ->delete();
+
+            DB::commit();
+
+            session()->flash('success', 'Batch berhasil dihapus beserta '.$pemesananList->count().' peserta!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            session()->flash('error', 'Gagal menghapus batch: '.$e->getMessage());
         }
-
-        $pemesananrsc->delete();
-
-        $this->dispatch('pemesananrsc-deleted', ['id' => $id], browserEvent: true);
     }
 
     #[Layout('layouts.app')]
