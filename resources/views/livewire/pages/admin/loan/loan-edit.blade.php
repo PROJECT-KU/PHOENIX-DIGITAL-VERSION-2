@@ -9,5 +9,15 @@
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
-    <livewire:pages.admin.loan.loan-form :loan-id="$loanId" />
+    <div class="card">
+        <div class="card-body">
+            <a href="{{route('admin.loan.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.loan.loan-form :loan-id="$loanId" />
+            </div>
+        </div>
+    </div>
 </div>

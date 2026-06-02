@@ -1,18 +1,22 @@
 <div>
     <div class="mb-3 d-flex align-items-center justify-content-between">
-        <h3>Detail Pelamar Kerja</h3>
+        <h3>Detail Pesan Masuk</h3>
         @php
-            $breadcrumbs = [
-                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                ['name' => 'Pesan Masuk', 'url' => route('admin.message.index')],
-                ['name' => 'Detail Pesan'],
-            ];
+        $breadcrumbs = [
+        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
+        ['name' => 'Pesan Masuk', 'url' => route('admin.message.index')],
+        ['name' => 'Detail Pesan'],
+        ];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
     <div class="mb-4 card">
         <div class="card-body">
-            <div class="row">
+            <a href="{{route('admin.message.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="row mt-4">
                 <div class="col-md-6">
                     <label>nama pengirim</label>
                     <p class="fs-5 fw-bold">{{ $message->name }}</p>

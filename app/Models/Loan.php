@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Str;
 
 class Loan extends Model
@@ -40,6 +41,11 @@ class Loan extends Model
     const STATUS_LUNAS = 'lunas';
 
     // Relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
+
     public function penginput(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

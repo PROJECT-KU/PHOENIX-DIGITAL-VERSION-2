@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\Order;
 
+use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +25,9 @@ class OrderDetail extends Component
     }
 
     #[On('sent-on-whatsapp')]
-    public function updateStatus($id)
+    public function updateStatus($id, SyncCashFlowAction $syncCashFlow)
     {
-        DB::transaction(function () use ($id) {
+        DB::transaction(function () use ($id, $syncCashFlow) {
             $this->orderItem = OrderItem::where('order_id', $this->order->id)
                 ->where('id', $id)
                 ->firstOrFail();
@@ -45,6 +46,14 @@ class OrderDetail extends Component
                     'status' => 'completed',
                 ]);
             }
+
+            $syncCashFlow->execute($this->order, [
+                'amount' => $this->order->total,
+                'type' => 'income',
+                'date' => $this->order->created_at,
+                'category' => 'e-commerce',
+                'description' => $this->order->deskripsi ?? 'Pembelian akun dari e-commerce',
+            ]);
         });
 
         $this->order->refresh();

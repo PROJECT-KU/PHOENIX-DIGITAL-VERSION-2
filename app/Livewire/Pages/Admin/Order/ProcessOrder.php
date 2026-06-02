@@ -184,10 +184,9 @@ class ProcessOrder extends Component
                 'order' => $this->order,
                 'orderItem' => $this->orderItem,
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal memproses order: '.$e->getMessage());
+            session()->flash('error', 'Gagal memproses order: ' . $e->getMessage());
         }
     }
 

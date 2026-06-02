@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class PemesananRsc extends Model
 {
@@ -38,6 +39,12 @@ class PemesananRsc extends Model
     protected $casts = [
         'tanggal_transaksi' => 'date',
     ];
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     /**
      * Relasi ke tabel users.

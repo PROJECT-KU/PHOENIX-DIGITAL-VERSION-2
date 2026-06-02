@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Promo;
 use App\Services\PromoService;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -74,6 +75,9 @@ class CheckoutPage extends Component
     public $isCheckingReferral = false;
 
     public $referralDiscount = 0;
+
+    // unik kode
+    public $uniqueCode = 0;
 
     // Total
     public $totalDiscount = 0;
@@ -342,33 +346,42 @@ class CheckoutPage extends Component
 
     private function calculateTotal()
     {
-        // Calculate subtotal
         $this->subtotal = array_sum(array_column($this->cart, 'subtotal'));
 
-        // Calculate promo discount using PromoService
         $promoResult = $this->promoService->calculateDiscount(
             $this->cart,
             $this->foundCustomer,
             $this->promoValid ? $this->kodePromo : null,
             $this->referralValid,
-            false // points handled separately
+            false
         );
 
         $this->promoDiscount = $promoResult['promo_discount'];
         $this->referralDiscount = $promoResult['referral_discount'];
         $this->appliedPromos = $promoResult['applied_promos'];
 
-        // Calculate points discount
+        $tempTotal = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
+
         if ($this->usePoints && $this->pointsValue > 0) {
-            $totalAfterPromo = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
-            $this->pointsDiscount = min($this->pointsValue, $totalAfterPromo);
+            $this->pointsDiscount = min($this->pointsValue, max(0, $tempTotal));
         } else {
             $this->pointsDiscount = 0;
         }
 
-        // Calculate total discount and final total
         $this->totalDiscount = $this->promoDiscount + $this->referralDiscount + $this->pointsDiscount;
-        $this->finalTotal = max(0, $this->subtotal - $this->totalDiscount);
+
+        $netTotal = max(0, $this->subtotal - $this->totalDiscount);
+
+        if ($netTotal > 0) {
+            if ($this->uniqueCode === 0) {
+                $this->uniqueCode = rand(500, 999);
+            }
+
+            $this->finalTotal = $netTotal + $this->uniqueCode;
+        } else {
+            $this->uniqueCode = 0;
+            $this->finalTotal = 0;
+        }
     }
 
     public function checkout()
@@ -426,7 +439,9 @@ class CheckoutPage extends Component
                 'order_number' => $orderNumber,
                 'customer_id' => $customer->id,
                 'subtotal' => $this->subtotal,
+                'guest_token' => Cookie::get('guest_token'),
                 'total' => $this->finalTotal,
+                'unique_code' => $this->uniqueCode,
                 'status' => 'pending',
                 'customer_notes' => $this->customer_notes,
                 'expired_at' => now()->addHours(24),
@@ -504,7 +519,6 @@ class CheckoutPage extends Component
 
                 return redirect()->route('shop.index');
             }
-
         } catch (\Exception $e) {
             DB::rollBack();
             session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
@@ -514,13 +528,35 @@ class CheckoutPage extends Component
     private function generateOrderNumber()
     {
         $date = now()->format('Ymd');
+
+        // Tambahkan lockForUpdate() menghindari race condition di database
         $lastOrder = Order::whereDate('created_at', now())
             ->latest()
+            ->lockForUpdate()
             ->first();
 
-        $increment = $lastOrder ? intval(substr($lastOrder->order_number, -4)) + 1 : 1;
+        if (! $lastOrder) {
+            $number = 'INV-'.$date.'-0001';
+            if (Order::where('order_number', $number)->exists()) {
+                return 'INV-'.$date.'-0002';
+            }
 
-        return 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+            return $number;
+        }
+
+        $parts = explode('-', $lastOrder->order_number);
+        $lastSequence = intval(end($parts));
+
+        $increment = $lastSequence + 1;
+
+        $newOrderNumber = 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+
+        while (Order::where('order_number', $newOrderNumber)->exists()) {
+            $increment++;
+            $newOrderNumber = 'INV-'.$date.'-'.str_pad($increment, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $newOrderNumber;
     }
 
     #[Layout('layouts.guest')]

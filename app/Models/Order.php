@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
@@ -31,6 +32,8 @@ class Order extends Model
         'promo_discount',
         'referral_discount',
         'total_discount',
+        'guest_token',
+        'unique_code',
     ];
 
     protected $casts = [
@@ -41,6 +44,12 @@ class Order extends Model
         'referral_discount' => 'decimal:0',
         'total_discount' => 'decimal:0',
     ];
+
+    // relationship
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     public function promos(): BelongsToMany
     {

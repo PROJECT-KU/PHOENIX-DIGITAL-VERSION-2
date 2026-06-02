@@ -17,8 +17,8 @@
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/iconly.css') }}">
     <link rel="stylesheet" crossorigin href="{{ asset('mazer/compiled/css/custom.css') }}">
 
-     @stack('scripts-head')
-     @stack('styles')
+    @stack('scripts-head')
+    @stack('styles')
 
     <!-- Scripts -->
     @vite(['resources/css/app.scss', 'resources/js/app.js'])
@@ -40,92 +40,129 @@
 
     <!--================== SWEET ALERT ==================-->
     @push('scripts')
-        <script>
-            window.addEventListener("load", function() {
-                @if (session('success'))
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: '{{ session('success') }}',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                @endif
-
-                @if (session('error'))
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        text: '{{ session('error') }}'
-                    });
-                @endif
+    <script>
+        window.addEventListener('swal-alert', (event) => {
+            Swal.fire({
+                icon: event.detail[0].type,
+                title: event.detail[0].title,
+                text: event.detail[0].message,
+                timer: 2000,
+                showConfirmButton: false
             });
-            document.addEventListener('show-alert', function(event) {
-                const detail = event.detail[0] || event.detail;
+        });
 
-                Swal.fire({
-                    icon: detail.type,
-                    title: detail.type === 'success' ? 'Berhasil!' : 'Gagal!',
-                    text: detail.message,
-                    timer: detail.type === 'success' ? 2000 : null,
-                    showConfirmButton: detail.type !== 'success'
-                });
+        window.addEventListener('swal-confirm', (event) => {
+            Swal.fire({
+                icon: event.detail[0].type,
+                title: event.detail[0].title,
+                text: event.detail[0].message,
+                confirmButtonText: 'OK',
+                allowOutsideClick: false
             });
-            document.addEventListener('alpine:init', () => {
-                Alpine.directive('currency', (el, {}, {
-                    cleanup
-                }) => {
-                    const formatRupiah = (value) => {
-                        if (!value) return '';
-                        let number = value.toString().replace(/[^0-9]/g, '');
-                        if (!number) return '';
-                        return 'Rp ' + parseInt(number).toLocaleString('id-ID');
-                    };
+        });
 
-                    const parseRupiah = (value) => {
-                        return value.replace(/[^0-9]/g, '');
-                    };
+        function showAlertFromSession() {
+            @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: @js(session('success')),
+                timer: 2000,
+                showConfirmButton: false
+            });
+            @endif
 
-                    let isFormatting = false;
+            @if(session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: @js(session('error'))
+            });
+            @endif
+        }
 
-                    const handleInput = (e) => {
-                        if (isFormatting) return;
+        // 1. Saat pertama kali load page
+        window.addEventListener('load', () => {
+            showAlertFromSession();
+        });
 
-                        isFormatting = true;
-                        const rawValue = parseRupiah(e.target.value);
-                        e.target.value = formatRupiah(rawValue);
-                        isFormatting = false;
-                    };
+        // 2. Saat Livewire selesai re-render
+        document.addEventListener('livewire:navigated', () => {
+            showAlertFromSession();
+        });
 
-                    // Format initial value hanya sekali
-                    const initializeValue = () => {
-                        if (el.value && !el.dataset.formatted) {
-                            // Hanya format jika belum ada prefix "Rp"
-                            if (!el.value.toString().startsWith('Rp')) {
-                                el.value = formatRupiah(el.value);
-                            }
-                            el.dataset.formatted = 'true';
+        document.addEventListener('livewire:load', () => {
+            Livewire.hook('message.processed', () => {
+                showAlertFromSession();
+            });
+        });
+
+        document.addEventListener('show-alert', function(event) {
+            const detail = event.detail[0] || event.detail;
+
+            Swal.fire({
+                icon: detail.type,
+                title: detail.type === 'success' ? 'Berhasil!' : 'Gagal!',
+                text: detail.message,
+                timer: detail.type === 'success' ? 2000 : null,
+                showConfirmButton: detail.type !== 'success'
+            });
+        });
+        document.addEventListener('alpine:init', () => {
+            Alpine.directive('currency', (el, {}, {
+                cleanup
+            }) => {
+                const formatRupiah = (value) => {
+                    if (!value) return '';
+                    let number = value.toString().replace(/[^0-9]/g, '');
+                    if (!number) return '';
+                    return 'Rp ' + parseInt(number).toLocaleString('id-ID');
+                };
+
+                const parseRupiah = (value) => {
+                    return value.replace(/[^0-9]/g, '');
+                };
+
+                let isFormatting = false;
+
+                const handleInput = (e) => {
+                    if (isFormatting) return;
+
+                    isFormatting = true;
+                    const rawValue = parseRupiah(e.target.value);
+                    e.target.value = formatRupiah(rawValue);
+                    isFormatting = false;
+                };
+
+                // Format initial value hanya sekali
+                const initializeValue = () => {
+                    if (el.value && !el.dataset.formatted) {
+                        // Hanya format jika belum ada prefix "Rp"
+                        if (!el.value.toString().startsWith('Rp')) {
+                            el.value = formatRupiah(el.value);
                         }
-                    };
-
-                    // Tunggu Livewire selesai render
-                    if (window.Livewire) {
-                        Livewire.hook('morph.updated', () => {
-                            initializeValue();
-                        });
+                        el.dataset.formatted = 'true';
                     }
+                };
 
-                    // Untuk initial load
-                    setTimeout(initializeValue, 50);
-
-                    el.addEventListener('input', handleInput);
-
-                    cleanup(() => {
-                        el.removeEventListener('input', handleInput);
+                // Tunggu Livewire selesai render
+                if (window.Livewire) {
+                    Livewire.hook('morph.updated', () => {
+                        initializeValue();
                     });
+                }
+
+                // Untuk initial load
+                setTimeout(initializeValue, 50);
+
+                el.addEventListener('input', handleInput);
+
+                cleanup(() => {
+                    el.removeEventListener('input', handleInput);
                 });
             });
-        </script>
+        });
+    </script>
     @endpush
     <!--================== END ==================-->
 

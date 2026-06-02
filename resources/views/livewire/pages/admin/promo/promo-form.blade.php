@@ -13,7 +13,7 @@
                                 <input type="text" class="form-control @error('nama_promo') is-invalid @enderror"
                                     wire:model="nama_promo" placeholder="Contoh: Flash Sale Akhir Tahun">
                                 @error('nama_promo')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
@@ -27,21 +27,21 @@
                                     <option value="referral_bonus">Referral Bonus</option>
                                 </select>
                                 @error('tipe_promo')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
                             @if ($tipe_promo === 'kode_promo')
-                                <div class="mb-3">
-                                    <label class="form-label">Kode Promo <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('kode_promo') is-invalid @enderror"
-                                        wire:model="kode_promo" placeholder="Contoh: PROMO2024"
-                                        style="text-transform: uppercase;">
-                                    @error('kode_promo')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                    <small class="text-muted">Kode akan otomatis diubah menjadi huruf kapital</small>
-                                </div>
+                            <div class="mb-3">
+                                <label class="form-label">Kode Promo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('kode_promo') is-invalid @enderror"
+                                    wire:model="kode_promo" placeholder="Contoh: PROMO2024"
+                                    style="text-transform: uppercase;">
+                                @error('kode_promo')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Kode akan otomatis diubah menjadi huruf kapital</small>
+                            </div>
                             @endif
 
                             <div class="col-12 mb-3">
@@ -67,41 +67,41 @@
                                     <option value="nominal">Nominal (Rp)</option>
                                 </select>
                                 @error('tipe_diskon')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
                             <div class="col-12">
                                 <div class="">
                                     @if ($tipe_diskon === 'persen')
-                                        <div class="mb-3">
-                                            <label class="form-label">Diskon Member (%)</label>
-                                            <input type="number" class="form-control" wire:model="diskon_member_persen"
-                                                min="0" max="100" step="0.01" placeholder="0">
-                                            <small class="text-muted">Contoh: 20 untuk diskon 20%</small>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Diskon Non-Member (%)</label>
-                                            <input type="number" class="form-control"
-                                                wire:model="diskon_non_member_persen" min="0" max="100"
-                                                step="0.01" placeholder="0">
-                                            <small class="text-muted">Contoh: 15 untuk diskon 15%</small>
-                                        </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Diskon Member (%)</label>
+                                        <input type="number" class="form-control" wire:model="diskon_member_persen"
+                                            min="0" max="100" step="0.01" placeholder="0">
+                                        <small class="text-muted">Contoh: 20 untuk diskon 20%</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Diskon Non-Member (%)</label>
+                                        <input type="number" class="form-control"
+                                            wire:model="diskon_non_member_persen" min="0" max="100"
+                                            step="0.01" placeholder="0">
+                                        <small class="text-muted">Contoh: 15 untuk diskon 15%</small>
+                                    </div>
                                     @else
-                                        <div class="mb-3">
-                                            <label class="form-label">Diskon Member (Rp)</label>
-                                            <input type="number" class="form-control"
-                                                wire:model="diskon_member_nominal" min="0" step="1000"
-                                                placeholder="0">
-                                            <small class="text-muted">Contoh: 50000 untuk diskon Rp 50.000</small>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Diskon Non-Member (Rp)</label>
-                                            <input type="number" class="form-control"
-                                                wire:model="diskon_non_member_nominal" min="0" step="1000"
-                                                placeholder="0">
-                                            <small class="text-muted">Contoh: 30000 untuk diskon Rp 30.000</small>
-                                        </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Diskon Member (Rp)</label>
+                                        <input type="number" class="form-control"
+                                            wire:model="diskon_member_nominal" min="0" step="1000"
+                                            placeholder="0">
+                                        <small class="text-muted">Contoh: 50000 untuk diskon Rp 50.000</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Diskon Non-Member (Rp)</label>
+                                        <input type="number" class="form-control"
+                                            wire:model="diskon_non_member_nominal" min="0" step="1000"
+                                            placeholder="0">
+                                        <small class="text-muted">Contoh: 30000 untuk diskon Rp 30.000</small>
+                                    </div>
                                     @endif
                                 </div>
                             </div>
@@ -129,7 +129,7 @@
                                     <option value="non_member_only">Non-Member Saja</option>
                                 </select>
                                 @error('untuk_member')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
@@ -168,7 +168,7 @@
                                         class="form-control @error('mulai_promo') is-invalid @enderror"
                                         wire:model="mulai_promo">
                                     @error('mulai_promo')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
 
@@ -178,7 +178,7 @@
                                         class="form-control @error('selesai_promo') is-invalid @enderror"
                                         wire:model="selesai_promo">
                                     @error('selesai_promo')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                             </div>
@@ -279,15 +279,15 @@
                                 </div>
 
                                 @if ($badge_text)
-                                    <div class="col-12 mb-3">
-                                        <label class="form-label">Preview Badge:</label>
-                                        <div>
-                                            <span class="badge px-3 py-2"
-                                                style="background-color: {{ $badge_color }}; color: white;">
-                                                {{ $badge_text }}
-                                            </span>
-                                        </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">Preview Badge:</label>
+                                    <div>
+                                        <span class="badge px-3 py-2"
+                                            style="background-color: {{ $badge_color }}; color: white;">
+                                            {{ $badge_text }}
+                                        </span>
                                     </div>
+                                </div>
                                 @endif
                             </div>
                         </div>
@@ -295,8 +295,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Tampilan Badge -->
 
         <!-- Pilih Produk -->
         <div class="card mb-3">
@@ -310,28 +308,28 @@
 
                 <div class="row">
                     @foreach ($allProducts as $product)
-                        <div class="col-md-6 col-lg-4 mb-2">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" wire:model="selectedProducts"
-                                    value="{{ $product->id }}" id="product_{{ $product->id }}">
-                                <label class="form-check-label" for="product_{{ $product->id }}">
-                                    {{ $product->nama_akun }}
-                                </label>
-                            </div>
+                    <div class="col-md-6 col-lg-4 mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" wire:model="selectedProducts"
+                                value="{{ $product->id }}" id="product_{{ $product->id }}">
+                            <label class="form-check-label" for="product_{{ $product->id }}">
+                                {{ $product->nama_akun }}
+                            </label>
                         </div>
+                    </div>
                     @endforeach
                 </div>
 
                 @if (count($selectedProducts) > 0)
-                    <div class="alert alert-info mt-3">
-                        <i class="bi bi-info-circle"></i>
-                        {{ count($selectedProducts) }} produk dipilih
-                    </div>
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    {{ count($selectedProducts) }} produk dipilih
+                </div>
                 @endif
             </div>
         </div>
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn btn-primary">
+        <div class="mt-4">
+            <button type="submit" class="btn w-100 btn-primary">
                 <i class="bi bi-send me-1"></i>
                 {{ $this->mode === 'create' ? 'Tambah Promo' : 'Simpan Perubahan' }}
             </button>

@@ -8,19 +8,21 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <div class="gap-2 d-flex align-items-center">
-                <div class="mb-0 form-group position-relative has-icon-left w-25">
-                    <input wire:model.defer="searchInput" wire:keydown.enter="searchCustomer" type="text"
-                        class="form-control border-secondary" placeholder="cari kode pesanan atau no hp">
-                    <div class="form-control-icon">
-                        <i class="bi bi-search" style="font-size: 14px;"></i>
+            <div class="mb-3 d-flex align-items-center justify-content-between">
+                <div class="gap-2 d-flex align-items-center flex-grow-1">
+                    <div class="mb-0 form-group position-relative has-icon-left w-25">
+                        <input wire:model.defer="searchInput" wire:keydown.enter="searchCustomer" type="text"
+                            class="form-control border-secondary" placeholder="cari kode pesanan atau no hp">
+                        <div class="form-control-icon">
+                            <i class="bi bi-search" style="font-size: 14px;"></i>
+                        </div>
                     </div>
+                    @if ($this->search != '')
+                        <button class="btn btn-outline-secondary" wire:click='resetSearch'><i
+                                class="bi bi-x-circle"></i></button>
+                    @endif
+                    <button wire:click='searchCustomer' type="button" class="rounded btn btn-primary">cari</button>
                 </div>
-                @if ($this->search != '')
-                    <button class="btn btn-outline-secondary" wire:click='resetSearch'><i
-                            class="bi bi-x-circle"></i></button>
-                @endif
-                <button wire:click='searchCustomer' type="button" class="rounded btn btn-primary">cari</button>
             </div>
 
             <ul class="mt-3 mb-1 nav nav-tabs">
@@ -127,7 +129,7 @@
                 </div>
 
                 <div class="card-footer">
-                    {{ $orders->links() }}
+                    {{ $orders->links('vendor.pagination') }}
                 </div>
             </div>
         </div>

@@ -12,7 +12,13 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.lowongan-pekerjaan.lowongan-pekerjaan-form/>
+            <a href="{{route('admin.lowongan.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.lowongan-pekerjaan.lowongan-pekerjaan-form />
+            </div>
         </div>
     </div>
 </div>

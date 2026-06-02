@@ -14,7 +14,13 @@
     </div>
     <div class="card">
         <div class="card-body">
-            <livewire:pages.admin.data-akun.DataAkun-form :dataAkun="$dataAkun" />
+            <a href="{{route('admin.DataAkun.index')}}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                <span>Kembali</span>
+            </a>
+            <div class="mt-4">
+                <livewire:pages.admin.data-akun.DataAkun-form :dataAkun="$dataAkun" />
+            </div>
         </div>
     </div>
 </div>

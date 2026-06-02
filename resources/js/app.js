@@ -119,6 +119,13 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    Livewire.on("success-upload-excel", (data) => {
+        Toast.fire({
+            icon: "success",
+            title: data.message || "Berhasil upload file excel data peserta",
+        });
+    });
+
     // customer event
     Livewire.on("customer-created", (data) => {
         Toast.fire({
@@ -247,6 +254,22 @@ document.addEventListener("livewire:init", () => {
         });
     });
 
+    Livewire.on("will-delete-customer-message-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus Pesan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-customer-message-data", {
+                    id: data["id"],
+                });
+            }
+        });
+    });
+
     // permission
     Livewire.on("will-delete-permission-data", (data) => {
         Swal2.fire({
@@ -258,6 +281,75 @@ document.addEventListener("livewire:init", () => {
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-permission-data", { id: data["id"] });
+            }
+        });
+    });
+    // user account
+    Livewire.on("will-delete-user-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data user ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-user-data", { id: data["userId"] });
+            }
+        });
+    });
+    Livewire.on("will-delete-role-data", (data) => {
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data role ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-role-data", { id: data["id"] });
+            }
+        });
+    });
+
+    Livewire.on("will-delete-karyawan-data", (data) => {
+        console.log("data:", data);
+        Swal2.fire({
+            icon: "question",
+            title: "Yakin ingin hapus data karyawan ini ?",
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.dispatch("delete-karyawan-data", { id: data["id"] });
+            }
+        });
+    });
+
+    Livewire.on("will-delete-batch-pemesanan", (data) => {
+        Swal2.fire({
+            icon: "warning",
+            title: "Yakin ingin hapus Batch ini?",
+            html: `
+                <div class="text-start">
+                    <p><strong>Nama Camp:</strong> ${data[0].nama_camp}</p>
+                    <p><strong>Batch:</strong> ${data[0].batch_camp}</p>
+                    <p><strong>Total Peserta:</strong> ${data[0].total_peserta} orang</p>
+                    <hr>
+                    <p class="text-danger"><strong>Semua data peserta dan cashflow dalam batch ini akan dihapus!</strong></p>
+                </div>
+            `,
+            showCancelButton: true,
+            cancelButtonText: "Batal",
+            confirmButtonText: "Ya, hapus",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Dispatch event untuk delete
+                Livewire.dispatch("delete-batch-pemesanan", {
+                    nama_camp: data[0].nama_camp,
+                    batch_camp: data[0].batch_camp,
+                });
             }
         });
     });
