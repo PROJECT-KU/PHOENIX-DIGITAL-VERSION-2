@@ -32,7 +32,7 @@ class BannersList extends Component
 
         // Hapus file fisik jika ada
         if ($Banners->gambar) {
-            $filePath = storage_path('app/public/img/banners/'.$Banners->gambar);
+            $filePath = storage_path('app/public/img/banners/' . $Banners->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -44,7 +44,7 @@ class BannersList extends Component
         $this->dispatch('Banners-deleted', id: $id);
     }
 
-    #[Layout('layouts.app')]
+
     public function render()
     {
         $Banners = Banners::query()
@@ -56,6 +56,7 @@ class BannersList extends Component
 
         return view('livewire.pages.admin.Banners.Banners-list', [
             'Banners' => $Banners,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

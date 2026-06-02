@@ -64,7 +64,7 @@ class BannersForm extends Component
         try {
             // generate nama unik dengan angka random
             $random = rand(10000, 99999);
-            $filename = 'Banners_'.$random.'.'.$this->gambar->getClientOriginalExtension();
+            $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
 
             // simpan file fisik ke folder storage/app/public/img/banners
             $this->gambar->storeAs('img/banners', $filename, 'public');
@@ -83,7 +83,7 @@ class BannersForm extends Component
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan Data Banners: '.$e->getMessage());
+            session()->flash('error', 'Gagal menambahkan Data Banners: ' . $e->getMessage());
         }
     }
 
@@ -98,13 +98,13 @@ class BannersForm extends Component
 
             if ($this->gambar && is_object($this->gambar)) {
                 // hapus file lama kalau ada
-                if ($this->existingImage && Storage::disk('public')->exists('img/banners/'.$this->existingImage)) {
-                    Storage::disk('public')->delete('img/banners/'.$this->existingImage);
+                if ($this->existingImage && Storage::disk('public')->exists('img/banners/' . $this->existingImage)) {
+                    Storage::disk('public')->delete('img/banners/' . $this->existingImage);
                 }
 
                 // upload baru → replace
                 $random = rand(10000, 99999);
-                $filename = 'Banners_'.$random.'.'.$this->gambar->getClientOriginalExtension();
+                $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
                 $this->gambar->storeAs('img/banners', $filename, 'public');
                 $data['gambar'] = $filename;
             } else {
@@ -119,7 +119,7 @@ class BannersForm extends Component
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate Data Banners: '.$e->getMessage());
+            session()->flash('error', 'Gagal mengupdate Data Banners: ' . $e->getMessage());
         }
     }
 
