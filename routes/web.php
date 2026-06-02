@@ -37,10 +37,11 @@ use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
+// Data Order
 use App\Livewire\Pages\Admin\Order\OrderDetail;
-// Data Paket Bundling
 use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
+// Data Paket Bundling
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
 // Data Promo
@@ -120,8 +121,8 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
         ->name('admin.pesananrsc.edit');
     Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
-    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 
     // Data Customer
     Route::get('/admin/customer', CustomerList::class)->name('admin.customer.index');
@@ -222,4 +223,4 @@ Route::middleware(['checkrole:admin,finance'])->group(function () {
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
