@@ -346,7 +346,6 @@
 </style>
 <!--================== END STYLE LIST BANNERS ==================-->
 
-
 <!--================== STYLE FORM BANNERS ==================-->
 <style>
     /* Memaksa tinggi card header agar sama dengan halaman List */
@@ -592,6 +591,8 @@
     }
 </style>
 <!--================== END STYLE DASHBOARD ==================-->
+
+
 @endpush
 
 <div class="container-fluid p-4">

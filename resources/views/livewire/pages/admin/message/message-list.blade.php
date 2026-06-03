@@ -2,7 +2,7 @@
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Pesan Masuk</h3>
         @php
-            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesan Masuk']];
+        $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesan Masuk']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
@@ -16,7 +16,7 @@
                         <select wire:model.live="filterMonth" class="form-select">
                             <option value="">Semua Bulan</option>
                             @foreach ($months as $month)
-                                <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
+                            <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -49,45 +49,45 @@
                     </thead>
                     <tbody>
                         @forelse ($messages as $item)
-                            <tr class="{{ is_null($item->read_at) ? 'table-warning' : '' }}">
-                                <td>
-                                    @if (is_null($item->read_at))
-                                        <span class="badge bg-warning">Baru</span>
-                                    @else
-                                        <i class="text-success bi bi-check-circle-fill"></i>
-                                    @endif
-                                </td>
-                                <td class="fw-semibold text-capitalize">
-                                    {{ $item->name }}
-                                    @if (is_null($item->read_at))
-                                        <i class="text-primary bi bi-dot"></i>
-                                    @endif
-                                </td>
-                                <td>
-                                    {{ $item->email }}
-                                </td>
-                                <td class="text-muted small">
-                                    {{ $item->created_at->diffForHumans() }}
-                                </td>
-                                <td>
-                                    <div class="gap-2 d-flex justify-content-center">
-                                        <a wire:navigate href="{{ route('admin.message.detail', $item) }}"
-                                            class="text-black btn btn-sm btn-warning" title="Detail">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <button type="button" wire:click="$dispatch('will-delete-message-data', {{$item}})"
-                                            class="btn btn-sm btn-danger" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                        <tr class="{{ is_null($item->read_at) ? 'table-warning' : '' }}">
+                            <td>
+                                @if (is_null($item->read_at))
+                                <span class="badge bg-warning">Baru</span>
+                                @else
+                                <i class="text-success bi bi-check-circle-fill"></i>
+                                @endif
+                            </td>
+                            <td class="fw-semibold text-capitalize">
+                                {{ $item->name }}
+                                @if (is_null($item->read_at))
+                                <i class="text-primary bi bi-dot"></i>
+                                @endif
+                            </td>
+                            <td>
+                                {{ $item->email }}
+                            </td>
+                            <td class="text-muted small">
+                                {{ $item->created_at->diffForHumans() }}
+                            </td>
+                            <td>
+                                <div class="gap-2 d-flex justify-content-center">
+                                    <a wire:navigate href="{{ route('admin.message.detail', $item) }}"
+                                        class="text-black btn btn-sm btn-warning" title="Detail">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" wire:click="$dispatch('will-delete-message-data', {{$item}})"
+                                        class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="5" class="py-3 text-center text-muted">
-                                    Belum ada pesan masuk
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="5" class="py-3 text-center text-muted">
+                                Belum ada pesan masuk
+                            </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
