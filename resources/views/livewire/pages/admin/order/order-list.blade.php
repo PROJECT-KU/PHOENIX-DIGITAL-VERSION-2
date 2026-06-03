@@ -23,6 +23,14 @@
                     @endif
                     <button wire:click='searchCustomer' type="button" class="rounded btn btn-primary">cari</button>
                 </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesanantoko.create') }}"
+                        wire:navigate>
+                        <i class="bi bi-plus-lg"></i>
+                        <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
+                    </a>
+                </div>
             </div>
 
             <ul class="mt-3 mb-1 nav nav-tabs">

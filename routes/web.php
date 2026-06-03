@@ -40,6 +40,7 @@ use App\Livewire\Pages\Admin\Message\MessageList;
 // Data Order
 use App\Livewire\Pages\Admin\Order\OrderDetail;
 use App\Livewire\Pages\Admin\Order\OrderList;
+use App\Livewire\Pages\Admin\Order\OrderCreate;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
 // Data Paket Bundling
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
@@ -121,6 +122,7 @@ Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
         ->name('admin.pesananrsc.edit');
     Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    Route::get('/admin/pesanantoko/create', OrderCreate::class)->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 
