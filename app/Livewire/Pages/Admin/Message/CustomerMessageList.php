@@ -18,6 +18,32 @@ class CustomerMessageList extends Component
 
     public $filterStatus = '';
 
+    public function getQueuePositionForItem($item)
+    {
+        return \App\Models\CustomerMessage::where('status', '!=', 'closed')
+            ->whereNull('read_at')
+            ->where('created_at', '<', $item->created_at)
+            ->count() + 1;
+    }
+
+    public function updateStatus($id, $value)
+    {
+        $message = CustomerMessage::find($id);
+        if ($message) {
+            $message->update(['status' => $value]);
+            $this->dispatch('toast-success', message: 'Status diperbarui!');
+        }
+    }
+
+    public function updatePriority($id, $value)
+    {
+        $message = CustomerMessage::find($id);
+        if ($message) {
+            $message->update(['priority' => $value]);
+            $this->dispatch('toast-success', message: 'Prioritas diperbarui!');
+        }
+    }
+
     public function updatingFilterMonth()
     {
         $this->resetPage();
@@ -34,18 +60,30 @@ class CustomerMessageList extends Component
         $this->resetPage();
     }
 
-    #[On('delete-customer-message-data')]
     public function delete($id)
     {
-        try {
-            CustomerMessage::findOrFail($id)->delete();
-            session()->flash('success', 'berhasil menghapus data lowongan');
-        } catch (\Exception $e) {
-            session()->flash('error', 'gagal menghapus data lowongan');
+        $customerMessage = CustomerMessage::find($id);
+
+        if (! $customerMessage) {
+            $this->dispatch('delete-error', message: 'Data Pesan Pelanggan tidak ditemukan!');
+
+            return;
         }
+
+        // Hapus file fisik jika ada
+        if ($customerMessage->gambar) {
+            $filePath = storage_path('app/public/img/customer-messages/' . $customerMessage->gambar);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        }
+
+        // Hapus record dari DB
+        $customerMessage->delete();
+
+        $this->dispatch('customer-message-deleted', id: $id);
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $query = CustomerMessage::latest();
@@ -79,6 +117,7 @@ class CustomerMessageList extends Component
             'messages' => $dataPesan,
             'months' => $months,
             'unreadCount' => $unreadCount,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

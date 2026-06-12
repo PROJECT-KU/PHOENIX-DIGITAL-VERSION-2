@@ -473,6 +473,19 @@ Dashboard || Phoenix Digital
     // Eksekusi saat berpindah halaman via SPA Livewire (wire:navigate)
     document.addEventListener('livewire:navigated', renderFinanceChart);
 </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', renderFinanceChart);
+    document.addEventListener('livewire:navigated', () => {
+        setTimeout(renderFinanceChart, 100);
+    });
+
+    document.addEventListener('livewire:updated', () => {
+        if (document.querySelector("#finance-chart")) {
+            renderFinanceChart();
+        }
+    });
+</script>
 <!--================== END GRAFIK PEMASUKAN & PENGELUARAN ==================-->
 
 <!--================== UCAPAN SELAMAT ==================-->
@@ -548,19 +561,26 @@ Dashboard || Phoenix Digital
 
 <!--================== GRAFIK VISITORS PROFILE ==================-->
 <script>
-    document.addEventListener('livewire:navigated', function() {
+    function renderVisitorsChart() {
         const chartElement = document.querySelector("#chart-visitors-profile");
+
+        // Jangan render jika elemen tidak ada
         if (!chartElement) return;
 
-        // Ambil data dari PHP yang sudah kita kirim melalui view
-        const visitorCounts = @json($counts);
-        const visitorCountries = @json($countries);
+        // Validasi Data: Pastikan data dari PHP sudah terisi
+        const visitorCounts = @json($counts ?? []);
+        const visitorCountries = @json($countries ?? []);
+
+        if (visitorCounts.length === 0) return;
 
         const optionsVisitors = {
             series: visitorCounts,
             chart: {
                 type: 'donut',
-                height: 350
+                height: 350,
+                animations: {
+                    enabled: true
+                }
             },
             labels: visitorCountries,
             colors: ['#7c3aed', '#3b82f6', '#10b981', '#f43f5e'],
@@ -579,9 +599,33 @@ Dashboard || Phoenix Digital
             }
         };
 
-        chartElement.innerHTML = ''; // Bersihkan agar tidak duplikat
+        chartElement.innerHTML = '';
         const chart = new ApexCharts(chartElement, optionsVisitors);
         chart.render();
+    }
+
+    // Gunakan MutationObserver agar lebih akurat
+    const observer = new MutationObserver((mutations, obs) => {
+        const chartElement = document.querySelector("#chart-visitors-profile");
+        if (chartElement) {
+            renderVisitorsChart();
+            obs.disconnect(); // Hentikan pemantauan setelah grafik tampil
+        }
     });
+
+    // Jalankan inisialisasi
+    document.addEventListener('livewire:navigated', () => {
+        // Beri sedikit waktu untuk rendering Livewire selesai (50ms)
+        setTimeout(renderVisitorsChart, 50);
+
+        // Mulai memantau jika grafik belum muncul (fallback)
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    });
+
+    // Backup: Tetap jalankan saat DOM content siap
+    document.addEventListener('DOMContentLoaded', () => setTimeout(renderVisitorsChart, 50));
 </script>
 <!--================== END GRAFIK VISITORS PROFILE ==================-->

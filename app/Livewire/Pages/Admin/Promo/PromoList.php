@@ -7,6 +7,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Carbon;
 
 class PromoList extends Component
 {
@@ -33,21 +34,41 @@ class PromoList extends Component
             session()->flash('success', 'Promo berhasil dihapus');
             $this->dispatch('promoDeleted');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menghapus promo: '.$e->getMessage());
+            session()->flash('error', 'Gagal menghapus promo: ' . $e->getMessage());
         }
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
+        $now = now();
+
+        // Nonaktifkan promo yang selesai
+        Promo::where('is_active', true)
+            ->where('selesai_promo', '<', $now)
+            ->update(['is_active' => false]);
+
+        // Aktifkan promo yang sudah memasuki masa mulai
+        Promo::where('is_active', false)
+            ->where('mulai_promo', '<=', $now)
+            ->where('selesai_promo', '>=', $now) // Pastikan belum selesai
+            ->update(['is_active' => true]);
+
         $promos = Promo::query()
             ->when($this->searchDataPromo, function ($query) {
-                $query->where('nama_promo', 'like', '%'.$this->searchDataPromo.'%')
-                    ->orWhere('kode_promo', 'like', '%'.$this->searchDataPromo.'%');
+                $query->where('nama_promo', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('kode_promo', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('tipe_promo', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('kode_promo', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('diskon_member_persen', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('diskon_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('diskon_non_member_persen', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('diskon_non_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
+                    ->orWhere('status', 'like', '%' . $this->searchDataPromo . '%');
             })
             ->latest()
             ->paginate(10);
 
-        return view('livewire.pages.admin.promo.promo-list', ['promos' => $promos]);
+        return view('livewire.pages.admin.promo.promo-list', ['promos' => $promos])
+            ->layout('livewire.layout.templateindex');
     }
 }

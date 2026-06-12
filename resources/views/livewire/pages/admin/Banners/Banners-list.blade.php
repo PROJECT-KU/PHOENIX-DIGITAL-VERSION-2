@@ -1,5 +1,5 @@
 <div>
-    <div class="container-fluid p-4">
+    <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
@@ -130,7 +130,7 @@
 
 <!--================== SWEET ALERT DELETE ==================-->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('livewire:navigated', function() {
 
         const glossyConfig = {
             background: 'rgba(255, 255, 255, 0.8)',
@@ -144,50 +144,55 @@
             buttonsStyling: false
         };
 
-        document.querySelectorAll('.delete-Banners-btn').forEach(button => {
-            document.addEventListener('click', function(event) {
-                const button = event.target.closest('.delete-Banners-btn');
-                if (button) {
-                    event.preventDefault();
-                    const BannersId = button.getAttribute('data-id');
+        // EVENT DELEGATION: Pasang listener di 'document'
+        document.body.addEventListener('click', function(event) {
+            // Cek apakah yang diklik adalah tombol delete atau ikon di dalam tombol
+            const button = event.target.closest('.delete-Banners-btn');
 
-                    Swal.fire({
-                        title: 'Yakin hapus data?',
-                        text: "Data tidak bisa dikembalikan!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Ya, hapus!',
-                        cancelButtonText: 'Batal',
-                        ...glossyConfig
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            const livewireComponentId = button.closest('[wire\\:id]')
-                                .getAttribute('wire:id');
-                            Livewire.find(livewireComponentId).call('deleteBanners',
-                                BannersId);
+            if (button) {
+                event.preventDefault();
+                const BannersId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Yakin hapus data?',
+                    text: "Data tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfig
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Mencari komponen Livewire terdekat
+                        const component = button.closest('[wire\\:id]');
+                        if (component) {
+                            const livewireComponentId = component.getAttribute('wire:id');
+                            Livewire.find(livewireComponentId).call('deleteBanners', BannersId);
+
                         }
-                    });
-                }
-            });
+                    }
+                });
+            }
         });
+    });
 
-        window.addEventListener('Banners-deleted', () => {
-            Swal.fire({
-                title: 'Terhapus!',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false,
-                ...glossyConfig
-            });
+    // Listener untuk sukses (gunakan window agar tetap menangkap event dari Livewire)
+    window.addEventListener('Banners-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            background: 'rgba(255, 255, 255, 0.8)' // Tambahkan config jika perlu
         });
+    });
 
-        window.addEventListener('delete-error', (e) => {
-            Swal.fire({
-                title: 'Gagal!',
-                text: e.detail.message,
-                icon: 'error',
-                ...glossyConfig
-            });
+    window.addEventListener('delete-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error',
+            background: 'rgba(255, 255, 255, 0.8)'
         });
     });
 </script>

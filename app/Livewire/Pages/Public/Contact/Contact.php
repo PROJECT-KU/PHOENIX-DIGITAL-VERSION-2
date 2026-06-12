@@ -14,6 +14,8 @@ class Contact extends Component
 
     public $email;
 
+    public $no_telp;
+
     public $message;
 
     // Honeypot field
@@ -27,7 +29,7 @@ class Contact extends Component
             return;
         }
 
-        $key = 'contact-form:'.$request->ip();
+        $key = 'contact-form:' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             $this->addError('rate_limit', "Terlalu banyak percobaan. Silakan tunggu $seconds detik lagi.");
@@ -38,12 +40,14 @@ class Contact extends Component
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'no_telp' => ['required', 'string', 'regex:/^\+[1-9]\d{6,14}$/'],
             'message' => 'required|string|max:2000',
         ]);
 
         CustomerMessage::create([
             'name' => $this->name,
             'email' => $this->email,
+            'no_telp' => $this->no_telp,
             'message' => $this->message,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
@@ -51,7 +55,7 @@ class Contact extends Component
 
         RateLimiter::hit($key);
 
-        $this->reset(['name', 'email', 'message']);
+        $this->reset(['name', 'email', 'no_telp', 'message']);
         session()->flash('success', 'Terima kasih! Pesan Anda telah kami terima.');
     }
 

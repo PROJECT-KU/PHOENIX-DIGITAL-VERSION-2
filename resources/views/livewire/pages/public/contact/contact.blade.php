@@ -44,6 +44,17 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="no_telp" class="form-label">No WhatsApp (dengan kode negara)</label>
+                    <input type="tel"
+                        class="form-control @error('no_telp') is-invalid @enderror"
+                        id="no_telp"
+                        wire:model="no_telp"
+                        placeholder="+1234567890">
+                    @error('no_telp') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                    <small class="text-muted">Contoh: +628123456789 atau +1555010999</small>
+                </div>
+
+                <div class="mb-3">
                     <label for="message" class="form-label">Pesan</label>
                     <textarea class="form-control @error('message') is-invalid @enderror" id="message" rows="5" wire:model="message" placeholder="Tulis pesan Anda di sini..."></textarea>
                     @error('message') <div class="invalid-feedback">{{ $message }}</div> @enderror
