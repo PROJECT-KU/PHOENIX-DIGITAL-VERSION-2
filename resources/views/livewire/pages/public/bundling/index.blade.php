@@ -1,5 +1,5 @@
 <!-- Best Sellers Section -->
-<section id="best-sellers" class="best-sellers section">
+<section id="best-sellers" class="best-sellers section" data-aos="fade-up" wire:ignore.self>
     <!-- Section Title -->
     <div class="container section-title" data-aos="fade-up" wire:ignore.self>
         <h2>Paket Bundling</h2>
@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <div class="mx-auto col-lg-8">
+    <div class="mx-auto col-lg-8" data-aos="fade-up">
         <div class="text-center main-content" data-aos="zoom-in" data-aos-delay="200">
             <div class="action-buttons" data-aos="fade-up" data-aos-delay="450">
                 <a href="{{ route('bundling.product-bundlings') }}" class="btn-view-deals">View All Bundlings</a>

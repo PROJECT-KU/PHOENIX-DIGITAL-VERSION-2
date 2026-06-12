@@ -2,25 +2,35 @@
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Data Pesanan Toko</h3>
         @php
-        $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesanan Toko']];
+            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesanan Toko']];
         @endphp
         <x-breadcrumb :items="$breadcrumbs" />
     </div>
     <div class="card">
         <div class="card-body">
-            <div class="gap-2 d-flex align-items-center">
-                <div class="mb-0 form-group position-relative has-icon-left w-25">
-                    <input wire:model.defer="searchInput" wire:keydown.enter="searchCustomer" type="text"
-                        class="form-control border-secondary" placeholder="cari kode pesanan atau no hp">
-                    <div class="form-control-icon">
-                        <i class="bi bi-search" style="font-size: 14px;"></i>
+            <div class="mb-3 d-flex align-items-center justify-content-between">
+                <div class="gap-2 d-flex align-items-center flex-grow-1">
+                    <div class="mb-0 form-group position-relative has-icon-left w-25">
+                        <input wire:model.defer="searchInput" wire:keydown.enter="searchCustomer" type="text"
+                            class="form-control border-secondary" placeholder="cari kode pesanan atau no hp">
+                        <div class="form-control-icon">
+                            <i class="bi bi-search" style="font-size: 14px;"></i>
+                        </div>
                     </div>
+                    @if ($this->search != '')
+                        <button class="btn btn-outline-secondary" wire:click='resetSearch'><i
+                                class="bi bi-x-circle"></i></button>
+                    @endif
+                    <button wire:click='searchCustomer' type="button" class="rounded btn btn-primary">cari</button>
                 </div>
-                @if ($this->search != '')
-                <button class="btn btn-outline-secondary" wire:click='resetSearch'><i
-                        class="bi bi-x-circle"></i></button>
-                @endif
-                <button wire:click='searchCustomer' type="button" class="rounded btn btn-primary">cari</button>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesanantoko.create') }}"
+                        wire:navigate>
+                        <i class="bi bi-plus-lg"></i>
+                        <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
+                    </a>
+                </div>
             </div>
 
             <ul class="mt-3 mb-1 nav nav-tabs">
@@ -76,50 +86,50 @@
                             </thead>
                             <tbody>
                                 @forelse ($orders as $order)
-                                <tr class="text-center">
-                                    <td>{{ $order->order_number }}</td>
-                                    <td>{{ $order->customer->nama }}</td>
-                                    <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
-                                    <td>
-                                        @php
-                                        $color = '';
-                                        if ($order->status == 'pending') {
-                                        $color = 'warning';
-                                        }
-                                        if ($order->status == 'processing') {
-                                        $color = 'info';
-                                        }
-                                        if ($order->status == 'paid') {
-                                        $color = 'success';
-                                        }
-                                        if ($order->status == 'cancelled') {
-                                        $color = 'danger';
-                                        }
-                                        if ($order->status == 'completed') {
-                                        $color = 'primary';
-                                        }
-                                        @endphp
-                                        <span class="badge bg-{{ $color }}">
-                                            {{ strtoupper($order->status) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
-                                    <td class="text-end">
-                                        <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
-                                            title="detail pesanan" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </td>
-                                </tr>
+                                    <tr class="text-center">
+                                        <td>{{ $order->order_number }}</td>
+                                        <td>{{ $order->customer->nama }}</td>
+                                        <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
+                                        <td>
+                                            @php
+                                                $color = '';
+                                                if ($order->status == 'pending') {
+                                                    $color = 'warning';
+                                                }
+                                                if ($order->status == 'processing') {
+                                                    $color = 'info';
+                                                }
+                                                if ($order->status == 'paid') {
+                                                    $color = 'success';
+                                                }
+                                                if ($order->status == 'cancelled') {
+                                                    $color = 'danger';
+                                                }
+                                                if ($order->status == 'completed') {
+                                                    $color = 'primary';
+                                                }
+                                            @endphp
+                                            <span class="badge bg-{{ $color }}">
+                                                {{ strtoupper($order->status) }}
+                                            </span>
+                                        </td>
+                                        <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+                                        <td class="text-end">
+                                            <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
+                                                title="detail pesanan" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
                                 @empty
-                                <tr>
-                                    <td colspan="8" class="py-4 text-center">
-                                        <div class="text-muted">
-                                            <i class="mb-2 bi bi-inbox fs-1"></i>
-                                            <p>Tidak ada data pemesanan yang ditemukan.</p>
-                                        </div>
-                                    </td>
-                                </tr>
+                                    <tr>
+                                        <td colspan="8" class="py-4 text-center">
+                                            <div class="text-muted">
+                                                <i class="mb-2 bi bi-inbox fs-1"></i>
+                                                <p>Tidak ada data pemesanan yang ditemukan.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>

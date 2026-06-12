@@ -17,21 +17,19 @@
                                 <i class="bi bi-search"></i>
                             </div>
 
-                            <input wire:model.live.debounce.300ms="searchBanners"
-                                type="text"
-                                class="form-control ps-5 pe-5"
-                                placeholder="Cari banner...">
+                            <input wire:model.live.debounce.300ms="searchBanners" type="text"
+                                class="form-control ps-5 pe-5" placeholder="Cari banner...">
 
-                            @if($searchBanners)
-                            <span wire:click="$set('searchBanners', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;"
-                                title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                            </span>
+                            @if ($searchBanners)
+                                <span wire:click="$set('searchBanners', '')"
+                                    class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                                    style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                                    <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                                </span>
                             @endif
                         </div>
-                        <a wire:navigate href="{{ route('admin.Banners.create') }}" class="btn btn-primary d-flex align-items-center justify-content-center px-4">
+                        <a wire:navigate href="{{ route('admin.Banners.create') }}"
+                            class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Data</span>
                         </a>
@@ -56,53 +54,68 @@
                         </thead>
                         <tbody>
                             @forelse ($Banners as $item)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td class="fw-bold">{{ $item->judul }}</td>
-                                <td>
-                                    @if ($item->gambar && \Storage::disk('public')->exists('img/banners/' . $item->gambar))
-                                    <img src="{{ asset('storage/app/public/mg/banners/' . $item->gambar) }}"
-                                        class="rounded-3"
-                                        style="width: 60px; height: 40px; object-fit: cover; cursor: pointer;"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#bannerModal{{ $item->id }}">
-                                    @else
-                                    <img src="{{ asset('assets/img/no-image.jpg') }}"
-                                        class="rounded-3"
-                                        style="width: 60px; height: 40px; object-fit: cover;">
-                                    @endif
-                                </td>
-                                <td class="text-truncate" style="max-width: 150px;">{{ $item->deskripsi }}</td>
-                                <td class="text-center">
-                                    <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
-                                    </span>
-                                </td>
-                                <td class="text-center text-nowrap">
-                                    <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}" class="btn btn-sm btn-warning text-white p-2" title="Edit">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-danger delete-Banners-btn p-2" data-id="{{ $item->id }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td class="fw-bold">{{ $item->judul }}</td>
+                                    <td>
+                                        @if ($item->gambar && \Storage::disk('public')->exists('img/banners/' . $item->gambar))
+                                            <!-- Thumbnail -->
+                                            <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
+                                                class="rounded shadow-sm"
+                                                style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                                data-bs-toggle="modal" data-bs-target="#imageModal{{ $item->id }}">
+
+                                            <!-- Modal -->
+                                            <div class="modal fade" id="imageModal{{ $item->id }}" tabindex="-1"
+                                                aria-labelledby="imageModalLabel{{ $item->id }}" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                    <div class="modal-content">
+                                                        <div class="modal-body text-center p-0">
+                                                            <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
+                                                                class="img-fluid rounded">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <img src="{{ asset('assets/img/no-image.jpg') }}" class="rounded-3"
+                                                style="width: 60px; height: 40px; object-fit: cover;">
+                                        @endif
+                                    </td>
+                                    <td class="text-truncate" style="max-width: 150px;">{{ $item->deskripsi }}</td>
+                                    <td class="text-center">
+                                        <span
+                                            class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
+                                            {{ ucfirst($item->status) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}"
+                                            class="btn btn-sm btn-warning text-white p-2" title="Edit">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger delete-Banners-btn p-2"
+                                            data-id="{{ $item->id }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
                             @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-images"></i>
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="d-flex flex-column align-items-center justify-content-center">
+                                            <div class="empty-state-icon-wrapper mb-3">
+                                                <i class="bi bi-images"></i>
+                                            </div>
+                                            <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
+                                                Belum Ada Data Banner
+                                            </h5>
+                                            <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                                Silakan klik tombol tambah data untuk memasukkan banner baru.
+                                            </p>
                                         </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                            Belum Ada Data Banner
-                                        </h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                            Silakan klik tombol tambah data untuk memasukkan banner baru.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
+                                    </td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -155,6 +168,7 @@
                         if (component) {
                             const livewireComponentId = component.getAttribute('wire:id');
                             Livewire.find(livewireComponentId).call('deleteBanners', BannersId);
+
                         }
                     }
                 });

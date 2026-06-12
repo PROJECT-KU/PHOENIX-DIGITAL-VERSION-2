@@ -64,11 +64,16 @@ class ProductBundlings extends Component
                 'subtotal' => $price
             ];
         }
+        // session()->put('cart', $cart);
+
+        // $this->dispatch('cart-updated', count: $this->getCartCount());
+        // $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
+        // $this->dispatch('redirect-home');
+
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
-        $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
-        // $this->dispatch('redirect-home');
+        $this->dispatch('success-add-to-cart');
     }
 
     private function getCartCount(): int
