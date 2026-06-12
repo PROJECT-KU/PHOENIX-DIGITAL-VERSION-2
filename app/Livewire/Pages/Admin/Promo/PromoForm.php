@@ -24,19 +24,19 @@ class PromoForm extends Component
 
     public $tipe_diskon = 'persen';
 
-    public $diskon_member_persen = 0;
+    public $diskon_member_persen = "";
 
-    public $diskon_member_nominal = 0;
+    public $diskon_member_nominal = "";
 
-    public $diskon_non_member_persen = 0;
+    public $diskon_non_member_persen = "";
 
-    public $diskon_non_member_nominal = 0;
+    public $diskon_non_member_nominal = "";
 
     public $untuk_member = 'semua';
 
     public $untuk_pembeli_pertama = false;
 
-    public $min_pembelian = 0;
+    public $min_pembelian = "";
 
     public $mulai_promo = '';
 
@@ -171,7 +171,6 @@ class PromoForm extends Component
             session()->flash('success', 'Promo berhasil dibuat');
 
             return redirect()->route('admin.promo.index');
-
         } catch (Exception $e) {
             dump($e->getMessage());
         }
@@ -213,7 +212,6 @@ class PromoForm extends Component
             session()->flash('success', 'Promo berhasil diupdate');
 
             return redirect()->route('admin.promo.index');
-
         } catch (Exception $e) {
             dump($e->getMessage());
         }

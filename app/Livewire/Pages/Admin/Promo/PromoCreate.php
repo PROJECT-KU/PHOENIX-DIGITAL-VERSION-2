@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class PromoCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.promo.promo-create');
+        return view('livewire.pages.admin.promo.promo-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

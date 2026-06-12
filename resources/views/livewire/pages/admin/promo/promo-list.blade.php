@@ -64,8 +64,8 @@
                                 <!-- Nama Promo -->
                                 <td class="fw-semibold text-start">
                                     {{ $item->nama_promo }}
-                                    @if ($item->show_on_homepage)
-                                    <span class="badge bg-info ms-1">Homepage</span>
+                                    @if ($item->show_on_homepage) <br>
+                                    <span class="badge bg-info">Homepage</span>
                                     @endif
                                 </td>
 
