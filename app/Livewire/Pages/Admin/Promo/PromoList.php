@@ -63,7 +63,8 @@ class PromoList extends Component
                     ->orWhere('diskon_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
                     ->orWhere('diskon_non_member_persen', 'like', '%' . $this->searchDataPromo . '%')
                     ->orWhere('diskon_non_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('status', 'like', '%' . $this->searchDataPromo . '%');
+                    ->orWhereRaw("CASE WHEN is_active = 1 THEN 'aktif' ELSE 'nonaktif' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%'])
+                    ->orWhereRaw("CASE WHEN show_on_homepage = 1 THEN 'homepage' ELSE 'biasa' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%']);
             })
             ->latest()
             ->paginate(10);

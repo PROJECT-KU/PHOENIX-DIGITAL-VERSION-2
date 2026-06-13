@@ -77,7 +77,7 @@ class PromoForm extends Component
             $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal;
             $this->untuk_member = $promo->untuk_member;
             $this->untuk_pembeli_pertama = $promo->untuk_pembeli_pertama;
-            $this->min_pembelian = $promo->min_pembelian;
+            $this->min_pembelian = $promo->min_pembelian ? number_format($promo->min_pembelian, 0, '', '.') : '';
             $this->mulai_promo = $promo->mulai_promo->format('Y-m-d\TH:i');
             $this->selesai_promo = $promo->selesai_promo->format('Y-m-d\TH:i');
             $this->is_active = $promo->is_active;
@@ -117,6 +117,11 @@ class PromoForm extends Component
         return $rules;
     }
 
+    private function cleanNumber($value)
+    {
+        return empty($value) ? 0 : (int) str_replace('.', '', $value);
+    }
+
     public function save()
     {
         $this->validate();
@@ -150,7 +155,7 @@ class PromoForm extends Component
                 'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,
@@ -191,7 +196,7 @@ class PromoForm extends Component
                 'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,

@@ -68,7 +68,7 @@
                                 <div class="position-relative">
                                     <input type="text"
                                         inputmode="numeric"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 3)"
                                         class="form-control shadow-none"
                                         wire:model="diskon_member_persen"
                                         placeholder="0"
@@ -145,6 +145,7 @@
             <!--================== END PENGATURAN DISKON ==================-->
         </div>
         <!--================== END CARD 1 & 2 ==================-->
+
 
         <!--================== CARD 3 & 4 ==================-->
         <div class="row">
@@ -254,10 +255,11 @@
         </div>
         <!--================== END CARD 3 & 4 ==================-->
 
+
         <!--================== CARD 5 & 6 ==================-->
         <div class="row">
             <!--================== PENGATURAN STACKING PROMO ==================-->
-            <div class="col-md-6">
+            <div class="{{ $tipe_promo === 'flash_sale' ? 'col-md-6' : 'col-md-12' }}">
                 <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
                     <div class="card-header bg-info bg-opacity-10 p-3 border-0">
                         <h5 class="mb-0 text-info fw-bold"><i class="bi bi-layers-fill me-2"></i>Pengaturan Stacking Promo</h5>
@@ -298,6 +300,35 @@
             <!--================== END PENGATURAN STACKING PROMO ==================-->
 
             <!--================== TAMPILAN BADGE ==================-->
+            @if ($tipe_promo === 'flash_sale')
+            <style>
+                /* Reset total tampilan bawaan Mac/Windows */
+                .input-color-solid {
+                    -webkit-appearance: none !important;
+                    -moz-appearance: none !important;
+                    appearance: none !important;
+                    background-color: transparent !important;
+                    padding: 0 !important;
+                    border: none !important;
+                }
+
+                /* Menghilangkan padding dalam dari browser */
+                .input-color-solid::-webkit-color-swatch-wrapper {
+                    padding: 0 !important;
+                }
+
+                /* Memaksa warna merentang penuh dan melengkung mengikuti Bootstrap */
+                .input-color-solid::-webkit-color-swatch {
+                    border: none !important;
+                    border-radius: 0.5rem !important;
+                }
+
+                .input-color-solid::-moz-color-swatch {
+                    border: none !important;
+                    border-radius: 0.5rem !important;
+                }
+            </style>
+
             <div class="col-md-6">
                 <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
                     <div class="card-header bg-secondary bg-opacity-10 p-3 border-0">
@@ -305,34 +336,32 @@
                     </div>
                     <div class="card-body p-4">
 
-                        <div class="row align-items-end">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-8">
                                 <label class="form-label fw-semibold">Teks Badge</label>
                                 <input type="text" class="form-control"
                                     wire:model="badge_text" placeholder="Contoh: SALE 50%">
-                                <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Tampil pada produk</small>
+                                <small class="text-muted d-block"><i class="bi bi-info-circle me-1"></i>Tampil pada produk</small>
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label fw-semibold">Warna Badge</label>
-                                <input type="color" class="form-control"
-                                    wire:model="badge_color" style="height: calc(3.1rem + 2px);">
+                                <label class="form-label fw-semibold">Warna</label>
+                                <input type="color" class="form-control form-control-lg w-100 shadow-sm input-color-solid"
+                                    wire:model="badge_color" style="height: 48px; cursor: pointer;">
+
+                                @if ($badge_text)
+                                <div class="mt-3 text-center">
+                                    <label class="form-label fw-semibold d-block mb-2 text-muted" style="font-size: 0.8rem;">Preview:</label>
+                                    <span class="badge rounded-pill shadow-sm w-100 d-inline-block text-truncate"
+                                        style="background-color: {{ $badge_color }}; color: white; padding: 0.7em 1em; font-size: 0.9em;">
+                                        {{ $badge_text }}
+                                    </span>
+                                </div>
+                                @endif
                             </div>
                         </div>
 
-                        @if ($badge_text)
-                        <div class="bg-light rounded-4 border-0 text-center shadow-sm">
-                            <label class="form-label fw-semibold d-block mb-2 text-muted" style="font-size: 0.85rem;">Preview Badge</label>
-                            <div>
-                                <span class="badge rounded-pill shadow-sm"
-                                    style="background-color: {{ $badge_color }}; color: white; padding: 0.6em 1.2em; font-size: 0.95em;">
-                                    {{ $badge_text }}
-                                </span>
-                            </div>
-                        </div>
-                        @endif
-
-                        <div class="mt-4">
+                        <div class="mt-2">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" wire:model="show_on_homepage"
                                     id="show_on_homepage" style="cursor: pointer; width: 2.5em; height: 1.25em;">
@@ -341,49 +370,63 @@
                                 </label>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
+            @endif
             <!--================== END TAMPILAN BADGE ==================-->
         </div>
         <!--================== END CARD 5 & 6 ==================-->
 
 
-        <!-- Pilih Produk -->
-        <div class="card mb-3">
-            <div class="card-header bg-light mb-3">
-                <h5 class="mb-0">Pilih Produk</h5>
+        <!--================== TAMPILAN PRODUK ==================-->
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-primary bg-opacity-10 p-3 border-0">
+                <h5 class="mb-0 text-primary fw-bold"><i class="bi bi-box-seam-fill me-2"></i>Pilih Produk</h5>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">Pilih produk yang akan mendapatkan promo ini. Kosongkan jika berlaku untuk
-                    semua
-                    produk.</p>
 
-                <div class="row">
+            <div class="card-body p-4">
+                <p class="text-muted mb-4">
+                    <i class="bi bi-info-circle me-1"></i>Pilih produk yang akan mendapatkan promo ini. Kosongkan jika berlaku untuk semua produk.
+                </p>
+
+                <div class="row g-3">
                     @foreach ($allProducts as $product)
-                    <div class="col-md-6 col-lg-4 mb-2">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" wire:model="selectedProducts"
-                                value="{{ $product->id }}" id="product_{{ $product->id }}">
-                            <label class="form-check-label" for="product_{{ $product->id }}">
-                                {{ $product->nama_akun }}
-                            </label>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-2 rounded-3 border-0 d-flex align-items-center" style="transition: all 0.2s;">
+                            <div class="form-check form-switch mb-0 d-flex align-items-center w-100">
+                                <input class="form-check-input m-0 flex-shrink-0" type="checkbox" wire:model="selectedProducts"
+                                    value="{{ $product->id }}" id="product_{{ $product->id }}" style="cursor: pointer; width: 2.5em; height: 1.25em;">
+                                <label class="form-check-label fw-semibold ms-3 w-100 text-truncate" for="product_{{ $product->id }}" style="cursor: pointer; padding-top: 2px;">
+                                    {{ $product->nama_akun }}
+                                </label>
+                            </div>
                         </div>
                     </div>
                     @endforeach
                 </div>
 
                 @if (count($selectedProducts) > 0)
-                <div class="alert alert-info mt-3">
-                    <i class="bi bi-info-circle"></i>
-                    {{ count($selectedProducts) }} produk dipilih
+                <div class="p-3 bg-primary bg-opacity-10 border-0 rounded-4 mt-4 mb-0 d-flex align-items-center shadow-sm">
+
+                    <i class="bi bi-check-circle-fill text-primary fs-4 mb-3 me-3 lh-1"></i>
+
+                    <p class="text-dark mb-0 m-0" style="font-size: 0.95rem;">
+                        <span class="fw-bold text-primary">{{ count($selectedProducts) }} produk</span> telah dipilih untuk mendapatkan promo ini.
+                    </p>
+
                 </div>
                 @endif
             </div>
         </div>
-        <div class="mt-4">
-            <button type="submit" class="btn w-100 btn-primary">
-                <i class="bi bi-send me-1"></i>
+        <!--================== END TAMPILAN PRODUK ==================-->
+
+        <div class="mt-4 pt-3 border-top d-flex gap-2">
+            <button type="submit"
+                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
+                style="height: 52px;">
+                <i class="bi bi-check2-circle me-2 fs-5"></i>
                 {{ $this->mode === 'create' ? 'Tambah Promo' : 'Simpan Perubahan' }}
             </button>
         </div>
