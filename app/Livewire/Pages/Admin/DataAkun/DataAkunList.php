@@ -33,7 +33,6 @@ class DataAkunList extends Component
         $this->dispatch('DataAkun-deleted', ['id' => $id], browserEvent: true);
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $DataAkuns = DataAkun::latest()
@@ -49,6 +48,7 @@ class DataAkunList extends Component
 
         return view('livewire.pages.admin.data-akun.DataAkun-list', [
             'DataAkun' => $DataAkuns,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

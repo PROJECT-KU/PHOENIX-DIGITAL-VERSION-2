@@ -62,7 +62,7 @@
                             @forelse ($promos as $item)
                             <tr style="text-align: center;">
                                 <!-- Nama Promo -->
-                                <td class="fw-semibold text-start">
+                                <td>
                                     {{ $item->nama_promo }}
                                     @if ($item->show_on_homepage) <br>
                                     <span class="badge bg-info">Homepage</span>
@@ -117,11 +117,9 @@
 
                                 <!-- Status -->
                                 <td>
-                                    @if ($item->is_active)
-                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Aktif</span>
-                                    @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">Nonaktif</span>
-                                    @endif
+                                    <span class="badge {{ $item->is_active ? 'bg-success' : 'bg-danger' }}">
+                                        {{ $item->is_active ? 'Active' : 'Non-active' }}
+                                    </span>
                                 </td>
 
                                 <!-- Periode -->
@@ -167,7 +165,7 @@
                 </div>
 
                 <div class="d-flex justify-content-center">
-                    {{ $promos->links('pagination::bootstrap-5') }}
+                    {{ $promos->links('vendor.pagination') }}
                 </div>
             </div>
         </div>

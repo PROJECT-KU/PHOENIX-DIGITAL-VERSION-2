@@ -59,7 +59,7 @@
             <div class="table-responsive">
                 <table class="table align-middle">
                     <thead>
-                        <tr class="text-secondary">
+                        <tr style="text-align: center;">
                             <th style="width: 50px;">No</th>
                             <th>Ticket</th>
                             <th>Status Ticket</th>
@@ -73,7 +73,7 @@
                     </thead>
                     <tbody>
                         @forelse ($messages as $item)
-                        <tr class="{{ is_null($item->read_at) ? 'table-warning' : '' }}">
+                        <tr class="{{ is_null($item->read_at) ? 'table-warning' : '' }}" style="text-align: center;">
                             <td>{{ $loop->iteration }}</td>
                             <td>
                                 {{ $item->ticket }}
@@ -201,7 +201,7 @@
                 </table>
             </div>
             <div class="d-flex justify-content-center">
-                {{ $messages->links('pagination::bootstrap-5') }}
+                {{ $messages->links('vendor.pagination') }}
             </div>
         </div>
     </div>

@@ -61,9 +61,54 @@
                                 }
                             </script>
                             <div class="swiper-wrapper">
-                                <div class="swiper-slide">🚚 Free shipping on orders over $50</div>
-                                <div class="swiper-slide">💰 30 days money back guarantee.</div>
-                                <div class="swiper-slide">🎁 20% off on your first order</div>
+                                @forelse ($headerPromos as $promo)
+                                <div class="swiper-slide text-center d-flex align-items-center justify-content-center">
+
+                                    @php
+                                    // Menentukan ikon dan warna berdasarkan tipe promo
+                                    $iconPromo = match($promo->tipe_promo) {
+                                    'flash_sale' => '<i class="bi bi-lightning-charge-fill text-warning me-2 fs-5" style="vertical-align: middle;"></i>',
+                                    'kode_promo' => '<i class="bi bi-ticket-perforated-fill text-info me-2 fs-5" style="vertical-align: middle;"></i>',
+                                    'referral_bonus' => '<i class="bi bi-gift-fill text-danger me-2 fs-5" style="vertical-align: middle;"></i>',
+                                    default => '<i class="bi bi-tags-fill text-success me-2 fs-5" style="vertical-align: middle;"></i>'
+                                    };
+
+                                    // Ambil 4 nilai yang mungkin ada
+                                    $vals = [
+                                    $promo->diskon_member_persen,
+                                    $promo->diskon_member_nominal,
+                                    $promo->diskon_non_member_persen,
+                                    $promo->diskon_non_member_nominal
+                                    ];
+
+                                    // Ambil nilai terbesar yang bukan 0
+                                    $maxVal = max($vals);
+
+                                    // Tentukan apakah yang terbesar itu persen atau nominal
+                                    $isNominal = ($maxVal == $promo->diskon_member_nominal || $maxVal == $promo->diskon_non_member_nominal) && $maxVal > 0;
+                                    @endphp
+
+                                    {!! $iconPromo !!}
+
+                                    <span class="fw-bold">{{ $promo->nama_promo }}</span>
+                                    <small class="opacity-75 mx-2 text-capitalize">
+                                        ({{ $promo->tipe_promo === 'flash_sale' ? 'Flash Sale' : str_replace('_', ' ', $promo->tipe_promo) }})
+                                    </small>
+
+                                    <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-2 ms-1">
+                                        @if ($promo->tipe_diskon === 'nominal' || $isNominal)
+                                        -Rp {{ number_format($maxVal, 0, ',', '.') }}
+                                        @else
+                                        -{{ $maxVal }}%
+                                        @endif
+                                    </span>
+
+                                </div>
+                                @empty
+                                <div class="swiper-slide text-center">
+                                    <i class="bi bi-box-seam text-primary me-2"></i> 🚚 Dapatkan promo menarik kami hari ini!
+                                </div>
+                                @endforelse
                             </div>
                         </div>
                     </div>

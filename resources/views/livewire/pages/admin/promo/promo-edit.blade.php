@@ -1,4 +1,4 @@
-<div class="container-fluid p-4">
+<div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
         <div class="card-body p-4 d-flex align-items-center">
             <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 header-action w-100">

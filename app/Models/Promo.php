@@ -50,11 +50,11 @@ class Promo extends Model
         'can_stack_with_points' => 'boolean',
         'show_on_homepage' => 'boolean',
         'diskon_member_persen' => 'integer',
-        'diskon_member_nominal' => 'decimal:0',
+        'diskon_member_nominal' => 'integer',
         'diskon_non_member_persen' => 'integer',
-        'diskon_non_member_nominal' => 'decimal:0',
-        'min_pembelian' => 'decimal:0',
-        'total_diskon_diberikan' => 'decimal:0',
+        'diskon_non_member_nominal' => 'integer',
+        'min_pembelian' => 'integer',
+        'total_diskon_diberikan' => 'integer',
     ];
 
     // Relationships

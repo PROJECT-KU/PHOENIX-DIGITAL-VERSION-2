@@ -43,7 +43,7 @@
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
-                            <tr class="text-secondary">
+                            <tr style="text-align: center;">
                                 <th style="width: 50px;">No</th>
                                 <th>Judul Banner</th>
                                 <th>Gambar</th>
@@ -54,7 +54,7 @@
                         </thead>
                         <tbody>
                             @forelse ($Banners as $item)
-                            <tr>
+                            <tr style="text-align: center;">
                                 <td>{{ $loop->iteration }}</td>
                                 <td class="fw-bold">{{ $item->judul }}</td>
                                 <td>
@@ -107,7 +107,7 @@
                     </table>
                 </div>
                 <div class="d-flex justify-content-center">
-                    {{ $Banners->links('pagination::bootstrap-5') }}
+                    {{ $Banners->links('vendor.pagination') }}
                 </div>
             </div>
         </div>
