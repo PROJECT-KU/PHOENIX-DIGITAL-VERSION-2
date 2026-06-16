@@ -22,15 +22,22 @@ class DataAkunList extends Component
     {
         $DataAkun = DataAkun::find($id);
 
+        // Pastikan data ditemukan
         if (! $DataAkun) {
-            $this->dispatch('delete-error', ['message' => 'Data Akun tidak ditemukan!'], browserEvent: true);
-
+            $this->dispatch('DataAkunDeleteError', message: 'Data Akun tidak ditemukan!');
             return;
         }
 
+        // Sesuaikan string 'active' dengan nilai yang ada di database Anda (misal: 'Aktif', 'Active', atau 1)
+        if (strtolower($DataAkun->status) === 'active' || strtolower($DataAkun->status) === 'aktif') {
+            $this->dispatch('DataAkunDeleteError', message: 'Data Akun masih aktif dan tidak bisa dihapus!');
+            return;
+        }
+
+        // Hapus record dari DB jika status tidak aktif
         $DataAkun->delete();
 
-        $this->dispatch('DataAkun-deleted', ['id' => $id], browserEvent: true);
+        $this->dispatch('DataAkunDeleted', id: $id);
     }
 
     public function render()

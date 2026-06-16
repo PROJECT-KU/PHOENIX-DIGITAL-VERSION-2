@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4">
+    <div class="card border-0 shadow-sm rounded-4" wire:poll.60s>
         <div class="card-body p-4">
             <div class="table-responsive">
                 <table class="table align-middle">

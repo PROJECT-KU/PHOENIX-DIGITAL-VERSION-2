@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.60s>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
@@ -93,7 +93,7 @@
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
                                         <button type="button"
-                                            class="btn btn-danger btn-sm delete-DataAkun-btn"
+                                            class="btn btn-sm btn-danger delete-DataAkun-btn"
                                             data-id="{{ $item->id }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -118,3 +118,77 @@
             </div>
         </div>
     </div>
+
+    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    @include('livewire.layout.sweetalert')
+    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
+</div>
+
+<!--================== SWEET ALERT DELETE ==================-->
+<script>
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
+    document.addEventListener('livewire:navigated', function() {
+        document.body.addEventListener('click', function(event) {
+            const button = event.target.closest('.delete-DataAkun-btn');
+
+            if (button) {
+                event.preventDefault();
+                const promoId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Yakin hapus data?',
+                    text: "Data Akun ini tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfig
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = button.closest('[wire\\:id]');
+                        if (component) {
+                            const livewireComponentId = component.getAttribute('wire:id');
+                            Livewire.find(livewireComponentId).call('deleteDataAkun', promoId);
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // MENANGKAP EVENT SUKSES
+    window.addEventListener('DataAkunDeleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data Akun berhasil dihapus.',
+            icon: 'success',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+
+    // MENANGKAP EVENT GAGAL
+    window.addEventListener('DataAkunDeleteError', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->
