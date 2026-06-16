@@ -25,7 +25,7 @@ class BannersList extends Component
         $Banners = Banners::find($id);
 
         if (! $Banners) {
-            $this->dispatch('delete-error', message: 'Data Banners tidak ditemukan!');
+            $this->dispatch('Banners-deleteError', message: 'Data Banners tidak ditemukan!');
 
             return;
         }

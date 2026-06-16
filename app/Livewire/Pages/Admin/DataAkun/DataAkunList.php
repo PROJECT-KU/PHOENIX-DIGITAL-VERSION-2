@@ -38,6 +38,7 @@ class DataAkunList extends Component
         $DataAkuns = DataAkun::latest()
             ->where('nama_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('username_akun', 'like', "%{$this->searchDataAkun}%")
+            ->orWhere('password_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('link_login_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhereHas('pj', function ($query) {
                 $query->where('name', 'like', "%{$this->searchDataAkun}%");

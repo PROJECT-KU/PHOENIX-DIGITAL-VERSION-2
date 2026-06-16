@@ -136,8 +136,7 @@
                                             class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        <button type="button" wire:click="$dispatch('will-delete-promo-data', {{$item}})"
-                                            class="btn btn-sm btn-danger" title="Delete">
+                                        <button type="button" class="btn btn-sm btn-danger delete-promo-btn" data-id="{{ $item->id }}" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -170,3 +169,73 @@
             </div>
         </div>
     </div>
+</div>
+
+<!--================== SWEET ALERT DELETE ==================-->
+<script>
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
+    document.addEventListener('livewire:navigated', function() {
+        document.body.addEventListener('click', function(event) {
+            const button = event.target.closest('.delete-promo-btn');
+
+            if (button) {
+                event.preventDefault();
+                const promoId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Yakin hapus data?',
+                    text: "Data promo ini tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfig
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = button.closest('[wire\\:id]');
+                        if (component) {
+                            const livewireComponentId = component.getAttribute('wire:id');
+                            Livewire.find(livewireComponentId).call('delete', promoId);
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // MENANGKAP EVENT SUKSES
+    window.addEventListener('promoDeleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data promo berhasil dihapus.',
+            icon: 'success',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+
+    // MENANGKAP EVENT GAGAL
+    window.addEventListener('promoDeleteError', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->

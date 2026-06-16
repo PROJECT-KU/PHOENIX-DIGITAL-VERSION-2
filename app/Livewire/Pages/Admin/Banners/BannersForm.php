@@ -77,13 +77,13 @@ class BannersForm extends Component
                 'status' => $this->status,
             ]);
 
-            session()->flash('success', 'Data Banner berhasil ditambahkan!');
+            session()->flash('successCreated', 'Data Banner berhasil ditambahkan!');
             $this->dispatch('Banners-created');
             $this->resetForm();
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan Data Banners: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Banners: ' . $e->getMessage());
         }
     }
 
@@ -113,13 +113,13 @@ class BannersForm extends Component
 
             $this->banners->update($data);
 
-            session()->flash('success', 'Perubahan Data Banners berhasil disimpan!');
+            session()->flash('successUpdated', 'Perubahan Data Banners berhasil disimpan!');
             $this->dispatch('Banners-updated');
             $this->resetForm();
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate Data Banners: ' . $e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Banners: ' . $e->getMessage());
         }
     }
 

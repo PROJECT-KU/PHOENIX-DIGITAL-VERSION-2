@@ -78,8 +78,8 @@ class PromoForm extends Component
             $this->untuk_member = $promo->untuk_member;
             $this->untuk_pembeli_pertama = $promo->untuk_pembeli_pertama;
             $this->min_pembelian = $promo->min_pembelian ? number_format($promo->min_pembelian, 0, '', '.') : '';
-            $this->mulai_promo = $promo->mulai_promo->format('Y-m-d\TH:i');
-            $this->selesai_promo = $promo->selesai_promo->format('Y-m-d\TH:i');
+            $this->mulai_promo = $promo->mulai_promo ? $promo->mulai_promo->format('Y-m-d\TH:i') : '';
+            $this->selesai_promo = $promo->selesai_promo ? $promo->selesai_promo->format('Y-m-d\TH:i') : '';
             $this->is_active = $promo->is_active;
             $this->prioritas = $promo->prioritas;
             $this->can_stack_with_other = $promo->can_stack_with_other;
@@ -90,10 +90,12 @@ class PromoForm extends Component
             $this->badge_color = $promo->badge_color ?? '#FF6B6B';
             $this->mode = 'edit';
             $this->selectedProducts = $promo->products->pluck('id')->toArray();
+        } else {
+            $this->mulai_promo = '';
+            $this->selesai_promo = '';
         }
+
         $this->allProducts = Product::orderBy('nama_akun')->get();
-        $this->mulai_promo = now()->format('Y-m-d\TH:i');
-        $this->selesai_promo = now()->addDays(7)->format('Y-m-d\TH:i');
     }
 
     public function updatedTipePromo()

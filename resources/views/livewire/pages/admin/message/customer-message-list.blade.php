@@ -209,23 +209,20 @@
 
 <!--================== SWEET ALERT DELETE ==================-->
 <script>
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
     document.addEventListener('livewire:navigated', function() {
-
-        const glossyConfig = {
-            background: 'rgba(255, 255, 255, 0.8)',
-            backdrop: 'rgba(139, 92, 246, 0.15)',
-            customClass: {
-                popup: 'swal-glossy-popup',
-                confirmButton: 'btn-glossy-confirm',
-                cancelButton: 'btn-glossy-cancel',
-                title: 'swal-glossy-title'
-            },
-            buttonsStyling: false
-        };
-
-        // EVENT DELEGATION: Pasang listener di 'document'
         document.body.addEventListener('click', function(event) {
-            // Cek apakah yang diklik adalah tombol delete atau ikon di dalam tombol
             const button = event.target.closest('.delete-CustomerMessage-btn');
 
             if (button) {
@@ -242,7 +239,6 @@
                     ...glossyConfig
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Mencari komponen Livewire terdekat
                         const component = button.closest('[wire\\:id]');
                         if (component) {
                             const livewireComponentId = component.getAttribute('wire:id');
@@ -254,23 +250,28 @@
         });
     });
 
-    // Listener untuk sukses (gunakan window agar tetap menangkap event dari Livewire)
-    window.addEventListener('customer-message-deleted', () => {
+
+    // MENANGKAP EVENT SUKSES
+    window.addEventListener('CustomerMessage-deleted', () => {
         Swal.fire({
             title: 'Terhapus!',
+            text: 'Data pesan pelanggan berhasil dihapus.',
             icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-            background: 'rgba(255, 255, 255, 0.8)' // Tambahkan config jika perlu
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
         });
     });
 
-    window.addEventListener('delete-error', (e) => {
+    // MENANGKAP EVENT GAGAL
+    window.addEventListener('CustomerMessage-deleteError', (e) => {
         Swal.fire({
             title: 'Gagal!',
             text: e.detail.message,
             icon: 'error',
-            background: 'rgba(255, 255, 255, 0.8)'
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
         });
     });
 </script>
