@@ -15,9 +15,9 @@ class ProductEdit extends Component
         $this->product = $product;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.product.product-edit');
+        return view('livewire.pages.admin.product.product-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

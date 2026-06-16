@@ -24,8 +24,8 @@ class ProductList extends Component
         try {
             $product = Product::findOrFail($id);
 
-            if (! empty($product->image) && Storage::disk('public')->exists('img/Product/'.$product->image)) {
-                Storage::disk('public')->delete('img/Product/'.$product->image);
+            if (! empty($product->image) && Storage::disk('public')->exists('img/Product/' . $product->image)) {
+                Storage::disk('public')->delete('img/Product/' . $product->image);
             }
 
             $product->delete();
@@ -36,7 +36,6 @@ class ProductList extends Component
         }
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $Dataproduct = Product::latest()
@@ -51,6 +50,7 @@ class ProductList extends Component
 
         return view('livewire.pages.admin.product.product-list', [
             'DataProduct' => $Dataproduct,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }
