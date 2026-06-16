@@ -17,6 +17,7 @@ class PaymentPage extends Component
 
     public function mount(Order $order)
     {
+        // dd(config('qris'));
         // Verify order belongs to current session
         if (! $order) {
             session()->flash('error', 'Order tidak ditemukan');
