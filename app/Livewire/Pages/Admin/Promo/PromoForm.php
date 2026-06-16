@@ -175,11 +175,11 @@ class PromoForm extends Component
             // Sync products
             $promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil dibuat');
+            session()->flash('successCreated', 'Promo berhasil dibuat');
 
             return redirect()->route('admin.promo.index');
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorCreated', 'Gagal menambahkan Data Promo: ' . $e->getMessage());
         }
     }
 
@@ -216,11 +216,11 @@ class PromoForm extends Component
             // Sync products
             $this->promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil diupdate');
+            session()->flash('successUpdated', 'Promo berhasil diupdate');
 
             return redirect()->route('admin.promo.index');
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Promo: ' . $e->getMessage());
         }
     }
 

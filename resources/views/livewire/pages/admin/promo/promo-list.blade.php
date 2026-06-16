@@ -91,6 +91,7 @@
                                     'flash_sale' => 'Flash Sale',
                                     'kode_promo' => 'Kode Promo',
                                     'referral_bonus' => 'Referral',
+                                    'auto_promo' => 'Auto Promo',
                                     default => $item->tipe_promo,
                                     };
                                     @endphp
@@ -169,6 +170,10 @@
             </div>
         </div>
     </div>
+
+    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    @include('livewire.layout.sweetalert')
+    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
 
 <!--================== SWEET ALERT DELETE ==================-->
