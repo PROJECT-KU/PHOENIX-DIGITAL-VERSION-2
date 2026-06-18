@@ -1,12 +1,15 @@
+<!--================== JS UNTUK SLEECT 2 ==================-->
 @assets
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 @endassets
+<!--================== END JS UNTUK SELECT 2 ==================-->
 
 <form wire:submit.prevent="save">
     <div class="d-flex flex-column gap-4">
 
+        <!--================== CSS UNTUK SELECT 2 ==================-->
         <style>
             .select2-container--default .select2-selection--single {
                 background-color: #ffffff !important;
@@ -69,6 +72,7 @@
                 color: #000 !important;
             }
         </style>
+        <!--================== CSS UNTUK SELECT 2 ==================-->
 
         <div class="card border-0 shadow-sm rounded-4" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
             <div class="card-header bg-primary bg-opacity-10 p-3 border-0 rounded-top-4">
@@ -255,6 +259,7 @@
     </div>
 </form>
 
+<!--================== SWEET ALERT IMAGE UPLOAD ==================-->
 @push('scripts')
 <script>
     // Preview/zoom gambar (sama seperti pada Banners & Product form)
@@ -302,3 +307,4 @@
     });
 </script>
 @endpush
+<!--================== SWEET ALERT IMAGE UPLOAD ==================-->

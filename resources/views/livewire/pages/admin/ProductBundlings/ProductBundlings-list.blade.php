@@ -132,7 +132,6 @@
 
 <!--================== SWEET ALERT DELETE ==================-->
 <script>
-    // Preview/zoom gambar (sama seperti pada Banners & Product list)
     window.showGlossyPreview = function(imageUrl) {
         Swal.fire({
             imageUrl: imageUrl,
@@ -158,11 +157,6 @@
         });
     };
 
-    // Pakai event delegation di document + guard anti-duplikat, supaya delete
-    // tetap jalan walau tabel di-render ulang (search/paginasi) dan walau
-    // halaman diakses via wire:navigate (DOMContentLoaded tidak dipicu pada
-    // navigasi SPA Livewire).
-    // Konfigurasi tampilan glossy (sama seperti pada Banners-list)
     const glossyConfig = {
         background: 'rgba(255, 255, 255, 0.8)',
         backdrop: 'rgba(139, 92, 246, 0.15)',
