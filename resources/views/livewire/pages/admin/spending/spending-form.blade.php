@@ -1,4 +1,10 @@
 <div>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+
     <!-- Flash Messages -->
     @if (session()->has('error'))
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -36,7 +42,7 @@
                                 rupiah += separator + ribuan.join('.');
                             }
                             rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-                            return rupiah ? 'Rp ' + rupiah : '';
+                            return rupiah;
                         },
                         parseRaw(v) {
                             return (v || '').toString().replace(/[^0-9]/g, '');
@@ -51,17 +57,24 @@
                 </label>
 
                 <!-- Input tampil ke user -->
-                <input type="text"
-                    id="nominal_display"
-                    x-ref="display"
-                    x-on:focus="$event.target.select()"
-                    x-on:input="
+                <div class="position-relative">
+                    <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                        style="pointer-events: none; z-index: 5;">
+                        Rp
+                    </span>
+                    <input type="text"
+                        id="nominal_display"
+                        x-ref="display"
+                        x-on:focus="$event.target.select()"
+                        x-on:input="
                                 let raw = parseRaw($event.target.value);
                                 $event.target.value = formatRupiah(raw);
                                 $wire.set('nominal', raw);
                         "
-                    class="form-control @error('nominal') is-invalid @enderror"
-                    placeholder="Rp 0">
+                        class="form-control @error('nominal') is-invalid @enderror"
+                        style="padding-left: 45px;"
+                        placeholder="0">
+                </div>
 
                 <!-- Pesan error dari Livewire -->
                 @error('nominal')
@@ -107,9 +120,19 @@
             </div>
         </div>
 
-        <div class="row">
+        <!-- PIC: hanya untuk pembelian akun -->
+        <div class="row" x-show="jenis_pengeluaran === 'pembelian_akun'" x-transition x-cloak>
+            <!-- PIC Penginput (selalu dari akun yang login) -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">
+                    PIC Penginput
+                </label>
+                <input type="text" class="form-control" value="{{ auth()->user()->name }}" readonly>
+                <div class="form-text text-muted">Otomatis diambil dari akun yang sedang login.</div>
+            </div>
+
             <!-- PIC Pembeli -->
-            <div class="col-md-12 mb-3" x-show="jenis_pengeluaran === 'pembelian_akun' || jenis_pengeluaran === 'lainnya'" x-transition>
+            <div class="col-md-6 mb-3">
                 <label for="pic_pembeli_id" class="form-label">
                     PIC Pembeli <span class="text-danger">*</span>
                 </label>
@@ -145,16 +168,12 @@
         </div>
 
         <!-- Buttons -->
-        <div class="d-flex justify-content-end gap-2">
-            <button type="submit" class="btn w-100 btn-primary" wire:loading.attr="disabled">
-                <i class="bi bi-send me-1"></i>
-                <span wire:loading.remove>
-                    {{ $isEdit ? 'Perbarui Data' : 'Simpan Data' }}
-                </span>
-                <span wire:loading>
-                    <span class="spinner-border spinner-border-sm" role="status"></span>
-                    Menyimpan...
-                </span>
+        <div class="mt-4 pt-3 border-top d-flex gap-2">
+            <button type="submit"
+                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
+                style="height: 52px;">
+                <i class="bi bi-check2-circle me-2 fs-5"></i>
+                <span>{{ $isEdit ? 'Update Data' : 'Simpan Data' }}</span>
             </button>
         </div>
     </form>

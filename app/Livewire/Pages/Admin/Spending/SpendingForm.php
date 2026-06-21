@@ -31,6 +31,15 @@ class SpendingForm extends Component
         $this->nominal = (int) preg_replace('/[^0-9]/', '', $value);
     }
 
+    public function updatedJenisPengeluaran($value)
+    {
+        // PIC Pembeli hanya relevan untuk pembelian akun
+        if ($value !== 'pembelian_akun') {
+            $this->pic_pembeli_id = null;
+            $this->resetErrorBag('pic_pembeli_id');
+        }
+    }
+
     protected function rules()
     {
         return [
@@ -39,7 +48,10 @@ class SpendingForm extends Component
             'deskripsi' => 'nullable|string',
             'status' => 'required|in:pending,completed',
             'jenis_pengeluaran' => 'required|in:pembelian_akun,lainnya',
-            'pic_pembeli_id' => 'nullable|exists:users,id',
+            // PIC Pembeli hanya wajib ketika jenis pengeluaran = pembelian akun
+            'pic_pembeli_id' => $this->jenis_pengeluaran === 'pembelian_akun'
+                ? 'required|exists:users,id'
+                : 'nullable',
         ];
     }
 
@@ -87,8 +99,11 @@ class SpendingForm extends Component
     {
         $this->validate();
 
+        // PIC Pembeli hanya disimpan untuk pembelian akun; selain itu null
+        $picPembeliId = $this->jenis_pengeluaran === 'pembelian_akun' ? $this->pic_pembeli_id : null;
+
         try {
-            DB::transaction(function () use ($syncCashFlow) {
+            DB::transaction(function () use ($syncCashFlow, $picPembeliId) {
 
                 if ($this->isEdit) {
                     $spending = Spending::findOrFail($this->spendingId);
@@ -99,7 +114,7 @@ class SpendingForm extends Component
                         'jenis_pengeluaran' => $this->jenis_pengeluaran,
                         'status' => $this->status,
                         'penginput_id' => auth()->id(),
-                        'pic_pembeli_id' => $this->pic_pembeli_id,
+                        'pic_pembeli_id' => $picPembeliId,
                     ]);
                     session()->flash('success', 'berhasil edit data pengeluaran');
                 } else {
@@ -110,7 +125,7 @@ class SpendingForm extends Component
                         'status' => $this->status,
                         'jenis_pengeluaran' => $this->jenis_pengeluaran,
                         'penginput_id' => auth()->id(),
-                        'pic_pembeli_id' => $this->pic_pembeli_id,
+                        'pic_pembeli_id' => $picPembeliId,
                     ]);
 
                     session()->flash('success', 'berhasil tambah data pengeluaran');
