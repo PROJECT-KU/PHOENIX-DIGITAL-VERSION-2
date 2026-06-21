@@ -15,9 +15,9 @@ class PromoEdit extends Component
         $this->promo = $promo;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.promo.promo-edit');
+        return view('livewire.pages.admin.promo.promo-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

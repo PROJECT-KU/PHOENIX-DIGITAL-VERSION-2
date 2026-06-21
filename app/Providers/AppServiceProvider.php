@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Order;
+use App\Models\Promo;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -48,6 +50,20 @@ class AppServiceProvider extends ServiceProvider
         // Blade directive untuk check role (yang sudah ada)
         Blade::if('hasRole', function ($role) {
             return auth()->check() && auth()->user()->hasRole($role);
+        });
+
+        // memanggil data pormos di $headerPromos
+        View::composer('layouts.guest', function ($view) {
+            $promos = Promo::where('is_active', true)
+                ->where(function ($query) {
+                    $query->where('diskon_member_nominal', '>', 0)
+                        ->orWhere('diskon_member_persen', '>', 0)
+                        ->orWhere('diskon_non_member_nominal', '>', 0)
+                        ->orWhere('diskon_non_member_persen', '>', 0);
+                })
+                ->get();
+
+            $view->with('headerPromos', $promos);
         });
     }
 }

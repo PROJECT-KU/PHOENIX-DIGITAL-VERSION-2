@@ -64,13 +64,19 @@ class CustomerMessageList extends Component
     {
         $customerMessage = CustomerMessage::find($id);
 
+        // 1. Pastikan data ditemukan
         if (! $customerMessage) {
-            $this->dispatch('delete-error', message: 'Data Pesan Pelanggan tidak ditemukan!');
-
+            $this->dispatch('CustomerMessage-deleteError', message: 'Data Pesan Pelanggan tidak ditemukan!');
             return;
         }
 
-        // Hapus file fisik jika ada
+        // 2. Pengecekan read_at (Jika masih null, batalkan penghapusan)
+        if (is_null($customerMessage->read_at)) {
+            $this->dispatch('CustomerMessage-deleteError', message: 'Pesan belum dibaca dan tidak bisa dihapus!');
+            return;
+        }
+
+        // 3. Hapus file fisik jika ada
         if ($customerMessage->gambar) {
             $filePath = storage_path('app/public/img/customer-messages/' . $customerMessage->gambar);
             if (file_exists($filePath)) {
@@ -78,10 +84,10 @@ class CustomerMessageList extends Component
             }
         }
 
-        // Hapus record dari DB
+        // 4. Hapus record dari DB
         $customerMessage->delete();
 
-        $this->dispatch('customer-message-deleted', id: $id);
+        $this->dispatch('CustomerMessage-deleted', id: $id);
     }
 
     public function render()

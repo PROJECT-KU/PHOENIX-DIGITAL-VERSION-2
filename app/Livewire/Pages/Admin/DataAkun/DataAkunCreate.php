@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class DataAkunCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.data-akun.DataAkun-create');
+        return view('livewire.pages.admin.data-akun.DataAkun-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

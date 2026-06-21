@@ -40,12 +40,25 @@
                 </div>
 
                 <div class="col-md-6">
-                    <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center">
+                    <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center" style="min-height: 150px;">
                         @if ($gambar && is_object($gambar) && !$errors->has('gambar'))
-                        <img src="{{ $gambar->temporaryUrl() }}" class="rounded-3">
+                        <!-- Preview untuk gambar yang baru di-upload (temporary) -->
+                        <img src="{{ $gambar->temporaryUrl() }}"
+                            class="rounded-3 img-fluid"
+                            style="cursor: pointer; max-height: 250px; object-fit: contain;"
+                            onclick="showGlossyPreview('{{ $gambar->temporaryUrl() }}')"
+                            title="Klik untuk memperbesar">
+
                         @elseif ($existingImage)
-                        <img src="{{ asset('storage/img/banners/' . $existingImage) }}" class="rounded-3">
+                        <!-- Preview untuk gambar lama dari database -->
+                        <img src="{{ asset('storage/img/banners/' . $existingImage) }}"
+                            class="rounded-3 img-fluid"
+                            style="cursor: pointer; max-height: 250px; object-fit: contain;"
+                            onclick="showGlossyPreview('{{ asset('storage/img/banners/' . $existingImage) }}')"
+                            title="Klik untuk memperbesar">
+
                         @else
+                        <!-- Placeholder saat tidak ada gambar -->
                         <div class="text-center text-muted p-3">
                             <i class="bi bi-image fs-1 opacity-50"></i>
                             <p class="small mb-0">Preview Gambar</p>

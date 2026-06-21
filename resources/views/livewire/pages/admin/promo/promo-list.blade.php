@@ -62,10 +62,10 @@
                             @forelse ($promos as $item)
                             <tr style="text-align: center;">
                                 <!-- Nama Promo -->
-                                <td class="fw-semibold text-start">
+                                <td>
                                     {{ $item->nama_promo }}
-                                    @if ($item->show_on_homepage)
-                                    <span class="badge bg-info ms-1">Homepage</span>
+                                    @if ($item->show_on_homepage) <br>
+                                    <span class="badge bg-info">Homepage</span>
                                     @endif
                                 </td>
 
@@ -91,6 +91,7 @@
                                     'flash_sale' => 'Flash Sale',
                                     'kode_promo' => 'Kode Promo',
                                     'referral_bonus' => 'Referral',
+                                    'auto_promo' => 'Auto Promo',
                                     default => $item->tipe_promo,
                                     };
                                     @endphp
@@ -117,11 +118,9 @@
 
                                 <!-- Status -->
                                 <td>
-                                    @if ($item->is_active)
-                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Aktif</span>
-                                    @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">Nonaktif</span>
-                                    @endif
+                                    <span class="badge {{ $item->is_active ? 'bg-success' : 'bg-danger' }}">
+                                        {{ $item->is_active ? 'Active' : 'Non-active' }}
+                                    </span>
                                 </td>
 
                                 <!-- Periode -->
@@ -138,8 +137,7 @@
                                             class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        <button type="button" wire:click="$dispatch('will-delete-promo-data', {{$item}})"
-                                            class="btn btn-sm btn-danger" title="Delete">
+                                        <button type="button" class="btn btn-sm btn-danger delete-promo-btn" data-id="{{ $item->id }}" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -167,8 +165,82 @@
                 </div>
 
                 <div class="d-flex justify-content-center">
-                    {{ $promos->links('pagination::bootstrap-5') }}
+                    {{ $promos->links('vendor.pagination') }}
                 </div>
             </div>
         </div>
     </div>
+
+    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    @include('livewire.layout.sweetalert')
+    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
+</div>
+
+<!--================== SWEET ALERT DELETE ==================-->
+<script>
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
+    document.addEventListener('livewire:navigated', function() {
+        document.body.addEventListener('click', function(event) {
+            const button = event.target.closest('.delete-promo-btn');
+
+            if (button) {
+                event.preventDefault();
+                const promoId = button.getAttribute('data-id');
+
+                Swal.fire({
+                    title: 'Yakin hapus data?',
+                    text: "Data promo ini tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfig
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = button.closest('[wire\\:id]');
+                        if (component) {
+                            const livewireComponentId = component.getAttribute('wire:id');
+                            Livewire.find(livewireComponentId).call('delete', promoId);
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    // MENANGKAP EVENT SUKSES
+    window.addEventListener('promoDeleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data promo berhasil dihapus.',
+            icon: 'success',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+
+    // MENANGKAP EVENT GAGAL
+    window.addEventListener('promoDeleteError', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: e.detail.message,
+            icon: 'error',
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
+        });
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->

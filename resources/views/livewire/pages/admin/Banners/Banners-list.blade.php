@@ -21,11 +21,11 @@
                                 class="form-control ps-5 pe-5" placeholder="Cari banner...">
 
                             @if ($searchBanners)
-                                <span wire:click="$set('searchBanners', '')"
-                                    class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                    style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                    <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                                </span>
+                            <span wire:click="$set('searchBanners', '')"
+                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                            </span>
                             @endif
                         </div>
                         <a wire:navigate href="{{ route('admin.Banners.create') }}"
@@ -43,7 +43,7 @@
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
-                            <tr class="text-secondary">
+                            <tr style="text-align: center;">
                                 <th style="width: 50px;">No</th>
                                 <th>Judul Banner</th>
                                 <th>Gambar</th>
@@ -54,108 +54,95 @@
                         </thead>
                         <tbody>
                             @forelse ($Banners as $item)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td class="fw-bold">{{ $item->judul }}</td>
-                                    <td>
-                                        @if ($item->gambar && \Storage::disk('public')->exists('img/banners/' . $item->gambar))
-                                            <!-- Thumbnail -->
-                                            <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
-                                                class="rounded shadow-sm"
-                                                style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
-                                                data-bs-toggle="modal" data-bs-target="#imageModal{{ $item->id }}">
-
-                                            <!-- Modal -->
-                                            <div class="modal fade" id="imageModal{{ $item->id }}" tabindex="-1"
-                                                aria-labelledby="imageModalLabel{{ $item->id }}" aria-hidden="true">
-                                                <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-body text-center p-0">
-                                                            <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
-                                                                class="img-fluid rounded">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @else
-                                            <img src="{{ asset('assets/img/no-image.jpg') }}" class="rounded-3"
-                                                style="width: 60px; height: 40px; object-fit: cover;">
-                                        @endif
-                                    </td>
-                                    <td class="text-truncate" style="max-width: 150px;">{{ $item->deskripsi }}</td>
-                                    <td class="text-center">
-                                        <span
-                                            class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
-                                            {{ ucfirst($item->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="text-center text-nowrap">
-                                        <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}"
-                                            class="btn btn-sm btn-warning text-white p-2" title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-danger delete-Banners-btn p-2"
-                                            data-id="{{ $item->id }}">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                            <tr style="text-align: center;">
+                                <td>{{ $loop->iteration }}</td>
+                                <td class="fw-bold">{{ $item->judul }}</td>
+                                <td>
+                                    @if ($item->gambar && \Storage::disk('public')->exists('img/banners/' . $item->gambar))
+                                    <img src="{{ asset('storage/img/banners/' . $item->gambar) }}"
+                                        class="rounded shadow-sm"
+                                        style="width: 60px; height: 60px; object-fit: cover; cursor: pointer;"
+                                        onclick="showGlossyPreview('{{ asset('storage/img/banners/' . $item->gambar) }}')">
+                                    @else
+                                    <img src="{{ asset('assets/img/no-image.jpg') }}" class="rounded-3 shadow-sm"
+                                        style="width: 60px; height: 60px; object-fit: cover;">
+                                    @endif
+                                </td>
+                                <td class="text-truncate" style="max-width: 150px;">{{ $item->deskripsi }}</td>
+                                <td class="text-center">
+                                    <span
+                                        class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
+                                        {{ ucfirst($item->status) }}
+                                    </span>
+                                </td>
+                                <td class="text-center text-nowrap">
+                                    <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}"
+                                        class="btn btn-sm btn-warning text-white p-2" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger delete-Banners-btn p-2"
+                                        data-id="{{ $item->id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="text-center py-5">
-                                        <div class="d-flex flex-column align-items-center justify-content-center">
-                                            <div class="empty-state-icon-wrapper mb-3">
-                                                <i class="bi bi-images"></i>
-                                            </div>
-                                            <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                                Belum Ada Data Banner
-                                            </h5>
-                                            <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                                Silakan klik tombol tambah data untuk memasukkan banner baru.
-                                            </p>
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="d-flex flex-column align-items-center justify-content-center">
+                                        <div class="empty-state-icon-wrapper mb-3">
+                                            <i class="bi bi-images"></i>
                                         </div>
-                                    </td>
-                                </tr>
+                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
+                                            Belum Ada Data Banner
+                                        </h5>
+                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                            Silakan klik tombol tambah data untuk memasukkan banner baru.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
                 <div class="d-flex justify-content-center">
-                    {{ $Banners->links('pagination::bootstrap-5') }}
+                    {{ $Banners->links('vendor.pagination') }}
                 </div>
             </div>
         </div>
     </div>
+
+    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    @include('livewire.layout.sweetalert')
+    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
 
 <!--================== SWEET ALERT DELETE ==================-->
 <script>
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
     document.addEventListener('livewire:navigated', function() {
-
-        const glossyConfig = {
-            background: 'rgba(255, 255, 255, 0.8)',
-            backdrop: 'rgba(139, 92, 246, 0.15)',
-            customClass: {
-                popup: 'swal-glossy-popup',
-                confirmButton: 'btn-glossy-confirm',
-                cancelButton: 'btn-glossy-cancel',
-                title: 'swal-glossy-title'
-            },
-            buttonsStyling: false
-        };
-
-        // EVENT DELEGATION: Pasang listener di 'document'
         document.body.addEventListener('click', function(event) {
-            // Cek apakah yang diklik adalah tombol delete atau ikon di dalam tombol
             const button = event.target.closest('.delete-Banners-btn');
 
             if (button) {
                 event.preventDefault();
-                const BannersId = button.getAttribute('data-id');
+                const promoId = button.getAttribute('data-id');
 
                 Swal.fire({
                     title: 'Yakin hapus data?',
-                    text: "Data tidak bisa dikembalikan!",
+                    text: "Data promo ini tidak bisa dikembalikan!",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, hapus!',
@@ -163,12 +150,10 @@
                     ...glossyConfig
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Mencari komponen Livewire terdekat
                         const component = button.closest('[wire\\:id]');
                         if (component) {
                             const livewireComponentId = component.getAttribute('wire:id');
-                            Livewire.find(livewireComponentId).call('deleteBanners', BannersId);
-
+                            Livewire.find(livewireComponentId).call('deleteBanners', promoId);
                         }
                     }
                 });
@@ -176,24 +161,60 @@
         });
     });
 
-    // Listener untuk sukses (gunakan window agar tetap menangkap event dari Livewire)
+    // MENANGKAP EVENT SUKSES
     window.addEventListener('Banners-deleted', () => {
         Swal.fire({
             title: 'Terhapus!',
+            text: 'Data banner berhasil dihapus.',
             icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-            background: 'rgba(255, 255, 255, 0.8)' // Tambahkan config jika perlu
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
         });
     });
 
-    window.addEventListener('delete-error', (e) => {
+    // MENANGKAP EVENT GAGAL
+    window.addEventListener('Banners-deleteError', (e) => {
         Swal.fire({
             title: 'Gagal!',
             text: e.detail.message,
             icon: 'error',
-            background: 'rgba(255, 255, 255, 0.8)'
+            timer: 2500, // Otomatis tutup dalam 2.5 detik
+            showConfirmButton: false, // Tanpa tombol
+            ...glossyConfig
         });
     });
 </script>
 <!--================== END SWEET ALERT DELETE ==================-->
+
+<!--================== END SWEET ALERT PREVIEW IMAGE ==================-->
+<script>
+    function showGlossyPreview(imageUrl) {
+        Swal.fire({
+            imageUrl: imageUrl,
+            imageAlt: 'Preview Gambar',
+            showConfirmButton: false, // Hilangkan tombol OK
+            showCloseButton: true, // Tampilkan tombol X di sudut
+            width: 'auto', // Sesuaikan lebar dengan gambar
+            padding: '1em',
+            background: 'rgba(255, 255, 255, 0.65)', // Warna dasar semi-transparan
+            backdrop: 'rgba(0, 0, 0, 0.4)', // Latar belakang layar agak gelap
+            didOpen: () => {
+                // Menyuntikkan efek Glossy Clean (Glassmorphism) langsung ke popup Swal
+                const popup = Swal.getPopup();
+                popup.style.backdropFilter = 'blur(15px)';
+                popup.style.WebkitBackdropFilter = 'blur(15px)';
+                popup.style.border = '1px solid rgba(255, 255, 255, 0.4)';
+                popup.style.borderRadius = '20px';
+                popup.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.2)';
+
+                // Merapikan sedikit gambar di dalamnya
+                const swalImage = Swal.getImage();
+                swalImage.style.borderRadius = '12px';
+                swalImage.style.maxHeight = '80vh'; // Agar tidak melebihi tinggi layar
+                swalImage.style.objectFit = 'contain';
+            }
+        });
+    }
+</script>
+<!--================== END SWEET ALERT PREVIEW IMAGE ==================-->

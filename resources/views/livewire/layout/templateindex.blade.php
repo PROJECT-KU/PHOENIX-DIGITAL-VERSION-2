@@ -2,7 +2,6 @@
 
 @section('content')
 @push('styles')
-<!--================== STYLE LUST BANNERS ==================-->
 <style>
     body {
         background: #f8fafc !important;
@@ -190,40 +189,45 @@
         font-weight: 600 !important;
     }
 
-    /* Mengatur presisi ikon di dalam modal glossy */
-    /* Memaksa kontainer ikon menjadi flex agar bisa diatur posisinya */
+    /* ========================================================
+       Mengatur presisi ikon di dalam modal glossy
+       ======================================================== */
     .swal-glossy-popup .swal2-icon {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
         margin: 1.5rem auto 1rem auto !important;
-        transform: scale(0.85);
-        position: relative !important;
-        /* Penting untuk mengunci posisi */
+        transform: scale(0.9);
     }
 
-    /* Mengatasi offset pada ikon sukses */
+    /* Memperbaiki masalah masking latar belakang putih bawaan SweetAlert
+       agar menyatu dengan efek kaca (blur) tanpa merusak garis ikon */
+    .swal-glossy-popup .swal2-success-circular-line-left,
+    .swal-glossy-popup .swal2-success-circular-line-right,
+    .swal-glossy-popup .swal2-success-fix {
+        background-color: transparent !important;
+    }
+
+    /* Styling Presisi Ikon Sukses */
     .swal-glossy-popup .swal2-icon.swal2-success {
         border-color: #10b981 !important;
     }
 
-    /* Memastikan lingkaran (ring) berada tepat di tengah */
     .swal-glossy-popup .swal2-icon.swal2-success .swal2-success-ring {
-        display: none !important;
-        /* Opsi: Sembunyikan ring jika masih menyebabkan pergeseran */
+        border-color: rgba(16, 185, 129, 0.3) !important;
     }
 
-    /* Mengatur posisi garis centang (check) agar benar-benar simetris */
     .swal-glossy-popup .swal2-icon.swal2-success [class^='swal2-success-line'] {
         background-color: #10b981 !important;
     }
 
-    /* Menghilangkan margin bawaan SweetAlert pada ikon */
-    .swal-glossy-popup .swal2-success-circular-line-left,
-    .swal-glossy-popup .swal2-success-circular-line-right,
-    .swal-glossy-popup .swal2-success-fix {
-        display: none !important;
+    /* Styling Presisi Ikon Error / Gagal */
+    .swal-glossy-popup .swal2-icon.swal2-error {
+        border-color: #f43f5e !important;
     }
+
+    .swal-glossy-popup .swal2-icon.swal2-error [class^='swal2-x-mark-line'] {
+        background-color: #f43f5e !important;
+    }
+
+    /* ======================================================== */
 
     /* KUSTOMISASI TOMBOL ANGKA PAGINATION (MODERN) */
     .pagination {
@@ -344,9 +348,6 @@
         box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.2);
     }
 </style>
-<!--================== END STYLE LIST BANNERS ==================-->
-
-<!--================== STYLE FORM BANNERS ==================-->
 <style>
     /* Memaksa tinggi card header agar sama dengan halaman List */
     .fixed-header-card {
@@ -540,9 +541,6 @@
         margin-right: 15px !important;
     }
 </style>
-<!--================== END STYLE FORM BANNERS ==================-->
-
-<!--================== STYLE DASHBOARD ==================-->
 <style>
     /* DASHBOARD STATISTIC CARDS */
     .stat-card {
@@ -590,9 +588,6 @@
         box-shadow: 0 8px 15px rgba(244, 63, 94, 0.25);
     }
 </style>
-<!--================== END STYLE DASHBOARD ==================-->
-
-
 @endpush
 
 <div class="container-fluid p-4">

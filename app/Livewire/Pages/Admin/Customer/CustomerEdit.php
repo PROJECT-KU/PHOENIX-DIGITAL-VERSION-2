@@ -15,9 +15,9 @@ class CustomerEdit extends Component
         $this->customer = $customer;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.customer.customer-edit');
+        return view('livewire.pages.admin.customer.customer-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

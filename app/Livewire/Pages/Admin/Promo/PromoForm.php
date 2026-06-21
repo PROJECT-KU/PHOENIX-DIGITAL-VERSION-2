@@ -24,19 +24,19 @@ class PromoForm extends Component
 
     public $tipe_diskon = 'persen';
 
-    public $diskon_member_persen = 0;
+    public $diskon_member_persen = "";
 
-    public $diskon_member_nominal = 0;
+    public $diskon_member_nominal = "";
 
-    public $diskon_non_member_persen = 0;
+    public $diskon_non_member_persen = "";
 
-    public $diskon_non_member_nominal = 0;
+    public $diskon_non_member_nominal = "";
 
     public $untuk_member = 'semua';
 
     public $untuk_pembeli_pertama = false;
 
-    public $min_pembelian = 0;
+    public $min_pembelian = "";
 
     public $mulai_promo = '';
 
@@ -72,14 +72,14 @@ class PromoForm extends Component
             $this->tipe_promo = $promo->tipe_promo;
             $this->tipe_diskon = $promo->tipe_diskon;
             $this->diskon_member_persen = $promo->diskon_member_persen;
-            $this->diskon_member_nominal = $promo->diskon_member_nominal;
+            $this->diskon_member_nominal = $promo->diskon_member_nominal ? number_format($promo->diskon_member_nominal, 0, '', '.') : '';
             $this->diskon_non_member_persen = $promo->diskon_non_member_persen;
-            $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal;
+            $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal ? number_format($promo->diskon_non_member_nominal, 0, '', '.') : '';
             $this->untuk_member = $promo->untuk_member;
             $this->untuk_pembeli_pertama = $promo->untuk_pembeli_pertama;
-            $this->min_pembelian = $promo->min_pembelian;
-            $this->mulai_promo = $promo->mulai_promo->format('Y-m-d\TH:i');
-            $this->selesai_promo = $promo->selesai_promo->format('Y-m-d\TH:i');
+            $this->min_pembelian = $promo->min_pembelian ? number_format($promo->min_pembelian, 0, '', '.') : '';
+            $this->mulai_promo = $promo->mulai_promo ? $promo->mulai_promo->format('Y-m-d\TH:i') : '';
+            $this->selesai_promo = $promo->selesai_promo ? $promo->selesai_promo->format('Y-m-d\TH:i') : '';
             $this->is_active = $promo->is_active;
             $this->prioritas = $promo->prioritas;
             $this->can_stack_with_other = $promo->can_stack_with_other;
@@ -90,10 +90,12 @@ class PromoForm extends Component
             $this->badge_color = $promo->badge_color ?? '#FF6B6B';
             $this->mode = 'edit';
             $this->selectedProducts = $promo->products->pluck('id')->toArray();
+        } else {
+            $this->mulai_promo = '';
+            $this->selesai_promo = '';
         }
+
         $this->allProducts = Product::orderBy('nama_akun')->get();
-        $this->mulai_promo = now()->format('Y-m-d\TH:i');
-        $this->selesai_promo = now()->addDays(7)->format('Y-m-d\TH:i');
     }
 
     public function updatedTipePromo()
@@ -115,6 +117,11 @@ class PromoForm extends Component
         ];
 
         return $rules;
+    }
+
+    private function cleanNumber($value)
+    {
+        return empty($value) ? 0 : (int) str_replace('.', '', $value);
     }
 
     public function save()
@@ -144,13 +151,13 @@ class PromoForm extends Component
                 'deskripsi' => $this->deskripsi,
                 'tipe_promo' => $this->tipe_promo,
                 'tipe_diskon' => $this->tipe_diskon,
-                'diskon_member_persen' => $this->diskon_member_persen,
-                'diskon_member_nominal' => $this->diskon_member_nominal,
-                'diskon_non_member_persen' => $this->diskon_non_member_persen,
-                'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
+                'diskon_member_persen' => (int) $this->diskon_member_persen,
+                'diskon_member_nominal' => $this->cleanNumber($this->diskon_member_nominal),
+                'diskon_non_member_persen' => (int) $this->diskon_non_member_persen,
+                'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,
@@ -168,12 +175,11 @@ class PromoForm extends Component
             // Sync products
             $promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil dibuat');
+            session()->flash('successCreated', 'Promo berhasil dibuat');
 
             return redirect()->route('admin.promo.index');
-
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorCreated', 'Gagal menambahkan Data Promo: ' . $e->getMessage());
         }
     }
 
@@ -186,13 +192,13 @@ class PromoForm extends Component
                 'deskripsi' => $this->deskripsi,
                 'tipe_promo' => $this->tipe_promo,
                 'tipe_diskon' => $this->tipe_diskon,
-                'diskon_member_persen' => $this->diskon_member_persen,
-                'diskon_member_nominal' => $this->diskon_member_nominal,
-                'diskon_non_member_persen' => $this->diskon_non_member_persen,
-                'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
+                'diskon_member_persen' => (int) $this->diskon_member_persen,
+                'diskon_member_nominal' => $this->cleanNumber($this->diskon_member_nominal),
+                'diskon_non_member_persen' => (int) $this->diskon_non_member_persen,
+                'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,
@@ -210,12 +216,11 @@ class PromoForm extends Component
             // Sync products
             $this->promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil diupdate');
+            session()->flash('successUpdated', 'Promo berhasil diupdate');
 
             return redirect()->route('admin.promo.index');
-
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Promo: ' . $e->getMessage());
         }
     }
 

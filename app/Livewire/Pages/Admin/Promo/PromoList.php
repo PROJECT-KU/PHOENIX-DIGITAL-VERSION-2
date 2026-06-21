@@ -24,17 +24,25 @@ class PromoList extends Component
         $this->resetPage();
     }
 
-    #[On('delete-promo-data')]
     public function delete($id)
     {
         try {
             $promo = Promo::findOrFail($id);
+
+            // Pengecekan status is_active
+            if ($promo->is_active) {
+                $this->dispatch('promoDeleteError', message: 'Promo masih aktif! Nonaktifkan promo terlebih dahulu sebelum menghapus.');
+                return;
+            }
+
+            // Jika tidak aktif, jalankan proses delete
             $promo->delete();
 
             session()->flash('success', 'Promo berhasil dihapus');
             $this->dispatch('promoDeleted');
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal menghapus promo: ' . $e->getMessage());
+            $this->dispatch('promoDeleteError', message: 'Terjadi kesalahan sistem saat menghapus data.');
         }
     }
 
@@ -63,7 +71,8 @@ class PromoList extends Component
                     ->orWhere('diskon_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
                     ->orWhere('diskon_non_member_persen', 'like', '%' . $this->searchDataPromo . '%')
                     ->orWhere('diskon_non_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('status', 'like', '%' . $this->searchDataPromo . '%');
+                    ->orWhereRaw("CASE WHEN is_active = 1 THEN 'aktif' ELSE 'nonaktif' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%'])
+                    ->orWhereRaw("CASE WHEN show_on_homepage = 1 THEN 'homepage' ELSE 'biasa' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%']);
             })
             ->latest()
             ->paginate(10);

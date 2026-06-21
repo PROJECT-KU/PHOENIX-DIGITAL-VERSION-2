@@ -32,14 +32,16 @@ class CustomerList extends Component
         $this->resetPage();
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $customers = Customer::query()
             ->where(function ($query) {
                 $query->where('nama', 'like', "%{$this->searchCustomer}%")
                     ->orWhere('email', 'like', "%{$this->searchCustomer}%")
-                    ->orWhere('no_hp', 'like', "%{$this->searchCustomer}%");
+                    ->orWhere('no_hp', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('kode_ref', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('status_member', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('point', 'like', "%{$this->searchCustomer}%");
             })
             ->when($this->activeTab === 'member', function ($q) {
                 $q->where('status_member', 'active');
@@ -49,6 +51,7 @@ class CustomerList extends Component
 
         return view('livewire.pages.admin.customer.customer-list', [
             'customers' => $customers,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

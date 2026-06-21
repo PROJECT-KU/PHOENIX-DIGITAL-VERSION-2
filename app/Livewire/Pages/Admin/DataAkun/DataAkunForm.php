@@ -77,13 +77,13 @@ class DataAkunForm extends Component
                 'status' => $this->status,
             ]);
 
-            session()->flash('success', 'Data Akun berhasil ditambahkan!');
+            session()->flash('successCreated', 'Data Akun berhasil ditambahkan!');
             $this->dispatch('DataAkun-created');
             $this->resetForm();
 
             return redirect()->route('admin.DataAkun.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan Data Akun: '.$e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Akun: ' . $e->getMessage());
             $this->dispatch('failed-create-data-DataAkun');
         }
     }
@@ -102,13 +102,13 @@ class DataAkunForm extends Component
                 'status' => $this->status,
             ]);
 
-            session()->flash('success', 'Perubahan Data Akun berhasil disimpan!');
+            session()->flash('successUpdated', 'Perubahan Data Akun berhasil disimpan!');
             $this->dispatch('DataAkun-updated');
             $this->resetForm();
 
             return redirect()->route('admin.DataAkun.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate Data Akun: '.$e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Akun: ' . $e->getMessage());
             $this->dispatch('failed-update-data-DataAkun');
         }
     }
