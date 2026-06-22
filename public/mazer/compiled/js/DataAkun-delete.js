@@ -86,179 +86,128 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-document.addEventListener('DOMContentLoaded', function () {
+// ===== Glossy delete: Peminjaman & Pengembalian (gaya seperti fitur Banners) =====
+(function () {
+    const glossyConfig = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
 
-    document.querySelectorAll('.delete-Loan-btn').forEach(button => {
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-            const loanId = button.getAttribute('data-id');
+    function konfirmasiHapus(button, teks) {
+        const id = button.getAttribute('data-id');
+        const component = button.closest('[wire\\:id]');
+        if (!component) return;
 
-            Swal.fire({
-                title: 'Yakin hapus Loan?',
-                text: "Data loan yang dihapus tidak bisa dikembalikan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
-                    Livewire.find(livewireComponentId).call('delete', loanId);
-                }
-            });
+        Swal.fire({
+            title: 'Yakin hapus data?',
+            text: teks,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            ...glossyConfig
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Livewire.find(component.getAttribute('wire:id')).call('delete', id);
+            }
         });
+    }
+
+    // Delegasi klik (tetap berfungsi setelah Livewire re-render / navigasi)
+    document.addEventListener('click', function (event) {
+        const loanBtn = event.target.closest('.delete-Loan-btn');
+        if (loanBtn) {
+            event.preventDefault();
+            konfirmasiHapus(loanBtn, 'Data peminjaman ini tidak bisa dikembalikan!');
+            return;
+        }
+
+        const pengembalianBtn = event.target.closest('.delete-pengembalian-btn');
+        if (pengembalianBtn) {
+            event.preventDefault();
+            konfirmasiHapus(pengembalianBtn, 'Data pengembalian ini tidak bisa dikembalikan!');
+            return;
+        }
+
+        const spendingBtn = event.target.closest('.delete-spending-btn');
+        if (spendingBtn) {
+            event.preventDefault();
+            konfirmasiHapus(spendingBtn, 'Data pengeluaran ini tidak bisa dikembalikan!');
+        }
     });
 
-    // Event sukses dari Livewire
+    // Notifikasi sukses
     window.addEventListener('loan-deleted', () => {
         Swal.fire({
             title: 'Terhapus!',
-            text: 'Data loan berhasil dihapus.',
+            text: 'Data peminjaman berhasil dihapus.',
             icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
         });
     });
 
-    // Event error dari Livewire
-    window.addEventListener('delete-loan-error', (e) => {
-        Swal.fire({
-            title: 'Gagal!',
-            text: e.detail.message,
-            icon: 'error'
-        });
-    });
-
-});
-
-document.addEventListener('click', function (event) {
-    const button = event.target.closest('.delete-Loan-btn');
-    if (!button) return; // bukan tombol hapus
-
-    event.preventDefault();
-    const loanId = button.getAttribute('data-id');
-
-    Swal.fire({
-        title: 'Yakin hapus Loan?',
-        text: "Data loan yang dihapus tidak bisa dikembalikan!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, hapus!',
-        cancelButtonText: 'Batal',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
-            Livewire.find(livewireComponentId).call('delete', loanId);
-        }
-    });
-});
-
-// Event sukses
-window.addEventListener('loan-deleted', () => {
-    Swal.fire({
-        title: 'Terhapus!',
-        text: 'Data loan berhasil dihapus.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
-    });
-});
-
-// Event gagal
-window.addEventListener('delete-loan-error', (e) => {
-    Swal.fire({
-        title: 'Gagal!',
-        text: e.detail.message,
-        icon: 'error'
-    });
-});
-
-// pengenbalian
-document.addEventListener('DOMContentLoaded', function () {
-
-    document.querySelectorAll('.delete-pengembalian-btn').forEach(button => {
-        button.addEventListener('click', function (event) {
-            event.preventDefault();
-            const pengembalianId = button.getAttribute('data-id');
-
-            Swal.fire({
-                title: 'Yakin hapus Loan?',
-                text: "Data pengembalian yang dihapus tidak bisa dikembalikan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
-                    Livewire.find(livewireComponentId).call('delete', pengembalianId);
-                }
-            });
-        });
-    });
-
-    // Event sukses dari Livewire
     window.addEventListener('pengembalian-deleted', () => {
         Swal.fire({
             title: 'Terhapus!',
             text: 'Data pengembalian berhasil dihapus.',
             icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
         });
     });
 
-    // Event error dari Livewire
+    // Notifikasi gagal
+    window.addEventListener('delete-loan-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: (e.detail && e.detail.message) ? e.detail.message : 'Terjadi kesalahan saat menghapus data.',
+            icon: 'error',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
+    });
+
     window.addEventListener('delete-pengembalian-error', (e) => {
         Swal.fire({
             title: 'Gagal!',
-            text: e.detail.message,
-            icon: 'error'
+            text: (e.detail && e.detail.message) ? e.detail.message : 'Terjadi kesalahan saat menghapus data.',
+            icon: 'error',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
         });
     });
 
-});
-
-document.addEventListener('click', function (event) {
-    const button = event.target.closest('.delete-pengembalian-btn');
-    if (!button) return; // bukan tombol hapus
-
-    event.preventDefault();
-    const pengembalianId = button.getAttribute('data-id');
-
-    Swal.fire({
-        title: 'Yakin hapus Loan?',
-        text: "Data pengembalian yang dihapus tidak bisa dikembalikan!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, hapus!',
-        cancelButtonText: 'Batal',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            const livewireComponentId = button.closest('[wire\\:id]').getAttribute('wire:id');
-            Livewire.find(livewireComponentId).call('delete', pengembalianId);
-        }
+    window.addEventListener('spending-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data pengeluaran berhasil dihapus.',
+            icon: 'success',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
     });
-});
 
-// Event sukses
-window.addEventListener('pengembalian-deleted', () => {
-    Swal.fire({
-        title: 'Terhapus!',
-        text: 'Data pengembalian berhasil dihapus.',
-        icon: 'success',
-        timer: 2000,
-        showConfirmButton: false
+    window.addEventListener('spending-delete-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: (e.detail && e.detail.message) ? e.detail.message : 'Terjadi kesalahan saat menghapus data.',
+            icon: 'error',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
     });
-});
-
-// Event gagal
-window.addEventListener('delete-pengembalian-error', (e) => {
-    Swal.fire({
-        title: 'Gagal!',
-        text: e.detail.message,
-        icon: 'error'
-    });
-});
-
-
+})();

@@ -18,7 +18,7 @@
             <td>{{ $loan->tanggal_peminjam_formatted ?? $loan->tanggal_pinjam }}</td>
             <td>{{ $loan->nominal_formatted ?? 'Rp ' . number_format($loan->nominal, 0, ',', '.') }}</td>
             <td>{{ $loan->deskripsi }}</td>
-            <td>{{ ucfirst($loan->status) }}</td>
+            <td>{{ ucfirst($statusMap[$loan->nama_peminjam] ?? 'pending') }}</td>
             <td>{{ $loan->penginput->name ?? '-' }}</td>
         </tr>
         @endforeach

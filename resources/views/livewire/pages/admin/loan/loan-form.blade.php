@@ -42,8 +42,8 @@
                 @enderror
             </div>
 
-            <!-- NOMINAL (formatted input + hidden wire model) -->
-            <div class="col-md-6 mb-3"
+            <!-- NOMINAL (formatted input) -->
+            <div class="col-md-12 mb-3"
                 x-data="{
                             formatRupiah(v) {
                                 if (!v) return '';
@@ -57,52 +57,38 @@
                                     rupiah += separator + ribuan.join('.');
                                 }
                                 rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
-                                return rupiah ? 'Rp ' + rupiah : '';
+                                return rupiah;
                             },
                             parseRaw(v) {
                                 return (v || '').toString().replace(/[^0-9]/g, '');
                             }
                         }"
-                x-init="$nextTick(() => { 
-                            // inisialisasi tampilan dari nilai Livewire (hidden.value)
-                            $refs.display.value = formatRupiah($refs.hidden.value ?? '');
+                x-init="$nextTick(() => {
+                            // Inisialisasi tampilan dari nilai Livewire
+                            $refs.display.value = formatRupiah($wire.nominal);
                         })">
-                <label for="nominal" class="form-label">Nominal Pinjaman <span class="text-danger">*</span></label>
+                <label for="nominal_display" class="form-label">Nominal Pinjaman <span class="text-danger">*</span></label>
 
-                <!-- tampil untuk user (format Rupiah) -->
-                <input type="text"
-                    x-ref="display"
-                    x-on:input="
+                <!-- Input tampil ke user (format Rupiah) -->
+                <div class="position-relative">
+                    <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                        style="pointer-events: none; z-index: 5;">
+                        Rp
+                    </span>
+                    <input type="text"
+                        id="nominal_display"
+                        x-ref="display"
+                        x-on:focus="$event.target.select()"
+                        x-on:input="
                                 let raw = parseRaw($event.target.value);
-                                // update display (tampil Rp)
                                 $event.target.value = formatRupiah(raw);
-                                // update Livewire property langsung supaya submit valid
                                 $wire.set('nominal', raw);
-                                // juga sinkron ke hidden input value agar x-init baca benar
-                                $refs.hidden.value = raw;
-                            "
-                    class="form-control @error('nominal') is-invalid @enderror"
-                    placeholder="Rp 0">
-                <!-- hidden untuk Livewire binding (nilai angka murni) -->
-                <input type="hidden" x-ref="hidden" wire:model.defer="nominal">
+                        "
+                        class="form-control @error('nominal') is-invalid @enderror"
+                        style="padding-left: 45px;"
+                        placeholder="0">
+                </div>
                 @error('nominal')
-                <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- Status -->
-            <div class="col-md-6 mb-3">
-                <label for="status" class="form-label">
-                    Status <span class="text-danger">*</span>
-                </label>
-                <select wire:model="status"
-                    class="form-select @error('status') is-invalid @enderror" id="status">
-                    <option value="">Pilih Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="berjalan">Berjalan</option>
-                    <option value="lunas">Lunas</option>
-                </select>
-                @error('status')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
@@ -123,10 +109,12 @@
         </div>
 
         <!-- Buttons -->
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn w-100 btn-primary">
-                <i class="bi bi-send me-1"></i>
-                {{ $this->mode === 'create' ? 'Tambah peminjaman' : 'Simpan Perubahan' }}
+        <div class="mt-4 pt-3 border-top d-flex gap-2">
+            <button type="submit"
+                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
+                style="height: 52px;">
+                <i class="bi bi-check2-circle me-2 fs-5"></i>
+                <span>{{ $this->mode === 'create' ? 'Simpan Data' : 'Update Data' }}</span>
             </button>
         </div>
     </form>

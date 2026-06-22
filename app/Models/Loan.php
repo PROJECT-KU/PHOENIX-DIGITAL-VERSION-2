@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Loan extends Model
@@ -105,6 +106,53 @@ class Loan extends Model
         return 'Rp '.number_format($this->total_borrower_loan, 0, ',', '.');
     }
 
+    /**
+     * Tentukan status peminjaman OTOMATIS dari total pinjaman vs total pengembalian.
+     * - belum ada pengembalian       -> pending
+     * - sudah mencicil sebagian       -> berjalan
+     * - pengembalian >= total pinjaman -> lunas
+     */
+    public static function statusDari($totalPinjaman, $totalPengembalian): string
+    {
+        $totalPinjaman = (float) $totalPinjaman;
+        $totalPengembalian = (float) $totalPengembalian;
+
+        if ($totalPinjaman <= 0 || $totalPengembalian <= 0) {
+            return self::STATUS_PENDING;
+        }
+
+        if ($totalPengembalian < $totalPinjaman) {
+            return self::STATUS_BERJALAN;
+        }
+
+        return self::STATUS_LUNAS;
+    }
+
+    /**
+     * Peta status otomatis per nama peminjam (lintas waktu / seluruh riwayat).
+     * Mengembalikan array ['Nama Peminjam' => 'pending|berjalan|lunas'].
+     * Dipakai bersama oleh daftar peminjaman, pengembalian, dan export.
+     */
+    public static function statusMap(): array
+    {
+        $pinjaman = static::query()
+            ->select('nama_peminjam', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_peminjam')
+            ->pluck('total', 'nama_peminjam');
+
+        $pengembalian = DB::table('pengembalians')
+            ->select('nama_pengembalian', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_pengembalian')
+            ->pluck('total', 'nama_pengembalian');
+
+        $map = [];
+        foreach ($pinjaman as $nama => $total) {
+            $map[$nama] = static::statusDari($total, $pengembalian[$nama] ?? 0);
+        }
+
+        return $map;
+    }
+
     protected static function boot()
     {
         parent::boot();
@@ -134,6 +182,11 @@ class Loan extends Model
             if (auth()->check()) {
                 $model->user_id = auth()->id();
             }
+        });
+
+        // Saat peminjaman dihapus, hapus juga catatan cash flow terkait
+        static::deleting(function ($model) {
+            $model->cashFlow()->delete();
         });
     }
 }

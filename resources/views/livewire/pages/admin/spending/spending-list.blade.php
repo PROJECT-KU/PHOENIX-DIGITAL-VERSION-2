@@ -195,8 +195,8 @@
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <button wire:click="$dispatch('will-delete-spending-data', {{ $spending }})"
-                                        class="btn btn-sm btn-danger p-2" title="Hapus">
+                                    <button type="button" class="btn btn-sm btn-danger p-2 delete-spending-btn"
+                                        data-id="{{ $spending->id }}" title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </td>

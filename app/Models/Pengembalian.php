@@ -128,5 +128,10 @@ class Pengembalian extends Model
                 $model->user_id = auth()->id();
             }
         });
+
+        // Saat pengembalian dihapus, hapus juga catatan cash flow terkait
+        static::deleting(function ($model) {
+            $model->cashFlow()->delete();
+        });
     }
 }
