@@ -89,3 +89,87 @@ window.addEventListener("cart-error", (event) => {
         showConfirmButton: true,
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const countdownElement = document.getElementById('countdown');
+
+    if (!countdownElement) {
+        return;
+    }
+
+    const expiredAt = countdownElement.dataset.expired;
+
+    const expiredTime = new Date(expiredAt).getTime();
+
+    const timer = setInterval(() => {
+
+        const now = new Date().getTime();
+
+        const distance = expiredTime - now;
+
+        if (distance <= 0) {
+
+            clearInterval(timer);
+
+            countdownElement.innerHTML = 'QRIS Kadaluarsa';
+
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+
+            return;
+        }
+
+        const minutes = Math.floor(
+    distance / (1000 * 60)
+);
+
+const seconds = Math.floor(
+    (distance % (1000 * 60)) / 1000
+);
+
+countdownElement.innerHTML =
+    `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+        countdownElement.innerHTML =
+            `${hours}j ${minutes}m ${seconds}d`;
+
+    }, 1000);
+
+});
+
+document.addEventListener('livewire:init', () => {
+
+    Livewire.on('payment-success', (event) => {
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Pembayaran Berhasil 🎉',
+            html: `
+                <p>Terima kasih atas pembayaran Anda.</p>
+                <small>Mengarahkan ke halaman sukses...</small>
+            `,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            timer: 2500,
+            timerProgressBar: true
+        });
+
+        setTimeout(() => {
+            window.location.href = event.url;
+        }, 2500);
+
+    });
+
+});
+
+// scrol pagination
+window.addEventListener('scroll', () => {
+    if (
+        window.innerHeight + window.scrollY >=
+        document.body.offsetHeight - 500
+    ) {
+        Livewire.dispatch('loadMore');
+    }
+});
