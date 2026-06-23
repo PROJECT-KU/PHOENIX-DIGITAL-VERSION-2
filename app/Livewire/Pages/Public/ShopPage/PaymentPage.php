@@ -4,6 +4,8 @@ namespace App\Livewire\Pages\Public\ShopPage;
 
 use App\Models\Order;
 use App\Services\PaymentService;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -15,61 +17,185 @@ class PaymentPage extends Component
 
     public $paymentUrl;
 
+    public $payment;
+
+    public $qrisContent;
+
+    public $qrisNmid;
+
+    public $qrisInvoiceId;
+
+    public $qrCodeImage;
+
     public function mount(Order $order)
     {
-        // Verify order belongs to current session
-        if (! $order) {
-            session()->flash('error', 'Order tidak ditemukan');
-
-            return redirect()->route('shop.index');
-        }
-
-        // Check if order already paid
-        if ($order->status === 'paid') {
-            session()->flash('info', 'Order sudah dibayar');
-
-            return redirect()->route('order.success', $order);
-        }
-
-        // Check if order expired
-        if ($order->isExpired()) {
-            session()->flash('error', 'Order sudah kadaluarsa');
-
-            return redirect()->route('shop.index');
-        }
-
         $this->order = $order;
 
-        // Create or get payment
-        if (! $order->payment_url) {
-            // $paymentService = new PaymentService();
-            // $result = $paymentService->createPayment($order);
+        // Sudah dibayar
+        if ($order->status === 'paid') {
 
-            // if ($result['success']) {
-            //     $this->snapToken = $result['snap_token'];
-            //     $this->paymentUrl = $result['snap_url'];
-            // } else {
-            //     session()->flash('error', 'Gagal membuat pembayaran: ' . $result['message']);
-            // }
-        } else {
-            $this->paymentUrl = $order->payment_url;
+            return redirect()->route(
+                'order.success',
+                $order
+            );
         }
+
+        $payment = $order
+            ->payments()
+            ->latest()
+            ->first();
+
+        $needNewQris = false;
+
+        if (! $payment) {
+
+            $needNewQris = true;
+        } elseif ($payment->status === 'settlement') {
+
+            return redirect()->route(
+                'order.success',
+                $order
+            );
+        } elseif (
+            $payment->status === 'expire'
+            || (
+                $payment->status === 'pending'
+                && $payment->expired_at
+                && $payment->expired_at->isPast()
+            )
+        ) {
+
+            // tandai payment lama expire
+            $payment->update([
+                'status' => 'expire',
+            ]);
+
+            $needNewQris = true;
+        }
+
+        if ($needNewQris) {
+
+            $result = app(PaymentService::class)
+                ->createQrisPayment($order);
+
+            if (! ($result['success'] ?? false)) {
+
+                session()->flash(
+                    'error',
+                    $result['message'] ?? 'Gagal membuat QRIS'
+                );
+
+                return;
+            }
+
+            $this->payment = $result['payment'];
+
+            $this->qrisContent = $result['qris_content'] ?? null;
+            $this->qrisInvoiceId = $result['invoice_id'] ?? null;
+            $this->qrisNmid = $result['nmid'] ?? null;
+        } else {
+
+            $this->payment = $payment;
+
+            $data = $payment->gateway_response['data'] ?? [];
+
+            $this->qrisContent = $data['qris_content'] ?? null;
+            $this->qrisInvoiceId = $data['qris_invoiceid'] ?? null;
+            $this->qrisNmid = $data['qris_nmid'] ?? null;
+        }
+
+        $this->generateQrCode();
     }
 
     public function checkPaymentStatus()
     {
-        $this->order->refresh();
+        $payment = $this->order
+            ->payments()
+            ->latest()
+            ->first();
 
-        if ($this->order->status === 'paid') {
-            session()->flash('success', 'Pembayaran berhasil!');
-
-            return redirect()->route('order.success', $this->order);
+        if (! $payment) {
+            return;
         }
+
+        if ($payment->status === 'settlement') {
+            return;
+        }
+
+        if ($payment->status === 'expire') {
+            return;
+        }
+
+        if (
+            $payment->expired_at &&
+            $payment->expired_at->isPast()
+        ) {
+            return;
+        }
+
+        $paid = app(PaymentService::class)
+            ->checkQrisPayment($payment);
+
+        if ($paid) {
+
+            $this->order->refresh();
+
+            $this->dispatch(
+                'payment-success',
+                url: route(
+                    'order.success',
+                    $this->order
+                )
+            );
+        }
+    }
+
+    private function generateQrCode()
+    {
+        if (empty($this->qrisContent)) {
+            return;
+        }
+
+        $writer = new PngWriter();
+
+        $qrCode = new QrCode(
+            $this->qrisContent
+        );
+
+        $result = $writer->write($qrCode);
+
+        $this->qrCodeImage = base64_encode(
+            $result->getString()
+        );
+    }
+
+    public function generateNewQris()
+    {
+        $payment = $this->order
+            ->payments()
+            ->latest()
+            ->first();
+
+        if (
+            $payment &&
+            $payment->status !== 'settlement'
+        ) {
+            $payment->update([
+                'status' => 'expire',
+            ]);
+        }
+
+        return redirect()->route(
+            'payment',
+            $this->order
+        );
     }
 
     #[Layout('layouts.guest')]
     public function render()
     {
-        return view('livewire.pages.public.shop-page.payment-page');
+        return view(
+            'livewire.pages.public.shop-page.payment-page'
+        );
     }
 }

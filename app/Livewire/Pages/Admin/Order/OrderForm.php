@@ -9,9 +9,13 @@ use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use App\Services\PromoService;
+use App\Models\Promo;
 
 class OrderForm extends Component
 {
+    protected PromoService $promoService;
+
     public $customer_id = null;
 
     public $nama = '';
@@ -28,7 +32,42 @@ class OrderForm extends Component
 
     public $isLoadingCustomer = false;
 
+    public $customerPoint = 0;
+
+    public $customerStatus = null;
+
+    public $customerReferralCode = null;
+
     public $customer_notes = '';
+
+    public $promoDiscount = 0;
+
+    public $totalDiscount = 0;
+
+    public $appliedPromos = [];
+
+    public $kodePromo = '';
+
+    public $promoValid = false;
+
+    public $promoMessage = '';
+
+    public $showPointsOption = false;
+
+    public $usePoints = false;
+
+    public $availablePoints = 0;
+
+    public $pointsValue = 0;
+
+    public $pointsDiscount = 0;
+
+    public $selectedPromoId = null;
+
+    public function boot(PromoService $promoService)
+    {
+        $this->promoService = $promoService;
+    }
 
     public function mount()
     {
@@ -71,6 +110,7 @@ class OrderForm extends Component
             'price' => 0,
             'subtotal' => 0,
         ];
+        $this->calculateTotals();
     }
 
     public function removeItem($index)
@@ -92,12 +132,20 @@ class OrderForm extends Component
         foreach ($this->items as $index => $item) {
 
             if (empty($item['product_id'])) {
+
+                $this->items[$index]['price'] = 0;
+                $this->items[$index]['subtotal'] = 0;
+
                 continue;
             }
 
             $product = Product::find($item['product_id']);
 
             if (! $product) {
+
+                $this->items[$index]['price'] = 0;
+                $this->items[$index]['subtotal'] = 0;
+
                 continue;
             }
 
@@ -107,11 +155,27 @@ class OrderForm extends Component
                 (int) $item['duration_value']
             );
 
+            if ($price <= 0) {
+                continue;
+            }
+
             $this->items[$index]['price'] = $price;
 
-            $this->items[$index]['subtotal'] =
-                $price * (int) $item['quantity'];
+            $qty = max(1, (int) ($item['quantity'] ?? 1));
+
+            if ($item['duration_type'] === 'bulan') {
+
+                $this->items[$index]['subtotal'] =
+                    $price *
+                    (int) $item['duration_value'] *
+                    $qty;
+            } else {
+
+                $this->items[$index]['subtotal'] =
+                    $price * $qty;
+            }
         }
+        $this->calculateDiscounts();
     }
 
     private function getPrice(
@@ -120,31 +184,51 @@ class OrderForm extends Component
         int $durationValue
     ): int {
 
-        if ($durationType === 'tahun') {
-            return (int) ($product->harga_pertahun ?? 0);
+        if ($durationType === 'paket') {
+
+            return match ($durationValue) {
+                5  => (int) ($product->harga_5_perbulan ?? 0),
+                10 => (int) ($product->harga_10_perbulan ?? 0),
+                12 => (int) ($product->harga_pertahun ?? 0),
+                default => 0,
+            };
         }
 
-        return match ($durationValue) {
-            1 => (int) ($product->harga_perbulan ?? 0),
-            5 => (int) ($product->harga_5_perbulan ?? 0),
-            10 => (int) ($product->harga_10_perbulan ?? 0),
-            default => (int) ($product->harga_awal ?? 0),
-        };
+        return (int) ($product->harga_perbulan ?? 0);
     }
 
     public function getGrandTotalProperty()
     {
-        return collect($this->items)->sum('subtotal');
+        return max(
+            0,
+            $this->subTotal
+                - $this->promoDiscount
+                - $this->pointsDiscount
+        );
     }
 
     private function generateOrderNumber(): string
     {
-        $count = Order::count() + 1;
+        $count = Order::count();
 
-        return 'INV-' .
-            now()->format('Ymd') .
-            '-' .
-            str_pad($count, 4, '0', STR_PAD_LEFT);
+        while (
+            Order::where(
+                'order_number',
+                'INV-' . now()->format('Ymd') . '-' . str_pad($count + 1, 4, '0', STR_PAD_LEFT)
+            )->exists()
+        ) {
+            $count++;
+        }
+
+        return 'INV-'
+            . now()->format('Ymd')
+            . '-'
+            . str_pad($count + 1, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function getSubTotalProperty()
+    {
+        return collect($this->items)->sum('subtotal');
     }
 
     public function save()
@@ -159,7 +243,7 @@ class OrderForm extends Component
             'items.*.product_id' => 'required|exists:products,id',
 
             'items.*.duration_type' =>
-            'required|in:bulan,tahun',
+            'required|in:bulan,paket',
 
             'items.*.duration_value' =>
             'required|integer|min:1',
@@ -190,12 +274,26 @@ class OrderForm extends Component
 
             $this->customer_id = $customer->id;
 
+            if (
+                $this->usePoints &&
+                $customer->status_member === 'active' &&
+                $customer->point > 0
+            ) {
+                $customer->usePoints();
+            }
+
             $order = Order::create([
                 'order_number' => $this->generateOrderNumber(),
 
                 'customer_id' => $this->customer_id,
 
-                'subtotal' => $this->grandTotal,
+                'subtotal' => $this->subTotal,
+
+                'promo_discount' => $this->promoDiscount,
+
+                'points_discount' => $this->pointsDiscount,
+
+                'total_discount' => $this->totalDiscount,
 
                 'total' => $this->grandTotal,
 
@@ -212,23 +310,17 @@ class OrderForm extends Component
 
                 OrderItem::create([
                     'order_id' => $order->id,
-
                     'product_id' => $product->id,
-
                     'product_name' => $product->nama_akun,
-
                     'product_description' => $product->deskripsi,
 
-                    'product_image' => $product->image,
-
-                    'duration_type' => $item['duration_type'],
+                    'duration_type' => $item['duration_type'] === 'paket'
+                        ? 'tahun'
+                        : 'bulan',
 
                     'duration_value' => $item['duration_value'],
-
                     'price' => $item['price'],
-
                     'quantity' => $item['quantity'],
-
                     'subtotal' => $item['subtotal'],
                 ]);
             }
@@ -248,6 +340,7 @@ class OrderForm extends Component
 
             DB::rollBack();
 
+            dd($e->getMessage());
             session()->flash(
                 'error',
                 'Gagal membuat pesanan : ' . $e->getMessage()
@@ -284,26 +377,207 @@ class OrderForm extends Component
 
             $this->email = $customer->email;
 
+            $this->customerPoint = $customer->point ?? 0;
+
+            $this->customerStatus = $customer->status_member;
+
+            $this->customerReferralCode = $customer->kode_ref;
+
             $this->customerFound = true;
+            if (
+                $customer->status_member === 'active'
+                && $customer->point > 0
+            ) {
+
+                $this->showPointsOption = true;
+
+                $this->availablePoints = $customer->point;
+
+                $this->pointsValue =
+                    $customer->getPointValue();
+            } else {
+
+                $this->showPointsOption = false;
+
+                $this->usePoints = false;
+
+                $this->availablePoints = 0;
+
+                $this->pointsValue = 0;
+            }
         } else {
 
             $this->resetCustomerData();
         }
 
         $this->isLoadingCustomer = false;
+        $this->calculateDiscounts();
+    }
+
+    private function buildCart(): array
+    {
+        $cart = [];
+
+        foreach ($this->items as $item) {
+
+            if (empty($item['product_id'])) {
+                continue;
+            }
+
+            $product = Product::find($item['product_id']);
+
+            if (! $product) {
+                continue;
+            }
+
+            $cart[] = [
+                'product_id'   => $product->id,
+                'product_name' => $product->nama_akun,
+                'price'        => $item['price'],
+                'quantity'     => $item['quantity'] ?? 1,
+                'subtotal'     => $item['subtotal'],
+            ];
+        }
+
+        return $cart;
+    }
+
+    private function calculateDiscounts()
+    {
+        $cart = $this->buildCart();
+
+        if (empty($cart)) {
+
+            $this->promoDiscount = 0;
+            $this->pointsDiscount = 0;
+            $this->totalDiscount = 0;
+            $this->appliedPromos = [];
+
+            return;
+        }
+
+        $result = $this->promoService->calculateDiscount(
+            $cart,
+            $this->foundCustomer,
+            $this->promoValid
+                ? $this->kodePromo
+                : null,
+            false,
+            false
+        );
+
+        $this->promoDiscount =
+            $result['promo_discount'];
+
+        $this->appliedPromos =
+            $result['applied_promos'];
+
+        $tempTotal =
+            $result['subtotal']
+            - $this->promoDiscount;
+
+        if (
+            $this->usePoints &&
+            $this->pointsValue > 0
+        ) {
+
+            $this->pointsDiscount = min(
+                $this->pointsValue,
+                $tempTotal
+            );
+        } else {
+
+            $this->pointsDiscount = 0;
+        }
+
+        $this->totalDiscount =
+            $this->promoDiscount +
+            $this->pointsDiscount;
+    }
+
+    public function updatedUsePoints()
+    {
+        $this->calculateDiscounts();
     }
 
     private function resetCustomerData()
     {
         $this->customer_id = null;
-
         $this->nama = '';
-
         $this->email = '';
 
-        $this->customerFound = false;
+        $this->customerPoint = 0;
+        $this->customerStatus = null;
+        $this->customerReferralCode = null;
 
+        $this->customerFound = false;
         $this->foundCustomer = null;
+
+        $this->showPointsOption = false;
+        $this->usePoints = false;
+        $this->availablePoints = 0;
+        $this->pointsValue = 0;
+        $this->pointsDiscount = 0;
+
+        $this->isLoadingCustomer = false;
+
+        $this->calculateDiscounts();
+    }
+
+    public function checkPromo()
+    {
+        $result = $this->promoService->validateKodePromo(
+            $this->kodePromo,
+            $this->foundCustomer,
+            $this->subTotal
+        );
+
+        $this->promoValid = $result['valid'];
+
+        $this->promoMessage = $result['message'];
+
+        $this->calculateDiscounts();
+    }
+
+    public function removePromo()
+    {
+        $this->kodePromo = '';
+
+        $this->promoValid = false;
+
+        $this->promoMessage = '';
+
+        $this->calculateDiscounts();
+    }
+
+    public function updatedKodePromo()
+    {
+        $this->promoValid = false;
+        $this->promoMessage = '';
+
+        $this->promoDiscount = 0;
+        $this->appliedPromos = [];
+
+        $this->calculateDiscounts();
+    }
+
+    public function updatedSelectedPromoId($value)
+    {
+        if (!$value) {
+            $this->removePromo();
+
+            return;
+        }
+
+        $promo = Promo::find($value);
+
+        if (!$promo) {
+            return;
+        }
+
+        $this->kodePromo = $promo->kode_promo;
+
+        $this->checkPromo();
     }
 
     #[Layout('layouts.app')]
@@ -313,6 +587,9 @@ class OrderForm extends Component
             'livewire.pages.admin.order.order-form',
             [
                 'products' => Product::orderBy('nama_akun')->get(),
+                'activePromos' => Promo::active()
+                    ->orderBy('nama_promo')
+                    ->get(),
             ]
         );
     }

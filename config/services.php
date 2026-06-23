@@ -31,4 +31,10 @@ return [
         ],
     ],
 
+    // Interactive QRIS
+    'qris' => [
+        'apikey' => env('QRIS_API_KEY'),
+        'mid' => env('QRIS_MID'),
+        'nmid' => env('QRIS_NMID'),
+    ],
 ];
