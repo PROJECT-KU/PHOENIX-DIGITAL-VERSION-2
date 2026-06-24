@@ -8,29 +8,26 @@ use Maatwebsite\Excel\Concerns\FromView;
 
 class GajiKaryawansExport implements FromView
 {
-    protected $status;
+    protected $bulan;
 
-    protected $start;
+    protected $tahun;
 
-    protected $end;
-
-    public function __construct($status = null, $start = null, $end = null)
+    public function __construct($bulan = null, $tahun = null)
     {
-        $this->status = $status;
-        $this->start = $start;
-        $this->end = $end;
+        $this->bulan = $bulan;
+        $this->tahun = $tahun;
     }
 
     public function view(): View
     {
         $query = GajiKaryawans::with(['karyawan']);
 
-        if ($this->start && $this->end) {
-            $query->whereBetween('tanggal_transaksi', [$this->start, $this->end]);
+        // Filter berdasarkan PERIODE GAJI
+        if ($this->bulan) {
+            $query->where('periode_bulan', $this->bulan);
         }
-
-        if ($this->status) {
-            $query->when('status', $this->status);
+        if ($this->tahun) {
+            $query->where('periode_tahun', $this->tahun);
         }
 
         return view('exports.gaji-karyawan', [

@@ -19,14 +19,23 @@ class GajiKaryawans extends Model
         'bank',
         'no_rek',
         'tanggal_transaksi',
+        'periode_bulan',
+        'periode_tahun',
         'gaji_pokok',
         'bonus_kinerja',
         'bonus_lainnya',
+        'uang_lembur',
+        'jam_lembur',
         'tunjangan_kesehatan',
         'tunjangan_thr',
         'tunjangan_ketenagakerjaan',
         'tunjangan_lainnya',
+        'tunjangan_transport',
+        'tunjangan_makan',
         'potongan',
+        'potongan_bpjs_kesehatan',
+        'potongan_bpjs_ketenagakerjaan',
+        'potongan_pinjaman',
         'pph21',
         'total',
         'deskripsi',
@@ -36,6 +45,15 @@ class GajiKaryawans extends Model
     protected $casts = [
         'tanggal_transaksi' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        // Saat data gaji dihapus, bersihkan cash flow & pengembalian potongan pinjaman terkait
+        static::deleting(function (self $model) {
+            \App\Models\Pengembalian::where('source_gaji_id', $model->id)->delete();
+            $model->cashFlow()->delete();
+        });
+    }
 
     // relationship
     public function cashFlow(): MorphOne
@@ -77,6 +95,27 @@ class GajiKaryawans extends Model
     public function getCreatedAtFormattedAttribute(): string
     {
         return $this->created_at->translatedFormat('d F Y H:i');
+    }
+
+    public function getPeriodeLabelAttribute(): string
+    {
+        $namaBulan = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        if ($this->periode_bulan && $this->periode_tahun) {
+            return ($namaBulan[(int) $this->periode_bulan] ?? '').' '.$this->periode_tahun;
+        }
+
+        return '-';
+    }
+
+    // Pengembalian pinjaman yang berasal dari potongan gaji ini
+    public function pengembalianPinjaman()
+    {
+        return $this->hasOne(Pengembalian::class, 'source_gaji_id');
     }
 
     // Scope filter status

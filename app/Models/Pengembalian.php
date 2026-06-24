@@ -26,6 +26,7 @@ class Pengembalian extends Model
         'status',
         'user_id',
         'id_transaksi',
+        'source_gaji_id',
     ];
 
     protected $casts = [

@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
         buttonsStyling: false
     };
 
-    function konfirmasiHapus(button, teks) {
+    function konfirmasiHapus(button, teks, metode = 'delete') {
         const id = button.getAttribute('data-id');
         const component = button.closest('[wire\\:id]');
         if (!component) return;
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
             ...glossyConfig
         }).then((result) => {
             if (result.isConfirmed) {
-                Livewire.find(component.getAttribute('wire:id')).call('delete', id);
+                Livewire.find(component.getAttribute('wire:id')).call(metode, id);
             }
         });
     }
@@ -140,6 +140,36 @@ document.addEventListener('DOMContentLoaded', function () {
         if (spendingBtn) {
             event.preventDefault();
             konfirmasiHapus(spendingBtn, 'Data pengeluaran ini tidak bisa dikembalikan!');
+            return;
+        }
+
+        const gajiBtn = event.target.closest('.delete-gajikaryawan-btn');
+        if (gajiBtn) {
+            event.preventDefault();
+            konfirmasiHapus(gajiBtn, 'Data gaji karyawan ini tidak bisa dikembalikan!', 'deletegajikaryawan');
+            return;
+        }
+
+        // Generate gaji massal (konfirmasi glossy)
+        const generateBtn = event.target.closest('.generate-gaji-btn');
+        if (generateBtn) {
+            event.preventDefault();
+            const component = generateBtn.closest('[wire\\:id]');
+            if (!component) return;
+
+            Swal.fire({
+                title: 'Generate gaji untuk semua karyawan?',
+                text: 'Draft gaji (status pending) dibuat dari gaji periode BULAN SEBELUMNYA untuk periode terpilih. Yang sudah ada akan dilewati.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, generate',
+                cancelButtonText: 'Batal',
+                ...glossyConfig
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Livewire.find(component.getAttribute('wire:id')).call('generateGaji');
+                }
+            });
         }
     });
 
@@ -207,6 +237,48 @@ document.addEventListener('DOMContentLoaded', function () {
             icon: 'error',
             timer: 2500,
             showConfirmButton: false,
+            ...glossyConfig
+        });
+    });
+
+    window.addEventListener('gajikaryawan-deleted', () => {
+        Swal.fire({
+            title: 'Terhapus!',
+            text: 'Data gaji karyawan berhasil dihapus.',
+            icon: 'success',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
+    });
+
+    window.addEventListener('gajikaryawan-delete-error', (e) => {
+        Swal.fire({
+            title: 'Gagal!',
+            text: (e.detail && e.detail.message) ? e.detail.message : 'Terjadi kesalahan saat menghapus data.',
+            icon: 'error',
+            timer: 2500,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
+    });
+
+    window.addEventListener('gaji-generated', (e) => {
+        Swal.fire({
+            title: 'Berhasil!',
+            text: (e.detail && e.detail.message) ? e.detail.message : 'Draft gaji berhasil dibuat.',
+            icon: 'success',
+            timer: 3000,
+            showConfirmButton: false,
+            ...glossyConfig
+        });
+    });
+
+    window.addEventListener('gaji-generate-info', (e) => {
+        Swal.fire({
+            title: 'Info',
+            text: (e.detail && e.detail.message) ? e.detail.message : '',
+            icon: 'info',
             ...glossyConfig
         });
     });
