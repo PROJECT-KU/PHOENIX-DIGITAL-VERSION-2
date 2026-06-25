@@ -34,7 +34,7 @@ Dashboard || Phoenix Digital
 
                         <div class="d-flex align-items-center bg-white px-3 py-2 shadow-sm" style="border-radius: 50px; border: 1px solid #f1f5f9;">
                             <div class="position-relative">
-                                <img src="{{ asset('mazer/compiled/jpg/1.jpg') }}" alt="User Avatar" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
+                                <img src="{{ Auth::user()->profile_photo ? Storage::url(Auth::user()->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}" alt="User Avatar" class="rounded-circle" style="width: 45px; height: 45px; object-fit: cover;">
 
                                 @if (Auth::user()->isOnline())
                                 <span class="position-absolute bottom-0 end-0 bg-success border border-2 border-white rounded-circle" style="width: 14px; height: 14px; transform: translate(-2px, -2px);" title="Online"></span>

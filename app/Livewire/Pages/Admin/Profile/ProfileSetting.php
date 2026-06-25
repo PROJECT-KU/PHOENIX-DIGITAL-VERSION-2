@@ -50,66 +50,58 @@ class ProfileSetting extends Component
 
     public function updateProfile()
     {
+        // Validasi di luar try agar pesan error tampil di tiap field (bukan tertangkap catch)
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,'.Auth::id(),
+        ]);
+
         try {
-
-            $this->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users,email,'.Auth::id(),
-            ]);
-
             $user = Auth::user();
             $user->update([
                 'name' => $this->name,
                 'email' => $this->email,
             ]);
 
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Data profil berhasil diperbarui.',
-            ]);
+            $this->dispatch('swal-success', message: 'Data profil berhasil diperbarui.');
         } catch (Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Data profil gagal diperbarui.',
-            ]);
+            $this->dispatch('swal-error', message: 'Data profil gagal diperbarui.');
         }
     }
 
     public function updatePassword()
     {
+        // Validasi di luar try agar alasan error (mis. password tidak sama / terlalu pendek)
+        // tampil di field, tidak tertangkap catch (Exception) yang juga menangkap ValidationException.
+        $this->validate();
+
         try {
-
-            $this->validate();
-
             Auth::user()->update([
                 'password' => Hash::make($this->password),
             ]);
 
             $this->reset(['current_password', 'password', 'password_confirmation']);
 
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Password berhasil diperbarui.',
-            ]);
+            // Demi keamanan: logout & paksa login ulang dengan password baru
+            Auth::guard('web')->logout();
+            session()->invalidate();
+            session()->regenerateToken();
+
+            session()->flash('password_updated', 'Password berhasil diperbarui. Silakan login kembali dengan password baru Anda.');
+
+            return redirect()->route('login');
         } catch (Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Password gagal diperbarui.',
-            ]);
+            $this->dispatch('swal-error', message: 'Password gagal diperbarui.');
         }
     }
 
     public function updatePhoto()
     {
-        try {
-            $this->validate([
-                'photo' => 'required|image|max:2048',
-            ]);
+        $this->validate([
+            'photo' => 'required|image|max:2048',
+        ]);
 
+        try {
             $user = Auth::user();
 
             // Hapus foto lama dari storage jika ada
@@ -128,18 +120,9 @@ class ProfileSetting extends Component
             $this->current_profile_photo = $path;
             $this->reset('photo');
 
-            session()->flash('success', 'foto profil berhasil diperbarui.');
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Foto Profil berhasil diperbarui.',
-            ]);
+            $this->dispatch('swal-success', message: 'Foto profil berhasil diperbarui.');
         } catch (Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Foto Profil gagal diperbarui.'.$e->getMessage(),
-            ]);
+            $this->dispatch('swal-error', message: 'Foto profil gagal diperbarui.');
         }
     }
 
@@ -158,21 +141,13 @@ class ProfileSetting extends Component
 
             $this->current_profile_photo = null;
 
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Foto profil berhasil dihapus.',
-            ]);
+            $this->dispatch('swal-success', message: 'Foto profil berhasil dihapus.');
         } catch (Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Foto profil gagal dihapus.'.$e->getMessage(),
-            ]);
+            $this->dispatch('swal-error', message: 'Foto profil gagal dihapus.');
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.profile.profile-setting');
@@ -182,9 +157,28 @@ class ProfileSetting extends Component
     {
         return [
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'string', Password::defaults()],
+            'password' => ['required', 'string', 'min:8', 'different:current_password', Password::defaults()],
             'password_confirmation' => ['required', 'string', 'same:password'],
             'photo' => ['nullable', 'image', 'max:2048'],
+        ];
+    }
+
+    protected function messages()
+    {
+        return [
+            'current_password.required' => 'Password saat ini harus diisi.',
+            'current_password.current_password' => 'Password saat ini salah.',
+
+            'password.required' => 'Password baru harus diisi.',
+            'password.min' => 'Password baru minimal :min karakter.',
+            'password.different' => 'Password baru tidak boleh sama dengan password saat ini.',
+
+            'password_confirmation.required' => 'Ulangi password baru harus diisi.',
+            'password_confirmation.same' => 'Ulangi password tidak sama dengan password baru.',
+
+            'photo.required' => 'Silakan pilih foto terlebih dahulu.',
+            'photo.image' => 'File harus berupa gambar (JPG/PNG).',
+            'photo.max' => 'Ukuran foto maksimal 2 MB.',
         ];
     }
 }
