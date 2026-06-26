@@ -1,46 +1,69 @@
 <div>
+    <style>
+        .lwg-input {
+            border-radius: 12px;
+            border: 1.5px solid #e7e9f2;
+            padding: 11px 14px;
+            transition: 0.18s;
+        }
+
+        .lwg-input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 0.18rem rgba(124, 58, 237, 0.12);
+        }
+    </style>
+
     <form wire:submit.prevent="save">
-        <div class="row">
-            <div class="form-group col-6">
-                <label for="title" class="form-label">Nama Lowongan Pekerjaan</label>
-                <input class="form-control" type="text" wire:model="title" placeholder="nama lowongan">
+        <div class="row g-3">
+            <div class="form-group col-md-6">
+                <label for="title" class="form-label fw-semibold text-dark">Nama Lowongan Pekerjaan <span class="text-danger">*</span></label>
+                <input class="form-control lwg-input @error('title') is-invalid @enderror" type="text" wire:model.live="title" placeholder="Nama lowongan">
+                @error('title') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
             </div>
-            <div class="form-group col-6">
-                <label for="isActive" class="form-label">Status Lowongan</label>
-                <select class="form-select" wire:model.defer='isActive'>
+            <div class="form-group col-md-6">
+                <label for="isActive" class="form-label fw-semibold text-dark">Status Lowongan <span class="text-danger">*</span></label>
+                <select class="form-select lwg-input @error('isActive') is-invalid @enderror" wire:model.defer='isActive'>
                     <option value="">Pilih Status</option>
                     <option value="active">Aktif</option>
                     <option value="non-active">Tidak Aktif</option>
                 </select>
+                @error('isActive') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
             </div>
         </div>
+
         <!-- descriptions form -->
-        <div class="form-group" wire:ignore>
-            <label class="form-label fw-semibold">Deskripsi Lowongan</label>
-            <div class="border rounded quill-container" style="height: 150px; overflow: auto;">
+        <div class="form-group mt-3" wire:ignore>
+            <label class="form-label fw-semibold text-dark">Deskripsi Lowongan</label>
+            <div class="border rounded-3 quill-container" style="height: 150px; overflow: auto;">
                 <div id="editor-descriptions"></div>
             </div>
             <input type="hidden" wire:model="descriptions" id="descriptions">
             @error('descriptions')
-            <div class="text-danger small">{{ $message }}</div>
+            <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
 
         <!-- requirements form -->
-        <div class="form-group" wire:ignore>
-            <label class="form-label fw-semibold">Persyaratan Lowongan</label>
-            <div class="border rounded quill-container" style="height: 150px; overflow: auto;">
+        <div class="form-group mt-3" wire:ignore>
+            <label class="form-label fw-semibold text-dark">Persyaratan Lowongan</label>
+            <div class="border rounded-3 quill-container" style="height: 150px; overflow: auto;">
                 <div id="editor-requirements"></div>
             </div>
             <input type="hidden" wire:model="requirements" id="requirements">
             @error('requirements')
-            <div class="text-danger small">{{ $message }}</div>
+            <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
-        <div class="mt-4 text-end">
-            <button type="submit" class="btn w-100 btn-primary">
-                <i class="bi bi-send me-1"></i>
-                {{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}
+
+        <div class="d-flex mt-4">
+            <button type="submit"
+                class="btn flex-grow-1 d-inline-flex align-items-center justify-content-center text-white rounded-pill shadow-lg"
+                style="height: 55px; background: linear-gradient(135deg, #6c63ff, #4e46e5); font-weight: 600; font-size: 1.1rem; border: none;"
+                wire:loading.attr="disabled" wire:target="save">
+                <span wire:loading.remove wire:target="save" class="d-inline-flex align-items-center">
+                    <i class="bi bi-check2-circle me-2 fs-4"></i>
+                    <span>{{ $this->mode === 'create' ? 'Tambah Lowongan' : 'Simpan Perubahan' }}</span>
+                </span>
             </button>
         </div>
     </form>

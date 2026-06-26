@@ -69,13 +69,13 @@
     </style>
 
     <div class="container-fluid">
-        <!--================== HEADER ==================-->
+        <!--================== HEADER + TOOLBAR (SATU CARD) ==================-->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                    <div class="title-wrapper text-center text-lg-start">
                         <h3 class="gradient-text fw-bold mb-1">Manajemen Role & Akun</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
+                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-lg-start">
                             @php
                             $breadcrumbs = [
                             ['name' => 'Beranda', 'url' => route('admin.dashboard')],
@@ -84,6 +84,41 @@
                             @endphp
                             <x-breadcrumb :items="$breadcrumbs" />
                         </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-stretch gap-2 header-action" style="flex: 1 1 auto; max-width: 560px;">
+                        @if ($activeTab === 'tab-role')
+                        <div class="form-group position-relative mb-0 flex-grow-1">
+                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                            <input wire:model.live.debounce.300ms="searchRole" type="text" class="form-control ps-5 pe-5"
+                                placeholder="Cari nama atau deskripsi role...">
+                            @if ($searchRole)
+                            <span wire:click="$set('searchRole', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                            </span>
+                            @endif
+                        </div>
+                        @if (auth()->user()->hasPermission('create_roles'))
+                        <button class="btn btn-primary d-flex align-items-center justify-content-center px-4 flex-shrink-0"
+                            wire:click="showModalFormRole">
+                            <i class="bi bi-plus-lg"></i>
+                            <span class="ms-2">Tambah Role</span>
+                        </button>
+                        @endif
+                        @else
+                        <div class="form-group position-relative mb-0 flex-grow-1">
+                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                            <input wire:model.live.debounce.300ms="searchUser" type="text" class="form-control ps-5 pe-5"
+                                placeholder="Cari nama atau email user...">
+                            @if ($searchUser)
+                            <span wire:click="$set('searchUser', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                            </span>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -105,27 +140,6 @@
         <!--================== TAB ROLE ==================-->
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-between gap-2 mb-4">
-                    <div class="form-group position-relative mb-0" style="flex: 1 1 auto; max-width: 380px;">
-                        <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                        <input wire:model.live.debounce.300ms="searchRole" type="text" class="form-control ps-5 pe-5"
-                            placeholder="Cari nama atau deskripsi role...">
-                        @if ($searchRole)
-                        <span wire:click="$set('searchRole', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                            style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                            <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                        </span>
-                        @endif
-                    </div>
-                    @if (auth()->user()->hasPermission('create_roles'))
-                    <button class="btn btn-primary rounded-pill d-inline-flex align-items-center justify-content-center gap-2 px-3"
-                        wire:click="showModalFormRole">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Tambah Role</span>
-                    </button>
-                    @endif
-                </div>
-
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
@@ -161,8 +175,8 @@
                                     </button>
                                     @endif
                                     @if (auth()->user()->hasPermission('delete_roles'))
-                                    <button class="btn btn-danger btn-sm p-2"
-                                        wire:click="$dispatch('will-delete-role-data', { id: {{ $role->id }} })"
+                                    <button type="button" class="btn btn-danger btn-sm p-2 delete-role-btn"
+                                        data-id="{{ $role->id }}" data-name="{{ $role->name }}"
                                         title="Hapus Role">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -198,20 +212,6 @@
         <!--================== TAB USER ==================-->
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
-                <div class="d-flex mb-4">
-                    <div class="form-group position-relative mb-0" style="flex: 1 1 auto; max-width: 380px;">
-                        <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                        <input wire:model.live.debounce.300ms="searchUser" type="text" class="form-control ps-5 pe-5"
-                            placeholder="Cari nama atau email user...">
-                        @if ($searchUser)
-                        <span wire:click="$set('searchUser', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                            style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                            <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                        </span>
-                        @endif
-                    </div>
-                </div>
-
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
@@ -241,8 +241,8 @@
                                     </button>
                                     @endif
                                     @if (auth()->user()->hasPermission('delete_roles'))
-                                    <button class="btn btn-danger btn-sm p-2"
-                                        wire:click="$dispatch('will-delete-user-data', { userId: {{ $user->id }} })" title="Hapus User">
+                                    <button type="button" class="btn btn-danger btn-sm p-2 delete-user-btn"
+                                        data-id="{{ $user->id }}" data-name="{{ $user->name }}" title="Hapus User">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     @endif
@@ -365,3 +365,74 @@
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
+
+<!--================== SWEET ALERT DELETE (GLOSSY, SEPERTI BANNERS) ==================-->
+<script>
+    const glossyConfigRole = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
+    document.addEventListener('livewire:navigated', function() {
+        document.body.addEventListener('click', function(event) {
+            const roleBtn = event.target.closest('.delete-role-btn');
+            const userBtn = event.target.closest('.delete-user-btn');
+
+            // Hapus ROLE
+            if (roleBtn) {
+                event.preventDefault();
+                const id = roleBtn.getAttribute('data-id');
+                const name = roleBtn.getAttribute('data-name');
+
+                Swal.fire({
+                    title: 'Yakin hapus role?',
+                    text: 'Role ' + (name || '') + ' akan dihapus permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfigRole
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = roleBtn.closest('[wire\\:id]');
+                        if (component) {
+                            Livewire.find(component.getAttribute('wire:id')).call('deleteRole', id);
+                        }
+                    }
+                });
+            }
+
+            // Hapus USER
+            if (userBtn) {
+                event.preventDefault();
+                const id = userBtn.getAttribute('data-id');
+                const name = userBtn.getAttribute('data-name');
+
+                Swal.fire({
+                    title: 'Yakin hapus user?',
+                    text: 'Data user ' + (name || '') + ' akan dihapus permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfigRole
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = userBtn.closest('[wire\\:id]');
+                        if (component) {
+                            Livewire.find(component.getAttribute('wire:id')).call('deleteUser', id);
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->

@@ -47,13 +47,13 @@
     @endphp
 
     <div class="container-fluid">
-        <!--================== HEADER ==================-->
+        <!--================== HEADER + TOOLBAR (SATU CARD) ==================-->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                    <div class="title-wrapper text-center text-lg-start">
                         <h3 class="gradient-text fw-bold mb-1">Data Permission Akun</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
+                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-lg-start">
                             @php
                             $breadcrumbs = [
                             ['name' => 'Beranda', 'url' => route('admin.dashboard')],
@@ -63,13 +63,45 @@
                             <x-breadcrumb :items="$breadcrumbs" />
                         </div>
                     </div>
-                    @if (auth()->user()->hasPermission('create_permission'))
-                    <a wire:navigate href="{{ route('admin.account.permission.create') }}"
-                        class="btn btn-primary rounded-pill d-inline-flex align-items-center justify-content-center gap-2 px-3 flex-shrink-0">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>Tambah Permission</span>
-                    </a>
-                    @endif
+
+                    <div class="d-flex flex-column flex-sm-row align-items-stretch gap-2 header-action" style="flex: 1 1 auto; max-width: 640px;">
+                        <!-- Search -->
+                        <div class="form-group position-relative mb-0 flex-grow-1">
+                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
+                                placeholder="Cari permission...">
+                            @if ($search)
+                            <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                            </span>
+                            @endif
+                        </div>
+
+                        <!-- Filter Group -->
+                        <select wire:model.live="filterGroup" class="form-select text-capitalize" style="max-width: 180px;">
+                            <option value="">Semua Group</option>
+                            @foreach ($groups as $group)
+                            <option value="{{ $group['value'] }}">{{ str_replace('_', ' ', $group['label']) }}</option>
+                            @endforeach
+                        </select>
+
+                        @if ($search || $filterGroup)
+                        <button wire:click="resetFilters" type="button"
+                            class="btn btn-light d-inline-flex align-items-center justify-content-center px-3"
+                            title="Reset filter">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        @endif
+
+                        @if (auth()->user()->hasPermission('create_permission'))
+                        <a wire:navigate href="{{ route('admin.account.permission.create') }}"
+                            class="btn btn-primary d-flex align-items-center justify-content-center px-4 flex-shrink-0">
+                            <i class="bi bi-plus-lg"></i>
+                            <span class="ms-2">Tambah</span>
+                        </a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -107,50 +139,6 @@
         <!--================== TABEL ==================-->
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
-                <!--================== SEARCH ==================-->
-                <div class="form-group position-relative mb-3">
-                    <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                    <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
-                        placeholder="Cari nama tampilan permission...">
-                    @if ($search)
-                    <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                        style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                        <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                    </span>
-                    @endif
-                </div>
-
-                <!--================== FILTER GROUP ==================-->
-                <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
-                    <div class="card-body p-3 px-4">
-                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                            <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
-                                <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
-                                    style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
-                                    <i class="bi bi-funnel"></i>
-                                </span>
-                                <span>Filter Group</span>
-                            </div>
-
-                            <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                                <select wire:model.live="filterGroup" class="form-select rounded-3 text-capitalize" style="min-width: 200px;">
-                                    <option value="">Semua Group</option>
-                                    @foreach ($groups as $group)
-                                    <option value="{{ $group['value'] }}">{{ str_replace('_', ' ', $group['label']) }}</option>
-                                    @endforeach
-                                </select>
-
-                                @if ($search || $filterGroup)
-                                <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3"
-                                    title="Reset filter">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
@@ -197,8 +185,8 @@
                                     </a>
                                     @endif
                                     @if (auth()->user()->hasPermission('delete_permission'))
-                                    <button type="button" class="btn btn-danger btn-sm p-2"
-                                        wire:click="$dispatch('will-delete-permission-data', {{ $item }})"
+                                    <button type="button" class="btn btn-danger btn-sm p-2 delete-permission-btn"
+                                        data-id="{{ $item->id }}" data-name="{{ $item->display_name }}"
                                         title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -234,3 +222,48 @@
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
+
+<!--================== SWEET ALERT DELETE (GLOSSY, SEPERTI BANNERS) ==================-->
+<script>
+    const glossyConfigPermission = {
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdrop: 'rgba(139, 92, 246, 0.15)',
+        customClass: {
+            popup: 'swal-glossy-popup',
+            confirmButton: 'btn-glossy-confirm',
+            cancelButton: 'btn-glossy-cancel',
+            title: 'swal-glossy-title'
+        },
+        buttonsStyling: false
+    };
+
+    document.addEventListener('livewire:navigated', function() {
+        document.body.addEventListener('click', function(event) {
+            const button = event.target.closest('.delete-permission-btn');
+
+            if (button) {
+                event.preventDefault();
+                const id = button.getAttribute('data-id');
+                const name = button.getAttribute('data-name');
+
+                Swal.fire({
+                    title: 'Yakin hapus permission?',
+                    text: 'Permission "' + (name || '') + '" akan dihapus permanen!',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal',
+                    ...glossyConfigPermission
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const component = button.closest('[wire\\:id]');
+                        if (component) {
+                            Livewire.find(component.getAttribute('wire:id')).call('delete', id);
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
+<!--================== END SWEET ALERT DELETE ==================-->

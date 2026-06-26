@@ -36,7 +36,7 @@ class PermissionList extends Component
     public function delete($id)
     {
         if (! auth()->user()->hasPermission('delete_permission')) {
-            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus permission.']);
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus permission.');
 
             return;
         }
@@ -48,27 +48,15 @@ class PermissionList extends Component
             $usedByRoles = $permission->roles()->count();
 
             if ($usedByRoles > 0) {
-                $this->dispatch('swal-confirm', [
-                    'type' => 'error',
-                    'title' => 'Gagal!',
-                    'message' => 'Permission \'' . $permission->display_name . '\' masih digunakan oleh ' . $usedByRoles . ' role. Hapus dari role terlebih dahulu.',
-                ]);
+                $this->dispatch('swal-error', message: 'Permission \'' . $permission->display_name . '\' masih digunakan oleh ' . $usedByRoles . ' role. Hapus dari role terlebih dahulu.');
 
                 return;
             }
 
             $permission->delete();
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Permission berhasil dihapus.',
-            ]);
+            $this->dispatch('swal-success', message: 'Permission berhasil dihapus.');
         } catch (\Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Permission gagal dihapus.',
-            ]);
+            $this->dispatch('swal-error', message: 'Permission gagal dihapus.');
         }
     }
 

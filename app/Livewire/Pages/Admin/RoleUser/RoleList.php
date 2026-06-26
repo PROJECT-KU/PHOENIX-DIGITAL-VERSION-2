@@ -114,17 +114,13 @@ class RoleList extends Component
     public function deleteUser($id)
     {
         if (! auth()->user()->hasPermission('delete_roles')) {
-            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus user.']);
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus user.');
 
             return;
         }
 
         User::findOrFail($id)->delete();
-        $this->dispatch('swal-alert', [
-            'type' => 'success',
-            'title' => 'Berhasil!',
-            'message' => 'Data pengguna berhasil dihapus.',
-        ]);
+        $this->dispatch('swal-success', message: 'Data pengguna berhasil dihapus.');
     }
 
     public function updatedSearchUser()
@@ -193,18 +189,14 @@ class RoleList extends Component
     public function deleteRole($id)
     {
         if (! auth()->user()->hasPermission('delete_roles')) {
-            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus role.']);
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus role.');
 
             return;
         }
 
         $role = ModelsRole::findOrFail($id);
         $role->delete();
-        $this->dispatch('swal-alert', [
-            'type' => 'success',
-            'title' => 'Berhasil!',
-            'message' => 'Role berhasil dihapus.',
-        ]);
+        $this->dispatch('swal-success', message: 'Role berhasil dihapus.');
     }
 
     private function resetForm()
