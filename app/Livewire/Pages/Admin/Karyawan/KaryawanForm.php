@@ -113,8 +113,6 @@ class KaryawanForm extends Component
             'nomor_rekening' => 'nullable|numeric',
         ]);
 
-        dump('helo');
-
         DB::transaction(function () {
             $userData = [
                 'name' => $this->name,

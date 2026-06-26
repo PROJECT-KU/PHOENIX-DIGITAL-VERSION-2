@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\Karyawan;
 
+use App\Models\Role;
 use App\Models\User;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -14,30 +15,53 @@ class KaryawanList extends Component
 
     public $search = '';
 
+    public $filterRole = '';
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterRole()
+    {
+        $this->resetPage();
+    }
+
+    public function resetFilters()
+    {
+        $this->reset(['search', 'filterRole']);
+        $this->resetPage();
+    }
+
     #[On('delete-karyawan-data')]
     public function delete($id)
     {
         if (! auth()->user()->hasPermission('delete_karyawan')) {
-            session()->flash('error', 'Anda tidak memiliki izin menghapus data karyawan.');
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus data karyawan.');
 
             return;
         }
 
-        $user = User::findOrFail($id);
-        $user->delete();
-        session()->flash('message', 'Karyawan berhasil dihapus.');
+        User::findOrFail($id)->delete();
+        $this->dispatch('swal-success', message: 'Data karyawan berhasil dihapus.');
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $users = User::with(['detail', 'role'])
-            ->where('name', 'like', '%'.$this->search.'%')
-            ->orWhere('email', 'like', '%'.$this->search.'%')
+            ->when($this->filterRole, fn ($q) => $q->where('role_id', $this->filterRole))
+            ->where(function ($q) {
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('email', 'like', '%'.$this->search.'%');
+            })
+            ->latest()
             ->paginate(10);
 
         return view('livewire.pages.admin.karyawan.karyawan-list', [
             'users' => $users,
+            'roles' => Role::orderBy('name')->get(),
+            'totalKaryawan' => User::count(),
         ]);
     }
 }

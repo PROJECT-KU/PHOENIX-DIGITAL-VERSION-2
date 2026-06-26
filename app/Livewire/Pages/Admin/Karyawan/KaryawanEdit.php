@@ -15,7 +15,7 @@ class KaryawanEdit extends Component
         $this->user = $user;
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.karyawan.karyawan-edit');

@@ -229,4 +229,8 @@
             </div>
         </div>
     </div>
+
+    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    @include('livewire.layout.sweetalert')
+    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
