@@ -75,10 +75,12 @@
                                         class="text-black btn btn-sm btn-warning" title="Detail">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    @if (auth()->user()->hasPermission('delete_message'))
                                     <button type="button" wire:click="$dispatch('will-delete-message-data', {{$item}})"
                                         class="btn btn-sm btn-danger" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

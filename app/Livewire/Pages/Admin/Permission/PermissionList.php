@@ -35,6 +35,12 @@ class PermissionList extends Component
     #[On('delete-permission-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_permission')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus permission.']);
+
+            return;
+        }
+
         try {
             $permission = Permission::findOrFail($id);
 

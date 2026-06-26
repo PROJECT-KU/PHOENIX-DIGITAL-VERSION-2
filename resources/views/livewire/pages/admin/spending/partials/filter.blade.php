@@ -26,11 +26,13 @@
                     <span class="d-none d-md-inline">Export PDF</span>
                 </span>
             </button>
+            @if (auth()->user()->hasPermission('create_spending'))
             <a class="btn btn-primary rounded-pill d-flex align-items-center justify-content-center gap-2 px-3"
                 href="{{ route('admin.spending.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
                 <span class="d-none d-lg-inline">Tambah Data</span>
             </a>
+            @endif
         </div>
     </div>
 

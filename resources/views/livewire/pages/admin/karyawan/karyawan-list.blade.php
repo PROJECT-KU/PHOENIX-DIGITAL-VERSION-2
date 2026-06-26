@@ -16,10 +16,12 @@
                         <i class="bi bi-search" style="font-size: 14px;"></i>
                     </div>
                 </div>
+                @if (auth()->user()->hasPermission('create_karyawan'))
                 <a href="{{route('admin.karyawan.create')}}" wire:navigate class="btn btn-primary">
                     <i class="bi bi-plus me-1"></i>
                     Tambah Karyawan
                 </a>
+                @endif
             </div>
             <div class="table-responsive">
                 <table class="table table-striped text-center">
@@ -29,7 +31,9 @@
                             <th>Email</th>
                             <th>Jabatan</th>
                             <th>Bank Info</th>
+                            @if (auth()->user()->hasAnyPermission(['edit_karyawan', 'delete_karyawan']))
                             <th>Aksi</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -49,15 +53,21 @@
                                 <span class="text-muted small">-</span>
                                 @endif
                             </td>
+                            @if (auth()->user()->hasAnyPermission(['edit_karyawan', 'delete_karyawan']))
                             <td>
+                                @if (auth()->user()->hasPermission('edit_karyawan'))
                                 <a href="{{ route('admin.karyawan.edit', $user) }}" title="edit data" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i></a>
+                                @endif
 
+                                @if (auth()->user()->hasPermission('delete_karyawan'))
                                 <button type="button" class="btn btn-sm btn-danger"
                                     wire:click="$dispatch('will-delete-karyawan-data', {{ $user }})"
                                     title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                                @endif
                             </td>
+                            @endif
                         </tr>
                         @empty
                         <tr>

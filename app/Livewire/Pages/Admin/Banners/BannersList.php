@@ -22,6 +22,12 @@ class BannersList extends Component
     // Hapus Banners
     public function deleteBanners($id)
     {
+        if (! auth()->user()->hasPermission('delete_banners')) {
+            $this->dispatch('Banners-deleteError', message: 'Anda tidak memiliki izin menghapus banner.');
+
+            return;
+        }
+
         $Banners = Banners::find($id);
 
         if (! $Banners) {

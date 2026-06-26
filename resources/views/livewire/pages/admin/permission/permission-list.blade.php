@@ -36,10 +36,12 @@
                             </button>
                         </div>
                         <div class="">
+                            @if (auth()->user()->hasPermission('create_permission'))
                             <a wire:navigate href="{{ route('admin.account.permission.create') }}" class="px-4 btn btn-primary rounded-pill">
                                 <i class="bi bi-plus-lg"></i>
                                 <span>Tambah Permission</span>
                             </a>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -52,7 +54,9 @@
                                     <th>Nama Permission</th>
                                     <th>Group Permission</th>
                                     <th>Deskripsi</th>
+                                    @if (auth()->user()->hasAnyPermission(['edit_permission', 'delete_permission']))
                                     <th width="120">Aksi</th>
+                                    @endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -61,21 +65,27 @@
                                     <td>{{ $item->display_name }}</td>
                                     <td>{{ $item->group }}</td>
                                     <td>{{ $item->description }}</td>
+                                    @if (auth()->user()->hasAnyPermission(['edit_permission', 'delete_permission']))
                                     <td>
                                         <div class="d-flex justify-content-center">
+                                            @if (auth()->user()->hasPermission('edit_permission'))
                                             <a href="{{ route('admin.account.permission.edit', $item) }}"
                                                 wire:navigate
                                                 class="btn btn-sm btn-warning me-1"
                                                 title="Edit">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
+                                            @endif
+                                            @if (auth()->user()->hasPermission('delete_permission'))
                                             <button type="button" class="btn btn-sm btn-danger"
                                                 wire:click="$dispatch('will-delete-permission-data', {{ $item }})"
                                                 title="Delete">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                            @endif
                                         </div>
                                     </td>
+                                    @endif
                                 </tr>
                                 @empty
                                 <tr>

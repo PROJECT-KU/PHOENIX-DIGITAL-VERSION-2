@@ -26,11 +26,13 @@
                     <span class="d-none d-md-inline">Export PDF</span>
                 </span>
             </button>
+            @if (auth()->user()->hasPermission('create_loan'))
             <a class="btn btn-primary rounded-pill d-flex align-items-center justify-content-center gap-2 px-3"
                 href="{{ route('admin.loan.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
                 <span class="d-none d-lg-inline">Tambah Peminjaman</span>
             </a>
+            @endif
         </div>
     </div>
 

@@ -26,6 +26,12 @@ class PromoList extends Component
 
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_promo')) {
+            $this->dispatch('promoDeleteError', message: 'Anda tidak memiliki izin menghapus promo.');
+
+            return;
+        }
+
         try {
             $promo = Promo::findOrFail($id);
 

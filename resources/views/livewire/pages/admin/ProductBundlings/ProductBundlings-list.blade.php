@@ -29,10 +29,12 @@
                             </span>
                             @endif
                         </div>
+                        @if (auth()->user()->hasPermission('create_bundlings'))
                         <a wire:navigate href="{{ route('admin.Bundlings.create') }}" class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Data</span>
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -49,7 +51,9 @@
                                 <th>Harga Awal</th>
                                 <th>Harga Bundling</th>
                                 <th>Status</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_bundlings', 'delete_bundlings']))
                                 <th class="text-center">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -83,19 +87,25 @@
                                     </span>
                                 </td>
 
+                                @if (auth()->user()->hasAnyPermission(['edit_bundlings', 'delete_bundlings']))
                                 <td class="text-center">
+                                    @if (auth()->user()->hasPermission('edit_bundlings'))
                                     <a wire:navigate href="{{ route('admin.Bundlings.edit', $item) }}"
                                         class="btn btn-warning btn-sm me-1"
                                         title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_bundlings'))
                                     <button type="button"
                                         class="btn btn-danger btn-sm delete-ProductBundlings-btn"
                                         data-id="{{ $item->id }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
 
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>

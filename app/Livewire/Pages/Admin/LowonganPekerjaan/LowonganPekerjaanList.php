@@ -31,6 +31,12 @@ class LowonganPekerjaanList extends Component
     #[On('delete-lowongan-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_lowongan')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus data lowongan.');
+
+            return;
+        }
+
         try {
             Lowongan::findOrFail($id)->delete();
             session()->flash('success', 'berhasil menghapus data lowongan');

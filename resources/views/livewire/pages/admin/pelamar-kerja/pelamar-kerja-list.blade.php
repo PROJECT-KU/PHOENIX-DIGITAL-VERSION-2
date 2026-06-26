@@ -69,10 +69,12 @@
                                             class="text-black btn btn-sm btn-warning" title="Detail">
                                             <i class="bi bi-eye"></i>
                                         </a>
+                                        @if (auth()->user()->hasPermission('delete_pelamar'))
                                         <button type="button" onclick="confirmDelete({{ $item->id }})"
                                             class="btn btn-sm btn-danger" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

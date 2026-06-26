@@ -25,11 +25,13 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
+                    @if (auth()->user()->hasPermission('create_pemesanantoko'))
                     <a class="btn btn-primary rounded-pill" href="{{ route('admin.pesanantoko.create') }}"
                         wire:navigate>
                         <i class="bi bi-plus-lg"></i>
                         <span class="d-none d-lg-inline">Tambah Data Pemesanan</span>
                     </a>
+                    @endif
                 </div>
             </div>
 

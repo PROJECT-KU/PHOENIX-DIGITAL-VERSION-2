@@ -169,7 +169,9 @@
                                 <th>PIC Pembeli</th>
                                 @endif
                                 <th>Waktu Data Dibuat</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_spending', 'delete_spending']))
                                 <th class="text-center" width="120">Aksi</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -190,16 +192,22 @@
                                 <td>{{ $spending->jenis_pengeluaran === 'pembelian_akun' ? ($spending->namaPicPembeli ?: '-') : '-' }}</td>
                                 @endif
                                 <td>{{ $spending->created_at_formatted }}</td>
+                                @if (auth()->user()->hasAnyPermission(['edit_spending', 'delete_spending']))
                                 <td class="text-center text-nowrap">
+                                    @if (auth()->user()->hasPermission('edit_spending'))
                                     <a href="{{ route('admin.spending.edit', $spending->id) }}" wire:navigate
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_spending'))
                                     <button type="button" class="btn btn-sm btn-danger p-2 delete-spending-btn"
                                         data-id="{{ $spending->id }}" title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>

@@ -62,6 +62,12 @@ class CustomerMessageList extends Component
 
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_customer_message')) {
+            $this->dispatch('CustomerMessage-deleteError', message: 'Anda tidak memiliki izin menghapus pesan pelanggan.');
+
+            return;
+        }
+
         $customerMessage = CustomerMessage::find($id);
 
         // 1. Pastikan data ditemukan

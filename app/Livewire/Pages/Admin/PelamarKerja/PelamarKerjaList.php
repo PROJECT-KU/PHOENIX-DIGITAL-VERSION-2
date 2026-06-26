@@ -62,6 +62,12 @@ class PelamarKerjaList extends Component
     #[On('confirm-delete')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_pelamar')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus data pelamar.');
+
+            return;
+        }
+
         try {
             $application = JobApplication::findOrFail($id);
 

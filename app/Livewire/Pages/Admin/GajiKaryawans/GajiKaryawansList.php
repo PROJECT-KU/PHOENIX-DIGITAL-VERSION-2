@@ -59,6 +59,12 @@ class GajiKaryawansList extends Component
 
     public function deletegajikaryawan($id)
     {
+        if (! auth()->user()->hasPermission('delete_gajikaryawan')) {
+            $this->dispatch('gajikaryawan-delete-error', message: 'Anda tidak memiliki izin menghapus data gaji.');
+
+            return;
+        }
+
         try {
             $gajikaryawan = GajiKaryawans::findOrFail($id);
             $gajikaryawan->delete();
@@ -77,6 +83,12 @@ class GajiKaryawansList extends Component
      */
     public function generateGaji()
     {
+        if (! auth()->user()->hasPermission('create_gajikaryawan')) {
+            $this->dispatch('gajikaryawan-delete-error', message: 'Anda tidak memiliki izin membuat data gaji.');
+
+            return;
+        }
+
         $bulan = (int) ($this->bulan ?: now()->month);
         $tahun = (int) ($this->tahun ?: now()->year);
 

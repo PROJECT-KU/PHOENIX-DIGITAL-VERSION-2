@@ -21,6 +21,12 @@ class ProductList extends Component
 
     public function deleteDataProduct($id)
     {
+        if (! auth()->user()->hasPermission('delete_product')) {
+            $this->dispatch('delete-product-error', message: 'Anda tidak memiliki izin menghapus produk.');
+
+            return;
+        }
+
         try {
             $product = Product::findOrFail($id);
 

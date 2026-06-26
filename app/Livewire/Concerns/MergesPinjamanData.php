@@ -27,6 +27,12 @@ trait MergesPinjamanData
      */
     public function delete($id): void
     {
+        if (! auth()->user()->hasPermission('delete_loan')) {
+            $this->dispatch('delete-loan-error', message: 'Anda tidak memiliki izin menghapus data ini.');
+
+            return;
+        }
+
         try {
             if ($loan = Loan::find($id)) {
                 $loan->delete();

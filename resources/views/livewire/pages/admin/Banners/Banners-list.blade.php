@@ -28,11 +28,13 @@
                             </span>
                             @endif
                         </div>
+                        @if (auth()->user()->hasPermission('create_banners'))
                         <a wire:navigate href="{{ route('admin.Banners.create') }}"
                             class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Data</span>
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -49,7 +51,9 @@
                                 <th>Gambar</th>
                                 <th>Deskripsi</th>
                                 <th class="text-center">Status</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_banners', 'delete_banners']))
                                 <th class="text-center">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -75,16 +79,22 @@
                                         {{ ucfirst($item->status) }}
                                     </span>
                                 </td>
+                                @if (auth()->user()->hasAnyPermission(['edit_banners', 'delete_banners']))
                                 <td class="text-center text-nowrap">
+                                    @if (auth()->user()->hasPermission('edit_banners'))
                                     <a wire:navigate href="{{ route('admin.Banners.edit', $item) }}"
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_banners'))
                                     <button type="button" class="btn btn-sm btn-danger delete-Banners-btn p-2"
                                         data-id="{{ $item->id }}">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>

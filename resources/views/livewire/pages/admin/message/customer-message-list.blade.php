@@ -148,9 +148,11 @@
                                 <a wire:navigate href="{{ route('admin.customer-message.detail', $item) }}" class="btn btn-sm btn-warning text-white p-2" title="Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                @if (auth()->user()->hasPermission('delete_customer_message'))
                                 <button type="button" class="btn btn-sm btn-danger delete-CustomerMessage-btn p-2" data-id="{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                                @endif
 
                                 @if (!in_array($item->status, ['closed', 'resolved']))
                                 @php

@@ -114,113 +114,153 @@ Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-Route::middleware(['checkrole:admin,admin-mimin'])->group(function () {
-    // Data Pemesanan RSC dan pemesanan toko online
+// ======================= AKSES BERBASIS PERMISSION =======================
+
+// Dashboard
+Route::middleware('permission:view_dashboard')->group(function () {
+    Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
+});
+
+// Profil — semua pengguna yang login boleh mengakses profilnya sendiri
+Route::middleware('auth')->group(function () {
+    Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
+});
+
+// Pesanan RSC
+Route::middleware('permission:view_pesananrsc')->group(function () {
     Route::get('/admin/pesananrsc', PemesananrscList::class)->name('admin.pesananrsc.index');
-    Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->name('admin.pesananrsc.create');
+    Route::get('/admin/pesananrsc/create', PemesananrscCreate::class)->middleware('permission:create_pesananrsc')->name('admin.pesananrsc.create');
     Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
-        ->name('admin.pesananrsc.edit');
+        ->middleware('permission:edit_pesananrsc')->name('admin.pesananrsc.edit');
     Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
+});
+
+// Pesanan Toko
+Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
-    Route::get('/admin/pesanantoko/create', OrderCreate::class)->name('admin.pesanantoko.create');
-    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
+    Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
+});
 
-    // Data Customer
+// Data Customer
+Route::middleware('permission:view_customer')->group(function () {
     Route::get('/admin/customer', CustomerList::class)->name('admin.customer.index');
-    Route::get('/admin/customer/create', CustomerCreate::class)->name('admin.customer.create');
+    Route::get('/admin/customer/create', CustomerCreate::class)->middleware('permission:create_customer')->name('admin.customer.create');
     Route::get('/admin/customer/{customer}', CustomerEdit::class)->name('admin.customer.show');
-    Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->name('admin.customer.edit');
+    Route::get('/admin/customer/{customer}/edit', CustomerEdit::class)->middleware('permission:edit_customer')->name('admin.customer.edit');
+});
 
-    // customer message
+// Customer Message
+Route::middleware('permission:view_customer_message')->group(function () {
     Route::get('/admin/customer-message', CustomerMessageList::class)->name('admin.customer-message.index');
     Route::get('/admin/customer-message/{message}', CustomerMessageDetail::class)->name('admin.customer-message.detail');
 });
 
-Route::middleware(['checkrole:admin'])->group(function () {
-    // data role
+// Role
+Route::middleware('permission:view_roles')->group(function () {
     Route::get('/admin/role', RoleList::class)->name('admin.account.role');
-    Route::get('/admin/role/{role}/edit', RolePermissionEdit::class)->name('admin.account.role.permission');
+    Route::get('/admin/role/{role}/edit', RolePermissionEdit::class)->middleware('permission:edit_roles')->name('admin.account.role.permission');
+});
 
-    // data permission
+// Permission
+Route::middleware('permission:view_permission')->group(function () {
     Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
-    Route::get('/admin/permission/create', PermissionCreate::class)->name('admin.account.permission.create');
-    Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->name('admin.account.permission.edit');
+    Route::get('/admin/permission/create', PermissionCreate::class)->middleware('permission:create_permission')->name('admin.account.permission.create');
+    Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->middleware('permission:edit_permission')->name('admin.account.permission.edit');
+});
 
-    // data karyawan
+// Karyawan
+Route::middleware('permission:view_karyawan')->group(function () {
     Route::get('/admin/karyawan', KaryawanList::class)->name('admin.karyawan.index');
-    Route::get('/admin/karyawan/create', KaryawanCreate::class)->name('admin.karyawan.create');
-    Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->name('admin.karyawan.edit');
-});
-Route::middleware(['checkrole:admin,finance,admin-mimin'])->group(function () {
-    Route::get('/admin/dashboard', Dashboard::class)->name('admin.dashboard');
-    Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
+    Route::get('/admin/karyawan/create', KaryawanCreate::class)->middleware('permission:create_karyawan')->name('admin.karyawan.create');
+    Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->middleware('permission:edit_karyawan')->name('admin.karyawan.edit');
 });
 
-Route::middleware(['checkrole:admin,finance'])->group(function () {
-
-    // Data Akun
+// Data Akun
+Route::middleware('permission:view_dataakun')->group(function () {
     Route::get('/admin/DataAkun', DataAkunList::class)->name('admin.DataAkun.index');
-    Route::get('/admin/DataAkun/create', DataAkunCreate::class)->name('admin.DataAkun.create');
+    Route::get('/admin/DataAkun/create', DataAkunCreate::class)->middleware('permission:create_dataakun')->name('admin.DataAkun.create');
     Route::get('/admin/DataAkun/{DataAkun}', DataAkunEdit::class)->name('admin.DataAkun.show');
-    Route::get('/admin/DataAkun/{dataAkun}/edit', DataAkunEdit::class)->name('admin.DataAkun.edit');
+    Route::get('/admin/DataAkun/{dataAkun}/edit', DataAkunEdit::class)->middleware('permission:edit_dataakun')->name('admin.DataAkun.edit');
+});
 
-    // Data Product
+// Data Product
+Route::middleware('permission:view_product')->group(function () {
     Route::get('/admin/product', ProductList::class)->name('admin.product.index');
-    Route::get('/admin/product/create', ProductCreate::class)->name('admin.product.create');
-    Route::get('/admin/product/{product}/edit', ProductEdit::class)->name('admin.product.edit');
+    Route::get('/admin/product/create', ProductCreate::class)->middleware('permission:create_product')->name('admin.product.create');
+    Route::get('/admin/product/{product}/edit', ProductEdit::class)->middleware('permission:edit_product')->name('admin.product.edit');
+});
 
-    // Data Banners
+// Data Banners
+Route::middleware('permission:view_banners')->group(function () {
     Route::get('/admin/DataBanners', BannersList::class)->name('admin.Banners.index');
-    Route::get('/admin/DataBanners/create', BannersCreate::class)->name('admin.Banners.create');
+    Route::get('/admin/DataBanners/create', BannersCreate::class)->middleware('permission:create_banners')->name('admin.Banners.create');
     Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
-    Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->name('admin.Banners.edit');
+    Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->middleware('permission:edit_banners')->name('admin.Banners.edit');
+});
 
-    // Data Product Bundling
+// Data Product Bundling
+Route::middleware('permission:view_bundlings')->group(function () {
     Route::get('/admin/DataBundlings', ProductBundlingsList::class)->name('admin.Bundlings.index');
-    Route::get('/admin/DataBundlings/create', ProductBundlingsCreate::class)->name('admin.Bundlings.create');
+    Route::get('/admin/DataBundlings/create', ProductBundlingsCreate::class)->middleware('permission:create_bundlings')->name('admin.Bundlings.create');
     Route::get('/admin/DataBundlings/{ProductBundlings}', ProductBundlingsEdit::class)->name('admin.Bundlings.show');
-    Route::get('/admin/DataBundlings/{ProductBundlings}/edit', ProductBundlingsEdit::class)->name('admin.Bundlings.edit');
+    Route::get('/admin/DataBundlings/{ProductBundlings}/edit', ProductBundlingsEdit::class)->middleware('permission:edit_bundlings')->name('admin.Bundlings.edit');
+});
 
-    // data laporan cashflow
+// Cashflow
+Route::middleware('permission:view_cashflow')->group(function () {
     Route::get('/admin/cashflow', CashFlowList::class)->name('admin.cashflow.index');
     Route::get('/admin/cashflow/{cashflow}', CashFlowDetail::class)->name('admin.cashflow.detail');
+});
 
-    // Data Spending
+// Data Spending
+Route::middleware('permission:view_spending')->group(function () {
     Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');
-    Route::get('/admin/spending/create', SpendingCreate::class)->name('admin.spending.create');
-    Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->name('admin.spending.edit');
+    Route::get('/admin/spending/create', SpendingCreate::class)->middleware('permission:create_spending')->name('admin.spending.create');
+    Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->middleware('permission:edit_spending')->name('admin.spending.edit');
+});
 
-    // Data Loan
+// Data Loan & Pengembalian (satu modul Peminjaman)
+Route::middleware('permission:view_loan')->group(function () {
     Route::get('/admin/loan', LoanList::class)->name('admin.loan.index');
-    Route::get('/admin/loan/create', LoanCreate::class)->name('admin.loan.create');
-    Route::get('/admin/loan/{id}/edit', LoanEdit::class)->name('admin.loan.edit');
+    Route::get('/admin/loan/create', LoanCreate::class)->middleware('permission:create_loan')->name('admin.loan.create');
+    Route::get('/admin/loan/{id}/edit', LoanEdit::class)->middleware('permission:edit_loan')->name('admin.loan.edit');
 
-    // Data Gaji Karyawan
-    Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
-    Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->name('admin.gajikaryawan.create');
-    Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->name('admin.gajikaryawan.edit');
-
-    // Data Pengembalian
     Route::get('/admin/pengembalian', PengembalianList::class)->name('admin.pengembalian.index');
-    Route::get('/admin/pengembalian/create', PengembalianCreate::class)->name('admin.pengembalian.create');
-    Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->name('admin.pengembalian.edit');
+    Route::get('/admin/pengembalian/create', PengembalianCreate::class)->middleware('permission:create_loan')->name('admin.pengembalian.create');
+    Route::get('/admin/pengembalian/{id}/edit', PengembalianEdit::class)->middleware('permission:edit_loan')->name('admin.pengembalian.edit');
+});
 
-    // Route Lowongan Pekerjaan
+// Data Gaji Karyawan
+Route::middleware('permission:view_gajikaryawan')->group(function () {
+    Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
+    Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->middleware('permission:create_gajikaryawan')->name('admin.gajikaryawan.create');
+    Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->middleware('permission:edit_gajikaryawan')->name('admin.gajikaryawan.edit');
+});
+
+// Lowongan Pekerjaan
+Route::middleware('permission:view_lowongan')->group(function () {
     Route::get('/admin/lowongan', LowonganPekerjaanList::class)->name('admin.lowongan.index');
-    Route::get('/admin/lowongan/create', LowonganPekerjaanCreate::class)->name('admin.lowongan.create');
-    Route::get('/admin/lowongan/{lowongan}/edit', LowonganPekerjaanEdit::class)->name('admin.lowongan.edit');
+    Route::get('/admin/lowongan/create', LowonganPekerjaanCreate::class)->middleware('permission:create_lowongan')->name('admin.lowongan.create');
+    Route::get('/admin/lowongan/{lowongan}/edit', LowonganPekerjaanEdit::class)->middleware('permission:edit_lowongan')->name('admin.lowongan.edit');
+});
 
-    // route data pelamar
+// Pelamar Kerja
+Route::middleware('permission:view_pelamar')->group(function () {
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
+});
 
-    // Route Promo
+// Promo
+Route::middleware('permission:view_promo')->group(function () {
     Route::get('/admin/promo', PromoList::class)->name('admin.promo.index');
-    Route::get('/admin/promo/create', PromoCreate::class)->name('admin.promo.create');
-    Route::get('/admin/promo/{promo}/edit', PromoEdit::class)->name('admin.promo.edit');
+    Route::get('/admin/promo/create', PromoCreate::class)->middleware('permission:create_promo')->name('admin.promo.create');
+    Route::get('/admin/promo/{promo}/edit', PromoEdit::class)->middleware('permission:edit_promo')->name('admin.promo.edit');
+});
 
-    // route pesan masuk
+// Pesan Masuk
+Route::middleware('permission:view_message')->group(function () {
     Route::get('/admin/message', MessageList::class)->name('admin.message.index');
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });

@@ -17,6 +17,12 @@ class KaryawanList extends Component
     #[On('delete-karyawan-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_karyawan')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus data karyawan.');
+
+            return;
+        }
+
         $user = User::findOrFail($id);
         $user->delete();
         session()->flash('message', 'Karyawan berhasil dihapus.');

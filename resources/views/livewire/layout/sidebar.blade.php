@@ -31,14 +31,16 @@ new class extends Component
             <ul class="menu">
                 <li class="sidebar-title">Menu</li>
 
+                @if (auth()->user()->hasPermission('view_dashboard'))
                 <li class="sidebar-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                     <a href="{{ route('admin.dashboard') }}" class='sidebar-link' wire:navigate>
                         <i class="bi bi-grid-fill"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
+                @endif
 
-                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
+                @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
@@ -51,20 +53,24 @@ new class extends Component
                         </span>
                     </a>
                     <ul class="submenu">
+                        @if (auth()->user()->hasPermission('view_pesananrsc'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesananrsc.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.pesananrsc.index') }}" class="submenu-link">
                                 Pesanan RSC
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_pemesanantoko'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
                             <a wire:navigate class="submenu-link" href="{{ route('admin.pesanantoko.index') }}">Pesanan
                                 Toko</a>
                         </li>
+                        @endif
                     </ul>
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
+                @if (auth()->user()->hasAnyPermission(['view_banners', 'view_customer_message']))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
                         class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
@@ -74,16 +80,22 @@ new class extends Component
                         </span>
                     </a>
                     <ul class="submenu">
+                        @if (auth()->user()->hasPermission('view_banners'))
                         <li class="submenu-item {{ request()->routeIs('admin.Banners.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.Banners.index') }}" class="submenu-link">Data
                                 Banner</a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_customer_message'))
                         <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Masuk</a>
                         </li>
+                        @endif
                     </ul>
                 </li>
+                @endif
 
+                @if (auth()->user()->hasPermission('view_promo'))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.promo.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
                         class="sidebar-link {{ request()->routeIs('admin.promo.*') ? 'text-primary fw-bold' : '' }}">
@@ -99,7 +111,9 @@ new class extends Component
                         </li>
                     </ul>
                 </li>
+                @endif
 
+                @if (auth()->user()->hasAnyPermission(['view_dataakun', 'view_product', 'view_bundlings']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
@@ -112,20 +126,26 @@ new class extends Component
                         </span>
                     </a>
                     <ul class="submenu">
+                        @if (auth()->user()->hasPermission('view_dataakun'))
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_product'))
                         <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_bundlings'))
                         <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
                             <a href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
                         </li>
+                        @endif
                     </ul>
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyRole(['admin', 'admin-mimin']))
+                @if (auth()->user()->hasPermission('view_customer'))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.customer.*') ? 'text-primary fw-bold' : '' }}">
@@ -144,7 +164,7 @@ new class extends Component
                 @endif
 
                 <!-- section menu data dan laporan -->
-                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
+                @if (auth()->user()->hasAnyPermission(['view_cashflow', 'view_spending', 'view_loan', 'view_gajikaryawan']))
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
@@ -161,27 +181,35 @@ new class extends Component
                     </a>
 
                     <ul class="submenu">
+                        @if (auth()->user()->hasPermission('view_cashflow'))
                         <li class="submenu-item {{ request()->routeIs('admin.cashflow.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.cashflow.index') }}" class="submenu-link">
                                 Cashflow
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_spending'))
                         <li class="submenu-item {{ request()->routeIs('admin.spending.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.spending.index') }}" class="submenu-link">
                                 Pengeluaran
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_loan'))
                         <li
                             class="submenu-item {{ request()->routeIs('admin.loan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.loan.index') }}" class="submenu-link">
                                 Peminjaman
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_gajikaryawan'))
                         <li class="submenu-item {{ request()->routeIs('admin.gajikaryawan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.gajikaryawan.index') }}" class="submenu-link">
                                 Gaji Karyawan
                             </a>
                         </li>
+                        @endif
                     </ul>
                 </li>
                 @endif
@@ -194,17 +222,18 @@ new class extends Component
                     </a>
 
                     <ul class="submenu {{ request()->routeIs('admin.account.*') ? 'active' : '' }}">
-                        @if (auth()->user()->hasAnyRole(['admin', 'finance', 'admin-mimin']))
+                        {{-- Profil bisa diakses semua pengguna yang login --}}
                         <li class="submenu-item {{ request()->routeIs('admin.account.profile') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.profile') }}"
                                 class="submenu-link">Pengaturan Profil</a>
                         </li>
-                        @endif
-                        @if (auth()->user()->hasRole('admin'))
+                        @if (auth()->user()->hasPermission('view_roles'))
                         <li class="submenu-item  {{ request()->routeIs('admin.account.role') || request()->routeIs('admin.account.role.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.role') }}"
                                 class="submenu-link">Pengaturan Role</a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_permission'))
                         <li class="submenu-item {{ request()->routeIs('admin.account.permission') || request()->routeIs('admin.account.permission.*')? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.permission') }}"
                                 class="submenu-link">Permission Akun</a>
@@ -214,7 +243,7 @@ new class extends Component
                 </li>
 
                 <!-- section karir & karyawan-->
-                @if (auth()->user()->hasAnyRole(['admin', 'finance']))
+                @if (auth()->user()->hasAnyPermission(['view_karyawan', 'view_lowongan', 'view_pelamar', 'view_message']))
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li
                     class="sidebar-item has-sub
@@ -231,24 +260,32 @@ new class extends Component
                     </a>
 
                     <ul class="submenu">
+                        @if (auth()->user()->hasPermission('view_karyawan'))
                         <li class="submenu-item {{ request()->routeIs('admin.karyawan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.karyawan.index') }}" class="submenu-link">
                                 Karyawan
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_lowongan'))
                         <li class="submenu-item {{ request()->routeIs('admin.lowongan.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.lowongan.index') }}" class="submenu-link">
                                 Lowongan Kerja
                             </a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_pelamar'))
                         <li class="submenu-item {{ request()->routeIs('admin.pelamar.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.pelamar.index') }}"
                                 class="submenu-link">Pelamar</a>
                         </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_message'))
                         <li class="submenu-item {{ request()->routeIs('admin.message.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.message.index') }}"
                                 class="submenu-link">Pesan Masuk</a>
                         </li>
+                        @endif
                     </ul>
                 </li>
                 @endif

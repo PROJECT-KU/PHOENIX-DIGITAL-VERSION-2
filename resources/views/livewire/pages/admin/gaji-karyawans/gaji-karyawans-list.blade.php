@@ -112,14 +112,18 @@
                                         class="btn btn-sm btn-success text-white p-2" title="Cetak Slip Gaji">
                                         <i class="bi bi-receipt"></i>
                                     </button>
+                                    @if (auth()->user()->hasPermission('edit_gajikaryawan'))
                                     <a href="{{ route('admin.gajikaryawan.edit', $item->id) }}" wire:navigate
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_gajikaryawan'))
                                     <button type="button" class="btn btn-sm btn-danger p-2 delete-gajikaryawan-btn"
                                         data-id="{{ $item->id }}" title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
                                 </td>
                             </tr>
                             @empty

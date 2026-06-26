@@ -16,10 +16,12 @@
                         <i class="bi bi-search" style="font-size: 14px;"></i>
                     </div>
                 </div>
+                @if (auth()->user()->hasPermission('create_lowongan'))
                 <a wire:navigate href="{{ route('admin.lowongan.create') }}" class="px-4 btn btn-primary rounded-pill">
                     <i class="bi bi-plus-lg"></i>
                     <span>Tambah Lowongan</span>
                 </a>
+                @endif
             </div>
 
             <div class="table-responsive">
@@ -28,7 +30,9 @@
                         <tr>
                             <th style="width: 150px;">Nama Lowongan</th>
                             <th style="width: 150px;">Status Lowongan</th>
+                            @if (auth()->user()->hasAnyPermission(['edit_lowongan', 'delete_lowongan']))
                             <th style="width: 100px;">Action</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -43,19 +47,25 @@
                                         {{ $lowongan->is_active ? 'Aktif' : 'Tidak Aktif' }}
                                     </span>
                                 </td>
+                                @if (auth()->user()->hasAnyPermission(['edit_lowongan', 'delete_lowongan']))
                                 <td>
                                     <div class="gap-2 d-flex justify-content-center">
+                                        @if (auth()->user()->hasPermission('edit_lowongan'))
                                         <a href="{{ route('admin.lowongan.edit', $lowongan->id) }}"
                                             class="btn btn-sm btn-warning">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('delete_lowongan'))
                                         <button type="button" class="btn btn-sm btn-danger"
                                             wire:click="$dispatch('will-delete-lowongan-data', {{ $lowongan }})"
                                             title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        @endif
                                     </div>
                                 </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>

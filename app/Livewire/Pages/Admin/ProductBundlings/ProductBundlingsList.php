@@ -21,6 +21,12 @@ class ProductBundlingsList extends Component
 
     public function deleteProductBundlings($id)
     {
+        if (! auth()->user()->hasPermission('delete_bundlings')) {
+            $this->dispatch('delete-error', message: 'Anda tidak memiliki izin menghapus bundling.');
+
+            return;
+        }
+
         $ProductBundlings = ProductBundlings::find($id);
 
         if (! $ProductBundlings) {

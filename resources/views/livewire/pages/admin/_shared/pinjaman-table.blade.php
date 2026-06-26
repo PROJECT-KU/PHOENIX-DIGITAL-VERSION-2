@@ -14,7 +14,9 @@
                 <th class="text-center">Status</th>
                 <th>Penginput</th>
                 <th>Waktu Data Dibuat</th>
+                @if (auth()->user()->hasAnyPermission(['edit_loan', 'delete_loan']))
                 <th class="text-center" width="120">Aksi</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -40,16 +42,22 @@
                 </td>
                 <td>{{ $row['penginput'] }}</td>
                 <td>{{ $row['created_at'] }}</td>
+                @if (auth()->user()->hasAnyPermission(['edit_loan', 'delete_loan']))
                 <td class="text-center text-nowrap">
+                    @if (auth()->user()->hasPermission('edit_loan'))
                     <a href="{{ $row['edit_url'] }}" wire:navigate
                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                         <i class="bi bi-pencil-square"></i>
                     </a>
+                    @endif
+                    @if (auth()->user()->hasPermission('delete_loan'))
                     <button type="button" class="btn btn-sm btn-danger p-2 {{ $row['delete_class'] }}"
                         data-id="{{ $row['id'] }}" title="Hapus">
                         <i class="bi bi-trash"></i>
                     </button>
+                    @endif
                 </td>
+                @endif
             </tr>
             @empty
             <tr>

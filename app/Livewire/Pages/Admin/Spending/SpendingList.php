@@ -68,6 +68,12 @@ class SpendingList extends Component
     #[On('delete-spending-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_spending')) {
+            $this->dispatch('spending-delete-error', message: 'Anda tidak memiliki izin menghapus data pengeluaran.');
+
+            return;
+        }
+
         try {
             $spending = Spending::findOrFail($id);
             $spending->delete();

@@ -19,6 +19,7 @@
 
         <!-- Generate + Export + Create -->
         <div class="d-flex gap-2">
+            @if (auth()->user()->hasPermission('create_gajikaryawan'))
             <button type="button" class="btn btn-info text-white rounded-pill d-flex align-items-center justify-content-center gap-2 px-3 generate-gaji-btn"
                 wire:loading.attr="disabled" wire:target="generateGaji" title="Buat draft gaji semua karyawan dari periode bulan sebelumnya">
                 <span wire:loading.remove wire:target="generateGaji" class="d-flex align-items-center gap-2">
@@ -26,6 +27,7 @@
                     <span class="d-none d-md-inline">Generate Gaji</span>
                 </span>
             </button>
+            @endif
             <button wire:click="downloadPdf" wire:loading.attr="disabled" wire:target="downloadPdf"
                 class="btn btn-danger rounded-pill d-flex align-items-center justify-content-center gap-2 px-3">
                 <span wire:loading.remove wire:target="downloadPdf" class="d-flex align-items-center gap-2">
@@ -33,11 +35,13 @@
                     <span class="d-none d-md-inline">Export PDF</span>
                 </span>
             </button>
+            @if (auth()->user()->hasPermission('create_gajikaryawan'))
             <a class="btn btn-primary rounded-pill d-flex align-items-center justify-content-center gap-2 px-3"
                 href="{{ route('admin.gajikaryawan.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
                 <span class="d-none d-lg-inline">Tambah Gaji Karyawan</span>
             </a>
+            @endif
         </div>
     </div>
 

@@ -37,6 +37,12 @@ class MessageList extends Component
     #[On('delete-message-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_message')) {
+            session()->flash('error', 'Anda tidak memiliki izin menghapus pesan.');
+
+            return;
+        }
+
         try {
             Message::findOrFail($id)->delete();
             session()->flash('success', 'berhasil menghapus data lowongan');

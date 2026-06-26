@@ -46,7 +46,13 @@ class RoleList extends Component
     public function setTab(string $tab): void
     {
         $this->activeTab = $tab;
-        $this->resetPage();
+        $this->resetPage('rolePage');
+        $this->resetPage('userPage');
+    }
+
+    public function updatedSearchRole()
+    {
+        $this->resetPage('rolePage');
     }
 
     public function cancelModal()
@@ -81,6 +87,12 @@ class RoleList extends Component
 
     public function updateRoleUser()
     {
+        if (! auth()->user()->hasPermission('edit_roles')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin mengubah role user.']);
+
+            return;
+        }
+
         $this->validate([
             'userRole' => 'required|exists:roles,id',
         ]);
@@ -101,6 +113,12 @@ class RoleList extends Component
     #[On('delete-user-data')]
     public function deleteUser($id)
     {
+        if (! auth()->user()->hasPermission('delete_roles')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus user.']);
+
+            return;
+        }
+
         User::findOrFail($id)->delete();
         $this->dispatch('swal-alert', [
             'type' => 'success',
@@ -111,12 +129,18 @@ class RoleList extends Component
 
     public function updatedSearchUser()
     {
-        $this->resetPage();
+        $this->resetPage('userPage');
     }
 
     // manajemen role method
     public function addRole()
     {
+        if (! auth()->user()->hasPermission('create_roles')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menambah role.']);
+
+            return;
+        }
+
         $this->validate();
         try {
             ModelsRole::create([
@@ -143,6 +167,12 @@ class RoleList extends Component
 
     public function updateRole()
     {
+        if (! auth()->user()->hasPermission('edit_roles')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin mengubah role.']);
+
+            return;
+        }
+
         $this->validate();
 
         $role = ModelsRole::findOrFail($this->roleIdBeingEdited);
@@ -162,6 +192,12 @@ class RoleList extends Component
     #[On('delete-role-data')]
     public function deleteRole($id)
     {
+        if (! auth()->user()->hasPermission('delete_roles')) {
+            $this->dispatch('swal-alert', ['type' => 'error', 'title' => 'Gagal!', 'message' => 'Anda tidak memiliki izin menghapus role.']);
+
+            return;
+        }
+
         $role = ModelsRole::findOrFail($id);
         $role->delete();
         $this->dispatch('swal-alert', [
@@ -178,17 +214,22 @@ class RoleList extends Component
         $this->roleIdBeingEdited = null;
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $roles = ModelsRole::withCount('permissions')->latest()
-            ->where('name', 'like', "%{$this->searchRole}%")
-            ->get();
+            ->where(function ($q) {
+                $q->where('name', 'like', "%{$this->searchRole}%")
+                    ->orWhere('description', 'like', "%{$this->searchRole}%");
+            })
+            ->paginate(10, ['*'], 'rolePage');
 
         $users = User::with('role')
-            ->where('name', 'like', "%{$this->searchUser}%")
-            ->orWhere('email', 'like', "%{$this->searchUser}%")
-            ->paginate(5);
+            ->where(function ($q) {
+                $q->where('name', 'like', "%{$this->searchUser}%")
+                    ->orWhere('email', 'like', "%{$this->searchUser}%");
+            })
+            ->paginate(10, ['*'], 'userPage');
 
         return view('livewire.pages.admin.role-user.role-list', [
             'roles' => $roles,
