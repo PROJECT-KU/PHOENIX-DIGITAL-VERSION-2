@@ -83,21 +83,25 @@ class PermissionList extends Component
 
         $permissions = $permisionsData
             ->where('display_name', 'like', "%{$this->search}%")
-            ->paginate(8);
+            ->paginate(10);
+
+        $groups = Permission::query()
+            ->whereNotNull('group')
+            ->select('group')
+            ->distinct()
+            ->orderBy('group')
+            ->get()
+            ->map(fn($item) => [
+                'value' => $item->group,
+                'label' => $item->group,
+            ])
+            ->toArray();
 
         return view('livewire.pages.admin.permission.permission-list', [
             'permissions' => $permissions,
-            'groups' => Permission::query()
-                ->whereNotNull('group')
-                ->select('group')
-                ->distinct()
-                ->orderBy('group')
-                ->get()
-                ->map(fn($item) => [
-                    'value' => $item->group,
-                    'label' => $item->group,
-                ])
-                ->toArray(),
+            'groups' => $groups,
+            'totalPermission' => Permission::count(),
+            'totalGroup' => count($groups),
         ]);
     }
 }

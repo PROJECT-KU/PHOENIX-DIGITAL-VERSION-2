@@ -1,105 +1,220 @@
 <div>
+    <!--================== GLOSSY STYLE ==================-->
+    <style>
+        .stat-icon-wrapper {
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon-wrapper i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .perm-key-badge {
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            background: #f1f5f9;
+            color: #475569;
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        .aksi-badge {
+            font-size: 0.68rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+    </style>
+
+    @php
+    $aksiWarna = [
+    'view' => ['#eff6ff', '#2563eb', 'Lihat'],
+    'view_all' => ['#fef3c7', '#a16207', 'Lihat Semua'],
+    'create' => ['#ecfdf5', '#059669', 'Tambah'],
+    'edit' => ['#fffbeb', '#d97706', 'Edit'],
+    'delete' => ['#fef2f2', '#e11d48', 'Hapus'],
+    ];
+    $aksiDari = function ($name) {
+    if (\Illuminate\Support\Str::startsWith($name, 'view_all_')) return 'view_all';
+    return \Illuminate\Support\Str::before($name, '_');
+    };
+    @endphp
+
     <div class="container-fluid">
+        <!--================== HEADER ==================-->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
                     <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Permission Role Akun</h3>
+                        <h3 class="gradient-text fw-bold mb-1">Data Permission Akun</h3>
                         <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
                             @php
                             $breadcrumbs = [
                             ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                            ['name' => 'Data Permission']
+                            ['name' => 'Data Permission'],
                             ];
                             @endphp
                             <x-breadcrumb :items="$breadcrumbs" />
                         </div>
                     </div>
+                    @if (auth()->user()->hasPermission('create_permission'))
+                    <a wire:navigate href="{{ route('admin.account.permission.create') }}"
+                        class="btn btn-primary rounded-pill d-inline-flex align-items-center justify-content-center gap-2 px-3 flex-shrink-0">
+                        <i class="bi bi-plus-lg"></i>
+                        <span>Tambah Permission</span>
+                    </a>
+                    @endif
+                </div>
+            </div>
+        </div>
 
-                    <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                        <div class="form-group position-relative flex-grow-1">
-                            <div class="form-control-icon">
-                                <i class="bi bi-search"></i>
-                            </div>
-
-                            <input wire:model.live.debounce.300ms="search" type="text"
-                                class="form-control ps-5 pe-5" placeholder="ketik nama lowongan">
-
-                            @if ($search)
-                            <span wire:click="$set('search', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                            </span>
-                            @endif
+        <!--================== RINGKASAN STAT ==================-->
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <span class="stat-icon-wrapper flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.3rem; border-radius: 14px; background: linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff;">
+                            <i class="bi bi-key-fill"></i>
+                        </span>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.8rem;">Total Permission</p>
+                            <h4 class="fw-bold mb-0 text-dark">{{ $totalPermission }}</h4>
                         </div>
-                        <select style="width: fit-content;" wire:model.live="filterGroup" class="form-select">
-                            <option value="">Semua Group</option>
-                            @foreach ($groups as $group)
-                            <option value="{{ $group['value'] }}">{{ $group['label'] }}</option>
-                            @endforeach
-                        </select>
                     </div>
-                    <div class="">
-                        @if (auth()->user()->hasPermission('create_permission'))
-                        <a wire:navigate href="{{ route('admin.account.permission.create') }}" class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                            <i class="bi bi-plus-lg"></i>
-                            <span class="ms-2">Tambah Permission</span>
-                        </a>
-                        @endif
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <span class="stat-icon-wrapper flex-shrink-0" style="width: 48px; height: 48px; font-size: 1.3rem; border-radius: 14px; background: linear-gradient(135deg,#2563eb,#0ea5e9); color:#fff;">
+                            <i class="bi bi-collection-fill"></i>
+                        </span>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.8rem;">Total Group/Modul</p>
+                            <h4 class="fw-bold mb-0 text-dark">{{ $totalGroup }}</h4>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!--================== TABEL ==================-->
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
+                <!--================== SEARCH ==================-->
+                <div class="form-group position-relative mb-3">
+                    <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                    <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
+                        placeholder="Cari nama tampilan permission...">
+                    @if ($search)
+                    <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                        style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                        <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                    </span>
+                    @endif
+                </div>
+
+                <!--================== FILTER GROUP ==================-->
+                <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
+                    <div class="card-body p-3 px-4">
+                        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                            <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
+                                <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
+                                    style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
+                                    <i class="bi bi-funnel"></i>
+                                </span>
+                                <span>Filter Group</span>
+                            </div>
+
+                            <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                                <select wire:model.live="filterGroup" class="form-select rounded-3 text-capitalize" style="min-width: 200px;">
+                                    <option value="">Semua Group</option>
+                                    @foreach ($groups as $group)
+                                    <option value="{{ $group['value'] }}">{{ str_replace('_', ' ', $group['label']) }}</option>
+                                    @endforeach
+                                </select>
+
+                                @if ($search || $filterGroup)
+                                <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3"
+                                    title="Reset filter">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
                             <tr style="text-align: center;">
-                                <th>Nama Permission</th>
-                                <th>Group Permission</th>
+                                <th>Permission</th>
+                                <th>Group</th>
+                                <th>Jenis Aksi</th>
                                 <th>Deskripsi</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_permission', 'delete_permission']))
-                                <th width="120">Aksi</th>
+                                <th class="text-center" width="120">Aksi</th>
                                 @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($permissions as $item)
+                            @php
+                            $aksi = $aksiDari($item->name);
+                            $w = $aksiWarna[$aksi] ?? ['#f1f5f9', '#475569', ucfirst($aksi)];
+                            @endphp
                             <tr style="text-align: center;">
-                                <td>{{ $item->display_name }}</td>
-                                <td>{{ $item->group }}</td>
-                                <td>{{ $item->description }}</td>
-                                @if (auth()->user()->hasAnyPermission(['edit_permission', 'delete_permission']))
                                 <td>
-                                    <div class="d-flex justify-content-center">
-                                        @if (auth()->user()->hasPermission('edit_permission'))
-                                        <a href="{{ route('admin.account.permission.edit', $item) }}"
-                                            wire:navigate
-                                            class="btn btn-sm btn-warning me-1"
-                                            title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        @endif
-                                        @if (auth()->user()->hasPermission('delete_permission'))
-                                        <button type="button" class="btn btn-sm btn-danger"
-                                            wire:click="$dispatch('will-delete-permission-data', {{ $item }})"
-                                            title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                        @endif
-                                    </div>
+                                    <div class="fw-semibold text-dark">{{ $item->display_name }}</div>
+                                    <span class="perm-key-badge">{{ $item->name }}</span>
+                                </td>
+                                <td>
+                                    @if ($item->group)
+                                    <span class="badge bg-gradient-purple rounded-pill px-3 py-2 text-capitalize">
+                                        {{ str_replace('_', ' ', $item->group) }}
+                                    </span>
+                                    @else
+                                    <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="aksi-badge" style="background: {{ $w[0] }}; color: {{ $w[1] }};">{{ $w[2] }}</span>
+                                </td>
+                                <td class="text-muted" style="max-width: 280px;">{{ $item->description ?: '-' }}</td>
+                                @if (auth()->user()->hasAnyPermission(['edit_permission', 'delete_permission']))
+                                <td class="text-center text-nowrap">
+                                    @if (auth()->user()->hasPermission('edit_permission'))
+                                    <a href="{{ route('admin.account.permission.edit', $item) }}" wire:navigate
+                                        class="btn btn-warning btn-sm text-white p-2" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_permission'))
+                                    <button type="button" class="btn btn-danger btn-sm p-2"
+                                        wire:click="$dispatch('will-delete-permission-data', {{ $item }})"
+                                        title="Hapus">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    @endif
                                 </td>
                                 @endif
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="bi bi-inbox mb-2 fs-1"></i>
-                                        <p>Tidak ada data permission.</p>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="d-flex flex-column align-items-center justify-content-center">
+                                        <div class="empty-state-icon-wrapper mb-3">
+                                            <i class="bi bi-key"></i>
+                                        </div>
+                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">Tidak Ada Permission</h5>
+                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">Belum ada data permission yang cocok.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -107,14 +222,11 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-3">
+
+                <div class="mt-4">
                     {{ $permissions->links('vendor.pagination') }}
                 </div>
             </div>
         </div>
     </div>
-
-    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
-    @include('livewire.layout.sweetalert')
-    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>

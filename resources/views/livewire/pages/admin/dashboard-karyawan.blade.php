@@ -18,6 +18,27 @@ Dashboard || Phoenix Digital
 
 <div>
 
+    <style>
+        /* Pusatkan ikon Bootstrap (bi) di dalam stat-icon-wrapper yang
+           aslinya didesain untuk font iconly. */
+        .stat-icon-wrapper {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon-wrapper i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .stat-icon-wrapper i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+    </style>
 
     @php
     $rp = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
@@ -94,7 +115,7 @@ Dashboard || Phoenix Digital
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                         <div class="card-body p-4 d-flex align-items-center gap-3">
-                            <div class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"><i class="iconly-boldWallet"></i></div>
+                            <div class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"><i class="bi bi-cash-coin"></i></div>
                             <div>
                                 <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Gaji Terakhir</p>
                                 <h4 class="fw-bold mb-0 text-dark">{{ $gajiTerakhir ? $gajiTerakhir->total_formatted : 'Rp 0' }}</h4>
@@ -107,7 +128,7 @@ Dashboard || Phoenix Digital
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                         <div class="card-body p-4 d-flex align-items-center gap-3">
-                            <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="iconly-boldWork"></i></div>
+                            <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="bi bi-wallet2"></i></div>
                             <div>
                                 <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Gaji {{ $tahunIni }}</p>
                                 <h4 class="fw-bold mb-0 text-dark">{{ $rp($totalGajiTahunIni) }}</h4>
@@ -120,7 +141,7 @@ Dashboard || Phoenix Digital
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                         <div class="card-body p-4 d-flex align-items-center gap-3">
-                            <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="iconly-boldBuy"></i></div>
+                            <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-cash-stack"></i></div>
                             <div>
                                 <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Sisa Pinjaman</p>
                                 <h4 class="fw-bold mb-0 text-dark">{{ $rp($sisaPinjaman) }}</h4>
@@ -133,7 +154,7 @@ Dashboard || Phoenix Digital
                 <div class="col-12 col-md-6 col-xl-3">
                     <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                         <div class="card-body p-4 d-flex align-items-center gap-3">
-                            <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="iconly-boldUser"></i></div>
+                            <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="bi bi-patch-check-fill"></i></div>
                             <div>
                                 <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Status Pinjaman</p>
                                 <span class="badge rounded-pill mt-1" style="background: {{ $sb[0] }}; color: {{ $sb[1] }}; font-size: 0.9rem;">{{ $sb[2] }}</span>
