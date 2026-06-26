@@ -118,6 +118,30 @@ class GajiKaryawans extends Model
         return $this->hasOne(Pengembalian::class, 'source_gaji_id');
     }
 
+    /**
+     * Scope kepemilikan data (row-level security).
+     * Dipakai oleh SEMUA jalur baca (tabel, pencarian, total, export PDF, slip)
+     * agar data gaji rahasia tidak bocor ke karyawan lain.
+     *
+     * - user dengan permission "view_all_gajikaryawan" (admin/finance) -> semua data
+     * - selain itu -> hanya gaji miliknya sendiri (nama_karyawan = id user)
+     * - tidak login -> tidak ada data
+     */
+    public function scopeVisibleTo($query, ?User $user = null)
+    {
+        $user ??= auth()->user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->canViewAll('gajikaryawan')) {
+            return $query;
+        }
+
+        return $query->where('nama_karyawan', $user->id);
+    }
+
     // Scope filter status
     public function scopeByStatus($query, $status)
     {

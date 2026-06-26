@@ -133,6 +133,16 @@
             color: #e11d48;
         }
 
+        /* chip "Lihat Semua" (scope admin/finance) */
+        .act-scope {
+            align-items: flex-start;
+        }
+
+        .act-scope .perm-ico {
+            background: #fef3c7;
+            color: #a16207;
+        }
+
         /* state aktif per aksi */
         .perm-chip.active.act-view {
             border-color: #2563eb;
@@ -152,6 +162,24 @@
         .perm-chip.active.act-delete {
             border-color: #e11d48;
             background: #fff5f6;
+        }
+
+        .perm-chip.active.act-scope {
+            border-color: #d97706;
+            background: #fffbeb;
+        }
+
+        .perm-chip.active.act-scope .perm-ico {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            color: #fff;
+        }
+
+        .perm-chip.active.act-scope .perm-label {
+            color: #92400e;
+        }
+
+        .perm-chip.active.act-scope .perm-check {
+            color: #d97706;
         }
 
         .perm-chip.active.act-view .perm-ico {
@@ -315,6 +343,40 @@
             </div>
         </div>
 
+        <!--================== PANDUAN SINGKAT ==================-->
+        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #f8fafc;">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3">
+                    <span class="stat-icon-wrapper flex-shrink-0"
+                        style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px; background: linear-gradient(135deg,#0ea5e9,#0284c7); color:#fff;">
+                        <i class="bi bi-info-lg"></i>
+                    </span>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-bold text-dark mb-2">Panduan Singkat</h6>
+                        <div class="d-flex flex-column flex-md-row gap-2 gap-md-4 mb-2">
+                            <span class="d-inline-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background:#dcfce7; color:#15803d;">
+                                    <i class="bi bi-person-badge me-1"></i>Data Pribadi Karyawan
+                                </span>
+                                <small class="text-muted">karyawan boleh melihat <b>miliknya sendiri</b></small>
+                            </span>
+                            <span class="d-inline-flex align-items-center gap-2">
+                                <span class="badge rounded-pill" style="background:#f1f5f9; color:#475569;">
+                                    <i class="bi bi-building me-1"></i>Data Perusahaan
+                                </span>
+                                <small class="text-muted">rahasia — hanya admin/finance</small>
+                            </span>
+                        </div>
+                        <small class="text-muted d-block">
+                            Pada modul "Data Pribadi Karyawan": beri <b>Lihat</b> agar karyawan melihat datanya sendiri.
+                            Permission <b>"Lihat Semua ..."</b> (ikon <i class="bi bi-shield-lock"></i>) HANYA untuk admin/finance —
+                            jangan dicentang untuk role karyawan, agar data orang lain tidak bocor.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!--================== SEARCH MODUL ==================-->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-md-4">
@@ -350,6 +412,7 @@
                 $ikonModul = $meta[1];
                 $gradModul = $meta[2];
                 $warnaModul = explode(',', $gradModul)[0];
+                $isSelfService = in_array($groupName, $selfServiceModules);
                 @endphp
                 <div class="col-12 col-xl-6">
                     <div class="card border-0 shadow-sm rounded-4 h-100 perm-card overflow-hidden">
@@ -361,7 +424,20 @@
                                     <i class="bi {{ $ikonModul }}"></i>
                                 </span>
                                 <div class="flex-grow-1">
-                                    <h6 class="fw-bold mb-0 text-dark">{{ $namaModul }}</h6>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="fw-bold mb-0 text-dark">{{ $namaModul }}</h6>
+                                        @if ($isSelfService)
+                                        <span class="badge rounded-pill" style="background:#dcfce7; color:#15803d; font-size:0.62rem;"
+                                            data-bs-toggle="tooltip" title="Data pribadi karyawan — karyawan hanya boleh melihat miliknya sendiri">
+                                            <i class="bi bi-person-badge me-1"></i>Data Pribadi
+                                        </span>
+                                        @else
+                                        <span class="badge rounded-pill" style="background:#f1f5f9; color:#64748b; font-size:0.62rem;"
+                                            data-bs-toggle="tooltip" title="Data perusahaan — sebaiknya hanya admin/finance">
+                                            <i class="bi bi-building me-1"></i>Perusahaan
+                                        </span>
+                                        @endif
+                                    </div>
                                     <small class="text-muted">{{ $groupSelected }} dari {{ $groupTotal }} aktif</small>
                                 </div>
                                 <div class="form-check form-switch m-0" title="Pilih semua">
@@ -386,11 +462,12 @@
                                 @foreach ($permissions as $permission)
                                 @php
                                 $aktif = in_array($permission->id, $selectedPermissions);
+                                $isViewAll = \Illuminate\Support\Str::startsWith($permission->name, 'view_all_');
                                 $aksi = \Illuminate\Support\Str::before($permission->name, '_');
-                                $aksiKelas = in_array($aksi, ['view', 'create', 'edit', 'delete']) ? $aksi : 'view';
-                                $ico = $ikonAksi[$aksi] ?? 'bi-dot';
+                                $aksiKelas = $isViewAll ? 'scope' : (in_array($aksi, ['view', 'create', 'edit', 'delete']) ? $aksi : 'view');
+                                $ico = $isViewAll ? 'bi-shield-lock-fill' : ($ikonAksi[$aksi] ?? 'bi-dot');
                                 @endphp
-                                <div class="col-12 col-sm-6">
+                                <div class="{{ $isViewAll ? 'col-12' : 'col-12 col-sm-6' }}">
                                     <label for="permission_{{ $permission->id }}" class="perm-chip act-{{ $aksiKelas }} {{ $aktif ? 'active' : '' }}">
                                         <input type="checkbox" class="d-none" id="permission_{{ $permission->id }}"
                                             wire:click="togglePermission({{ $permission->id }})"
@@ -398,9 +475,17 @@
                                         <span class="perm-ico"><i class="bi {{ $ico }}"></i></span>
                                         <span class="perm-label">
                                             {{ $permission->display_name }}
+                                            @if ($isViewAll)
+                                            <span class="badge rounded-pill ms-1" style="background:#fef9c3; color:#a16207; font-size:0.6rem;">admin/finance</span>
+                                            @endif
                                             @if ($permission->description)
                                             <i class="bi bi-info-circle text-muted ms-1" data-bs-toggle="tooltip"
                                                 title="{{ $permission->description }}"></i>
+                                            @endif
+                                            @if ($isViewAll)
+                                            <small class="d-block text-muted fw-normal mt-1" style="font-size:0.68rem; line-height:1.25;">
+                                                Lihat data SEMUA karyawan. Jangan dicentang untuk role karyawan.
+                                            </small>
                                             @endif
                                         </span>
                                         <i class="perm-check bi {{ $aktif ? 'bi-check-circle-fill' : 'bi-circle' }}"></i>

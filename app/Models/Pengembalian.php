@@ -53,6 +53,30 @@ class Pengembalian extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Scope kepemilikan data (row-level security) untuk pengembalian pinjaman.
+     * Mengikuti modul "loan" (permission view_all_loan). Peminjam/pengembali
+     * dicocokkan lewat `nama_pengembalian` (selaras dengan nama_peminjam Loan).
+     *
+     * - punya "view_all_loan" (admin/finance) -> semua data
+     * - selain itu -> hanya pengembalian atas namanya sendiri
+     * - tidak login -> tidak ada data
+     */
+    public function scopeVisibleTo($query, ?User $user = null)
+    {
+        $user ??= auth()->user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->canViewAll('loan')) {
+            return $query;
+        }
+
+        return $query->where('nama_pengembalian', $user->name);
+    }
+
     // === Scopes ===
     public function scopeByStatus($query, string $status)
     {

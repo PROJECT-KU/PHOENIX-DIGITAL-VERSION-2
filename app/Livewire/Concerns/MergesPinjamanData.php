@@ -88,7 +88,8 @@ trait MergesPinjamanData
 
         // ---- Peminjaman: tampil bila sedang search, gabung-semua (export), ATAU tab aktif Peminjaman ----
         if ($isSearching || $gabungSemua || $jenisAktif === 'peminjaman') {
-            $loanQuery = Loan::with('penginput');
+            // visibleTo() = scope keamanan: karyawan hanya melihat pinjamannya sendiri.
+            $loanQuery = Loan::visibleTo()->with('penginput');
             if ($isSearching) {
                 $this->applySearch($loanQuery, 'nama_peminjam', 'tanggal_peminjam', $statusMap);
             } else {
@@ -117,7 +118,8 @@ trait MergesPinjamanData
 
         // ---- Pengembalian: tampil bila sedang search, gabung-semua (export), ATAU tab aktif Pengembalian ----
         if ($isSearching || $gabungSemua || $jenisAktif === 'pengembalian') {
-            $pQuery = Pengembalian::with('penginput');
+            // visibleTo() = scope keamanan: karyawan hanya melihat pengembaliannya sendiri.
+            $pQuery = Pengembalian::visibleTo()->with('penginput');
             if ($isSearching) {
                 $this->applySearch($pQuery, 'nama_pengembalian', 'tanggal_pengembalian', $statusMap);
             } else {
@@ -207,7 +209,7 @@ trait MergesPinjamanData
      */
     protected function buildTotalLoans()
     {
-        $totalQuery = Loan::query()
+        $totalQuery = Loan::visibleTo()
             ->select('nama_peminjam', DB::raw('SUM(nominal) as total_pinjaman'));
 
         if ($this->tahun) {

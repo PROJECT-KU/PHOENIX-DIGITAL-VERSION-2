@@ -15,7 +15,7 @@ class PermissionEdit extends Component
         $this->permission = $permission;
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.permission.permission-edit');

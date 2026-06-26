@@ -189,7 +189,8 @@ class GajiKaryawansList extends Component
             ->paginate(10);
 
         // Total gaji per status mengikuti scope aktif (pencarian / periode)
-        $totalQuery = GajiKaryawans::select('status', DB::raw('SUM(total) as total_gaji'));
+        // visibleTo() menjaga total juga tidak membocorkan data karyawan lain.
+        $totalQuery = GajiKaryawans::visibleTo()->select('status', DB::raw('SUM(total) as total_gaji'));
         if ($isSearching) {
             $this->applySearch($totalQuery);
         } else {
@@ -212,7 +213,9 @@ class GajiKaryawansList extends Component
      */
     protected function buildFilteredQuery()
     {
-        $query = GajiKaryawans::with('karyawan');
+        // visibleTo() = pondasi keamanan: tabel, pencarian, dan export PDF
+        // semuanya dibangun dari query ini sehingga otomatis ter-scope.
+        $query = GajiKaryawans::visibleTo()->with('karyawan');
 
         if (! empty($this->search)) {
             $this->applySearch($query);
@@ -345,7 +348,9 @@ class GajiKaryawansList extends Component
      */
     public function downloadSlip($id)
     {
-        $gaji = GajiKaryawans::with('karyawan')->findOrFail($id);
+        // visibleTo() mencegah IDOR: karyawan tidak bisa mengunduh slip milik
+        // orang lain dengan menebak id, karena query tidak akan menemukannya.
+        $gaji = GajiKaryawans::visibleTo()->with('karyawan')->findOrFail($id);
 
         $pdf = Pdf::loadView('livewire.pages.admin.gaji-karyawans.slip-gaji-pdf', [
             'g' => $gaji,

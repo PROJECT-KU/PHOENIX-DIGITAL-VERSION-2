@@ -18,6 +18,18 @@ class RolePermissionEdit extends Component
     public $searchModul = '';
 
     /**
+     * Modul yang berisi DATA PRIBADI karyawan (self-service).
+     * Dipakai untuk menampilkan label penjelas di halaman edit permission
+     * agar admin awam paham mana yang boleh diakses karyawan untuk dirinya.
+     * Harus sinkron dengan $scopedModules di PermissionAccessSeeder.
+     */
+    public array $selfServiceModules = [
+        'gajikaryawan',
+        'loan',
+        'dashboard',
+    ];
+
+    /**
      * Metadata modul: urutan, label, ikon & warna mengikuti sidebar.
      * key => [label, ikon bootstrap, gradient warna].
      */

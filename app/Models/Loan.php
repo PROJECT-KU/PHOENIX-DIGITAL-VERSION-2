@@ -52,6 +52,34 @@ class Loan extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Scope kepemilikan data (row-level security) untuk peminjaman.
+     * Dipakai SEMUA jalur baca (tabel, pencarian, total, export PDF) agar
+     * data pinjaman tidak bocor antar karyawan.
+     *
+     * Catatan: kolom `user_id` di tabel ini = PENGINPUT (admin/finance), bukan
+     * peminjam. Peminjam diidentifikasi lewat `nama_peminjam` (disalin dari
+     * nama user terpilih saat input), sehingga scope karyawan dicocokkan ke nama.
+     *
+     * - punya "view_all_loan" (admin/finance) -> semua data
+     * - selain itu -> hanya pinjaman atas namanya sendiri
+     * - tidak login -> tidak ada data
+     */
+    public function scopeVisibleTo($query, ?User $user = null)
+    {
+        $user ??= auth()->user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->canViewAll('loan')) {
+            return $query;
+        }
+
+        return $query->where('nama_peminjam', $user->name);
+    }
+
     // Scopes
     public function scopeByStatus($query, string $status)
     {

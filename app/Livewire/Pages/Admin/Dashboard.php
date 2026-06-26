@@ -6,8 +6,11 @@ use App\Models\User;
 use App\Models\Order;
 use App\Models\Spending;
 use App\Models\GajiKaryawans;
+use App\Models\Loan;
+use App\Models\Pengembalian;
 use App\Models\PemesananRsc;
 use App\Models\Customer;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -24,6 +27,116 @@ class Dashboard extends Component
     }
 
     public function render()
+    {
+        // Dashboard PERUSAHAAN (admin/finance) vs PRIBADI (karyawan).
+        // Konvensi scoping: lihat angka perusahaan butuh view_all_dashboard.
+        if (Auth::user()->canViewAll('dashboard')) {
+            return $this->renderDashboardPerusahaan();
+        }
+
+        return $this->renderDashboardKaryawan();
+    }
+
+    /**
+     * Unduh slip gaji milik karyawan yang sedang login.
+     * visibleTo() memastikan ia tidak bisa mengunduh slip orang lain.
+     */
+    public function downloadSlip($id)
+    {
+        // visibleTo() menghormati permission: karyawan hanya bisa unduh slip miliknya.
+        $gaji = GajiKaryawans::visibleTo()->with('karyawan')->findOrFail($id);
+
+        $pdf = Pdf::loadView('livewire.pages.admin.gaji-karyawans.slip-gaji-pdf', [
+            'g' => $gaji,
+        ])->setPaper('a4', 'portrait');
+
+        return response()->streamDownload(
+            fn () => print ($pdf->output()),
+            'slip-gaji-' . $gaji->id_transaksi . '.pdf'
+        );
+    }
+
+    /**
+     * Dashboard pribadi karyawan: hanya data miliknya sendiri (gaji, pinjaman,
+     * slip, profil). Semua query lewat visibleTo() agar tidak bocor.
+     */
+    protected function renderDashboardKaryawan()
+    {
+        $user = Auth::user();
+        $tahunIni = now()->year;
+
+        // Ringkasan gaji (visibleTo menghormati permission: karyawan -> data sendiri)
+        $gajiTerakhir = GajiKaryawans::visibleTo()
+            ->orderByDesc('tanggal_transaksi')
+            ->first();
+
+        $totalGajiTahunIni = GajiKaryawans::visibleTo()
+            ->whereYear('tanggal_transaksi', $tahunIni)
+            ->sum('total');
+
+        // Grafik gaji & pengembalian per bulan (1 tahun, data sendiri)
+        $grafikGaji = array_fill(0, 12, 0);
+        $grafikPengembalian = array_fill(0, 12, 0);
+
+        foreach (GajiKaryawans::visibleTo()->whereYear('tanggal_transaksi', $tahunIni)->get() as $g) {
+            $bulan = \Carbon\Carbon::parse($g->tanggal_transaksi)->month - 1;
+            $grafikGaji[$bulan] += (float) $g->total;
+        }
+
+        foreach (Pengembalian::visibleTo()->whereYear('tanggal_pengembalian', $tahunIni)->get() as $p) {
+            $bulan = \Carbon\Carbon::parse($p->tanggal_pengembalian)->month - 1;
+            $grafikPengembalian[$bulan] += (float) $p->nominal;
+        }
+
+        // Ringkasan pinjaman (data sendiri)
+        $totalPinjaman = (float) Loan::visibleTo()->sum('nominal');
+        $totalPengembalian = (float) Pengembalian::visibleTo()->sum('nominal');
+        $sisaPinjaman = max($totalPinjaman - $totalPengembalian, 0);
+        $statusPinjaman = Loan::statusDari($totalPinjaman, $totalPengembalian);
+
+        // Riwayat pinjaman & pengembalian terbaru (gabungan, data sendiri)
+        $riwayatPinjaman = Loan::visibleTo()->orderByDesc('tanggal_peminjam')->take(5)->get()
+            ->map(fn (Loan $l) => [
+                'jenis' => 'Peminjaman',
+                'tanggal' => $l->tanggal_peminjam_formatted,
+                'tanggal_sort' => optional($l->tanggal_peminjam)->timestamp ?? 0,
+                'nominal' => $l->nominal_formatted,
+                'arah' => 'keluar',
+                'deskripsi' => $l->deskripsi,
+            ]);
+
+        $riwayatPengembalian = Pengembalian::visibleTo()->orderByDesc('tanggal_pengembalian')->take(5)->get()
+            ->map(fn (Pengembalian $p) => [
+                'jenis' => 'Pengembalian',
+                'tanggal' => $p->tanggal_pengembalian_formatted,
+                'tanggal_sort' => optional($p->tanggal_pengembalian)->timestamp ?? 0,
+                'nominal' => $p->nominal_formatted,
+                'arah' => 'masuk',
+                'deskripsi' => $p->deskripsi,
+            ]);
+
+        $riwayat = $riwayatPinjaman->concat($riwayatPengembalian)
+            ->sortByDesc('tanggal_sort')
+            ->take(6)
+            ->values();
+
+        return view('livewire.pages.admin.dashboard-karyawan', [
+            'user' => $user,
+            'detail' => $user->detail,
+            'gajiTerakhir' => $gajiTerakhir,
+            'totalGajiTahunIni' => $totalGajiTahunIni,
+            'dataGrafikGaji' => $grafikGaji,
+            'dataGrafikPengembalian' => $grafikPengembalian,
+            'totalPinjaman' => $totalPinjaman,
+            'totalPengembalian' => $totalPengembalian,
+            'sisaPinjaman' => $sisaPinjaman,
+            'statusPinjaman' => $statusPinjaman,
+            'riwayat' => $riwayat,
+            'tahunIni' => $tahunIni,
+        ])->layout('livewire.layout.templateindex');
+    }
+
+    protected function renderDashboardPerusahaan()
     {
         $authUser = Auth::user();
 

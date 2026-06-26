@@ -42,6 +42,29 @@ class PermissionAccessSeeder extends Seeder
         'delete' => 'Hapus',
     ];
 
+    /**
+     * Modul yang berisi data personal/rahasia per-karyawan.
+     * Untuk modul ini dibuat permission tambahan "view_all_{modul}":
+     * - punya     -> lihat SEMUA data (admin/finance)
+     * - tidak     -> hanya data sendiri (karyawan)
+     * Tambahkan modul lain di sini saat self-service karyawan diperluas.
+     */
+    private array $scopedModules = [
+        'gajikaryawan',
+        'loan',
+        'dashboard',
+    ];
+
+    /**
+     * Penjelasan singkat untuk permission "view_all_{modul}" (muncul sebagai
+     * tooltip di halaman edit permission) supaya admin awam paham fungsinya.
+     */
+    private array $scopedDesc = [
+        'gajikaryawan' => 'Centang HANYA untuk admin/finance agar bisa melihat gaji SEMUA karyawan. Untuk role karyawan jangan dicentang — cukup beri "Lihat" agar ia hanya melihat gajinya sendiri.',
+        'loan' => 'Centang HANYA untuk admin/finance agar bisa melihat peminjaman SEMUA karyawan. Untuk role karyawan jangan dicentang — cukup beri "Lihat" agar ia hanya melihat pinjamannya sendiri.',
+        'dashboard' => 'Centang HANYA untuk admin/finance agar dashboard menampilkan ringkasan PERUSAHAAN (omzet, pengeluaran, gaji semua). Untuk role karyawan jangan dicentang — dashboard akan menampilkan ringkasan PRIBADI miliknya (gaji & pinjaman sendiri).',
+    ];
+
     public function run(): void
     {
         // 1. Buat katalog permission CRUD per modul
@@ -53,6 +76,19 @@ class PermissionAccessSeeder extends Seeder
                     ['display_name' => $this->aksiLabel[$aksi].' '.$label, 'group' => $group]
                 );
             }
+        }
+
+        // 1b. Permission scope "lihat semua" untuk modul data personal/rahasia
+        foreach ($this->scopedModules as $group) {
+            $label = $this->modules[$group][0] ?? $group;
+            Permission::updateOrCreate(
+                ['name' => 'view_all_'.$group],
+                [
+                    'display_name' => 'Lihat Semua '.$label,
+                    'group' => $group,
+                    'description' => $this->scopedDesc[$group] ?? null,
+                ]
+            );
         }
 
         // helper ambil id dari daftar nama
@@ -77,18 +113,29 @@ class PermissionAccessSeeder extends Seeder
 
         // 3. admin-mimin = pesanan, pelanggan, pesan pelanggan, dashboard (CRUD penuh modulnya)
         if ($mimin = Role::where('name', 'admin-mimin')->first()) {
-            $mimin->permissions()->syncWithoutDetaching($ids($allFor([
+            $miminNames = $allFor([
                 'dashboard', 'pesananrsc', 'pemesanantoko', 'customer', 'customer_message',
-            ])));
+            ]);
+            // melihat dashboard versi PERUSAHAAN (bukan dashboard pribadi karyawan)
+            $miminNames[] = 'view_all_dashboard';
+
+            $mimin->permissions()->syncWithoutDetaching($ids($miminNames));
         }
 
         // 4. finance = dashboard + modul keuangan/konten (CRUD penuh), pesanantoko dipertahankan
         if ($finance = Role::where('name', 'finance')->first()) {
-            $finance->permissions()->syncWithoutDetaching($ids($allFor([
+            $financeNames = $allFor([
                 'dashboard', 'cashflow', 'pelamar', 'banners', 'promo', 'dataakun',
                 'product', 'bundlings', 'spending', 'loan', 'gajikaryawan', 'lowongan',
                 'message', 'pemesanantoko',
-            ])));
+            ]);
+            // finance boleh melihat SEMUA data gaji & peminjaman (bukan hanya miliknya)
+            $financeNames[] = 'view_all_gajikaryawan';
+            $financeNames[] = 'view_all_loan';
+            // dashboard versi PERUSAHAAN
+            $financeNames[] = 'view_all_dashboard';
+
+            $finance->permissions()->syncWithoutDetaching($ids($financeNames));
         }
     }
 

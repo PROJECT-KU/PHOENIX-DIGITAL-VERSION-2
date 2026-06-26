@@ -51,7 +51,7 @@ class PermissionList extends Component
                 $this->dispatch('swal-confirm', [
                     'type' => 'error',
                     'title' => 'Gagal!',
-                    'message' => 'Permission \''.$permission->display_name.'\' masih digunakan oleh '.$usedByRoles.' role. Hapus dari role terlebih dahulu.',
+                    'message' => 'Permission \'' . $permission->display_name . '\' masih digunakan oleh ' . $usedByRoles . ' role. Hapus dari role terlebih dahulu.',
                 ]);
 
                 return;
@@ -72,7 +72,7 @@ class PermissionList extends Component
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $permisionsData = Permission::latest();
@@ -93,7 +93,7 @@ class PermissionList extends Component
                 ->distinct()
                 ->orderBy('group')
                 ->get()
-                ->map(fn ($item) => [
+                ->map(fn($item) => [
                     'value' => $item->group,
                     'label' => $item->group,
                 ])
