@@ -40,15 +40,15 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko']))
+                @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko', 'view_ebook']))
                 <li
-                    class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'active open' : '' }}">
+                    class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cart {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-cart {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}">
                             Pesanan
                         </span>
                     </a>
@@ -64,6 +64,12 @@ new class extends Component
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
                             <a wire:navigate class="submenu-link" href="{{ route('admin.pesanantoko.index') }}">Pesanan
                                 Toko</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_ebook'))
+                        <li class="submenu-item {{ request()->routeIs('admin.ebook.*') ? 'active' : '' }}">
+                            <a wire:navigate class="submenu-link" href="{{ route('admin.ebook.index') }}">Ebook
+                                Bonus</a>
                         </li>
                         @endif
                     </ul>
@@ -88,7 +94,7 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_customer_message'))
                         <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Masuk</a>
+                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Pelanggan (Helpdesk)</a>
                         </li>
                         @endif
                     </ul>
@@ -155,7 +161,7 @@ new class extends Component
                         </span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item {{ request()->routeIs('admin.customer.index') ? 'active' : '' }}">
+                        <li class="submenu-item {{ request()->routeIs('admin.customer.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.customer.index') }}" class="submenu-link">Data
                                 Pelanggan</a>
                         </li>

@@ -14,6 +14,32 @@ class PermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
+            // Ebook Bonus
+            [
+                'name' => 'view_ebook',
+                'display_name' => 'Lihat Ebook Bonus',
+                'group' => 'ebook',
+                'description' => 'Dapat melihat pustaka ebook bonus'
+            ],
+            [
+                'name' => 'create_ebook',
+                'display_name' => 'Buat Ebook Bonus',
+                'group' => 'ebook',
+                'description' => 'Dapat menambah ebook bonus'
+            ],
+            [
+                'name' => 'edit_ebook',
+                'display_name' => 'Edit Ebook Bonus',
+                'group' => 'ebook',
+                'description' => 'Dapat mengedit ebook bonus'
+            ],
+            [
+                'name' => 'delete_ebook',
+                'display_name' => 'Hapus Ebook Bonus',
+                'group' => 'ebook',
+                'description' => 'Dapat menghapus ebook bonus'
+            ],
+
             // Pemesanan Toko
             [
                 'name' => 'view_pemesanantoko',

@@ -124,13 +124,13 @@
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead>
-                            <tr>
+                            <tr style="text-align: center;">
                                 <th>Karyawan</th>
                                 <th>Jabatan</th>
                                 <th>Role</th>
                                 <th>Info Bank</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_karyawan', 'delete_karyawan']))
-                                <th class="text-center" width="120">Aksi</th>
+                                <th width="120">Aksi</th>
                                 @endif
                             </tr>
                         </thead>
@@ -139,7 +139,7 @@
                             $avatarGrad = ['#7c3aed,#6d28d9', '#2563eb,#0ea5e9', '#059669,#10b981', '#e11d48,#f43f5e', '#d97706,#f59e0b'];
                             @endphp
                             @forelse($users as $user)
-                            <tr>
+                            <tr style="text-align: center;">
                                 <td>
                                     <div class="d-flex align-items-center gap-3">
                                         <span class="kry-avatar" style="background: linear-gradient(135deg,{{ $avatarGrad[$loop->index % count($avatarGrad)] }});">

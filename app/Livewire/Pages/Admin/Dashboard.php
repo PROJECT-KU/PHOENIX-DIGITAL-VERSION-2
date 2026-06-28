@@ -4,11 +4,10 @@ namespace App\Livewire\Pages\Admin;
 
 use App\Models\User;
 use App\Models\Order;
-use App\Models\Spending;
+use App\Models\CashFlow;
 use App\Models\GajiKaryawans;
 use App\Models\Loan;
 use App\Models\Pengembalian;
-use App\Models\PemesananRsc;
 use App\Models\Customer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
@@ -140,13 +139,7 @@ class Dashboard extends Component
     {
         $authUser = Auth::user();
 
-        // ==========================================
-        // DATA UNTUK CARD (BULAN INI)
-        // ==========================================
-        $awalBulan = now()->startOfMonth()->toDateString();
-        $akhirBulan = now()->endOfMonth()->toDateString();
-
-        // User Online 
+        // User Online
         $users = User::where('id', '!=', $authUser->id)
             ->whereNotNull('last_seen_at')
             ->get()
@@ -160,54 +153,53 @@ class Dashboard extends Component
             ->take(5)
             ->values();
 
-        $totalPemasukanBulanIni = Order::whereBetween('created_at', [$awalBulan, $akhirBulan])
-            ->where('status', 'completed')->sum('total');
-
-        $totalPengeluaranBulanIni = Spending::whereBetween('tanggal_transaksi', [$awalBulan, $akhirBulan])
-            ->where('status', 'completed')->sum('nominal');
-
-        $totalGajiKaryawanBulanIni = GajiKaryawans::whereBetween('tanggal_transaksi', [$awalBulan, $akhirBulan])
-            ->sum('total');
-
-        $totalPemesananRscBulanIni = PemesananRsc::whereBetween('tanggal_pemesanan', [$awalBulan, $akhirBulan])
-            ->sum('total');
-
         // ==========================================
-        // DATA UNTUK GRAFIK (SATU TAHUN)
+        // DATA KEUANGAN — DISINKRONKAN DENGAN CASHFLOW
+        // Semua angka bersumber dari tabel cash_flows (type income/expense)
+        // agar identik dengan halaman Cashflow.
         // ==========================================
+        $bulanIni = now()->month;
         $tahunIni = now()->year;
 
+        // Total bulan ini (mengikuti cashflow: berdasarkan transaction_date)
+        $cfBulan = fn ($type) => (float) CashFlow::where('type', $type)
+            ->whereYear('transaction_date', $tahunIni)
+            ->whereMonth('transaction_date', $bulanIni)
+            ->sum('amount');
+
+        $totalPemasukanBulanIni = $cfBulan('income');
+        $totalPengeluaranBulanIni = $cfBulan('expense');
+        $saldoBersihBulanIni = $totalPemasukanBulanIni - $totalPengeluaranBulanIni;
+
+        // Total kode unik (sama seperti cashflow): dari pesanan yang sudah dibayar
+        // pada bulan ini, berdasarkan tanggal bayar (fallback ke tanggal dibuat).
+        $paidStatuses = ['paid', 'processing', 'completed'];
+        $totalKodeUnikBulanIni = (float) Order::whereIn('status', $paidStatuses)
+            ->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahunIni])
+            ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulanIni])
+            ->sum('unique_code');
+
+        // ==========================================
+        // GRAFIK 1 TAHUN — income vs expense per bulan (dari cashflow)
+        // ==========================================
         $grafikPemasukan = array_fill(0, 12, 0);
         $grafikPengeluaran = array_fill(0, 12, 0);
-        $grafikGaji = array_fill(0, 12, 0);
-        $grafikRsc = array_fill(0, 12, 0);
 
-        // Pemasukan 1 Tahun
-        $orders = Order::whereYear('created_at', $tahunIni)->where('status', 'completed')->get();
-        foreach ($orders as $o) {
-            $bulan = \Carbon\Carbon::parse($o->created_at)->month - 1;
-            $grafikPemasukan[$bulan] += $o->total;
-        }
+        $monthly = CashFlow::whereYear('transaction_date', $tahunIni)
+            ->selectRaw('MONTH(transaction_date) as bln, type, SUM(amount) as total')
+            ->groupBy('bln', 'type')
+            ->get();
 
-        // Pengeluaran 1 Tahun
-        $spendings = Spending::whereYear('tanggal_transaksi', $tahunIni)->where('status', 'completed')->get();
-        foreach ($spendings as $s) {
-            $bulan = \Carbon\Carbon::parse($s->tanggal_transaksi)->month - 1;
-            $grafikPengeluaran[$bulan] += $s->nominal;
-        }
-
-        // Gaji Karyawan 1 Tahun
-        $gajis = GajiKaryawans::whereYear('tanggal_transaksi', $tahunIni)->get();
-        foreach ($gajis as $g) {
-            $bulan = \Carbon\Carbon::parse($g->tanggal_transaksi)->month - 1;
-            $grafikGaji[$bulan] += $g->total;
-        }
-
-        // Pemesanan RSc 1 Tahun
-        $rscs = PemesananRsc::whereYear('tanggal_pemesanan', $tahunIni)->get();
-        foreach ($rscs as $r) {
-            $bulan = \Carbon\Carbon::parse($r->tanggal_pemesanan)->month - 1;
-            $grafikRsc[$bulan] += $r->total;
+        foreach ($monthly as $row) {
+            $idx = (int) $row->bln - 1;
+            if ($idx < 0 || $idx > 11) {
+                continue;
+            }
+            if ($row->type === 'income') {
+                $grafikPemasukan[$idx] = (float) $row->total;
+            } else {
+                $grafikPengeluaran[$idx] = (float) $row->total;
+            }
         }
 
         // ==========================================
@@ -243,13 +235,12 @@ class Dashboard extends Component
 
             'totalPemasukan' => number_format($totalPemasukanBulanIni ?? 0, 0, ',', '.'),
             'totalPengeluaran' => number_format($totalPengeluaranBulanIni ?? 0, 0, ',', '.'),
-            'totalGajiKaryawan' => number_format($totalGajiKaryawanBulanIni ?? 0, 0, ',', '.'),
-            'totalPemesananRsc' => number_format($totalPemesananRscBulanIni ?? 0, 0, ',', '.'),
+            'totalKodeUnik' => number_format($totalKodeUnikBulanIni ?? 0, 0, ',', '.'),
+            'saldoBersih' => number_format($saldoBersihBulanIni ?? 0, 0, ',', '.'),
+            'saldoIsNegatif' => $saldoBersihBulanIni < 0,
 
             'dataGrafikPemasukan' => $grafikPemasukan,
             'dataGrafikPengeluaran' => $grafikPengeluaran,
-            'dataGrafikGaji' => $grafikGaji,
-            'dataGrafikRsc' => $grafikRsc,
 
             // Variabel Baru untuk Tabel
             'recentOrders' => $recentOrders,

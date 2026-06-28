@@ -14,9 +14,16 @@ class MessageList extends Component
 
     public $perPage = 10;
 
+    public $search = '';
+
     public $filterMonth = '';
 
     public $filterStatus = '';
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
 
     public function updatingFilterMonth()
     {
@@ -30,7 +37,7 @@ class MessageList extends Component
 
     public function resetFilters()
     {
-        $this->reset(['filterMonth', 'filterStatus']);
+        $this->reset(['search', 'filterMonth', 'filterStatus']);
         $this->resetPage();
     }
 
@@ -38,23 +45,32 @@ class MessageList extends Component
     public function delete($id)
     {
         if (! auth()->user()->hasPermission('delete_message')) {
-            session()->flash('error', 'Anda tidak memiliki izin menghapus pesan.');
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus pesan.');
 
             return;
         }
 
         try {
             Message::findOrFail($id)->delete();
-            session()->flash('success', 'berhasil menghapus data lowongan');
+            $this->dispatch('swal-success', message: 'Pesan berhasil dihapus.');
         } catch (\Exception $e) {
-            session()->flash('error', 'gagal menghapus data lowongan');
+            $this->dispatch('swal-error', message: 'Gagal menghapus pesan.');
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $query = Message::latest();
+
+        // Pencarian: nama, email, atau isi pesan
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('email', 'like', "%{$this->search}%")
+                    ->orWhere('message', 'like', "%{$this->search}%");
+            });
+        }
 
         if ($this->filterMonth) {
             $query->whereMonth('created_at', $this->filterMonth);

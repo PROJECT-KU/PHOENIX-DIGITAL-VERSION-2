@@ -14,6 +14,7 @@ class Order extends Model
 
     protected $fillable = [
         'order_number',
+        'share_token',
         'customer_id',
         'subtotal',
         'total',
@@ -44,6 +45,24 @@ class Order extends Model
         'referral_discount' => 'decimal:0',
         'total_discount' => 'decimal:0',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($order) {
+            if (empty($order->share_token)) {
+                do {
+                    $token = \Illuminate\Support\Str::random(10);
+                } while (self::where('share_token', $token)->exists());
+                $order->share_token = $token;
+            }
+        });
+    }
+
+    // URL struk publik berbasis token pendek (tanpa expose UUID)
+    public function getReceiptUrl(): ?string
+    {
+        return $this->share_token ? url('/s/' . $this->share_token) : null;
+    }
 
     // relationship
     public function cashFlow(): MorphOne
@@ -81,6 +100,18 @@ class Order extends Model
     public function getAppliedPromoCodes(): array
     {
         return $this->applied_promos ? array_column($this->applied_promos, 'kode_promo') : [];
+    }
+
+    // Scope: order yang punya minimal 1 item habis (status 'habis' ATAU end_date terlewat)
+    public function scopeHasExpiredItem($query)
+    {
+        return $query->whereHas('items', function ($q) {
+            $q->where('subscription_status', 'habis')
+                ->orWhere(function ($q2) {
+                    $q2->whereNotNull('end_date')
+                        ->where('end_date', '<', now());
+                });
+        });
     }
 
     // Scope untuk filter status

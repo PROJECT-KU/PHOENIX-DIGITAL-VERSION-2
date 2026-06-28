@@ -14,9 +14,16 @@ class CustomerMessageList extends Component
 
     public $perPage = 10;
 
+    public $search = '';
+
     public $filterMonth = '';
 
     public $filterStatus = '';
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
 
     public function getQueuePositionForItem($item)
     {
@@ -56,7 +63,7 @@ class CustomerMessageList extends Component
 
     public function resetFilters()
     {
-        $this->reset(['filterMonth', 'filterStatus']);
+        $this->reset(['search', 'filterMonth', 'filterStatus']);
         $this->resetPage();
     }
 
@@ -99,6 +106,16 @@ class CustomerMessageList extends Component
     public function render()
     {
         $query = CustomerMessage::latest();
+
+        // Pencarian: tiket, nama, email, atau isi pesan
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('ticket', 'like', "%{$this->search}%")
+                    ->orWhere('name', 'like', "%{$this->search}%")
+                    ->orWhere('email', 'like', "%{$this->search}%")
+                    ->orWhere('message', 'like', "%{$this->search}%");
+            });
+        }
 
         if ($this->filterMonth) {
             $query->whereMonth('created_at', $this->filterMonth);

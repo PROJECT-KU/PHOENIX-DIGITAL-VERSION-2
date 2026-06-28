@@ -94,6 +94,14 @@ use App\Livewire\Pages\Public\ShopPage\ProductDetail;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Index::class)->name('homepage');
+
+// Struk pakai token pendek (tanpa expose UUID)
+Route::get('/s/{token}', [\App\Http\Controllers\OrderReceiptController::class, 'show'])->name('order.receipt');
+
+// Ebook viewer view-only (link pendek) + streaming terproteksi
+Route::get('/e/{token}', [\App\Http\Controllers\EbookViewerController::class, 'show'])->name('ebook.view');
+Route::get('/e/{token}/raw', [\App\Http\Controllers\EbookViewerController::class, 'raw'])->name('ebook.raw');
+
 Route::get('/shop', ShopPageIndex::class)->name('shop.index');
 Route::get('/shop/product/{id}', ProductDetail::class)->name('shop.detail-product');
 Route::get('/cart', CartPage::class)->name('cart');
@@ -190,6 +198,14 @@ Route::middleware('permission:view_product')->group(function () {
     Route::get('/admin/product', ProductList::class)->name('admin.product.index');
     Route::get('/admin/product/create', ProductCreate::class)->middleware('permission:create_product')->name('admin.product.create');
     Route::get('/admin/product/{product}/edit', ProductEdit::class)->middleware('permission:edit_product')->name('admin.product.edit');
+});
+
+// Ebook Bonus
+Route::middleware('permission:view_ebook')->group(function () {
+    Route::get('/admin/ebook', \App\Livewire\Pages\Admin\Ebook\EbookList::class)->name('admin.ebook.index');
+    Route::get('/admin/ebook/{ebook}/download', [\App\Http\Controllers\EbookController::class, 'download'])->name('admin.ebook.download');
+    Route::get('/admin/ebook/create', \App\Livewire\Pages\Admin\Ebook\EbookCreate::class)->middleware('permission:create_ebook')->name('admin.ebook.create');
+    Route::get('/admin/ebook/{ebook}/edit', \App\Livewire\Pages\Admin\Ebook\EbookEdit::class)->middleware('permission:edit_ebook')->name('admin.ebook.edit');
 });
 
 // Data Banners

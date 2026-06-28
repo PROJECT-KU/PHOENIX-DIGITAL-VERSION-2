@@ -182,7 +182,10 @@
                                         {{ ucfirst($customer->status_member) }}
                                     </span>
                                 </td>
-                                <td>{{ $customer->point }}</td>
+                                <td>
+                                    <span class="fw-semibold">{{ $customer->point }}</span> poin
+                                    <small class="d-block text-muted">Rp {{ number_format($customer->point * 500, 0, ',', '.') }}</small>
+                                </td>
                                 <td>{{ $customer->kode_ref }}</td>
                                 @if (auth()->user()->hasAnyPermission(['edit_customer', 'delete_customer']))
                                 <td>

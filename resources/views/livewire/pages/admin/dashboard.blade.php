@@ -18,6 +18,28 @@ Dashboard || Phoenix Digital
 
 <div>
 
+    <style>
+        /* Pusatkan ikon Bootstrap (bi) di dalam stat-icon-wrapper yang
+           aslinya didesain untuk font iconly. */
+        .stat-icon-wrapper {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon-wrapper i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .stat-icon-wrapper i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+    </style>
+
     <!--================== HEADER ==================-->
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -75,11 +97,11 @@ Dashboard || Phoenix Digital
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"><i class="iconly-boldWallet"></i></div>
+                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-arrow-down-circle-fill"></i></div>
                         <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pemasukan Orderan</p>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pemasukan</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalPemasukan }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode: {{ now()->translatedFormat('F Y') }}</span>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Sinkron Cashflow • {{ now()->translatedFormat('F Y') }}</span>
                         </div>
                     </div>
                 </div>
@@ -88,24 +110,11 @@ Dashboard || Phoenix Digital
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="iconly-boldWork"></i></div>
-                        <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pemasukan RSc</p>
-                            <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalPemesananRsc }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode: {{ now()->translatedFormat('F Y') }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
-                    <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="iconly-boldBuy"></i></div>
+                        <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="bi bi-arrow-up-circle-fill"></i></div>
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pengeluaran</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalPengeluaran }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode: {{ now()->translatedFormat('F Y') }}</span>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Sinkron Cashflow • {{ now()->translatedFormat('F Y') }}</span>
                         </div>
                     </div>
                 </div>
@@ -114,10 +123,23 @@ Dashboard || Phoenix Digital
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="iconly-boldUser"></i></div>
+                        <div class="stat-icon-wrapper {{ $saldoIsNegatif ? 'bg-gradient-red' : 'bg-gradient-purple' }} flex-shrink-0"><i class="bi bi-cash-stack"></i></div>
                         <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pengeluaran Gaji</p>
-                            <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalGajiKaryawan }}</h4>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Saldo Bersih</p>
+                            <h4 class="fw-bold mb-0 {{ $saldoIsNegatif ? 'text-danger' : 'text-dark' }}">Rp {{ $saldoBersih }}</h4>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-graph-up-arrow me-1"></i>Pemasukan − Pengeluaran</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="bi bi-upc-scan"></i></div>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Kode Unik</p>
+                            <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalKodeUnik }}</h4>
                             <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode: {{ now()->translatedFormat('F Y') }}</span>
                         </div>
                     </div>
@@ -356,28 +378,18 @@ Dashboard || Phoenix Digital
         // Jika elemen grafik tidak ada di halaman ini, hentikan proses
         if (!chartElement) return;
 
-        // AMAN DARI AUTO-FORMATTER
+        // AMAN DARI AUTO-FORMATTER — data dari cashflow (income vs expense)
         const dataPemasukan = @json($dataGrafikPemasukan);
-        const dataPemasukanRsc = @json($dataGrafikRsc);
         const dataPengeluaran = @json($dataGrafikPengeluaran);
-        const dataGaji = @json($dataGrafikGaji);
 
         const chartOptions = {
             series: [{
-                    name: 'Pemasukan Orderan',
+                    name: 'Pemasukan',
                     data: dataPemasukan
                 },
                 {
-                    name: 'Pemasukan RSc',
-                    data: dataPemasukanRsc
-                },
-                {
-                    name: 'Total Pengeluaran',
+                    name: 'Pengeluaran',
                     data: dataPengeluaran
-                },
-                {
-                    name: 'Gaji Karyawan',
-                    data: dataGaji
                 }
             ],
             chart: {
@@ -388,7 +400,7 @@ Dashboard || Phoenix Digital
                 },
                 fontFamily: 'inherit'
             },
-            colors: ['#7c3aed', '#3b82f6', '#10b981', '#f43f5e'],
+            colors: ['#10b981', '#f43f5e'],
             fill: {
                 type: 'gradient',
                 gradient: {

@@ -192,18 +192,18 @@
                 <div class="table-responsive">
                     <table class="table align-middle cashflow-table mb-0">
                         <thead>
-                            <tr class="text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                            <tr class="text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px; text-align: center;">
                                 <th class="border-0">Tanggal</th>
                                 <th class="border-0">Kategori</th>
                                 <th class="border-0">Deskripsi</th>
                                 <th class="border-0">Sumber</th>
-                                <th class="border-0 text-end">Nominal</th>
-                                <th class="border-0 text-center">Aksi</th>
+                                <th class="border-0">Nominal</th>
+                                <th class="border-0">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($reports as $item)
-                            <tr>
+                            <tr style="text-align: center;">
                                 <td class="text-nowrap">
                                     <span class="fw-semibold text-dark">{{ $item->transaction_date->format('d M Y') }}</span>
                                 </td>
@@ -257,11 +257,11 @@
                                     <span class="text-secondary">-</span>
                                     @endif
                                 </td>
-                                <td class="text-end fw-bold {{ $item->type == 'income' ? 'text-success' : 'text-danger' }}">
+                                <td class="fw-bold {{ $item->type == 'income' ? 'text-success' : 'text-danger' }}">
                                     {{ $item->type == 'income' ? '+' : '-' }}
                                     Rp {{ number_format($item->amount) }}
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <button wire:click="$dispatch('openDetail', { id: '{{ $item->id }}' })"
                                         class="btn btn-sm btn-light-primary rounded-pill px-3" title="Lihat detail">
                                         <i class="bi bi-eye"></i>
