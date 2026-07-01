@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pinjaman || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->
     <style>

@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pelamar Kerja || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

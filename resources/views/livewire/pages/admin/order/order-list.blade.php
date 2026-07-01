@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pesanan || PT. Asthana Cipta Mandiri
+@stop
 <div wire:poll.15s="watchNewPayments">
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">

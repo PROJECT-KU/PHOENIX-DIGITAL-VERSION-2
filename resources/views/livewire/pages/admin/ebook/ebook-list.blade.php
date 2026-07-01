@@ -1,3 +1,7 @@
+
+@section('title')
+Data Ebook || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <style>
         .ebook-dl-btn {

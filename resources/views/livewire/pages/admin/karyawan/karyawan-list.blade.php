@@ -1,3 +1,7 @@
+
+@section('title')
+Data Karyawan || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

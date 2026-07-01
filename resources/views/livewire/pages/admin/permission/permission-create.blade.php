@@ -1,3 +1,7 @@
+
+@section('title')
+Tambah Hak Akses || PT. Asthana Cipta Mandiri
+@stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
         <div class="card-body p-4 d-flex align-items-center">

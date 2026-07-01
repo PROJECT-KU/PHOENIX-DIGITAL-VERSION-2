@@ -1,3 +1,7 @@
+
+@section('title')
+Pembayaran QRIS || PT. Asthana Cipta Mandiri
+@stop
 <div id="qrisRoot" data-expires="{{ optional($order->expired_at)->toIso8601String() }}"
     @if ($order->status === 'pending' && ! $this->isExpired()) wire:poll.5s.keep-alive="checkPayment" @endif>
 

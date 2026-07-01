@@ -95,7 +95,7 @@
     <table class="header">
         <tr>
             <td>
-                <div class="brand">Phoenix Digital<small>SISTEM MANAJEMEN KEUANGAN</small></div>
+                <table style="border-collapse:collapse; border:none; margin:0;"><tr><td style="width:86px; vertical-align:middle; padding:0 12px 0 0; border:none;"><img src="{{ storage_path('app/public/img/archive/logo-icon.png') }}" style="width:72px; height:66px;" alt=""></td><td style="vertical-align:middle; border:none; padding:0;"><div class="brand">PT. Asthana Cipta Mandiri<small>SISTEM MANAJEMEN KEUANGAN</small></div></td></tr></table>
             </td>
             <td class="doc-title">
                 <h1>SLIP GAJI</h1>
@@ -191,7 +191,7 @@
     </table>
 
     <div class="footer">
-        Slip gaji ini dibuat otomatis oleh sistem Phoenix Digital &middot; dicetak {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB.
+        Slip gaji ini dibuat otomatis oleh sistem PT. Asthana Cipta Mandiri &middot; dicetak {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB.
     </div>
 </body>
 

@@ -1,3 +1,7 @@
+
+@section('title')
+Detail Cash Flow || PT. Asthana Cipta Mandiri
+@stop
 <div>
     @if($isOpen && $cashFlow)
     @php $isIncome = $cashFlow->type === 'income'; @endphp

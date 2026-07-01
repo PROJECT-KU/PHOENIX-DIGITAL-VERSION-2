@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
+use App\Models\Promo;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -55,8 +56,14 @@ class CustomerList extends Component
             ->latest()
             ->paginate(10);
 
+        $activePromos = Promo::active()
+            ->orderByDesc('prioritas')
+            ->orderByDesc('mulai_promo')
+            ->get();
+
         return view('livewire.pages.admin.customer.customer-list', [
             'customers' => $customers,
+            'activePromos' => $activePromos,
         ])
             ->layout('livewire.layout.templateindex');
     }

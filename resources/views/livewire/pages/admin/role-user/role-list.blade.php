@@ -1,3 +1,7 @@
+
+@section('title')
+Data Role || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

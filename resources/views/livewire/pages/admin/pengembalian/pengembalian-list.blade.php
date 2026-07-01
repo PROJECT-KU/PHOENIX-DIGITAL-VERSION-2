@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pengembalian || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->
     <style>

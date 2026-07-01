@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-Dashboard || Phoenix Digital
+Dashboard || PT. Asthana Cipta Mandiri
 @stop
 
 <div>

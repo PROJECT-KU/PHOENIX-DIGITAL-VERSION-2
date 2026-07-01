@@ -187,6 +187,17 @@ Route::middleware('permission:view_karyawan')->group(function () {
     Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->middleware('permission:edit_karyawan')->name('admin.karyawan.edit');
 });
 
+// Presensi
+Route::middleware('permission:view_presensi')->group(function () {
+    Route::get('/admin/presensi', \App\Livewire\Pages\Admin\Presensi\PresensiIndex::class)->name('admin.presensi.index');
+});
+Route::middleware('permission:view_all_presensi')->group(function () {
+    Route::get('/admin/presensi/rekap', \App\Livewire\Pages\Admin\Presensi\PresensiRekap::class)->name('admin.presensi.rekap');
+});
+Route::middleware('permission:manage_presensi_setting')->group(function () {
+    Route::get('/admin/presensi/pengaturan', \App\Livewire\Pages\Admin\Presensi\PresensiSetting::class)->name('admin.presensi.pengaturan');
+});
+
 // Data Akun
 Route::middleware('permission:view_dataakun')->group(function () {
     Route::get('/admin/DataAkun', DataAkunList::class)->name('admin.DataAkun.index');

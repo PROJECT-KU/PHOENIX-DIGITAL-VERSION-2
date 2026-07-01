@@ -1,3 +1,7 @@
+
+@section('title')
+Data Lowongan Pekerjaan || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <div class="container-fluid">
         <!--================== HEADER + TOOLBAR (SATU CARD) ==================-->

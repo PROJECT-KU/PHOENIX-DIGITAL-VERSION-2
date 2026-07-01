@@ -1,3 +1,7 @@
+
+@section('title')
+Kelola Role & Hak Akses || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pesan Masuk || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

@@ -1,3 +1,7 @@
+
+@section('title')
+Pengaturan Profil || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

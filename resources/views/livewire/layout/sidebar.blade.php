@@ -14,12 +14,60 @@ new class extends Component
 }; ?>
 
 <div id="sidebar">
+    <style>
+        .asthana-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: .6rem;
+        }
+
+        .asthana-brand .asthana-logo {
+            height: 50px;
+            width: auto;
+            max-width: none;
+            flex-shrink: 0;
+        }
+
+        .asthana-brand .ab-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            line-height: 1.14;
+        }
+
+        .asthana-brand .ab-main {
+            font-weight: 800;
+            font-size: .96rem;
+            letter-spacing: .01em;
+            color: #1e293b;
+            white-space: nowrap;
+        }
+
+        .asthana-brand .ab-sub {
+            font-weight: 600;
+            font-size: .68rem;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: #8a90a3;
+            margin-top: 1px;
+            white-space: nowrap;
+        }
+
+        .sidebar-header .logo {
+            padding: .35rem 0;
+        }
+    </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="logo">
-                    <a href="{{ route('admin.dashboard') }}" class="" wire:navigate>
-                        <small>Phoenix</small>
+                    <a href="{{ route('admin.dashboard') }}" class="asthana-brand text-decoration-none" wire:navigate>
+                        <img src="{{ asset('storage/img/archive/logo-icon.png') }}" alt="Asthana Cipta Mandiri"
+                            class="asthana-logo" onerror="this.style.display='none'">
+                        <span class="ab-text">
+                            <span class="ab-main">PT. Asthana</span>
+                            <span class="ab-sub">Cipta Mandiri</span>
+                        </span>
                     </a>
                 </div>
                 <div class="sidebar-toggler x">
@@ -249,6 +297,32 @@ new class extends Component
                 </li>
 
                 <!-- section karir & karyawan-->
+                @if (auth()->user()->hasPermission('view_presensi'))
+                <li class="mt-4 sidebar-title">Kepegawaian</li>
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.presensi.*') ? 'active open' : '' }}">
+                    <a href="#"
+                        class="sidebar-link {{ request()->routeIs('admin.presensi.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-fingerprint {{ request()->routeIs('admin.presensi.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.presensi.*') ? 'text-primary' : '' }}">Presensi</span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.index') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.index') }}" class="submenu-link">Presensi Saya</a>
+                        </li>
+                        @if (auth()->user()->hasPermission('view_all_presensi'))
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.rekap') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.rekap') }}" class="submenu-link">Rekap Presensi</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('manage_presensi_setting'))
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.pengaturan') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.pengaturan') }}" class="submenu-link">Pengaturan</a>
+                        </li>
+                        @endif
+                    </ul>
+                </li>
+                @endif
+
                 @if (auth()->user()->hasAnyPermission(['view_karyawan', 'view_lowongan', 'view_pelamar', 'view_message']))
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li

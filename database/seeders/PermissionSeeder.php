@@ -105,6 +105,26 @@ class PermissionSeeder extends Seeder
                 'group' => 'roles',
                 'description' => 'Dapat mengelola role dan permission'
             ],
+
+            // Presensi
+            [
+                'name' => 'view_presensi',
+                'display_name' => 'Presensi',
+                'group' => 'presensi',
+                'description' => 'Dapat mengakses & melakukan presensi sendiri'
+            ],
+            [
+                'name' => 'view_all_presensi',
+                'display_name' => 'Lihat Semua Presensi',
+                'group' => 'presensi',
+                'description' => 'Dapat melihat rekap presensi semua karyawan'
+            ],
+            [
+                'name' => 'manage_presensi_setting',
+                'display_name' => 'Kelola Pengaturan Presensi',
+                'group' => 'presensi',
+                'description' => 'Dapat mengatur lokasi, radius, & durasi presensi'
+            ],
         ];
 
         foreach ($permissions as $permission) {

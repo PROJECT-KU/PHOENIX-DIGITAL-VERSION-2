@@ -1,3 +1,7 @@
+
+@section('title')
+Data Data Akun || PT. Asthana Cipta Mandiri
+@stop
 <div wire:poll.60s>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">

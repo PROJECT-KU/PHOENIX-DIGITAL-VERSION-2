@@ -1,3 +1,7 @@
+
+@section('title')
+Pengguna Online || PT. Asthana Cipta Mandiri
+@stop
 <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden"
     wire:poll.10s
     style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);">

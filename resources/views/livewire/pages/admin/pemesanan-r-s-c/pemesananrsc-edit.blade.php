@@ -1,3 +1,7 @@
+
+@section('title')
+Edit Pesanan RSC || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Edit Data Pesanan {{$nama_camp}} Batch {{$batch_camp}}</h3>

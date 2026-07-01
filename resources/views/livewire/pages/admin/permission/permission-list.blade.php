@@ -1,3 +1,7 @@
+
+@section('title')
+Data Hak Akses || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

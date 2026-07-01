@@ -1,3 +1,7 @@
+
+@section('title')
+Data Gaji Karyawan || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

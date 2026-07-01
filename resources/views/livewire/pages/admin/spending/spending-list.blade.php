@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pengeluaran || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->
     <style>

@@ -1,3 +1,7 @@
+
+@section('title')
+Proses Pesanan || PT. Asthana Cipta Mandiri
+@stop
 <div class="container-fluid">
     <style>
         /* Tombol pemicu picker (mirip form-select) */

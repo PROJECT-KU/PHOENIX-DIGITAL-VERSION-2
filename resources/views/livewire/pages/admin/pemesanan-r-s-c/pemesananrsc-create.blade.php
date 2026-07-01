@@ -1,3 +1,7 @@
+
+@section('title')
+Tambah Pesanan RSC || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <div class="mb-2 d-flex align-items-center justify-content-between">
         <h3>Tambah Data Pemesanan</h3>

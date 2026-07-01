@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
+@stop
 <div>
     <style>
         .stat-icon-wrapper {

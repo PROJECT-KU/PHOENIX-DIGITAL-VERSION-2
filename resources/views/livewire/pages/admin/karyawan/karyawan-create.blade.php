@@ -1,3 +1,7 @@
+
+@section('title')
+Tambah Karyawan || PT. Asthana Cipta Mandiri
+@stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
