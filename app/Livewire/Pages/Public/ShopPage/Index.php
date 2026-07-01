@@ -35,7 +35,7 @@ class Index extends Component
         $this->search = $search;
 
         if (! empty(trim($search))) {
-            $this->redirect('/shop?search='.urlencode($search));
+            $this->redirect('/shop?search=' . urlencode($search));
         } else {
             $this->redirect('/shop', navigate: true);
         }
@@ -120,6 +120,12 @@ class Index extends Component
     public function getBestDiscount($productId)
     {
         return $this->promoService->getBestProductDiscount($productId, null);
+    }
+
+
+    public function loadMore()
+    {
+        $this->perPage += 12;
     }
 
     #[Layout('layouts.guest')]

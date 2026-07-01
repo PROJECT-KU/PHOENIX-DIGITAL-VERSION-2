@@ -34,98 +34,100 @@
                                 @php
                                     $bestDiscount = $this->getBestDiscount($item->id);
                                 @endphp
-                                <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $item->id }}">
-                                    <div class="product-card">
-                                        <div class="product-image">
-                                            @if ($item->image)
-                                                <div>
-                                                    <img src="{{ asset('storage/img/Product/' . $item->image) }}"
-                                                        class="img-fluid" alt="{{ $item->nama_akun }}">
-                                                </div>
-                                            @else
-                                                <div>
-                                                    <img class="img-fluid" style="object-fit: cover"
-                                                        src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                                        alt="">
-                                                </div>
-                                            @endif
+                                <div class="col-6 col-md-4 col-lg-3 mb-4" wire:key="product-{{ $item->id }}">
+                                    <div class="product-item shadow-sm rounded-4">
 
-                                            <!-- Promo Badge -->
-                                            @if ($bestDiscount)
-                                                <div class="discount-badge"
-                                                    style="background: {{ $bestDiscount['promo']->badge_color ?? '#FF6B6B' }};">
-                                                    @if ($bestDiscount['type'] === 'persen')
-                                                        @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
-                                                            diskon
-                                                            {{ number_format($bestDiscount['non_member_value'], 0) }}-{{ number_format($bestDiscount['member_value'], 0) }}%
-                                                        @else
-                                                            diskon{{ number_format($bestDiscount['value'], 0) }}%
-                                                        @endif
-                                                    @else
-                                                        diskon Rp{{ number_format($bestDiscount['value'], 0) }}
-                                                    @endif
-                                                </div>
-                                            @endif
+                                        <a href="{{ route('shop.detail-product', $item->id) }}"
+                                            class="product-link text-decoration-none text-dark">
 
-                                            <div class="product-overlay">
-                                                <div class="product-actions">
-                                                    <a href="{{ route('shop.detail-product', $item->id) }}"
-                                                        class="action-btn" data-bs-toggle="tooltip"
-                                                        title="Detail Product">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <button type="button" class="action-btn" data-bs-toggle="modal"
-                                                        data-bs-target="#selectPackageModal{{ $item->id }}"
-                                                        title="Tambah ke Keranjang">
-                                                        <i class="bi bi-cart-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                            <div class="product-image">
+                                                @if ($item->image)
+                                                    <div>
+                                                        <img src="{{ asset('storage/img/Product/' . $item->image) }}"
+                                                            class="img-fluid" alt="{{ $item->nama_akun }}">
+                                                    </div>
+                                                @else
+                                                    <div>
+                                                        <img class="img-fluid" style="object-fit: cover"
+                                                            src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
+                                                            alt="">
+                                                    </div>
+                                                @endif
 
-                                        <div class="product-details">
-                                            <h4 class="product-title">
-                                                <a href="{{ route('shop.detail-product', $item->id) }}">
-                                                    {{ $item->nama_akun }}
-                                                </a>
-                                            </h4>
-                                            <div class="product-meta">
                                                 @if ($bestDiscount)
-                                                    <div class="product-price flex-column align-items-start">
-                                                        @php
-                                                            $originalPrice = $item->harga_perbulan;
-                                                            if ($bestDiscount['type'] === 'persen') {
-                                                                $discountedPrice =
-                                                                    $originalPrice -
-                                                                    ($originalPrice * $bestDiscount['value']) / 100;
-                                                            } else {
-                                                                $discountedPrice = max(
-                                                                    0,
-                                                                    $originalPrice - $bestDiscount['value'],
-                                                                );
-                                                            }
-                                                        @endphp
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <span class="text-danger small d-block">
-                                                                <del>Rp
-                                                                    {{ number_format($originalPrice, 0, ',', '.') }}</del>
-                                                            </span>
-                                                            <div class="d-flex align-items-baseline gap-2">
-                                                                <span class="sale-price fs-6 text-dark small fw-bold">Rp
+                                                    <div class="discount-badge"
+                                                        style="background: {{ $bestDiscount['promo']->badge_color ?? '#FF6B6B' }};">
+                                                        @if ($bestDiscount['type'] === 'persen')
+                                                            @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
+                                                                Diskon
+                                                                {{ number_format($bestDiscount['non_member_value'], 0) }}-{{ number_format($bestDiscount['member_value'], 0) }}%
+                                                            @else
+                                                                Diskon {{ number_format($bestDiscount['value'], 0) }}%
+                                                            @endif
+                                                        @else
+                                                            Diskon Rp{{ number_format($bestDiscount['value'], 0) }}
+                                                        @endif
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <div class="product-details">
+                                                <h4 class="product-category">
+                                                    {{ $item->nama_akun }}
+                                                </h4>
+
+                                                <div class="product-meta">
+                                                    @if ($bestDiscount)
+                                                        <div class="product-price flex-column align-items-start">
+                                                            @php
+                                                                $originalPrice = $item->harga_perbulan;
+
+                                                                if ($bestDiscount['type'] === 'persen') {
+                                                                    $discountedPrice =
+                                                                        $originalPrice -
+                                                                        ($originalPrice * $bestDiscount['value']) / 100;
+                                                                } else {
+                                                                    $discountedPrice = max(
+                                                                        0,
+                                                                        $originalPrice - $bestDiscount['value'],
+                                                                    );
+                                                                }
+                                                            @endphp
+
+                                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                                <span class="text-danger small">
+                                                                    <del>
+                                                                        Rp
+                                                                        {{ number_format($originalPrice, 0, ',', '.') }}
+                                                                    </del>
+                                                                </span>
+
+                                                                <span class="sale-price fs-6 text-dark fw-bold">
+                                                                    Rp
                                                                     {{ number_format($discountedPrice, 0, ',', '.') }}/bulan
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                @else
-                                                    <div class="product-price text-muted">
-                                                        Mulai Rp
-                                                        {{ number_format($item->harga_perbulan, 0, ',', '.') }}/bulan
-                                                    </div>
-                                                @endif
+                                                    @else
+                                                        <div class="product-price">
+                                                            <span class="current-price">Mulai Rp
+                                                                {{ number_format($item->harga_perbulan, 0, ',', '.') }}/bulan
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
+                                        </a>
+
+                                        <div class="p-3 pt-0">
+                                            <a href="#" class="cart-btn-overlay" data-bs-toggle="modal"
+                                                data-bs-target="#selectPackageModal{{ $item->id }}">
+                                                Add to Cart
+                                            </a>
                                         </div>
+
                                     </div>
+
                                 </div>
 
                                 <!-- Modal Pilih Paket -->
@@ -158,7 +160,7 @@
                                                                     $item->harga_perbulan * 1 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
+                                                        <button type="button" class="package-btn w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 1)"
                                                             data-bs-dismiss="modal">
                                                             <div
@@ -211,7 +213,7 @@
                                                                     $item->harga_perbulan * 5 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
+                                                        <button type="button" class="package-btn w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 5)"
                                                             data-bs-dismiss="modal">
                                                             <div
@@ -269,7 +271,7 @@
                                                                     $item->harga_perbulan * 10 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
+                                                        <button type="button" class="package-btn w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'bulan', 10)"
                                                             data-bs-dismiss="modal">
                                                             <div
@@ -327,7 +329,7 @@
                                                                     $item->harga_perbulan * 12 - $discountedPrice;
                                                             }
                                                         @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
+                                                        <button type="button" class="package-btn w-100"
                                                             wire:click="addToCart('{{ $item->id }}', 'tahun', 1)"
                                                             data-bs-dismiss="modal">
                                                             <div
@@ -380,8 +382,12 @@
                             @endforelse
                         </div>
 
-                        <div class="mt-5">
-                            {{ $products->links('vendor.pagination') }}
+                        <div class="text-center mt-5">
+                            @if ($products->hasMorePages())
+                                <button wire:click="loadMore" class="load-more-btn">
+                                    Load More Products
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </section>

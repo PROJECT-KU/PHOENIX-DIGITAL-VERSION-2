@@ -82,6 +82,9 @@ class ProductDetail extends Component
                 default => null
             };
         }
+        // if ($durationType === 'bulan') {
+        //     return $product->harga_perbulan * $durationValue;
+        // }
 
         if ($durationType === 'tahun') {
             return $product->harga_pertahun;

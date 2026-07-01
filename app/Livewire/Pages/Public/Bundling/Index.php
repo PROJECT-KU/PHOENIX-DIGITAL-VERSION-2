@@ -10,6 +10,8 @@ use Livewire\Attributes\On;
 
 class Index extends Component
 {
+    public $perPage = 8;
+
     use WithPagination;
 
     public function addToCart($bundlingId)
@@ -60,10 +62,15 @@ class Index extends Component
         return array_sum(array_column($cart, 'quantity') ?: [0]);
     }
 
+    public function loadMore()
+    {
+        $this->perPage += 12;
+    }
+
     #[Layout('layouts.guest')]
     public function render()
     {
-        $bundlings = ProductBundlings::latest()->take(3)->get();
+        $bundlings = ProductBundlings::latest()->paginate($this->perPage);
 
         return view('livewire.pages.public.bundling.index', [
             'bundlings' => $bundlings

@@ -10,9 +10,9 @@
                     </div>
 
                     @if (session()->has('error'))
-                    <div class="alert alert-danger">
-                        {{ session('error') }}
-                    </div>
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
                     @endif
 
                     <!-- Order Summary -->
@@ -20,16 +20,17 @@
                         <div class="card-body">
                             <h6 class="mb-3">Detail Pesanan</h6>
 
-                            @foreach($order->items as $item)
-                            <div class="mb-2 d-flex justify-content-between">
-                                <div>
-                                    <strong>{{ $item->product_name }}</strong><br>
-                                    <small class="text-muted">{{ $item->getDurationLabel() }} x{{ $item->quantity }}</small>
+                            @foreach ($order->items as $item)
+                                <div class="mb-2 d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ $item->product_name }}</strong><br>
+                                        <small class="text-muted">{{ $item->getDurationLabel() }}
+                                            x{{ $item->quantity }}</small>
+                                    </div>
+                                    <div>
+                                        <strong>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</strong>
+                                    </div>
                                 </div>
-                                <div>
-                                    <strong>Rp {{ number_format($item->subtotal, 0, ',', '.') }}</strong>
-                                </div>
-                            </div>
                             @endforeach
 
                             <hr>
@@ -48,40 +49,118 @@
                                 <i class="bi bi-clock-history text-warning fs-4 me-3"></i>
                                 <div>
                                     <strong>Batas Waktu Pembayaran</strong><br>
-                                    <span class="text-muted">{{ $order->expired_at->format('d F Y, H:i') }} WIB</span>
+                                    <span class="text-muted">
+                                        {{ optional($payment->expired_at)->format('d F Y, H:i') }} WIB
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Button -->
-                    @if($paymentUrl)
-                    <div class="gap-2 mb-3 d-grid">
-                        <a href="{{ $paymentUrl }}"
-                            target="_blank"
-                            class="btn btn-primary btn-lg">
-                            <i class="bi bi-wallet2"></i> Bayar Sekarang
-                        </a>
-                    </div>
+                    <!-- QRIS Payment -->
+                    @if ($qrCodeImage)
 
-                    <div class="text-center">
-                        <button wire:click="checkPaymentStatus"
-                            class="btn btn-outline-primary"
-                            wire:loading.attr="disabled">
-                            <span wire:loading.remove>
-                                <i class="bi bi-arrow-clockwise"></i> Cek Status Pembayaran
-                            </span>
-                            <span wire:loading>
-                                <span class="spinner-border spinner-border-sm"></span>
-                                Mengecek...
-                            </span>
-                        </button>
-                    </div>
+                        <div wire:poll.15s="checkPaymentStatus">
+
+                            <div class="card border-success mb-4">
+                                <div class="card-body text-center">
+
+                                    <h5 class="mb-3">
+                                        <i class="bi bi-qr-code-scan"></i>
+                                        Scan QRIS Untuk Pembayaran
+                                    </h5>
+
+                                    <img src="data:image/png;base64,{{ $qrCodeImage }}" alt="QRIS"
+                                        class="img-fluid border rounded p-2 bg-white" style="max-width:300px;">
+
+                                    <div class="mt-3">
+                                        <h4 class="text-primary">
+                                            Rp {{ number_format($order->total, 0, ',', '.') }}
+                                        </h4>
+                                    </div>
+
+                                    @if ($qrisNmid)
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                NMID: {{ $qrisNmid }}
+                                            </small>
+                                        </div>
+                                    @endif
+
+                                    @if ($qrisInvoiceId)
+                                        <div class="mt-1">
+                                            <small class="text-muted">
+                                                Invoice QRIS: {{ $qrisInvoiceId }}
+                                            </small>
+                                        </div>
+                                    @endif
+
+                                    {{-- STATUS EXPIRED --}}
+                                    @if (!$payment->isExpired())
+                                        <div class="alert alert-warning mt-3">
+                                            <strong>Sisa Waktu Pembayaran</strong><br>
+                                            <span id="countdown"
+                                                data-expired="{{ $payment->expired_at->format('Y-m-d H:i:s') }}">
+                                            </span>
+                                        </div>
+                                    @else
+                                        <div class="alert alert-danger mt-3">
+                                            <strong>QRIS Sudah Kadaluarsa</strong>
+                                        </div>
+
+                                        <button wire:click="generateNewQris" class="btn btn-primary">
+                                            Buat QRIS Baru
+                                        </button>
+                                    @endif
+
+                                    <div class="alert alert-info mt-3 text-start">
+                                        <strong>Cara Pembayaran:</strong>
+                                        <ol class="mb-0 mt-2">
+                                            <li>Buka aplikasi Mobile Banking atau E-Wallet.</li>
+                                            <li>Pilih menu Scan QRIS.</li>
+                                            <li>Scan QR Code di atas.</li>
+                                            <li>Pastikan nominal sesuai.</li>
+                                            <li>Selesaikan pembayaran.</li>
+                                        </ol>
+                                    </div>
+
+                                    @if (!$payment->isExpired())
+                                        <div wire:poll.60s="checkPaymentStatus">
+
+                                            <button wire:click="checkPaymentStatus" class="btn btn-success btn-lg"
+                                                wire:loading.attr="disabled">
+
+                                                <span wire:loading.remove>
+                                                    <i class="bi bi-check-circle"></i>
+                                                    Saya Sudah Bayar
+                                                </span>
+
+                                                <span wire:loading>
+                                                    <span class="spinner-border spinner-border-sm"></span>
+                                                    Mengecek...
+                                                </span>
+
+                                            </button>
+
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    Status pembayaran diperiksa otomatis setiap 1 menit.
+                                                </small>
+                                            </div>
+
+                                        </div>
+                                    @endif
+
+                                </div>
+                            </div>
+
+                        </div>
                     @else
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Gagal membuat link pembayaran. Silakan hubungi admin.
-                    </div>
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            QRIS tidak dapat dibuat.
+                        </div>
+
                     @endif
 
                     <hr class="my-4">
@@ -123,7 +202,8 @@
 
                     <div class="mt-3 alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Catatan:</strong> Jika Anda tidak menyelesaikan pembayaran dalam waktu yang ditentukan, pesanan akan otomatis dibatalkan.
+                        <strong>Catatan:</strong> Jika Anda tidak menyelesaikan pembayaran dalam waktu yang ditentukan,
+                        pesanan akan otomatis dibatalkan.
                     </div>
                 </div>
             </div>

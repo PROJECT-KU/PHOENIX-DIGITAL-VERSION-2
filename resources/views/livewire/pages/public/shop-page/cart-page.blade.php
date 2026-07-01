@@ -19,7 +19,7 @@
                 <div class="my-5 text-center">
                     <i class="bi bi-cart-x fs-1"></i>
                     <p class="mt-3 mb-3">Keranjang Anda kosong</p>
-                    <a href="{{ route('shop.index') }}" class="btn btn-primary">Mulai Belanja</a>
+                    <a href="{{ route('shop.index') }}" class="load-more-btn">Mulai Belanja</a>
                 </div>
             @else
                 <div class="row">
@@ -28,8 +28,7 @@
                             <div class="order-summary-header">
                                 <h3>Produk Pilihanmu</h3>
 
-                                <button wire:click="$dispatch('confirm-empty-cart')"
-                                    class="btn btn-sm btn-outline-secondary">
+                                <button wire:click="$dispatch('confirm-empty-cart')" class="load-more-btn">
                                     <i class="mr-2 bi bi-trash"></i> Kosongkan Keranjang
                                 </button>
                             </div>
@@ -37,9 +36,14 @@
                                 @foreach ($cart as $key => $item)
                                     <div class="d-flex align-items-center">
                                         @if ($item['product_image'])
-                                            <img src="{{ $item['product_image'] ? asset('storage/img/Product/' . $item['product_image']) : 'https://via.placeholder.com/80' }}"
+                                            <img src="{{ $item['product_image']
+                                                ? asset(
+                                                    (($item['type'] ?? 'product') === 'bundling' ? 'storage/img/ProductBundlings/' : 'storage/img/Product/') .
+                                                        $item['product_image'],
+                                                )
+                                                : 'https://via.placeholder.com/80' }}"
                                                 alt="{{ $item['product_name'] }}" class="rounded"
-                                                style="width: 80px; height: 80px; object-fit: cover;">
+                                                style="width:80px;height:80px;object-fit:cover;">
                                         @else
                                             <img class="rounded" style="object-fit: cover; width: 80px; height: 80px;"
                                                 src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
@@ -78,58 +82,6 @@
                                             class="btn btn-sm btn-outline-danger ms-3">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                    </div>
-                                    <div class="gap-3 flex-column order-summary-content d-flex">
-                                        @foreach ($cart as $key => $item)
-                                            <div class="d-flex align-items-center">
-                                                @if ($item['product_image'])
-                                                    <img src="{{ $item['product_image'] ? asset(($item['type'] === 'bundling' ? 'storage/img/ProductBundlings/' : 'storage/img/Product/') . $item['product_image']) : 'https://via.placeholder.com/80' }}"
-                                                        alt="{{ $item['product_name'] }}" class="rounded"
-                                                        style="width: 80px; height: 80px; object-fit: cover;">
-                                                @else
-                                                    <img class="rounded"
-                                                        style="object-fit: cover; width: 80px; height: 80px;"
-                                                        src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                                        alt="">
-                                                @endif
-
-                                                <div class="flex-grow-1 ms-3">
-                                                    <h6 class="mb-1">{{ $item['product_name'] }}</h6>
-                                                    <small class="text-muted">
-                                                        Paket {{ $item['duration_value'] }}
-                                                        {{ $item['duration_type'] }}
-                                                    </small>
-                                                    <div class="mt-2">
-                                                        <strong>Rp
-                                                            {{ number_format($item['price'], 0, ',', '.') }}</strong>
-                                                    </div>
-                                                </div>
-
-                                                <div class="d-flex align-items-center">
-                                                    <button
-                                                        wire:click="updateQuantity('{{ $key }}', {{ $item['quantity'] - 1 }})"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                        <i class="bi bi-dash"></i>
-                                                    </button>
-                                                    <span class="mx-3">{{ $item['quantity'] }}</span>
-                                                    <button
-                                                        wire:click="updateQuantity('{{ $key }}', {{ $item['quantity'] + 1 }})"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                        <i class="bi bi-plus"></i>
-                                                    </button>
-                                                </div>
-
-                                                <div class="ms-4 text-end" style="min-width: 120px;">
-                                                    <strong>Rp
-                                                        {{ number_format($item['subtotal'], 0, ',', '.') }}</strong>
-                                                </div>
-                                                <button
-                                                    wire:click="$dispatch('confirm-delete-product-cart', '{{ $key }}')"
-                                                    class="btn btn-sm btn-outline-danger ms-3">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        @endforeach
                                     </div>
                                 @endforeach
                             </div>
