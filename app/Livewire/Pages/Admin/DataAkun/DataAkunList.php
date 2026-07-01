@@ -20,6 +20,12 @@ class DataAkunList extends Component
 
     public function deleteDataAkun($id)
     {
+        if (! auth()->user()->hasPermission('delete_dataakun')) {
+            $this->dispatch('DataAkunDeleteError', message: 'Anda tidak memiliki izin menghapus data akun.');
+
+            return;
+        }
+
         $DataAkun = DataAkun::find($id);
 
         // Pastikan data ditemukan

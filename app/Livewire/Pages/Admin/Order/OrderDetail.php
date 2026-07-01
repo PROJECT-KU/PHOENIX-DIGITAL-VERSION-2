@@ -18,10 +18,38 @@ class OrderDetail extends Component
 
     public function mount(Order $order)
     {
-        $this->order = $order->load([
+        // Auto-update: tandai item yang end_date-nya sudah lewat menjadi 'habis'
+        // dan segarkan sisa hari (sisi otomatis dari penentuan "habis").
+        $order->load('items');
+        foreach ($order->items as $item) {
+            if ($item->end_date) {
+                $item->updateRemainingDays();
+            }
+        }
+
+        $this->order = $order->fresh()->load([
             'customer',
-            'items.product',
+            'items.product', 'items.ebooks', 'items.processedBy',
         ]);
+    }
+
+    public function updateSubscriptionStatus(string $itemId, string $status): void
+    {
+        $allowed = ['baru', 'perpanjang', 'pengganti', 'habis'];
+
+        if (! in_array($status, $allowed, true)) {
+            return;
+        }
+
+        $item = OrderItem::where('order_id', $this->order->id)
+            ->where('id', $itemId)
+            ->firstOrFail();
+
+        $item->update(['subscription_status' => $status]);
+
+        $this->order = $this->order->fresh()->load(['customer', 'items.product', 'items.ebooks', 'items.processedBy']);
+
+        $this->dispatch('subscription-status-updated');
     }
 
     #[On('sent-on-whatsapp')]
@@ -60,7 +88,22 @@ class OrderDetail extends Component
         $this->dispatch('close-wa-modal');
     }
 
-    #[Layout('layouts.app')]
+    // Tandai bahwa notifikasi "akun habis" sudah dikirim ke pelanggan via WhatsApp.
+    // Tidak mengubah status order/delivery, hanya mencatat waktu pemberitahuan.
+    #[On('habis-notified')]
+    public function markHabisNotified($id)
+    {
+        $item = OrderItem::where('order_id', $this->order->id)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $item->update(['habis_notified_at' => now()]);
+
+        $this->order = $this->order->fresh()->load(['customer', 'items.product', 'items.ebooks', 'items.processedBy']);
+        $this->dispatch('close-wa-modal');
+    }
+
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.order.order-detail');

@@ -12,7 +12,8 @@ class LoanExport implements FromView
     {
         // $loans = Loan::with('penginput')->orderBy('tanggal_pinjam', 'desc')->get();
         $loans = Loan::with('penginput')->orderBy('tanggal_peminjam', 'desc')->get();
+        $statusMap = Loan::statusMap();
 
-        return view('exports.loan', compact('loans'));
+        return view('exports.loan', compact('loans', 'statusMap'));
     }
 }

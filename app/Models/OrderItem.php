@@ -18,6 +18,8 @@ class OrderItem extends Model
         'product_image',
         'duration_type',
         'duration_value',
+        'bonus_duration_value',
+        'bonus_duration_type',
         'price',
         'quantity',
         'subtotal',
@@ -26,6 +28,8 @@ class OrderItem extends Model
         'account_password',
         'account_link',
         'account_notes',
+        'bonus_description',
+        'bonus_file',
         'start_date',
         'end_date',
         'remaining_days',
@@ -33,6 +37,7 @@ class OrderItem extends Model
         'is_delivered',
         'delivered_at',
         'delivery_status',
+        'habis_notified_at',
         'processed_by',
         'processed_at',
         'processing_notes',
@@ -45,6 +50,7 @@ class OrderItem extends Model
         'is_delivered' => 'boolean',
         'delivered_at' => 'datetime',
         'processed_at' => 'datetime',
+        'habis_notified_at' => 'datetime',
     ];
 
     // Relationships
@@ -66,6 +72,11 @@ class OrderItem extends Model
     public function processedBy()
     {
         return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    public function ebooks()
+    {
+        return $this->belongsToMany(Ebook::class, 'order_item_ebook')->withTimestamps();
     }
 
     // Scopes
@@ -103,20 +114,60 @@ class OrderItem extends Model
         return "{$this->duration_value} {$this->duration_type}";
     }
 
-    // Hitung end_date berdasarkan start_date dan duration
+    // Apakah item ini punya bonus durasi tambahan
+    public function hasBonusDuration(): bool
+    {
+        return $this->bonus_duration_value > 0 && ! empty($this->bonus_duration_type);
+    }
+
+    // Label durasi lengkap termasuk bonus, mis. "1 bulan + bonus 2 bulan (total 3 bulan)"
+    public function getFullDurationLabel(): string
+    {
+        $label = "{$this->duration_value} {$this->duration_type}";
+
+        if ($this->hasBonusDuration()) {
+            $label .= " + bonus {$this->bonus_duration_value} {$this->bonus_duration_type}";
+
+            // Total hanya ditampilkan jika satuan sama
+            if ($this->duration_type === $this->bonus_duration_type) {
+                $total = $this->duration_value + $this->bonus_duration_value;
+                $label .= " (total {$total} {$this->duration_type})";
+            }
+        }
+
+        return $label;
+    }
+
+    // URL unduh file bonus (ebook) yang diupload admin
+    public function getBonusFileUrl(): ?string
+    {
+        if (! $this->bonus_file) {
+            return null;
+        }
+
+        return asset('storage/order-bonus/' . $this->bonus_file);
+    }
+
+    // Hitung end_date berdasarkan start_date + durasi beli + bonus durasi
     public function calculateEndDate()
     {
         if (! $this->start_date) {
             return null;
         }
 
-        $startDate = Carbon::parse($this->start_date);
+        $endDate = Carbon::parse($this->start_date);
 
-        if ($this->duration_type === 'tahun') {
-            return $startDate->addYears($this->duration_value);
+        $endDate = $this->duration_type === 'tahun'
+            ? $endDate->addYears($this->duration_value)
+            : $endDate->addMonths($this->duration_value);
+
+        if ($this->hasBonusDuration()) {
+            $endDate = $this->bonus_duration_type === 'tahun'
+                ? $endDate->addYears($this->bonus_duration_value)
+                : $endDate->addMonths($this->bonus_duration_value);
         }
 
-        return $startDate->addMonths($this->duration_value);
+        return $endDate;
     }
 
     // Update remaining days
@@ -149,6 +200,32 @@ class OrderItem extends Model
         }
 
         return now()->lessThanOrEqualTo($this->end_date);
+    }
+
+    // Check apakah akun sudah habis (manual status 'habis' ATAU end_date terlewat)
+    public function isHabis(): bool
+    {
+        if ($this->subscription_status === 'habis') {
+            return true;
+        }
+
+        return $this->end_date && now()->greaterThan($this->end_date);
+    }
+
+    // Label sisa masa aktif untuk tampilan admin
+    public function getRemainingLabel(): string
+    {
+        if (! $this->end_date) {
+            return '-';
+        }
+
+        if ($this->isHabis()) {
+            return 'Habis';
+        }
+
+        $sisa = (int) ceil(now()->floatDiffInDays($this->end_date, false));
+
+        return $sisa . ' hari lagi';
     }
 
     // Check apakah akan expire dalam X hari

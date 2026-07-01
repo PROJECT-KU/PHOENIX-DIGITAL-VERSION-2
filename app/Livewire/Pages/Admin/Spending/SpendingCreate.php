@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class SpendingCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.spending.spending-create');
+        return view('livewire.pages.admin.spending.spending-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

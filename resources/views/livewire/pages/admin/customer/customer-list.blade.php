@@ -165,7 +165,9 @@
                                 <th>Status Member</th>
                                 <th>Jumlah Poin</th>
                                 <th>Kode Referral</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_customer', 'delete_customer']))
                                 <th>Aksi</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -180,19 +182,28 @@
                                         {{ ucfirst($customer->status_member) }}
                                     </span>
                                 </td>
-                                <td>{{ $customer->point }}</td>
-                                <td>{{ $customer->kode_ref }}</td>
                                 <td>
+                                    <span class="fw-semibold">{{ $customer->point }}</span> poin
+                                    <small class="d-block text-muted">Rp {{ number_format($customer->point * 500, 0, ',', '.') }}</small>
+                                </td>
+                                <td>{{ $customer->kode_ref }}</td>
+                                @if (auth()->user()->hasAnyPermission(['edit_customer', 'delete_customer']))
+                                <td>
+                                    @if (auth()->user()->hasPermission('edit_customer'))
                                     <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
                                         class="btn btn-warning btn-sm me-1">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    @endif
+                                    @if (auth()->user()->hasPermission('delete_customer'))
                                     <button type="button"
                                         wire:click="$dispatch('will-delete-customer-data', {{ $customer }})"
                                         class="btn btn-danger btn-sm">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                    @endif
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>

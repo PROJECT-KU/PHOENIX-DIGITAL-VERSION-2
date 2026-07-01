@@ -20,8 +20,6 @@ class PengembalianForm extends Component
 
     public $deskripsi;
 
-    public $status = 'pending';
-
     public $mode = 'create'; // create | edit
 
     protected function rules()
@@ -31,7 +29,6 @@ class PengembalianForm extends Component
             'tanggal_pengembalian' => 'required|date',
             'nominal' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string',
-            'status' => 'required|in:pending,berjalan,lunas',
         ];
     }
 
@@ -45,8 +42,6 @@ class PengembalianForm extends Component
             'nominal.required' => 'Nominal harus diisi.',
             'nominal.numeric' => 'Nominal harus berupa angka.',
             'nominal.min' => 'Nominal tidak boleh kurang dari 0.',
-            'status.required' => 'Status harus dipilih.',
-            'status.in' => 'Status tidak valid.',
         ];
     }
 
@@ -70,7 +65,6 @@ class PengembalianForm extends Component
         $this->tanggal_pengembalian = $pengembalian->tanggal_pengembalian->format('Y-m-d');
         $this->nominal = (string) intval($pengembalian->nominal);
         $this->deskripsi = $pengembalian->deskripsi;
-        $this->status = $pengembalian->status;
     }
 
     public function save(SyncCashFlowAction $syncCashFlow)
@@ -95,7 +89,6 @@ class PengembalianForm extends Component
                         'tanggal_pengembalian' => $this->tanggal_pengembalian,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
-                        'status' => $this->status,
                     ]);
 
                     session()->flash('success', 'Data Pengembalian berhasil diperbarui!');
@@ -107,7 +100,6 @@ class PengembalianForm extends Component
                         'tanggal_pengembalian' => $this->tanggal_pengembalian,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
-                        'status' => $this->status,
                     ]);
 
                     session()->flash('success', 'Data Pengembalian berhasil ditambahkan!');
@@ -138,18 +130,15 @@ class PengembalianForm extends Component
         $this->tanggal_pengembalian = now()->format('Y-m-d');
         $this->nominal = '';
         $this->deskripsi = null;
-        $this->status = 'pending';
         $this->mode = 'create';
     }
 
     public function render()
     {
         $users = User::select('id', 'name')->orderBy('name')->get();
-        $statusOptions = ['pending', 'berjalan', 'lunas'];
 
         return view('livewire.pages.admin.pengembalian.pengembalian-form', [
             'users' => $users,
-            'statusOptions' => $statusOptions,
         ]);
     }
 }

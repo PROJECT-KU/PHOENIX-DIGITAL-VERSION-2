@@ -62,10 +62,13 @@ class SyncCashFlowAction
             return $model->status === 'completed';
         }
         if ($model instanceof \App\Models\Loan) {
-            return $model->status !== 'pending';
+            // Peminjaman = uang keluar; selalu dicatat di cash flow saat data dibuat.
+            // (Status kini dihitung otomatis dan tidak lagi menjadi syarat pencatatan.)
+            return true;
         }
         if ($model instanceof \App\Models\Pengembalian) {
-            return $model->status !== 'pending';
+            // Pengembalian = uang masuk; selalu dicatat di cash flow.
+            return true;
         }
         if ($model instanceof \App\Models\Spending) {
             return $model->status !== 'pending';

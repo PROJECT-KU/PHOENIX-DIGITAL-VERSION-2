@@ -86,6 +86,19 @@ class User extends Authenticatable
         return true;
     }
 
+    /**
+     * Scope data: apakah user boleh melihat SELURUH data modul ini
+     * (mis. semua gaji karyawan), atau hanya miliknya sendiri.
+     *
+     * Konvensi: permission "view_all_{modul}".
+     * - admin/finance  -> punya view_all_xxx  -> lihat semua
+     * - karyawan       -> tidak punya         -> hanya data sendiri
+     */
+    public function canViewAll(string $module): bool
+    {
+        return $this->hasPermission('view_all_'.$module);
+    }
+
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo && file_exists(public_path($this->profile_photo))) {

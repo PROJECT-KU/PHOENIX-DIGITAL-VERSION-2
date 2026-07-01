@@ -10,9 +10,12 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class ProcessOrder extends Component
 {
+    use WithFileUploads;
+
     public OrderItem $orderItem;
 
     public Order $order;
@@ -33,6 +36,17 @@ class ProcessOrder extends Component
 
     public $endDate;
 
+    // Bonus
+    public $bonusDurationValue;
+
+    public $bonusDurationType = 'bulan';
+
+    public $bonusDescription;
+
+    public $selectedEbooks = []; // id ebook yang dipilih dari pustaka
+
+    public $availableEbooks = []; // daftar ebook aktif
+
     #[Validate('required|in:baru,perpanjang,pengganti')]
     public $subscriptionStatus = 'baru';
 
@@ -51,6 +65,12 @@ class ProcessOrder extends Component
         $this->calculateEndDate();
 
         $this->loadAvailableAccounts();
+
+        // Pustaka ebook aktif untuk dipilih
+        $this->availableEbooks = \App\Models\Ebook::active()->orderBy('judul')->get();
+
+        // Ebook yang sudah terpilih untuk item ini
+        $this->selectedEbooks = $this->orderItem->ebooks()->pluck('ebooks.id')->map(fn ($v) => (string) $v)->toArray();
 
         if ($this->orderItem->data_akun_id) {
             $this->loadExistingData();
@@ -78,6 +98,16 @@ class ProcessOrder extends Component
         $this->endDate = $this->orderItem->end_date?->format('Y-m-d');
         $this->subscriptionStatus = $this->orderItem->subscription_status;
         $this->processingNotes = $this->orderItem->processing_notes;
+        $this->bonusDurationValue = $this->orderItem->bonus_duration_value;
+        $this->bonusDurationType = $this->orderItem->bonus_duration_type ?? 'bulan';
+        $this->bonusDescription = $this->orderItem->bonus_description;
+    }
+
+    // Dipanggil dari picker SweetAlert (JS) saat admin memilih akun
+    public function pickAccount($id)
+    {
+        $this->selectedDataAkunId = $id;
+        $this->updatedSelectedDataAkunId($id);
     }
 
     public function updatedSelectedDataAkunId($value)
@@ -104,6 +134,16 @@ class ProcessOrder extends Component
         $this->calculateEndDate();
     }
 
+    public function updatedBonusDurationValue()
+    {
+        $this->calculateEndDate();
+    }
+
+    public function updatedBonusDurationType()
+    {
+        $this->calculateEndDate();
+    }
+
     public function calculateEndDate()
     {
         if (! $this->startDate) {
@@ -113,12 +153,18 @@ class ProcessOrder extends Component
         }
 
         try {
-            $startDate = Carbon::parse($this->startDate);
+            $endDate = Carbon::parse($this->startDate);
 
-            if ($this->orderItem->duration_type === 'tahun') {
-                $endDate = $startDate->copy()->addYears($this->orderItem->duration_value);
-            } else {
-                $endDate = $startDate->copy()->addMonths($this->orderItem->duration_value);
+            // Durasi yang dibeli
+            $endDate = $this->orderItem->duration_type === 'tahun'
+                ? $endDate->addYears($this->orderItem->duration_value)
+                : $endDate->addMonths($this->orderItem->duration_value);
+
+            // Bonus durasi (jika diisi)
+            if ((int) $this->bonusDurationValue > 0) {
+                $endDate = $this->bonusDurationType === 'tahun'
+                    ? $endDate->addYears((int) $this->bonusDurationValue)
+                    : $endDate->addMonths((int) $this->bonusDurationValue);
             }
 
             $this->endDate = $endDate->format('Y-m-d');
@@ -145,6 +191,11 @@ class ProcessOrder extends Component
             'startDate' => 'required|date',
             'subscriptionStatus' => 'required|in:baru,perpanjang,pengganti',
             'processingNotes' => 'nullable|string',
+            'bonusDurationValue' => 'nullable|integer|min:1',
+            'bonusDurationType' => 'nullable|in:bulan,tahun',
+            'bonusDescription' => 'nullable|string|max:255',
+            'selectedEbooks' => 'nullable|array',
+            'selectedEbooks.*' => 'exists:ebooks,id',
         ]);
 
         try {
@@ -158,12 +209,18 @@ class ProcessOrder extends Component
                 'account_notes' => $this->accountNotes,
                 'start_date' => $this->startDate,
                 'end_date' => $this->endDate,
+                'bonus_duration_value' => $this->bonusDurationValue ?: null,
+                'bonus_duration_type' => $this->bonusDurationValue ? $this->bonusDurationType : null,
+                'bonus_description' => $this->bonusDescription,
                 'subscription_status' => $this->subscriptionStatus,
                 'delivery_status' => 'processing',
                 'processed_by' => auth()->id(),
                 'processed_at' => now(),
                 'processing_notes' => $this->processingNotes,
             ]);
+
+            // Sinkronkan ebook bonus yang dipilih dari pustaka
+            $this->orderItem->ebooks()->sync($this->selectedEbooks);
 
             $this->orderItem->updateRemainingDays();
 
@@ -195,7 +252,7 @@ class ProcessOrder extends Component
         return redirect()->route('admin.pesanantoko.index', $this->order);
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.order.process-order');

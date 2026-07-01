@@ -7,7 +7,7 @@ use Livewire\Component;
 
 class OrderEdit extends Component
 {
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.order.order-edit');

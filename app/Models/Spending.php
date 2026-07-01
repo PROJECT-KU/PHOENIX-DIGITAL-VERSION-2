@@ -99,13 +99,15 @@ class Spending extends Model
     public function getTanggalTransaksiFormattedAttribute(): string
     {
         return Carbon::parse($this->tanggal_transaksi)
+            ->locale('id')
             ->translatedFormat('d F Y');
     }
 
     // akses created_at dengan format: 26 September 2025 14:35
     public function getCreatedAtFormattedAttribute(): string
     {
-        return $this->created_at
+        return Carbon::parse($this->created_at)
+            ->locale('id')
             ->translatedFormat('d F Y H:i');
     }
 

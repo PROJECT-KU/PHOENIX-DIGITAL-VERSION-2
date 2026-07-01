@@ -49,7 +49,8 @@
                         <div class="form-group">
                             <label for="total_point" class="form-label">Total Point</label>
                             <input id="total_point" class="form-control bg-light" type="text" readonly
-                                value="{{ number_format($customer?->point ?? 0, 0, ',', '.') }} Poin (Saldo Rp {{ number_format($customer?->point_balance ?? 0, 0, ',', '.') }})">
+                                value="{{ number_format($customer?->point ?? 0, 0, ',', '.') }} Poin (Senilai Rp {{ number_format(($customer?->point ?? 0) * 500, 0, ',', '.') }})">
+                            <small class="text-muted">1 poin = Rp 500 · poin didapat tiap belanja kelipatan Rp 50.000</small>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -160,6 +161,10 @@
 
                 @php
                 $promoCodes = array_filter($order->getAppliedPromoCodes());
+                $appliedPromos = collect($order->applied_promos ?? []);
+                // Flash sale & auto promo tidak punya kode, dideteksi dari tipe_promo
+                $flashSales = $appliedPromos->where('tipe_promo', 'flash_sale')->pluck('nama_promo')->filter()->values();
+                $autoPromos = $appliedPromos->where('tipe_promo', 'auto_promo')->pluck('nama_promo')->filter()->values();
                 // Flag used_points/points_discount tidak tersimpan di order (bukan fillable),
                 // jadi potongan poin disimpulkan dari sisa diskon di luar promo & referral.
                 $pointsDiscount = max(0, (int) $order->total_discount - (int) $order->promo_discount - (int) $order->referral_discount);
@@ -167,8 +172,20 @@
                 $referrer = $order->referral_code && $order->referrer_id ? \App\Models\Customer::find($order->referrer_id) : null;
                 @endphp
 
-                @if (!empty($promoCodes) || $pointsUsed > 0 || $order->referral_code)
+                @if (!empty($promoCodes) || $flashSales->isNotEmpty() || $autoPromos->isNotEmpty() || $pointsUsed > 0 || $order->referral_code)
                 <div class="d-flex flex-wrap gap-2 mt-3">
+                    @foreach ($flashSales as $fs)
+                    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-semibold">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>Flash Sale{{ $fs ? ': ' . $fs : '' }}
+                    </span>
+                    @endforeach
+
+                    @foreach ($autoPromos as $ap)
+                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary fw-semibold">
+                        <i class="bi bi-tags-fill me-1"></i>Promo{{ $ap ? ': ' . $ap : '' }}
+                    </span>
+                    @endforeach
+
                     @foreach ($promoCodes as $kode)
                     <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning fw-semibold">
                         <i class="bi bi-tag-fill me-1"></i>Promo: {{ $kode }}

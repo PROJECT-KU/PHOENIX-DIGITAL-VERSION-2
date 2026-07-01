@@ -158,7 +158,7 @@ class CashFlowDetail extends Component
                 'ID Transaksi' => $s->id_transaksi,
                 'Peminjam' => $s->nama_peminjam,
                 'Tanggal' => optional($s->tanggal_peminjam)->format('d M Y') ?? '-',
-                'Status' => ucfirst($s->status ?? '-'),
+                'Status' => ucfirst(Loan::statusMap()[$s->nama_peminjam] ?? 'pending'),
                 'Penginput' => $s->penginput->name ?? '-',
             ];
             $totals = ['Nominal Pinjaman' => $this->rupiah($s->nominal)];
@@ -168,7 +168,7 @@ class CashFlowDetail extends Component
                 'ID Transaksi' => $s->id_transaksi,
                 'Nama' => $s->nama_pengembalian,
                 'Tanggal' => optional($s->tanggal_pengembalian)->format('d M Y') ?? '-',
-                'Status' => ucfirst($s->status ?? '-'),
+                'Status' => ucfirst(Loan::statusMap()[$s->nama_pengembalian] ?? 'pending'),
                 'Penginput' => $s->penginput->name ?? '-',
             ];
             $totals = ['Nominal Pengembalian' => $this->rupiah($s->nominal)];

@@ -22,9 +22,9 @@ class PengembalianEdit extends Component
         }
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.pengembalian.pengembalian-edit');
+        return view('livewire.pages.admin.pengembalian.pengembalian-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

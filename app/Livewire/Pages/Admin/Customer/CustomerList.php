@@ -21,6 +21,12 @@ class CustomerList extends Component
     #[On('delete-customer')]
     public function deleteCustomer($id)
     {
+        if (! auth()->user()->hasPermission('delete_customer')) {
+            $this->dispatch('customer-delete-error', message: 'Anda tidak memiliki izin menghapus pelanggan.');
+
+            return;
+        }
+
         Customer::findOrFail($id)->delete();
 
         $this->dispatch('customer-deleted');

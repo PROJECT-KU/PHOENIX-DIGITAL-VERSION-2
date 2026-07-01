@@ -17,7 +17,7 @@
         <div class="recent-message d-flex px-4 py-3 align-items-center border-bottom border-light">
             <!-- Avatar dengan Indikator Status -->
             <div class="avatar avatar-lg position-relative">
-                <img src="{{ $user->profile_photo_url ?? asset('mazer/compiled/jpg/1.jpg') }}" alt="{{ $user->name }}" class="rounded-circle shadow-sm">
+                <img src="{{ $user->profile_photo && Storage::disk('public')->exists($user->profile_photo) ? Storage::url($user->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}" alt="{{ $user->name }}" class="rounded-circle shadow-sm">
                 <!-- Titik indikator status -->
                 <span class="position-absolute bottom-0 end-0 p-1 {{ $user->online ? 'bg-success' : 'bg-danger' }} border border-white rounded-circle"></span>
             </div>

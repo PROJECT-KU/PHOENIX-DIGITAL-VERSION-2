@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class PengembalianCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.pengembalian.pengembalian-create');
+        return view('livewire.pages.admin.pengembalian.pengembalian-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

@@ -44,19 +44,23 @@
                                     <td>
                                         <div>
                                             {{-- Edit menuju ke batch group --}}
+                                            @if (auth()->user()->hasPermission('edit_pesananrsc'))
                                             <a href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
                                                 wire:navigate
                                                 class="btn btn-sm btn-warning me-1"
                                                 title="Edit Batch">
                                                 <i class="bi bi-pencil-square"></i>
                                             </a>
+                                            @endif
 
                                             {{-- Delete batch --}}
+                                            @if (auth()->user()->hasPermission('delete_pesananrsc'))
                                             <button type="button"
                                                 class="btn btn-danger btn-sm delete-batch-btn"
                                                 wire:click="confirmDeleteBatch('{{ $item->nama_camp }}', '{{ $item->batch_camp }}', {{ $item->total_peserta }})">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                            @endif
 
                                             {{-- Detail peserta --}}
                                             <a wire:navigate href="{{ route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]) }}"

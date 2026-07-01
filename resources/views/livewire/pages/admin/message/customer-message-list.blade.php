@@ -1,66 +1,92 @@
 <div>
-    <div class="container-fluid">
-        <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
-            <div class="card-body p-4 d-flex align-items-center">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 w-100">
+    <style>
+        .stat-icon-wrapper {
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+        }
 
-                    <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Pesan Masuk Pelanggan</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
+        .stat-icon-wrapper i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+    </style>
+
+    <div class="container-fluid">
+        <!--================== HEADER + SEARCH (SATU CARD) ==================-->
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                    <div class="title-wrapper text-center text-lg-start">
+                        <h3 class="gradient-text fw-bold mb-1">Pesan Pelanggan (Helpdesk)</h3>
+                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-lg-start">
                             @php
-                            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesan Pelanggan']];
+                            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Pesan Pelanggan (Helpdesk)']];
                             @endphp
                             <x-breadcrumb :items="$breadcrumbs" />
                         </div>
                     </div>
 
-                    <div class="d-flex flex-row align-items-center gap-3 p-2 rounded-pill shadow-sm"
-                        style="background: rgba(248, 249, 250, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(0, 0, 0, 0.05);">
-
-                        <div class="input-group input-group-sm rounded-pill overflow-hidden shadow-sm"
-                            style="width: 155px; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(108, 99, 255, 0.2);">
-                            <span class="input-group-text bg-transparent border-0 text-primary ps-3 pe-1">
-                                <i class="bi bi-calendar-event"></i>
-                            </span>
-                            <select wire:model.live="filterMonth" class="form-select border-0 bg-transparent shadow-none fw-semibold text-dark" style="font-size: 0.85rem; cursor: pointer;">
-                                <option value="">Semua Bulan</option>
-                                @foreach ($months as $month)
-                                <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="input-group input-group-sm rounded-pill overflow-hidden shadow-sm"
-                            style="width: 155px; background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(25, 135, 84, 0.2);">
-                            <span class="input-group-text bg-transparent border-0 text-success ps-3 pe-1">
-                                <i class="bi bi-envelope-paper"></i>
-                            </span>
-                            <select wire:model.live="filterStatus" class="form-select border-0 bg-transparent shadow-none fw-semibold text-dark" style="font-size: 0.85rem; cursor: pointer;">
-                                <option value="">Semua Status</option>
-                                <option value="unread">Belum Dibaca</option>
-                                <option value="read">Sudah Dibaca</option>
-                            </select>
-                        </div>
-
-                        <button wire:click="resetFilters"
-                            class="btn btn-sm rounded-pill d-flex align-items-center justify-content-center shadow-sm px-3 border-0"
-                            style="background: linear-gradient(135deg, #6c63ff, #4e46e5); color: white; height: 32px; font-weight: 600; transition: transform 0.2s;">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Reset
-                        </button>
+                    <div class="form-group position-relative mb-0 header-action" style="flex: 1 1 auto; max-width: 420px;">
+                        <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                        <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
+                            placeholder="Cari tiket, nama, email, atau pesan...">
+                        @if ($search)
+                        <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                            style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                            <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                        </span>
+                        @endif
                     </div>
-
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="card border-0 shadow-sm rounded-4" wire:poll.60s>
-        <div class="card-body p-4">
-            <div class="table-responsive">
-                <table class="table align-middle">
-                    <thead>
-                        <tr style="text-align: center;">
-                            <th style="width: 50px;">No</th>
+        <!--================== FILTER ==================-->
+        <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
+            <div class="card-body p-3 px-4">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
+                        <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
+                            style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
+                            <i class="bi bi-funnel"></i>
+                        </span>
+                        <span>Filter Pesan</span>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
+                            <option value="">Semua Bulan</option>
+                            @foreach ($months as $month)
+                            <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <select wire:model.live="filterStatus" class="form-select rounded-3" style="min-width: 160px;">
+                            <option value="">Semua Status</option>
+                            <option value="unread">Belum Dibaca</option>
+                            <option value="read">Sudah Dibaca</option>
+                        </select>
+                        @if ($search || $filterMonth || $filterStatus)
+                        <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3" title="Reset filter">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--================== TABEL ==================-->
+        <div class="card border-0 shadow-sm rounded-4" wire:poll.60s>
+            <div class="card-body p-4">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr style="text-align: center;">
+                                <th style="width: 50px;">No</th>
                             <th>Ticket</th>
                             <th>Status Ticket</th>
                             <th>Priority Ticket</th>
@@ -88,8 +114,7 @@
             @case('resolved') bg-light-success text-success @break
             @case('closed') bg-light-secondary text-secondary @break
         @endswitch"
-                                    style="cursor: pointer; width: 135px;"
-                                    {{ in_array($item->status, ['resolved', 'closed']) ? : '' }}>
+                                    style="cursor: pointer; width: 135px;">
 
                                     @if(in_array($item->status, ['resolved', 'closed']))
                                     {{-- Jika sudah selesai/tutup, hanya tampilkan pilihan yang relevan --}}
@@ -148,9 +173,11 @@
                                 <a wire:navigate href="{{ route('admin.customer-message.detail', $item) }}" class="btn btn-sm btn-warning text-white p-2" title="Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                @if (auth()->user()->hasPermission('delete_customer_message'))
                                 <button type="button" class="btn btn-sm btn-danger delete-CustomerMessage-btn p-2" data-id="{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
+                                @endif
 
                                 @if (!in_array($item->status, ['closed', 'resolved']))
                                 @php
@@ -200,8 +227,9 @@
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex justify-content-center">
-                {{ $messages->links('vendor.pagination') }}
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $messages->links('vendor.pagination') }}
+                </div>
             </div>
         </div>
     </div>

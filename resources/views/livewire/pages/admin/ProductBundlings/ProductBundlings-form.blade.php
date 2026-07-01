@@ -71,6 +71,57 @@
                 /* Warna hover opsi kuning */
                 color: #000 !important;
             }
+
+            /* Slot produk bundling — rapi & mudah dibaca */
+            .bundle-slot {
+                border: 1px solid #eef0f6;
+                border-radius: 14px;
+                background: linear-gradient(135deg, #fbfcff, #f7f8ff);
+                padding: 1rem 1.1rem;
+                margin-bottom: .85rem;
+                transition: border-color .2s ease, box-shadow .2s ease;
+            }
+
+            .bundle-slot:hover {
+                border-color: rgba(245, 158, 11, 0.35);
+                box-shadow: 0 6px 16px rgba(217, 119, 6, 0.08);
+            }
+
+            .bundle-slot .slot-head {
+                display: flex;
+                align-items: center;
+                gap: .55rem;
+                margin-bottom: .75rem;
+            }
+
+            .bundle-slot .slot-num {
+                width: 28px;
+                height: 28px;
+                flex-shrink: 0;
+                border-radius: 9px;
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: .85rem;
+                box-shadow: 0 4px 10px rgba(217, 119, 6, 0.30);
+            }
+
+            .bundle-slot .slot-title {
+                font-weight: 700;
+                color: #334155;
+                font-size: .95rem;
+            }
+
+            .bundle-slot .slot-label {
+                font-size: .78rem;
+                font-weight: 600;
+                color: #94a3b8;
+                margin-bottom: .25rem;
+                display: block;
+            }
         </style>
         <!--================== CSS UNTUK SELECT 2 ==================-->
 
@@ -111,43 +162,66 @@
                 <h5 class="mb-0 text-warning fw-bold"><i class="bi bi-box-seam me-2"></i>Daftar Produk Bundling</h5>
             </div>
             <div class="card-body p-4">
-                <div class="row g-4">
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i> Pilih produk dan tentukan <b>durasi tiap produk</b>. Durasi ini
+                    otomatis terpakai saat admin membuat pesanan paket. Produk 3–5 opsional.
+                </p>
 
-                    @foreach (['product_1' => 'col-md-4', 'product_2' => 'col-md-4', 'product_3' => 'col-md-4', 'product_4' => 'col-md-6', 'product_5' => 'col-md-6'] as $field => $colClass)
-                    <div class="{{ $colClass }}">
-                        <label for="{{ $field }}" class="form-label fw-semibold text-muted">{{ ucwords(str_replace('_', ' ', $field)) }}</label>
-                        <div wire:ignore x-data x-init="
-                            let $select = $($el).find('select');
-                            $select.select2({
-                                placeholder: '-- Pilih Product --',
-                                allowClear: true,
-                                width: '100%',
-                                dropdownParent: $($el)
-                            });
-                            $select.on('change', function () {
-                                $wire.set('{{ $field }}', $(this).val(), false);
-                            });
-                            // Naikkan z-index card saat dropdown dibuka agar tidak
-                            // tertimpa card di bawahnya (tiap card punya stacking
-                            // context sendiri karena backdrop-filter).
-                            $select.on('select2:open', function () {
-                                $($el).closest('.card').css('z-index', 1060);
-                            });
-                            $select.on('select2:close', function () {
-                                $($el).closest('.card').css('z-index', '');
-                            });
-                        ">
-                            <select id="{{ $field }}" class="form-select select2-bundling">
-                                <option value="">-- Pilih Product --</option>
-                                @foreach($products as $product)
-                                <option value="{{ $product->id }}" @selected($product->id == $$field)>{{ $product->nama_akun }}</option>
-                                @endforeach
+                @foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $field)
+                <div class="bundle-slot">
+                    <div class="slot-head">
+                        <span class="slot-num">{{ $loop->iteration }}</span>
+                        <span class="slot-title">Produk {{ $loop->iteration }}</span>
+                        @if ($loop->iteration <= 2)
+                        <span class="badge bg-warning-subtle text-warning border border-warning">Disarankan</span>
+                        @else
+                        <span class="badge bg-light text-muted border">Opsional</span>
+                        @endif
+                    </div>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-7">
+                            <label class="slot-label">Pilih Produk</label>
+                            <div wire:ignore x-data x-init="
+                                let $select = $($el).find('select');
+                                $select.select2({
+                                    placeholder: '-- Pilih Product --',
+                                    allowClear: true,
+                                    width: '100%',
+                                    dropdownParent: $($el)
+                                });
+                                $select.on('change', function () {
+                                    $wire.set('{{ $field }}', $(this).val(), false);
+                                });
+                                $select.on('select2:open', function () {
+                                    $($el).closest('.card').css('z-index', 1060);
+                                });
+                                $select.on('select2:close', function () {
+                                    $($el).closest('.card').css('z-index', '');
+                                });
+                            ">
+                                <select id="{{ $field }}" class="form-select select2-bundling">
+                                    <option value="">-- Pilih Product --</option>
+                                    @foreach($products as $product)
+                                    <option value="{{ $product->id }}" @selected($product->id == $$field)>{{ $product->nama_akun }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-3">
+                            <label class="slot-label">Durasi</label>
+                            <input type="number" min="1" wire:model.defer="durations.{{ $field }}.value"
+                                class="form-control">
+                        </div>
+                        <div class="col-5 col-md-2">
+                            <label class="slot-label">Satuan</label>
+                            <select wire:model.defer="durations.{{ $field }}.type" class="form-select">
+                                <option value="bulan">Bulan</option>
+                                <option value="tahun">Tahun</option>
                             </select>
                         </div>
                     </div>
-                    @endforeach
-
                 </div>
+                @endforeach
             </div>
         </div>
     </div>

@@ -7,7 +7,7 @@ use Livewire\Component;
 
 class GajiKaryawansCreate extends Component
 {
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.gaji-karyawans.gaji-karyawans-create');

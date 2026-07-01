@@ -208,6 +208,12 @@ class PemesananrscList extends Component
     #[On('delete-batch-pemesanan')]
     public function deleteBatch($nama_camp, $batch_camp)
     {
+        if (! auth()->user()->hasPermission('delete_pesananrsc')) {
+            $this->dispatch('show-alert', ['type' => 'error', 'message' => 'Anda tidak memiliki izin menghapus data pesanan RSC.']);
+
+            return;
+        }
+
         DB::beginTransaction();
         try {
             $pemesananList = PemesananRsc::where('nama_camp', $nama_camp)

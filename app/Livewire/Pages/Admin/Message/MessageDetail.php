@@ -17,7 +17,7 @@ class MessageDetail extends Component
         $this->message->markAsRead();
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.message.message-detail');

@@ -33,10 +33,12 @@
                             </span>
                             @endif
                         </div>
+                        @if (auth()->user()->hasPermission('create_promo'))
                         <a wire:navigate href="{{ route('admin.promo.create') }}" class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Data</span>
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -55,7 +57,9 @@
                                 <th style="width: 140px;">Diskon Non-Member</th>
                                 <th style="width: 100px;">Status</th>
                                 <th style="width: 150px;">Periode</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_promo', 'delete_promo']))
                                 <th style="width: 100px;">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -131,17 +135,23 @@
                                 </td>
 
                                 <!-- Action -->
+                                @if (auth()->user()->hasAnyPermission(['edit_promo', 'delete_promo']))
                                 <td>
                                     <div class="d-flex justify-content-center gap-2">
+                                        @if (auth()->user()->hasPermission('edit_promo'))
                                         <a wire:navigate href="{{ route('admin.promo.edit', $item->id) }}"
                                             class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('delete_promo'))
                                         <button type="button" class="btn btn-sm btn-danger delete-promo-btn" data-id="{{ $item->id }}" title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        @endif
                                     </div>
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>

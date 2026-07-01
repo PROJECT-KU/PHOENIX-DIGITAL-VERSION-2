@@ -100,3 +100,16 @@ new #[Layout('layouts.authentication')] class extends Component {
     });
 </script>
 @endif
+
+@if (session('password_updated'))
+<script>
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: "{{ session('password_updated') }}",
+        timer: 4000,
+        timerProgressBar: true,
+        showConfirmButton: false
+    });
+</script>
+@endif

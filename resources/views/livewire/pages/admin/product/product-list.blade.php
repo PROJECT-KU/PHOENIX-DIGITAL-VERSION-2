@@ -29,11 +29,13 @@
                             </span>
                             @endif
                         </div>
+                        @if (auth()->user()->hasPermission('create_product'))
                         <a wire:navigate href="{{ route('admin.product.create') }}"
                             class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Data</span>
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -53,7 +55,9 @@
                                 <th style="width: 120px;">Harga / 10 Bulan</th>
                                 <th style="width: 120px;">Harga / Tahun</th>
                                 <th style="width: 220px;">Deskripsi</th>
+                                @if (auth()->user()->hasAnyPermission(['edit_product', 'delete_product']))
                                 <th style="width: 100px;">Action</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
@@ -93,22 +97,28 @@
                                 </td>
 
                                 <!-- Action -->
+                                @if (auth()->user()->hasAnyPermission(['edit_product', 'delete_product']))
                                 <td>
                                     <div class="d-flex justify-content-center gap-2">
+                                        @if (auth()->user()->hasPermission('edit_product'))
                                         <a wire:navigate
                                             href="{{ route('admin.product.edit', $item) }}"
                                             class="btn btn-sm btn-warning"
                                             title="Edit">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('delete_product'))
                                         <button type="button"
                                             class="btn btn-sm btn-danger delete-DataProduct-btn"
                                             data-id="{{ $item->id }}"
                                             title="Delete">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                        @endif
                                     </div>
                                 </td>
+                                @endif
                             </tr>
                             @empty
                             <tr>
