@@ -109,6 +109,7 @@ Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
 Route::get('/bundling', BundlingPageIndex::class)->name('bundling.index');
@@ -148,6 +149,7 @@ Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
     Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 });
 

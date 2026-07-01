@@ -23,6 +23,9 @@ class Order extends Model
         'payment_gateway',
         'payment_reference',
         'payment_url',
+        'qris_content',
+        'qris_trx_id',
+        'qris_request_date',
         'paid_at',
         'expired_at',
         'customer_notes',
@@ -135,6 +138,7 @@ class Order extends Model
     public function getStatusBadge()
     {
         return match ($this->status) {
+            'draft' => '<span class="badge bg-secondary">Draft</span>',
             'pending' => '<span class="badge bg-warning">Pending</span>',
             'paid' => '<span class="badge bg-success">Paid</span>',
             'processing' => '<span class="badge bg-info">Processing</span>',

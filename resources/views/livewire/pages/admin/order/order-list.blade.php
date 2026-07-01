@@ -1,4 +1,4 @@
-<div>
+<div wire:poll.15s="watchNewPayments">
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
@@ -216,6 +216,12 @@
                     <span>Pesanan Dibatalkan</span>
                     <span class="tab-count">{{ $tabCounts['cancelled'] }}</span>
                 </button>
+                <button type="button" class="customer-glossy-tab @if ($activeTab === 'draft') active @endif"
+                    wire:click="setTab('draft')">
+                    <i class="bi bi-inbox"></i>
+                    <span>Draft</span>
+                    <span class="tab-count">{{ $tabCounts['draft'] }}</span>
+                </button>
                 <button type="button" class="customer-glossy-tab @if ($activeTab === 'habis') active @endif"
                     wire:click="setTab('habis')">
                     <i class="bi bi-hourglass-bottom"></i>
@@ -324,6 +330,9 @@
                                 <td class="text-center">
                                     @php
                                     $color = '';
+                                    if ($order->status == 'draft') {
+                                    $color = 'secondary';
+                                    }
                                     if ($order->status == 'pending') {
                                     $color = 'warning';
                                     }
@@ -346,10 +355,20 @@
                                 </td>
                                 <td>{{ $order->created_at->translatedFormat('d F Y, H:i') }}</td>
                                 <td class="text-center text-nowrap">
-                                    <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
-                                        title="detail pesanan" class="btn btn-sm btn-primary p-2">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                                        @if ($order->status === 'draft' && $order->payment_method === 'qris_dinamis')
+                                            <a href="{{ route('admin.pesanantoko.qris', $order) }}"
+                                                title="lanjutkan pembayaran QRIS"
+                                                class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 px-2">
+                                                <i class="bi bi-play-fill"></i> <span>Lanjutkan</span>
+                                            </a>
+                                        @endif
+                                        <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
+                                            title="detail pesanan"
+                                            class="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center p-2">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
@@ -383,4 +402,31 @@
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
+
+    @push('scripts')
+        <script>
+            // Notifikasi saat pembayaran QRIS baru terdeteksi (dari polling watchNewPayments)
+            if (!window.__orderPaidToastBound) {
+                window.__orderPaidToastBound = true;
+                window.addEventListener('order-paid-toast', function (e) {
+                    var d = e.detail || {};
+                    if (Array.isArray(d)) d = d[0] || {};
+                    var amount = new Intl.NumberFormat('id-ID').format(d.total || 0);
+                    if (typeof Swal === 'undefined') return;
+                    Swal.fire({
+                        title: 'Pembayaran Diterima!',
+                        html: 'Pesanan <b>' + (d.orderNumber || '') + '</b><br>' +
+                            (d.customerName || '') + ' · <b>Rp ' + amount + '</b>',
+                        icon: 'success',
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        backdrop: 'rgba(16, 185, 129, 0.15)',
+                        customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                        buttonsStyling: false,
+                        timer: 4500,
+                        showConfirmButton: false,
+                    });
+                });
+            }
+        </script>
+    @endpush
 </div>

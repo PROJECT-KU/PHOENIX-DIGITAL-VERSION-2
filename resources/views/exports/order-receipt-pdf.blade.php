@@ -309,6 +309,43 @@
         $ttdPath = file_exists(storage_path('app/public/img/archive/ttd.png'))
             ? storage_path('app/public/img/archive/ttd.png')
             : public_path('assets/img/ttd.png');
+
+        // Gabungkan item paket bundling menjadi 1 baris (nama paket), bukan per item.
+        // Item paket disimpan dengan format nama: "[Nama Paket] Produk".
+        $displayRows = [];
+        $bundleIndex = [];
+        foreach ($order->items as $item) {
+            if (preg_match('/^\[(.+?)\]\s*(.*)$/u', (string) $item->product_name, $m)) {
+                $bundleName = trim($m[1]);
+                $sub = trim($m[2]);
+                if (! isset($bundleIndex[$bundleName])) {
+                    $bundleIndex[$bundleName] = count($displayRows);
+                    $displayRows[] = (object) [
+                        'type' => 'bundle',
+                        'name' => $bundleName,
+                        'qty' => 1,
+                        'price' => 0,
+                        'subtotal' => 0,
+                        'includes' => [],
+                    ];
+                }
+                $row = $displayRows[$bundleIndex[$bundleName]];
+                $row->price += (float) $item->price * (int) $item->quantity;
+                $row->subtotal += (float) $item->price * (int) $item->quantity;
+                if ($sub !== '') {
+                    $row->includes[] = $sub;
+                }
+            } else {
+                $displayRows[] = (object) [
+                    'type' => 'product',
+                    'name' => $item->product_name,
+                    'qty' => $item->quantity,
+                    'price' => $item->price,
+                    'subtotal' => (float) $item->price * (int) $item->quantity,
+                    'item' => $item,
+                ];
+            }
+        }
     @endphp
 
     <!-- HEADER -->
@@ -361,10 +398,20 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse ($order->items as $i => $item)
+                @forelse ($displayRows as $i => $row)
                 <tr>
                     <td class="text-center" style="width:24px;">{{ $i + 1 }}</td>
                     <td>
+                        @if ($row->type === 'bundle')
+                        <div class="prod-name">
+                            {{ $row->name }}
+                            <span style="display:inline-block; background:#ede9fe; color:#6d28d9; font-size:8px; font-weight:bold; padding:1px 6px; border-radius:8px; vertical-align:middle;">PAKET</span>
+                        </div>
+                        @if (count($row->includes))
+                        <div class="prod-sub">Termasuk: {{ implode(', ', $row->includes) }}</div>
+                        @endif
+                        @else
+                        @php $item = $row->item; @endphp
                         <div class="prod-name">{{ $item->product_name }}</div>
                         <div class="prod-sub">
                             Durasi: {{ $item->getFullDurationLabel() }}
@@ -380,10 +427,11 @@
                             {{ $item->ebooks->pluck('judul')->implode(', ') }}@if ($item->ebooks->count() && $item->bonus_description), @endif{{ $item->bonus_description }}
                         </div>
                         @endif
+                        @endif
                     </td>
-                    <td class="text-center" style="width:38px;">{{ $item->quantity }}</td>
-                    <td class="text-end" style="width:100px;">{{ $rp($item->price) }}</td>
-                    <td class="text-end" style="width:105px;">{{ $rp($item->price * $item->quantity) }}</td>
+                    <td class="text-center" style="width:38px;">{{ $row->qty }}</td>
+                    <td class="text-end" style="width:100px;">{{ $rp($row->price) }}</td>
+                    <td class="text-end" style="width:105px;">{{ $rp($row->subtotal) }}</td>
                 </tr>
                 @empty
                 <tr>

@@ -1,4 +1,65 @@
 <div class="container-fluid">
+    <style>
+        /* Tombol pemicu picker (mirip form-select) */
+        .pa-picker-btn {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .pa-picker-btn::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            position: absolute;
+            right: .9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: .9rem;
+        }
+
+        /* Daftar pilihan di dalam SweetAlert */
+        .pa-pick-list {
+            max-height: 320px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: .35rem;
+            text-align: left;
+        }
+
+        .pa-pick-item {
+            width: 100%;
+            border: 1px solid #eef0f6;
+            background: linear-gradient(135deg, #ffffff, #f8f9ff);
+            border-radius: 12px;
+            padding: .7rem .9rem;
+            font-size: .92rem;
+            color: #1e293b;
+            font-weight: 600;
+            text-align: left;
+            transition: all .15s ease;
+        }
+
+        .pa-pick-item:hover {
+            border-color: #c7c3ff;
+            background: linear-gradient(135deg, #f1f0ff, #e9e7ff);
+            transform: translateY(-1px);
+        }
+
+        .pa-pick-item .pa-sub {
+            display: block;
+            font-size: .78rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .pa-pick-empty {
+            padding: 1.25rem;
+            text-align: center;
+            color: #94a3b8;
+        }
+    </style>
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
         <div class="card-body p-4 d-flex align-items-center">
             <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 header-action w-100">
@@ -331,15 +392,19 @@
 
             <div class="mb-3">
                 <label class="form-label">Data Akun Tersedia <span class="text-danger">*</span></label>
-                <select class="form-select @error('selectedDataAkunId') is-invalid @enderror"
-                    wire:model.live="selectedDataAkunId">
-                    <option value="">-- Pilih atau isi manual di bawah --</option>
+                <button type="button" onclick="paOpenPicker(this)"
+                    class="form-select text-start pa-picker-btn @error('selectedDataAkunId') is-invalid @enderror">
+                    <span id="paAccountLabel" wire:ignore class="text-muted">-- Pilih atau isi manual di bawah --</span>
+                </button>
+
+                {{-- Sumber data akun AKTIF untuk picker (dibaca oleh JS) --}}
+                <div id="paAccountsSource" class="d-none">
                     @foreach ($availableAccounts as $akun)
-                    <option value="{{ $akun->id }}">
-                        {{ $akun->nama_akun }} - {{ $akun->username }}
-                    </option>
+                    <span data-id="{{ $akun->id }}" data-name="{{ $akun->nama_akun }}"
+                        data-sub="{{ $akun->username_akun }}"
+                        @if ($akun->id == $selectedDataAkunId) data-selected="1" @endif></span>
                     @endforeach
-                </select>
+                </div>
                 @error('selectedDataAkunId')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -571,4 +636,107 @@
             </button>
         </div>
     </form>
+
+    @push('scripts')
+    <script>
+        (function () {
+            // Popup pemilih akun (SweetAlert) — seragam dengan create order
+            window.paPicker = function (title, items, onPick) {
+                if (typeof Swal === 'undefined') return;
+                var wrap = document.createElement('div');
+                var search = document.createElement('input');
+                search.className = 'form-control mb-2';
+                search.placeholder = 'Ketik untuk mencari akun...';
+                var list = document.createElement('div');
+                list.className = 'pa-pick-list';
+
+                if (!items.length) {
+                    var empty = document.createElement('div');
+                    empty.className = 'pa-pick-empty';
+                    empty.textContent = 'Tidak ada akun aktif';
+                    list.appendChild(empty);
+                } else {
+                    items.forEach(function (it) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'pa-pick-item';
+                        btn.dataset.search = ((it.name || '') + ' ' + (it.sub || '')).toLowerCase();
+                        btn.textContent = it.name;
+                        if (it.sub) {
+                            var s = document.createElement('span');
+                            s.className = 'pa-sub';
+                            s.textContent = it.sub;
+                            btn.appendChild(s);
+                        }
+                        btn.addEventListener('click', function () {
+                            onPick(it.id, it.name, it.sub);
+                            Swal.close();
+                        });
+                        list.appendChild(btn);
+                    });
+                }
+                wrap.appendChild(search);
+                wrap.appendChild(list);
+
+                Swal.fire({
+                    title: title,
+                    html: wrap,
+                    background: 'rgba(255,255,255,0.92)',
+                    backdrop: 'rgba(139,92,246,0.15)',
+                    customClass: { popup: 'swal-glossy-popup', title: 'swal-glossy-title' },
+                    buttonsStyling: false,
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    width: 480,
+                    padding: '1.25rem',
+                    didOpen: function () {
+                        search.addEventListener('input', function () {
+                            var q = search.value.toLowerCase();
+                            list.querySelectorAll('.pa-pick-item').forEach(function (b) {
+                                b.style.display = b.dataset.search.indexOf(q) !== -1 ? '' : 'none';
+                            });
+                        });
+                        setTimeout(function () { search.focus(); }, 100);
+                    }
+                });
+            };
+
+            window.paOpenPicker = function (btn) {
+                var src = document.getElementById('paAccountsSource');
+                if (!src) return;
+                var items = Array.prototype.map.call(src.querySelectorAll('span'), function (s) {
+                    return { id: s.dataset.id, name: s.dataset.name, sub: s.dataset.sub || '' };
+                });
+                var cidEl = btn.closest('[wire\\:id]');
+                var cid = cidEl ? cidEl.getAttribute('wire:id') : null;
+                window.paPicker('Pilih Akun Premium (aktif)', items, function (id, name, sub) {
+                    var label = document.getElementById('paAccountLabel');
+                    if (label) {
+                        label.textContent = name + (sub ? ' — ' + sub : '');
+                        label.classList.remove('text-muted');
+                    }
+                    if (cid && window.Livewire) window.Livewire.find(cid).call('pickAccount', id);
+                });
+            };
+
+            // Set label awal bila sudah ada akun terpilih
+            function paInitLabel() {
+                var src = document.getElementById('paAccountsSource');
+                var label = document.getElementById('paAccountLabel');
+                if (!src || !label) return;
+                var sel = src.querySelector('[data-selected]');
+                if (sel) {
+                    label.textContent = sel.dataset.name + (sel.dataset.sub ? ' — ' + sel.dataset.sub : '');
+                    label.classList.remove('text-muted');
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', paInitLabel);
+            } else {
+                paInitLabel();
+            }
+            document.addEventListener('livewire:navigated', paInitLabel);
+        })();
+    </script>
+    @endpush
 </div>

@@ -103,6 +103,13 @@ class ProcessOrder extends Component
         $this->bonusDescription = $this->orderItem->bonus_description;
     }
 
+    // Dipanggil dari picker SweetAlert (JS) saat admin memilih akun
+    public function pickAccount($id)
+    {
+        $this->selectedDataAkunId = $id;
+        $this->updatedSelectedDataAkunId($id);
+    }
+
     public function updatedSelectedDataAkunId($value)
     {
         if (! $value) {

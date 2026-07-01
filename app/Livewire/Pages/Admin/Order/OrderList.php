@@ -12,6 +12,9 @@ class OrderList extends Component
 {
     use WithPagination;
 
+    // Penanda waktu pembayaran terakhir yang sudah "dilihat" (untuk notifikasi polling)
+    public string $lastPaidMarker = '';
+
     public string $activeTab = 'all';
 
     public string $search = '';
@@ -21,6 +24,40 @@ class OrderList extends Component
     public string $filterYear = '';
 
     protected $queryString = ['activeTab'];
+
+    public function mount(): void
+    {
+        // Hanya pembayaran SETELAH halaman dibuka yang akan memunculkan notifikasi
+        $this->lastPaidMarker = now()->toDateTimeString();
+    }
+
+    /**
+     * Polling ringan: deteksi pembayaran baru → tampilkan notifikasi glossy.
+     * Daftar & counter ikut ter-refresh karena method ini memicu re-render.
+     */
+    public function watchNewPayments(): void
+    {
+        $new = Order::whereNotNull('paid_at')
+            ->where('paid_at', '>', $this->lastPaidMarker)
+            ->orderBy('paid_at')
+            ->with('customer')
+            ->get(['id', 'order_number', 'total', 'paid_at', 'customer_id']);
+
+        if ($new->isEmpty()) {
+            return;
+        }
+
+        // Majukan penanda ke pembayaran terbaru
+        $this->lastPaidMarker = (string) $new->last()->paid_at;
+
+        $latest = $new->last();
+        $this->dispatch(
+            'order-paid-toast',
+            orderNumber: $latest->order_number,
+            customerName: $latest->customer->nama ?? 'Pelanggan',
+            total: (int) round((float) $latest->total),
+        );
+    }
 
     public function updatedSearch(): void
     {
@@ -81,10 +118,18 @@ class OrderList extends Component
                 $q->where('status', 'completed');
             })
             ->when($this->activeTab === 'neworder', function ($q) {
-                $q->where('status', 'pending');
+                // Pesanan baru = belum diproses (menunggu bayar ATAU sudah dibayar)
+                $q->whereIn('status', ['pending', 'paid']);
             })
             ->when($this->activeTab === 'cancelled', function ($q) {
                 $q->where('status', 'cancelled');
+            })
+            ->when($this->activeTab === 'draft', function ($q) {
+                $q->where('status', 'draft');
+            })
+            // Draft hanya muncul di tab Draft, tidak di tab lain
+            ->when($this->activeTab !== 'draft', function ($q) {
+                $q->where('status', '!=', 'draft');
             })
             ->when($this->filterMonth, function ($q) {
                 $q->whereMonth('created_at', $this->filterMonth);
@@ -165,11 +210,12 @@ class OrderList extends Component
             'months' => $months,
             'years' => $years,
             'tabCounts' => [
-                'all' => Order::count(),
-                'neworder' => Order::where('status', 'pending')->count(),
+                'all' => Order::where('status', '!=', 'draft')->count(),
+                'neworder' => Order::whereIn('status', ['pending', 'paid'])->count(),
                 'processing' => Order::where('status', 'processing')->count(),
                 'completed' => Order::where('status', 'completed')->count(),
                 'cancelled' => Order::where('status', 'cancelled')->count(),
+                'draft' => Order::where('status', 'draft')->count(),
                 'habis' => $habisItemsCount,
             ],
         ]);

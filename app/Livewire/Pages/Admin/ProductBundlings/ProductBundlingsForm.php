@@ -26,6 +26,9 @@ class ProductBundlingsForm extends Component
 
     public $product_5 = '';
 
+    // Durasi per produk: ['product_1' => ['value'=>1,'type'=>'bulan'], ...]
+    public $durations = [];
+
     public $harga_awal = '';
 
     public $harga_bundling = '';
@@ -47,6 +50,12 @@ class ProductBundlingsForm extends Component
     public function mount()
     {
         $this->products = Product::all();
+
+        // Default durasi tiap slot
+        foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $f) {
+            $this->durations[$f] = ['value' => 1, 'type' => 'bulan'];
+        }
+
         if ($this->product_bundlings) {
             $this->nama_paket = $this->product_bundlings->nama_paket;
             $this->product_1 = $this->product_bundlings->product_1;
@@ -60,6 +69,13 @@ class ProductBundlingsForm extends Component
             $this->deskripsi = $this->product_bundlings->deskripsi;
             $this->status = $this->product_bundlings->status;
             $this->mode = 'edit';
+
+            foreach (($this->product_bundlings->durations ?? []) as $f => $d) {
+                $this->durations[$f] = [
+                    'value' => (int) ($d['value'] ?? 1),
+                    'type' => $d['type'] ?? 'bulan',
+                ];
+            }
         }
     }
 
@@ -102,6 +118,22 @@ class ProductBundlingsForm extends Component
         }
     }
 
+    // Hanya simpan durasi untuk slot produk yang terisi
+    private function buildDurations(): array
+    {
+        $out = [];
+        foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $f) {
+            if (! empty($this->$f)) {
+                $out[$f] = [
+                    'value' => (int) ($this->durations[$f]['value'] ?? 1),
+                    'type' => $this->durations[$f]['type'] ?? 'bulan',
+                ];
+            }
+        }
+
+        return $out;
+    }
+
     private function createProductBundlings()
     {
         try {
@@ -117,6 +149,7 @@ class ProductBundlingsForm extends Component
                 'product_3' => $this->product_3,
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
+                'durations' => $this->buildDurations(),
                 'harga_awal' => $this->harga_awal,
                 'harga_bundling' => $this->harga_bundling,
                 'gambar' => $filename,
@@ -144,6 +177,7 @@ class ProductBundlingsForm extends Component
                 'product_3' => $this->product_3,
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
+                'durations' => $this->buildDurations(),
                 'harga_awal' => $this->harga_awal,
                 'harga_bundling' => $this->harga_bundling,
                 'deskripsi' => $this->deskripsi,
