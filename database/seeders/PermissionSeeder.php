@@ -125,6 +125,12 @@ class PermissionSeeder extends Seeder
                 'group' => 'presensi',
                 'description' => 'Dapat mengatur lokasi, radius, & durasi presensi'
             ],
+            [
+                'name' => 'create_presensi_manual',
+                'display_name' => 'Presensikan Manual',
+                'group' => 'presensi',
+                'description' => 'Dapat menginput presensi karyawan secara manual (tanpa batas jarak & waktu)'
+            ],
         ];
 
         foreach ($permissions as $permission) {

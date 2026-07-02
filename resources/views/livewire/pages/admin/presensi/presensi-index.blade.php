@@ -35,7 +35,21 @@ Presensi || PT. Asthana Cipta Mandiri
         .pr-ic i.bi {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             line-height: 1;
+        }
+
+        .pr-ic.sm {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            font-size: 1rem;
+        }
+
+        .pr-sec-title {
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.1;
         }
 
         .pr-clock {
@@ -91,9 +105,9 @@ Presensi || PT. Asthana Cipta Mandiri
 
         .pr-info-row {
             display: flex;
-            align-items: flex-start;
-            gap: .55rem;
-            padding: .55rem 0;
+            align-items: center;
+            gap: .65rem;
+            padding: .6rem 0;
             border-bottom: 1px dashed #eef0f6;
             font-size: .88rem;
             color: #475569;
@@ -103,9 +117,24 @@ Presensi || PT. Asthana Cipta Mandiri
             border-bottom: none;
         }
 
-        .pr-info-row i.bi {
+        .pr-info-ic {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: rgba(108, 99, 255, .10);
             color: #6c63ff;
-            margin-top: .15rem;
+            font-size: 1rem;
+        }
+
+        .pr-info-ic i.bi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
 
         .pr-status-pill {
@@ -130,6 +159,23 @@ Presensi || PT. Asthana Cipta Mandiri
             line-height: 1;
             display: inline-flex;
             align-items: center;
+        }
+
+        .pr-live {
+            padding: .55rem .9rem;
+            border-radius: .75rem;
+            background: linear-gradient(135deg, rgba(108, 99, 255, .10), rgba(78, 70, 229, .10));
+            border: 1px solid rgba(108, 99, 255, .20);
+            color: #4e46e5;
+            font-size: .9rem;
+        }
+
+        .pr-live .pr-live-val {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pr-live i.bi {
+            line-height: 1;
         }
     </style>
 
@@ -157,8 +203,8 @@ Presensi || PT. Asthana Cipta Mandiri
             <div class="col-lg-7">
                 <div class="pr-card p-4 h-100">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="bi bi-clipboard-check text-primary fs-5"></i>
-                        <h5 class="fw-bold mb-0">Presensi Hari Ini</h5>
+                        <span class="pr-ic sm"><i class="bi bi-clipboard-check"></i></span>
+                        <h5 class="pr-sec-title mb-0">Presensi Hari Ini</h5>
                     </div>
 
                     {{-- Status kehadiran --}}
@@ -201,8 +247,12 @@ Presensi || PT. Asthana Cipta Mandiri
                         @endif
                     </div>
                     @if (! $h->is_selesai)
+                    <div class="pr-live d-flex align-items-center gap-2 mb-3" data-pr-since="{{ $h->waktu_masuk->timestamp }}">
+                        <i class="bi bi-hourglass-split"></i>
+                        <span>Sudah bekerja <b class="pr-live-val">…</b></span>
+                    </div>
                     <button type="button" class="pr-btn pr-btn-out w-100" data-presensi-action="pulang"
-                        data-id="{{ $h->id }}">
+                        data-id="{{ $h->id }}" data-tipe="{{ $h->tipe }}">
                         <i class="bi bi-box-arrow-right"></i> Absen Pulang
                     </button>
                     <small class="text-muted d-block mt-2">Bisa pulang minimal setelah kerja {{ rtrim(rtrim(number_format($minDurasiJam, 1, '.', ''), '0'), '.') }}
@@ -220,8 +270,8 @@ Presensi || PT. Asthana Cipta Mandiri
                     {{-- Lembur --}}
                     @php $l = $this->todayLembur; @endphp
                     <div class="d-flex align-items-center gap-2 mb-2">
-                        <i class="bi bi-moon-stars text-warning"></i>
-                        <span class="fw-semibold">Lembur</span>
+                        <span class="pr-ic sm amber"><i class="bi bi-moon-stars"></i></span>
+                        <span class="pr-sec-title">Lembur</span>
                     </div>
                     @if ($l)
                     <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -229,12 +279,17 @@ Presensi || PT. Asthana Cipta Mandiri
                             <i class="bi bi-hourglass-split"></i> Lembur berjalan sejak {{ $l->waktu_masuk->format('H:i') }}
                         </span>
                     </div>
+                    <div class="pr-live d-flex align-items-center gap-2 mb-2" data-pr-since="{{ $l->waktu_masuk->timestamp }}">
+                        <i class="bi bi-hourglass-split"></i>
+                        <span>Sudah lembur <b class="pr-live-val">…</b></span>
+                    </div>
                     <button type="button" class="pr-btn pr-btn-out w-100" data-presensi-action="pulang"
-                        data-id="{{ $l->id }}">
+                        data-id="{{ $l->id }}" data-tipe="lembur">
                         <i class="bi bi-box-arrow-right"></i> Selesai Lembur
                     </button>
                     @else
-                    <button type="button" class="pr-btn pr-btn-lembur w-100" data-presensi-action="lembur">
+                    <button type="button" class="pr-btn pr-btn-lembur w-100" data-presensi-action="lembur"
+                        data-tipe="lembur">
                         <i class="bi bi-moon-stars"></i> Mulai Lembur
                     </button>
                     <small class="text-muted d-block mt-2">Lembur bebas lokasi (dicatat titiknya), tanpa syarat radius &
@@ -247,11 +302,11 @@ Presensi || PT. Asthana Cipta Mandiri
             <div class="col-lg-5">
                 <div class="pr-card p-4 h-100">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="bi bi-geo-alt text-primary fs-5"></i>
-                        <h5 class="fw-bold mb-0">Aturan & Lokasi</h5>
+                        <span class="pr-ic sm"><i class="bi bi-geo-alt"></i></span>
+                        <h5 class="pr-sec-title mb-0">Aturan & Lokasi</h5>
                     </div>
                     <div class="pr-info-row">
-                        <i class="bi bi-building"></i>
+                        <span class="pr-info-ic"><i class="bi bi-building"></i></span>
                         <div><b>{{ $officeNama ?: 'Kantor' }}</b>
                             @if ($officeLat === null)
                             <span class="badge bg-danger-subtle text-danger border border-danger ms-1">Belum diatur</span>
@@ -261,22 +316,25 @@ Presensi || PT. Asthana Cipta Mandiri
                             @endif
                         </div>
                     </div>
-                    <div class="pr-info-row"><i class="bi bi-bullseye"></i>
+                    <div class="pr-info-row">
+                        <span class="pr-info-ic"><i class="bi bi-bullseye"></i></span>
                         <div>Radius maksimal absen <b>offline</b>: <b>{{ $radius }} meter</b></div>
                     </div>
-                    <div class="pr-info-row"><i class="bi bi-stopwatch"></i>
+                    <div class="pr-info-row">
+                        <span class="pr-info-ic"><i class="bi bi-stopwatch"></i></span>
                         <div>Durasi kerja minimal sebelum pulang:
                             <b>{{ rtrim(rtrim(number_format($minDurasiJam, 1, '.', ''), '0'), '.') }} jam</b></div>
                     </div>
-                    <div class="pr-info-row"><i class="bi bi-globe2"></i>
+                    <div class="pr-info-row">
+                        <span class="pr-info-ic"><i class="bi bi-globe2"></i></span>
                         <div>Hadir <b>online</b> & <b>lembur</b>: bebas lokasi, titik lokasi tetap direkam.</div>
                     </div>
-                    @can('manage_presensi_setting')
+                    @if (auth()->user()->hasPermission('manage_presensi_setting'))
                     <a href="{{ route('admin.presensi.pengaturan') }}"
                         class="btn btn-sm btn-outline-primary w-100 mt-2 d-inline-flex align-items-center justify-content-center gap-1">
                         <i class="bi bi-sliders"></i> Ubah Pengaturan Presensi
                     </a>
-                    @endcan
+                    @endif
                 </div>
             </div>
         </div>
@@ -284,8 +342,8 @@ Presensi || PT. Asthana Cipta Mandiri
         <!-- ===== Riwayat ===== -->
         <div class="pr-card p-4 mt-4">
             <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-clock-history text-primary fs-5"></i>
-                <h5 class="fw-bold mb-0">Riwayat Presensi Saya</h5>
+                <span class="pr-ic sm"><i class="bi bi-clock-history"></i></span>
+                <h5 class="pr-sec-title mb-0">Riwayat Presensi Saya</h5>
             </div>
             <div class="table-responsive">
                 <table class="table align-middle">
@@ -341,65 +399,92 @@ Presensi || PT. Asthana Cipta Mandiri
                     </tbody>
                 </table>
             </div>
-            <div class="mt-2">{{ $history->links() }}</div>
+            <div class="mt-4">{{ $history->links('vendor.pagination') }}</div>
         </div>
     </div>
 
     @include('livewire.layout.sweetalert')
 
-    @script
+    @push('scripts')
     <script>
-        // Jam berjalan
-        function prTick() {
-            var el = document.getElementById('prClock');
-            if (!el) return;
-            var d = new Date();
-            function p(n) { return String(n).padStart(2, '0'); }
-            el.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
-        }
-        prTick();
-        if (window.__prClock) clearInterval(window.__prClock);
-        window.__prClock = setInterval(prTick, 1000);
+        (function () {
+            if (window.__presensiIdxBound) return;
+            window.__presensiIdxBound = true;
 
-        // Baca lokasi lalu jalankan callback
-        function prWithLocation(onOk) {
-            if (!navigator.geolocation) {
-                if (window.fireGlossySwal) window.fireGlossySwal('Tidak Didukung', 'Browser tidak mendukung lokasi (GPS).', 'error');
-                return;
+            // Jam berjalan + durasi kerja/lembur berjalan
+            function prTick() {
+                function p(n) { return String(n).padStart(2, '0'); }
+                var el = document.getElementById('prClock');
+                if (el) {
+                    var d = new Date();
+                    el.textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+                }
+                var nowSec = Math.floor(Date.now() / 1000);
+                document.querySelectorAll('[data-pr-since]').forEach(function (row) {
+                    var since = parseInt(row.getAttribute('data-pr-since'), 10);
+                    var val = row.querySelector('.pr-live-val');
+                    if (!since || !val) return;
+                    var diff = Math.max(0, nowSec - since);
+                    var jam = Math.floor(diff / 3600);
+                    var menit = Math.floor((diff % 3600) / 60);
+                    var detik = diff % 60;
+                    val.textContent = jam + ' jam ' + menit + ' menit ' + p(detik) + ' detik';
+                });
             }
-            Swal.fire({
-                title: 'Membaca lokasi…',
-                html: 'Pastikan GPS aktif & izinkan akses lokasi.',
-                allowOutsideClick: false,
-                background: 'rgba(255,255,255,0.95)',
-                customClass: { popup: 'swal-glossy-popup', title: 'swal-glossy-title' },
-                didOpen: function () { Swal.showLoading(); }
-            });
-            navigator.geolocation.getCurrentPosition(function (pos) {
-                Swal.close();
-                onOk(pos.coords.latitude, pos.coords.longitude);
-            }, function () {
-                Swal.close();
-                if (window.fireGlossySwal) window.fireGlossySwal('Gagal', 'Tidak bisa membaca lokasi. Aktifkan GPS & izinkan akses lokasi di browser.', 'error');
-            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-        }
+            prTick();
+            if (window.__prClock) clearInterval(window.__prClock);
+            window.__prClock = setInterval(prTick, 1000);
 
-        var root = document.getElementById('presensiRoot');
-        if (root && !root.__prBound) {
-            root.__prBound = true;
-            root.addEventListener('click', function (e) {
+            // Baca lokasi GPS akurat (wajib untuk semua jenis presensi).
+            function prWithLocation(onOk) {
+                if (!navigator.geolocation) {
+                    if (window.fireGlossySwal) window.fireGlossySwal('Tidak Didukung', 'Browser tidak mendukung lokasi (GPS).', 'error');
+                    return;
+                }
+                Swal.fire({
+                    title: 'Membaca lokasi…',
+                    html: 'Pastikan GPS aktif & izinkan akses lokasi.',
+                    allowOutsideClick: false,
+                    background: 'rgba(255,255,255,0.95)',
+                    customClass: { popup: 'swal-glossy-popup', title: 'swal-glossy-title' },
+                    didOpen: function () { Swal.showLoading(); }
+                });
+                navigator.geolocation.getCurrentPosition(function (pos) {
+                    Swal.close();
+                    onOk(pos.coords.latitude, pos.coords.longitude);
+                }, function (err) {
+                    Swal.close();
+                    var msg = (err && err.code === 1) ? 'Izin lokasi ditolak. Izinkan akses lokasi untuk situs ini di browser.'
+                        : (err && err.code === 2) ? 'Lokasi tidak dapat ditentukan. Nyalakan WiFi & aktifkan Layanan Lokasi (macOS) untuk browser Anda, lalu coba lagi.'
+                        : (err && err.code === 3) ? 'Waktu membaca lokasi habis. Coba lagi.'
+                        : 'Tidak bisa membaca lokasi. Nyalakan GPS/WiFi & izinkan akses lokasi.';
+                    if (window.fireGlossySwal) window.fireGlossySwal('Gagal', msg, 'error');
+                }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+            }
+
+            document.addEventListener('click', function (e) {
                 var btn = e.target.closest('[data-presensi-action]');
                 if (!btn) return;
+                e.preventDefault();
                 var action = btn.dataset.presensiAction;
                 var tipe = btn.dataset.tipe;
                 var id = btn.dataset.id;
-                prWithLocation(function (lat, lng) {
-                    if (action === 'masuk') $wire.call('absenMasuk', tipe, lat, lng);
-                    else if (action === 'lembur') $wire.call('absenLembur', lat, lng);
-                    else if (action === 'pulang') $wire.call('absenPulang', id, lat, lng);
-                });
+                var cidEl = btn.closest('[wire\\:id]');
+                var cid = cidEl ? cidEl.getAttribute('wire:id') : null;
+                if (!cid || !window.Livewire) return;
+
+                function doCall(lat, lng) {
+                    var comp = window.Livewire.find(cid);
+                    if (!comp) return;
+                    if (action === 'masuk') comp.call('absenMasuk', tipe, lat, lng);
+                    else if (action === 'lembur') comp.call('absenLembur', lat, lng);
+                    else if (action === 'pulang') comp.call('absenPulang', id, lat, lng);
+                }
+
+                // Semua jenis presensi wajib GPS akurat.
+                prWithLocation(function (lat, lng) { doCall(lat, lng); });
             });
-        }
+        })();
     </script>
-    @endscript
+    @endpush
 </div>

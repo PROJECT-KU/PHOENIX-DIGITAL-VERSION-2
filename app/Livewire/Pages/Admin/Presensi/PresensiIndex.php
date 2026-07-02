@@ -71,12 +71,23 @@ class PresensiIndex extends Component
             ->first();
     }
 
+    /** Normalisasi koordinat GPS dari JS (null/kosong -> null). */
+    private function coord($v): ?float
+    {
+        if ($v === null || $v === '' || $v === 0 || $v === '0') {
+            return null;
+        }
+
+        return (float) $v;
+    }
+
+    /** Pastikan koordinat GPS terbaca; kalau tidak, tampilkan error & kembalikan null. */
     private function validCoords($lat, $lng): ?array
     {
-        $lat = (float) $lat;
-        $lng = (float) $lng;
-        if (! $lat || ! $lng) {
-            $this->dispatch('swal-error', message: 'Lokasi tidak terbaca. Aktifkan GPS & izinkan akses lokasi di browser.');
+        $lat = $this->coord($lat);
+        $lng = $this->coord($lng);
+        if ($lat === null || $lng === null) {
+            $this->dispatch('swal-error', message: 'Lokasi GPS tidak terbaca. Aktifkan GPS/WiFi & izinkan akses lokasi, lalu coba lagi.');
 
             return null;
         }
@@ -84,27 +95,28 @@ class PresensiIndex extends Component
         return [$lat, $lng];
     }
 
-    public function absenMasuk(string $tipe, $lat, $lng)
+    public function absenMasuk(string $tipe, $lat = null, $lng = null)
     {
         if (! in_array($tipe, ['hadir_offline', 'hadir_online'], true)) {
             return;
         }
-
         if ($this->todayHadir) {
             $this->dispatch('swal-error', message: 'Kamu sudah absen masuk hari ini.');
 
             return;
         }
 
-        $coords = $this->validCoords($lat, $lng);
-        if (! $coords) {
+        // Semua jenis absen WAJIB GPS akurat.
+        $c = $this->validCoords($lat, $lng);
+        if (! $c) {
             return;
         }
-        [$lat, $lng] = $coords;
+        [$lat, $lng] = $c;
 
         $jarak = $this->hitungJarak($lat, $lng);
 
         if ($tipe === 'hadir_offline') {
+            // Offline harus dalam radius kantor.
             if ($jarak === null) {
                 $this->dispatch('swal-error', message: 'Lokasi kantor belum diatur admin. Hubungi admin untuk mengatur lokasi presensi.');
 
@@ -132,7 +144,7 @@ class PresensiIndex extends Component
         $this->dispatch('swal-success', message: 'Absen masuk berhasil ('.$label.').');
     }
 
-    public function absenLembur($lat, $lng)
+    public function absenLembur($lat = null, $lng = null)
     {
         if ($this->todayLembur) {
             $this->dispatch('swal-error', message: 'Masih ada sesi lembur yang belum ditutup.');
@@ -140,11 +152,12 @@ class PresensiIndex extends Component
             return;
         }
 
-        $coords = $this->validCoords($lat, $lng);
-        if (! $coords) {
+        // Lembur wajib GPS akurat (tanpa cek radius).
+        $c = $this->validCoords($lat, $lng);
+        if (! $c) {
             return;
         }
-        [$lat, $lng] = $coords;
+        [$lat, $lng] = $c;
 
         Presensi::create([
             'user_id' => auth()->id(),
@@ -160,7 +173,7 @@ class PresensiIndex extends Component
         $this->dispatch('swal-success', message: 'Mulai lembur berhasil dicatat.');
     }
 
-    public function absenPulang($id, $lat, $lng)
+    public function absenPulang($id, $lat = null, $lng = null)
     {
         $p = Presensi::where('user_id', auth()->id())->where('status', 'aktif')->find($id);
         if (! $p) {
@@ -168,12 +181,6 @@ class PresensiIndex extends Component
 
             return;
         }
-
-        $coords = $this->validCoords($lat, $lng);
-        if (! $coords) {
-            return;
-        }
-        [$lat, $lng] = $coords;
 
         $durasiMenit = $p->waktu_masuk->diffInMinutes(now());
         $isHadir = in_array($p->tipe, ['hadir_offline', 'hadir_online'], true);
@@ -188,10 +195,17 @@ class PresensiIndex extends Component
             }
         }
 
+        // Semua jenis absen pulang WAJIB GPS akurat.
+        $c = $this->validCoords($lat, $lng);
+        if (! $c) {
+            return;
+        }
+        [$lat, $lng] = $c;
+
         $jarak = $this->hitungJarak($lat, $lng);
 
-        // Pulang untuk hadir offline wajib dalam radius kantor
         if ($p->tipe === 'hadir_offline') {
+            // Pulang offline harus dalam radius kantor.
             if ($jarak === null) {
                 $this->dispatch('swal-error', message: 'Lokasi kantor belum diatur admin.');
 
