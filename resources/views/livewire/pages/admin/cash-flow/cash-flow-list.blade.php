@@ -1,13 +1,58 @@
-
 @section('title')
 Data Cash Flow || PT. Asthana Cipta Mandiri
 @stop
 <div>
+    <style>
+        .siklus-chip {
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(37, 99, 235, .08));
+            border: 1px solid rgba(124, 58, 237, .2);
+        }
+
+        .siklus-chip-ico {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #4e46e5);
+            color: #fff;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+
+        .siklus-chip-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .siklus-chip-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #7c3aed;
+        }
+
+        .siklus-chip-date {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .siklus-chip-arrow {
+            color: #94a3b8;
+            font-size: .8rem;
+        }
+    </style>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
+                    <div class="title-wrapper text-center text-md-start">
                         <h3 class="gradient-text fw-bold mb-1">Laporan Cashflow</h3>
                         <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
                             @php
@@ -16,12 +61,18 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                             <x-breadcrumb :items="$breadcrumbs" />
                         </div>
                     </div>
+
+                    <button wire:click="downloadReport" wire:loading.attr="disabled" wire:target="downloadReport"
+                        type="button" class="btn btn-danger rounded-pill d-flex align-items-center justify-content-center gap-2 px-3 flex-shrink-0">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                        <span>Export PDF</span>
+                    </button>
                 </div>
             </div>
         </div>
 
         {{-- ================== FILTER PERIODE ================== --}}
-        <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
+        <div class="card border-0 shadow-sm rounded-4 stat-card mb-4">
             <div class="card-body p-3 px-4">
                 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
@@ -33,6 +84,12 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                     </div>
 
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width: 175px;"
+                            title="Cara menghitung periode">
+                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
+                            <option value="siklus20">🔄 Periode 20-19</option>
+                        </select>
+
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
                             <option value="">Semua Bulan</option>
                             @foreach($daftarBulan as $num => $nama)
@@ -47,21 +104,42 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                             @endforeach
                         </select>
 
-                        @if($bulan || $tahun)
+                        @if($bulan || $tahun || $modePeriode !== 'kalender')
                         <button wire:click="resetFilter" type="button" class="btn btn-light-danger rounded-3" title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         @endif
-
-                        <button wire:click="downloadReport" wire:loading.attr="disabled" type="button"
-                            class="btn rounded-pill text-white fw-semibold d-inline-flex align-items-center justify-content-center gap-2 px-3 shadow-sm"
-                            style="background: linear-gradient(135deg, #10b981, #059669); border: none;">
-                            <span wire:loading.remove wire:target="downloadReport" class="d-inline-flex align-items-center gap-2">
-                                <i class="bi bi-file-earmark-arrow-down fs-6"></i><span>Unduh Laporan PDF</span>
-                            </span>
-                        </button>
                     </div>
                 </div>
+
+                @if($modePeriode === 'siklus20')
+                @php
+                $siklusInfo = null;
+                if ($bulan) {
+                $thn = (int) ($tahun ?: now()->year);
+                $mulaiS = \Carbon\Carbon::create($thn, (int) $bulan, 20);
+                $akhirS = $mulaiS->copy()->addMonthNoOverflow()->subDay();
+                $siklusInfo = $mulaiS->translatedFormat('d M Y') . ' – ' . $akhirS->translatedFormat('d M Y');
+                }
+                @endphp
+                <div class="mt-3 pt-3 border-top">
+                    @if($siklusInfo)
+                    <div class="siklus-chip d-inline-flex align-items-center gap-2">
+                        <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
+                            <i class="bi bi-calendar-range"></i>
+                        </span>
+                        <span class="siklus-chip-label">Periode</span>
+                        <span class="siklus-chip-date">{{ $mulaiS->translatedFormat('d M Y') }}</span>
+                        <i class="bi bi-arrow-right siklus-chip-arrow"></i>
+                        <span class="siklus-chip-date">{{ $akhirS->translatedFormat('d M Y') }}</span>
+                    </div>
+                    @else
+                    <span class="text-muted" style="font-size:.85rem;">
+                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan awal siklus (tgl 20). Contoh: pilih Juli → 20 Jul s/d 19 Agu.
+                    </span>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
 
@@ -139,7 +217,7 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                             <div>
                                 <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">
                                     Omset Bersih Penjualan
-                                    <i class="bi bi-info-circle ms-1" title="Total penjualan dikurangi modal (harga awal produk)"></i>
+                                    <i class="bi bi-info-circle ms-1" title="Total penjualan dikurangi modal (pembelian akun)"></i>
                                 </p>
                                 <h3 class="fw-bold mb-1 {{ $omset['bersih'] < 0 ? 'text-danger' : 'text-dark' }}">
                                     Rp {{ number_format($omset['bersih'], 0, ',', '.') }}
@@ -165,7 +243,7 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                             <div class="col-6">
                                 <div class="p-3 rounded-4 h-100" style="background: rgba(244, 63, 94, 0.08);">
                                     <p class="text-muted fw-semibold mb-1" style="font-size: 0.8rem;">
-                                        <i class="bi bi-box-seam text-danger me-1"></i>Total Modal (Harga Awal)
+                                        <i class="bi bi-box-seam text-danger me-1"></i>Total Modal (Pembelian Akun)
                                     </p>
                                     <h5 class="fw-bold mb-0 text-danger">Rp {{ number_format($omset['modal'], 0, ',', '.') }}</h5>
                                 </div>
@@ -173,10 +251,117 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                         </div>
                         <p class="text-muted mb-0 mt-2" style="font-size: 0.75rem;">
                             <i class="bi bi-calculator me-1"></i>
-                            Omset bersih = Total Penjualan &minus; Total Modal, dari pesanan yang sudah dibayar.
+                            Omset bersih = Total Penjualan &minus; Total Modal (Pembelian Akun) <b>pada periode terpilih</b> (per bulan).
                         </p>
                     </div>
                 </div>
+
+                {{-- ===== Rincian omset bersih per produk ===== --}}
+                @if ($produkTotal > 0)
+                <div class="mt-4 pt-3 border-top">
+                    <p class="fw-bold text-dark mb-3 d-flex align-items-center gap-2" style="font-size: .9rem;">
+                        <i class="bi bi-list-columns-reverse text-primary"></i>
+                        <span>Rincian Omset Bersih per Produk <span class="text-muted fw-normal">(periode terpilih)</span></span>
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr style="text-align:center; font-size:.8rem;" class="text-muted">
+                                    <th style="width:48px;">No</th>
+                                    <th>Produk</th>
+                                    <th title="Total penjualan (tanpa kode unik)">Penjualan</th>
+                                    <th>Modal (Beli Akun)</th>
+                                    <th>Omset Bersih</th>
+                                    <th>Status Modal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($produkItems as $i => $row)
+                                <tr style="text-align:center;">
+                                    <td class="text-muted">{{ ($produkPage - 1) * $produkPerPage + $i + 1 }}</td>
+                                    <td class="fw-semibold">{{ $row['nama'] }}</td>
+                                    <td class="text-success fw-semibold">Rp {{ number_format($row['penjualan'], 0, ',', '.') }}</td>
+                                    <td class="text-danger">Rp {{ number_format($row['modal'], 0, ',', '.') }}</td>
+                                    <td class="fw-bold {{ $row['bersih'] < 0 ? 'text-danger' : 'text-dark' }}">
+                                        Rp {{ number_format($row['bersih'], 0, ',', '.') }}
+                                    </td>
+                                    <td>
+                                        @if ($row['modal'] <= 0)
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary">—</span>
+                                            @elseif ($row['tertutup'])
+                                            <span class="badge bg-success-subtle text-success border border-success"><i class="bi bi-check-circle me-1"></i>Tertutup</span>
+                                            @else
+                                            <span class="badge bg-warning-subtle text-warning border border-warning"><i class="bi bi-hourglass-split me-1"></i>Belum tertutup</span>
+                                            @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr style="text-align:center; background: rgba(108,99,255,.06);">
+                                    <td colspan="2" class="fw-bold text-end">Total Periode</td>
+                                    <td class="fw-bold text-success">Rp {{ number_format($omset['penjualan'], 0, ',', '.') }}</td>
+                                    <td class="fw-bold text-danger">Rp {{ number_format($omset['modal'], 0, ',', '.') }}</td>
+                                    <td class="fw-bold {{ $omset['bersih'] < 0 ? 'text-danger' : 'text-primary' }}">Rp {{ number_format($omset['bersih'], 0, ',', '.') }}</td>
+                                    <td>—</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    @if ($produkTotalPages > 1)
+                    @php
+                    $pFirst = ($produkPage - 1) * $produkPerPage + 1;
+                    $pLast = $pFirst + count($produkItems) - 1;
+                    $pStart = max($produkPage - 2, 1);
+                    $pEnd = min($produkPage + 2, $produkTotalPages);
+                    @endphp
+                    <nav class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="small text-muted">
+                            Menampilkan
+                            <span class="fw-semibold">{{ $pFirst }}</span> sampai
+                            <span class="fw-semibold">{{ $pLast }}</span> dari
+                            <span class="fw-semibold">{{ $produkTotal }}</span> data
+                        </div>
+                        <ul class="pagination mb-0">
+                            @if ($produkPage <= 1)
+                                <li class="page-item disabled" aria-disabled="true"><span class="page-link">@lang('pagination.previous')</span></li>
+                                @else
+                                <li class="page-item">
+                                    <button type="button" class="page-link" wire:click="produkPrev" wire:loading.attr="disabled" rel="prev">@lang('pagination.previous')</button>
+                                </li>
+                                @endif
+
+                                @if ($pStart > 1)
+                                <li class="page-item"><button type="button" class="page-link" wire:click="produkGoto(1)">1</button></li>
+                                @if ($pStart > 2)<li class="page-item disabled"><span class="page-link">...</span></li>@endif
+                                @endif
+
+                                @for ($i = $pStart; $i <= $pEnd; $i++)
+                                    @if ($i==$produkPage)
+                                    <li class="page-item active"><span class="page-link">{{ $i }}</span></li>
+                                    @else
+                                    <li class="page-item"><button type="button" class="page-link" wire:click="produkGoto({{ $i }})">{{ $i }}</button></li>
+                                    @endif
+                                    @endfor
+
+                                    @if ($pEnd < $produkTotalPages)
+                                        @if ($pEnd < $produkTotalPages - 1)<li class="page-item disabled"><span class="page-link">...</span></li>@endif
+                                        <li class="page-item"><button type="button" class="page-link" wire:click="produkGoto({{ $produkTotalPages }})">{{ $produkTotalPages }}</button></li>
+                                        @endif
+
+                                        @if ($produkPage < $produkTotalPages)
+                                            <li class="page-item">
+                                            <button type="button" class="page-link" wire:click="produkNext" wire:loading.attr="disabled" rel="next">@lang('pagination.next')</button>
+                                            </li>
+                                            @else
+                                            <li class="page-item disabled" aria-disabled="true"><span class="page-link">@lang('pagination.next')</span></li>
+                                            @endif
+                        </ul>
+                    </nav>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
 
@@ -248,7 +433,19 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                                     @elseif($item->sourceable_type === 'App\Models\Spending')
                                     <a wire:navigate href="{{ route('admin.spending.edit', $item->sourceable->id) }}"
                                         class="text-decoration-none fw-semibold text-primary" title="Lihat pengeluaran">
-                                        Pengeluaran {{ $item->sourceable->jenis_pengeluaran }}
+                                        Pengeluaran {{ $item->sourceable->jenis_pengeluaran === 'pembelian_akun' ? 'Pembelian Akun' : 'Lainnya' }}
+                                        <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7rem;"></i>
+                                    </a>
+                                    @elseif($item->sourceable_type === 'App\Models\Modal')
+                                    <a wire:navigate href="{{ route('admin.modal.index') }}"
+                                        class="text-decoration-none fw-semibold text-primary" title="Lihat modal">
+                                        Modal Operasional
+                                        <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7rem;"></i>
+                                    </a>
+                                    @elseif($item->sourceable_type === 'App\Models\Pemasukan')
+                                    <a wire:navigate href="{{ route('admin.pemasukan.index') }}"
+                                        class="text-decoration-none fw-semibold text-primary" title="Lihat pemasukan">
+                                        {{ $item->sourceable->kategori ? 'Pemasukan: ' . $item->sourceable->kategori : 'Pemasukan Lainnya' }}
                                         <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7rem;"></i>
                                     </a>
                                     @elseif($item->sourceable_type === 'App\Models\PemesananRsc')
@@ -257,6 +454,10 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                                         Pesanan Rumah Scopus
                                         <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.7rem;"></i>
                                     </a>
+                                    @elseif($item->sourceable_type === 'App\Models\OrderItem')
+                                    <span class="fw-semibold text-warning">
+                                        <i class="bi bi-box-seam me-1"></i>Modal Akun: {{ $item->sourceable->product_name ?? '-' }}
+                                    </span>
                                     @else
                                     <span class="text-secondary">-</span>
                                     @endif

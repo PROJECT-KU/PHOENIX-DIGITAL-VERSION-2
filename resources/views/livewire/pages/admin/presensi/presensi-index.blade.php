@@ -177,6 +177,48 @@ Presensi || PT. Asthana Cipta Mandiri
         .pr-live i.bi {
             line-height: 1;
         }
+
+        .pr-notice {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .9rem 1rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(108, 99, 255, .09), rgba(14, 165, 233, .09));
+            border: 1px solid rgba(108, 99, 255, .18);
+        }
+
+        .pr-notice-ic {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.15rem;
+            background: linear-gradient(135deg, #6c63ff, #4e46e5);
+            box-shadow: 0 6px 14px rgba(108, 99, 255, .28);
+        }
+
+        .pr-notice-ic i.bi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .pr-notice-title {
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+
+        .pr-notice-sub {
+            font-size: .82rem;
+            color: #64748b;
+        }
     </style>
 
     <div class="container-fluid">
@@ -210,9 +252,12 @@ Presensi || PT. Asthana Cipta Mandiri
                     {{-- Status kehadiran --}}
                     @php $h = $this->todayHadir; @endphp
                     @if (! $h)
-                    <div class="alert alert-light border rounded-3 d-flex align-items-center gap-2 mb-3">
-                        <i class="bi bi-info-circle text-muted"></i>
-                        <span>Kamu belum absen masuk hari ini. Pilih jenis kehadiran di bawah.</span>
+                    <div class="pr-notice mb-3">
+                        <span class="pr-notice-ic"><i class="bi bi-fingerprint"></i></span>
+                        <div>
+                            <div class="pr-notice-title">Kamu belum absen masuk hari ini</div>
+                            <div class="pr-notice-sub">Pilih jenis kehadiran di bawah untuk mulai presensi.</div>
+                        </div>
                     </div>
                     <div class="row g-2 mb-2">
                         <div class="col-sm-6">
@@ -259,8 +304,8 @@ Presensi || PT. Asthana Cipta Mandiri
                         jam.@if ($h->tipe === 'hadir_offline') Pulang offline wajib dalam radius kantor.@endif</small>
                     @else
                     <div class="alert alert-success bg-success-subtle border-success rounded-3 mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill text-success"></i>
-                        <span>Presensi hari ini selesai. Terima kasih! 🙌</span>
+                        <i class="bi bi-check-circle-fill text-success d-inline-flex align-items-center" style="line-height: 1;"></i>
+                        <span class="d-inline-flex align-items-center">Presensi hari ini selesai. Terima kasih! 🙌</span>
                     </div>
                     @endif
                     @endif

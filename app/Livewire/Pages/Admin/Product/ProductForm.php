@@ -15,19 +15,16 @@ class ProductForm extends Component
 
     public $nama_akun = '';
 
+    public $tipe_akun = 'sharing';
+
     public $image;
 
     public $existingImage = null; // nama file lama di DB
 
     public $harga_awal = '';
 
-    public $harga_perbulan = '';
-
-    public $harga_5_perbulan = '';
-
-    public $harga_10_perbulan = '';
-
-    public $harga_pertahun = '';
+    // Harga per durasi (fleksibel): [['durasi_value'=>1,'durasi_type'=>'bulan','harga'=>'20000'], ...]
+    public $prices = [];
 
     public $deskripsi = '';
 
@@ -38,28 +35,55 @@ class ProductForm extends Component
         if ($product) {
             $this->product = $product;
             $this->nama_akun = $product->nama_akun;
+            $this->tipe_akun = $product->tipe_akun ?: 'sharing';
             $this->image = null;
             $this->existingImage = $product->image;
             $this->harga_awal = $product->harga_awal;
-            $this->harga_perbulan = $product->harga_perbulan;
-            $this->harga_5_perbulan = $product->harga_5_perbulan;
-            $this->harga_10_perbulan = $product->harga_10_perbulan;
-            $this->harga_pertahun = $product->harga_pertahun;
             $this->deskripsi = $product->deskripsi;
             $this->mode = 'edit';
+
+            $this->prices = $product->daftarHarga()->map(fn ($d) => [
+                'durasi_value' => $d['durasi_value'],
+                'durasi_type' => $d['durasi_type'],
+                'harga' => (string) $d['harga'],
+            ])->all();
         }
+
+        if (empty($this->prices)) {
+            $this->prices = [['durasi_value' => 1, 'durasi_type' => 'bulan', 'harga' => '']];
+        }
+    }
+
+    public function addPrice()
+    {
+        $this->prices[] = ['durasi_value' => 1, 'durasi_type' => 'bulan', 'harga' => ''];
+    }
+
+    public function removePrice($index)
+    {
+        unset($this->prices[$index]);
+        $this->prices = array_values($this->prices);
+        if (empty($this->prices)) {
+            $this->addPrice();
+        }
+    }
+
+    private function toNumber($value): int
+    {
+        return (int) preg_replace('/[^0-9]/', '', (string) $value);
     }
 
     public function save()
     {
         $rules = [
             'nama_akun' => 'required|min:3',
+            'tipe_akun' => 'required|in:sharing,private',
             'harga_awal' => 'nullable|numeric',
-            'harga_perbulan' => 'nullable|numeric',
-            'harga_5_perbulan' => 'nullable|numeric',
-            'harga_10_perbulan' => 'nullable|numeric',
-            'harga_pertahun' => 'nullable|numeric',
             'deskripsi' => 'nullable|string',
+            'prices' => 'required|array|min:1',
+            'prices.*.durasi_value' => 'required|integer|min:1',
+            'prices.*.durasi_type' => 'required|in:bulan,tahun',
+            'prices.*.harga' => 'required',
         ];
 
         if ($this->mode === 'create') {
@@ -68,7 +92,19 @@ class ProductForm extends Component
             $rules['image'] = 'nullable|image|mimes:png,jpg,jpeg|max:5120';
         }
 
-        $this->validate($rules);
+        $this->validate($rules, [
+            'prices.required' => 'Minimal 1 harga durasi harus diisi.',
+            'prices.*.durasi_value.required' => 'Durasi harus diisi.',
+            'prices.*.harga.required' => 'Harga harus diisi.',
+        ]);
+
+        // Cegah durasi ganda (kombinasi nilai + satuan)
+        $keys = collect($this->prices)->map(fn ($p) => (int) $p['durasi_value'].'|'.$p['durasi_type']);
+        if ($keys->count() !== $keys->unique()->count()) {
+            $this->addError('prices', 'Terdapat durasi yang sama lebih dari sekali. Hapus duplikatnya.');
+
+            return;
+        }
 
         if ($this->mode === 'create') {
             $this->createProduct();
@@ -86,16 +122,14 @@ class ProductForm extends Component
             // simpan file fisik ke folder storage/app/public/img/banners
             $this->image->storeAs('img/Product', $filename, 'public');
 
-            Product::create([
+            $product = Product::create([
                 'nama_akun' => $this->nama_akun,
+                'tipe_akun' => $this->tipe_akun,
                 'image' => $filename,
                 'harga_awal' => $this->harga_awal,
-                'harga_perbulan' => $this->harga_perbulan,
-                'harga_5_perbulan' => $this->harga_5_perbulan,
-                'harga_10_perbulan' => $this->harga_10_perbulan,
-                'harga_pertahun' => $this->harga_pertahun,
                 'deskripsi' => $this->deskripsi,
             ]);
+            $this->syncPrices($product);
 
             session()->flash('success', 'Product berhasil ditambahkan!');
             $this->dispatch('product-created');
@@ -113,11 +147,8 @@ class ProductForm extends Component
         try {
             $data = [
                 'nama_akun' => $this->nama_akun,
+                'tipe_akun' => $this->tipe_akun,
                 'harga_awal' => $this->harga_awal,
-                'harga_perbulan' => $this->harga_perbulan,
-                'harga_5_perbulan' => $this->harga_5_perbulan,
-                'harga_10_perbulan' => $this->harga_10_perbulan,
-                'harga_pertahun' => $this->harga_pertahun,
                 'deskripsi' => $this->deskripsi,
             ];
 
@@ -136,6 +167,7 @@ class ProductForm extends Component
             }
 
             $this->product->update($data);
+            $this->syncPrices($this->product);
 
             session()->flash('success', 'Product berhasil diperbarui!');
             $this->dispatch('product-updated');
@@ -148,15 +180,54 @@ class ProductForm extends Component
         }
     }
 
+    /**
+     * Simpan harga per durasi ke tabel fleksibel + sinkron kolom lama (kompatibilitas publik).
+     */
+    private function syncPrices(Product $product): void
+    {
+        $product->prices()->delete();
+
+        $legacy = [
+            'harga_perbulan' => 0,
+            'harga_5_perbulan' => 0,
+            'harga_10_perbulan' => 0,
+            'harga_pertahun' => 0,
+        ];
+
+        foreach ($this->prices as $row) {
+            $v = (int) $row['durasi_value'];
+            $t = $row['durasi_type'];
+            $h = $this->toNumber($row['harga'] ?? 0);
+            if ($v < 1) {
+                continue;
+            }
+
+            $product->prices()->create([
+                'durasi_value' => $v,
+                'durasi_type' => $t,
+                'harga' => $h,
+            ]);
+
+            if ($t === 'bulan' && $v === 1) {
+                $legacy['harga_perbulan'] = $h;
+            } elseif ($t === 'bulan' && $v === 5) {
+                $legacy['harga_5_perbulan'] = $h;
+            } elseif ($t === 'bulan' && $v === 10) {
+                $legacy['harga_10_perbulan'] = $h;
+            } elseif ($t === 'tahun' && $v === 1) {
+                $legacy['harga_pertahun'] = $h;
+            }
+        }
+
+        $product->update($legacy);
+    }
+
     private function resetForm()
     {
         $this->nama_akun = '';
         $this->image = null;
         $this->harga_awal = '';
-        $this->harga_perbulan = '';
-        $this->harga_5_perbulan = '';
-        $this->harga_10_perbulan = '';
-        $this->harga_pertahun = '';
+        $this->prices = [['durasi_value' => 1, 'durasi_type' => 'bulan', 'harga' => '']];
         $this->deskripsi = '';
     }
 

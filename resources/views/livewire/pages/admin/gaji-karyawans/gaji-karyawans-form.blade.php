@@ -80,6 +80,47 @@
         .readonly-total:focus {
             box-shadow: none;
         }
+
+        /* ===== Panel Penyelesaian Task ===== */
+        .task-panel {
+            border: 1px solid #eef0f7;
+            border-radius: 16px;
+            padding: 18px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, .04), rgba(37, 99, 235, .03));
+        }
+
+        .task-ico {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #7c3aed, #4e46e5);
+            color: #fff;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .task-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .task-table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .task-total {
+            background: #fff;
+            border: 1px solid #eef0f7;
+            border-radius: 999px;
+            padding: 8px 18px;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, .08);
+        }
     </style>
 
     <form wire:submit.prevent="save">
@@ -151,7 +192,7 @@
                         <label for="periode_bulan" class="form-label">
                             Periode Bulan <span class="text-danger">*</span>
                         </label>
-                        <select wire:model="periode_bulan" id="periode_bulan"
+                        <select wire:model.live="periode_bulan" id="periode_bulan"
                             class="form-select @error('periode_bulan') is-invalid @enderror">
                             <option value="">-- Bulan --</option>
                             @foreach ($daftarBulan as $num => $nama)
@@ -167,7 +208,7 @@
                         <label for="periode_tahun" class="form-label">
                             Periode Tahun <span class="text-danger">*</span>
                         </label>
-                        <select wire:model="periode_tahun" id="periode_tahun"
+                        <select wire:model.live="periode_tahun" id="periode_tahun"
                             class="form-select @error('periode_tahun') is-invalid @enderror">
                             <option value="">-- Tahun --</option>
                             @foreach ($daftarTahun as $th)
@@ -240,6 +281,24 @@
                         @enderror
                     </div>
 
+                    {{-- ================== BONUS PENYELESAIAN TASK (read-only) ================== --}}
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label d-flex align-items-center gap-1">
+                            Bonus Penyelesaian Task
+                            <i class="bi bi-info-circle text-muted" title="Diatur di halaman Penyelesaian Task (pool bersama)"></i>
+                        </label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text" id="bonus_penyelesaian_task_disp" readonly
+                                class="form-control readonly-pretty"
+                                value="{{ number_format((int) $bonus_penyelesaian_task, 0, ',', '.') }}">
+                        </div>
+                        <small class="text-muted"><i class="bi bi-list-check me-1"></i>Diatur di halaman <b>Penyelesaian Task</b>.</small>
+                        {{-- Hidden field agar total (JS) ikut menghitung bonus task --}}
+                        <input type="hidden" id="bonus_penyelesaian_task" value="{{ (int) $bonus_penyelesaian_task }}">
+                    </div>
+
                     <div class="col-md-6 mb-3">
                         <label for="tunjangan_kesehatan" class="form-label">Tunjangan Kesehatan</label>
                         <div class="rp-wrap">
@@ -300,36 +359,31 @@
                         @enderror
                     </div>
 
-                    <!-- Lembur: jam x tarif/jam = total otomatis -->
+                    <!-- Lembur: jam (auto dari presensi) x tarif/jam = total otomatis -->
                     <div class="col-md-4 mb-3">
                         <label for="jam_lembur" class="form-label">Jam Lembur</label>
                         <div class="input-suffix-wrap">
-                            <input type="number" min="0" step="1" wire:model="jam_lembur"
-                                class="form-control no-spinner pe-5 @error('jam_lembur') is-invalid @enderror" id="jam_lembur" placeholder="0">
+                            <input type="text" id="jam_lembur" class="form-control no-spinner pe-5 readonly-pretty"
+                                value="{{ $jam_lembur }}" placeholder="0" readonly>
                             <span class="input-suffix">jam</span>
                         </div>
-                        @error('jam_lembur')
-                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis dari presensi lembur (yang sudah absen pulang).</div>
                     </div>
 
                     <div class="col-md-4 mb-3">
                         <label for="tarif_lembur" class="form-label">
                             Tarif / Jam
-                            <i class="bi bi-pencil-square text-primary" title="Bisa diubah; tersimpan sebagai default baru"></i>
+                            <i class="bi bi-lock-fill text-muted" title="Diatur di data karyawan"></i>
                         </label>
                         <div class="rp-wrap">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
                                 style="pointer-events: none; z-index: 5;">
                                 Rp
                             </span>
-                            <input type="text" wire:model="tarif_lembur"
-                                class="form-control @error('tarif_lembur') is-invalid @enderror" id="tarif_lembur" placeholder="15.000">
+                            <input type="text" id="tarif_lembur" class="form-control readonly-pretty"
+                                value="{{ $tarif_lembur }}" placeholder="0" readonly>
                         </div>
-                        <div class="form-text text-muted" style="font-size: 0.78rem;">Default Rp 15.000, bisa diedit.</div>
-                        @error('tarif_lembur')
-                        <div class="invalid-feedback d-block">{{ $message }}</div>
-                        @enderror
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Dari data karyawan.</div>
                     </div>
 
                     <div class="col-md-4 mb-3">
@@ -343,6 +397,88 @@
                                 value="{{ $uang_lembur }}" placeholder="0" readonly>
                         </div>
                         <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis = jam &times; tarif.</div>
+                    </div>
+
+                    <!-- ===== Presensi Offline: jumlah (auto dari presensi) x tarif = total ===== -->
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-2 mt-1">
+                            <i class="bi bi-building-check text-primary d-inline-flex align-items-center" style="line-height: 1;"></i>
+                            <span class="fw-semibold d-inline-flex align-items-center">Uang Kehadiran (dari data presensi)</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary fw-normal d-inline-flex align-items-center">
+                                otomatis per periode
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="jumlah_hadir_offline" class="form-label">Hadir Offline</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" id="jumlah_hadir_offline" class="form-control no-spinner pe-5 readonly-pretty"
+                                value="{{ $jumlah_hadir_offline }}" readonly>
+                            <span class="input-suffix">hari</span>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis dari presensi (yang sudah absen pulang).</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="tarif_hadir_offline" class="form-label">
+                            Tarif / Hadir Offline
+                            <i class="bi bi-lock-fill text-muted" title="Diatur di data karyawan"></i>
+                        </label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text" id="tarif_hadir_offline" class="form-control readonly-pretty"
+                                value="{{ $tarif_hadir_offline }}" placeholder="0" readonly>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Dari data karyawan.</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="uang_hadir_offline" class="form-label">Total Uang Offline</label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text" id="uang_hadir_offline" class="form-control readonly-pretty"
+                                value="{{ $uang_hadir_offline }}" placeholder="0" readonly>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis = hari &times; tarif.</div>
+                    </div>
+
+                    <!-- ===== Presensi Online: jumlah (auto dari presensi) x tarif = total ===== -->
+                    <div class="col-md-4 mb-3">
+                        <label for="jumlah_hadir_online" class="form-label">Hadir Online</label>
+                        <div class="input-suffix-wrap">
+                            <input type="number" id="jumlah_hadir_online" class="form-control no-spinner pe-5 readonly-pretty"
+                                value="{{ $jumlah_hadir_online }}" readonly>
+                            <span class="input-suffix">hari</span>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis dari presensi (yang sudah absen pulang).</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="tarif_hadir_online" class="form-label">
+                            Tarif / Hadir Online
+                            <i class="bi bi-lock-fill text-muted" title="Diatur di data karyawan"></i>
+                        </label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text" id="tarif_hadir_online" class="form-control readonly-pretty"
+                                value="{{ $tarif_hadir_online }}" placeholder="0" readonly>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Dari data karyawan.</div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="uang_hadir_online" class="form-label">Total Uang Online</label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text" id="uang_hadir_online" class="form-control readonly-pretty"
+                                value="{{ $uang_hadir_online }}" placeholder="0" readonly>
+                        </div>
+                        <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis = hari &times; tarif.</div>
                     </div>
 
                     <div class="col-md-6 mb-3">
@@ -587,7 +723,10 @@
             ambil('gaji_pokok') +
             ambil('bonus_kinerja') +
             ambil('bonus_lainnya') +
+            ambil('bonus_penyelesaian_task') +
             ambil('uang_lembur') +
+            ambil('uang_hadir_offline') +
+            ambil('uang_hadir_online') +
             ambil('tunjangan_kesehatan') +
             ambil('tunjangan_thr') +
             ambil('tunjangan_ketenagakerjaan') +
@@ -647,9 +786,36 @@
     document.getElementById('jam_lembur')?.addEventListener('input', hitungLembur);
     document.getElementById('tarif_lembur')?.addEventListener('input', hitungLembur);
 
+    // ================= HITUNG UANG PRESENSI (hari x tarif) =================
+    function hitungPresensiSatu(jumlahId, tarifId, uangId) {
+        const jumlahEl = document.getElementById(jumlahId);
+        const tarifEl = document.getElementById(tarifId);
+        const uangEl = document.getElementById(uangId);
+        if (!uangEl) return;
+
+        let jumlah = parseInt((jumlahEl?.value || '').replace(/[^0-9]/g, "")) || 0;
+        let tarif = parseInt((tarifEl?.value || '').replace(/[^,\d]/g, "")) || 0;
+
+        if (tarifEl && document.activeElement === tarifEl) {
+            tarifEl.value = formatNumber(tarif);
+        }
+
+        uangEl.value = formatNumber(jumlah * tarif);
+    }
+
+    function hitungPresensi() {
+        hitungPresensiSatu('jumlah_hadir_offline', 'tarif_hadir_offline', 'uang_hadir_offline');
+        hitungPresensiSatu('jumlah_hadir_online', 'tarif_hadir_online', 'uang_hadir_online');
+        hitungTotal();
+    }
+
+    document.getElementById('tarif_hadir_offline')?.addEventListener('input', hitungPresensi);
+    document.getElementById('tarif_hadir_online')?.addEventListener('input', hitungPresensi);
+
     // Panggil saat halaman pertama kali load (jaga2 kalau edit data lama)
     document.addEventListener('DOMContentLoaded', function() {
         hitungLembur();
+        hitungPresensi();
         hitungTotal();
     });
 </script>

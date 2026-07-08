@@ -243,16 +243,7 @@ class OrderForm extends Component
 
     private function getPrice(Product $product, string $durationType, int $durationValue): int
     {
-        if ($durationType === 'tahun') {
-            return (int) ($product->harga_pertahun ?? 0);
-        }
-
-        return match ($durationValue) {
-            1 => (int) ($product->harga_perbulan ?? 0),
-            5 => (int) ($product->harga_5_perbulan ?? 0),
-            10 => (int) ($product->harga_10_perbulan ?? 0),
-            default => (int) ($product->harga_awal ?? 0),
-        };
+        return $product->hargaUntuk($durationValue, $durationType);
     }
 
     // ===================== TOTAL / DISKON =====================

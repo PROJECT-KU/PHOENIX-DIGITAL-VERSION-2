@@ -81,27 +81,13 @@
         }
     </style>
     @if ($customer)
-    @php
-    $customerOrders = \App\Models\Order::with('items')
-    ->whereHas('customer', function ($q) use ($customer) {
-    $q->where('no_hp', $customer->no_hp);
-    })
-    ->latest()
-    ->get();
-
-    // Total keseluruhan yang benar-benar dibayarkan (pesanan yang sudah dibayar)
-    $paidOrders = $customerOrders->filter(function ($o) {
-    return $o->paid_at !== null || in_array($o->status, ['paid', 'processing', 'completed']);
-    });
-    $grandTotalPaid = $paidOrders->sum('total');
-    @endphp
 
     <div class="card border-0 shadow-sm rounded-4 mt-4" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
         <div class="card-header bg-primary bg-opacity-10 p-3 border-0 rounded-top-4 d-flex align-items-center justify-content-between">
             <h5 class="mb-0 text-primary fw-bold">
                 <i class="bi bi-bag-check me-2"></i>Riwayat Pesanan
             </h5>
-            <span class="badge rounded-pill bg-primary">{{ $customerOrders->count() }} Pesanan</span>
+            <span class="badge rounded-pill bg-primary">{{ $totalPesanan }} Pesanan</span>
         </div>
         <div class="card-body p-4">
             @forelse ($customerOrders as $order)
@@ -247,12 +233,16 @@
             </div>
             @endforelse
 
-            @if ($customerOrders->isNotEmpty())
+            @if ($customerOrders->hasPages())
+            <div class="mt-4">{{ $customerOrders->links('vendor.pagination') }}</div>
+            @endif
+
+            @if ($totalPesanan > 0)
             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-4 p-3 rounded-3"
                 style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.12), rgba(78, 70, 229, 0.12));">
                 <span class="fw-bold text-primary">
                     <i class="bi bi-cash-stack me-2"></i>Total Keseluruhan Dibayarkan
-                    <small class="text-muted fw-normal">({{ $paidOrders->count() }} pesanan terbayar)</small>
+                    <small class="text-muted fw-normal">({{ $paidOrdersCount }} pesanan terbayar)</small>
                 </span>
                 <span class="fw-bold fs-4 text-primary">Rp {{ number_format($grandTotalPaid, 0, ',', '.') }}</span>
             </div>

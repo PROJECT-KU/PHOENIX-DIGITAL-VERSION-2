@@ -6,7 +6,9 @@ use App\Models\Order;
 use App\Models\Promo;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -36,6 +38,24 @@ class AppServiceProvider extends ServiceProvider
             return [Limit::perMinute(100)->by($request->ip())];
         });
         Order::observe(OrderObserver::class);
+
+        // Email reset kata sandi kustom (desain lemon, seragam dengan login).
+        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+            $url = route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
+
+            $expire = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
+            return (new MailMessage)
+                ->subject('Reset Kata Sandi — lemon by ACM')
+                ->view('emails.reset-password', [
+                    'url' => $url,
+                    'user' => $notifiable,
+                    'expire' => $expire,
+                ]);
+        });
 
         // Blade directive untuk check permission
         Blade::if('hasPermission', function ($permission) {

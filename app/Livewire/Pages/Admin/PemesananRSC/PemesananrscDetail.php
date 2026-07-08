@@ -17,6 +17,14 @@ class PemesananrscDetail extends Component
 
     public $pesertaList;
 
+    public $extraAkuns;
+
+    public $metode_harga = 'per_peserta';
+
+    public $akunBreakdown = [];
+
+    public $sumHargaAkun = 0;
+
     public function mount($nama_camp, $batch_camp)
     {
         $this->nama_camp = urldecode($nama_camp);
@@ -35,6 +43,8 @@ class PemesananrscDetail extends Component
                 'tanggal_akhir_camp',
                 'tanggal_pemesanan',
                 'tanggal_berakhir',
+                'jumlah_pemesanan',
+                'metode_harga',
                 'akun',
                 'pic',
                 'status',
@@ -56,6 +66,8 @@ class PemesananrscDetail extends Component
                 'tanggal_akhir_camp',
                 'tanggal_pemesanan',
                 'tanggal_berakhir',
+                'jumlah_pemesanan',
+                'metode_harga',
                 'akun',
                 'pic',
                 'status',
@@ -74,15 +86,41 @@ class PemesananrscDetail extends Component
             ->orderBy('nama_pembeli')
             ->get();
 
+        // Akun tambahan (kredensial saja)
+        $this->extraAkuns = \App\Models\RscBatchAkun::where('nama_camp', $this->nama_camp)
+            ->where('batch_camp', $this->batch_camp)
+            ->orderBy('id')
+            ->get();
+
         // Redirect jika data tidak ditemukan
         if (! $this->batchData) {
             session()->flash('error', 'Data batch tidak ditemukan!');
 
             return redirect()->route('admin.pesananrsc.index');
         }
+
+        // Metode harga + rincian harga tiap akun (untuk mode per_akun).
+        $this->metode_harga = $this->batchData->metode_harga ?? 'per_peserta';
+
+        $parse = fn ($v) => (int) preg_replace('/[^0-9]/', '', (string) $v);
+
+        $this->akunBreakdown = [];
+        $this->akunBreakdown[] = [
+            'nama' => optional($this->batchData->dataakun)->nama_akun ?? 'Akun Utama',
+            'harga' => (int) round($this->batchData->harga_satuan),
+            'utama' => true,
+        ];
+        foreach ($this->extraAkuns as $ea) {
+            $this->akunBreakdown[] = [
+                'nama' => $ea->nama_akun ?? optional($ea->dataakun)->nama_akun ?? 'Akun',
+                'harga' => $ea->akun_id ? $parse(optional($ea->dataakun)->harga_satuan) : 0,
+                'utama' => false,
+            ];
+        }
+        $this->sumHargaAkun = collect($this->akunBreakdown)->sum('harga');
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-detail');

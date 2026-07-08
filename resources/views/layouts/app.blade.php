@@ -33,10 +33,15 @@
         <livewire:layout.sidebar />
 
         <div id="main">
-            <header class="mb-3">
+            <header class="mb-3 d-flex align-items-center justify-content-between">
                 <a href="#" class="burger-btn d-block">
                     <i class="bi bi-list fs-3"></i>
                 </a>
+                @auth
+                <div class="ms-auto">
+                    <livewire:layout.notification-bell />
+                </div>
+                @endauth
             </header>
             {{ $slot }}
         </div>

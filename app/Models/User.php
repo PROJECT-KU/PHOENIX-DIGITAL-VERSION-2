@@ -20,7 +20,18 @@ class User extends Authenticatable
         'password',
         'role_id',
         'profile_photo',
+        'status',
+        'failed_login_attempts',
     ];
+
+    /**
+     * Akun terblokir (mis. setelah 3x gagal login). Hanya admin fitur karyawan
+     * yang dapat mengaktifkannya kembali.
+     */
+    public function isBlocked(): bool
+    {
+        return $this->status === 'blokir';
+    }
 
     protected $hidden = [
         'password',
@@ -46,6 +57,32 @@ class User extends Authenticatable
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role->name, $roles);
+    }
+
+    /**
+     * Profil karyawan sudah lengkap? (rekening, tanggal lahir, no HP, alamat).
+     * Dipakai gerbang akses fitur.
+     */
+    public function profileComplete(): bool
+    {
+        $d = $this->detail;
+
+        return $d
+            && filled($d->nomor_rekening)
+            && filled($d->tanggal_lahir)
+            && filled($d->phone)
+            && filled($d->alamat);
+    }
+
+    /** Apakah hari ini (tanggal & bulan) adalah ulang tahun karyawan? */
+    public function isBirthday(): bool
+    {
+        $tgl = $this->detail?->tanggal_lahir;
+        if (! $tgl) {
+            return false;
+        }
+
+        return $tgl->format('m-d') === now()->format('m-d');
     }
 
     // Check permission

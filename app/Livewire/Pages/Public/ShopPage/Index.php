@@ -91,18 +91,9 @@ class Index extends Component
 
     private function getPrice($product, $durationType, $durationValue)
     {
-        if ($durationType === 'bulan') {
-            return match ($durationValue) {
-                1 => $product->harga_perbulan,
-                5 => $product->harga_5_perbulan,
-                10 => $product->harga_10_perbulan,
-                default => null
-            };
-        } elseif ($durationType === 'tahun') {
-            return $product->harga_pertahun;
-        }
+        $harga = $product->hargaUntuk((int) $durationValue, $durationType);
 
-        return null;
+        return $harga > 0 ? $harga : null;
     }
 
     private function getCartCount()

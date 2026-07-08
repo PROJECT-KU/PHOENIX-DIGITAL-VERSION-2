@@ -134,7 +134,7 @@
                     <div class="sub t-in">{{ $rupiah($omset['penjualan']) }}</div>
                 </td>
                 <td class="last" style="width: 30%;">
-                    <div class="label">Total Modal (Harga Awal)</div>
+                    <div class="label">Total Modal (Pembelian Akun)</div>
                     <div class="sub t-ex">{{ $rupiah($omset['modal']) }}</div>
                 </td>
             </tr>

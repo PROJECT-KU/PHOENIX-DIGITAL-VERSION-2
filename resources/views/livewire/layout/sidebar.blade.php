@@ -88,6 +88,16 @@ new class extends Component
                 </li>
                 @endif
 
+                @if (auth()->user()->hasPermission('view_task'))
+                <li class="sidebar-item {{ request()->routeIs('admin.task-saya.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.task-saya.index') }}" class="sidebar-link" wire:navigate>
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Task Saya</span>
+                    </a>
+                </li>
+
+                @endif
+
                 @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko', 'view_ebook']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'active open' : '' }}">
@@ -218,18 +228,18 @@ new class extends Component
                 @endif
 
                 <!-- section menu data dan laporan -->
-                @if (auth()->user()->hasAnyPermission(['view_cashflow', 'view_spending', 'view_loan', 'view_gajikaryawan']))
+                @if (auth()->user()->hasAnyPermission(['view_cashflow', 'view_spending', 'view_modal', 'view_pemasukan', 'view_harga_modal', 'view_loan', 'view_gajikaryawan']))
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'active open' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
@@ -249,6 +259,27 @@ new class extends Component
                             </a>
                         </li>
                         @endif
+                        @if (auth()->user()->hasPermission('view_modal'))
+                        <li class="submenu-item {{ request()->routeIs('admin.modal.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.modal.index') }}" class="submenu-link">
+                                Modal
+                            </a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_pemasukan'))
+                        <li class="submenu-item {{ request()->routeIs('admin.pemasukan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.pemasukan.index') }}" class="submenu-link">
+                                Pemasukan Lainnya
+                            </a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_harga_modal'))
+                        <li class="submenu-item {{ request()->routeIs('admin.hargamodal.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.hargamodal.index') }}" class="submenu-link">
+                                Harga Modal Akun
+                            </a>
+                        </li>
+                        @endif
                         @if (auth()->user()->hasPermission('view_loan'))
                         <li
                             class="submenu-item {{ request()->routeIs('admin.loan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
@@ -263,6 +294,13 @@ new class extends Component
                                 Gaji Karyawan
                             </a>
                         </li>
+                        @if (auth()->user()->hasPermission('manage_task'))
+                        <li class="submenu-item {{ request()->routeIs('admin.penyelesaian-task.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.penyelesaian-task.index') }}" class="submenu-link">
+                                Penyelesaian Task
+                            </a>
+                        </li>
+                        @endif
                         @endif
                     </ul>
                 </li>

@@ -3,10 +3,14 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
+use App\Models\Order;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class CustomerForm extends Component
 {
+    use WithPagination;
+
     public ?Customer $customer = null;
 
     public $name = '';
@@ -132,6 +136,31 @@ class CustomerForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.customer.customer-form');
+        $customerOrders = collect();
+        $totalPesanan = 0;
+        $paidOrdersCount = 0;
+        $grandTotalPaid = 0;
+
+        if ($this->customer) {
+            $base = Order::whereHas('customer', fn ($q) => $q->where('no_hp', $this->customer->no_hp));
+
+            $totalPesanan = (clone $base)->count();
+
+            $paidCondition = function ($q) {
+                $q->whereNotNull('paid_at')->orWhereIn('status', ['paid', 'processing', 'completed']);
+            };
+            $paidBase = (clone $base)->where($paidCondition);
+            $paidOrdersCount = (clone $paidBase)->count();
+            $grandTotalPaid = (float) (clone $paidBase)->sum('total');
+
+            $customerOrders = (clone $base)->with('items')->latest()->paginate(5);
+        }
+
+        return view('livewire.pages.admin.customer.customer-form', [
+            'customerOrders' => $customerOrders,
+            'totalPesanan' => $totalPesanan,
+            'paidOrdersCount' => $paidOrdersCount,
+            'grandTotalPaid' => $grandTotalPaid,
+        ]);
     }
 }

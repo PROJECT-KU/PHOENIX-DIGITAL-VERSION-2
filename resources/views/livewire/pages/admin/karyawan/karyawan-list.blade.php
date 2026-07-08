@@ -150,7 +150,12 @@ Data Karyawan || PT. Asthana Cipta Mandiri
                                             {{ strtoupper(substr($user->name, 0, 1)) }}
                                         </span>
                                         <div>
-                                            <div class="fw-semibold text-dark">{{ $user->name }}</div>
+                                            <div class="fw-semibold text-dark d-flex align-items-center gap-2">
+                                                {{ $user->name }}
+                                                @if(($user->status ?? 'active') === 'blokir')
+                                                <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill" style="font-size:.66rem;"><i class="bi bi-lock-fill me-1"></i>Blokir</span>
+                                                @endif
+                                            </div>
                                             <small class="text-muted">{{ $user->email }}</small>
                                         </div>
                                     </div>

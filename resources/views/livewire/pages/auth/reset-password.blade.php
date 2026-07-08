@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Volt\Component;
@@ -17,96 +16,159 @@ new #[Layout('layouts.authentication')] class extends Component {
     public string $password = '';
     public string $password_confirmation = '';
 
-    /**
-     * Mount the component.
-     */
     public function mount(string $token): void
     {
         $this->token = $token;
-
         $this->email = request()->string('email');
     }
 
-    /**
-     * Reset the password for the given user.
-     */
     public function resetPassword(): void
     {
         $this->validate([
             'token' => ['required'],
             'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required', 'string', 'confirmed',
+                function ($attribute, $value, $fail) {
+                    if (strlen($value) < 8) {
+                        $fail('Kata sandi minimal 8 karakter.');
+                    } elseif (! preg_match('/[A-Z]/', $value)) {
+                        $fail('Kata sandi harus mengandung minimal 1 huruf besar.');
+                    } elseif (! preg_match('/[^A-Za-z]/', $value)) {
+                        $fail('Kata sandi harus mengandung minimal 1 angka atau karakter spesial.');
+                    }
+                },
+            ],
+        ], [
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset($this->only('email', 'password', 'password_confirmation', 'token'), function ($user) {
-            $user
-                ->forceFill([
+        $status = Password::reset(
+            $this->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user) {
+                $user->forceFill([
                     'password' => Hash::make($this->password),
                     'remember_token' => Str::random(60),
-                ])
-                ->save();
+                ])->save();
 
-            event(new PasswordReset($user));
-        });
+                event(new PasswordReset($user));
+            }
+        );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
         if ($status != Password::PASSWORD_RESET) {
             $this->addError('email', __($status));
+            $this->dispatch('reset-fail', message: __($status));
 
             return;
         }
 
-        Session::flash('status', __($status));
-
-        $this->redirectRoute('login', navigate: true);
+        // Sukses -> tampilkan Swal glossy di halaman ini, lalu arahkan ke login (via JS).
+        $this->dispatch('reset-success', message: 'Kata sandi berhasil diubah. Silakan login dengan kata sandi baru Anda.');
     }
 }; ?>
 
-<div class="shadow-lg rounded-3 overflow-hidden" style="width:32rem">
-    <div class="mb-1 bg-dark py-4 d-flex flex-column align-items-center justify-content-center">
-        <div class="w-50 overflow-hidden">
-            <img src="{{ asset('global/assets/img/logophoenix.png') }}" alt="" class="h-100 w-100">
+<div class="lemon-auth">
+    @include('livewire.pages.auth.partials.auth-styles')
+
+    <div class="lemon-card">
+        {{-- Brand --}}
+        <div class="text-center mb-4">
+            @include('livewire.pages.auth.partials.lemon-logo')
+            <h1 class="lemon-brand">lemon</h1>
+            <p class="lemon-by">by acm</p>
+            <p class="lemon-sub">Buat kata sandi baru</p>
+        </div>
+
+        <form wire:submit="resetPassword">
+            {{-- Email (readonly, dari tautan) --}}
+            <div class="mb-3">
+                <label class="lf-label" for="email">Email</label>
+                <div class="lf-field">
+                    <i class="bi bi-envelope lead-ico"></i>
+                    <input wire:model="email" id="email" type="email" name="email" class="lf-input"
+                        autocomplete="username" readonly>
+                </div>
+                <x-input-error :messages="$errors->get('email')" class="lf-error" />
+            </div>
+
+            {{-- Password baru --}}
+            <div class="mb-3" x-data="{ show: false }">
+                <label class="lf-label" for="password">Kata Sandi Baru</label>
+                <div class="lf-field">
+                    <i class="bi bi-lock lead-ico"></i>
+                    <input wire:model="password" id="password" name="password" class="lf-input"
+                        x-bind:type="show ? 'text' : 'password'" placeholder="••••••••" required autocomplete="new-password">
+                    <i class="lf-eye bi" :class="show ? 'bi-eye' : 'bi-eye-slash'" @click="show = !show"></i>
+                </div>
+                <x-input-error :messages="$errors->get('password')" class="lf-error" />
+                <small class="lf-hint">Min. 8 karakter, ada huruf besar, dan angka/karakter spesial.</small>
+            </div>
+
+            {{-- Konfirmasi Password --}}
+            <div class="mb-4" x-data="{ show: false }">
+                <label class="lf-label" for="password_confirmation">Konfirmasi Kata Sandi</label>
+                <div class="lf-field">
+                    <i class="bi bi-lock-fill lead-ico"></i>
+                    <input wire:model="password_confirmation" id="password_confirmation" name="password_confirmation" class="lf-input"
+                        x-bind:type="show ? 'text' : 'password'" placeholder="••••••••" required autocomplete="new-password">
+                    <i class="lf-eye bi" :class="show ? 'bi-eye' : 'bi-eye-slash'" @click="show = !show"></i>
+                </div>
+                <x-input-error :messages="$errors->get('password_confirmation')" class="lf-error" />
+            </div>
+
+            <button type="submit" class="lf-btn" wire:loading.attr="disabled" wire:target="resetPassword">
+                <i class="bi bi-check2-circle me-1"></i> Simpan Kata Sandi
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <a href="{{ route('login') }}" class="lf-back" wire:navigate><i class="bi bi-arrow-left"></i> Kembali ke Login</a>
         </div>
     </div>
-    <div class="p-5">
-        <h3>Reset Password</h3>
-        <form wire:submit="resetPassword" class="my-5">
-            <!-- Email Address -->
-            <div>
-                <x-input-label for="email" :value="__('Email')" />
-                <x-text-input wire:model="email" id="email" class="" type="email" name="email" required
-                    autofocus autocomplete="username" />
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
-            </div>
 
-            <!-- Password -->
-            <div class="mt-4">
-                <x-input-label for="password" :value="__('Password')" />
-                <x-text-input wire:model="password" placeholder="******" id="password" class="" type="password"
-                    name="password" required autocomplete="new-password" />
-                <x-input-error :messages="$errors->get('password')" class="mt-2" />
-            </div>
+    <script>
+        (function () {
+            function fireGlossy(icon, title, text) {
+                if (typeof Swal === 'undefined') return;
+                Swal.fire({
+                    icon: icon, title: title, text: text,
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', title: 'fw-bold' },
+                    buttonsStyling: false,
+                    confirmButtonText: 'Mengerti'
+                });
+            }
+            const LOGIN_URL = @json(route('login'));
 
-            <!-- Confirm Password -->
-            <div class="mt-4">
-                <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+            function register() {
+                if (window.__lemonResetBound) return;
+                window.__lemonResetBound = true;
+                Livewire.on('reset-fail', (event) => {
+                    const msg = (event && (event.message ?? (Array.isArray(event) ? event[0]?.message : null))) || 'Tautan tidak valid atau kedaluwarsa.';
+                    fireGlossy('error', 'Gagal', msg);
+                });
 
-                <x-text-input wire:model="password_confirmation" placeholder="******" id="password_confirmation"
-                    class="" type="password" name="password_confirmation" required autocomplete="new-password" />
-
-                <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-            </div>
-
-            <div class="d-flex align-items-center justify-content-end mt-4">
-                <x-primary-button>
-                    {{ __('Reset Password') }}
-                </x-primary-button>
-            </div>
-        </form>
-    </div>
+                Livewire.on('reset-success', (event) => {
+                    const msg = (event && (event.message ?? (Array.isArray(event) ? event[0]?.message : null))) || 'Kata sandi berhasil diubah.';
+                    if (typeof Swal === 'undefined') { window.location.href = LOGIN_URL; return; }
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: msg,
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        backdrop: 'rgba(139, 92, 246, 0.15)',
+                        customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', title: 'fw-bold' },
+                        buttonsStyling: false,
+                        confirmButtonText: 'Ke Halaman Login',
+                        allowOutsideClick: false,
+                        timer: 4500,
+                        timerProgressBar: true
+                    }).then(() => { window.location.href = LOGIN_URL; });
+                });
+            }
+            if (window.Livewire) { register(); }
+            else { document.addEventListener('livewire:init', register); }
+        })();
+    </script>
 </div>

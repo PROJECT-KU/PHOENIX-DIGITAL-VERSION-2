@@ -25,16 +25,18 @@ class KaryawanForm extends Component
 
     public $role_id = '';
 
+    // Status akun: active / blokir (blokir dipicu 3x gagal login; buka blokir = set active).
+    public $status = 'active';
+
     // Data Detail Karyawan
     public $jabatan = '';
 
-    public $nama_bank = '';
+    // Tarif bonus per karyawan (untuk perhitungan gaji dari presensi)
+    public $tarif_presensi_offline = 0;
 
-    public $nomor_rekening = '';
+    public $tarif_presensi_online = 0;
 
-    public $phone = '';
-
-    public $alamat = '';
+    public $tarif_lembur_per_jam = 0;
 
     public function mount($user = null)
     {
@@ -45,13 +47,14 @@ class KaryawanForm extends Component
             $this->name = $user->name;
             $this->email = $user->email;
             $this->role_id = $user->role_id;
+            $this->status = $user->status ?? 'active';
 
             // Load data detail (gunakan optional jika detail belum ada)
             $this->jabatan = $user->detail?->jabatan;
-            $this->nama_bank = $user->detail?->nama_bank;
-            $this->nomor_rekening = $user->detail?->nomor_rekening;
-            $this->phone = $user->detail?->phone;
-            $this->alamat = $user->detail?->alamat;
+
+            $this->tarif_presensi_offline = (int) ($user->detail?->tarif_presensi_offline ?? 0);
+            $this->tarif_presensi_online = (int) ($user->detail?->tarif_presensi_online ?? 0);
+            $this->tarif_lembur_per_jam = (int) ($user->detail?->tarif_lembur_per_jam ?? 0);
 
             $this->isEdit = true;
         }
@@ -59,17 +62,15 @@ class KaryawanForm extends Component
 
     public function store()
     {
-        $cleanRekening = str_replace('-', '', $this->nomor_rekening);
-        $this->nomor_rekening = $cleanRekening;
-
         $this->validate([
             'name' => 'required|min:3',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'role_id' => 'required|exists:roles,id',
             'jabatan' => 'required',
-            'nama_bank' => 'nullable|string',
-            'nomor_rekening' => 'nullable|numeric',
+            'tarif_presensi_offline' => 'nullable|numeric|min:0',
+            'tarif_presensi_online' => 'nullable|numeric|min:0',
+            'tarif_lembur_per_jam' => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () {
@@ -83,10 +84,9 @@ class KaryawanForm extends Component
             EmployeeDetail::create([
                 'user_id' => $user->id,
                 'jabatan' => $this->jabatan,
-                'nama_bank' => $this->nama_bank,
-                'nomor_rekening' => $this->nomor_rekening,
-                'phone' => $this->phone,
-                'alamat' => $this->alamat,
+                'tarif_presensi_offline' => (int) $this->tarif_presensi_offline,
+                'tarif_presensi_online' => (int) $this->tarif_presensi_online,
+                'tarif_lembur_per_jam' => (int) $this->tarif_lembur_per_jam,
             ]);
         });
 
@@ -99,18 +99,16 @@ class KaryawanForm extends Component
 
     public function update()
     {
-        if ($this->nomor_rekening) {
-            $this->nomor_rekening = str_replace('-', '', $this->nomor_rekening);
-        }
-
         $this->validate([
             'name' => 'required|min:3',
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->userModel->id)],
             'password' => 'nullable|min:6',
             'role_id' => 'required|exists:roles,id',
+            'status' => 'required|in:active,blokir',
             'jabatan' => 'required',
-            'nama_bank' => 'nullable|string',
-            'nomor_rekening' => 'nullable|numeric',
+            'tarif_presensi_offline' => 'nullable|numeric|min:0',
+            'tarif_presensi_online' => 'nullable|numeric|min:0',
+            'tarif_lembur_per_jam' => 'nullable|numeric|min:0',
         ]);
 
         DB::transaction(function () {
@@ -118,7 +116,13 @@ class KaryawanForm extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'role_id' => $this->role_id,
+                'status' => $this->status,
             ];
+
+            // Membuka blokir (set active) juga mereset penghitung gagal login.
+            if ($this->status === 'active') {
+                $userData['failed_login_attempts'] = 0;
+            }
 
             if ($this->password) {
                 $userData['password'] = Hash::make($this->password);
@@ -131,10 +135,9 @@ class KaryawanForm extends Component
                 ['user_id' => $this->userModel->id],
                 [
                     'jabatan' => $this->jabatan,
-                    'nama_bank' => $this->nama_bank,
-                    'nomor_rekening' => $this->nomor_rekening,
-                    'phone' => $this->phone,
-                    'alamat' => $this->alamat,
+                    'tarif_presensi_offline' => (int) $this->tarif_presensi_offline,
+                    'tarif_presensi_online' => (int) $this->tarif_presensi_online,
+                    'tarif_lembur_per_jam' => (int) $this->tarif_lembur_per_jam,
                 ]
             );
         });

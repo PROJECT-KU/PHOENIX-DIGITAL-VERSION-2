@@ -74,23 +74,9 @@ class ProductDetail extends Component
 
     private function getPrice(Product $product, string $durationType, int $durationValue)
     {
-        if ($durationType === 'bulan') {
-            return match ($durationValue) {
-                1 => $product->harga_perbulan,
-                5 => $product->harga_5_perbulan,
-                10 => $product->harga_10_perbulan,
-                default => null
-            };
-        }
-        // if ($durationType === 'bulan') {
-        //     return $product->harga_perbulan * $durationValue;
-        // }
+        $harga = $product->hargaUntuk($durationValue, $durationType);
 
-        if ($durationType === 'tahun') {
-            return $product->harga_pertahun;
-        }
-
-        return null;
+        return $harga > 0 ? $harga : null;
     }
 
     private function getCartCount(): int

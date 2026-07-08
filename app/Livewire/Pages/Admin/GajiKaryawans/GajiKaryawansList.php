@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Pages\Admin\GajiKaryawans;
 
+use App\Models\EmployeeDetail;
 use App\Models\GajiKaryawans;
+use App\Models\Presensi;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -133,8 +135,27 @@ class GajiKaryawansList extends Component
                         continue;
                     }
 
-                    // Komponen tetap disalin; komponen per-periode di-reset ke 0
+                    // ===== Presensi & lembur: SELALU ambil fresh untuk PERIODE TARGET
+                    // (bukan salinan bulan sebelumnya) + tarif TERKINI dari profil karyawan.
+                    $detail = EmployeeDetail::where('user_id', $ref->nama_karyawan)->first();
+                    $tarifOff = (int) ($detail->tarif_presensi_offline ?? 0);
+                    $tarifOn = (int) ($detail->tarif_presensi_online ?? 0);
+                    $tarifLembur = (int) ($detail->tarif_lembur_per_jam ?? 0);
+
+                    $rekap = Presensi::rekapBulan($ref->nama_karyawan, $bulan, $tahun);
+                    $jmlOff = (int) $rekap['hari_offline'];
+                    $jmlOn = (int) $rekap['hari_online'];
+                    $jamLembur = (int) round($rekap['jam_lembur']);
+
+                    $uangOff = $jmlOff * $tarifOff;
+                    $uangOn = $jmlOn * $tarifOn;
+                    $uangLembur = $jamLembur * $tarifLembur;
+
+                    // Komponen tetap disalin; komponen per-periode di-reset / diisi dari data terkini.
+                    // Bonus penyelesaian task mulai 0 — dihitung dari fitur Penyelesaian Task
+                    // (tabel `tasks` mandiri) lalu diterapkan via tombol "Terapkan ke Gaji".
                     $pendapatan = (int) $ref->gaji_pokok + (int) $ref->bonus_kinerja + (int) $ref->bonus_lainnya
+                        + $uangLembur + $uangOff + $uangOn
                         + (int) $ref->tunjangan_kesehatan + (int) $ref->tunjangan_ketenagakerjaan
                         + (int) $ref->tunjangan_lainnya + (int) $ref->tunjangan_transport + (int) $ref->tunjangan_makan;
                     $potongan = (int) $ref->potongan + (int) $ref->potongan_bpjs_kesehatan
@@ -151,8 +172,15 @@ class GajiKaryawansList extends Component
                         'gaji_pokok' => $ref->gaji_pokok,
                         'bonus_kinerja' => $ref->bonus_kinerja,
                         'bonus_lainnya' => $ref->bonus_lainnya,
-                        'uang_lembur' => 0,
-                        'jam_lembur' => 0,
+                        'task_budget' => 0, // pool budget kini per-periode di Setting, bukan per gaji
+                        'bonus_penyelesaian_task' => 0,
+                        'tasks' => $tasksTemplate,
+                        'uang_lembur' => $uangLembur,
+                        'jam_lembur' => $jamLembur,
+                        'jumlah_hadir_offline' => $jmlOff,
+                        'uang_hadir_offline' => $uangOff,
+                        'jumlah_hadir_online' => $jmlOn,
+                        'uang_hadir_online' => $uangOn,
                         'tunjangan_kesehatan' => $ref->tunjangan_kesehatan,
                         'tunjangan_thr' => 0,
                         'tunjangan_ketenagakerjaan' => $ref->tunjangan_ketenagakerjaan,

@@ -62,25 +62,17 @@
                         <div class="price-options-card mt-4" id="selectPackageModal" wire:ignore>
                             <h4 class="section-title">Pilih Paket Harga</h4>
                             <div class="price-select-list">
-                                @php
-                                    $packages = [
-                                        ['Per Bulan', 'perbulan', 'bulan', 1, 'harga_perbulan'],
-                                        ['5 Bulan', '5bulan', 'bulan', 5, 'harga_5_perbulan'],
-                                        ['10 Bulan', '10bulan', 'bulan', 10, 'harga_10_perbulan'],
-                                        ['Pertahun', 'pertahun', 'tahun', 12, 'harga_pertahun'],
-                                    ];
-                                @endphp
-                                @foreach ($packages as [$label, $value, $clickType, $multiplier, $field])
+                                @foreach ($product->daftarHarga() as $pkg)
                                     <label class="price-option selectable">
-                                        <input type="radio" name="price_option" value="{{ $value }}"
-                                            wire:click="selectPackage('{{ $clickType }}', {{ $multiplier }})"
-                                            data-value="{{ $product->{$field} }}"
-                                            data-multiplier="{{ $multiplier }}"
+                                        <input type="radio" name="price_option" value="{{ $pkg['durasi_value'] . $pkg['durasi_type'] }}"
+                                            wire:click="selectPackage('{{ $pkg['durasi_type'] }}', {{ $pkg['durasi_value'] }})"
+                                            data-value="{{ $pkg['harga'] }}"
+                                            data-multiplier="{{ $pkg['durasi_value'] }}"
                                             data-regular="{{ $product->harga_awal }}">
 
                                         <div class="option-content">
-                                            <div class="option-title">{{ $label }}</div>
-                                            <div class="option-price">{{ $product->formatted($field) }}</div>
+                                            <div class="option-title">{{ $pkg['durasi_value'] }} {{ ucfirst($pkg['durasi_type']) }}</div>
+                                            <div class="option-price">Rp {{ number_format($pkg['harga'], 0, ',', '.') }}</div>
                                         </div>
                                     </label>
                                 @endforeach

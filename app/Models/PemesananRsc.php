@@ -23,6 +23,7 @@ class PemesananRsc extends Model
         'nama_pembeli',
         'telp_pembeli',
         'jumlah_pemesanan',
+        'metode_harga',
         'tanggal_pemesanan',
         'tanggal_berakhir',
         'harga_satuan',

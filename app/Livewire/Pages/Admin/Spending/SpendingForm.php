@@ -24,7 +24,25 @@ class SpendingForm extends Component
 
     public $pic_pembeli_id;
 
+    public $product_id;
+
+    public $durasi_value;
+
+    public $durasi_type = 'bulan';
+
+    public $selectedProductTipe = null; // 'sharing' | 'private'
+
     public $isEdit = false;
+
+    public function updatedProductId($value)
+    {
+        $this->selectedProductTipe = $value ? (\App\Models\Product::find($value)?->tipe_akun) : null;
+        // Durasi hanya untuk produk PRIVATE
+        if ($this->selectedProductTipe !== 'private') {
+            $this->durasi_value = null;
+            $this->resetErrorBag(['durasi_value', 'durasi_type']);
+        }
+    }
 
     public function updatedNominal($value)
     {
@@ -33,10 +51,11 @@ class SpendingForm extends Component
 
     public function updatedJenisPengeluaran($value)
     {
-        // PIC Pembeli hanya relevan untuk pembelian akun
+        // PIC Pembeli & Produk hanya relevan untuk pembelian akun
         if ($value !== 'pembelian_akun') {
             $this->pic_pembeli_id = null;
-            $this->resetErrorBag('pic_pembeli_id');
+            $this->product_id = null;
+            $this->resetErrorBag(['pic_pembeli_id', 'product_id']);
         }
     }
 
@@ -51,6 +70,16 @@ class SpendingForm extends Component
             // PIC Pembeli hanya wajib ketika jenis pengeluaran = pembelian akun
             'pic_pembeli_id' => $this->jenis_pengeluaran === 'pembelian_akun'
                 ? 'required|exists:users,id'
+                : 'nullable',
+            'product_id' => $this->jenis_pengeluaran === 'pembelian_akun'
+                ? 'required|exists:products,id'
+                : 'nullable',
+            // Durasi wajib hanya untuk pembelian akun produk PRIVATE (modal satuan per durasi)
+            'durasi_value' => ($this->jenis_pengeluaran === 'pembelian_akun' && $this->selectedProductTipe === 'private')
+                ? 'required|integer|min:1'
+                : 'nullable',
+            'durasi_type' => ($this->jenis_pengeluaran === 'pembelian_akun' && $this->selectedProductTipe === 'private')
+                ? 'required|in:bulan,tahun'
                 : 'nullable',
         ];
     }
@@ -69,6 +98,13 @@ class SpendingForm extends Component
             'jenis_pengeluaran.in' => 'jenis pengeluaran tidak valid.',
             'pic_pembeli_id.required' => 'PIC Pembeli harus dipilih.',
             'pic_pembeli_id.exists' => 'PIC Pembeli tidak valid.',
+            'product_id.required' => 'Produk harus dipilih untuk pembelian akun.',
+            'product_id.exists' => 'Produk tidak valid.',
+            'durasi_value.required' => 'Durasi harus diisi untuk akun private.',
+            'durasi_value.integer' => 'Durasi harus berupa angka.',
+            'durasi_value.min' => 'Durasi minimal 1.',
+            'durasi_type.required' => 'Satuan durasi harus dipilih.',
+            'durasi_type.in' => 'Satuan durasi tidak valid.',
         ];
     }
 
@@ -93,17 +129,26 @@ class SpendingForm extends Component
         $this->status = $spending->status;
         $this->jenis_pengeluaran = $spending->jenis_pengeluaran;
         $this->pic_pembeli_id = $spending->pic_pembeli_id;
+        $this->product_id = $spending->product_id;
+        $this->durasi_value = $spending->durasi_value;
+        $this->durasi_type = $spending->durasi_type ?: 'bulan';
+        $this->selectedProductTipe = $spending->product?->tipe_akun;
     }
 
     public function save(SyncCashFlowAction $syncCashFlow)
     {
         $this->validate();
 
-        // PIC Pembeli hanya disimpan untuk pembelian akun; selain itu null
+        // PIC Pembeli & Produk hanya disimpan untuk pembelian akun; selain itu null
         $picPembeliId = $this->jenis_pengeluaran === 'pembelian_akun' ? $this->pic_pembeli_id : null;
+        $productId = $this->jenis_pengeluaran === 'pembelian_akun' ? $this->product_id : null;
+        // Durasi hanya untuk pembelian akun produk PRIVATE
+        $isPrivate = $this->jenis_pengeluaran === 'pembelian_akun' && $this->selectedProductTipe === 'private';
+        $durasiValue = $isPrivate ? (int) $this->durasi_value : null;
+        $durasiType = $isPrivate ? $this->durasi_type : null;
 
         try {
-            DB::transaction(function () use ($syncCashFlow, $picPembeliId) {
+            DB::transaction(function () use ($syncCashFlow, $picPembeliId, $productId, $durasiValue, $durasiType) {
 
                 if ($this->isEdit) {
                     $spending = Spending::findOrFail($this->spendingId);
@@ -115,6 +160,9 @@ class SpendingForm extends Component
                         'status' => $this->status,
                         'penginput_id' => auth()->id(),
                         'pic_pembeli_id' => $picPembeliId,
+                        'product_id' => $productId,
+                        'durasi_value' => $durasiValue,
+                        'durasi_type' => $durasiType,
                     ]);
                     session()->flash('success', 'berhasil edit data pengeluaran');
                 } else {
@@ -126,6 +174,9 @@ class SpendingForm extends Component
                         'jenis_pengeluaran' => $this->jenis_pengeluaran,
                         'penginput_id' => auth()->id(),
                         'pic_pembeli_id' => $picPembeliId,
+                        'product_id' => $productId,
+                        'durasi_value' => $durasiValue,
+                        'durasi_type' => $durasiType,
                     ]);
 
                     session()->flash('success', 'berhasil tambah data pengeluaran');
@@ -152,7 +203,10 @@ class SpendingForm extends Component
         $users = User::select('id', 'name')->orderBy('name')->get();
         $statusOptions = ['pending', 'completed'];
         $jenisPengeluaran = ['pembelian_akun', 'lainnya'];
+        // Private dikelola di "Harga Modal Akun" & dicatat per-order; pembelian akun manual hanya untuk sharing.
+        $products = \App\Models\Product::where(fn ($q) => $q->where('tipe_akun', '!=', 'private')->orWhereNull('tipe_akun'))
+            ->select('id', 'nama_akun', 'tipe_akun')->orderBy('nama_akun')->get();
 
-        return view('livewire.pages.admin.spending.spending-form', ['users' => $users, 'statusOptions' => $statusOptions, 'jenisPengeluaran' => $jenisPengeluaran]);
+        return view('livewire.pages.admin.spending.spending-form', ['users' => $users, 'statusOptions' => $statusOptions, 'jenisPengeluaran' => $jenisPengeluaran, 'products' => $products]);
     }
 }

@@ -8,7 +8,7 @@ new class extends Component {
     {
         $logout();
 
-        $this->redirect('/');
+        $this->redirect(route('login'));
     }
 }; ?>
 
@@ -59,6 +59,7 @@ Dashboard || PT. Asthana Cipta Mandiri
     @endphp
 
     <div class="container-fluid">
+        @include('livewire.pages.admin.partials.birthday-card')
         <!--================== HEADER ==================-->
         <div class="container-fluid">
             <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -93,9 +94,9 @@ Dashboard || PT. Asthana Cipta Mandiri
                             </div>
 
                             <div class="d-flex gap-2">
-                                <button class="btn btn-primary d-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px; padding: 10px 18px;">
+                                <a href="{{ route('admin.account.profile') }}" wire:navigate class="btn btn-primary d-flex align-items-center justify-content-center shadow-sm text-decoration-none" style="border-radius: 12px; padding: 10px 18px;">
                                     <i class="bi bi-person me-2"></i> Profile
-                                </button>
+                                </a>
 
                                 <button type="button" class="btn btn-danger btn-logout d-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px; padding: 10px 18px;">
                                     <i class="bi bi-box-arrow-right me-2"></i> Logout
@@ -323,3 +324,46 @@ Dashboard || PT. Asthana Cipta Mandiri
 </script>
 @endpush
 <!--================== END GRAFIK GAJI KARYAWAN ==================-->
+
+<!--================== SWEET ALERT LOGOUT ==================-->
+@push('scripts')
+<script>
+    if (!window.logoutListenerAdded) {
+        window.logoutListenerAdded = true;
+
+        const glossyConfig = {
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdrop: 'rgba(139, 92, 246, 0.15)',
+            customClass: {
+                popup: 'swal-glossy-popup',
+                confirmButton: 'btn-glossy-confirm',
+                cancelButton: 'btn-glossy-cancel',
+                title: 'swal-glossy-title'
+            },
+            buttonsStyling: false
+        };
+
+        document.addEventListener('click', function(event) {
+            const logoutBtn = event.target.closest('.btn-logout');
+            if (!logoutBtn) return;
+            event.preventDefault();
+
+            Swal.fire({
+                title: 'Yakin ingin keluar?',
+                text: "Anda harus login kembali untuk masuk ke sistem.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Logout!',
+                cancelButtonText: 'Batal',
+                ...glossyConfig
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const comp = logoutBtn.closest('[wire\\:id]');
+                    if (comp) Livewire.find(comp.getAttribute('wire:id')).call('logout');
+                }
+            });
+        });
+    }
+</script>
+@endpush
+<!--================== END SWEET ALERT LOGOUT ==================-->

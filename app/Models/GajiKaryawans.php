@@ -24,8 +24,15 @@ class GajiKaryawans extends Model
         'gaji_pokok',
         'bonus_kinerja',
         'bonus_lainnya',
+        'task_budget',
+        'bonus_penyelesaian_task',
+        'tasks',
         'uang_lembur',
         'jam_lembur',
+        'jumlah_hadir_offline',
+        'uang_hadir_offline',
+        'jumlah_hadir_online',
+        'uang_hadir_online',
         'tunjangan_kesehatan',
         'tunjangan_thr',
         'tunjangan_ketenagakerjaan',
@@ -44,6 +51,7 @@ class GajiKaryawans extends Model
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
+        'tasks' => 'array',
     ];
 
     protected static function booted(): void
@@ -75,6 +83,36 @@ class GajiKaryawans extends Model
     public function getNamaKaryawanTextAttribute(): string
     {
         return $this->nama_karyawan?->name ?? '-tidak ada-';
+    }
+
+    /**
+     * Hitung ulang total gaji dari nilai kolom tersimpan (Σ pendapatan − Σ potongan).
+     * Rumus harus konsisten dengan GajiKaryawansForm::calculateTotal().
+     * Dipakai saat bonus penyelesaian task diperbarui dari luar form (halaman pool).
+     */
+    public function hitungTotalDariKolom(): int
+    {
+        $pendapatan = (int) $this->gaji_pokok
+            + (int) $this->bonus_kinerja
+            + (int) $this->bonus_lainnya
+            + (int) $this->bonus_penyelesaian_task
+            + (int) $this->uang_lembur
+            + (int) $this->uang_hadir_offline
+            + (int) $this->uang_hadir_online
+            + (int) $this->tunjangan_kesehatan
+            + (int) $this->tunjangan_thr
+            + (int) $this->tunjangan_ketenagakerjaan
+            + (int) $this->tunjangan_lainnya
+            + (int) $this->tunjangan_transport
+            + (int) $this->tunjangan_makan;
+
+        $potongan = (int) $this->potongan
+            + (int) $this->potongan_bpjs_kesehatan
+            + (int) $this->potongan_bpjs_ketenagakerjaan
+            + (int) $this->potongan_pinjaman
+            + (int) $this->pph21;
+
+        return $pendapatan - $potongan;
     }
 
     public function getTotalFormattedAttribute(): string

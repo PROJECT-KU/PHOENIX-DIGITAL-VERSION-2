@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\DataAkun;
 
 use App\Models\DataAkun;
+use App\Models\Product;
 use App\Models\User;
 use Livewire\Component;
 
@@ -44,6 +45,42 @@ class DataAkunForm extends Component
         }
     }
 
+    /**
+     * Semua slot nama akun dari produk.
+     * Private -> 1 slot ("Nama 1"); Sharing -> 10 slot ("Nama 1".."Nama 10").
+     */
+    private function slotNames(): array
+    {
+        $names = [];
+        foreach (Product::orderBy('nama_akun')->get(['id', 'nama_akun', 'tipe_akun']) as $p) {
+            $base = trim((string) $p->nama_akun);
+            if ($base === '') {
+                continue;
+            }
+            $max = $p->tipe_akun === 'private' ? 1 : 10;
+            for ($n = 1; $n <= $max; $n++) {
+                $names[] = $base.' '.$n;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * Slot yang boleh dipilih: kecuali yang sedang dipakai Data Akun berstatus AKTIF.
+     * Saat edit, nama record ini sendiri tetap boleh dipilih.
+     */
+    public function availableNames(): array
+    {
+        $used = DataAkun::where('status', 'active')->pluck('nama_akun')->all();
+        $current = $this->mode === 'edit' ? $this->nama_akun : null;
+
+        return array_values(array_filter(
+            $this->slotNames(),
+            fn ($nm) => ! in_array($nm, $used, true) || $nm === $current
+        ));
+    }
+
     public function save()
     {
         $this->validate([
@@ -56,6 +93,18 @@ class DataAkunForm extends Component
             'deskripsi' => 'nullable|string',
             'status' => 'required|in:active,non-active',
         ]);
+
+        // Cegah pilih nama yang sedang AKTIF dipakai record lain
+        $dup = DataAkun::where('nama_akun', $this->nama_akun)->where('status', 'active');
+        if ($this->mode === 'edit' && $this->dataAkun) {
+            $dup->where('id', '!=', $this->dataAkun->id);
+        }
+        if ($dup->exists()) {
+            $this->addError('nama_akun', 'Nama akun ini sedang AKTIF dipakai. Nonaktifkan yang lama dulu, atau pilih nama lain.');
+
+            return;
+        }
+
         if ($this->mode === 'create') {
             $this->createDataAkun();
         } else {
@@ -132,6 +181,7 @@ class DataAkunForm extends Component
         return view('livewire.pages.admin.data-akun.DataAkun-form', [
             'dataAkun' => $this->dataAkun,
             'users' => $users,
+            'availableNames' => $this->availableNames(),
         ]);
     }
 }

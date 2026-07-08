@@ -40,6 +40,9 @@ class PemesananrscForm extends Component
 
     public $jumlah_pemesanan;
 
+    // Metode harga: 'per_peserta' (harga x jumlah peserta) atau 'per_akun' (harga x jumlah akun).
+    public $metode_harga = 'per_peserta';
+
     public $tanggal_pemesanan;
 
     public $tanggal_berakhir;
@@ -68,6 +71,9 @@ class PemesananrscForm extends Component
 
     public $peserta = [];
 
+    // Akun tambahan (kredensial saja: username/password/link) — TIDAK memengaruhi harga/hitungan.
+    public $akunTambahan = [];
+
     public $pemesananBatch = [];
 
     public function mount()
@@ -85,7 +91,8 @@ class PemesananrscForm extends Component
             $this->tanggal_akhir_camp = $first->tanggal_akhir_camp
                 ? Carbon::parse($first->tanggal_akhir_camp)->format('Y-m-d')
                 : null;
-            $this->jumlah_pemesanan = count($this->pemesananBatch);
+            $this->jumlah_pemesanan = $first->jumlah_pemesanan;
+            $this->metode_harga = $first->metode_harga ?? 'per_peserta';
             $this->tanggal_pemesanan = $first->tanggal_pemesanan
                 ? Carbon::parse($first->tanggal_pemesanan)->format('Y-m-d')
                 : null;
@@ -110,6 +117,26 @@ class PemesananrscForm extends Component
                     'telp_pembeli' => $p->telp_pembeli,
                 ];
             }
+            // Muat akun tambahan batch (kredensial saja).
+            $this->akunTambahan = [];
+            $extra = \App\Models\RscBatchAkun::where('nama_camp', $this->nama_camp)
+                ->where('batch_camp', $this->batch_camp)
+                ->orderBy('id')
+                ->get();
+            foreach ($extra as $e) {
+                $key = 'db-'.$e->id;
+                $hargaAkun = $e->akun_id ? $this->toNumber(optional(\App\Models\DataAkun::find($e->akun_id))->harga_satuan) : 0;
+                $this->akunTambahan[$key] = [
+                    'tmp_id' => $key,
+                    'akun_id' => $e->akun_id,
+                    'nama_akun' => $e->nama_akun,
+                    'username' => $e->username,
+                    'password' => $e->password,
+                    'link_akses' => $e->link_akses,
+                    'harga' => $hargaAkun,
+                ];
+            }
+
             $this->mode = 'edit';
         } else {
             $this->mode = 'create';
@@ -124,6 +151,15 @@ class PemesananrscForm extends Component
         $this->hitungTanggalBerakhir();
     }
 
+    // Download template Excel untuk import peserta.
+    public function downloadTemplate()
+    {
+        return Excel::download(
+            new \App\Exports\RscTemplateImportExport,
+            'template-import-peserta-rsc.xlsx'
+        );
+    }
+
     // import excel file
     public function updatedFileExcel()
     {
@@ -131,6 +167,13 @@ class PemesananrscForm extends Component
         $this->validate([
             'file_excel' => 'required|mimes:xlsx,xls,csv|max:2048',
         ]);
+
+        // Mode edit: TAMBAHKAN peserta dari file (data lama tidak dihapus).
+        if ($this->mode === 'edit') {
+            $this->importPesertaAppend();
+
+            return;
+        }
 
         try {
             $data = Excel::toCollection(new class implements \Maatwebsite\Excel\Concerns\ToCollection
@@ -160,7 +203,9 @@ class PemesananrscForm extends Component
                 foreach ($data->skip(1) as $row) {
                     // Cek kolom nama pembeli (C atau index 2)
                     if (! empty($row[2])) {
-                        $this->peserta[] = [
+                        $tmpId = (string) Str::uuid();
+                        $this->peserta[$tmpId] = [
+                            'tmp_id' => $tmpId,
                             'nama_pembeli' => $row[2],
                             'telp_pembeli' => $this->formatPhoneNumber($row[3]) ?? '',
                         ];
@@ -171,7 +216,56 @@ class PemesananrscForm extends Component
                 session()->flash('error', 'File Excel kosong atau tidak sesuai format.');
             }
         } catch (\Exception $e) {
-            dd($e->getMessage());
+            session()->flash('error', 'Gagal import file: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Tambahkan peserta dari Excel ke daftar yang sudah ada (mode edit).
+     * Hanya membaca kolom C (nama) & D (no telp); camp/batch tidak diubah.
+     * Peserta baru diberi tmp_id UUID baru agar dibuat sebagai record baru saat simpan.
+     */
+    private function importPesertaAppend()
+    {
+        try {
+            $data = Excel::toCollection(new class implements \Maatwebsite\Excel\Concerns\ToCollection
+            {
+                public function collection(\Illuminate\Support\Collection $rows)
+                {
+                    return $rows;
+                }
+            }, $this->file_excel)->first();
+
+            if (! $data || $data->count() <= 1) {
+                session()->flash('error', 'File Excel kosong atau tidak sesuai format.');
+
+                return;
+            }
+
+            $ditambah = 0;
+            foreach ($data->skip(1) as $row) {
+                // Kolom C (index 2) = nama peserta; wajib ada.
+                if (empty($row[2])) {
+                    continue;
+                }
+                $tmpId = (string) Str::uuid();
+                $this->peserta[$tmpId] = [
+                    'tmp_id' => $tmpId,
+                    'nama_pembeli' => $row[2],
+                    'telp_pembeli' => ! empty($row[3]) ? $this->formatPhoneNumber($row[3]) : '',
+                ];
+                $ditambah++;
+            }
+
+            // Reset input file agar bisa upload file lain lagi.
+            $this->reset('file_excel');
+
+            if ($ditambah > 0) {
+                $this->dispatch('success-upload-excel', message: $ditambah.' peserta berhasil ditambahkan dari file. Klik "Update" untuk menyimpan.');
+            } else {
+                session()->flash('error', 'Tidak ada nama peserta pada kolom C yang bisa ditambahkan.');
+            }
+        } catch (\Exception $e) {
             session()->flash('error', 'Gagal import file: '.$e->getMessage());
         }
     }
@@ -291,6 +385,66 @@ class PemesananrscForm extends Component
         unset($this->peserta[$tmpId]);
     }
 
+    // ===== Akun tambahan (kredensial saja) =====
+    public function addAkunTambahan()
+    {
+        $id = (string) Str::uuid();
+        $this->akunTambahan[$id] = [
+            'tmp_id' => $id, 'akun_id' => '', 'nama_akun' => '',
+            'username' => '', 'password' => '', 'link_akses' => '', 'harga' => 0,
+        ];
+    }
+
+    public function removeAkunTambahan($tmpId)
+    {
+        unset($this->akunTambahan[$tmpId]);
+    }
+
+    // Dipanggil dari picker; isi kredensial dari DataAkun (tanpa harga).
+    public function setAkunTambahan($tmpId, $akunId)
+    {
+        if (! isset($this->akunTambahan[$tmpId])) {
+            return;
+        }
+
+        $akun = \App\Models\DataAkun::find($akunId);
+        if (! $akun) {
+            return;
+        }
+
+        $this->akunTambahan[$tmpId] = array_merge($this->akunTambahan[$tmpId], [
+            'akun_id' => $akun->id,
+            'nama_akun' => $akun->nama_akun,
+            'username' => $akun->username_akun ?: 'Tidak ada',
+            'password' => $akun->password_akun ?: 'Tidak ada',
+            'link_akses' => $akun->link_login_akun ?: 'Tidak ada',
+            'harga' => $this->toNumber($akun->harga_satuan),
+        ]);
+    }
+
+    // Simpan/ganti akun tambahan untuk batch (kredensial saja).
+    private function simpanAkunTambahan()
+    {
+        \App\Models\RscBatchAkun::where('nama_camp', $this->nama_camp)
+            ->where('batch_camp', $this->batch_camp)
+            ->delete();
+
+        foreach ($this->akunTambahan as $a) {
+            if (empty($a['akun_id'])) {
+                continue;
+            }
+            \App\Models\RscBatchAkun::create([
+                'nama_camp' => $this->nama_camp,
+                'batch_camp' => $this->batch_camp,
+                'akun_id' => $a['akun_id'],
+                'nama_akun' => $a['nama_akun'],
+                'username' => $a['username'],
+                'password' => $a['password'],
+                'link_akses' => $a['link_akses'],
+            ]);
+        }
+    }
+
     #[Computed()]
     public function total_per_peserta()
     {
@@ -300,10 +454,78 @@ class PemesananrscForm extends Component
         return $jumlah * $harga;
     }
 
+    // Harga akun utama (numerik) — dipakai untuk rincian mode 'per_akun'.
+    public function hargaUtama()
+    {
+        return $this->toNumber($this->harga_satuan);
+    }
+
+    // Jumlah harga semua akun (utama + tambahan) — dipakai mode 'per_akun'.
+    public function sumHargaAkun()
+    {
+        $sum = $this->toNumber($this->harga_satuan); // akun utama
+        foreach ($this->akunTambahan as $a) {
+            if (! empty($a['akun_id'])) {
+                $sum += (int) ($a['harga'] ?? 0);
+            }
+        }
+
+        return $sum;
+    }
+
+    // Jumlah akun terisi (utama + tambahan).
+    public function jumlahAkun()
+    {
+        $n = $this->akun ? 1 : 0;
+        foreach ($this->akunTambahan as $a) {
+            if (! empty($a['akun_id'])) {
+                $n++;
+            }
+        }
+
+        return $n;
+    }
+
     #[Computed()]
     public function grand_total()
     {
+        // Mode per akun: bulan x jumlah harga semua akun (peserta tidak berpengaruh).
+        if ($this->metode_harga === 'per_akun') {
+            return (int) $this->jumlah_pemesanan * $this->sumHargaAkun();
+        }
+
+        // Mode per peserta (default, TIDAK diubah): harga per peserta x jumlah peserta.
         return $this->total_per_peserta() * count($this->peserta);
+    }
+
+    /**
+     * Total yang disimpan per baris peserta, agar SUM(total) = grand_total.
+     * - per_peserta: tiap baris = total_per_peserta() (persis seperti sekarang).
+     * - per_akun: grand_total dibagi rata ke peserta (sisa pembulatan ke baris pertama).
+     *
+     * @return array<string,int> keyed by tmp_id peserta
+     */
+    private function rowTotals()
+    {
+        $keys = array_keys($this->peserta);
+        $n = count($keys);
+
+        if ($this->metode_harga === 'per_akun') {
+            if ($n === 0) {
+                return [];
+            }
+            $grand = $this->grand_total();
+            $base = intdiv($grand, $n);
+            $totals = array_fill_keys($keys, $base);
+            $totals[$keys[0]] = $base + ($grand - $base * $n); // sisa ke baris pertama
+
+            return $totals;
+        }
+
+        // per_peserta: tetap seperti sekarang
+        $per = $this->total_per_peserta();
+
+        return array_fill_keys($keys, $per);
     }
 
     private function formatPhoneNumber($number)
@@ -323,7 +545,8 @@ class PemesananrscForm extends Component
     {
         DB::beginTransaction();
         try {
-            foreach ($this->peserta as $p) {
+            $rowTotals = $this->rowTotals();
+            foreach ($this->peserta as $tmpId => $p) {
 
                 $formattedTelp = $this->formatPhoneNumber($p['telp_pembeli']);
 
@@ -334,10 +557,11 @@ class PemesananrscForm extends Component
                     'tanggal_mulai_camp' => $this->tanggal_mulai_camp,
                     'tanggal_akhir_camp' => $this->tanggal_akhir_camp,
                     'jumlah_pemesanan' => $this->jumlah_pemesanan,
+                    'metode_harga' => $this->metode_harga,
                     'tanggal_pemesanan' => $this->tanggal_pemesanan,
                     'tanggal_berakhir' => $this->tanggal_berakhir,
                     'harga_satuan' => $this->toNumber($this->harga_satuan),
-                    'total' => $this->total_per_peserta(),
+                    'total' => $rowTotals[$tmpId] ?? $this->total_per_peserta(),
                     'akun' => $this->akun,
                     'username' => $this->username,
                     'password' => $this->password,
@@ -359,6 +583,10 @@ class PemesananrscForm extends Component
                     'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
                 ]);
             }
+
+            // Akun tambahan (kredensial saja).
+            $this->simpanAkunTambahan();
+
             DB::commit();
 
             session()->flash('success', 'Data Pemesanan berhasil ditambahkan!');
@@ -389,6 +617,7 @@ class PemesananrscForm extends Component
                 });
 
             // update atau create peserta
+            $rowTotals = $this->rowTotals();
             foreach ($this->peserta as $tmpId => $p) {
                 $formattedTelp = $this->formatPhoneNumber($p['telp_pembeli']);
                 $data = [
@@ -396,11 +625,12 @@ class PemesananrscForm extends Component
                     'batch_camp' => $this->batch_camp,
                     'tanggal_mulai_camp' => $this->tanggal_mulai_camp,
                     'tanggal_akhir_camp' => $this->tanggal_akhir_camp,
-                    'jumlah_pemesanan' => count($this->peserta),
+                    'jumlah_pemesanan' => $this->jumlah_pemesanan,
+                    'metode_harga' => $this->metode_harga,
                     'tanggal_pemesanan' => $this->tanggal_pemesanan,
                     'tanggal_berakhir' => $this->tanggal_berakhir,
                     'harga_satuan' => $this->toNumber($this->harga_satuan),
-                    'total' => $this->total_per_peserta(),
+                    'total' => $rowTotals[$tmpId] ?? $this->total_per_peserta(),
                     'akun' => $this->akun,
                     'username' => $this->username,
                     'password' => $this->password,
@@ -439,6 +669,9 @@ class PemesananrscForm extends Component
                     ]);
                 }
             }
+
+            // Akun tambahan (kredensial saja).
+            $this->simpanAkunTambahan();
 
             DB::commit();
             session()->flash('success', 'Berhasil Update data!');

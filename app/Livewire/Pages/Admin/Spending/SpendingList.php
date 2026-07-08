@@ -132,7 +132,7 @@ class SpendingList extends Component
 
         $jenis = $this->jenisPengeluaran === 'pembelian_akun' ? 'pembelian_akun' : 'lainnya';
 
-        $query = Spending::with(['penginput', 'picPembeli']);
+        $query = Spending::with(['penginput', 'picPembeli', 'product']);
 
         if (! empty($this->search)) {
             $this->applySearch($query);
@@ -217,7 +217,7 @@ class SpendingList extends Component
     {
         // Export selalu mencakup SEMUA kategori (Pembelian Akun + Lainnya).
         // Hanya mengikuti pencarian atau periode, bukan tab jenis yang aktif.
-        $query = Spending::with(['penginput', 'picPembeli']);
+        $query = Spending::with(['penginput', 'picPembeli', 'product']);
 
         if (! empty($this->search)) {
             $this->applySearch($query);

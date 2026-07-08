@@ -194,8 +194,9 @@ Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
                                 "• ID Tiket: *{$item->ticket}*\n" .
                                 "• Status: *" . ucfirst($item->status) . "*\n" .
                                 "• Prioritas: *" . ucfirst($item->priority) . "*\n\n" .
-                                "Saat ini tiket Anda berada di urutan antrian ke-{$queue}. Mohon kesediaannya untuk menunggu, kami akan segera menghubungkan Anda dengan admin spesialis kami.\n\n" .
-                                "Terima kasih atas pengertiannya.\n\n" .
+                                "Saat ini tiket Anda berada di urutan antrian ke-{$queue}.\n" .
+                                "Mohon ditunggu sejenak, pengaduan Anda sedang kami arahkan ke tim yang berkaitan agar dapat ditangani oleh admin spesialis yang paling sesuai dengan kendala Anda. Kami akan segera menindaklanjutinya.\n\n" .
+                                "Terima kasih atas kesabaran dan pengertiannya.\n\n" .
                                 "Salam hangat,\n*Phoenix Digital Warehouse*";
 
                                 $waPhone = preg_replace('/^0/', '62', $item->no_telp);

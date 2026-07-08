@@ -11,6 +11,7 @@ use App\Models\PemesananRsc;
 use App\Models\Pengembalian;
 use App\Models\Spending;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,6 +23,13 @@ class CashFlowList extends Component
 
     public $tahun;
 
+    // Mode periode: 'kalender' (1 s/d akhir bulan, default) atau 'siklus20' (tgl 20 s/d 19 bulan berikutnya)
+    public $modePeriode = 'kalender';
+
+    public $produkPage = 1;
+
+    public $produkPerPage = 8;
+
     public function mount(): void
     {
         // Default ke periode bulan & tahun berjalan
@@ -32,15 +40,57 @@ class CashFlowList extends Component
     public function updated($property): void
     {
         // Reset paginasi setiap kali filter periode berubah
-        if (in_array($property, ['bulan', 'tahun'])) {
+        if (in_array($property, ['bulan', 'tahun', 'modePeriode'])) {
             $this->resetPage();
+            $this->produkPage = 1;
         }
+    }
+
+    /**
+     * Apakah filter memakai siklus 20-20 (butuh bulan terpilih).
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20' && ! empty($this->bulan);
+    }
+
+    /**
+     * Rentang siklus 20-20 untuk bulan/tahun terpilih:
+     * [mulai = tgl 20 bulan terpilih 00:00, akhirEksklusif = tgl 20 bulan berikutnya 00:00].
+     * Jadi mencakup tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya.
+     */
+    protected function siklusRange(): array
+    {
+        $tahun = (int) ($this->tahun ?: now()->year);
+        $mulai = Carbon::create($tahun, (int) $this->bulan, 20)->startOfDay();
+        $akhirEksklusif = $mulai->copy()->addMonthNoOverflow();
+
+        return [$mulai, $akhirEksklusif];
+    }
+
+    public function produkNext(): void
+    {
+        $this->produkPage++;
+    }
+
+    public function produkPrev(): void
+    {
+        if ($this->produkPage > 1) {
+            $this->produkPage--;
+        }
+    }
+
+    public function produkGoto($page): void
+    {
+        $this->produkPage = max(1, (int) $page);
     }
 
     public function resetFilter(): void
     {
         $this->bulan = '';
         $this->tahun = '';
+        $this->modePeriode = 'kalender';
+        $this->produkPage = 1;
         $this->resetPage();
     }
 
@@ -51,6 +101,15 @@ class CashFlowList extends Component
         $totalIncome = (clone $query)->where('type', 'income')->sum('amount');
         $totalExpense = (clone $query)->where('type', 'expense')->sum('amount');
 
+        $omset = $this->hitungOmsetBersih();
+
+        // Paginasi rincian per produk (data in-memory)
+        $allProduk = $omset['per_produk'];
+        $produkTotal = count($allProduk);
+        $produkTotalPages = max(1, (int) ceil($produkTotal / $this->produkPerPage));
+        $this->produkPage = min(max(1, (int) $this->produkPage), $produkTotalPages);
+        $produkItems = array_slice($allProduk, ($this->produkPage - 1) * $this->produkPerPage, $this->produkPerPage);
+
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
             'reports' => $query->paginate(10),
             'summary' => [
@@ -58,7 +117,10 @@ class CashFlowList extends Component
                 'expense' => $totalExpense,
                 'net' => $totalIncome - $totalExpense,
             ],
-            'omset' => $this->hitungOmsetBersih(),
+            'omset' => $omset,
+            'produkItems' => $produkItems,
+            'produkTotal' => $produkTotal,
+            'produkTotalPages' => $produkTotalPages,
             'totalKodeUnik' => $this->hitungTotalKodeUnik(),
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
@@ -108,13 +170,19 @@ class CashFlowList extends Component
      */
     protected function filteredQuery()
     {
-        $query = CashFlow::with('sourceable')->latest('transaction_date');
+        $query = CashFlow::with('sourceable')->latest('created_at');
 
-        if ($this->tahun) {
-            $query->whereYear('transaction_date', $this->tahun);
-        }
-        if ($this->bulan) {
-            $query->whereMonth('transaction_date', $this->bulan);
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+            $query->where('transaction_date', '>=', $mulai)
+                ->where('transaction_date', '<', $akhir);
+        } else {
+            if ($this->tahun) {
+                $query->whereYear('transaction_date', $this->tahun);
+            }
+            if ($this->bulan) {
+                $query->whereMonth('transaction_date', $this->bulan);
+            }
         }
 
         return $query;
@@ -137,6 +205,9 @@ class CashFlowList extends Component
             Pengembalian::class => 'Pengembalian '.($s->nama_pengembalian ?? ''),
             GajiKaryawans::class => 'Gaji '.($s->karyawan->name ?? 'User'),
             Spending::class => 'Pengeluaran '.($s->jenis_pengeluaran === 'pembelian_akun' ? 'Pembelian Akun' : 'Lainnya'),
+            \App\Models\Modal::class => 'Modal Operasional',
+            \App\Models\OrderItem::class => 'Modal Akun: '.($s->product_name ?? '-'),
+            \App\Models\Pemasukan::class => $s->kategori ? 'Pemasukan: '.$s->kategori : 'Pemasukan Lainnya',
             PemesananRsc::class => 'Pesanan Rumah Scopus',
             default => class_basename($cf->sourceable_type),
         };
@@ -148,6 +219,12 @@ class CashFlowList extends Component
     protected function periodeLabel(): string
     {
         $namaBulan = $this->bulan ? ($this->daftarBulan()[$this->bulan] ?? '') : '';
+
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+
+            return $mulai->translatedFormat('d M Y').' – '.$akhir->copy()->subDay()->translatedFormat('d M Y');
+        }
 
         if ($this->bulan && $this->tahun) {
             return $namaBulan.' '.$this->tahun;
@@ -165,41 +242,173 @@ class CashFlowList extends Component
     /**
      * Hitung omset bersih penjualan pada periode terpilih.
      *
-     * Omset Bersih = Total Penjualan (SUM subtotal item) - Total Modal (SUM harga_awal * qty)
-     * Hanya dari pesanan yang sudah dibayar (paid/processing/completed).
-     * leftJoin agar item tanpa produk terpadan (mis. bundling) tetap dihitung
-     * penjualannya, sementara modalnya 0 bila harga_awal tidak ditemukan.
+     * Omset Bersih = Total Penjualan (SUM subtotal item) - Total Modal (Pembelian Akun).
+     * Modal kini diambil dari pengeluaran berjenis "pembelian_akun" (bukan harga_awal),
+     * dikelompokkan per produk. Hanya dari pesanan yang sudah dibayar (paid/processing/completed).
      */
     protected function hitungOmsetBersih(): array
     {
         $paidStatuses = ['paid', 'processing', 'completed'];
 
-        $agg = OrderItem::query()
-            ->whereHas('order', function ($q) use ($paidStatuses) {
+        // Per-periode: bisa mode kalender (bulan/tahun) atau siklus 20-20.
+        $tahun = $this->tahun;
+        $bulan = $this->bulan;
+        $usesSiklus = $this->usesSiklus();
+        [$siklusMulai, $siklusAkhir] = $usesSiklus ? $this->siklusRange() : [null, null];
+
+        $applyOrderPeriode = function ($q) use ($tahun, $bulan, $usesSiklus, $siklusMulai, $siklusAkhir) {
+            if ($usesSiklus) {
+                $q->whereRaw('COALESCE(paid_at, created_at) >= ?', [$siklusMulai])
+                    ->whereRaw('COALESCE(paid_at, created_at) < ?', [$siklusAkhir]);
+
+                return;
+            }
+            if ($tahun) {
+                $q->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun]);
+            }
+            if ($bulan) {
+                $q->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+            }
+        };
+
+        // Penjualan per produk (pesanan yang sudah dibayar, pada periode terpilih)
+        $penjualanRows = OrderItem::query()
+            ->whereHas('order', function ($q) use ($paidStatuses, $applyOrderPeriode) {
                 $q->whereIn('status', $paidStatuses);
-
-                // Filter periode berdasarkan tanggal bayar (fallback ke tanggal dibuat)
-                if ($this->tahun) {
-                    $q->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$this->tahun]);
-                }
-                if ($this->bulan) {
-                    $q->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$this->bulan]);
-                }
+                $applyOrderPeriode($q);
             })
-            ->leftJoin('products', 'order_items.product_id', '=', 'products.id')
-            ->selectRaw('COALESCE(SUM(order_items.subtotal), 0) as penjualan')
-            ->selectRaw('COALESCE(SUM(COALESCE(products.harga_awal, 0) * order_items.quantity), 0) as modal')
-            ->first();
+            ->selectRaw('order_items.product_id, COALESCE(SUM(order_items.subtotal), 0) as penjualan')
+            ->groupBy('order_items.product_id')
+            ->get();
 
-        $penjualan = (float) ($agg->penjualan ?? 0);
-        $modal = (float) ($agg->modal ?? 0);
+        // ===== Modal per produk =====
+        $privateIds = \App\Models\Product::where('tipe_akun', 'private')->pluck('id')->all();
+
+        // Modal produk NON-private (sharing / tanpa produk) = total pembelian akun periode terpilih
+        $modalNonPrivateRows = Spending::query()
+            ->where('jenis_pengeluaran', 'pembelian_akun')
+            ->when($usesSiklus, function ($q) use ($siklusMulai, $siklusAkhir) {
+                $q->where('tanggal_transaksi', '>=', $siklusMulai->toDateString())
+                    ->where('tanggal_transaksi', '<', $siklusAkhir->toDateString());
+            })
+            ->when(! $usesSiklus && $tahun, fn ($q) => $q->whereYear('tanggal_transaksi', $tahun))
+            ->when(! $usesSiklus && $bulan, fn ($q) => $q->whereMonth('tanggal_transaksi', $bulan))
+            ->when(! empty($privateIds), function ($q) use ($privateIds) {
+                $q->where(function ($x) use ($privateIds) {
+                    $x->whereNull('product_id')->orWhereNotIn('product_id', $privateIds);
+                });
+            })
+            ->selectRaw('product_id, COALESCE(SUM(nominal), 0) as modal')
+            ->groupBy('product_id')
+            ->get();
+
+        $modalByProduct = []; // key: product_id ('' utk null) => modal
+        foreach ($modalNonPrivateRows as $r) {
+            $modalByProduct[(string) $r->product_id] = (float) $r->modal;
+        }
+
+        // Modal produk PRIVATE = katalog modal satuan (harga BERLAKU s/d periode) x jumlah order
+        if (! empty($privateIds)) {
+            // Batas tanggal harga yang berlaku (akhir periode terpilih).
+            if ($usesSiklus) {
+                // Akhir siklus = tgl 19 bulan berikutnya (sehari sebelum akhir eksklusif).
+                $hargaCutoff = $siklusAkhir->copy()->subDay()->toDateString();
+            } elseif ($bulan && $tahun) {
+                $hargaCutoff = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
+            } elseif ($tahun) {
+                $hargaCutoff = Carbon::create($tahun, 12, 31)->toDateString();
+            } elseif ($bulan) {
+                $hargaCutoff = Carbon::create(now()->year, $bulan, 1)->endOfMonth()->toDateString();
+            } else {
+                $hargaCutoff = null;
+            }
+
+            $catalog = \App\Models\ProductModalPrice::query()
+                ->whereIn('product_id', $privateIds)
+                ->when($hargaCutoff, fn ($q) => $q->where('berlaku_mulai', '<=', $hargaCutoff))
+                ->orderBy('berlaku_mulai', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get(['product_id', 'durasi_value', 'durasi_type', 'harga']);
+            $unitMap = [];
+            foreach ($catalog as $c) {
+                $k = $c->product_id.'|'.$c->durasi_value.'|'.$c->durasi_type;
+                if (! array_key_exists($k, $unitMap)) {
+                    $unitMap[$k] = (float) $c->harga; // berlaku terbaru menang
+                }
+            }
+
+            $privItems = OrderItem::query()
+                ->whereHas('order', function ($q) use ($paidStatuses, $applyOrderPeriode) {
+                    $q->whereIn('status', $paidStatuses);
+                    $applyOrderPeriode($q);
+                })
+                ->whereIn('order_items.product_id', $privateIds)
+                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty')
+                ->groupBy('order_items.product_id', 'order_items.duration_value', 'order_items.duration_type')
+                ->get();
+
+            foreach ($privItems as $it) {
+                $k = $it->product_id.'|'.$it->duration_value.'|'.$it->duration_type;
+                $unit = $unitMap[$k] ?? 0;
+                $pidKey = (string) $it->product_id;
+                $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $unit * (int) $it->qty;
+            }
+        }
+
+        // Peta penjualan per produk
+        $penjualanByProduct = [];
+        foreach ($penjualanRows as $r) {
+            $penjualanByProduct[(string) $r->product_id] = (float) $r->penjualan;
+        }
+
+        $penjualan = array_sum($penjualanByProduct);
+        $modal = array_sum($modalByProduct);
         $bersih = $penjualan - $modal;
+
+        // ===== Rincian per produk =====
+        $productIds = collect(array_keys($penjualanByProduct))
+            ->merge(array_keys($modalByProduct))
+            ->filter(fn ($k) => $k !== '' && $k !== null)
+            ->unique()
+            ->values();
+        $names = \App\Models\Product::whereIn('id', $productIds)->pluck('nama_akun', 'id');
+
+        $perProduk = [];
+        foreach ($productIds as $pid) {
+            $pj = (float) ($penjualanByProduct[(string) $pid] ?? 0);
+            $md = (float) ($modalByProduct[(string) $pid] ?? 0);
+            $perProduk[] = [
+                'nama' => $names[$pid] ?? 'Produk',
+                'penjualan' => $pj,
+                'modal' => $md,
+                'bersih' => $pj - $md,
+                'tertutup' => $md <= 0 ? true : $pj >= $md,
+            ];
+        }
+
+        // Tanpa produk = pembelian akun / spending lama yang tidak tertaut ke produk mana pun.
+        // (Item paket bundling TIDAK masuk sini — saat checkout paket dipecah jadi OrderItem
+        //  per produk dengan product_id asli, jadi omset & modalnya sudah terhitung per produk.)
+        $pjNull = (float) ($penjualanByProduct[''] ?? 0);
+        $mdNull = (float) ($modalByProduct[''] ?? 0);
+        if ($pjNull > 0 || $mdNull > 0) {
+            $perProduk[] = [
+                'nama' => 'Tanpa Produk',
+                'penjualan' => $pjNull,
+                'modal' => $mdNull,
+                'bersih' => $pjNull - $mdNull,
+                'tertutup' => $mdNull <= 0 ? true : $pjNull >= $mdNull,
+            ];
+        }
+
+        usort($perProduk, fn ($a, $b) => $b['bersih'] <=> $a['bersih']);
 
         return [
             'penjualan' => $penjualan,
             'modal' => $modal,
             'bersih' => $bersih,
             'margin' => $penjualan > 0 ? round(($bersih / $penjualan) * 100, 1) : 0,
+            'per_produk' => $perProduk,
         ];
     }
 
@@ -214,11 +423,17 @@ class CashFlowList extends Component
 
         $query = Order::query()->whereIn('status', $paidStatuses);
 
-        if ($this->tahun) {
-            $query->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$this->tahun]);
-        }
-        if ($this->bulan) {
-            $query->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$this->bulan]);
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+            $query->whereRaw('COALESCE(paid_at, created_at) >= ?', [$mulai])
+                ->whereRaw('COALESCE(paid_at, created_at) < ?', [$akhir]);
+        } else {
+            if ($this->tahun) {
+                $query->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$this->tahun]);
+            }
+            if ($this->bulan) {
+                $query->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$this->bulan]);
+            }
         }
 
         return (float) $query->sum('unique_code');

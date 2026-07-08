@@ -250,6 +250,21 @@ Route::middleware('permission:view_spending')->group(function () {
     Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->middleware('permission:edit_spending')->name('admin.spending.edit');
 });
 
+// Data Modal
+Route::middleware('permission:view_modal')->group(function () {
+    Route::get('/admin/modal', \App\Livewire\Pages\Admin\Modal\ModalList::class)->name('admin.modal.index');
+});
+
+// Data Pemasukan Lainnya
+Route::middleware('permission:view_pemasukan')->group(function () {
+    Route::get('/admin/pemasukan', \App\Livewire\Pages\Admin\Pemasukan\PemasukanList::class)->name('admin.pemasukan.index');
+});
+
+// Harga Modal Akun (private)
+Route::middleware('permission:view_harga_modal')->group(function () {
+    Route::get('/admin/harga-modal', \App\Livewire\Pages\Admin\HargaModal\HargaModalList::class)->name('admin.hargamodal.index');
+});
+
 // Data Loan & Pengembalian (satu modul Peminjaman)
 Route::middleware('permission:view_loan')->group(function () {
     Route::get('/admin/loan', LoanList::class)->name('admin.loan.index');
@@ -266,6 +281,16 @@ Route::middleware('permission:view_gajikaryawan')->group(function () {
     Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
     Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->middleware('permission:create_gajikaryawan')->name('admin.gajikaryawan.create');
     Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->middleware('permission:edit_gajikaryawan')->name('admin.gajikaryawan.edit');
+});
+
+// Penyelesaian Task (admin): kelola task + pool bonus per periode
+Route::middleware('permission:manage_task')->group(function () {
+    Route::get('/admin/penyelesaian-task', \App\Livewire\Pages\Admin\PenyelesaianTask\PenyelesaianTaskList::class)->name('admin.penyelesaian-task.index');
+});
+
+// Task Saya (semua karyawan): lihat & kerjakan task miliknya
+Route::middleware('permission:view_task')->group(function () {
+    Route::get('/admin/task-saya', \App\Livewire\Pages\Admin\Task\TaskSayaList::class)->name('admin.task-saya.index');
 });
 
 // Lowongan Pekerjaan

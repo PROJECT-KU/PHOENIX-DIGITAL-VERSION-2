@@ -131,6 +131,58 @@ class PermissionSeeder extends Seeder
                 'group' => 'presensi',
                 'description' => 'Dapat menginput presensi karyawan secara manual (tanpa batas jarak & waktu)'
             ],
+
+            // Modal
+            [
+                'name' => 'view_modal',
+                'display_name' => 'Lihat Modal',
+                'group' => 'modal',
+                'description' => 'Dapat melihat modal operasional & modal pembelian akun'
+            ],
+            [
+                'name' => 'create_modal',
+                'display_name' => 'Tambah Modal',
+                'group' => 'modal',
+                'description' => 'Dapat menambah modal operasional'
+            ],
+            [
+                'name' => 'edit_modal',
+                'display_name' => 'Edit Modal',
+                'group' => 'modal',
+                'description' => 'Dapat mengubah modal operasional'
+            ],
+            [
+                'name' => 'delete_modal',
+                'display_name' => 'Hapus Modal',
+                'group' => 'modal',
+                'description' => 'Dapat menghapus modal operasional'
+            ],
+
+            // Pemasukan Lainnya
+            [
+                'name' => 'view_pemasukan',
+                'display_name' => 'Lihat Pemasukan Lainnya',
+                'group' => 'pemasukan',
+                'description' => 'Dapat melihat pemasukan lain di luar pemesanan'
+            ],
+            [
+                'name' => 'create_pemasukan',
+                'display_name' => 'Tambah Pemasukan Lainnya',
+                'group' => 'pemasukan',
+                'description' => 'Dapat menambah pemasukan lain'
+            ],
+            [
+                'name' => 'edit_pemasukan',
+                'display_name' => 'Edit Pemasukan Lainnya',
+                'group' => 'pemasukan',
+                'description' => 'Dapat mengubah pemasukan lain'
+            ],
+            [
+                'name' => 'delete_pemasukan',
+                'display_name' => 'Hapus Pemasukan Lainnya',
+                'group' => 'pemasukan',
+                'description' => 'Dapat menghapus pemasukan lain'
+            ],
         ];
 
         foreach ($permissions as $permission) {

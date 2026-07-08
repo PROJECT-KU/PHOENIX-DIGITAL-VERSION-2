@@ -8,7 +8,7 @@ new class extends Component {
     {
         $logout();
 
-        $this->redirect('/');
+        $this->redirect(route('login'));
     }
 }; ?>
 
@@ -42,6 +42,7 @@ Dashboard || PT. Asthana Cipta Mandiri
 
     <!--================== HEADER ==================-->
     <div class="container-fluid">
+        @include('livewire.pages.admin.partials.birthday-card')
         <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
             <div class="card-body p-4 d-flex align-items-center">
 
@@ -75,9 +76,9 @@ Dashboard || PT. Asthana Cipta Mandiri
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button class="btn btn-primary d-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px; padding: 10px 18px;">
+                            <a href="{{ route('admin.account.profile') }}" wire:navigate class="btn btn-primary d-flex align-items-center justify-content-center shadow-sm text-decoration-none" style="border-radius: 12px; padding: 10px 18px;">
                                 <i class="bi bi-person me-2"></i> Profile
-                            </button>
+                            </a>
 
                             <button type="button" class="btn btn-danger btn-logout d-flex align-items-center justify-content-center shadow-sm" style="border-radius: 12px; padding: 10px 18px;">
                                 <i class="bi bi-box-arrow-right me-2"></i> Logout
@@ -308,12 +309,20 @@ Dashboard || PT. Asthana Cipta Mandiri
                     style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px);">
 
                     <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
-                        <h5 class="fw-bold text-dark mb-0">Visitors Profile</h5>
-                        <small class="text-muted">Distribusi Negara Pengunjung</small>
+                        <h5 class="fw-bold text-dark mb-0">Metode Pembayaran</h5>
+                        <small class="text-muted">Distribusi order per metode pembayaran</small>
                     </div>
 
                     <div class="card-body px-4 pb-4">
+                        @if(empty($counts))
+                        <div class="d-flex flex-column align-items-center justify-content-center py-5">
+                            <div class="empty-state-icon-wrapper mb-3"><i class="bi bi-credit-card"></i></div>
+                            <h6 class="fw-bold text-dark mb-1">Belum Ada Data</h6>
+                            <p class="text-muted mb-0" style="font-size:.9rem;">Belum ada order dengan metode pembayaran.</p>
+                        </div>
+                        @else
                         <div id="chart-visitors-profile" class="mt-3"></div>
+                        @endif
                     </div>
                 </div>
             </div>

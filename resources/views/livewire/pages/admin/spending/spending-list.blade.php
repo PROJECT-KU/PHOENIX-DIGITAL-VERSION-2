@@ -166,7 +166,7 @@ Data Pengeluaran || PT. Asthana Cipta Mandiri
                                 <th>ID Transaksi</th>
                                 <th>Waktu Transaksi</th>
                                 <th>Nominal</th>
-                                <th>Deskripsi</th>
+                                <th>{{ $isPembelianAkun ? 'Akun' : 'Deskripsi' }}</th>
                                 <th class="text-center">Status</th>
                                 <th>Penginput</th>
                                 @if ($showPicColumn)
@@ -184,7 +184,15 @@ Data Pengeluaran || PT. Asthana Cipta Mandiri
                                 <td class="fw-bold">{{ $spending->id_transaksi }}</td>
                                 <td>{{ $spending->tanggal_transaksi_formatted }}</td>
                                 <td>{{ $spending->nominal_formatted }}</td>
-                                <td class="text-truncate" style="max-width: 200px;">{{ Str::limit($spending->deskripsi, 50) }}</td>
+                                <td class="text-truncate" style="max-width: 200px;">
+                                    @if ($spending->jenis_pengeluaran === 'pembelian_akun')
+                                    <span class="badge bg-primary-subtle text-primary border border-primary">
+                                        <i class="bi bi-box-seam me-1"></i>{{ $spending->product->nama_akun ?? '—' }}
+                                    </span>
+                                    @else
+                                    {{ Str::limit($spending->deskripsi, 50) }}
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     <span
                                         class="badge bg-{{ $spending->status === 'completed' ? 'success' : ($spending->status === 'rejected' ? 'danger' : ($spending->status === 'approved' ? 'info' : 'warning')) }}">

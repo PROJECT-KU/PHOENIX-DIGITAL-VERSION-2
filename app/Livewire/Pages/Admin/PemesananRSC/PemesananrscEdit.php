@@ -30,7 +30,7 @@ class PemesananrscEdit extends Component
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-edit', [

@@ -100,8 +100,8 @@ class CashFlowDetail extends Component
                 'Customer' => $s->customer->nama ?? '-',
                 'No. HP' => $s->customer->no_hp ?? '-',
                 'Status' => ucfirst($s->status),
-                'Metode Bayar' => $s->payment_method ?: '-',
-                'Tanggal Bayar' => $s->paid_at?->format('d M Y H:i') ?? '-',
+                'Metode Bayar' => $this->labelMetode($s->payment_method),
+                'Tanggal Bayar' => $this->tanggalBayar($s),
             ];
 
             foreach ($s->items as $it) {
@@ -220,5 +220,27 @@ class CashFlowDetail extends Component
     protected function rupiah($value): string
     {
         return 'Rp '.number_format((float) $value, 0, ',', '.');
+    }
+
+    /** Label metode bayar yang rapi (tanpa underscore). */
+    protected function labelMetode(?string $m): string
+    {
+        return match ($m) {
+            'transfer' => 'Transfer Bank',
+            'qris_statis' => 'QRIS Statis',
+            'qris_dinamis' => 'QRIS Dinamis',
+            default => $m ? ucwords(str_replace('_', ' ', $m)) : '-',
+        };
+    }
+
+    /**
+     * Tanggal bayar = saat pesanan dibayar (paid_at). Bila kosong, pakai tanggal
+     * transaksi cash flow (tanggal uang tercatat masuk / pesanan completed).
+     */
+    protected function tanggalBayar(Order $order): string
+    {
+        $tgl = $order->paid_at ?: $this->cashFlow->transaction_date;
+
+        return $tgl ? \Illuminate\Support\Carbon::parse($tgl)->format('d M Y H:i') : '-';
     }
 }

@@ -21,6 +21,9 @@ class Spending extends Model
         'penginput_id',
         'pic_pembeli_id',
         'jenis_pengeluaran',
+        'product_id',
+        'durasi_value',
+        'durasi_type',
         'id_transaksi',
     ];
 
@@ -47,6 +50,11 @@ class Spending extends Model
     public function picPembeli(): BelongsTo
     {
         return $this->belongsTo(User::class, 'pic_pembeli_id');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     // scope

@@ -4,11 +4,17 @@
 
             <div class="col-md-6">
                 <label for="namaAkun" class="form-label text-secondary fw-bold">Nama Akun <span class="text-danger">*</span></label>
-                <input type="text" id="namaAkun" wire:model.defer="nama_akun"
-                    class="form-control shadow-none @error('nama_akun') is-invalid @enderror"
-                    placeholder="Masukkan nama akun">
+                <button type="button" onclick="daNamaPicker(this)"
+                    class="form-select text-start da-picker-btn shadow-none @error('nama_akun') is-invalid @enderror" id="namaAkun">
+                    @if ($nama_akun)
+                    <span class="text-dark">{{ $nama_akun }}</span>
+                    @else
+                    <span class="text-muted">-- Pilih Nama Akun --</span>
+                    @endif
+                </button>
+                <div class="form-text text-muted">Dari produk. Private: 1 slot; Sharing: 1–10. Nama yang masih aktif tak bisa dipilih.</div>
                 @error('nama_akun')
-                <div class="invalid-feedback">{{ $message }}</div>
+                <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
 
@@ -113,4 +119,116 @@
             </button>
         </div>
     </form>
+
+    <style>
+        .da-picker-btn {
+            cursor: pointer;
+        }
+
+        .da-picker-btn::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            float: right;
+            color: #94a3b8;
+            font-size: .8rem;
+        }
+
+        .da-pick-list {
+            max-height: 340px;
+            overflow-y: auto;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: .4rem;
+            padding: .2rem;
+        }
+
+        .da-pick-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 1px solid #e6e8f2;
+            background: #fff;
+            border-radius: 12px;
+            padding: .7rem .9rem;
+            font-weight: 600;
+            color: #1e293b;
+            font-size: .92rem;
+            transition: all .15s ease;
+        }
+
+        .da-pick-item:hover {
+            border-color: #6c63ff;
+            background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04));
+            transform: translateY(-1px);
+        }
+
+        .da-pick-empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 1.5rem;
+            font-size: .9rem;
+        }
+    </style>
+
+    @push('scripts')
+    <script>
+        (function () {
+            window.__daNames = @json($availableNames);
+
+            if (window.__daPickerBound) return;
+            window.__daPickerBound = true;
+
+            const daGlossy = {
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                buttonsStyling: false,
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 480,
+                padding: '1.25rem',
+            };
+
+            window.daNamaPicker = function (btn) {
+                if (typeof Swal === 'undefined') return;
+                const el = btn.closest('[wire\\:id]');
+                if (!el) return;
+                const cid = el.getAttribute('wire:id');
+                const items = window.__daNames || [];
+
+                const rows = items.length
+                    ? items.map(function (nm) {
+                        return '<button type="button" class="da-pick-item" data-nama="' + nm + '" data-search="' + nm.toLowerCase() + '">' + nm + '</button>';
+                    }).join('')
+                    : '<div class="da-pick-empty">Tidak ada slot nama akun yang tersedia.<br>Semua sedang aktif, atau belum ada produk.</div>';
+
+                Swal.fire(Object.assign({
+                    title: 'Pilih Nama Akun',
+                    html: '<input id="daPickSearch" class="form-control mb-2" placeholder="Ketik untuk mencari...">' +
+                        '<div id="daPickList" class="da-pick-list">' + rows + '</div>',
+                    didOpen: function () {
+                        const search = document.getElementById('daPickSearch');
+                        const listEl = document.getElementById('daPickList');
+                        if (search) {
+                            search.addEventListener('input', function () {
+                                const q = search.value.toLowerCase();
+                                listEl.querySelectorAll('.da-pick-item').forEach(function (b) {
+                                    b.style.display = b.dataset.search.includes(q) ? '' : 'none';
+                                });
+                            });
+                            setTimeout(function () { search.focus(); }, 100);
+                        }
+                        listEl.querySelectorAll('.da-pick-item').forEach(function (b) {
+                            b.addEventListener('click', function () {
+                                if (window.Livewire) window.Livewire.find(cid).set('nama_akun', b.dataset.nama);
+                                Swal.close();
+                            });
+                        });
+                    }
+                }, daGlossy));
+            };
+        })();
+    </script>
+    @endpush
 </div>

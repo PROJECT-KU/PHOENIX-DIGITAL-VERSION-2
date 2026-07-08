@@ -12,12 +12,17 @@
         $periode = ($g->periode_bulan && $g->periode_tahun) ? (($namaBulan[(int)$g->periode_bulan] ?? '').' '.$g->periode_tahun) : '-';
 
         $lemburLabel = ((int) $g->jam_lembur > 0) ? 'Uang Lembur ('.(int) $g->jam_lembur.' jam)' : 'Uang Lembur';
+        $offlineLabel = ((int) $g->jumlah_hadir_offline > 0) ? 'Uang Hadir Offline ('.(int) $g->jumlah_hadir_offline.' hari)' : 'Uang Hadir Offline';
+        $onlineLabel = ((int) $g->jumlah_hadir_online > 0) ? 'Uang Hadir Online ('.(int) $g->jumlah_hadir_online.' hari)' : 'Uang Hadir Online';
 
         $pendapatan = array_filter([
             'Gaji Pokok' => (float) $g->gaji_pokok,
             'Bonus Kinerja' => (float) $g->bonus_kinerja,
             'Bonus Lainnya' => (float) $g->bonus_lainnya,
+            'Bonus Penyelesaian Task' => (float) $g->bonus_penyelesaian_task,
             $lemburLabel => (float) $g->uang_lembur,
+            $offlineLabel => (float) $g->uang_hadir_offline,
+            $onlineLabel => (float) $g->uang_hadir_online,
             'Tunjangan Kesehatan' => (float) $g->tunjangan_kesehatan,
             'Tunjangan THR' => (float) $g->tunjangan_thr,
             'Tunjangan Ketenagakerjaan' => (float) $g->tunjangan_ketenagakerjaan,

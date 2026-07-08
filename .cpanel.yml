@@ -1,0 +1,40 @@
+---
+# =============================================================================
+#  cPanel Git Version Control — deployment tasks
+# =============================================================================
+#  Berjalan HANYA bila Anda deploy lewat cPanel > Git Version Control
+#  (klik "Update from Remote" / "Deploy HEAD Commit"). Jika deploy via FTP/
+#  upload manual, file ini diabaikan (tidak berbahaya).
+#
+#  WAJIB SESUAIKAN placeholder di bawah dengan akun hosting Anda:
+#    - USERNAME   : username cPanel (lihat di pojok kanan atas cPanel)
+#    - APP_DIR    : folder root Laravel (tempat file `artisan`), BUKAN public_html
+#    - PHP_BIN    : path binary PHP (cPanel > Select PHP Version / MultiPHP)
+#
+#  Cara cek path: buka Terminal cPanel, `cd` ke folder proyek lalu jalankan `pwd`
+#  dan `which php` (atau lihat di MultiPHP Manager).
+# =============================================================================
+
+deployment:
+  tasks:
+    # --- 1. Path tujuan (root Laravel yang dilayani hosting) ---
+    - export APP_DIR=/home/USERNAME/APP_DIR
+    - export PHP_BIN=/usr/local/bin/php
+
+    # --- 2. Salin kode hasil git ke folder aplikasi live ---
+    #     '.' = isi repo. rsync mempertahankan storage & .env yang tidak di-repo.
+    - /usr/bin/rsync -a --exclude='.env' --exclude='storage/' --exclude='.git/' ./ "$APP_DIR/"
+
+    # --- 3. Langkah Laravel pasca-deploy ---
+    #     Aktifkan composer bila host mengizinkan (kadang perlu dijalankan manual).
+    # - cd "$APP_DIR" && /usr/local/bin/composer install --no-dev --optimize-autoloader
+    - cd "$APP_DIR" && $PHP_BIN artisan migrate --force
+    - cd "$APP_DIR" && $PHP_BIN artisan config:clear
+    - cd "$APP_DIR" && $PHP_BIN artisan view:clear
+    - cd "$APP_DIR" && $PHP_BIN artisan storage:link || true
+
+    # --- 4. Pasang cron scheduler (idempoten: tidak dobel bila deploy ulang) ---
+    #     Menghapus baris lama yang menunjuk artisan schedule:run milik APP_DIR,
+    #     lalu menambahkannya kembali. Bila host memblokir `crontab` dari deploy,
+    #     langkah ini gagal diam-diam -> pasang cron sekali lewat panel (DEPLOYMENT.md).
+    - CRON="* * * * * $PHP_BIN $APP_DIR/artisan schedule:run >> /dev/null 2>&1"; ( crontab -l 2>/dev/null | grep -v -F "$APP_DIR/artisan schedule:run"; echo "$CRON" ) | crontab - || true
