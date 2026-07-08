@@ -170,6 +170,31 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
         .pc-role { font-size: .58rem; font-weight: 800; padding: 1px 6px; border-radius: 6px; text-transform: uppercase; letter-spacing: .3px; }
         .pc-role.adm { background: #ede9fe; color: #6d28d9; }
         .pc-role.kar { background: #e0f2fe; color: #0369a1; }
+        .pc-bubble.pc-bubble-pinned { box-shadow: inset 0 0 0 1px rgba(245, 158, 11, .55); }
+        .pc-pin-btn { border: none; background: transparent; color: #cbd5e1; padding: 0 2px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; }
+        .pc-pin-btn:hover, .pc-pin-btn.active { color: #d97706; }
+        .pc-pinned { border: 1px solid #fde68a; background: linear-gradient(135deg, #fffbeb, #fff7ed); border-radius: 12px; padding: 8px 10px; }
+        .pc-pinned-lbl { font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: #b45309; margin-bottom: 4px; display: inline-flex; align-items: center; }
+        .pc-pinned-lbl i.bi { display: inline-flex; align-items: center; line-height: 1; }
+        .pc-pin-item { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: #334155; padding: 3px 0; }
+        .pc-pin-item + .pc-pin-item { border-top: 1px dashed #fde68a; }
+        .pc-pin-ico { color: #d97706; font-size: .8rem; flex-shrink: 0; display: inline-flex; align-items: center; line-height: 1; }
+        .pc-pin-who { font-weight: 700; flex-shrink: 0; }
+        .pc-pin-body { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+        .pc-pin-x { border: none; background: transparent; color: #94a3b8; cursor: pointer; padding: 0 2px; line-height: 1; display: inline-flex; align-items: center; flex-shrink: 0; }
+        .pc-pin-x:hover { color: #e11d48; }
+        /* Multi-select penerima */
+        .pt-multi { border: 1px solid #e6e8f2; border-radius: 12px; padding: 6px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; background: #fff; }
+        .pt-multi.is-invalid { border-color: #ef4444; }
+        .pt-multi-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; cursor: pointer; font-size: .9rem; color: #1e293b; font-weight: 500; margin: 0; }
+        .pt-multi-item:hover { background: #f7f5ff; }
+        .pt-multi-item.checked { background: linear-gradient(135deg, rgba(124,58,237,.10), rgba(78,70,229,.05)); }
+        .pt-multi-item input { position: absolute; opacity: 0; pointer-events: none; }
+        .pt-multi-check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; background: #fff; }
+        .pt-multi-check i.bi { display: none; line-height: 1; font-size: .8rem; }
+        .pt-multi-item.checked .pt-multi-check { background: linear-gradient(135deg, #7c3aed, #4e46e5); border-color: transparent; }
+        .pt-multi-item.checked .pt-multi-check i.bi { display: inline-flex; }
+        .pt-multi-count { font-size: .76rem; color: #7c3aed; font-weight: 600; margin-top: 5px; }
 
         /* ===== Composer ===== */
         .pc-composer { border: 1px solid #e6e8f2; border-radius: 14px; padding: 6px 14px; background: #fff; box-shadow: 0 4px 14px rgba(108, 99, 255, .05); transition: .15s; }
@@ -330,6 +355,9 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                         <tr>
                             <td class="fw-semibold text-dark">
                                 {{ $t['nama'] }}
+                                @if(($groupSizes[$t['group_id']] ?? 1) > 1)
+                                <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill ms-1" style="font-size:.62rem;" title="Task ini di-assign ke {{ $groupSizes[$t['group_id']] }} orang (grup)"><i class="bi bi-people-fill me-1"></i>Grup {{ $groupSizes[$t['group_id']] }}</span>
+                                @endif
                                 @if(!empty($t['kategori']))
                                 <div class="mt-1 d-flex flex-wrap gap-1 justify-content-center">
                                     <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill" style="font-size:.66rem;"><i class="bi bi-tag me-1"></i>{{ $t['kategori'] }}</span>
@@ -426,17 +454,21 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
             </div>
             <div class="p-4">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Karyawan <span class="text-danger">*</span></label>
-                    @php $selKar = $users->firstWhere('id', $t_user_id); @endphp
-                    <button type="button" onclick="taskKaryawanPicker(this)"
-                        class="form-select text-start of-picker-btn rounded-3 @error('t_user_id') is-invalid @enderror">
-                        @if($selKar)
-                        <span class="text-dark">{{ $selKar->name }}</span>
-                        @else
-                        <span class="text-muted">Pilih karyawan</span>
-                        @endif
-                    </button>
-                    @error('t_user_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    <label class="form-label fw-semibold">Karyawan <span class="text-danger">*</span>
+                        <span class="text-muted fw-normal" style="font-size:.8rem;">— bisa pilih lebih dari satu</span>
+                    </label>
+                    <div class="pt-multi @error('t_user_ids') is-invalid @enderror">
+                        @foreach($users as $u)
+                        <label class="pt-multi-item {{ in_array((string) $u->id, array_map('strval', $t_user_ids)) ? 'checked' : '' }}">
+                            <input type="checkbox" value="{{ $u->id }}" wire:model.live="t_user_ids">
+                            <span class="pt-multi-check"><i class="bi bi-check-lg"></i></span>
+                            <span>{{ $u->name }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                    <div class="pt-multi-count">{{ count($t_user_ids) }} karyawan dipilih</div>
+                    @error('t_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    @error('t_user_ids.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Nama Task <span class="text-danger">*</span></label>
@@ -632,26 +664,61 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                     </div>
                 </div>
                 @endif
+                @php
+                    // Palet warna komentar — diurut agar warna berbeda-beda kontras.
+                    $avatarPalette = [
+                        ['#3b82f6', '#2563eb'], ['#f97316', '#ea580c'], ['#10b981', '#059669'], ['#ec4899', '#db2777'],
+                        ['#06b6d4', '#0891b2'], ['#ef4444', '#dc2626'], ['#eab308', '#ca8a04'], ['#8b5cf6', '#7c3aed'],
+                    ];
+                    $groupComments = $activeTask->groupComments;
+                    $pinned = $groupComments->filter->isPinned();
+                    // Warna per penulis berdasarkan urutan kemunculan ("Anda"/admin dikecualikan).
+                    $threadColors = [];
+                    foreach ($groupComments as $cc) {
+                        if ($cc->user_id !== auth()->id() && ! isset($threadColors[$cc->user_id])) {
+                            $threadColors[$cc->user_id] = $avatarPalette[count($threadColors) % count($avatarPalette)];
+                        }
+                    }
+                @endphp
                 <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="pc-section-lbl"><i class="bi bi-chat-dots me-1"></i>Diskusi</div>
-                    <span class="badge bg-light text-secondary border rounded-pill">{{ $activeTask->comments->count() }} komentar</span>
+                    <div class="pc-section-lbl"><i class="bi bi-chat-dots me-1"></i>Diskusi Grup</div>
+                    <span class="badge bg-light text-secondary border rounded-pill">{{ $groupComments->count() }} komentar</span>
                 </div>
-                <div class="pc-thread mb-3" wire:key="pc-thread-{{ $activeTask->comments->count() }}"
+
+                @if($pinned->isNotEmpty())
+                <div class="pc-pinned mb-2">
+                    <div class="pc-pinned-lbl"><i class="bi bi-pin-angle-fill me-1"></i>Disematkan ({{ $pinned->count() }})</div>
+                    @foreach($pinned as $c)
+                    <div class="pc-pin-item">
+                        <i class="bi bi-pin-angle-fill pc-pin-ico"></i>
+                        <span class="pc-pin-who">{{ $c->user_id === auth()->id() ? 'Anda' : ($c->user->name ?? '-') }}:</span>
+                        <span class="pc-pin-body">{{ \Illuminate\Support\Str::limit($c->body ?: ($c->file_name ?: 'Lampiran'), 90) }}</span>
+                        <button type="button" class="pc-pin-x" wire:click="togglePin('{{ $c->id }}')" title="Lepas sematan"><i class="bi bi-x-lg"></i></button>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                <div class="pc-thread mb-3" wire:key="pc-thread-{{ $groupComments->count() }}-{{ $pinned->count() }}"
                     x-data x-init="$nextTick(() => { $el.scrollTop = $el.scrollHeight; })">
-                    @forelse($activeTask->comments as $c)
+                    @forelse($groupComments as $c)
                     @php
                         $mine = $c->user_id === auth()->id();
-                        $isKar = $c->user_id === $activeTask->user_id;
+                        $isAdmin = (bool) ($c->user?->hasPermission('manage_task'));
+                        $ac = $mine ? null : ($threadColors[$c->user_id] ?? $avatarPalette[0]);
                     @endphp
                     <div class="pc-msg {{ $mine ? 'right' : '' }}">
-                        <div class="pc-av {{ $isKar ? 'kar' : 'adm' }}">{{ strtoupper(substr($c->user->name ?? '?',0,1)) }}</div>
-                        <div class="pc-bubble {{ $c->type === 'revisi' ? 'pc-bubble-revisi' : '' }}">
+                        <div class="pc-av {{ $isAdmin ? 'adm' : 'kar' }}" @if(! $mine) style="background: linear-gradient(135deg, {{ $ac[0] }}, {{ $ac[1] }});" @endif>{{ strtoupper(substr($c->user->name ?? '?',0,1)) }}</div>
+                        <div class="pc-bubble {{ $c->type === 'revisi' ? 'pc-bubble-revisi' : '' }} {{ $c->isPinned() ? 'pc-bubble-pinned' : '' }}" @if(! $mine && $c->type !== 'revisi') style="border-left: 3px solid {{ $ac[0] }};" @endif>
                             <div class="meta">
                                 <span class="d-inline-flex align-items-center gap-1">
-                                    <span class="who">{{ $mine ? 'Anda' : ($c->user->name ?? '-') }}</span>
-                                    <span class="pc-role {{ $isKar ? 'kar' : 'adm' }}">{{ $isKar ? 'Karyawan' : 'Admin' }}</span>
+                                    <span class="who" @if(! $mine) style="color: {{ $ac[1] }};" @endif>{{ $mine ? 'Anda' : ($c->user->name ?? '-') }}</span>
+                                    <span class="pc-role {{ $isAdmin ? 'adm' : 'kar' }}">{{ $isAdmin ? 'Admin' : 'Karyawan' }}</span>
                                 </span>
-                                <span class="when">{{ $c->created_at->diffForHumans() }}</span>
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <span class="when">{{ $c->created_at->diffForHumans() }}</span>
+                                    <button type="button" class="pc-pin-btn {{ $c->isPinned() ? 'active' : '' }}" wire:click="togglePin('{{ $c->id }}')" title="{{ $c->isPinned() ? 'Lepas sematan' : 'Sematkan' }}"><i class="bi bi-pin-angle{{ $c->isPinned() ? '-fill' : '' }}"></i></button>
+                                </span>
                             </div>
                             @if($c->type === 'revisi')
                             <div class="mb-1"><span class="badge bg-warning-subtle text-warning border border-warning rounded-pill" style="font-size:.68rem;"><i class="bi bi-arrow-counterclockwise me-1"></i>Dibuka kembali untuk revisi</span></div>

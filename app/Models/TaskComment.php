@@ -12,19 +12,32 @@ class TaskComment extends Model
 
     protected $fillable = [
         'task_id',
+        'group_id',
         'user_id',
         'body',
         'type',
         'file_path',
         'file_name',
+        'pinned_at',
         'admin_read_at',
         'karyawan_read_at',
     ];
 
     protected $casts = [
+        'pinned_at' => 'datetime',
         'admin_read_at' => 'datetime',
         'karyawan_read_at' => 'datetime',
     ];
+
+    public function isPinned(): bool
+    {
+        return $this->pinned_at !== null;
+    }
+
+    public function scopePinned($query)
+    {
+        return $query->whereNotNull('pinned_at');
+    }
 
     public function task(): BelongsTo
     {

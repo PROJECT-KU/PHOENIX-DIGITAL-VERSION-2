@@ -2,10 +2,22 @@
 
 namespace App\Livewire\Layout;
 
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class NotificationBell extends Component
 {
+    /**
+     * Segarkan lonceng saat komponen lain menandai notifikasi dibaca
+     * (mis. membuka task di Task Saya / Penyelesaian Task) — tanpa refresh halaman.
+     */
+    #[On('notifs-read')]
+    public function refreshBell(): void
+    {
+        // Body kosong; menerima event sudah memicu Livewire me-render ulang
+        // sehingga jumlah unread dihitung ulang di render().
+    }
+
     public function markAsRead($id)
     {
         $user = auth()->user();

@@ -14,7 +14,9 @@ class Task extends Model
     public const BOBOT_POIN = ['ringan' => 1, 'sedang' => 2, 'berat' => 3];
 
     protected $fillable = [
+        'group_id',
         'user_id',
+        'assigned_by',
         'periode_bulan',
         'periode_tahun',
         'nama',
@@ -45,6 +47,12 @@ class Task extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /** Pemberi task. NULL = dibuat admin dari Penyelesaian Task. */
+    public function pemberi(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(TaskCategory::class, 'task_category_id');
@@ -58,6 +66,21 @@ class Task extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(TaskComment::class)->oldest();
+    }
+
+    /**
+     * Komentar di level GROUP (dibagikan semua sub-task dalam grup ini).
+     * Task multi-penerima berbagi satu diskusi via group_id.
+     */
+    public function groupComments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class, 'group_id', 'group_id')->oldest();
+    }
+
+    /** Semua sub-task dalam grup yang sama (termasuk dirinya). */
+    public function groupSiblings()
+    {
+        return static::where('group_id', $this->group_id);
     }
 
     public function attachments(): HasMany
@@ -81,7 +104,23 @@ class Task extends Model
             return $query;
         }
 
-        return $query->where('user_id', $user->id);
+        // Karyawan melihat:
+        //  - task miliknya sendiri (user_id), DAN
+        //  - task yang diberikan oleh dirinya ATAU oleh siapa pun di bawahannya
+        //    (downline), sehingga atasan memantau seluruh rantai di bawahnya, DAN
+        //  - SEMUA sub-task dalam grup di mana ia menjadi anggota, sehingga sesama
+        //    penerima 1 task (folder) bisa saling melihat progres.
+        // Task dari admin (Penyelesaian Task) ber-assigned_by NULL, jadi TIDAK
+        // ikut ter-scope ke atasan — hanya anggota grupnya yang melihatnya.
+        $giverIds = array_merge([$user->id], $user->bawahanIds());
+
+        return $query->where(function ($q) use ($user, $giverIds) {
+            $q->where('user_id', $user->id)
+                ->orWhereIn('assigned_by', $giverIds)
+                ->orWhereIn('group_id', function ($sub) use ($user) {
+                    $sub->select('group_id')->from('tasks')->where('user_id', $user->id);
+                });
+        });
     }
 
     /**

@@ -31,6 +31,9 @@ class KaryawanForm extends Component
     // Data Detail Karyawan
     public $jabatan = '';
 
+    // Atasan langsung (opsional). Menentukan hierarki untuk pemberian task.
+    public $atasan_id = '';
+
     // Tarif bonus per karyawan (untuk perhitungan gaji dari presensi)
     public $tarif_presensi_offline = 0;
 
@@ -51,6 +54,7 @@ class KaryawanForm extends Component
 
             // Load data detail (gunakan optional jika detail belum ada)
             $this->jabatan = $user->detail?->jabatan;
+            $this->atasan_id = $user->detail?->atasan_id ?? '';
 
             $this->tarif_presensi_offline = (int) ($user->detail?->tarif_presensi_offline ?? 0);
             $this->tarif_presensi_online = (int) ($user->detail?->tarif_presensi_online ?? 0);
@@ -68,6 +72,7 @@ class KaryawanForm extends Component
             'password' => 'required|min:6',
             'role_id' => 'required|exists:roles,id',
             'jabatan' => 'required',
+            'atasan_id' => 'nullable|exists:users,id',
             'tarif_presensi_offline' => 'nullable|numeric|min:0',
             'tarif_presensi_online' => 'nullable|numeric|min:0',
             'tarif_lembur_per_jam' => 'nullable|numeric|min:0',
@@ -84,6 +89,7 @@ class KaryawanForm extends Component
             EmployeeDetail::create([
                 'user_id' => $user->id,
                 'jabatan' => $this->jabatan,
+                'atasan_id' => $this->atasan_id ?: null,
                 'tarif_presensi_offline' => (int) $this->tarif_presensi_offline,
                 'tarif_presensi_online' => (int) $this->tarif_presensi_online,
                 'tarif_lembur_per_jam' => (int) $this->tarif_lembur_per_jam,
@@ -106,9 +112,12 @@ class KaryawanForm extends Component
             'role_id' => 'required|exists:roles,id',
             'status' => 'required|in:active,blokir',
             'jabatan' => 'required',
+            'atasan_id' => ['nullable', 'exists:users,id', Rule::notIn([$this->userModel->id])],
             'tarif_presensi_offline' => 'nullable|numeric|min:0',
             'tarif_presensi_online' => 'nullable|numeric|min:0',
             'tarif_lembur_per_jam' => 'nullable|numeric|min:0',
+        ], [
+            'atasan_id.not_in' => 'Karyawan tidak boleh menjadi atasan bagi dirinya sendiri.',
         ]);
 
         DB::transaction(function () {
@@ -135,6 +144,7 @@ class KaryawanForm extends Component
                 ['user_id' => $this->userModel->id],
                 [
                     'jabatan' => $this->jabatan,
+                    'atasan_id' => $this->atasan_id ?: null,
                     'tarif_presensi_offline' => (int) $this->tarif_presensi_offline,
                     'tarif_presensi_online' => (int) $this->tarif_presensi_online,
                     'tarif_lembur_per_jam' => (int) $this->tarif_lembur_per_jam,
@@ -151,8 +161,15 @@ class KaryawanForm extends Component
 
     public function render()
     {
+        // Kandidat atasan: semua user kecuali diri sendiri (saat edit).
+        $atasanOptions = User::query()
+            ->when($this->isEdit && $this->userModel, fn ($q) => $q->where('id', '!=', $this->userModel->id))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('livewire.pages.admin.karyawan.karyawan-form', [
             'roles' => Role::all(),
+            'atasanOptions' => $atasanOptions,
         ]);
     }
 }

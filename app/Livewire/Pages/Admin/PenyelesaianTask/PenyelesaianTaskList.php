@@ -11,9 +11,10 @@ use App\Models\TaskCategoryLabel;
 use App\Models\TaskComment;
 use App\Models\User;
 use App\Notifications\TaskAssigned;
-use App\Notifications\TaskCommented;
 use App\Notifications\TaskReopened;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -36,7 +37,10 @@ class PenyelesaianTaskList extends Component
 
     public $editingTaskId = null;
 
-    public $t_user_id = '';
+    public $editingGroupId = null;
+
+    // Multi-penerima: 1 task bisa di-assign ke banyak karyawan (fan-out per orang).
+    public $t_user_ids = [];
 
     public $t_nama = '';
 
@@ -131,7 +135,7 @@ class PenyelesaianTaskList extends Component
     // ===== Task CRUD =====
     public function openCreateTask(): void
     {
-        $this->reset(['editingTaskId', 't_user_id', 't_nama', 't_deskripsi', 't_files', 'newFiles',
+        $this->reset(['editingTaskId', 'editingGroupId', 't_user_ids', 't_nama', 't_deskripsi', 't_files', 'newFiles',
             't_category_id', 't_label_id', 'newCategoryName', 'newLabelName']);
         $this->t_bobot = 'sedang';
         $this->t_deadline_mulai = now()->toDateString();
@@ -142,8 +146,11 @@ class PenyelesaianTaskList extends Component
     public function openEditTask($id): void
     {
         $task = Task::findOrFail($id);
+        $group = Task::where('group_id', $task->group_id)->get();
+
         $this->editingTaskId = $task->id;
-        $this->t_user_id = $task->user_id;
+        $this->editingGroupId = $task->group_id;
+        $this->t_user_ids = $group->pluck('user_id')->map(fn ($v) => (string) $v)->values()->all();
         $this->t_nama = $task->nama;
         $this->t_deskripsi = $task->deskripsi;
         $this->t_category_id = $task->task_category_id ?? '';
@@ -259,7 +266,8 @@ class PenyelesaianTaskList extends Component
     public function saveTask(): void
     {
         $this->validate([
-            't_user_id' => 'required|exists:users,id',
+            't_user_ids' => ['required', 'array', 'min:1'],
+            't_user_ids.*' => 'exists:users,id',
             't_nama' => 'required|string|max:200',
             't_bobot' => 'required|in:ringan,sedang,berat',
             't_deadline_mulai' => 'required|date',
@@ -268,20 +276,16 @@ class PenyelesaianTaskList extends Component
         ], [
             't_files.*.max' => 'Ukuran file maksimal 2 MB (batas server).',
         ], [
-            't_user_id' => 'karyawan',
+            't_user_ids' => 'karyawan',
             't_nama' => 'nama task',
             't_deadline_selesai' => 'deadline selesai',
         ]);
 
         $akhir = Carbon::parse($this->t_deadline_selesai);
-
-        // Kategori "__new__" (Other belum di-Tambah) atau kosong -> null.
         $categoryId = ($this->t_category_id && $this->t_category_id !== '__new__') ? $this->t_category_id : null;
-        // Label hanya valid bila ada kategori.
         $labelId = ($categoryId && $this->t_label_id) ? $this->t_label_id : null;
 
-        $data = [
-            'user_id' => $this->t_user_id,
+        $shared = [
             'periode_bulan' => $akhir->month,
             'periode_tahun' => $akhir->year,
             'nama' => $this->t_nama,
@@ -293,34 +297,78 @@ class PenyelesaianTaskList extends Component
             'deadline_selesai' => $this->t_deadline_selesai,
         ];
 
-        if ($this->editingTaskId) {
-            $task = Task::findOrFail($this->editingTaskId);
-            $task->update($data);
-            $this->dispatch('swal-success', message: 'Task berhasil diperbarui.');
-        } else {
-            $task = Task::create($data);
-            // Notifikasi ke karyawan
-            $task->karyawan?->notify(new TaskAssigned($task));
-            $task->update(['assigned_notified_at' => now()]);
-            $this->dispatch('swal-success', message: 'Task dibuat & notifikasi dikirim ke karyawan.');
+        $userIds = array_values(array_unique(array_map('intval', $this->t_user_ids)));
+
+        $storedFiles = [];
+        foreach ((array) $this->t_files as $file) {
+            if ($file) {
+                $storedFiles[] = ['path' => $file->store('task_files', 'public'), 'name' => $file->getClientOriginalName()];
+            }
         }
 
-        // Simpan lampiran (bisa banyak)
-        foreach ((array) $this->t_files as $file) {
-            if (! $file) {
-                continue;
+        DB::transaction(function () use ($shared, $userIds, $storedFiles) {
+            if ($this->editingTaskId) {
+                $this->updateGroup($shared, $userIds, $storedFiles);
+            } else {
+                $this->createGroup($shared, $userIds, $storedFiles);
             }
+        });
+
+        $this->reset('t_files');
+        $this->showTaskModal = false;
+        $this->recompute();
+    }
+
+    private function createGroup(array $shared, array $userIds, array $storedFiles): void
+    {
+        $groupId = (string) Str::uuid();
+        foreach ($userIds as $uid) {
+            $task = Task::create($shared + ['group_id' => $groupId, 'user_id' => $uid]);
+            $this->attachFilesTo($task, $storedFiles);
+            $task->karyawan?->notify(new TaskAssigned($task));
+            $task->update(['assigned_notified_at' => now()]);
+        }
+        $this->dispatch('swal-success', message: 'Task dibuat & dikirim ke '.count($userIds).' karyawan.');
+    }
+
+    private function updateGroup(array $shared, array $userIds, array $storedFiles): void
+    {
+        $existing = Task::where('group_id', $this->editingGroupId)->get();
+        if ($existing->isEmpty()) {
+            return;
+        }
+        $byUser = $existing->keyBy('user_id');
+
+        foreach ($userIds as $uid) {
+            if ($t = $byUser->get($uid)) {
+                $t->update($shared);
+            } else {
+                $t = Task::create($shared + ['group_id' => $this->editingGroupId, 'user_id' => $uid]);
+                $t->karyawan?->notify(new TaskAssigned($t));
+                $t->update(['assigned_notified_at' => now()]);
+            }
+            $this->attachFilesTo($t, $storedFiles);
+        }
+
+        foreach ($existing as $t) {
+            if (! in_array((int) $t->user_id, $userIds, true)) {
+                $t->delete();
+            }
+        }
+        $this->dispatch('swal-success', message: 'Task grup berhasil diperbarui.');
+    }
+
+    /** @param  array<array{path:string,name:string}>  $storedFiles */
+    private function attachFilesTo(Task $task, array $storedFiles): void
+    {
+        foreach ($storedFiles as $f) {
             \App\Models\TaskAttachment::create([
                 'task_id' => $task->id,
                 'uploaded_by' => auth()->id(),
-                'path' => $file->store('task_files', 'public'),
-                'name' => $file->getClientOriginalName(),
+                'path' => $f['path'],
+                'name' => $f['name'],
             ]);
         }
-        $this->reset('t_files');
-
-        $this->showTaskModal = false;
-        $this->recompute();
     }
 
     public function deleteTask($id): void
@@ -375,9 +423,10 @@ class PenyelesaianTaskList extends Component
             'overdue_notified_at' => null,
         ]);
 
-        // Catat alasan sebagai komentar admin bertipe "revisi" (ditandai badge di thread).
+        // Catat alasan sebagai komentar admin bertipe "revisi" (di thread grup).
         TaskComment::create([
             'task_id' => $task->id,
+            'group_id' => $task->group_id,
             'user_id' => auth()->id(),
             'body' => $this->reopen_alasan,
             'type' => 'revisi',
@@ -398,14 +447,22 @@ class PenyelesaianTaskList extends Component
         $this->reset(['newComment', 'commentFile']);
         $this->showCommentModal = true;
 
-        // Tandai komentar karyawan sebagai sudah dibaca admin -> badge hilang.
+        // Tandai komentar karyawan (semua sub-task grup) sebagai dibaca admin.
         $task = Task::find($taskId);
         if ($task) {
-            TaskComment::where('task_id', $task->id)
-                ->where('user_id', $task->user_id)
+            $groupTaskIds = Task::where('group_id', $task->group_id)->pluck('id');
+            TaskComment::where('group_id', $task->group_id)
                 ->whereNull('admin_read_at')
                 ->update(['admin_read_at' => now()]);
+
+            // Selaraskan bell: tandai notifikasi seluruh sub-task grup ini dibaca.
+            auth()->user()->unreadNotifications()
+                ->whereIn('data->task_id', $groupTaskIds->all())
+                ->update(['read_at' => now()]);
         }
+
+        // Beri tahu komponen lonceng agar hitung ulang real-time (tanpa refresh).
+        $this->dispatch('notifs-read');
 
         $this->recompute();
     }
@@ -432,16 +489,28 @@ class PenyelesaianTaskList extends Component
 
         TaskComment::create([
             'task_id' => $task->id,
+            'group_id' => $task->group_id,
             'user_id' => auth()->id(),
             'body' => $this->newComment ?: null,
             'file_path' => $path,
             'file_name' => $name,
         ]);
 
-        // Notifikasi ke karyawan pemilik task
-        $task->karyawan?->notify(new TaskCommented($task, auth()->user()->name, false));
+        // Notifikasi ke seluruh pihak terkait (penerima + pemberi + atasan pemberi
+        // + admin lain) via sumber tunggal — konsisten dengan Task Saya.
+        app(\App\Actions\Task\NotifyTaskCommentAction::class)->execute($task, auth()->user());
 
         $this->reset(['newComment', 'commentFile']);
+    }
+
+    /** Pin/lepas-pin komentar grup (bisa banyak pin). */
+    public function togglePin($commentId): void
+    {
+        $task = Task::findOrFail($this->activeTaskId);
+        $c = TaskComment::where('group_id', $task->group_id)->find($commentId);
+        if ($c) {
+            $c->update(['pinned_at' => $c->pinned_at ? null : now()]);
+        }
     }
 
     public function recompute(): void
@@ -473,11 +542,12 @@ class PenyelesaianTaskList extends Component
     public function render()
     {
         $activeTask = $this->activeTaskId
-            ? Task::with(['comments.user', 'karyawan', 'attachments'])->find($this->activeTaskId)
+            ? Task::with(['groupComments.user.role.permissions', 'karyawan', 'attachments'])->find($this->activeTaskId)
             : null;
 
-        $editAttachments = $this->editingTaskId
-            ? \App\Models\TaskAttachment::where('task_id', $this->editingTaskId)->latest()->get()
+        $editAttachments = $this->editingGroupId
+            ? \App\Models\TaskAttachment::whereIn('task_id', Task::where('group_id', $this->editingGroupId)->pluck('id'))
+                ->latest()->get()->unique('path')->values()
             : collect();
 
         $reopenTask = $this->reopenTaskId
@@ -489,8 +559,16 @@ class PenyelesaianTaskList extends Component
             ? TaskCategoryLabel::where('task_category_id', $this->t_category_id)->orderBy('nama')->get()
             : collect();
 
+        // Ukuran tiap grup (jumlah penerima) untuk badge "grup" di baris task.
+        $groupSizes = Task::query()->toBase()
+            ->selectRaw('group_id, COUNT(*) as c')
+            ->groupBy('group_id')
+            ->pluck('c', 'group_id')
+            ->all();
+
         return view('livewire.pages.admin.penyelesaian-task.penyelesaian-task-list', [
             'rows' => $this->preview['rows'] ?? [],
+            'groupSizes' => $groupSizes,
             'editAttachments' => $editAttachments,
             'reopenTask' => $reopenTask,
             'categories' => $categories,

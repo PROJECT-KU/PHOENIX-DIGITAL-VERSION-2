@@ -136,6 +136,74 @@ class User extends Authenticatable
         return $this->hasPermission('view_all_'.$module);
     }
 
+    /** Atasan langsung user ini (dari employee_details.atasan_id). */
+    public function atasan(): ?User
+    {
+        return $this->detail?->atasan;
+    }
+
+    /**
+     * ID seluruh bawahan (downline) secara rekursif — bawahan langsung
+     * maupun tak langsung. Aman dari siklus (setiap id hanya diproses sekali).
+     *
+     * @return array<int>
+     */
+    protected ?array $bawahanIdsCache = null;
+
+    public function bawahanIds(): array
+    {
+        if ($this->bawahanIdsCache !== null) {
+            return $this->bawahanIdsCache;
+        }
+
+        $all = [];
+        $frontier = [$this->id];
+
+        while ($frontier) {
+            $children = EmployeeDetail::whereIn('atasan_id', $frontier)
+                ->pluck('user_id')
+                ->all();
+
+            $frontier = [];
+            foreach ($children as $childId) {
+                if (! in_array($childId, $all, true)) {
+                    $all[] = $childId;
+                    $frontier[] = $childId;
+                }
+            }
+        }
+
+        return $this->bawahanIdsCache = $all;
+    }
+
+    /**
+     * ID seluruh atasan (rantai ke atas) dari user ini — atasan langsung
+     * hingga puncak. Aman dari siklus. Dipakai untuk notifikasi berantai.
+     *
+     * @return array<int>
+     */
+    public function atasanIds(): array
+    {
+        $ids = [];
+        $currentId = $this->detail?->atasan_id;
+
+        while ($currentId && ! in_array($currentId, $ids, true)) {
+            $ids[] = $currentId;
+            $currentId = EmployeeDetail::where('user_id', $currentId)->value('atasan_id');
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Boleh memberi task lewat "Task Saya"? Butuh izin assign_task DAN
+     * benar-benar punya bawahan (mis. Fajar tanpa bawahan tidak bisa).
+     */
+    public function canAssignTask(): bool
+    {
+        return $this->hasPermission('assign_task') && count($this->bawahanIds()) > 0;
+    }
+
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo && file_exists(public_path($this->profile_photo))) {

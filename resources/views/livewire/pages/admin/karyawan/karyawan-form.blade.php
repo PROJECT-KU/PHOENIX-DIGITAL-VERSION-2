@@ -289,6 +289,24 @@
                     @error('jabatan') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
 
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">
+                        Atasan Langsung
+                        <span class="text-muted fw-normal" style="font-size:.8rem;">— opsional, untuk pemberian task</span>
+                    </label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-diagram-3"></i></span>
+                        <select wire:model="atasan_id"
+                            class="form-select kry-input has-ico text-capitalize @error('atasan_id') is-invalid @enderror">
+                            <option value="">— Tidak ada —</option>
+                            @foreach($atasanOptions as $opt)
+                            <option value="{{ $opt->id }}">{{ $opt->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @error('atasan_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
                 <div class="col-12">
                     <label class="form-label fw-semibold text-dark">
                         Password {{ $isEdit ? '(kosongkan jika tidak diganti)' : '' }}

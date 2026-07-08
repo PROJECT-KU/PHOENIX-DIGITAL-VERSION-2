@@ -16,4 +16,10 @@ class EmployeeDetail extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /** Atasan langsung karyawan ini. */
+    public function atasan()
+    {
+        return $this->belongsTo(User::class, 'atasan_id');
+    }
 }

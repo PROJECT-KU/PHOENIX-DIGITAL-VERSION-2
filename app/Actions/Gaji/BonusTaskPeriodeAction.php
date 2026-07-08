@@ -102,6 +102,7 @@ class BonusTaskPeriodeAction
 
                 $rincian[] = [
                     'task_id' => $t->id,
+                    'group_id' => $t->group_id,
                     'nama' => $t->nama,
                     'kategori' => $t->category?->nama,
                     'label' => $t->label?->nama,
