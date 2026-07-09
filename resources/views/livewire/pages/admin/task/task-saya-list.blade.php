@@ -116,6 +116,8 @@ Task Saya || PT. Asthana Cipta Mandiri
         .ts-mention-item { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; border: none; background: transparent; border-radius: 9px; padding: 7px 10px; font-size: .88rem; font-weight: 600; color: #1e293b; cursor: pointer; }
         .ts-mention-item i.bi { color: #7c3aed; display: inline-flex; align-items: center; line-height: 1; }
         .ts-mention-item.active, .ts-mention-item:hover { background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(78,70,229,.06)); }
+        .ts-mentioned-badge { background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; box-shadow: 0 3px 8px rgba(124, 58, 237, .3); }
+        .ts-mentioned-badge i.bi { display: inline-flex; align-items: center; line-height: 1; }
 
         /* ===== Composer ===== */
         .ts-composer { border: 1px solid #e6e8f2; border-radius: 14px; padding: 6px 14px; background: #fff; box-shadow: 0 4px 14px rgba(108, 99, 255, .05); transition: .15s; }

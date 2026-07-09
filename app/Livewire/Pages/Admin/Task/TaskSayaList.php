@@ -217,16 +217,18 @@ class TaskSayaList extends Component
             $name = $this->commentFile->getClientOriginalName();
         }
 
+        $body = $this->newComment ?: null;
+
         TaskComment::create([
             'task_id' => $task->id,
             'group_id' => $task->group_id,
             'user_id' => auth()->id(),
-            'body' => $this->newComment ?: null,
+            'body' => $body,
             'file_path' => $path,
             'file_name' => $name,
         ]);
 
-        $this->notifyComment($task);
+        $this->notifyComment($task, $body);
 
         $this->reset(['newComment', 'commentFile']);
     }
@@ -250,9 +252,9 @@ class TaskSayaList extends Component
      *  - Admin ber-izin manage_task → tautan ke "Penyelesaian Task".
      * Kedua himpunan dibuat saling lepas (admin tidak dobel).
      */
-    protected function notifyComment(Task $task): void
+    protected function notifyComment(Task $task, ?string $body = null): void
     {
-        app(\App\Actions\Task\NotifyTaskCommentAction::class)->execute($task, auth()->user());
+        app(\App\Actions\Task\NotifyTaskCommentAction::class)->execute($task, auth()->user(), $body);
     }
 
     // ===== Beri task ke bawahan (atasan ber-izin assign_task) =====

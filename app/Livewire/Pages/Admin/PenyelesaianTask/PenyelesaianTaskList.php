@@ -487,18 +487,20 @@ class PenyelesaianTaskList extends Component
             $name = $this->commentFile->getClientOriginalName();
         }
 
+        $body = $this->newComment ?: null;
+
         TaskComment::create([
             'task_id' => $task->id,
             'group_id' => $task->group_id,
             'user_id' => auth()->id(),
-            'body' => $this->newComment ?: null,
+            'body' => $body,
             'file_path' => $path,
             'file_name' => $name,
         ]);
 
         // Notifikasi ke seluruh pihak terkait (penerima + pemberi + atasan pemberi
-        // + admin lain) via sumber tunggal — konsisten dengan Task Saya.
-        app(\App\Actions\Task\NotifyTaskCommentAction::class)->execute($task, auth()->user());
+        // + admin lain) + @mention via sumber tunggal — konsisten dengan Task Saya.
+        app(\App\Actions\Task\NotifyTaskCommentAction::class)->execute($task, auth()->user(), $body);
 
         $this->reset(['newComment', 'commentFile']);
     }

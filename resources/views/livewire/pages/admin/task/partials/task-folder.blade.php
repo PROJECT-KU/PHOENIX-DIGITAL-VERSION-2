@@ -8,6 +8,14 @@
     $myLastRead = ($reads[$first->group_id] ?? null) ? \Illuminate\Support\Carbon::parse($reads[$first->group_id]) : null;
     $komentarBaru = $first->groupComments->where('user_id', '!=', auth()->id())
         ->filter(fn ($c) => ! $myLastRead || $c->created_at->gt($myLastRead))->count();
+    // Apakah SAYA disebut (@nama-depan) di komentar grup yg belum saya baca?
+    $myFirst = mb_strtolower((string) \Illuminate\Support\Str::of(auth()->user()->name)->trim()->explode(' ')->first());
+    $disebutSaya = $myFirst !== '' && $first->groupComments->contains(function ($c) use ($myLastRead, $myFirst) {
+        return $c->user_id !== auth()->id()
+            && (! $myLastRead || $c->created_at->gt($myLastRead))
+            && $c->body
+            && preg_match('/@'.preg_quote($myFirst, '/').'(?![\p{L}\p{N}_])/ui', $c->body);
+    });
     $pemberiName = $first->pemberi?->name ?? 'Admin';
     // Urutkan: sub-task milik saya dulu, lalu sisanya per nama.
     $members = $gtasks->sortBy(fn ($t) => [$t->user_id === auth()->id() ? 0 : 1, $t->karyawan?->name ?? ''])->values();
@@ -20,6 +28,9 @@
                 <div class="ts-folder-title">
                     {{ $first->nama }}
                     <span class="ts-folder-count"><i class="bi bi-people-fill me-1"></i>{{ $total }} penerima</span>
+                    @if($disebutSaya)
+                    <span class="badge rounded-pill ts-badge ms-1 ts-mentioned-badge"><i class="bi bi-at me-1"></i>Anda disebut</span>
+                    @endif
                     @if($komentarBaru)
                     <span class="badge bg-danger rounded-pill ts-badge ms-1"><i class="bi bi-chat-dots-fill me-1"></i>{{ $komentarBaru > 9 ? '9+' : $komentarBaru }} baru</span>
                     @endif
