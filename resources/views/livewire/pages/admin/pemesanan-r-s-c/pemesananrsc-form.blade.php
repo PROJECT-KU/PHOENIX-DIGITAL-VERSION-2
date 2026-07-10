@@ -161,6 +161,41 @@
         .of-pick-item { display: block; width: 100%; text-align: left; border: 1px solid #e6e8f2; background: #fff; border-radius: 12px; padding: .7rem .9rem; font-weight: 600; color: #1e293b; font-size: .92rem; transition: all .15s ease; }
         .of-pick-item:hover { border-color: #6c63ff; background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04)); transform: translateY(-1px); }
         .of-pick-empty { text-align: center; color: #94a3b8; padding: 1.5rem; font-size: .9rem; }
+
+        /* Mobile: tombol/badge tertentu memenuhi lebar & isi (ikon+teks) di tengah.
+           Desktop tetap seperti semula. */
+        @media (max-width: 575.98px) {
+            .rsc-m-full {
+                width: 100% !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center !important;
+                text-align: center;
+            }
+
+            /* Tombol hapus akun tambahan: pindah ke pojok kanan atas card, bulat & menarik.
+               Beri ruang di atas (padding-top) agar tak menimpa select Akun. */
+            .rsc-akun-card { position: relative; padding-top: 46px !important; }
+            .rsc-akun-card .rsc-del-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                z-index: 3;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, .20);
+            }
+
+            /* Box Total: ikon & teks "Rp" sejajar & berada di tengah (agar kanan tak kosong). */
+            .of-total-box { display: flex; align-items: center; justify-content: center; text-align: center; }
+            .of-total-box i.bi { display: inline-flex; align-items: center; line-height: 1; }
+
+            /* Rincian harga per akun: harga "Rp" tetap utuh & rata kanan, nama menyusut. */
+            .rsc-akun-row { gap: 10px; }
+            .rsc-akun-row > span:first-child { min-width: 0; }
+            .rsc-akun-row > span:last-child { white-space: nowrap; flex-shrink: 0; text-align: right; }
+        }
     </style>
 
     <form wire:submit="save" x-cloak>
@@ -178,7 +213,7 @@
                         @endif
                     </small>
                 </div>
-                <button type="button" onclick="rscTemplatePopup(this)" class="btn rsc-btn-template">
+                <button type="button" onclick="rscTemplatePopup(this)" class="btn rsc-btn-template rsc-m-full">
                     <span><i class="bi bi-download me-1"></i>Download Template</span>
                 </button>
             </div>
@@ -332,13 +367,13 @@
                     </div>
                 </div>
                 <button type="button" wire:click="addAkunTambahan"
-                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center justify-content-center gap-1 rsc-m-full">
                     <i class="bi bi-plus-circle"></i> Tambah Akun
                 </button>
             </div>
 
             @forelse($akunTambahan as $tmpId => $a)
-            <div class="border rounded-3 p-3 mb-2" wire:key="akt-{{ $tmpId }}" style="background:#fff;">
+            <div class="border rounded-3 p-3 mb-2 rsc-akun-card" wire:key="akt-{{ $tmpId }}" style="background:#fff;">
                 <div class="row g-3 align-items-start">
                     <div class="col-md-3">
                         <label class="of-form-label d-block">Akun</label>
@@ -395,7 +430,7 @@
                     <h5 class="fw-bold mb-0">Data Pembeli</h5>
                 </div>
                 <button type="button" wire:click="addPeserta"
-                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center justify-content-center gap-1 rsc-m-full">
                     <i class="bi bi-plus-circle"></i> Tambah Peserta
                 </button>
             </div>
@@ -446,7 +481,7 @@
             </div>
 
             <div class="d-flex justify-content-end mt-3">
-                <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3 py-2">
+                <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3 py-2 rsc-m-full">
                     <i class="bi bi-people-fill me-1"></i> Total Peserta: {{ count($peserta) }} orang
                 </span>
             </div>
@@ -510,7 +545,7 @@
                         <div class="fw-semibold small text-dark mb-2"><i class="bi bi-list-ul me-1"></i>Rincian harga per akun</div>
                         @php $selUtama = $akuns->firstWhere('id', (int) $akun); @endphp
                         @if($akun)
-                        <div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+                        <div class="rsc-akun-row d-flex justify-content-between align-items-center small py-1 border-bottom">
                             <span><i class="bi bi-star-fill text-warning me-1"></i>{{ $selUtama->nama_akun ?? 'Akun Utama' }}
                                 <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill ms-1" style="font-size:.6rem;">UTAMA</span></span>
                             <span class="fw-semibold">Rp {{ number_format($this->hargaUtama(), 0, ',', '.') }}</span>
@@ -518,13 +553,13 @@
                         @endif
                         @foreach($akunTambahan as $a)
                         @if(!empty($a['akun_id']))
-                        <div class="d-flex justify-content-between align-items-center small py-1 border-bottom">
+                        <div class="rsc-akun-row d-flex justify-content-between align-items-center small py-1 border-bottom">
                             <span><i class="bi bi-collection me-1 text-primary"></i>{{ $a['nama_akun'] }}</span>
                             <span class="fw-semibold">Rp {{ number_format($a['harga'] ?? 0, 0, ',', '.') }}</span>
                         </div>
                         @endif
                         @endforeach
-                        <div class="d-flex justify-content-between align-items-center pt-2 fw-bold text-success">
+                        <div class="rsc-akun-row d-flex justify-content-between align-items-center pt-2 fw-bold text-success">
                             <span>Jumlah harga {{ $this->jumlahAkun() }} akun</span>
                             <span>Rp {{ number_format($this->sumHargaAkun(), 0, ',', '.') }}</span>
                         </div>

@@ -1,6 +1,6 @@
 
 @section('title')
-Data Lowongan Pekerjaan || PT. Asthana Cipta Mandiri
+Data Lowongan Pekerjaan || lemon
 @stop
 <div>
     <div class="container-fluid">

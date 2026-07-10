@@ -111,4 +111,82 @@ class PemesananRsc extends Model
     {
         return $query->where('id_transaksi', $idtransaksi);
     }
+
+    /**
+     * Susun item invoice (dikelompokkan per nama_camp+batch_camp) untuk daftar
+     * batch terpilih (format "nama|batch"). Sumber tunggal dipakai preview & unduh
+     * invoice agar konsisten. Untuk batch metode "per_akun" disertakan daftar akun
+     * (nama + harga per akun) sehingga invoice menampilkan basis akun, bukan peserta.
+     *
+     * @param  array<string>  $selectedBatches
+     */
+    public static function invoiceItemsFor(array $selectedBatches)
+    {
+        $conditions = collect($selectedBatches)->map(function ($item) {
+            [$nama, $batch] = explode('|', $item);
+
+            return ['nama_camp' => $nama, 'batch_camp' => $batch];
+        });
+
+        $items = static::query()
+            ->where(function ($query) use ($conditions) {
+                foreach ($conditions as $condition) {
+                    $query->orWhere(function ($q) use ($condition) {
+                        $q->where('nama_camp', $condition['nama_camp'])
+                            ->where('batch_camp', $condition['batch_camp']);
+                    });
+                }
+            })
+            ->selectRaw('
+                nama_camp,
+                batch_camp,
+                MIN(tanggal_mulai_camp) as periode_mulai,
+                MAX(tanggal_akhir_camp) as periode_akhir,
+                COUNT(id) as total_peserta,
+                SUM(total) as total_harga,
+                MAX(harga_satuan) as harga_satuan,
+                MAX(metode_harga) as metode_harga,
+                MAX(jumlah_pemesanan) as jumlah_pemesanan,
+                MAX(akun) as akun_utama_id
+            ')
+            ->groupBy('nama_camp', 'batch_camp')
+            ->orderBy('nama_camp')
+            ->orderBy('batch_camp')
+            ->get();
+
+        $toInt = fn ($v) => (int) preg_replace('/[^0-9]/', '', (string) $v);
+
+        $items->each(function ($item) use ($toInt) {
+            $item->metode_harga = $item->metode_harga ?: 'per_peserta';
+            $item->bulan = max((int) $item->jumlah_pemesanan, 1);
+
+            if ($item->metode_harga !== 'per_akun') {
+                $item->akun_list = null;
+                $item->jumlah_akun = 0;
+
+                return;
+            }
+
+            $akunList = [];
+            $mainNama = optional(DataAkun::find($item->akun_utama_id))->nama_akun ?? 'Akun utama';
+            $akunList[] = ['nama' => $mainNama, 'harga' => (int) $item->harga_satuan];
+
+            $tambahan = RscBatchAkun::where('nama_camp', $item->nama_camp)
+                ->where('batch_camp', $item->batch_camp)
+                ->orderBy('id')
+                ->get();
+            foreach ($tambahan as $t) {
+                $d = DataAkun::find($t->akun_id);
+                $akunList[] = [
+                    'nama' => $t->nama_akun ?: (optional($d)->nama_akun ?? 'Akun'),
+                    'harga' => $toInt(optional($d)->harga_satuan),
+                ];
+            }
+
+            $item->akun_list = $akunList;
+            $item->jumlah_akun = count($akunList);
+        });
+
+        return $items;
+    }
 }

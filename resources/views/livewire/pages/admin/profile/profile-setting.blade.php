@@ -1,6 +1,6 @@
 
 @section('title')
-Pengaturan Profil || PT. Asthana Cipta Mandiri
+Pengaturan Profil || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->

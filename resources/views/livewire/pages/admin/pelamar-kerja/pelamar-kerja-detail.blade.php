@@ -1,6 +1,6 @@
 
 @section('title')
-Detail Pelamar Kerja || PT. Asthana Cipta Mandiri
+Detail Pelamar Kerja || lemon
 @stop
 <div class="container-fluid">
     <!--================== HEADER ==================-->

@@ -1,6 +1,6 @@
 
 @section('title')
-Data Gaji Karyawan || PT. Asthana Cipta Mandiri
+Data Gaji Karyawan || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->

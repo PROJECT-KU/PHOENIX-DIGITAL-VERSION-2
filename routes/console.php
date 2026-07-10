@@ -70,3 +70,10 @@ Schedule::command('notifications:prune')->dailyAt('00:05');
  * tidak menumpuk. Idempoten: hanya menghapus yang dibuat sebelum awal tahun berjalan.
  */
 Schedule::command('comments:prune')->dailyAt('00:10');
+
+/**
+ * Reset poin member setiap awal tahun (poin kadaluarsa akhir tahun kalender).
+ * Berjalan tiap 1 Januari 00:15. Model juga punya pengaman lazy (applyYearlyExpiry)
+ * bila scheduler terlewat.
+ */
+Schedule::command('points:reset-yearly')->yearlyOn(1, 1, '00:15');

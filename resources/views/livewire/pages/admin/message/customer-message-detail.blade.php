@@ -1,6 +1,5 @@
-
 @section('title')
-Detail Pesan Pelanggan || PT. Asthana Cipta Mandiri
+Detail Pesan Pelanggan || lemon
 @stop
 <div>
     <div class="container-fluid">
@@ -14,7 +13,7 @@ Detail Pesan Pelanggan || PT. Asthana Cipta Mandiri
                             @php
                             $breadcrumbs = [
                             ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                            ['name' => 'Pesan Masuk', 'url' => route('admin.message.index')],
+                            ['name' => 'Pesan Pelanggan', 'url' => route('admin.customer-message.index')],
                             ['name' => 'Detail']
                             ];
                             @endphp

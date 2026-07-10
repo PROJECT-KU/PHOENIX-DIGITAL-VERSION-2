@@ -1,4 +1,5 @@
-<div wire:poll.30s x-data="{ open: false }" class="position-relative" style="z-index: 1050;">
+<div wire:poll.30s x-data="{ open: false }" class="position-relative" style="z-index: 1050;"
+    id="lemon-bell" data-unread="{{ $unread }}">
     <style>
         .nb-btn { width: 44px; height: 44px; border-radius: 14px; border: 1px solid #eef0f7; background: #fff; color: #475569; display: inline-flex; align-items: center; justify-content: center; font-size: 1.2rem; line-height: 1; transition: .15s; }
         .nb-btn:hover { border-color: #c7d2fe; color: #4f46e5; }
@@ -18,6 +19,9 @@
         .nb-body { font-size: .8rem; color: #64748b; line-height: 1.35; }
         .nb-time { font-size: .7rem; color: #94a3b8; margin-top: 2px; }
         .nb-empty { padding: 28px 16px; text-align: center; color: #94a3b8; font-size: .85rem; }
+        .nb-foot { padding: 10px 16px; border-top: 1px solid #f1f5f9; text-align: center; }
+        .nb-push-btn { border: 0; background: transparent; color: #4d7c0f; font-size: .78rem; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: .12s; }
+        .nb-push-btn:hover { background: rgba(132,204,22,.12); }
     </style>
 
     <button type="button" class="nb-btn" @click="open = !open" title="Notifikasi">
@@ -50,6 +54,10 @@
             @empty
             <div class="nb-empty"><i class="bi bi-bell-slash fs-4 d-block mb-2 opacity-50"></i>Belum ada notifikasi.</div>
             @endforelse
+        </div>
+        <div class="nb-foot">
+            <button type="button" id="lemon-push-toggle" class="nb-push-btn"
+                onclick="window.lemonPush && window.lemonPush.toggle()">🔔 Aktifkan notifikasi perangkat</button>
         </div>
     </div>
 </div>

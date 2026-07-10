@@ -1,6 +1,6 @@
 
 @section('title')
-Detail Pesanan || PT. Asthana Cipta Mandiri
+Detail Pesanan || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -213,6 +213,18 @@ Detail Pesanan || PT. Asthana Cipta Mandiri
                         @endif
                     </span>
                 </div>
+                @if($order->bukti_pembayaran)
+                <div class="info-row">
+                    <span class="info-label">Bukti Pembayaran</span>
+                    <span class="info-value">
+                        <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
+                            data-bukti-url="{{ Storage::url($order->bukti_pembayaran) }}" title="Perbesar bukti pembayaran">
+                            <img src="{{ Storage::url($order->bukti_pembayaran) }}" alt="Bukti pembayaran"
+                                style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
+                        </a>
+                    </span>
+                </div>
+                @endif
                 <div class="info-row">
                     <span class="info-label">Status</span>
                     <span class="info-value">
@@ -557,6 +569,30 @@ Detail Pesanan || PT. Asthana Cipta Mandiri
     };
 
     let waData = {};
+
+    // Popup glossy untuk memperbesar bukti pembayaran (seragam dgn fitur lain).
+    if (!window.__buktiZoomBound) {
+        window.__buktiZoomBound = true;
+        document.addEventListener('click', function (e) {
+            const trigger = e.target.closest && e.target.closest('.bukti-zoom-trigger');
+            if (!trigger) return;
+            e.preventDefault();
+            const url = trigger.getAttribute('data-bukti-url');
+            if (!url) return;
+            if (typeof Swal === 'undefined') { window.open(url, '_blank'); return; }
+            Swal.fire({
+                // Gambar dibatasi ke ukuran layar agar muat tanpa perlu scroll.
+                html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + url + '" alt="Bukti pembayaran" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '1rem',
+            });
+        });
+    }
 
     document.addEventListener('livewire:init', () => {
         Livewire.on('close-wa-modal', () => {

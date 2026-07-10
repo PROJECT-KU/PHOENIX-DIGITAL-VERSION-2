@@ -39,6 +39,10 @@ class TaskSayaList extends Component
 
     public $tahun = '';
 
+    // Mode periode (sama seperti Cashflow): 'kalender' (1 s/d akhir bulan) atau
+    // 'siklus20' (tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya).
+    public $modePeriode = 'kalender';
+
     // ===== Modal beri/edit task ke bawahan (khusus atasan ber-izin assign_task) =====
     public bool $showTaskModal = false;
 
@@ -111,6 +115,31 @@ class TaskSayaList extends Component
     {
         $this->bulan = '';
         $this->tahun = '';
+        $this->modePeriode = 'kalender';
+    }
+
+    /**
+     * Apakah filter memakai siklus 20-19 (butuh bulan terpilih). Sama seperti Cashflow.
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20' && ! empty($this->bulan);
+    }
+
+    /**
+     * Rentang siklus untuk bulan/tahun terpilih:
+     * [mulai = tgl 20 bulan terpilih, akhirEksklusif = tgl 20 bulan berikutnya].
+     * Jadi mencakup tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya (persis Cashflow).
+     *
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    protected function siklusRange(): array
+    {
+        $tahun = (int) ($this->tahun ?: now()->year);
+        $mulai = Carbon::create($tahun, (int) $this->bulan, 20)->startOfDay();
+        $akhirEksklusif = $mulai->copy()->addMonthNoOverflow();
+
+        return [$mulai, $akhirEksklusif];
     }
 
     protected function daftarBulan(): array
@@ -663,8 +692,16 @@ class TaskSayaList extends Component
     {
         $tasks = Task::visibleTo()
             ->with(['groupComments', 'category', 'label', 'pemberi', 'karyawan'])
-            ->when($this->bulan, fn ($q) => $q->where('periode_bulan', $this->bulan))
-            ->when($this->tahun, fn ($q) => $q->where('periode_tahun', $this->tahun))
+            ->when($this->usesSiklus(), function ($q) {
+                // Siklus 20-19: filter berdasarkan tanggal deadline_selesai.
+                [$mulai, $akhir] = $this->siklusRange();
+                $q->whereDate('deadline_selesai', '>=', $mulai->toDateString())
+                    ->whereDate('deadline_selesai', '<', $akhir->toDateString());
+            }, function ($q) {
+                // Kalender: berdasarkan bulan/tahun periode (dari deadline_selesai).
+                $q->when($this->bulan, fn ($qq) => $qq->where('periode_bulan', $this->bulan))
+                    ->when($this->tahun, fn ($qq) => $qq->where('periode_tahun', $this->tahun));
+            })
             ->orderByRaw("CASE WHEN progress <> 'selesai' AND DATE(deadline_selesai) = CURDATE() THEN 0 ELSE 1 END")
             ->orderByRaw("FIELD(progress,'dikerjakan','belum','selesai')")
             ->latest()

@@ -180,6 +180,13 @@
                                                             poin</strong>
                                                         (senilai Rp {{ number_format($pointsValue, 0, ',', '.') }})
                                                     </small>
+                                                    @if ($pointsExpireLabel)
+                                                        <small class="d-block mt-1 text-danger">
+                                                            <i class="bi bi-clock-history"></i>
+                                                            Poin akan kadaluarsa pada
+                                                            <strong>{{ $pointsExpireLabel }}</strong>
+                                                        </small>
+                                                    @endif
                                                     @if ($usePoints)
                                                         <div class="alert alert-info mt-2 mb-0">
                                                             <small>

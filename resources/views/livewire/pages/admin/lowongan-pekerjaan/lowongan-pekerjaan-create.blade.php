@@ -1,6 +1,6 @@
 
 @section('title')
-Tambah Lowongan Pekerjaan || PT. Asthana Cipta Mandiri
+Tambah Lowongan Pekerjaan || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4">

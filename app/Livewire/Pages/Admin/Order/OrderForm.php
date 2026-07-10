@@ -13,21 +13,37 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class OrderForm extends Component
 {
+    use WithFileUploads;
+
+    // ===== Bukti pembayaran manual (transfer / QRIS statis) =====
+    public bool $showBuktiModal = false;
+
+    public $bukti; // file bukti yang diunggah
+
     // ===== Customer =====
     public $customer_id = null;
+
     public $nama = '';
+
     public $email = '';
+
     public $no_hp = '';
+
     public $customerFound = false;
+
     public $foundCustomer = null;
+
     public $isLoadingCustomer = false;
+
     public $customer_notes = '';
 
     // ===== Items (boleh lebih dari satu akun / paket) =====
     public $items = [];
+
     public $selectedBundleId = '';
 
     // ===== Pembayaran =====
@@ -35,28 +51,42 @@ class OrderForm extends Component
 
     // ===== Promo =====
     public $kodePromo = '';
+
     public $promoValid = false;
+
     public $promoMessage = '';
 
     // ===== Referral =====
     public $referralCode = '';
+
     public $referralValid = false;
+
     public $referralMessage = '';
+
     public $referrerId = null;
+
     public $showReferralInput = false;
 
     // ===== Points =====
     public $usePoints = false;
+
     public $pointsValue = 0;
 
     // ===== Totals (computed) =====
     public $subtotal = 0;
+
     public $promoDiscount = 0;
+
     public $referralDiscount = 0;
+
     public $pointsDiscount = 0;
+
     public $totalDiscount = 0;
+
     public $uniqueCode = 0;
+
     public $finalTotal = 0;
+
     public $appliedPromos = [];
 
     protected PromoService $promoService;
@@ -141,9 +171,15 @@ class OrderForm extends Component
     protected function formatIndonesianPhone(string $value): string
     {
         $value = preg_replace('/[^0-9+]/', '', $value);
-        if (str_starts_with($value, '+62')) return $value;
-        if (str_starts_with($value, '62')) return '+' . $value;
-        if (str_starts_with($value, '0')) return '+62' . substr($value, 1);
+        if (str_starts_with($value, '+62')) {
+            return $value;
+        }
+        if (str_starts_with($value, '62')) {
+            return '+'.$value;
+        }
+        if (str_starts_with($value, '0')) {
+            return '+62'.substr($value, 1);
+        }
 
         return $value;
     }
@@ -275,6 +311,7 @@ class OrderForm extends Component
                     $this->items[$i]['products'][$j]['distributed'] = max(0, $dist);
                 }
                 $this->items[$i]['subtotal'] = $harga;
+
                 continue;
             }
 
@@ -282,10 +319,13 @@ class OrderForm extends Component
             if (empty($item['product_id'])) {
                 $this->items[$i]['price'] = 0;
                 $this->items[$i]['subtotal'] = 0;
+
                 continue;
             }
             $product = Product::find($item['product_id']);
-            if (! $product) continue;
+            if (! $product) {
+                continue;
+            }
 
             $price = $this->getPrice($product, $item['duration_type'], (int) $item['duration_value']);
             $this->items[$i]['price'] = $price;
@@ -300,9 +340,12 @@ class OrderForm extends Component
         foreach ($this->items as $item) {
             if (($item['type'] ?? 'product') === 'bundle') {
                 $fullSubtotal += (int) ($item['subtotal'] ?? 0);
+
                 continue; // tidak masuk promo cart
             }
-            if (empty($item['product_id'])) continue;
+            if (empty($item['product_id'])) {
+                continue;
+            }
             $fullSubtotal += (int) $item['subtotal'];
             $promoCart[] = [
                 'product_id' => $item['product_id'],
@@ -316,6 +359,7 @@ class OrderForm extends Component
 
         if ($fullSubtotal <= 0) {
             $this->resetTotals();
+
             return;
         }
 
@@ -389,6 +433,7 @@ class OrderForm extends Component
 
         if (empty($this->kodePromo)) {
             $this->promoMessage = 'Masukkan kode promo';
+
             return;
         }
 
@@ -400,7 +445,7 @@ class OrderForm extends Component
 
         if ($result['valid'] ?? false) {
             $this->promoValid = true;
-            $this->promoMessage = '✓ ' . ($result['message'] ?? 'Kode promo dipakai');
+            $this->promoMessage = '✓ '.($result['message'] ?? 'Kode promo dipakai');
         } else {
             $this->promoMessage = $result['message'] ?? 'Kode promo tidak valid';
         }
@@ -425,6 +470,7 @@ class OrderForm extends Component
 
         if (empty($this->referralCode)) {
             $this->referralMessage = 'Masukkan kode referral';
+
             return;
         }
 
@@ -432,6 +478,7 @@ class OrderForm extends Component
 
         if (! preg_match('/^PDW_\d{4}$/', $this->referralCode)) {
             $this->referralMessage = 'Format tidak valid (contoh: PDW_1234).';
+
             return;
         }
 
@@ -441,17 +488,19 @@ class OrderForm extends Component
 
         if (! $referrer) {
             $this->referralMessage = 'Kode referral tidak ditemukan / tidak aktif';
+
             return;
         }
 
         if (! $this->showReferralInput) {
             $this->referralMessage = 'Referral hanya untuk pembelian pertama';
+
             return;
         }
 
         $this->referralValid = true;
         $this->referrerId = $referrer->id;
-        $this->referralMessage = '✓ Valid! Direferensikan oleh ' . $referrer->nama;
+        $this->referralMessage = '✓ Valid! Direferensikan oleh '.$referrer->nama;
         $this->calculateTotals();
     }
 
@@ -475,7 +524,7 @@ class OrderForm extends Component
     {
         $count = Order::count() + 1;
 
-        return 'INV-' . now()->format('Ymd') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
+        return 'INV-'.now()->format('Ymd').'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     public function save()
@@ -502,6 +551,37 @@ class OrderForm extends Component
 
         $this->calculateTotals();
 
+        // Transfer & QRIS statis = pembayaran manual -> WAJIB unggah bukti dulu
+        // (lewat popup) sebelum pesanan dibuat & masuk ke detail.
+        if (in_array($this->payment_method, ['transfer', 'qris_statis'], true) && ! $this->bukti) {
+            $this->showBuktiModal = true;
+
+            return;
+        }
+
+        return $this->persistAndRedirect();
+    }
+
+    /** Konfirmasi dari popup bukti: validasi bukti lalu simpan pesanan. */
+    public function konfirmasiBukti()
+    {
+        $this->validate(
+            ['bukti' => 'required|image|max:4096'],
+            ['bukti.required' => 'Bukti pembayaran wajib diunggah.', 'bukti.image' => 'Berkas harus gambar.', 'bukti.max' => 'Ukuran maksimal 4 MB.'],
+            ['bukti' => 'bukti pembayaran']
+        );
+
+        return $this->persistAndRedirect();
+    }
+
+    protected function persistAndRedirect()
+    {
+        // Simpan file bukti (untuk transfer / qris_statis).
+        $buktiPath = null;
+        if ($this->bukti) {
+            $buktiPath = $this->bukti->store('bukti_pembayaran', 'public');
+        }
+
         DB::beginTransaction();
         try {
             $customer = Customer::updateOrCreate(
@@ -524,6 +604,7 @@ class OrderForm extends Component
                 'unique_code' => $this->uniqueCode,
                 'status' => 'pending',
                 'payment_method' => $this->payment_method,
+                'bukti_pembayaran' => $buktiPath,
                 'customer_notes' => $this->customer_notes,
                 'used_points' => $this->usePoints,
                 'points_discount' => $this->pointsDiscount,
@@ -544,7 +625,7 @@ class OrderForm extends Component
                         OrderItem::create([
                             'order_id' => $order->id,
                             'product_id' => $product->id,
-                            'product_name' => '[' . $item['bundling_name'] . '] ' . $product->nama_akun,
+                            'product_name' => '['.$item['bundling_name'].'] '.$product->nama_akun,
                             'product_description' => $product->deskripsi ?? null,
                             'product_image' => $product->image ?? null,
                             'duration_type' => $sub['duration_type'],
@@ -554,10 +635,13 @@ class OrderForm extends Component
                             'subtotal' => $sub['distributed'] ?? 0,
                         ]);
                     }
+
                     continue;
                 }
 
-                if (empty($item['product_id'])) continue;
+                if (empty($item['product_id'])) {
+                    continue;
+                }
                 $product = Product::findOrFail($item['product_id']);
 
                 OrderItem::create([
@@ -575,7 +659,9 @@ class OrderForm extends Component
             }
 
             foreach ($this->appliedPromos as $promoData) {
-                if (empty($promoData['promo_id'])) continue;
+                if (empty($promoData['promo_id'])) {
+                    continue;
+                }
                 $order->promos()->attach($promoData['promo_id'], [
                     'id' => (string) Str::uuid(),
                     'kode_promo' => $promoData['kode_promo'] ?? null,
@@ -602,7 +688,8 @@ class OrderForm extends Component
             return redirect()->route('admin.pesanantoko.detail', $order);
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('swal-error', message: 'Gagal membuat pesanan: ' . $e->getMessage());
+            $this->showBuktiModal = false;
+            $this->dispatch('swal-error', message: 'Gagal membuat pesanan: '.$e->getMessage());
         }
     }
 

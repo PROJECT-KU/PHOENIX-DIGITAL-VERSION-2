@@ -1,6 +1,6 @@
 
 @section('title')
-Data Promo || PT. Asthana Cipta Mandiri
+Data Promo || lemon
 @stop
 <div>
     <div class="container-fluid">

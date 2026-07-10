@@ -29,7 +29,7 @@
                     {{ $first->nama }}
                     <span class="ts-folder-count"><i class="bi bi-people-fill me-1"></i>{{ $total }} penerima</span>
                     @if($disebutSaya)
-                    <span class="badge rounded-pill ts-badge ms-1 ts-mentioned-badge"><i class="bi bi-at me-1"></i>Anda disebut</span>
+                    <span class="badge rounded-pill ts-badge ms-1 ts-mentioned-badge"><i class="bi bi-at"></i>Anda disebut</span>
                     @endif
                     @if($komentarBaru)
                     <span class="badge bg-danger rounded-pill ts-badge ms-1"><i class="bi bi-chat-dots-fill me-1"></i>{{ $komentarBaru > 9 ? '9+' : $komentarBaru }} baru</span>
@@ -57,7 +57,8 @@
             </div>
         </div>
 
-        <div class="ts-folder-body" x-show="open" x-transition.opacity>
+        <div class="ts-folder-body" :class="{ 'is-open': open }">
+            <div class="ts-folder-body-inner">
             <div class="row g-2">
                 @foreach($members as $m)
                 @php
@@ -88,6 +89,7 @@
                     </div>
                 </div>
                 @endforeach
+            </div>
             </div>
         </div>
     </div>

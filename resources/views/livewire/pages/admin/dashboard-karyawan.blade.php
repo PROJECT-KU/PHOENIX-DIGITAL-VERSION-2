@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-Dashboard || PT. Asthana Cipta Mandiri
+Dashboard || lemon
 @stop
 
 <div>

@@ -1,5 +1,5 @@
 @section('title')
-Rekap Presensi || PT. Asthana Cipta Mandiri
+Rekap Presensi || lemon
 @stop
 
 <div>

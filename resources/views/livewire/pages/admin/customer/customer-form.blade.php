@@ -14,13 +14,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="email" class="form-label">Email Pelangan</label>
-                            <input class="form-control" type="email" wire:model="email" placeholder="email@example.com">
+                            <label for="email" class="form-label">Email Pelanggan <span class="text-muted small">(opsional)</span></label>
+                            <input class="form-control" type="email" wire:model="email" placeholder="email@example.com (opsional)">
                         </div>
                     </div>
-                </div>
-
-                <div class="row g-4">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="phone" class="form-label">Nomor Handphone</label>
@@ -35,9 +32,6 @@
                             <option value="active">Active</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="row g-4">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="tanggal_daftar" class="form-label">Tanggal Daftar</label>
@@ -78,6 +72,15 @@
     <style>
         [x-cloak] {
             display: none !important;
+        }
+
+        /* Badge promo di riwayat pesanan boleh membungkus teks agar tidak melebihi card
+           (mis. nama promo yang panjang). */
+        .riwayat-promo .badge {
+            white-space: normal;
+            text-align: left;
+            word-break: break-word;
+            max-width: 100%;
         }
     </style>
     @if ($customer)
@@ -159,7 +162,7 @@
                 @endphp
 
                 @if (!empty($promoCodes) || $flashSales->isNotEmpty() || $autoPromos->isNotEmpty() || $pointsUsed > 0 || $order->referral_code)
-                <div class="d-flex flex-wrap gap-2 mt-3">
+                <div class="riwayat-promo d-flex flex-wrap gap-2 mt-3">
                     @foreach ($flashSales as $fs)
                     <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-semibold">
                         <i class="bi bi-lightning-charge-fill me-1"></i>Flash Sale{{ $fs ? ': ' . $fs : '' }}
@@ -238,11 +241,13 @@
             @endif
 
             @if ($totalPesanan > 0)
-            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-4 p-3 rounded-3"
+            <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-center justify-content-sm-between text-center text-sm-start gap-1 gap-sm-2 mt-4 p-3 rounded-3"
                 style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.12), rgba(78, 70, 229, 0.12));">
-                <span class="fw-bold text-primary">
-                    <i class="bi bi-cash-stack me-2"></i>Total Keseluruhan Dibayarkan
-                    <small class="text-muted fw-normal">({{ $paidOrdersCount }} pesanan terbayar)</small>
+                <span class="fw-bold text-primary d-inline-flex align-items-start justify-content-center gap-2">
+                    <i class="bi bi-cash-stack" style="line-height:1.4;"></i>
+                    <span>Total Keseluruhan Dibayarkan
+                        <small class="text-muted fw-normal d-block d-sm-inline">({{ $paidOrdersCount }} pesanan terbayar)</small>
+                    </span>
                 </span>
                 <span class="fw-bold fs-4 text-primary">Rp {{ number_format($grandTotalPaid, 0, ',', '.') }}</span>
             </div>

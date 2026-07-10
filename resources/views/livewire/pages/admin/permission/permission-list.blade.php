@@ -1,6 +1,6 @@
 
 @section('title')
-Data Hak Akses || PT. Asthana Cipta Mandiri
+Data Hak Akses || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->

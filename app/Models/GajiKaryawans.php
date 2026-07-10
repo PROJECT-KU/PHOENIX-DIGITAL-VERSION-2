@@ -162,7 +162,9 @@ class GajiKaryawans extends Model
      * agar data gaji rahasia tidak bocor ke karyawan lain.
      *
      * - user dengan permission "view_all_gajikaryawan" (admin/finance) -> semua data
-     * - selain itu -> hanya gaji miliknya sendiri (nama_karyawan = id user)
+     * - selain itu -> hanya gaji miliknya sendiri (nama_karyawan = id user) yang
+     *   sudah "completed"; gaji "pending" (masih draft/diproses) TIDAK ditampilkan
+     *   ke karyawan (dashboard maupun list) sampai difinalkan admin
      * - tidak login -> tidak ada data
      */
     public function scopeVisibleTo($query, ?User $user = null)
@@ -177,7 +179,8 @@ class GajiKaryawans extends Model
             return $query;
         }
 
-        return $query->where('nama_karyawan', $user->id);
+        return $query->where('nama_karyawan', $user->id)
+            ->where('status', 'completed');
     }
 
     // Scope filter status

@@ -95,11 +95,15 @@
                                         ({{ $promo->tipe_promo === 'flash_sale' ? 'Flash Sale' : str_replace('_', ' ', $promo->tipe_promo) }})
                                     </small>
 
+                                    @if ($promo->tipe_promo === 'kode_promo' && $promo->kode_promo)
+                                    <span class="promo-code-chip"><i class="bi bi-tag-fill"></i>{{ strtoupper($promo->kode_promo) }}</span>
+                                    @endif
+
                                     <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-2 ms-1">
                                         @if ($promo->tipe_diskon === 'nominal' || $isNominal)
-                                        -Rp {{ number_format($maxVal, 0, ',', '.') }}
+                                        Hemat sampai Rp {{ number_format($maxVal, 0, ',', '.') }}
                                         @else
-                                        -{{ $maxVal }}%
+                                        Diskon sampai {{ $maxVal }}%
                                         @endif
                                     </span>
 
@@ -120,68 +124,43 @@
         <!-- Main Header -->
         <div class="main-header">
             <div class="container-fluid container-xl">
-                <div class="py-3 d-flex align-items-center justify-content-between">
+                <div class="main-header-row py-2 d-flex align-items-center justify-content-between flex-wrap flex-xl-nowrap gap-2">
 
-                    <!-- Logo -->
-                    <a href="/" class="logo d-flex align-items-center">
-                        <h1 class="sitename">Phoenix</h1>
+                    <!-- Logo: flame (gambar, tanpa teks) + wordmark via kode -->
+                    <a href="/" class="logo phoenix-logo d-flex align-items-center">
+                        <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
+                        <span class="phoenix-wordmark">
+                            <span class="pw-top">Phoenix</span>
+                            <span class="pw-sub">Digital</span>
+                        </span>
                     </a>
 
-                    <!-- Search -->
-                    <livewire:components.global-search />
-                    <!-- Actions -->
-                    <div class="header-actions d-flex align-items-center justify-content-end">
-                        <!-- Mobile Search Toggle -->
-                        <button class="header-action-btn mobile-search-toggle d-xl-none" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-expanded="false"
-                            aria-controls="mobileSearch">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
+                    <!-- Menu utama — desktop: inline di bar; mobile: off-canvas (hamburger) -->
+                    <nav id="navmenu" class="navmenu">
+                        <ul>
+                            <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
+                            <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
+                            <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
+                            <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
+                        </ul>
+                    </nav>
 
-                    <!-- Cart -->
-                    <div class="d-flex align-items-center gap-4">
-                        <a href="{{route('order.history')}}" class="text-dark">
-                            <i class="bi bi-clock-history fs-5"></i>
+                    <!-- Live Search (responsive: inline di desktop, baris penuh di mobile) -->
+                    <livewire:components.global-search />
+
+                    <!-- Cart & aksi -->
+                    <div class="header-actions-group d-flex align-items-center gap-3 gap-md-4">
+                        <a href="{{route('order.history')}}" class="ha-item ha-riwayat" title="Riwayat Pesanan">
+                            <i class="bi bi-clock-history"></i>
+                            <span class="ha-label">Riwayat</span>
                         </a>
                         <livewire:components.cart-badge />
+                        <!-- Mobile Navigation Toggle -->
+                        <i class="mobile-nav-toggle d-xl-none bi bi-list me-0"></i>
                     </div>
-
-                    <!-- Mobile Navigation Toggle -->
-                    <i class="mobile-nav-toggle d-xl-none bi bi-list me-0"></i>
                 </div>
             </div>
         </div>
-        </div>
-
-        <!-- Navigation -->
-        <div class="header-nav">
-            <div class="container-fluid container-xl position-relative">
-                <nav id="navmenu" class="navmenu">
-                    <ul>
-                        <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
-                        <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
-                        <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
-                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
-
-                    </ul>
-                </nav>
-            </div>
-        </div>
-
-        <!-- Mobile Search Form -->
-        <div class="collapse" id="mobileSearch">
-            <div class="container">
-                <form action="{{ route('homepage') }}" method="GET" class="search-form">
-                    <div class="input-group">
-                        <input type="text" name="search" value="{{ request('search') }}" class="form-control"
-                            placeholder="Search for products">
-                        <button class="btn" type="submit">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
 
     </header>
@@ -193,8 +172,12 @@
                 <div class="row gy-4">
                     <div class="col-lg-6 col-md-8">
                         <div class="footer-widget footer-about">
-                            <a href="index.html" class="logo">
-                                <span class="sitename">Phoenix</span>
+                            <a href="/" class="logo phoenix-logo phoenix-logo--light d-inline-flex align-items-center">
+                                <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
+                                <span class="phoenix-wordmark">
+                                    <span class="pw-top">Phoenix</span>
+                                    <span class="pw-sub">Digital</span>
+                                </span>
                             </a>
                             <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in nibh vehicula,
                                 facilisis magna ut, consectetur lorem. Proin eget tortor risus.</p>

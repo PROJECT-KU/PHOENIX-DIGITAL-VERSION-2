@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pelanggan || PT. Asthana Cipta Mandiri
+Data Pelanggan || lemon
 @stop
 <div>
     <div class="container-fluid">
@@ -189,21 +189,28 @@ Data Pelanggan || PT. Asthana Cipta Mandiri
                                 <td>
                                     <span class="fw-semibold">{{ $customer->point }}</span> poin
                                     <small class="d-block text-muted">Rp {{ number_format($customer->point * 500, 0, ',', '.') }}</small>
+                                    @if ($customer->point > 0)
+                                        <small class="d-block text-danger">
+                                            <i class="bi bi-clock-history"></i> Exp {{ $customer->pointsExpireLabel('d M Y') }}
+                                        </small>
+                                    @endif
                                 </td>
                                 <td>{{ $customer->kode_ref }}</td>
                                 <td>
-                                    <button type="button" class="btn btn-success btn-sm me-1 cust-wa-btn"
+                                    <div class="d-inline-flex flex-nowrap align-items-center justify-content-center gap-1">
+                                    <button type="button" class="btn btn-success btn-sm cust-wa-btn"
                                         title="Kirim WhatsApp"
                                         data-nama="{{ $customer->nama }}"
                                         data-hp="{{ $customer->no_hp }}"
                                         data-member="{{ $customer->status_member }}"
                                         data-point="{{ (int) $customer->point }}"
+                                        data-point-exp="{{ $customer->pointsExpireLabel() }}"
                                         data-ref="{{ $customer->kode_ref }}">
                                         <i class="bi bi-whatsapp"></i>
                                     </button>
                                     @if (auth()->user()->hasPermission('edit_customer'))
                                     <a wire:navigate href="{{ route('admin.customer.edit', $customer) }}"
-                                        class="btn btn-warning btn-sm me-1">
+                                        class="btn btn-warning btn-sm">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     @endif
@@ -214,6 +221,7 @@ Data Pelanggan || PT. Asthana Cipta Mandiri
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     @endif
+                                    </div>
                                 </td>
                             </tr>
                             @empty
@@ -441,6 +449,7 @@ Data Pelanggan || PT. Asthana Cipta Mandiri
                 var m = 'Halo ' + c.nama + '! 👋\n\nInfo akun kamu di *' + STORE + '*:\n\n';
                 m += '🏅 Status: *' + status + '*\n';
                 m += '💎 Poin: *' + c.point + ' poin* (senilai ' + rp(c.point * 500) + ')\n';
+                if (c.point > 0 && c.pointExp) m += '⏳ Poin berlaku sampai *' + c.pointExp + '* (kadaluarsa setelah tanggal tsb)\n';
                 if (c.ref) m += '🔗 Kode Referral: *' + c.ref + '*\n';
                 m += '\n';
                 if (c.ref) m += 'Ajak teman belanja pakai kode referral kamu — tiap transaksi pertama mereka, kamu dapat *2 poin*! 🎁\n';
@@ -596,6 +605,7 @@ Data Pelanggan || PT. Asthana Cipta Mandiri
                     hp: btn.dataset.hp || '',
                     member: btn.dataset.member || '',
                     point: parseInt(btn.dataset.point || '0', 10),
+                    pointExp: btn.dataset.pointExp || '',
                     ref: btn.dataset.ref || ''
                 });
             });

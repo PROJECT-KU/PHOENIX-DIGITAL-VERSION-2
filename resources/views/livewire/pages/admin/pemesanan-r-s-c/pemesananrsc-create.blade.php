@@ -1,5 +1,5 @@
 @section('title')
-Tambah Pesanan RSC || PT. Asthana Cipta Mandiri
+Tambah Pesanan RSC || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -12,7 +12,7 @@ Tambah Pesanan RSC || PT. Asthana Cipta Mandiri
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Pemesanan RSC', 'url' => route('admin.pesananrsc.index')],
-                        ['name' => 'Tambah Data Pemesanan RSC'],
+                        ['name' => 'Tambah Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

@@ -1,5 +1,5 @@
 @section('title')
-Harga Modal Produk || PT. Asthana Cipta Mandiri
+Harga Modal Produk || lemon
 @stop
 
 <div>

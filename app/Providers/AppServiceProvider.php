@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Listeners\SendWebPushNotification;
 use App\Models\Order;
 use App\Models\Promo;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Blade;
@@ -38,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
             return [Limit::perMinute(100)->by($request->ip())];
         });
         Order::observe(OrderObserver::class);
+
+        // Kirim Web Push otomatis untuk setiap notifikasi database (badge PWA di background).
+        Event::listen(NotificationSent::class, SendWebPushNotification::class);
 
         // Email reset kata sandi kustom (desain lemon, seragam dengan login).
         ResetPassword::toMailUsing(function ($notifiable, string $token) {

@@ -1,64 +1,70 @@
 
 @section('title')
-Data Pengeluaran || PT. Asthana Cipta Mandiri
+Data Pengeluaran || lemon
 @stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->
     <style>
+        /* Tab glossy — seragam dengan tab di fitur Order (Pemesanan Toko). */
         .spending-tabs {
             display: flex;
-            flex-wrap: wrap;
             width: 100%;
-            gap: 6px;
-            padding: 6px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 18px;
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.08);
+            gap: .5rem;
+            padding: .5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+            overflow-x: auto;
         }
 
         .spending-tab {
+            flex: 1;
             display: inline-flex;
-            flex: 1 1 0;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 13px;
+            gap: .6rem;
+            border: none;
+            background: transparent;
+            color: #6b7280;
             font-weight: 600;
-            font-size: 0.95rem;
-            color: #64748b;
+            font-size: 1.05rem;
+            line-height: 1;
+            padding: .95rem 1.5rem;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all .25s ease;
             text-decoration: none;
             white-space: nowrap;
-            transition: 0.3s;
         }
 
         .spending-tab i {
-            font-size: 1.05rem;
+            font-size: 1.25rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
         }
 
-        .spending-tab:hover {
-            color: #7c3aed;
-            background: rgba(139, 92, 246, 0.08);
-            transform: translateY(-1px);
+        .spending-tab:hover:not(.active) {
+            color: #4e46e5;
+            background: rgba(108, 99, 255, 0.10);
         }
 
         .spending-tab.active {
             color: #fff;
-            background: linear-gradient(135deg, #7c3aed, #4f46e5);
-            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.3);
+            background: linear-gradient(135deg, #6c63ff, #4e46e5);
+            box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45);
+            transform: translateY(-1px);
         }
 
-        @media (max-width: 575px) {
-            .spending-tabs {
-                width: 100%;
-            }
-
+        @media (max-width: 575.98px) {
             .spending-tab {
-                flex: 1 1 auto;
+                flex: 0 0 auto;
                 justify-content: center;
-                padding: 10px 14px;
+                padding: .6rem .9rem;
+                font-size: .9rem;
             }
         }
 
@@ -113,6 +119,30 @@ Data Pengeluaran || PT. Asthana Cipta Mandiri
             font-size: 1.3rem;
             border-radius: 14px;
             color: #fff;
+        }
+
+        /* Rapikan Total Keseluruhan Pengeluaran di layar mobile. */
+        @media (max-width: 575.98px) {
+            .grand-total-card {
+                text-align: center;
+                padding: 1.25rem !important;
+                gap: .35rem !important;
+            }
+
+            .grand-total-card>div {
+                justify-content: center;
+                flex-wrap: wrap;
+                row-gap: .35rem;
+            }
+
+            .grand-total-card>div span.fw-semibold {
+                font-size: .95rem !important;
+            }
+
+            .grand-total-card h3 {
+                font-size: 1.5rem;
+                width: 100%;
+            }
         }
     </style>
 
@@ -191,6 +221,16 @@ Data Pengeluaran || PT. Asthana Cipta Mandiri
                                     </span>
                                     @else
                                     {{ Str::limit($spending->deskripsi, 50) }}
+                                    @endif
+                                    @php $fotoBukti = $spending->images; @endphp
+                                    @if (count($fotoBukti))
+                                    <a href="javascript:void(0)" role="button" class="sp-bukti-trigger d-inline-block ms-1 align-middle position-relative" title="Lihat gambar/bukti"
+                                        data-bukti='@json(collect($fotoBukti)->map(fn ($p) => Storage::url($p))->values())'>
+                                        <img src="{{ Storage::url($fotoBukti[0]) }}" alt="bukti" style="width:26px; height:26px; object-fit:cover; border-radius:6px; border:1px solid #e6e8f2; cursor:zoom-in;">
+                                        @if (count($fotoBukti) > 1)
+                                        <span class="badge bg-primary position-absolute top-0 start-100 translate-middle" style="font-size:.5rem;">+{{ count($fotoBukti) - 1 }}</span>
+                                        @endif
+                                    </a>
                                     @endif
                                 </td>
                                 <td class="text-center">
@@ -325,4 +365,76 @@ Data Pengeluaran || PT. Asthana Cipta Mandiri
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
+
+    @push('scripts')
+    {{-- Popup lihat bukti pengeluaran (SweetAlert glossy). >1 gambar = slider manual (tanpa auto-slide). --}}
+    <script>
+        window.spShowBukti = function (images) {
+            if (!images || !images.length) return;
+            if (typeof Swal === 'undefined') { window.open(images[0], '_blank'); return; }
+
+            const glossy = {
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '1rem',
+            };
+
+            // Satu gambar: tampilkan langsung (dibatasi ke ukuran layar agar tanpa scroll).
+            if (images.length === 1) {
+                Swal.fire(Object.assign({
+                    html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + images[0] + '" alt="Bukti pengeluaran" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                }, glossy));
+                return;
+            }
+
+            // Banyak gambar: slider manual (prev/next + panah keyboard), TIDAK auto-slide.
+            let idx = 0;
+            const html =
+                '<div style="position:relative; max-width:80vw;">' +
+                '  <img id="spBuktiImg" src="' + images[0] + '" style="max-width:100%; max-height:70vh; border-radius:12px; object-fit:contain;">' +
+                '  <button type="button" id="spBuktiPrev" class="btn btn-light rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="position:absolute; top:50%; left:8px; transform:translateY(-50%); width:40px; height:40px;"><i class="bi bi-chevron-left"></i></button>' +
+                '  <button type="button" id="spBuktiNext" class="btn btn-light rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="position:absolute; top:50%; right:8px; transform:translateY(-50%); width:40px; height:40px;"><i class="bi bi-chevron-right"></i></button>' +
+                '  <div id="spBuktiCounter" class="mt-2 fw-semibold text-muted">1 / ' + images.length + '</div>' +
+                '</div>';
+
+            Swal.fire(Object.assign({
+                html: html,
+                didOpen: function () {
+                    const img = document.getElementById('spBuktiImg');
+                    const counter = document.getElementById('spBuktiCounter');
+                    const show = function (i) {
+                        idx = (i + images.length) % images.length;
+                        img.src = images[idx];
+                        counter.textContent = (idx + 1) + ' / ' + images.length;
+                    };
+                    document.getElementById('spBuktiPrev').addEventListener('click', function () { show(idx - 1); });
+                    document.getElementById('spBuktiNext').addEventListener('click', function () { show(idx + 1); });
+                    const onKey = function (e) {
+                        if (!document.getElementById('spBuktiImg')) { document.removeEventListener('keydown', onKey); return; }
+                        if (e.key === 'ArrowLeft') show(idx - 1);
+                        if (e.key === 'ArrowRight') show(idx + 1);
+                    };
+                    document.addEventListener('keydown', onKey);
+                },
+            }, glossy));
+        };
+
+        // Delegasi klik thumbnail bukti (di-bind sekali).
+        if (!window.__spBuktiBound) {
+            window.__spBuktiBound = true;
+            document.addEventListener('click', function (e) {
+                const trigger = e.target.closest && e.target.closest('.sp-bukti-trigger');
+                if (!trigger) return;
+                e.preventDefault();
+                let images = [];
+                try { images = JSON.parse(trigger.getAttribute('data-bukti') || '[]'); } catch (_) { images = []; }
+                window.spShowBukti(images);
+            });
+        }
+    </script>
+    @endpush
 </div>

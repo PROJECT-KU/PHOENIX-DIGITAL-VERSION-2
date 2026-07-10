@@ -63,7 +63,7 @@
 
                         <div class="row">
                             @if ($tipe_diskon === 'persen')
-                            <div class="col-6 mb-3">
+                            <div class="col-6 mb-3 promo-diskon-col">
                                 <label class="form-label fw-bold text-secondary">Diskon Member</label>
                                 <div class="position-relative">
                                     <input type="text"
@@ -81,7 +81,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-6 mb-3">
+                            <div class="col-6 mb-3 promo-diskon-col">
                                 <label class="form-label fw-bold text-secondary">Diskon Non-Member</label>
                                 <div class="position-relative">
                                     <input type="text"
@@ -99,7 +99,7 @@
                                 </div>
                             </div>
                             @else
-                            <div class="col-6 mb-3">
+                            <div class="col-6 mb-3 promo-diskon-col">
                                 <label class="form-label fw-bold text-secondary">Diskon Member</label>
                                 <div class="position-relative">
                                     <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
@@ -117,7 +117,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-6 mb-3">
+                            <div class="col-6 mb-3 promo-diskon-col">
                                 <label class="form-label fw-bold text-secondary">Diskon Non-Member</label>
                                 <div class="position-relative">
                                     <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
@@ -326,6 +326,15 @@
                 .input-color-solid::-moz-color-swatch {
                     border: none !important;
                     border-radius: 0.5rem !important;
+                }
+
+                /* Mobile: label diskon dijaga 1 baris agar input Member & Non-Member sejajar. */
+                @media (max-width: 575.98px) {
+                    .promo-diskon-col .form-label {
+                        font-size: .78rem;
+                        white-space: nowrap;
+                        margin-bottom: .3rem;
+                    }
                 }
             </style>
 

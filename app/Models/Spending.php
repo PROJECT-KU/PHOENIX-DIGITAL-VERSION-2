@@ -17,6 +17,8 @@ class Spending extends Model
         'tanggal_transaksi',
         'nominal',
         'deskripsi',
+        'gambar',
+        'gambar_list',
         'status',
         'penginput_id',
         'pic_pembeli_id',
@@ -30,7 +32,23 @@ class Spending extends Model
     protected $casts = [
         'tanggal_transaksi' => 'date',
         'nominal' => 'decimal:0',
+        'gambar_list' => 'array',
     ];
+
+    /**
+     * Semua gambar/bukti sebagai array path. Memakai gambar_list bila ada; jika
+     * belum (data lama), jatuh ke kolom tunggal "gambar".
+     *
+     * @return array<int, string>
+     */
+    public function getImagesAttribute(): array
+    {
+        if (! empty($this->gambar_list) && is_array($this->gambar_list)) {
+            return array_values($this->gambar_list);
+        }
+
+        return $this->gambar ? [$this->gambar] : [];
+    }
 
     const STATUS_PENDING = 'pending';
 

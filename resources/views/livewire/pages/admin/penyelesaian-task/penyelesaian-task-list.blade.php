@@ -1,5 +1,5 @@
 @section('title')
-Penyelesaian Task || PT. Asthana Cipta Mandiri
+Penyelesaian Task || lemon
 @stop
 <div wire:poll.30s="recompute">
     <style>
@@ -184,17 +184,30 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
         .pc-pin-x { border: none; background: transparent; color: #94a3b8; cursor: pointer; padding: 0 2px; line-height: 1; display: inline-flex; align-items: center; flex-shrink: 0; }
         .pc-pin-x:hover { color: #e11d48; }
         /* Multi-select penerima */
-        .pt-multi { border: 1px solid #e6e8f2; border-radius: 12px; padding: 6px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; background: #fff; }
+        .pt-multi { border: 1px solid #eef0f7; border-radius: 14px; padding: 6px; max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #fff; }
         .pt-multi.is-invalid { border-color: #ef4444; }
-        .pt-multi-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; cursor: pointer; font-size: .9rem; color: #1e293b; font-weight: 500; margin: 0; }
-        .pt-multi-item:hover { background: #f7f5ff; }
-        .pt-multi-item.checked { background: linear-gradient(135deg, rgba(124,58,237,.10), rgba(78,70,229,.05)); }
+        .pt-multi-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; cursor: pointer; margin: 0; border: 1px solid transparent; transition: .13s; }
+        .pt-multi-item:hover { background: #f8f7ff; }
+        .pt-multi-item.checked { background: linear-gradient(135deg, rgba(124,58,237,.09), rgba(78,70,229,.04)); border-color: #ddd6fe; }
         .pt-multi-item input { position: absolute; opacity: 0; pointer-events: none; }
-        .pt-multi-check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; background: #fff; }
-        .pt-multi-check i.bi { display: none; line-height: 1; font-size: .8rem; }
+        .pt-multi-av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .82rem; color: #fff; background: linear-gradient(135deg, #a5b4fc, #818cf8); transition: .13s; }
+        .pt-multi-item.checked .pt-multi-av { background: linear-gradient(135deg, #7c3aed, #4e46e5); box-shadow: 0 4px 10px rgba(124,58,237,.28); }
+        .pt-multi-name { flex: 1 1 auto; font-size: .9rem; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pt-multi-item.checked .pt-multi-name { color: #4c1d95; }
+        .pt-multi-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #e2e8f0; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: #fff; transition: .13s; }
+        .pt-multi-check i.bi { display: none; align-items: center; justify-content: center; line-height: 1; font-size: .8rem; }
         .pt-multi-item.checked .pt-multi-check { background: linear-gradient(135deg, #7c3aed, #4e46e5); border-color: transparent; }
         .pt-multi-item.checked .pt-multi-check i.bi { display: inline-flex; }
-        .pt-multi-count { font-size: .76rem; color: #7c3aed; font-weight: 600; margin-top: 5px; }
+        .pt-multi-count { font-size: .76rem; color: #7c3aed; font-weight: 600; margin-top: 6px; }
+        .pt-multi-search { position: relative; margin-bottom: 6px; }
+        .pt-multi-search i.bi { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .85rem; line-height: 1; display: inline-flex; align-items: center; pointer-events: none; }
+        .pt-multi-search input { padding-left: 34px; border-radius: 10px; }
+        [x-cloak] { display: none !important; }
+        .ts-mention { color: #6d28d9; background: #ede9fe; font-weight: 700; border-radius: 5px; padding: 0 4px; }
+        .ts-mention-menu { position: absolute; bottom: calc(100% + 6px); left: 26px; z-index: 20; min-width: 180px; max-height: 190px; overflow-y: auto; background: #fff; border: 1px solid #e6e8f2; border-radius: 12px; box-shadow: 0 12px 28px rgba(15, 23, 42, .16); padding: 5px; }
+        .ts-mention-item { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; border: none; background: transparent; border-radius: 9px; padding: 7px 10px; font-size: .88rem; font-weight: 600; color: #1e293b; cursor: pointer; }
+        .ts-mention-item i.bi { color: #7c3aed; display: inline-flex; align-items: center; line-height: 1; }
+        .ts-mention-item.active, .ts-mention-item:hover { background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(78,70,229,.06)); }
 
         /* ===== Composer ===== */
         .pc-composer { border: 1px solid #e6e8f2; border-radius: 14px; padding: 6px 14px; background: #fff; box-shadow: 0 4px 14px rgba(108, 99, 255, .05); transition: .15s; }
@@ -248,7 +261,7 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
 
     @php
         $badgeBonus = ['tepat_waktu'=>'success','terlambat'=>'warning','tidak_selesai'=>'danger','tidak_ada_info'=>'primary'];
-        $labelBonus = ['tepat_waktu'=>'Tepat Waktu','terlambat'=>'Terlambat','tidak_selesai'=>'Tidak Selesai','tidak_ada_info'=>'Berjalan'];
+        $labelBonus = ['tepat_waktu'=>'Tepat Waktu','terlambat'=>'Melebihi Deadline','tidak_selesai'=>'Tidak Selesai','tidak_ada_info'=>'Berjalan'];
         $badgeProg = ['belum'=>'secondary','dikerjakan'=>'info','selesai'=>'success'];
         $labelProg = ['belum'=>'Belum Dikerjakan','dikerjakan'=>'Dikerjakan','selesai'=>'Selesai'];
         $badgeBobot = ['ringan'=>'success','sedang'=>'warning','berat'=>'danger'];
@@ -380,7 +393,7 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                                     @if($tSelesai)
                                     <span class="badge bg-success-subtle text-success border border-success rounded-pill" style="font-size:.7rem;"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>
                                     @elseif($tLewat)
-                                    <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill" style="font-size:.7rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Terlambat</span>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill" style="font-size:.7rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Melebihi Deadline</span>
                                     @elseif($tSisa === 0)
                                     <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill" style="font-size:.7rem;"><i class="bi bi-alarm-fill me-1"></i>Hari ini</span>
                                     @elseif(!is_null($tSisa))
@@ -457,14 +470,27 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                     <label class="form-label fw-semibold">Karyawan <span class="text-danger">*</span>
                         <span class="text-muted fw-normal" style="font-size:.8rem;">— bisa pilih lebih dari satu</span>
                     </label>
-                    <div class="pt-multi @error('t_user_ids') is-invalid @enderror">
-                        @foreach($users as $u)
-                        <label class="pt-multi-item {{ in_array((string) $u->id, array_map('strval', $t_user_ids)) ? 'checked' : '' }}">
-                            <input type="checkbox" value="{{ $u->id }}" wire:model.live="t_user_ids">
-                            <span class="pt-multi-check"><i class="bi bi-check-lg"></i></span>
-                            <span>{{ $u->name }}</span>
-                        </label>
-                        @endforeach
+                    <div x-data="{ q: '', names: @js($users->pluck('name')->map(fn ($n) => mb_strtolower($n))->values()), get anyVisible() { return this.names.some(n => n.includes(this.q.toLowerCase())); } }">
+                        @if($users->count() > 5)
+                        <div class="pt-multi-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" x-model="q" placeholder="Cari nama karyawan..." class="form-control form-control-sm">
+                        </div>
+                        @endif
+                        <div class="pt-multi @error('t_user_ids') is-invalid @enderror">
+                            @foreach($users as $u)
+                            <label class="pt-multi-item {{ in_array((string) $u->id, array_map('strval', $t_user_ids)) ? 'checked' : '' }}"
+                                x-show="@js(mb_strtolower($u->name)).includes(q.toLowerCase())">
+                                <input type="checkbox" value="{{ $u->id }}" wire:model.live="t_user_ids">
+                                <span class="pt-multi-av">{{ strtoupper(mb_substr($u->name, 0, 1)) }}</span>
+                                <span class="pt-multi-name">{{ $u->name }}</span>
+                                <span class="pt-multi-check"><i class="bi bi-check-lg"></i></span>
+                            </label>
+                            @endforeach
+                            @if($users->count())
+                            <div class="text-muted small p-2 text-center" x-show="!anyVisible" x-cloak>Tidak ada nama yang cocok.</div>
+                            @endif
+                        </div>
                     </div>
                     <div class="pt-multi-count">{{ count($t_user_ids) }} karyawan dipilih</div>
                     @error('t_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -723,7 +749,10 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                             @if($c->type === 'revisi')
                             <div class="mb-1"><span class="badge bg-warning-subtle text-warning border border-warning rounded-pill" style="font-size:.68rem;"><i class="bi bi-arrow-counterclockwise me-1"></i>Dibuka kembali untuk revisi</span></div>
                             @endif
-                            @if($c->body)<div>{{ $c->body }}</div>@endif
+                            @if($c->body)
+                            @php $bodyHtml = preg_replace('/@([\p{L}\p{N}_]+)/u', '<span class="ts-mention">@$1</span>', e($c->body)); @endphp
+                            <div>{!! nl2br($bodyHtml) !!}</div>
+                            @endif
                             @if($c->file_path)
                                 @if($c->isImage())
                                 <a href="{{ Storage::url($c->file_path) }}" target="_blank"><img src="{{ Storage::url($c->file_path) }}" style="max-width:170px; border-radius:10px; margin-top:6px; display:block;"></a>
@@ -739,10 +768,18 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
                 </div>
 
                 {{-- Composer --}}
-                <div class="pc-composer">
-                    <div class="d-flex align-items-center gap-2">
+                <div class="pc-composer" x-data="tsMention(@js($chatMembers ?? []))">
+                    <div class="d-flex align-items-center gap-2 position-relative">
                         <i class="bi bi-chat-left-text pc-input-ico"></i>
-                        <textarea wire:model="newComment" rows="1" class="form-control" placeholder="Tulis balasan untuk karyawan..."></textarea>
+                        <textarea x-ref="ta" wire:model="newComment" rows="1" class="form-control"
+                            @input="onInput" @keydown="onKeydown" @keyup="onInput"
+                            placeholder="{{ !empty($chatMembers) ? 'Tulis balasan… ketik @ untuk menyebut' : 'Tulis balasan untuk karyawan...' }}"></textarea>
+                        <div class="ts-mention-menu" x-show="open" x-cloak @click.outside="open=false" style="display:none;">
+                            <template x-for="(m, i) in filtered" :key="m">
+                                <button type="button" class="ts-mention-item" :class="{ active: i === active }"
+                                    @click="pick(m)" @mouseenter="active = i"><i class="bi bi-at"></i><span x-text="m"></span></button>
+                            </template>
+                        </div>
                     </div>
                     <div class="d-flex align-items-center justify-content-between gap-2 mt-2 pt-2 border-top">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -775,6 +812,35 @@ Penyelesaian Task || PT. Asthana Cipta Mandiri
 
 @push('scripts')
     <script>
+        // Widget @mention untuk composer komentar (Alpine) — sama seperti Task Saya.
+        window.tsMention = window.tsMention || function (members) {
+            return {
+                members: members || [], open: false, query: '', active: 0,
+                get filtered() { const q = this.query.toLowerCase(); return this.members.filter(m => m.toLowerCase().includes(q)).slice(0, 6); },
+                onInput() {
+                    if (!this.members.length) { this.open = false; return; }
+                    const ta = this.$refs.ta; const before = ta.value.slice(0, ta.selectionStart);
+                    const m = before.match(/@([\p{L}\p{N}_]*)$/u);
+                    if (m) { this.query = m[1]; this.active = 0; this.open = this.filtered.length > 0; } else { this.open = false; }
+                },
+                onKeydown(e) {
+                    if (!this.open) return;
+                    if (e.key === 'ArrowDown') { e.preventDefault(); this.active = Math.min(this.active + 1, this.filtered.length - 1); }
+                    else if (e.key === 'ArrowUp') { e.preventDefault(); this.active = Math.max(this.active - 1, 0); }
+                    else if (e.key === 'Enter' && this.filtered.length) { e.preventDefault(); this.pick(this.filtered[this.active]); }
+                    else if (e.key === 'Escape') { this.open = false; }
+                },
+                pick(name) {
+                    const ta = this.$refs.ta; const pos = ta.selectionStart;
+                    const before = ta.value.slice(0, pos).replace(/@([\p{L}\p{N}_]*)$/u, '@' + name + ' ');
+                    ta.value = before + ta.value.slice(pos);
+                    ta.dispatchEvent(new Event('input'));
+                    this.open = false;
+                    this.$nextTick(() => { ta.focus(); ta.setSelectionRange(before.length, before.length); });
+                }
+            };
+        };
+
         document.addEventListener('input', function (e) {
             if (!e.target.classList.contains('rupiah')) return;
             let v = e.target.value.replace(/[^\d]/g, '');

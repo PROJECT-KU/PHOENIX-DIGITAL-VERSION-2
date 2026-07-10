@@ -149,9 +149,22 @@ class Task extends Model
         return 'tidak_ada_info';
     }
 
+    /** Sudah melewati deadline & belum selesai. */
+    public function isLewatDeadline(): bool
+    {
+        if ($this->progress === 'selesai') {
+            return false;
+        }
+        $batas = $this->deadline_selesai?->endOfDay();
+
+        return (bool) ($batas && now()->gt($batas));
+    }
+
     /**
-     * Terkunci bila sudah selesai ATAU sudah melewati deadline (tidak selesai).
-     * Karyawan tak bisa lagi mengubah status pada kondisi ini.
+     * Terkunci bila sudah selesai, ATAU sudah melewati deadline dan BELUM
+     * dikerjakan (tidak selesai — hangus). Jika sudah "dikerjakan" saat lewat
+     * deadline, TIDAK terkunci: karyawan masih boleh "Tandai Selesai Melebihi
+     * Deadline" (bonus dikurangi otomatis via bonusStatus 'terlambat').
      */
     public function isLocked(): bool
     {
@@ -159,9 +172,11 @@ class Task extends Model
             return true;
         }
 
-        $batas = $this->deadline_selesai?->endOfDay();
+        if ($this->isLewatDeadline()) {
+            return $this->progress !== 'dikerjakan';
+        }
 
-        return $batas && now()->gt($batas);
+        return false;
     }
 
     public function bobotPoin(): int

@@ -1,5 +1,5 @@
 @section('title')
-Presensi || PT. Asthana Cipta Mandiri
+Presensi || lemon
 @stop
 
 <div id="presensiRoot">

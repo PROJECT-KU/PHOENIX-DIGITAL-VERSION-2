@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
+use App\Http\Controllers\PushSubscriptionController;
 // Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
@@ -133,6 +134,46 @@ Route::middleware('permission:view_dashboard')->group(function () {
 // Profil — semua pengguna yang login boleh mengakses profilnya sendiri
 Route::middleware('auth')->group(function () {
     Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
+
+    // Manifest PWA — hanya user yang sudah login yang bisa install aplikasi.
+    // Tamu yang akses langsung akan di-redirect ke login (manifest tak valid → tak bisa install).
+    Route::get('/manifest.webmanifest', function () {
+        return response()->json([
+            'name' => 'lemon by acm',
+            'short_name' => 'lemon',
+            'description' => 'Aplikasi admin lemon by acm',
+            'start_url' => '/admin/dashboard?source=pwa',
+            'scope' => '/',
+            'display' => 'standalone',
+            'orientation' => 'portrait-primary',
+            'background_color' => '#fffdf2',
+            'theme_color' => '#84cc16',
+            'lang' => 'id',
+            'dir' => 'ltr',
+            'icons' => [
+                ['src' => '/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => '/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => '/icons/icon-maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+            ],
+        ])->header('Content-Type', 'application/manifest+json');
+    })->name('pwa.manifest');
+
+    // Langganan Web Push (aktifkan/matikan notifikasi perangkat)
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
+    // Jumlah notifikasi belum dibaca (bulan berjalan) — untuk sinkron badge saat app fokus.
+    Route::get('/notifications/unread-count', function () {
+        $u = auth()->user();
+        $count = $u
+            ? $u->unreadNotifications()
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count()
+            : 0;
+
+        return response()->json(['count' => $count]);
+    })->name('notifications.unread-count');
 });
 
 // Pesanan RSC

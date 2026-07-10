@@ -1,0 +1,485 @@
+/* =====================================================================
+   PHOENIX DIGITAL — tema publik (warna dari logo: oranye → amber).
+   Clean, rapi, hangat, tidak norak. Di-load setelah main.css template,
+   jadi menimpa dengan aman tanpa mengubah struktur.
+   ===================================================================== */
+
+:root {
+    --ph-orange: #f26522;   /* oranye api (bawah flame) */
+    --ph-orange-2: #f4772b;
+    --ph-amber: #fba919;    /* amber (atas flame) */
+    --ph-gold: #fbc02d;
+    --ph-grad: linear-gradient(135deg, #fba919 0%, #f26522 100%);
+    --ph-grad-soft: linear-gradient(135deg, #fff5e9 0%, #fff9f3 100%);
+    --ph-ink: #23272f;      /* teks utama */
+    --ph-muted: #6b7280;    /* teks sekunder */
+    --ph-soft: #fff8f1;     /* latar hangat lembut */
+    --ph-line: #f1e6d8;     /* garis/border halus */
+    --ph-shadow: 0 10px 30px rgba(242, 101, 34, .12);
+
+    /* Override warna brand template (semula biru #435EBE) → oranye phoenix.
+       Ini otomatis mengganti warna nav aktif/hover & link jadi hangat, bukan biru. */
+    --accent-color: #f26522;
+    --heading-color: #23272f;
+}
+
+/* ---------- LOGO (flame + wordmark) ---------- */
+.phoenix-logo { gap: 10px; text-decoration: none; }
+.phoenix-logo .phoenix-mark {
+    height: 42px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 4px 10px rgba(242, 101, 34, .28));
+}
+.phoenix-wordmark { display: flex; flex-direction: column; line-height: 1; }
+.phoenix-wordmark .pw-top {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -.01em;
+    color: var(--ph-ink);
+}
+.phoenix-wordmark .pw-sub {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: .7rem;
+    letter-spacing: .34em;
+    text-transform: uppercase;
+    margin-top: 3px;
+    background: var(--ph-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: var(--ph-orange);
+}
+/* Varian terang (footer gelap) */
+.phoenix-logo--light .phoenix-wordmark .pw-top { color: #fff; }
+
+@media (max-width: 575.98px) {
+    .phoenix-logo .phoenix-mark { height: 34px; }
+    .phoenix-wordmark .pw-top { font-size: 1.2rem; }
+    .phoenix-wordmark .pw-sub { font-size: .6rem; letter-spacing: .28em; }
+}
+
+/* ---------- TOP BAR (pengumuman promo) — oranye tipis/lembut, teks putih ---------- */
+#header .top-bar {
+    background: linear-gradient(135deg, #fdc06a 0%, #f79256 100%);
+}
+/* Teks promo gelap (hitam kehangatan) biar tidak terlalu kontras */
+#header .top-bar,
+#header .top-bar .fw-bold,
+#header .top-bar small,
+#header .top-bar .swiper-slide {
+    color: #241a12 !important;
+    text-shadow: none !important;
+}
+#header .top-bar small { color: #4a3a2a !important; }
+
+/* Ikon promo warna-warni (nada permata) biar menarik & kontras di atas oranye */
+#header .top-bar i {
+    font-size: 1.05rem;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .12));
+}
+#header .top-bar i.text-warning { color: #7c3aed !important; }  /* flash sale → ungu */
+#header .top-bar i.text-info    { color: #0e7490 !important; }  /* kode promo → teal */
+#header .top-bar i.text-danger  { color: #be123c !important; }  /* referral → rose */
+#header .top-bar i.text-success { color: #15803d !important; }  /* lainnya → hijau */
+#header .top-bar i.text-primary { color: #1d4ed8 !important; }
+/* Tinggi slide top-bar dikunci seragam (overflow hidden) supaya slide kode promo
+   (yg lebih ramai) tidak "nyeruak" saat transisi. Tinggi cukup untuk teks besar. */
+#header .top-bar { padding-top: .25rem !important; padding-bottom: .25rem !important; }
+#header .top-bar .announcement-slider { height: 30px; overflow: hidden; }
+#header .top-bar .announcement-slider .swiper-slide {
+    height: 30px !important;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    line-height: 1;
+}
+/* Teks promo — ringkas tapi tetap terbaca */
+#header .top-bar .swiper-slide { font-size: .82rem; }
+#header .top-bar .fw-bold { font-size: .84rem; }
+
+/* Chip kode promo (gaya kupon) */
+#header .top-bar .promo-code-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 5px;
+    padding: 3px 11px;
+    font-weight: 700;
+    font-size: .86rem;
+    line-height: 1.1;
+    letter-spacing: .05em;
+    color: #0e7490 !important;
+    background: #fff;
+    border: 1.5px dashed #0e7490;
+    border-radius: 8px;
+    text-shadow: none !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+#header .top-bar .promo-code-chip i { color: #0e7490 !important; font-size: .86rem; }
+/* Badge diskon */
+#header .top-bar .badge.bg-warning { padding: 5px 12px !important; font-size: .82rem; }
+
+/* Responsif mobile: promo tetap muat 1 baris, label tipe disembunyikan, font mengecil */
+@media (max-width: 575.98px) {
+    #header .top-bar { padding-top: .2rem !important; padding-bottom: .2rem !important; }
+    #header .top-bar .announcement-slider,
+    #header .top-bar .announcement-slider .swiper-slide { height: 28px !important; }
+    #header .top-bar .swiper-slide { font-size: .72rem; }
+    #header .top-bar .fw-bold { font-size: .74rem; }
+    #header .top-bar small { display: none !important; }   /* sembunyikan "(Flash Sale)" dll di HP */
+    #header .top-bar .swiper-slide i { font-size: .85rem !important; }
+    #header .top-bar .promo-code-chip { font-size: .72rem; padding: 2px 8px; margin: 0 3px; gap: 4px; }
+    #header .top-bar .promo-code-chip i { font-size: .72rem; }
+    #header .top-bar .badge.bg-warning { font-size: .68rem; padding: 3px 8px !important; }
+}
+
+/* Badge diskon putih dengan teks oranye biar menonjol */
+#header .top-bar .badge.bg-warning {
+    background: #fff !important;
+    color: var(--ph-orange) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .12);
+}
+
+/* ---------- HEADER ---------- */
+#header .main-header { background: #fff; }
+#header.sticky-top { box-shadow: 0 6px 24px rgba(35, 39, 47, .06); }
+
+/* ---------- LIVE SEARCH (kecil, clean, tanpa tombol) ---------- */
+.phoenix-search {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+}
+.phoenix-search .ps-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1.5px solid var(--ph-line);
+    border-radius: 999px;
+    padding: 7px 14px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+}
+.phoenix-search .ps-form:focus-within {
+    border-color: var(--ph-orange);
+    box-shadow: 0 4px 16px rgba(242, 101, 34, .14);
+}
+.phoenix-search .ps-icon { color: var(--ph-orange); font-size: .95rem; }
+.phoenix-search .ps-input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: .875rem;
+    color: var(--ph-ink);
+    padding: 0;
+}
+.phoenix-search .ps-input::placeholder { color: #9aa1ab; }
+.phoenix-search .ps-loading .spinner-border { width: 15px; height: 15px; color: var(--ph-orange); border-width: 2px; }
+.phoenix-search .ps-clear {
+    border: 0; background: #f3f4f6; color: #6b7280;
+    width: 20px; height: 20px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: .85rem; cursor: pointer; line-height: 1;
+}
+.phoenix-search .ps-clear:hover { background: var(--ph-soft); color: var(--ph-orange); }
+
+/* Dropdown hasil */
+.phoenix-search .ps-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--ph-line);
+    border-radius: 14px;
+    box-shadow: 0 18px 45px rgba(35, 39, 47, .16);
+    overflow: hidden;
+    z-index: 1100;
+    max-height: 420px;
+    overflow-y: auto;
+}
+.phoenix-search .ps-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    text-decoration: none;
+    border-bottom: 1px solid #f6f3ee;
+    transition: background .12s ease;
+}
+.phoenix-search .ps-item:hover { background: var(--ph-soft); }
+.phoenix-search .ps-thumb {
+    width: 42px; height: 42px; flex-shrink: 0;
+    border-radius: 10px; overflow: hidden;
+    background: var(--ph-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ph-orange); border: 1px solid var(--ph-line);
+}
+.phoenix-search .ps-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.phoenix-search .ps-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.phoenix-search .ps-name {
+    font-weight: 600; font-size: .85rem; color: var(--ph-ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.phoenix-search .ps-price { font-size: .8rem; font-weight: 700; color: var(--ph-orange); }
+.phoenix-search .ps-price small { font-weight: 500; color: var(--ph-muted); font-size: .7rem; }
+.phoenix-search .ps-go { color: #c7ccd3; font-size: 1.2rem; }
+.phoenix-search .ps-item:hover .ps-go { color: var(--ph-orange); }
+.phoenix-search .ps-empty {
+    display: flex; align-items: center; gap: 8px;
+    padding: 18px 16px; color: var(--ph-muted); font-size: .82rem;
+}
+.phoenix-search .ps-empty i { color: var(--ph-orange); }
+.phoenix-search .ps-all {
+    width: 100%; border: 0; background: var(--ph-soft);
+    color: var(--ph-orange); font-weight: 600; font-size: .82rem;
+    padding: 11px; cursor: pointer; transition: background .12s ease;
+}
+.phoenix-search .ps-all:hover { background: #ffeede; }
+
+/* Responsif: inline di desktop; jadi baris penuh di layar < xl (tetap live-search) */
+@media (max-width: 1199.98px) {
+    .phoenix-search {
+        order: 10;
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin: 6px 0 2px;
+    }
+}
+
+/* ---------- HEADER LEBIH RINGKAS ---------- */
+#header .main-header .main-header-row { padding-top: .45rem !important; padding-bottom: .45rem !important; }
+.phoenix-logo .phoenix-mark { height: 36px; }
+.phoenix-wordmark .pw-top { font-size: 1.35rem; }
+.phoenix-wordmark .pw-sub { font-size: .66rem; }
+
+/* ---------- NAV MENYATU DALAM SATU BAR HEADER ----------
+   Desktop: menu inline di bar putih (logo | menu | search | riwayat+cart).
+   Mobile: menu jadi off-canvas (lihat blok "MOBILE MENU" di bawah). */
+.navmenu ul li a::before { display: none !important; }
+
+@media (min-width: 1200px) {
+    /* Satu baris rapat: search mengisi ruang kosong di tengah */
+    .main-header-row { gap: 16px !important; }
+    #header .main-header .main-header-row { padding-top: .6rem !important; padding-bottom: .6rem !important; }
+    .main-header-row .phoenix-search { flex: 1 1 auto; max-width: 460px; margin: 0; }
+
+    /* Menu inline */
+    .main-header .navmenu { margin: 0; }
+    .main-header .navmenu ul {
+        display: flex; align-items: center; gap: 2px;
+        list-style: none; margin: 0; padding: 0;
+    }
+    .main-header .navmenu ul a,
+    .main-header .navmenu ul a:focus {
+        color: #2b2f36 !important;
+        font-weight: 500;
+        font-size: 15px !important;
+        padding: 9px 15px !important;
+        border-radius: 10px;
+        white-space: nowrap;
+        transition: background .18s ease, color .18s ease;
+    }
+    .main-header .navmenu ul a:hover,
+    .main-header .navmenu li:hover > a {
+        color: var(--ph-orange) !important;
+        background: var(--ph-soft);
+    }
+    .main-header .navmenu ul a.active,
+    .main-header .navmenu ul a.active:focus {
+        color: #fff !important;
+        background: var(--ph-grad);          /* aktif = pil oranye menonjol */
+        font-weight: 600;
+        box-shadow: var(--ph-shadow);
+    }
+
+    /* Pemisah halus + hover ikon pada grup riwayat/keranjang */
+    .header-actions-group { padding-left: 16px; border-left: 1px solid var(--ph-line); }
+    .header-actions-group a .bi-clock-history { color: #5b616e; transition: color .18s ease; }
+    .header-actions-group a:hover .bi-clock-history { color: var(--ph-orange); }
+}
+
+/* ---------- TOMBOL ---------- */
+.btn-primary,
+.hero .hero-actions .btn-primary {
+    background: var(--ph-grad) !important;
+    border: none !important;
+    color: #fff !important;
+    box-shadow: var(--ph-shadow);
+    transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.btn-primary:hover { transform: translateY(-2px); filter: brightness(1.03); box-shadow: 0 14px 34px rgba(242, 101, 34, .28); }
+
+.btn-secondary,
+.hero .hero-actions .btn-secondary {
+    background: #fff !important;
+    border: 1.5px solid var(--ph-orange) !important;
+    color: var(--ph-orange) !important;
+    transition: all .18s ease;
+}
+.btn-secondary:hover { background: var(--ph-soft) !important; transform: translateY(-2px); }
+
+.btn-shop, .card-link {
+    color: var(--ph-orange) !important;
+    font-weight: 600;
+    transition: gap .18s ease, color .18s ease;
+}
+.btn-shop:hover, .card-link:hover { color: var(--ph-orange-2) !important; }
+.btn-shop i, .card-link i { transition: transform .18s ease; }
+.btn-shop:hover i, .card-link:hover i { transform: translateX(4px); }
+
+/* ---------- HERO ---------- */
+.hero.section { background: var(--ph-grad-soft); }
+.hero .hero-title { color: var(--ph-ink); }
+.hero .feature-item i { color: var(--ph-orange); }
+.hero .product-card.featured {
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(242, 101, 34, .16);
+    overflow: hidden;
+}
+.hero .floating-icon { color: var(--ph-orange); box-shadow: var(--ph-shadow); }
+.hero .floating-icon .notification-dot { background: var(--ph-orange); }
+.hero .mini-price { background: var(--ph-grad); color: #fff; }
+
+/* ---------- SECTION / KARTU ---------- */
+.category-tag, .category-featured .category-tag {
+    display: inline-block;
+    background: var(--ph-soft);
+    color: var(--ph-orange);
+    border: 1px solid var(--ph-line);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    font-size: .7rem;
+    padding: 5px 12px;
+    border-radius: 999px;
+}
+.category-featured .category-content h2 { color: var(--ph-ink); font-weight: 700; }
+.category-card {
+    border-radius: 16px;
+    border: 1px solid var(--ph-line);
+    background: #fff;
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    overflow: hidden;
+}
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--ph-shadow);
+    border-color: rgba(242, 101, 34, .35);
+}
+.category-card .category-content h4 { color: var(--ph-ink); }
+
+/* Judul section umum */
+.section-title h2, .section-header h2 { color: var(--ph-ink); }
+.section-title p, .section-header p { color: var(--ph-muted); }
+
+/* ---------- FOOTER ---------- */
+#footer.footer.dark-background { background: #1b1e24; }
+#footer .footer-widget h4 { color: #fff; }
+#footer .footer-links a:hover,
+#footer .footer-contact .contact-item i,
+#footer .social-icons a:hover,
+#footer .legal-links a:hover { color: var(--ph-amber) !important; }
+#footer .social-icons a:hover { border-color: var(--ph-amber) !important; }
+#footer .copyright .sitename { color: var(--ph-amber); }
+
+/* ---------- FLOATING WA & SCROLL TOP ---------- */
+#wa-button { background: #25d366; }
+#scroll-top { background: var(--ph-grad) !important; }
+
+/* =====================================================================
+   MOBILE MENU — desain unik, clean & premium (off-canvas)
+   ===================================================================== */
+@media (max-width: 1199px) {
+    /* Backdrop lembut + blur */
+    .mobile-nav-active .navmenu {
+        background: rgba(24, 18, 12, .55) !important;
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+    }
+
+    /* Kartu menu melengkung */
+    .navmenu ul {
+        inset: 74px 16px auto 16px !important;
+        max-height: calc(100vh - 100px);
+        padding: 8px 10px 14px !important;
+        border-radius: 22px !important;
+        background: #fff !important;
+        box-shadow: 0 26px 60px rgba(0, 0, 0, .38) !important;
+        border: 1px solid rgba(242, 101, 34, .12);
+    }
+    /* Label "MENU" + garis pemisah di atas kartu */
+    .navmenu ul::before {
+        content: "Menu";
+        display: block;
+        font-family: 'Poppins', sans-serif;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: .24em;
+        text-transform: uppercase;
+        color: var(--ph-orange);
+        padding: 12px 16px 12px;
+        border-bottom: 1px solid #f4ece2;
+        margin-bottom: 6px;
+    }
+    /* Animasi masuk halus */
+    .mobile-nav-active .navmenu > ul { animation: mnavIn .24s cubic-bezier(.22,1,.36,1); }
+    @keyframes mnavIn {
+        from { opacity: 0; transform: translateY(-12px) scale(.97); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    /* Item menu — besar, mudah disentuh, rapi */
+    .navmenu a,
+    .navmenu a:focus {
+        position: relative;
+        margin: 4px 8px !important;
+        padding: 14px 16px !important;
+        border-radius: 14px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: #2b2f36 !important;
+        background: #fff;
+        transition: background .18s ease, color .18s ease, transform .16s ease, box-shadow .18s ease;
+    }
+    /* Chevron kanan */
+    .navmenu a::after {
+        content: "\F285"; /* bi-chevron-right */
+        font-family: "bootstrap-icons";
+        margin-left: auto;
+        font-size: .9rem;
+        color: #cbd0d8;
+        transition: color .18s ease, transform .18s ease;
+    }
+    .navmenu a:hover,
+    .navmenu li:hover > a,
+    .navmenu .active,
+    .navmenu .active:focus {
+        background: var(--ph-soft) !important;
+        color: var(--ph-orange) !important;
+        transform: translateX(3px);
+    }
+    .navmenu a:hover::after,
+    .navmenu .active::after { color: var(--ph-orange); transform: translateX(3px); }
+    /* Bar aksen kiri saat aktif */
+    .navmenu .active,
+    .navmenu .active:focus { box-shadow: inset 3px 0 0 var(--ph-orange); }
+
+    /* Tombol close bulat */
+    .mobile-nav-active .mobile-nav-toggle {
+        background: #fff;
+        color: var(--ph-orange) !important;
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        top: 18px !important; right: 18px !important;
+        font-size: 22px !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+    }
+}
+
+/* ---------- Aksen halus ---------- */
+::selection { background: rgba(242, 101, 34, .18); color: var(--ph-ink); }

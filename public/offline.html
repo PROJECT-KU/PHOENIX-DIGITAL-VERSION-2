@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline — lemon</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#fffdf2;color:#3f3f46;text-align:center;padding:24px}
+  .box{max-width:340px}
+  img{width:96px;height:96px;margin-bottom:18px}
+  h1{font-size:1.35rem;margin:0 0 8px;background:linear-gradient(135deg,#ca8a04,#4d7c0f);-webkit-background-clip:text;background-clip:text;color:transparent}
+  p{color:#71717a;line-height:1.5;margin:0 0 20px}
+  button{border:0;border-radius:12px;padding:11px 22px;font-weight:600;color:#fff;background:linear-gradient(135deg,#84cc16,#4d7c0f);cursor:pointer}
+</style>
+</head>
+<body>
+  <div class="box">
+    <img src="/icons/icon-192.png" alt="lemon">
+    <h1>Tidak ada koneksi</h1>
+    <p>Anda sedang offline. Periksa koneksi internet lalu coba lagi.</p>
+    <button onclick="location.reload()">Coba lagi</button>
+  </div>
+</body>
+</html>

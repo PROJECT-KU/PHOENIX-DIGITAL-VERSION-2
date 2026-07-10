@@ -73,6 +73,19 @@ class ProductForm extends Component
         return (int) preg_replace('/[^0-9]/', '', (string) $value);
     }
 
+    /**
+     * Harga Awal opsional. Kolom bertipe decimal, jadi string kosong harus jadi
+     * null (bukan '') agar tidak ditolak DB ("Incorrect decimal value: ''").
+     */
+    private function normalizeHargaAwal(): ?int
+    {
+        if ($this->harga_awal === '' || $this->harga_awal === null) {
+            return null;
+        }
+
+        return $this->toNumber($this->harga_awal);
+    }
+
     public function save()
     {
         $rules = [
@@ -126,7 +139,7 @@ class ProductForm extends Component
                 'nama_akun' => $this->nama_akun,
                 'tipe_akun' => $this->tipe_akun,
                 'image' => $filename,
-                'harga_awal' => $this->harga_awal,
+                'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
             ]);
             $this->syncPrices($product);
@@ -136,9 +149,9 @@ class ProductForm extends Component
             $this->resetForm();
 
             return redirect()->route('admin.product.index');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan Product: '.$e->getMessage());
-            $this->dispatch('failed-create-product');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('product-save-error', message: 'Gagal menambahkan Product: '.$e->getMessage());
         }
     }
 
@@ -148,7 +161,7 @@ class ProductForm extends Component
             $data = [
                 'nama_akun' => $this->nama_akun,
                 'tipe_akun' => $this->tipe_akun,
-                'harga_awal' => $this->harga_awal,
+                'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
             ];
 
@@ -174,9 +187,9 @@ class ProductForm extends Component
             $this->resetForm();
 
             return redirect()->route('admin.product.index');
-        } catch (\Exception $e) {
-            session()->flash('error', 'Gagal update Product: '.$e->getMessage());
-            $this->dispatch('failed-update-product');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('product-save-error', message: 'Gagal update Product: '.$e->getMessage());
         }
     }
 

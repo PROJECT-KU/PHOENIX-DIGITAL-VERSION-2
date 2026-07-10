@@ -48,7 +48,7 @@
             @if($selesai)
             <span class="ts-deadchip" style="background:rgba(16,185,129,.12); color:#059669;"><i class="bi bi-check-circle-fill"></i>Selesai</span>
             @elseif($lewat)
-            <span class="ts-deadchip" style="background:rgba(244,63,94,.12); color:#e11d48;"><i class="bi bi-exclamation-circle-fill"></i>Terlambat</span>
+            <span class="ts-deadchip" style="background:rgba(244,63,94,.12); color:#e11d48;"><i class="bi bi-exclamation-circle-fill"></i>Melebihi Deadline</span>
             @elseif($sisa === 0)
             <span class="ts-deadchip" style="background:rgba(245,158,11,.14); color:#d97706;"><i class="bi bi-alarm-fill"></i>Hari ini</span>
             @else

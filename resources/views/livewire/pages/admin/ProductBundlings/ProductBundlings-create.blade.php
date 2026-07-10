@@ -1,6 +1,6 @@
 
 @section('title')
-Tambah Paket Bundling || PT. Asthana Cipta Mandiri
+Tambah Paket Bundling || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">

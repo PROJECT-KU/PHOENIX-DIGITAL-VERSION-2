@@ -1,6 +1,6 @@
 
 @section('title')
-Proses Pesanan || PT. Asthana Cipta Mandiri
+Proses Pesanan || lemon
 @stop
 <div class="container-fluid">
     <style>

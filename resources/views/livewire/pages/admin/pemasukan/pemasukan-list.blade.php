@@ -1,5 +1,5 @@
 @section('title')
-Pemasukan Lainnya || PT. Asthana Cipta Mandiri
+Pemasukan Lainnya || lemon
 @stop
 
 <div>

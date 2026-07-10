@@ -1,6 +1,6 @@
 
 @section('title')
-Detail Cash Flow || PT. Asthana Cipta Mandiri
+Detail Cash Flow || lemon
 @stop
 <div>
     @if($isOpen && $cashFlow)

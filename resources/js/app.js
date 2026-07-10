@@ -165,11 +165,24 @@ document.addEventListener("livewire:init", () => {
     });
     Livewire.on("will-delete-customer-data", (data) => {
         Swal2.fire({
-            icon: "question",
-            title: "Yakin ingin hapus data pelanggan " + data["nama"] + " ?",
+            icon: "warning",
+            title: "Yakin hapus data?",
+            text:
+                "Data pelanggan " +
+                data["nama"] +
+                " tidak bisa dikembalikan!",
             showCancelButton: true,
+            confirmButtonText: "Ya, hapus!",
             cancelButtonText: "Batal",
-            confirmButtonText: "Ya, hapus",
+            background: "rgba(255, 255, 255, 0.8)",
+            backdrop: "rgba(139, 92, 246, 0.15)",
+            customClass: {
+                popup: "swal-glossy-popup",
+                confirmButton: "btn-glossy-confirm",
+                cancelButton: "btn-glossy-cancel",
+                title: "swal-glossy-title",
+            },
+            buttonsStyling: false,
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-customer", { id: data["id"] });

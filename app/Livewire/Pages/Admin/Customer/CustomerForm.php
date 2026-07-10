@@ -48,9 +48,13 @@ class CustomerForm extends Component
 
     public function save()
     {
+        // Email opsional: string kosong dinormalkan ke null agar aturan "nullable"
+        // melewati validasi email/unique (mis. pelanggan dari checkout tanpa email).
+        $this->email = filled($this->email) ? trim($this->email) : null;
+
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:customers,email,' . ($this->customer->id ?? null),
+            'email' => 'nullable|email|unique:customers,email,' . ($this->customer->id ?? null),
             'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:15',
             'statusMember' => 'required|string',
         ]);

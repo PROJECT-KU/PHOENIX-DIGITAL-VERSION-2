@@ -1,5 +1,5 @@
 @section('title')
-Pengaturan Presensi || PT. Asthana Cipta Mandiri
+Pengaturan Presensi || lemon
 @stop
 
 @assets

@@ -1,6 +1,5 @@
-
 @section('title')
-Tambah Pesanan || PT. Asthana Cipta Mandiri
+Tambah Pesanan || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -13,7 +12,7 @@ Tambah Pesanan || PT. Asthana Cipta Mandiri
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Pemesanan', 'url' => route('admin.pesanantoko.index')],
-                        ['name' => 'Tambah Data Pemesanan Toko'],
+                        ['name' => 'Tambah Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

@@ -1,6 +1,6 @@
 
 @section('title')
-Data Paket Bundling || PT. Asthana Cipta Mandiri
+Data Paket Bundling || lemon
 @stop
 <div>
     <div class="container-fluid">
@@ -93,9 +93,10 @@ Data Paket Bundling || PT. Asthana Cipta Mandiri
 
                                 @if (auth()->user()->hasAnyPermission(['edit_bundlings', 'delete_bundlings']))
                                 <td class="text-center">
+                                    <div class="d-inline-flex flex-nowrap align-items-center justify-content-center gap-1">
                                     @if (auth()->user()->hasPermission('edit_bundlings'))
                                     <a wire:navigate href="{{ route('admin.Bundlings.edit', $item) }}"
-                                        class="btn btn-warning btn-sm me-1"
+                                        class="btn btn-warning btn-sm"
                                         title="Edit">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
@@ -107,6 +108,7 @@ Data Paket Bundling || PT. Asthana Cipta Mandiri
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     @endif
+                                    </div>
 
                                 </td>
                                 @endif

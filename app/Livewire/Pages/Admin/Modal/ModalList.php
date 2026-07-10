@@ -7,13 +7,15 @@ use App\Models\Modal;
 use App\Models\Setting;
 use App\Models\Spending;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class ModalList extends Component
 {
-    use WithPagination;
+    use WithFileUploads, WithPagination;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -35,6 +37,14 @@ class ModalList extends Component
     public $formNominal = '';
 
     public $formDeskripsi = '';
+
+    // Bukti top-up (bisa banyak). fotosLama = path tersimpan (edit), fotosBaru = file baru,
+    // tempUpload = penampung input file (multiple) sebelum dipindah ke fotosBaru.
+    public array $fotosLama = [];
+
+    public array $fotosBaru = [];
+
+    public $tempUpload = [];
 
     public bool $showTarget = false;
 
@@ -143,6 +153,9 @@ class ModalList extends Component
      * Pengeluaran (Spending) yang mengurangi MODAL OPERASIONAL:
      * semua "lainnya" + "pembelian_akun" produk NON-private.
      * (Private = katalog, biayanya dihitung per-order via terpakaiPrivateRange.)
+     *
+     * Khusus "pembelian_akun": hanya yang berstatus "completed" yang mengurangi
+     * modal. Yang masih "pending" belum dianggap uang keluar, jadi tidak ikut.
      */
     private function terpakaiOperasionalQuery()
     {
@@ -151,7 +164,8 @@ class ModalList extends Component
         return Spending::query()->where(function ($q) use ($privateIds) {
             $q->where('jenis_pengeluaran', 'lainnya')
                 ->orWhere(function ($x) use ($privateIds) {
-                    $x->where('jenis_pengeluaran', 'pembelian_akun');
+                    $x->where('jenis_pengeluaran', 'pembelian_akun')
+                        ->where('status', 'completed');
                     if (! empty($privateIds)) {
                         $x->where(function ($y) use ($privateIds) {
                             $y->whereNull('product_id')->orWhereNotIn('product_id', $privateIds);
@@ -244,17 +258,14 @@ class ModalList extends Component
             ? now()->toDateString()
             : Carbon::create($tahun, $bulan, 1)->toDateString();
 
-        $m = Modal::create([
-            'tanggal' => $tanggal,
-            'nominal' => $saran,
-            'jenis' => 'operasional',
-            'deskripsi' => 'Top-up otomatis ke target',
-            'penginput_id' => auth()->id(),
-        ]);
-        $this->syncCashFlow($m);
-
-        $this->resetPage();
-        $this->dispatch('modal-saved');
+        // Buka form top-up TERISI (nominal kekurangan) agar bisa melampirkan bukti
+        // gambar sebelum disimpan — konsisten dengan top-up manual.
+        $this->reset(['editingId', 'formNominal', 'formDeskripsi', 'fotosLama', 'fotosBaru', 'tempUpload']);
+        $this->resetErrorBag();
+        $this->formTanggal = $tanggal;
+        $this->formNominal = number_format((int) round($saran), 0, ',', '.');
+        $this->formDeskripsi = 'Top-up otomatis ke target';
+        $this->showForm = true;
     }
 
     /* ===== CRUD top-up ===== */
@@ -266,10 +277,37 @@ class ModalList extends Component
             return;
         }
 
-        $this->reset(['editingId', 'formNominal', 'formDeskripsi']);
+        $this->reset(['editingId', 'formNominal', 'formDeskripsi', 'fotosLama', 'fotosBaru', 'tempUpload']);
         $this->resetErrorBag();
         $this->formTanggal = now()->toDateString();
         $this->showForm = true;
+    }
+
+    /**
+     * Setiap pilih file (input multiple), pindahkan ke daftar $fotosBaru agar
+     * terakumulasi (bisa pilih beberapa kali + kamera), lalu kosongkan input.
+     */
+    public function updatedTempUpload(): void
+    {
+        $this->validate(['tempUpload.*' => 'nullable|image|max:4096']);
+
+        foreach ($this->tempUpload as $file) {
+            $this->fotosBaru[] = $file;
+        }
+
+        $this->tempUpload = [];
+    }
+
+    public function removeFotoLama(int $index): void
+    {
+        unset($this->fotosLama[$index]);
+        $this->fotosLama = array_values($this->fotosLama);
+    }
+
+    public function removeFotoBaru(int $index): void
+    {
+        unset($this->fotosBaru[$index]);
+        $this->fotosBaru = array_values($this->fotosBaru);
     }
 
     public function openEdit($id): void
@@ -291,6 +329,9 @@ class ModalList extends Component
         $this->formTanggal = $m->tanggal->toDateString();
         $this->formNominal = number_format((int) $m->nominal, 0, ',', '.');
         $this->formDeskripsi = $m->deskripsi;
+        $this->fotosLama = $m->images;
+        $this->fotosBaru = [];
+        $this->tempUpload = [];
         $this->resetErrorBag();
         $this->showForm = true;
     }
@@ -298,6 +339,7 @@ class ModalList extends Component
     public function closeForm(): void
     {
         $this->showForm = false;
+        $this->reset(['fotosLama', 'fotosBaru', 'tempUpload']);
         $this->resetErrorBag();
     }
 
@@ -322,11 +364,29 @@ class ModalList extends Component
             'formDeskripsi' => 'keterangan',
         ]);
 
+        // Susun daftar gambar akhir: foto lama dipertahankan + foto baru disimpan.
+        $paths = array_values($this->fotosLama);
+        foreach ($this->fotosBaru as $file) {
+            if ($file && ! is_string($file)) {
+                $paths[] = $file->store('modal', 'public');
+            }
+        }
+
+        // Hapus file gambar lama yang dibuang saat edit.
+        if ($this->editingId) {
+            $original = Modal::find($this->editingId)?->images ?? [];
+            foreach (array_diff($original, $paths) as $dibuang) {
+                Storage::disk('public')->delete($dibuang);
+            }
+        }
+
         $data = [
             'tanggal' => $this->formTanggal,
             'nominal' => $this->toNumber($this->formNominal),
             'jenis' => 'operasional',
             'deskripsi' => $this->formDeskripsi,
+            'gambar' => $paths[0] ?? null,
+            'gambar_list' => $paths ?: null,
         ];
 
         if ($this->editingId) {
@@ -345,7 +405,7 @@ class ModalList extends Component
         $this->syncCashFlow($m);
 
         $this->showForm = false;
-        $this->reset(['editingId', 'formNominal', 'formDeskripsi']);
+        $this->reset(['editingId', 'formNominal', 'formDeskripsi', 'fotosLama', 'fotosBaru', 'tempUpload']);
         $this->resetPage();
         $this->dispatch('modal-saved');
     }
@@ -419,10 +479,11 @@ class ModalList extends Component
         $namaAll = \App\Models\Product::pluck('nama_akun', 'id');
         $akunPerProduk = [];
 
-        // SHARING / non-private: total pembelian akun periode
+        // SHARING / non-private: total pembelian akun periode (hanya yang completed).
+        // Saat mencari, abaikan periode agar pencarian mencakup semua waktu (seragam dgn daftar setoran).
         $sharingRows = Spending::where('jenis_pengeluaran', 'pembelian_akun')
-            ->whereYear('tanggal_transaksi', $tahun)
-            ->whereMonth('tanggal_transaksi', $bulan)
+            ->where('status', 'completed')
+            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal_transaksi', $tahun)->whereMonth('tanggal_transaksi', $bulan))
             ->when(! empty($privateIds), fn ($q) => $q->where(fn ($x) => $x->whereNull('product_id')->orWhereNotIn('product_id', $privateIds)))
             ->selectRaw('product_id, COALESCE(SUM(nominal), 0) as total')
             ->groupBy('product_id')
@@ -455,11 +516,14 @@ class ModalList extends Component
                 }
             }
 
+            $searching = (bool) $this->search;
             $privOrders = \App\Models\OrderItem::query()
-                ->whereHas('order', function ($q) use ($tahun, $bulan) {
+                ->whereHas('order', function ($q) use ($tahun, $bulan, $searching) {
                     $q->whereIn('status', ['paid', 'processing', 'completed'])
-                        ->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
-                        ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                        ->when(! $searching, function ($qq) use ($tahun, $bulan) {
+                            $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
+                                ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                        });
                 })
                 ->whereIn('order_items.product_id', $privateIds)
                 ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty')
@@ -489,6 +553,16 @@ class ModalList extends Component
         }
 
         usort($akunPerProduk, fn ($a, $b) => $b['total'] <=> $a['total']);
+
+        // Ikut pencarian: saring rincian pembelian akun berdasarkan nama produk.
+        if ($this->search) {
+            $term = mb_strtolower(trim($this->search));
+            $akunPerProduk = array_values(array_filter(
+                $akunPerProduk,
+                fn ($a) => str_contains(mb_strtolower($a['nama']), $term)
+            ));
+        }
+
         $pembelianAkun = array_sum(array_column($akunPerProduk, 'total'));
 
         // Paginasi rincian per produk (in-memory)

@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
+Data Pesan Pelanggan || lemon
 @stop
 <div>
     <style>
@@ -62,10 +62,16 @@ Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
                     </div>
 
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                        <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
+                        <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 160px;">
                             <option value="">Semua Bulan</option>
                             @foreach ($months as $month)
                             <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
+                            @endforeach
+                        </select>
+                        <select wire:model.live="filterYear" class="form-select rounded-3" style="min-width: 130px;">
+                            <option value="">Semua Tahun</option>
+                            @foreach ($years as $year)
+                            <option value="{{ $year }}">{{ $year }}</option>
                             @endforeach
                         </select>
                         <select wire:model.live="filterStatus" class="form-select rounded-3" style="min-width: 160px;">
@@ -73,8 +79,10 @@ Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
                             <option value="unread">Belum Dibaca</option>
                             <option value="read">Sudah Dibaca</option>
                         </select>
-                        @if ($search || $filterMonth || $filterStatus)
-                        <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3" title="Reset filter">
+                        @if ($search || $filterMonth || $filterYear || $filterStatus)
+                        <button wire:click="resetFilters" type="button"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                            title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         @endif
@@ -188,12 +196,29 @@ Data Pesan Pelanggan || PT. Asthana Cipta Mandiri
                                 // Hitung antrian
                                 $queue = $this->getQueuePositionForItem($item);
 
+                                // Label ramah untuk pesan WA (tanpa underscore), seragam dgn dropdown.
+                                $statusLabels = [
+                                    'open' => 'Terbuka',
+                                    'pending' => 'Tertunda',
+                                    'in_progress' => 'Sedang Diproses',
+                                    'resolved' => 'Selesai',
+                                    'closed' => 'Ditutup',
+                                ];
+                                $priorityLabels = [
+                                    'low' => 'Rendah',
+                                    'medium' => 'Sedang',
+                                    'high' => 'Tinggi',
+                                    'urgent' => 'Mendesak',
+                                ];
+                                $statusLabel = $statusLabels[$item->status] ?? ucfirst(str_replace('_', ' ', $item->status));
+                                $priorityLabel = $priorityLabels[$item->priority] ?? ucfirst(str_replace('_', ' ', $item->priority));
+
                                 // Format pesan
                                 $waText = "Halo {$item->name}, terima kasih telah menghubungi kami.\n\n" .
                                 "Berikut informasi mengenai tiket pengaduan atau kendala Anda:\n" .
                                 "• ID Tiket: *{$item->ticket}*\n" .
-                                "• Status: *" . ucfirst($item->status) . "*\n" .
-                                "• Prioritas: *" . ucfirst($item->priority) . "*\n\n" .
+                                "• Status: *" . $statusLabel . "*\n" .
+                                "• Prioritas: *" . $priorityLabel . "*\n\n" .
                                 "Saat ini tiket Anda berada di urutan antrian ke-{$queue}.\n" .
                                 "Mohon ditunggu sejenak, pengaduan Anda sedang kami arahkan ke tim yang berkaitan agar dapat ditangani oleh admin spesialis yang paling sesuai dengan kendala Anda. Kami akan segera menindaklanjutinya.\n\n" .
                                 "Terima kasih atas kesabaran dan pengertiannya.\n\n" .

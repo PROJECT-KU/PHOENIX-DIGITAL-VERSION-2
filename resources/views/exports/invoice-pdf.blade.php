@@ -212,20 +212,32 @@
         <thead>
             <tr>
                 <th style="width:6%;">No</th>
-                <th style="width:34%; text-align:left;">Deskripsi</th>
-                <th style="width:18%;">Periode</th>
-                <th style="width:12%;">Peserta</th>
-                <th style="width:15%;">Harga Satuan</th>
+                <th style="width:32%; text-align:left;">Deskripsi</th>
+                <th style="width:17%;">Periode</th>
+                <th style="width:13%;">Jumlah</th>
+                <th style="width:17%;">Harga Satuan</th>
                 <th style="width:15%;">Total</th>
             </tr>
         </thead>
         <tbody>
             @foreach($items as $index => $item)
+            @php
+                $perAkun = ($item->metode_harga ?? 'per_peserta') === 'per_akun';
+                $bulan = max((int) ($item->jumlah_pemesanan ?? 1), 1);
+                $sumHargaAkun = $perAkun && ! empty($item->akun_list) ? collect($item->akun_list)->sum('harga') : 0;
+            @endphp
             <tr class="{{ $loop->even ? 'alt' : '' }}">
                 <td class="text-center">{{ $loop->iteration }}</td>
                 <td>
                     <span class="camp-name">{{ $item->nama_camp }}</span><br>
-                    <span class="camp-batch">Batch #{{ $item->batch_camp }}</span>
+                    <span class="camp-batch">Batch #{{ $item->batch_camp }} · {{ $perAkun ? 'Basis Akun' : 'Basis Peserta' }} · {{ $bulan }} bln</span>
+                    @if($perAkun && ! empty($item->akun_list))
+                    <div style="margin-top:4px;">
+                        @foreach($item->akun_list as $ak)
+                        <div style="font-size:9px; color:#4b5563;">• {{ $ak['nama'] }} — <strong>Rp {{ number_format($ak['harga'], 0, ',', '.') }}</strong>/bln</div>
+                        @endforeach
+                    </div>
+                    @endif
                 </td>
                 <td class="text-center">
                     @if(!empty($item->periode_mulai) && !empty($item->periode_akhir))
@@ -235,8 +247,22 @@
                         —
                     @endif
                 </td>
-                <td class="text-center">{{ $item->total_peserta }} orang</td>
-                <td class="text-right">Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}</td>
+                <td class="text-center">
+                    @if($perAkun)
+                        {{ $item->jumlah_akun }} akun
+                    @else
+                        {{ $item->total_peserta }} peserta
+                    @endif
+                </td>
+                <td class="text-right">
+                    @if($perAkun)
+                        Rp {{ number_format($sumHargaAkun, 0, ',', '.') }}
+                        <br><span style="color:#9ca3af; font-size:8.5px;">total akun / bln</span>
+                    @else
+                        Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}
+                        <br><span style="color:#9ca3af; font-size:8.5px;">/ peserta · {{ $bulan }} bln</span>
+                    @endif
+                </td>
                 <td class="text-right" style="font-weight:bold;">Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
             </tr>
             @endforeach

@@ -83,22 +83,33 @@
                 </div>
                 @error('prices') <div class="text-danger small mb-2">{{ $message }}</div> @enderror
 
+                <style>
+                    /* Mobile: beri jarak & pemisah antar baris katalog harga agar tidak mepet. */
+                    @media (max-width: 767.98px) {
+                        .price-row-sep {
+                            margin-top: .85rem !important;
+                            padding-top: .85rem;
+                            border-top: 1px dashed #e6e8f2;
+                        }
+                    }
+                </style>
+
                 @foreach ($prices as $i => $row)
-                <div class="row g-2 align-items-end mb-2" wire:key="price-{{ $i }}">
-                    <div class="col-4 col-md-3">
-                        @if ($i === 0)<label class="form-label small text-muted mb-1">Durasi</label>@endif
+                <div class="price-row row g-2 align-items-end mb-2 {{ $i > 0 ? 'price-row-sep' : '' }}" wire:key="price-{{ $i }}">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Durasi</label>
                         <input type="number" min="1" wire:model="prices.{{ $i }}.durasi_value"
                             class="form-control @error('prices.'.$i.'.durasi_value') is-invalid @enderror" placeholder="1">
                     </div>
-                    <div class="col-4 col-md-3">
-                        @if ($i === 0)<label class="form-label small text-muted mb-1">Satuan</label>@endif
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Satuan</label>
                         <select wire:model="prices.{{ $i }}.durasi_type" class="form-select">
                             <option value="bulan">Bulan</option>
                             <option value="tahun">Tahun</option>
                         </select>
                     </div>
-                    <div class="col-md-5" x-data>
-                        @if ($i === 0)<label class="form-label small text-muted mb-1">Harga</label>@endif
+                    <div class="col-9 col-md-5" x-data>
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Harga</label>
                         <div class="position-relative">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
                                 style="pointer-events: none; z-index: 5;">Rp</span>
@@ -108,8 +119,8 @@
                                 @input="let n = $el.value.replace(/[^0-9]/g, ''); $el.value = n ? new Intl.NumberFormat('id-ID').format(n) : ''; @this.set('prices.{{ $i }}.harga', n)">
                         </div>
                     </div>
-                    <div class="col-4 col-md-1">
-                        @if ($i === 0)<label class="form-label small text-muted mb-1 d-block invisible">.</label>@endif
+                    <div class="col-3 col-md-1">
+                        <label class="form-label small text-muted mb-1 d-block invisible {{ $i > 0 ? 'd-md-none' : '' }}">.</label>
                         <button type="button" wire:click="removePrice({{ $i }})"
                             class="btn btn-outline-danger w-100 d-inline-flex align-items-center justify-content-center"
                             style="height: 38px;" title="Hapus durasi">
@@ -282,6 +293,18 @@
                     }
                 }
             }, true);
+        }
+
+        // Tampilkan pesan error saat penyimpanan gagal (sebelumnya gagal senyap).
+        if (window.Livewire) {
+            Livewire.on('product-save-error', (event) => {
+                const msg = (event && event.message) ? event.message : 'Terjadi kesalahan saat menyimpan data.';
+                ToastGlossy.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: msg
+                });
+            });
         }
 
     });

@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pesan Masuk || PT. Asthana Cipta Mandiri
+Data Pesan Masuk || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->

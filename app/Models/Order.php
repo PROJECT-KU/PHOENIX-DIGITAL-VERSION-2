@@ -23,6 +23,7 @@ class Order extends Model
         'payment_gateway',
         'payment_reference',
         'payment_url',
+        'bukti_pembayaran',
         'qris_content',
         'qris_trx_id',
         'qris_request_date',
@@ -64,7 +65,7 @@ class Order extends Model
     // URL struk publik berbasis token pendek (tanpa expose UUID)
     public function getReceiptUrl(): ?string
     {
-        return $this->share_token ? url('/s/' . $this->share_token) : null;
+        return $this->share_token ? url('/s/'.$this->share_token) : null;
     }
 
     // relationship

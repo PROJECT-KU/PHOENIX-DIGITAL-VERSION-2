@@ -46,6 +46,8 @@ class CheckoutPage extends Component
 
     public $pointsValue = 0;
 
+    public $pointsExpireLabel = '';
+
     public $pointsDiscount = 0;
 
     // Promo
@@ -163,6 +165,9 @@ class CheckoutPage extends Component
         $customer = Customer::where('no_hp', $this->no_hp)->first();
 
         if ($customer) {
+            // Pastikan poin tahun lalu sudah kadaluarsa sebelum ditampilkan.
+            $customer->applyYearlyExpiry();
+
             $this->foundCustomer = $customer;
             $this->nama = $customer->nama;
             $this->email = $customer->email;
@@ -174,9 +179,11 @@ class CheckoutPage extends Component
                 $this->showPointsOption = true;
                 $this->availablePoints = $customer->point;
                 $this->pointsValue = $customer->getPointValue();
+                $this->pointsExpireLabel = $customer->pointsExpireLabel();
             } else {
                 $this->showPointsOption = false;
                 $this->usePoints = false;
+                $this->pointsExpireLabel = '';
             }
 
             session()->flash('info', 'Data pelanggan ditemukan dan diisi otomatis');

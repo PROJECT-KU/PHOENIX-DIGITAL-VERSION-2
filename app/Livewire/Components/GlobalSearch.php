@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\Product;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -30,6 +31,19 @@ class GlobalSearch extends Component
 
     public function render()
     {
-        return view('livewire.components.global-search');
+        $results = collect();
+        $q = trim($this->searchQuery);
+
+        if (mb_strlen($q) >= 1) {
+            $results = Product::where('nama_akun', 'like', "%{$q}%")
+                ->orWhere('deskripsi', 'like', "%{$q}%")
+                ->latest()
+                ->take(6)
+                ->get();
+        }
+
+        return view('livewire.components.global-search', [
+            'results' => $results,
+        ]);
     }
 }

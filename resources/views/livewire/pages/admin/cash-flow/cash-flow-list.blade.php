@@ -1,5 +1,5 @@
 @section('title')
-Data Cash Flow || PT. Asthana Cipta Mandiri
+Data Cash Flow || lemon
 @stop
 <div>
     <style>
@@ -105,7 +105,9 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                         </select>
 
                         @if($bulan || $tahun || $modePeriode !== 'kalender')
-                        <button wire:click="resetFilter" type="button" class="btn btn-light-danger rounded-3" title="Reset filter">
+                        <button wire:click="resetFilter" type="button"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                            title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         @endif
@@ -316,14 +318,14 @@ Data Cash Flow || PT. Asthana Cipta Mandiri
                     $pStart = max($produkPage - 2, 1);
                     $pEnd = min($produkPage + 2, $produkTotalPages);
                     @endphp
-                    <nav class="d-flex justify-content-between align-items-center mt-3">
-                        <div class="small text-muted">
+                    <nav class="d-flex flex-column flex-sm-row justify-content-sm-between align-items-center gap-2 mt-3">
+                        <div class="small text-muted text-center text-sm-start order-2 order-sm-1">
                             Menampilkan
                             <span class="fw-semibold">{{ $pFirst }}</span> sampai
                             <span class="fw-semibold">{{ $pLast }}</span> dari
                             <span class="fw-semibold">{{ $produkTotal }}</span> data
                         </div>
-                        <ul class="pagination mb-0">
+                        <ul class="pagination mb-0 flex-wrap justify-content-center order-1 order-sm-2">
                             @if ($produkPage <= 1)
                                 <li class="page-item disabled" aria-disabled="true"><span class="page-link">@lang('pagination.previous')</span></li>
                                 @else

@@ -1,6 +1,6 @@
 
 @section('title')
-Detail Pesan Masuk || PT. Asthana Cipta Mandiri
+Detail Pesan Masuk || lemon
 @stop
 <div class="container-fluid">
     <!--================== HEADER ==================-->

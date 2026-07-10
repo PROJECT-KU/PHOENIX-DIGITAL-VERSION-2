@@ -1,6 +1,6 @@
 
 @section('title')
-Data Banner || PT. Asthana Cipta Mandiri
+Data Banner || lemon
 @stop
 <div>
     <div class="container-fluid">

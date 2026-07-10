@@ -435,6 +435,38 @@
         .chip-promo {
             background: linear-gradient(135deg, #6c63ff, #4e46e5);
         }
+
+        /* Mobile: tombol Tambah Akun & Tambah Paket sejajar bersebelahan (bagi rata). */
+        @media (max-width: 575.98px) {
+            .of-akun-actions {
+                flex-wrap: nowrap !important;
+                width: 100%;
+            }
+            .of-akun-actions>button {
+                flex: 1 1 0;
+                justify-content: center;
+                min-width: 0;
+            }
+
+            /* Durasi & Qty di kolom sempit: hilangkan padding-kiri 45px global (untuk ikon)
+               yang mendorong angka keluar area terlihat. !important agar menang dari style global. */
+            .of-item-body .form-control,
+            .of-item-body .form-select {
+                padding-left: .5rem !important;
+                padding-right: .35rem !important;
+                font-size: 16px;
+                text-align: center;
+            }
+            .of-item-body input[type=number]::-webkit-outer-spin-button,
+            .of-item-body input[type=number]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+            .of-item-body input[type=number] {
+                -moz-appearance: textfield;
+                appearance: textfield;
+            }
+        }
     </style>
 
     <form wire:submit="save">
@@ -520,7 +552,7 @@
                             <span class="of-icon"><i class="bi bi-bag-check-fill"></i></span>
                             <h5 class="fw-bold mb-0">Pemesanan Akun</h5>
                         </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="of-akun-actions d-flex flex-wrap align-items-center gap-2">
                             <button type="button" wire:click="addItem"
                                 class="btn btn-sm btn-outline-primary rounded-pill px-3 d-inline-flex align-items-center gap-1">
                                 <i class="bi bi-plus-lg"></i> Tambah Akun
@@ -652,13 +684,13 @@
                     @endif
 
                     <label class="of-form-label">Kode Promo</label>
-                    <div class="input-group mb-1">
-                        <input type="text" wire:model="kodePromo" class="form-control" placeholder="Masukkan kode promo"
+                    <div class="d-flex gap-2 mb-1">
+                        <input type="text" wire:model="kodePromo" class="form-control flex-grow-1" placeholder="Masukkan kode promo"
                             {{ $promoValid ? 'readonly' : '' }}>
                         @if ($promoValid)
-                        <button type="button" wire:click="removePromo" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                        <button type="button" wire:click="removePromo" class="btn btn-outline-danger flex-shrink-0"><i class="bi bi-x-lg"></i></button>
                         @else
-                        <button type="button" wire:click="applyPromo" class="btn btn-primary">Pakai</button>
+                        <button type="button" wire:click="applyPromo" class="btn btn-primary flex-shrink-0 px-4">Pakai</button>
                         @endif
                     </div>
                     @if ($promoMessage)
@@ -668,13 +700,13 @@
                     @if ($showReferralInput)
                     <hr class="my-3">
                     <label class="of-form-label">Kode Referral <span class="text-muted">(khusus pembeli pertama)</span></label>
-                    <div class="input-group mb-1">
-                        <input type="text" wire:model="referralCode" class="form-control" placeholder="PDW_XXXX"
+                    <div class="d-flex gap-2 mb-1">
+                        <input type="text" wire:model="referralCode" class="form-control flex-grow-1" placeholder="PDW_XXXX"
                             {{ $referralValid ? 'readonly' : '' }}>
                         @if ($referralValid)
-                        <button type="button" wire:click="removeReferral" class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                        <button type="button" wire:click="removeReferral" class="btn btn-outline-danger flex-shrink-0"><i class="bi bi-x-lg"></i></button>
                         @else
-                        <button type="button" wire:click="checkReferralCode" class="btn btn-success">Cek</button>
+                        <button type="button" wire:click="checkReferralCode" class="btn btn-success flex-shrink-0 px-4">Cek</button>
                         @endif
                     </div>
                     @if ($referralMessage)
@@ -789,6 +821,50 @@
             </div>
         </div>
     </form>
+
+    {{-- ===== Popup upload bukti pembayaran (transfer / QRIS statis) ===== --}}
+    @if($showBuktiModal)
+    <div wire:click="$set('showBuktiModal', false)" style="position:fixed; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); z-index:1055;"></div>
+    <div style="position:fixed; inset:0; z-index:1056; display:flex; align-items:center; justify-content:center; padding:16px; overflow-y:auto;">
+        <div style="background:rgba(255,255,255,.9); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.6); border-radius:22px; width:100%; max-width:460px; max-height:92vh; overflow:auto; box-shadow:0 30px 70px rgba(15,23,42,.32);">
+            <div style="padding:20px 24px; background:linear-gradient(135deg,#7c3aed,#4e46e5); color:#fff; position:relative;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-receipt-cutoff" style="font-size:1.2rem; display:inline-flex; align-items:center; line-height:1;"></i>
+                    <h5 class="fw-bold mb-0 text-white">Upload Bukti Pembayaran</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" wire:click="$set('showBuktiModal', false)" style="position:absolute; top:18px; right:20px;"></button>
+            </div>
+            <div class="p-4">
+                <p class="text-muted mb-3" style="font-size:.88rem;">
+                    Metode <b class="text-dark">{{ $payment_method === 'transfer' ? 'Transfer Bank' : 'QRIS Statis' }}</b> memerlukan bukti pembayaran sebelum pesanan dibuat &amp; masuk ke detail.
+                </p>
+                <div wire:loading.class="opacity-50" wire:target="bukti"
+                    style="border:1.5px dashed #d6d9e6; border-radius:14px; padding:20px; text-align:center; position:relative; background:#fbfcff;">
+                    <input type="file" wire:model="bukti" accept="image/*" style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                    <i class="bi bi-cloud-arrow-up" style="font-size:1.8rem; color:#7c3aed;"></i>
+                    <div class="fw-semibold text-dark" style="font-size:.9rem;">Klik untuk pilih gambar bukti</div>
+                    <div class="text-muted" style="font-size:.76rem;">JPG/PNG · maks 4 MB</div>
+                    <div wire:loading wire:target="bukti" class="text-primary small mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Mengunggah...</div>
+                </div>
+                @error('bukti')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                @if($bukti && !is_string($bukti))
+                <div class="mt-3 text-center">
+                    <img src="{{ $bukti->temporaryUrl() }}" style="max-height:220px; max-width:100%; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,.12);">
+                </div>
+                @endif
+            </div>
+            <div class="px-4 pb-4 d-flex justify-content-end gap-2">
+                <button type="button" class="btn btn-danger rounded-pill px-4 d-inline-flex align-items-center justify-content-center" wire:click="$set('showBuktiModal', false)">Batal</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-1"
+                    wire:click="konfirmasiBukti" wire:loading.attr="disabled" wire:target="konfirmasiBukti,bukti">
+                    <i class="bi bi-check2-circle"></i>
+                    <span wire:loading.remove wire:target="konfirmasiBukti">Konfirmasi &amp; Buat Pesanan</span>
+                    <span wire:loading wire:target="konfirmasiBukti">Memproses...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 
     @php
         $ofProductsData = $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->nama_akun])->values();

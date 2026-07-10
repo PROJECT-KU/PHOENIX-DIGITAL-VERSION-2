@@ -1,6 +1,6 @@
 
 @section('title')
-Edit Karyawan || PT. Asthana Cipta Mandiri
+Update Karyawan || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4">

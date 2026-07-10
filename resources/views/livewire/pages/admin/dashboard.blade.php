@@ -13,7 +13,7 @@ new class extends Component {
 }; ?>
 
 @section('title')
-Dashboard || PT. Asthana Cipta Mandiri
+Dashboard || lemon
 @stop
 
 <div>
@@ -171,7 +171,7 @@ Dashboard || PT. Asthana Cipta Mandiri
     <!--================== END MENAMPILKAN GRAFIK PEMASUKAN & PENGELUARAN ==================-->
 
     <!--================== MENAMPILKAN DATA ORDER & CUSTOMER TERBARU ==================-->
-    <div class="row mb-4">
+    <div class="row g-4 mb-4 align-items-stretch">
 
         <!-- GRID KIRI: Orderan Terbaru -->
         <div class="col-12 col-xl-6">

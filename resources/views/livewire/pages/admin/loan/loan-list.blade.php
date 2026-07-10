@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pinjaman || PT. Asthana Cipta Mandiri
+Data Pinjaman || lemon
 @stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->

@@ -1,6 +1,6 @@
 
 @section('title')
-Tambah Ebook || PT. Asthana Cipta Mandiri
+Tambah Ebook || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">

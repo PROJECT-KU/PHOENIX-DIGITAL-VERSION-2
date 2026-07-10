@@ -541,6 +541,44 @@ class PemesananrscForm extends Component
         return '+62'.$number;
     }
 
+    /**
+     * Catat cash flow untuk seluruh batch sebagai SATU entri (total batch), bukan
+     * per peserta. Entri dilampirkan ke satu baris representatif (tertua); cash flow
+     * baris lain dalam batch dihapus agar tidak terpecah-pecah di laporan cash flow.
+     */
+    private function syncRscBatchCashFlow(SyncCashFlowAction $action): void
+    {
+        $rows = PemesananRsc::where('nama_camp', $this->nama_camp)
+            ->where('batch_camp', $this->batch_camp)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $representatif = $rows->first();
+        $totalBatch = (int) $rows->sum('total');
+
+        // Sisakan hanya cash flow milik baris representatif.
+        foreach ($rows as $row) {
+            if ($row->id !== $representatif->id) {
+                $action->delete($row);
+            }
+        }
+
+        // Satu entri untuk seluruh batch. execute() self-guard lewat shouldRecord()
+        // (status 'baru'): bila tak layak dicatat, cash flow representatif dihapus.
+        $action->execute($representatif, [
+            'amount' => $totalBatch,
+            'type' => 'income',
+            'date' => $representatif->tanggal_pemesanan,
+            'category' => 'PemesananRSC',
+            'description' => 'Pesanan Rumah Scopus - '.$this->nama_camp.' Batch '.$this->batch_camp,
+        ]);
+    }
+
     private function createpemesananrsc(SyncCashFlowAction $action)
     {
         DB::beginTransaction();
@@ -550,7 +588,7 @@ class PemesananrscForm extends Component
 
                 $formattedTelp = $this->formatPhoneNumber($p['telp_pembeli']);
 
-                $pemesanan = PemesananRsc::create([
+                PemesananRsc::create([
                     'id_transaksi' => Str::upper(Str::random(5)),
                     'nama_camp' => $this->nama_camp,
                     'batch_camp' => $this->batch_camp,
@@ -574,15 +612,10 @@ class PemesananrscForm extends Component
                     'nama_pembeli' => $p['nama_pembeli'],
                     'telp_pembeli' => $formattedTelp,
                 ]);
-
-                $action->execute($pemesanan, [
-                    'amount' => $pemesanan->total,
-                    'type' => 'income',
-                    'date' => $pemesanan->tanggal_pemesanan,
-                    'category' => 'PemesananRSC',
-                    'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
-                ]);
             }
+
+            // Cash flow dicatat sekali per batch (total batch), bukan per peserta.
+            $this->syncRscBatchCashFlow($action);
 
             // Akun tambahan (kredensial saja).
             $this->simpanAkunTambahan();
@@ -647,28 +680,14 @@ class PemesananrscForm extends Component
                     if ($pemesanan) {
                         $pemesanan->update($data);
                     }
-
-                    $action->execute($pemesanan, [
-                        'amount' => $pemesanan->total,
-                        'type' => 'income',
-                        'date' => $pemesanan->tanggal_pemesanan,
-                        'category' => 'PemesananRSC',
-                        'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
-
-                    ]);
                 } else {
                     $data['id_transaksi'] = Str::upper(Str::random(5));
-                    $pemesanan = PemesananRsc::create($data);
-
-                    $action->execute($pemesanan, [
-                        'amount' => $pemesanan->total,
-                        'type' => 'income',
-                        'date' => $pemesanan->tanggal_pemesanan,
-                        'category' => 'PemesananRSC',
-                        'description' => $pemesanan->deskripsi ?? 'Pemesanan dari Rumah Scopus',
-                    ]);
+                    PemesananRsc::create($data);
                 }
             }
+
+            // Cash flow dicatat sekali per batch (total batch), bukan per peserta.
+            $this->syncRscBatchCashFlow($action);
 
             // Akun tambahan (kredensial saja).
             $this->simpanAkunTambahan();

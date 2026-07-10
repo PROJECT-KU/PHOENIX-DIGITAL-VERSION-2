@@ -4,7 +4,6 @@ namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
 use App\Models\Promo;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -55,6 +54,12 @@ class CustomerList extends Component
             })
             ->latest()
             ->paginate(10);
+
+        // Pengaman kadaluarsa tahunan: nolkan poin milik tahun sebelumnya pada
+        // baris halaman ini (self-healing bila command terjadwal terlewat).
+        foreach ($customers as $customer) {
+            $customer->applyYearlyExpiry();
+        }
 
         $activePromos = Promo::active()
             ->orderByDesc('prioritas')

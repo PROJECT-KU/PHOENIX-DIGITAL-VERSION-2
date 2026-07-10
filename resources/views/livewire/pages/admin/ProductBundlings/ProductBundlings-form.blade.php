@@ -201,21 +201,29 @@
             <div class="row g-4">
                 <div class="col-md-6">
                     <label for="harga_awal" class="form-label fw-semibold text-muted">Harga Awal <span class="text-danger">*</span></label>
-                    <input type="text" id="harga_awal" wire:model.defer="harga_awal"
-                        class="form-control @error('harga_awal') is-invalid @enderror rupiah"
-                        placeholder="Rp 0">
+                    <div class="position-relative">
+                        <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                            style="pointer-events: none; z-index: 5;">Rp</span>
+                        <input type="text" id="harga_awal" wire:model.defer="harga_awal"
+                            class="form-control ps-5 @error('harga_awal') is-invalid @enderror rupiah"
+                            placeholder="0">
+                    </div>
                     @error('harga_awal')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label for="harga_bundling" class="form-label fw-semibold text-muted">Harga Bundling <span class="text-danger">*</span></label>
-                    <input type="text" id="harga_bundling" wire:model.defer="harga_bundling"
-                        class="form-control @error('harga_bundling') is-invalid @enderror rupiah"
-                        placeholder="Rp 0">
+                    <div class="position-relative">
+                        <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                            style="pointer-events: none; z-index: 5;">Rp</span>
+                        <input type="text" id="harga_bundling" wire:model.defer="harga_bundling"
+                            class="form-control ps-5 @error('harga_bundling') is-invalid @enderror rupiah"
+                            placeholder="0">
+                    </div>
                     @error('harga_bundling')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -409,7 +417,7 @@
                 rupiah += separator + ribuan.join('.');
             }
 
-            e.target.value = rupiah ? 'Rp ' + rupiah : '';
+            e.target.value = rupiah ? rupiah : '';
         });
     });
 </script>

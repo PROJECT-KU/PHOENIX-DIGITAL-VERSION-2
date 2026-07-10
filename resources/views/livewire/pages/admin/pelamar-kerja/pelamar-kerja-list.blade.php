@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pelamar Kerja || PT. Asthana Cipta Mandiri
+Data Pelamar Kerja || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->

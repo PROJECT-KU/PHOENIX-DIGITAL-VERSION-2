@@ -1,6 +1,6 @@
 
 @section('title')
-Pengguna Online || PT. Asthana Cipta Mandiri
+Pengguna Online || lemon
 @stop
 <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden"
     wire:poll.10s

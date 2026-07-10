@@ -25,13 +25,31 @@ class Modal extends Model
         'nominal',
         'jenis',
         'deskripsi',
+        'gambar',
+        'gambar_list',
         'penginput_id',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'nominal' => 'decimal:0',
+        'gambar_list' => 'array',
     ];
+
+    /**
+     * Semua gambar/bukti top-up sebagai array path. Memakai gambar_list bila ada;
+     * jika belum (data lama), jatuh ke kolom tunggal "gambar".
+     *
+     * @return array<int, string>
+     */
+    public function getImagesAttribute(): array
+    {
+        if (! empty($this->gambar_list) && is_array($this->gambar_list)) {
+            return array_values($this->gambar_list);
+        }
+
+        return $this->gambar ? [$this->gambar] : [];
+    }
 
     public function penginput(): BelongsTo
     {

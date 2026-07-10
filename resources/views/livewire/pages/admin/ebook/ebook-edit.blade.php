@@ -1,6 +1,5 @@
-
 @section('title')
-Edit Ebook || PT. Asthana Cipta Mandiri
+Update Ebook || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -13,7 +12,7 @@ Edit Ebook || PT. Asthana Cipta Mandiri
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Ebook Bonus', 'url' => route('admin.ebook.index')],
-                        ['name' => 'Edit Ebook'],
+                        ['name' => 'Update Ebook'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

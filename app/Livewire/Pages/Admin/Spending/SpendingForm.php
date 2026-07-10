@@ -6,10 +6,14 @@ use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Spending;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class SpendingForm extends Component
 {
+    use WithFileUploads;
+
     public $spendingId = null;
 
     public $tanggal_transaksi;
@@ -17,6 +21,16 @@ class SpendingForm extends Component
     public $nominal;
 
     public $deskripsi;
+
+    // Gambar/bukti pengeluaran (bisa lebih dari satu, opsional).
+    // $fotosLama = path yang sudah tersimpan (mode edit) yang dipertahankan.
+    // $fotosBaru = file baru (upload/kamera) yang belum tersimpan.
+    // $tempUpload = penampung sementara input file (multiple) sebelum dipindah ke $fotosBaru.
+    public array $fotosLama = [];
+
+    public array $fotosBaru = [];
+
+    public $tempUpload = [];
 
     public $status = 'pending';
 
@@ -65,6 +79,7 @@ class SpendingForm extends Component
             'tanggal_transaksi' => 'required|date',
             'nominal' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string',
+            'tempUpload.*' => 'nullable|image|max:4096',
             'status' => 'required|in:pending,completed',
             'jenis_pengeluaran' => 'required|in:pembelian_akun,lainnya',
             // PIC Pembeli hanya wajib ketika jenis pengeluaran = pembelian akun
@@ -133,6 +148,40 @@ class SpendingForm extends Component
         $this->durasi_value = $spending->durasi_value;
         $this->durasi_type = $spending->durasi_type ?: 'bulan';
         $this->selectedProductTipe = $spending->product?->tipe_akun;
+        $this->fotosLama = $spending->images; // array path gambar tersimpan
+    }
+
+    /**
+     * Setiap kali file dipilih (input multiple), pindahkan ke daftar $fotosBaru
+     * agar terakumulasi (bisa pilih beberapa kali + kamera), lalu kosongkan input.
+     */
+    public function updatedTempUpload()
+    {
+        $this->validate(['tempUpload.*' => 'nullable|image|max:4096']);
+
+        foreach ($this->tempUpload as $file) {
+            $this->fotosBaru[] = $file;
+        }
+
+        $this->tempUpload = [];
+    }
+
+    /**
+     * Hapus salah satu gambar yang SUDAH tersimpan (file fisik dihapus saat simpan).
+     */
+    public function removeFotoLama(int $index): void
+    {
+        unset($this->fotosLama[$index]);
+        $this->fotosLama = array_values($this->fotosLama);
+    }
+
+    /**
+     * Hapus salah satu gambar baru yang belum tersimpan.
+     */
+    public function removeFotoBaru(int $index): void
+    {
+        unset($this->fotosBaru[$index]);
+        $this->fotosBaru = array_values($this->fotosBaru);
     }
 
     public function save(SyncCashFlowAction $syncCashFlow)
@@ -147,8 +196,29 @@ class SpendingForm extends Component
         $durasiValue = $isPrivate ? (int) $this->durasi_value : null;
         $durasiType = $isPrivate ? $this->durasi_type : null;
 
+        // Susun daftar gambar akhir: foto lama yang dipertahankan + foto baru disimpan.
+        $paths = array_values($this->fotosLama);
+        foreach ($this->fotosBaru as $file) {
+            if ($file && ! is_string($file)) {
+                $paths[] = $file->store('spending', 'public');
+            }
+        }
+
+        // Hapus file gambar lama yang dibuang (ada di data, tak lagi dipertahankan).
+        if ($this->isEdit) {
+            $original = Spending::find($this->spendingId)?->images ?? [];
+            foreach (array_diff($original, $paths) as $dibuang) {
+                Storage::disk('public')->delete($dibuang);
+            }
+        }
+
+        // Kolom "gambar" menyimpan gambar pertama (kompatibilitas thumbnail),
+        // "gambar_list" menyimpan seluruh daftar.
+        $gambarPath = $paths[0] ?? null;
+        $gambarList = $paths ?: null;
+
         try {
-            DB::transaction(function () use ($syncCashFlow, $picPembeliId, $productId, $durasiValue, $durasiType) {
+            DB::transaction(function () use ($syncCashFlow, $picPembeliId, $productId, $durasiValue, $durasiType, $gambarPath, $gambarList) {
 
                 if ($this->isEdit) {
                     $spending = Spending::findOrFail($this->spendingId);
@@ -156,6 +226,8 @@ class SpendingForm extends Component
                         'tanggal_transaksi' => $this->tanggal_transaksi,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
+                        'gambar' => $gambarPath,
+                        'gambar_list' => $gambarList,
                         'jenis_pengeluaran' => $this->jenis_pengeluaran,
                         'status' => $this->status,
                         'penginput_id' => auth()->id(),
@@ -170,6 +242,8 @@ class SpendingForm extends Component
                         'tanggal_transaksi' => $this->tanggal_transaksi,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
+                        'gambar' => $gambarPath,
+                        'gambar_list' => $gambarList,
                         'status' => $this->status,
                         'jenis_pengeluaran' => $this->jenis_pengeluaran,
                         'penginput_id' => auth()->id(),

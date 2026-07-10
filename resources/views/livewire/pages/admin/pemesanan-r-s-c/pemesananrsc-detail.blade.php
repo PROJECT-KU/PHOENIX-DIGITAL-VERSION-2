@@ -1,5 +1,5 @@
 @section('title')
-Detail Pesanan RSC || PT. Asthana Cipta Mandiri
+Detail Pesanan RSC || lemon
 @stop
 <div class="container-fluid">
     <style>
@@ -139,6 +139,28 @@ Detail Pesanan RSC || PT. Asthana Cipta Mandiri
         .dv-copy:hover {
             color: #6d28d9;
         }
+
+        /* Chip total daftar peserta (khusus mobile). */
+        .peserta-total-mobile {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 14px;
+            box-shadow: 0 6px 16px rgba(16, 185, 129, .28);
+            font-size: .95rem;
+        }
+
+        /* ===== Penyesuaian khusus mobile (desktop tetap) ===== */
+        @media (max-width: 575.98px) {
+            /* Kartu Total Harga & Harga Satuan: "Rp" dan angka sejajar (satu baris). */
+            .dv-stat { padding: 12px; gap: 8px; }
+            .dv-stat .ico { width: 40px; height: 40px; font-size: 1.05rem; border-radius: 10px; }
+            .dv-stat .lbl { font-size: .68rem; }
+            .dv-stat .val { font-size: .95rem; white-space: nowrap; }
+
+            /* Total daftar peserta: footer tabel disembunyikan, diganti chip menarik. */
+            .peserta-tfoot { display: none; }
+        }
     </style>
 
     {{-- Header --}}
@@ -152,7 +174,7 @@ Detail Pesanan RSC || PT. Asthana Cipta Mandiri
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Pemesanan RSC', 'url' => route('admin.pesananrsc.index')],
-                        ['name' => 'Detail'],
+                        ['name' => 'Detail Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />
@@ -415,7 +437,7 @@ Detail Pesanan RSC || PT. Asthana Cipta Mandiri
                         @endforelse
                     </tbody>
                     @if($pesertaList->count() > 0)
-                    <tfoot>
+                    <tfoot class="peserta-tfoot">
                         <tr style="border-top:2px solid #eef0f7;">
                             @if($perAkun)
                             <th colspan="5" class="text-end fs-6 text-success">Total Batch (per akun): Rp {{ number_format($batchData->total_harga, 0, ',', '.') }}</th>
@@ -428,6 +450,18 @@ Detail Pesanan RSC || PT. Asthana Cipta Mandiri
                     @endif
                 </table>
             </div>
+            @if($pesertaList->count() > 0)
+            {{-- Total ringkas & menarik khusus mobile (menggantikan footer tabel) --}}
+            <div class="d-md-none mt-3">
+                <div class="peserta-total-mobile d-flex align-items-center justify-content-between gap-2">
+                    <span class="d-inline-flex align-items-center gap-2 fw-semibold">
+                        <i class="bi bi-cash-stack d-inline-flex align-items-center" style="line-height:1;"></i>
+                        <span>Total{{ $perAkun ? ' Batch (per akun)' : '' }}</span>
+                    </span>
+                    <span class="fw-bold fs-6">Rp {{ number_format($batchData->total_harga, 0, ',', '.') }}</span>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
     @endif

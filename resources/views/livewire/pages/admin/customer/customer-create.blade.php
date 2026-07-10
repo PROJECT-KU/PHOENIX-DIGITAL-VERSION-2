@@ -1,6 +1,6 @@
 
 @section('title')
-Tambah Pelanggan || PT. Asthana Cipta Mandiri
+Tambah Pelanggan || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">

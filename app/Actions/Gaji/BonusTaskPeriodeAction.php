@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\DB;
  */
 class BonusTaskPeriodeAction
 {
+    // Persentase pembayaran per status. 'terlambat' (selesai melebihi deadline)
+    // TIDAK pakai angka ini — dibayar = alokasi × (bobot/4), dihitung di distribusi().
     public const STATUS_PERSEN = ['tepat_waktu' => 1.0, 'terlambat' => 0.6, 'tidak_selesai' => 0.0];
 
     public static function settingKey(int $bulan, int $tahun): string
@@ -91,7 +93,13 @@ class BonusTaskPeriodeAction
 
                 if ($adaGajiPending && ! $dikecualikan && $totalBobot > 0) {
                     $alokasi = (int) round($sisaPool * $t->bobotPoin() / $totalBobot);
-                    $dibayar = (int) round($alokasi * (self::STATUS_PERSEN[$status] ?? 0));
+                    if ($status === 'terlambat') {
+                        // Selesai MELEBIHI deadline: dibayar = alokasi × (bobot / 4).
+                        // (ringan 1/4, sedang 2/4, berat 3/4 dari alokasinya.)
+                        $dibayar = (int) round($alokasi * $t->bobotPoin() / 4);
+                    } else {
+                        $dibayar = (int) round($alokasi * (self::STATUS_PERSEN[$status] ?? 0));
+                    }
                 }
 
                 // Komentar "baru untuk admin" = komentar dari karyawan yang belum dibaca admin.

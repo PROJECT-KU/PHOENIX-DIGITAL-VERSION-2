@@ -547,6 +547,14 @@ class PenyelesaianTaskList extends Component
             ? Task::with(['groupComments.user.role.permissions', 'karyawan', 'attachments'])->find($this->activeTaskId)
             : null;
 
+        // Nama depan penerima grup untuk @mention di composer komentar.
+        $chatMembers = $activeTask
+            ? User::whereIn('id', Task::where('group_id', $activeTask->group_id)->pluck('user_id')->all())
+                ->pluck('name')
+                ->map(fn ($n) => Str::of($n)->trim()->explode(' ')->first())
+                ->filter()->unique()->values()->all()
+            : [];
+
         $editAttachments = $this->editingGroupId
             ? \App\Models\TaskAttachment::whereIn('task_id', Task::where('group_id', $this->editingGroupId)->pluck('id'))
                 ->latest()->get()->unique('path')->values()
@@ -583,6 +591,7 @@ class PenyelesaianTaskList extends Component
             ],
             'users' => User::orderBy('name')->get(['id', 'name']),
             'activeTask' => $activeTask,
+            'chatMembers' => $chatMembers,
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ]);

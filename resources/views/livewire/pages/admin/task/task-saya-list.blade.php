@@ -1,5 +1,5 @@
 @section('title')
-Task Saya || PT. Asthana Cipta Mandiri
+Task Saya || lemon
 @stop
 <div wire:poll.30s>
     <style>
@@ -116,8 +116,8 @@ Task Saya || PT. Asthana Cipta Mandiri
         .ts-mention-item { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; border: none; background: transparent; border-radius: 9px; padding: 7px 10px; font-size: .88rem; font-weight: 600; color: #1e293b; cursor: pointer; }
         .ts-mention-item i.bi { color: #7c3aed; display: inline-flex; align-items: center; line-height: 1; }
         .ts-mention-item.active, .ts-mention-item:hover { background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(78,70,229,.06)); }
-        .ts-mentioned-badge { background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; box-shadow: 0 3px 8px rgba(124, 58, 237, .3); }
-        .ts-mentioned-badge i.bi { display: inline-flex; align-items: center; line-height: 1; }
+        .ts-mentioned-badge { background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; box-shadow: 0 3px 8px rgba(124, 58, 237, .3); display: inline-flex; align-items: center; gap: 4px; }
+        .ts-mentioned-badge i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
 
         /* ===== Composer ===== */
         .ts-composer { border: 1px solid #e6e8f2; border-radius: 14px; padding: 6px 14px; background: #fff; box-shadow: 0 4px 14px rgba(108, 99, 255, .05); transition: .15s; }
@@ -175,8 +175,12 @@ Task Saya || PT. Asthana Cipta Mandiri
         .ts-folder-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .ts-folder-progress { font-size: .78rem; color: #475569; white-space: nowrap; }
         .ts-folder-progress b { color: #059669; }
-        .ts-folder-chev { color: #94a3b8; display: inline-flex; align-items: center; line-height: 1; }
-        .ts-folder-body { padding: 4px 14px 14px; }
+        .ts-folder-chev { color: #94a3b8; display: inline-flex; align-items: center; line-height: 1; transition: transform .3s ease; }
+        /* Collapse via grid-rows (0fr↔1fr): animasi ke tinggi natural tanpa mengukur
+           scrollHeight, sehingga tidak desync setelah re-render Livewire. */
+        .ts-folder-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .34s cubic-bezier(.4, 0, .2, 1); }
+        .ts-folder-body.is-open { grid-template-rows: 1fr; }
+        .ts-folder-body-inner { overflow: hidden; min-height: 0; padding: 4px 14px 14px; }
         .ts-folder-chat { position: relative; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #ddd6fe; background: #fff; color: #6d28d9; font-weight: 600; font-size: .82rem; display: inline-flex; align-items: center; gap: 6px; line-height: 1; cursor: pointer; transition: .15s; white-space: nowrap; }
         .ts-folder-chat:hover { background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; border-color: transparent; box-shadow: 0 6px 14px rgba(124, 58, 237, .28); }
         .ts-folder-chat i.bi { display: inline-flex; align-items: center; line-height: 1; }
@@ -229,17 +233,24 @@ Task Saya || PT. Asthana Cipta Mandiri
         .ts-form-label { font-weight: 600; font-size: .85rem; color: #334155; margin-bottom: 4px; }
 
         /* ===== Multi-select penerima ===== */
-        .ts-multi { border: 1px solid #e6e8f2; border-radius: 12px; padding: 6px; max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; background: #fff; }
+        .ts-multi { border: 1px solid #eef0f7; border-radius: 14px; padding: 6px; max-height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #fff; }
         .ts-multi.is-invalid { border-color: #ef4444; }
-        .ts-multi-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 9px; cursor: pointer; font-size: .9rem; color: #1e293b; font-weight: 500; transition: .12s; margin: 0; }
-        .ts-multi-item:hover { background: #f7f5ff; }
-        .ts-multi-item.checked { background: linear-gradient(135deg, rgba(124,58,237,.10), rgba(78,70,229,.05)); }
+        .ts-multi-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; cursor: pointer; margin: 0; border: 1px solid transparent; transition: .13s; }
+        .ts-multi-item:hover { background: #f8f7ff; }
+        .ts-multi-item.checked { background: linear-gradient(135deg, rgba(124,58,237,.09), rgba(78,70,229,.04)); border-color: #ddd6fe; }
         .ts-multi-item input { position: absolute; opacity: 0; pointer-events: none; }
-        .ts-multi-check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #cbd5e1; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; background: #fff; transition: .12s; }
-        .ts-multi-check i.bi { display: none; line-height: 1; font-size: .8rem; }
+        .ts-multi-av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: .82rem; color: #fff; background: linear-gradient(135deg, #a5b4fc, #818cf8); transition: .13s; }
+        .ts-multi-item.checked .ts-multi-av { background: linear-gradient(135deg, #7c3aed, #4e46e5); box-shadow: 0 4px 10px rgba(124,58,237,.28); }
+        .ts-multi-name { flex: 1 1 auto; font-size: .9rem; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ts-multi-item.checked .ts-multi-name { color: #4c1d95; }
+        .ts-multi-check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #e2e8f0; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: #fff; transition: .13s; }
+        .ts-multi-check i.bi { display: none; align-items: center; justify-content: center; line-height: 1; font-size: .8rem; }
         .ts-multi-item.checked .ts-multi-check { background: linear-gradient(135deg, #7c3aed, #4e46e5); border-color: transparent; }
         .ts-multi-item.checked .ts-multi-check i.bi { display: inline-flex; }
-        .ts-multi-count { font-size: .76rem; color: #7c3aed; font-weight: 600; margin-top: 5px; }
+        .ts-multi-count { font-size: .76rem; color: #7c3aed; font-weight: 600; margin-top: 6px; }
+        .ts-multi-search { position: relative; margin-bottom: 6px; }
+        .ts-multi-search i.bi { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .85rem; line-height: 1; display: inline-flex; align-items: center; pointer-events: none; }
+        .ts-multi-search input { padding-left: 34px; border-radius: 10px; }
         .ts-drop {
             border: 1.5px dashed #d6d9e6; border-radius: 14px; padding: 16px; text-align: center;
             position: relative; background: #fbfcff; transition: .15s;
@@ -274,6 +285,27 @@ Task Saya || PT. Asthana Cipta Mandiri
         .of-pick-msg { color: #ef4444; font-size: .82rem; margin-top: .35rem; min-height: 1rem; text-align: left; }
         .of-pick-confirm { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .5rem .8rem; border: 1px dashed #fca5a5; border-radius: 12px; background: #fff5f5; color: #b91c1c; font-weight: 600; font-size: .88rem; }
         .of-pick-confirm span { margin-right: auto; }
+
+        /* ===== Perapian card group (folder) di layar mobile ===== */
+        @media (max-width: 575.98px) {
+            .ts-folder-head { flex-wrap: wrap; align-items: flex-start; padding: 12px 14px; gap: 10px; }
+            .ts-folder-info { flex: 1 1 calc(100% - 52px); min-width: 0; }
+            .ts-folder-title { font-size: .95rem; }
+            /* Baris aksi turun penuh ke bawah: progres di kiri, tombol di kanan. */
+            .ts-folder-side { flex: 1 1 100%; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding-top: 8px; margin-top: 2px; border-top: 1px dashed #ece9fb; }
+            .ts-folder-progress { margin-right: auto; }
+            .ts-folder-chat { height: 32px; padding: 0 12px; }
+            /* Sub-kartu penerima: satu kolom penuh & lega. */
+            .ts-folder-body-inner .row > [class*="col-"] { flex: 0 0 100%; max-width: 100%; }
+        }
+
+        /* ===== Chip periode siklus (seragam dengan Cashflow) ===== */
+        .siklus-chip { padding: 6px 14px 6px 6px; border-radius: 999px; background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(37, 99, 235, .08)); border: 1px solid rgba(124, 58, 237, .2); }
+        .siklus-chip-ico { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; font-size: .9rem; flex-shrink: 0; }
+        .siklus-chip-ico i.bi { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; line-height: 1; }
+        .siklus-chip-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #7c3aed; }
+        .siklus-chip-date { font-size: .88rem; font-weight: 700; color: #1e293b; }
+        .siklus-chip-arrow { color: #94a3b8; font-size: .8rem; }
     </style>
 
     @php
@@ -281,7 +313,7 @@ Task Saya || PT. Asthana Cipta Mandiri
         $badgeProg = ['belum'=>'secondary','dikerjakan'=>'info','selesai'=>'success'];
         $labelProg = ['belum'=>'Belum Dikerjakan','dikerjakan'=>'Dikerjakan','selesai'=>'Selesai'];
         $badgeBonus = ['tepat_waktu'=>'success','terlambat'=>'warning','tidak_selesai'=>'danger','tidak_ada_info'=>'primary'];
-        $labelBonus = ['tepat_waktu'=>'Tepat Waktu','terlambat'=>'Terlambat','tidak_selesai'=>'Tidak Selesai','tidak_ada_info'=>'Berjalan'];
+        $labelBonus = ['tepat_waktu'=>'Tepat Waktu','terlambat'=>'Melebihi Deadline','tidak_selesai'=>'Tidak Selesai','tidak_ada_info'=>'Berjalan'];
 
         // Palet warna komentar — diurut agar dua warna pertama paling kontras.
         // Ungu ditaruh terakhir supaya tak bentrok dengan bubble "Anda" (ungu).
@@ -329,6 +361,11 @@ Task Saya || PT. Asthana Cipta Mandiri
                         <span>Filter Periode</span>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width:175px;"
+                            title="Cara menghitung periode">
+                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
+                            <option value="siklus20">🔄 Periode 20-19</option>
+                        </select>
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width:160px;">
                             <option value="">Semua Bulan</option>
                             @foreach($daftarBulan as $num => $nama)
@@ -341,19 +378,58 @@ Task Saya || PT. Asthana Cipta Mandiri
                             <option value="{{ $th }}">{{ $th }}</option>
                             @endforeach
                         </select>
-                        @if($bulan || $tahun)
-                        <button wire:click="resetFilter" type="button" class="btn btn-danger rounded-3" title="Reset filter">
+                        @if($bulan || $tahun || $modePeriode !== 'kalender')
+                        <button wire:click="resetFilter" type="button"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                            title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
                         @endif
                     </div>
                 </div>
+
+                {{-- Info rentang siklus (persis Cashflow): tgl 20 bln terpilih s/d 19 bln berikutnya --}}
+                @if($modePeriode === 'siklus20')
+                @php
+                    $mulaiS = $akhirS = null;
+                    if ($bulan) {
+                        $thn = (int) ($tahun ?: now()->year);
+                        $mulaiS = \Carbon\Carbon::create($thn, (int) $bulan, 20);
+                        $akhirS = $mulaiS->copy()->addMonthNoOverflow()->subDay();
+                    }
+                @endphp
+                <div class="mt-3 pt-3 border-top">
+                    @if($bulan)
+                    <div class="siklus-chip d-inline-flex align-items-center gap-2">
+                        <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
+                            <i class="bi bi-calendar-range"></i>
+                        </span>
+                        <span class="siklus-chip-label">Periode</span>
+                        <span class="siklus-chip-date">{{ $mulaiS->translatedFormat('d M Y') }}</span>
+                        <i class="bi bi-arrow-right siklus-chip-arrow"></i>
+                        <span class="siklus-chip-date">{{ $akhirS->translatedFormat('d M Y') }}</span>
+                    </div>
+                    @else
+                    <span class="text-muted" style="font-size:.85rem;">
+                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan awal siklus (tgl 20). Contoh: pilih Juli → 20 Jul s/d 19 Agu.
+                    </span>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
 
         <div class="row g-3">
-            {{-- Kelompokkan per grup: >1 penerima = FOLDER berisi sub-card; 1 = card biasa. --}}
-            @forelse($tasks->groupBy('group_id') as $gid => $gtasks)
+            {{-- FOLDER (grup >1 penerima) selalu di ATAS — tetap di atas walau ada
+                 sub-task yang sudah selesai — lalu SOLO di bawah (urutan mengikuti
+                 aturan query: deadline hari ini, progres, terbaru). --}}
+            @php
+                // toBase() agar merge memakai Support Collection (bukan Eloquent yg getKey).
+                $allGroups = $tasks->groupBy('group_id')->toBase();
+                $ordered = $allGroups->filter(fn ($g) => $g->count() > 1)
+                    ->merge($allGroups->filter(fn ($g) => $g->count() === 1));
+            @endphp
+            @forelse($ordered as $gid => $gtasks)
                 @if($gtasks->count() > 1)
                     @include('livewire.pages.admin.task.partials.task-folder', ['gtasks' => $gtasks])
                 @else
@@ -399,16 +475,29 @@ Task Saya || PT. Asthana Cipta Mandiri
                     <label class="ts-form-label">Penerima <span class="text-danger">*</span>
                         <span class="text-muted fw-normal" style="font-size:.8rem;">— bisa pilih lebih dari satu</span>
                     </label>
-                    <div class="ts-multi @error('t_user_ids') is-invalid @enderror">
-                        @forelse($bawahan as $b)
-                        <label class="ts-multi-item {{ in_array((string) $b->id, array_map('strval', $t_user_ids)) ? 'checked' : '' }}">
-                            <input type="checkbox" value="{{ $b->id }}" wire:model.live="t_user_ids">
-                            <span class="ts-multi-check"><i class="bi bi-check-lg"></i></span>
-                            <span>{{ $b->name }}</span>
-                        </label>
-                        @empty
-                        <div class="text-muted small p-2">Tidak ada bawahan.</div>
-                        @endforelse
+                    <div x-data="{ q: '', names: @js($bawahan->pluck('name')->map(fn ($n) => mb_strtolower($n))->values()), get anyVisible() { return this.names.some(n => n.includes(this.q.toLowerCase())); } }">
+                        @if($bawahan->count() > 5)
+                        <div class="ts-multi-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" x-model="q" placeholder="Cari nama bawahan..." class="form-control form-control-sm">
+                        </div>
+                        @endif
+                        <div class="ts-multi @error('t_user_ids') is-invalid @enderror">
+                            @forelse($bawahan as $b)
+                            <label class="ts-multi-item {{ in_array((string) $b->id, array_map('strval', $t_user_ids)) ? 'checked' : '' }}"
+                                x-show="@js(mb_strtolower($b->name)).includes(q.toLowerCase())">
+                                <input type="checkbox" value="{{ $b->id }}" wire:model.live="t_user_ids">
+                                <span class="ts-multi-av">{{ strtoupper(mb_substr($b->name, 0, 1)) }}</span>
+                                <span class="ts-multi-name">{{ $b->name }}</span>
+                                <span class="ts-multi-check"><i class="bi bi-check-lg"></i></span>
+                            </label>
+                            @empty
+                            <div class="text-muted small p-2">Tidak ada bawahan.</div>
+                            @endforelse
+                            @if($bawahan->count())
+                            <div class="text-muted small p-2 text-center" x-show="!anyVisible" x-cloak>Tidak ada nama yang cocok.</div>
+                            @endif
+                        </div>
                     </div>
                     <div class="ts-multi-count">{{ count($t_user_ids) }} penerima dipilih</div>
                     @error('t_user_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
@@ -468,9 +557,15 @@ Task Saya || PT. Asthana Cipta Mandiri
                         @if($editingTaskId)
                         @foreach($editAttachments as $att)
                         <div class="ts-thumb">
-                            <a href="{{ Storage::url($att->path) }}" target="_blank" class="d-block text-decoration-none">
-                                <div class="media">@if($att->isImage())<img src="{{ Storage::url($att->path) }}" alt="">@else<i class="bi bi-file-earmark-text"></i>@endif</div>
+                            @if($att->isImage())
+                            <a href="javascript:void(0)" role="button" class="ts-img-zoom d-block text-decoration-none" data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar">
+                                <div class="media"><img src="{{ Storage::url($att->path) }}" alt="" style="cursor:zoom-in;"></div>
                             </a>
+                            @else
+                            <a href="{{ Storage::url($att->path) }}" target="_blank" class="d-block text-decoration-none">
+                                <div class="media"><i class="bi bi-file-earmark-text"></i></div>
+                            </a>
+                            @endif
                             <div class="cap">{{ $att->name }}</div>
                             <button type="button" class="rm" wire:click="removeAttachment('{{ $att->id }}')" title="Hapus"><i class="bi bi-x"></i></button>
                         </div>
@@ -552,7 +647,7 @@ Task Saya || PT. Asthana Cipta Mandiri
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($activeTask->attachments as $att)
                         @if($att->isImage())
-                        <a href="{{ Storage::url($att->path) }}" target="_blank"><img src="{{ Storage::url($att->path) }}" style="width:58px;height:58px;object-fit:cover;border-radius:10px;"></a>
+                        <a href="javascript:void(0)" role="button" class="ts-img-zoom" data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar"><img src="{{ Storage::url($att->path) }}" style="width:58px;height:58px;object-fit:cover;border-radius:10px;cursor:zoom-in;"></a>
                         @else
                         <a href="{{ Storage::url($att->path) }}" target="_blank" class="border rounded-3 px-2 py-1 d-inline-flex align-items-center gap-1 text-decoration-none" style="font-size:.78rem;"><i class="bi bi-file-earmark"></i>{{ Str::limit($att->name, 18) }}</a>
                         @endif
@@ -591,13 +686,21 @@ Task Saya || PT. Asthana Cipta Mandiri
                     {{ $activeTask->progress==='selesai' ? 'Task sudah selesai — status terkunci.' : 'Melewati deadline → Tidak Selesai. Status terkunci.' }}
                 </span>
                 @else
-                <span class="text-muted" style="font-size:.8rem;"><i class="bi bi-info-circle me-1"></i>Perbarui status task Anda</span>
+                @php $lewat = $activeTask->isLewatDeadline(); @endphp
+                <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size:.8rem;">
+                    <i class="bi {{ $lewat ? 'bi-alarm-fill text-warning' : 'bi-info-circle' }}"></i>
+                    {{ $lewat ? 'Melebihi deadline — bonus dikurangi bila diselesaikan' : 'Perbarui status task Anda' }}
+                </span>
                 <div class="d-flex gap-2">
                     @if($activeTask->progress !== 'dikerjakan')
                     <button type="button" wire:click="mulaiKerjakan('{{ $activeTask->id }}')" class="btn btn-outline-info btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1"><i class="bi bi-play-circle"></i> Mulai Kerjakan</button>
                     @endif
                     @if($activeTask->progress === 'dikerjakan')
-                    <button type="button" data-id="{{ $activeTask->id }}" class="btn btn-success btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ts-selesai-btn"><i class="bi bi-check2-circle"></i> Tandai Selesai</button>
+                        @if($lewat)
+                        <button type="button" data-id="{{ $activeTask->id }}" class="btn btn-warning btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ts-selesai-late-btn"><i class="bi bi-alarm-fill"></i> Tandai Selesai Melebihi Deadline</button>
+                        @else
+                        <button type="button" data-id="{{ $activeTask->id }}" class="btn btn-success btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ts-selesai-btn"><i class="bi bi-check2-circle"></i> Tandai Selesai</button>
+                        @endif
                     @else
                     <button type="button" disabled class="btn btn-success btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 opacity-50" style="cursor:not-allowed;" title="Klik 'Mulai Kerjakan' dulu"><i class="bi bi-lock-fill"></i> Tandai Selesai</button>
                     @endif
@@ -684,6 +787,30 @@ Task Saya || PT. Asthana Cipta Mandiri
 
     @push('scripts')
     <script>
+        // Popup glossy untuk memperbesar lampiran/komentar gambar (seragam dgn fitur lain,
+        // center & tanpa scroll). Di-bind sekali via guard.
+        if (!window.__tsImgZoomBound) {
+            window.__tsImgZoomBound = true;
+            document.addEventListener('click', function (e) {
+                const trigger = e.target.closest && e.target.closest('.ts-img-zoom');
+                if (!trigger) return;
+                e.preventDefault();
+                const url = trigger.getAttribute('data-img-url');
+                if (!url) return;
+                if (typeof Swal === 'undefined') { window.open(url, '_blank'); return; }
+                Swal.fire({
+                    html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + url + '" alt="Gambar" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    width: 'auto',
+                    padding: '1rem',
+                });
+            });
+        }
+
         // Widget @mention untuk composer diskusi grup (Alpine).
         window.tsMention = function (members) {
             return {
@@ -740,6 +867,20 @@ Task Saya || PT. Asthana Cipta Mandiri
                     title: 'Tandai task selesai?',
                     text: 'Waktu penyelesaian dicatat sekarang & status akan terkunci.',
                     icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, selesai!', cancelButtonText: 'Batal', ...glossyConfig
+                }).then(r => { if (r.isConfirmed) Livewire.find(c.getAttribute('wire:id')).call('tandaiSelesai', id); });
+            });
+
+            // Tandai selesai MELEBIHI deadline (bonus dikurangi).
+            document.addEventListener('click', function (event) {
+                const b = event.target.closest('.ts-selesai-late-btn');
+                if (!b) return;
+                event.preventDefault();
+                const c = b.closest('[wire\\:id]'); if (!c) return;
+                const id = b.getAttribute('data-id');
+                Swal.fire({
+                    title: 'Selesaikan melebihi deadline?',
+                    text: 'Task ini sudah lewat deadline. Bonusnya akan dikurangi otomatis (sesuai bobot). Lanjutkan?',
+                    icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, tandai selesai', cancelButtonText: 'Batal', ...glossyConfig
                 }).then(r => { if (r.isConfirmed) Livewire.find(c.getAttribute('wire:id')).call('tandaiSelesai', id); });
             });
         }

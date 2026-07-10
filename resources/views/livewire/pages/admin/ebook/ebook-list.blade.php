@@ -1,6 +1,6 @@
 
 @section('title')
-Data Ebook || PT. Asthana Cipta Mandiri
+Data Ebook || lemon
 @stop
 <div>
     <style>

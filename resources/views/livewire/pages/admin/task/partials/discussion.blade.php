@@ -51,7 +51,7 @@
             @endif
             @if($c->file_path)
                 @if($c->isImage())
-                <a href="{{ Storage::url($c->file_path) }}" target="_blank"><img src="{{ Storage::url($c->file_path) }}" style="max-width:160px; border-radius:10px; margin-top:6px;"></a>
+                <a href="javascript:void(0)" role="button" class="ts-img-zoom" data-img-url="{{ Storage::url($c->file_path) }}" title="Perbesar gambar"><img src="{{ Storage::url($c->file_path) }}" style="max-width:160px; border-radius:10px; margin-top:6px; cursor:zoom-in;"></a>
                 @else
                 <a href="{{ Storage::url($c->file_path) }}" target="_blank" class="d-inline-flex align-items-center gap-1 mt-1" style="font-size:.8rem;"><i class="bi bi-paperclip"></i>{{ $c->file_name }}</a>
                 @endif

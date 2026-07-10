@@ -15,58 +15,217 @@ new class extends Component
 
 <div id="sidebar">
     <style>
-        .asthana-brand {
+        /* ============ Sidebar — tema lemon (seragam dengan halaman login) ============ */
+        #sidebar .sidebar-wrapper {
+            background: #ffffff;
+            border-right: 1px solid #eef0f4;
+        }
+
+        /* ----- Brand: logo & teks persis seperti login ----- */
+        #sidebar .sidebar-header {
+            padding: 1.15rem 1.1rem .5rem;
+        }
+
+        #sidebar .logo {
+            padding: 0;
+        }
+
+        #sidebar .lemon-brand-side {
             display: inline-flex;
             align-items: center;
-            gap: .6rem;
+            gap: .65rem;
         }
 
-        .asthana-brand .asthana-logo {
-            height: 50px;
-            width: auto;
-            max-width: none;
+        #sidebar .lemon-logo {
+            width: 44px;
+            height: 44px;
+            margin: 0;
             flex-shrink: 0;
+            filter: drop-shadow(0 8px 14px rgba(202, 138, 4, .35));
         }
 
-        .asthana-brand .ab-text {
+        #sidebar .lemon-spin {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: lemonBob 4s ease-in-out infinite;
+        }
+
+        #sidebar .lemon-pulse {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: lemonJuice 4s ease-in-out infinite;
+        }
+
+        @keyframes lemonBob {
+            0%, 100% { transform: rotate(-8deg) translateY(0); }
+            50% { transform: rotate(8deg) translateY(-5px); }
+        }
+
+        @keyframes lemonJuice {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #sidebar .lsb-text {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            line-height: 1.14;
+            line-height: 1;
         }
 
-        .asthana-brand .ab-main {
+        #sidebar .lemon-brand {
+            font-size: 1.5rem;
             font-weight: 800;
-            font-size: .96rem;
-            letter-spacing: .01em;
-            color: #1e293b;
+            letter-spacing: -.5px;
+            line-height: 1;
+            margin: 0;
+            background: linear-gradient(135deg, #ca8a04, #4d7c0f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
             white-space: nowrap;
         }
 
-        .asthana-brand .ab-sub {
-            font-weight: 600;
-            font-size: .68rem;
-            letter-spacing: .16em;
+        #sidebar .lemon-by {
+            font-size: .6rem;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            color: #8a90a3;
-            margin-top: 1px;
+            font-weight: 700;
+            color: #a3a3a3;
+            margin: 3px 0 0;
             white-space: nowrap;
         }
 
-        .sidebar-header .logo {
-            padding: .35rem 0;
+        /* ----- Judul section ----- */
+        #sidebar .sidebar-title {
+            color: #a0a6b4;
+            font-size: .68rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 0 1.1rem;
+            margin: 1.35rem 0 .35rem;
+        }
+
+        /* ----- Item menu ----- */
+        #sidebar .sidebar-menu {
+            padding: 0 .35rem;
+        }
+
+        #sidebar .sidebar-item {
+            margin: 3px .3rem;
+        }
+
+        #sidebar .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            border-radius: 12px;
+            padding: .68rem .85rem;
+            color: #556070;
+            font-weight: 600;
+            font-size: .93rem;
+            transition: background .18s ease, color .18s ease;
+        }
+
+        #sidebar .sidebar-link i {
+            font-size: 1.08rem;
+            color: #9aa0ae;
+            min-width: 20px;
+            text-align: center;
+            transition: color .18s ease;
+        }
+
+        #sidebar .sidebar-link:hover {
+            background: rgba(132, 204, 22, .10);
+            color: #4d7c0f;
+        }
+
+        #sidebar .sidebar-link:hover i {
+            color: #65a30d;
+        }
+
+        /* Aktif — item sederhana (Dashboard, Task) jadi pil gradien lime */
+        #sidebar .sidebar-item.active:not(.has-sub)>.sidebar-link {
+            background: linear-gradient(135deg, #84cc16, #4d7c0f);
+            color: #fff;
+            box-shadow: 0 8px 16px rgba(101, 163, 13, .28);
+        }
+
+        #sidebar .sidebar-item.active:not(.has-sub)>.sidebar-link i {
+            color: #fff;
+        }
+
+        /* Aktif — parent (punya submenu): sorotan lembut */
+        #sidebar .sidebar-item.has-sub.active>.sidebar-link {
+            background: rgba(132, 204, 22, .10);
+        }
+
+        /* Recolor semua text-primary di sidebar jadi lime (state aktif parent) */
+        #sidebar .text-primary {
+            color: #4d7c0f !important;
+        }
+
+        #sidebar i.text-primary {
+            color: #65a30d !important;
+        }
+
+        /* ----- Submenu ----- */
+        #sidebar .submenu-link {
+            border-radius: 10px;
+            padding: .5rem .8rem .5rem 2.7rem;
+            color: #6b7280;
+            font-weight: 500;
+            font-size: .88rem;
+            transition: background .16s ease, color .16s ease;
+        }
+
+        #sidebar .submenu-link:hover {
+            background: rgba(132, 204, 22, .08);
+            color: #4d7c0f;
+        }
+
+        #sidebar .submenu-item.active>.submenu-link {
+            background: linear-gradient(135deg, #84cc16, #4d7c0f);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 8px 16px rgba(101, 163, 13, .28);
+        }
+
+        #sidebar .submenu-item.active>.submenu-link:hover {
+            color: #fff;
+        }
+
+        /* ----- Logout ----- */
+        #sidebar .sidebar-item button.sidebar-link {
+            color: #e11d48;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link i {
+            color: #f43f5e;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link:hover {
+            background: rgba(244, 63, 94, .10);
+            color: #be123c;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link:hover i {
+            color: #e11d48;
+        }
+
+        #sidebar .sidebar-toggler .sidebar-hide {
+            color: #9aa0ae;
         }
     </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="logo">
-                    <a href="{{ route('admin.dashboard') }}" class="asthana-brand text-decoration-none" wire:navigate>
-                        <img src="{{ asset('storage/img/archive/logo-icon.png') }}" alt="Asthana Cipta Mandiri"
-                            class="asthana-logo" onerror="this.style.display='none'">
-                        <span class="ab-text">
-                            <span class="ab-main">PT. Asthana</span>
-                            <span class="ab-sub">Cipta Mandiri</span>
+                    <a href="{{ route('admin.dashboard') }}" class="lemon-brand-side text-decoration-none" wire:navigate>
+                        @include('livewire.pages.auth.partials.lemon-logo')
+                        <span class="lsb-text">
+                            <span class="lemon-brand">lemon</span>
+                            <span class="lemon-by">by acm</span>
                         </span>
                     </a>
                 </div>
@@ -192,17 +351,17 @@ new class extends Component
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_dataakun'))
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
+                            <a wire:navigate href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_product'))
                         <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                            <a wire:navigate href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_bundlings'))
                         <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
+                            <a wire:navigate href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
                         </li>
                         @endif
                     </ul>

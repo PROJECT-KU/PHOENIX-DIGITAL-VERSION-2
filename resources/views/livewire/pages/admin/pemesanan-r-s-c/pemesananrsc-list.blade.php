@@ -1,5 +1,5 @@
 @section('title')
-Data Pesanan RSC || PT. Asthana Cipta Mandiri
+Data Pesanan RSC || lemon
 @stop
 <div>
     <style>
@@ -160,7 +160,9 @@ Data Pesanan RSC || PT. Asthana Cipta Mandiri
                         @endforeach
                     </select>
                     @if ($search || $filterMonth || $filterYear)
-                    <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3" title="Reset filter">
+                    <button wire:click="resetFilters" type="button"
+                        class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                        title="Reset filter">
                         <i class="bi bi-x-circle"></i>
                     </button>
                     @endif

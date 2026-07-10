@@ -1,6 +1,5 @@
-
 @section('title')
-Edit Produk || PT. Asthana Cipta Mandiri
+Update Produk || lemon
 @stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -13,7 +12,7 @@ Edit Produk || PT. Asthana Cipta Mandiri
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Product', 'url' => route('admin.product.index')],
-                        ['name' => 'Edit Product'],
+                        ['name' => 'Update Product'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

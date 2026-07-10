@@ -1,6 +1,6 @@
 
 @section('title')
-Data Pesanan || PT. Asthana Cipta Mandiri
+Data Pesanan || lemon
 @stop
 <div wire:poll.15s="watchNewPayments">
     <div class="container-fluid">
@@ -72,7 +72,8 @@ Data Pesanan || PT. Asthana Cipta Mandiri
                             @endforeach
                         </select>
                         @if ($search || $filterMonth || $filterYear)
-                        <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3"
+                        <button wire:click="resetFilters" type="button"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
                             title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>

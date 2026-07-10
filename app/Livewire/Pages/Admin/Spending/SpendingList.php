@@ -93,8 +93,9 @@ class SpendingList extends Component
 
         $isSearching = ! empty($this->search);
 
+        // Urutkan dari yang paling baru ditambahkan (berlaku untuk "lainnya" & "pembelian_akun").
         $spendings = $this->buildFilteredQuery()
-            ->orderBy('tanggal_transaksi', 'desc')
+            ->orderByDesc('created_at')
             ->paginate(10);
 
         // Total pengeluaran per jenis: ikut hasil pencarian bila sedang mencari,
@@ -225,7 +226,8 @@ class SpendingList extends Component
             $this->applyPeriode($query);
         }
 
-        $records = $query->orderBy('tanggal_transaksi', 'desc')->get();
+        // Urutkan dari yang paling baru ditambahkan (seragam dengan tampilan list).
+        $records = $query->orderByDesc('created_at')->get();
 
         $rows = $records->map(function (Spending $s) {
             $isAkun = $s->jenis_pengeluaran === 'pembelian_akun';

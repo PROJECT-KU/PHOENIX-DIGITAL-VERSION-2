@@ -24,6 +24,7 @@ class Customer extends Model
         'status_member',
         'point',
         'point_balance',
+        'points_year',
     ];
 
     public function orders()
@@ -73,11 +74,15 @@ class Customer extends Model
      */
     public function updatePoints(): void
     {
+        // Pastikan poin tahun lalu sudah kadaluarsa sebelum menambah poin baru.
+        $this->applyYearlyExpiry();
+
         $calculation = $this->calculateYearlyPoints();
 
         $this->update([
             'point' => $this->point + $calculation['points'],
             'point_balance' => $calculation['balance'],
+            'points_year' => now()->year,
         ]);
 
         if ($calculation['total_amount'] > 0) {
@@ -116,6 +121,50 @@ class Customer extends Model
     }
 
     /**
+     * Tanggal kadaluarsa poin: akhir tahun kalender berjalan (31 Desember).
+     * Poin di-reset tiap 1 Januari, jadi poin yang ada sekarang berlaku sampai
+     * 31 Desember tahun ini.
+     */
+    public function pointsExpireAt(): \Carbon\Carbon
+    {
+        return \Carbon\Carbon::create(now()->year, 12, 31)->endOfDay();
+    }
+
+    /**
+     * Label tanggal kadaluarsa poin (mis. "31 Desember 2026").
+     */
+    public function pointsExpireLabel(string $format = 'd F Y'): string
+    {
+        return $this->pointsExpireAt()->locale('id')->translatedFormat($format);
+    }
+
+    /**
+     * Terapkan kadaluarsa tahunan secara lazy: bila poin milik tahun sebelumnya,
+     * nolkan (sudah kadaluarsa). Dipanggil di titik baca/pakai poin sebagai
+     * pengaman bila command terjadwal terlewat. Mengembalikan true bila di-reset.
+     */
+    public function applyYearlyExpiry(): bool
+    {
+        $currentYear = now()->year;
+
+        if ((int) $this->points_year === $currentYear) {
+            return false;
+        }
+
+        // Poin lama (tahun sebelumnya) dianggap kadaluarsa. Untuk data lama yang
+        // belum punya points_year (null), adopsi ke tahun berjalan tanpa menolkan.
+        if ($this->points_year !== null && (int) $this->points_year < $currentYear) {
+            $this->point = 0;
+            $this->point_balance = 0;
+        }
+
+        $this->points_year = $currentYear;
+        $this->save();
+
+        return true;
+    }
+
+    /**
      * Generate unique referral code
      */
     public static function generateReferralCode(): string
@@ -141,7 +190,10 @@ class Customer extends Model
      */
     public function addReferralPoints(int $points = 2): void
     {
+        // Poin referral juga masuk tahun berjalan (kadaluarsa akhir tahun ini).
+        $this->applyYearlyExpiry();
         $this->increment('point', $points);
+        $this->update(['points_year' => now()->year]);
     }
 
     /**

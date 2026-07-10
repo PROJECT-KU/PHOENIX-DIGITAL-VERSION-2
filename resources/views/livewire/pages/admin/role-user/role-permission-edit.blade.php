@@ -1,6 +1,6 @@
 
 @section('title')
-Kelola Role & Hak Akses || PT. Asthana Cipta Mandiri
+Kelola Role & Hak Akses || lemon
 @stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
