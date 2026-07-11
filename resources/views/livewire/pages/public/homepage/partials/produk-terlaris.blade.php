@@ -64,7 +64,7 @@
                             Akun Scopus Lisensi & Scopus AI memberi akses ke database jurnal ilmiah terbesar dengan
                             dukungan AI untuk pencarian, analisis, dan rekomendasi publikasi. Solusi ideal bagi
                             peneliti, akademisi, dan profesional yang membutuhkan sumber ilmiah terkini.</p>
-                        <a href="#" class="btn-shop">Explore Products <i class="bi bi-arrow-right"></i></a>
+                        <a href="{{ route('shop.index') }}" class="btn-shop">Explore Products <i class="bi bi-arrow-right"></i></a>
                     </div>
                 </div>
             </div>
@@ -78,7 +78,8 @@
                             </div>
                             <div class="category-content">
                                 <h4>Grammarly Premium</h4>
-                                <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                <p>Perbaiki tata bahasa & gaya tulisan secara otomatis.</p>
+                                <a href="{{ route('shop.index') }}" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
                     </div>
@@ -89,7 +90,8 @@
                             </div>
                             <div class="category-content">
                                 <h4>Quillbot Premium</h4>
-                                <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                <p>Parafrase & rangkum teks dengan cepat.</p>
+                                <a href="{{ route('shop.index') }}" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
                     </div>
@@ -100,7 +102,8 @@
                             </div>
                             <div class="category-content">
                                 <h4>Consensus Premium</h4>
-                                <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                <p>Temukan jawaban dari jurnal ilmiah pakai AI.</p>
+                                <a href="{{ route('shop.index') }}" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
                     </div>
@@ -111,7 +114,8 @@
                             </div>
                             <div class="category-content">
                                 <h4>Gamma AI Premium</h4>
-                                <a href="#" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
+                                <p>Buat presentasi profesional dalam sekejap.</p>
+                                <a href="{{ route('shop.index') }}" class="card-link">Shop Now <i class="bi bi-arrow-right"></i></a>
                             </div>
                         </div>
                     </div>

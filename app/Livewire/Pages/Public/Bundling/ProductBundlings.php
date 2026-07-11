@@ -73,7 +73,7 @@ class ProductBundlings extends Component
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
-        $this->dispatch('success-add-to-cart');
+        $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
     }
 
     private function getCartCount(): int
@@ -92,6 +92,7 @@ class ProductBundlings extends Component
             'product4',
             'product5',
         ])
+            ->where('status', 'active')
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nama_paket', 'like', "%{$this->search}%")

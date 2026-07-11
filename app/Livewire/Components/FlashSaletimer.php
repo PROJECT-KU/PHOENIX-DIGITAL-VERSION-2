@@ -16,6 +16,27 @@ class FlashSaletimer extends Component
 
     public $customer = null;
 
+    // ---- Modal pilih durasi (sebelum masuk keranjang) ----
+    public bool $showDurationModal = false;
+
+    public $pickProductId = null;
+
+    public string $pickProductName = '';
+
+    public $pickProductImage = null;
+
+    public array $pickPackages = [];
+
+    public $pickType = null;
+
+    public $pickValue = null;
+
+    public int $pickPerBulan = 0;      // harga per bulan (untuk durasi custom)
+
+    public int $pickCustomMonths = 3;  // jumlah bulan pilihan customer
+
+    public bool $pickIsCustom = false; // sedang memilih durasi custom?
+
     protected PromoService $promoService;
 
     public function boot(PromoService $promoService)
@@ -34,15 +55,14 @@ class FlashSaletimer extends Component
             return;
         }
 
-        $productIds = $this->flashSale->products->pluck('id')->toArray();
+        $products = $this->flashSale->products;
 
-        if (empty($productIds)) {
-            $this->featuredProducts = Product::inRandomOrder()->take(4)->get();
+        if ($products->isEmpty()) {
+            // Tidak ada produk khusus → tampilkan produk terbaru (stabil, tidak acak)
+            $this->featuredProducts = Product::latest()->take(4)->get();
         } else {
-            $this->featuredProducts = Product::whereIn('id', $productIds)
-                ->inRandomOrder()
-                ->take(4)
-                ->get();
+            // Pertahankan urutan yang diatur admin di flash sale (stabil, tidak berubah-ubah)
+            $this->featuredProducts = $products->take(4)->values();
         }
     }
 
@@ -114,6 +134,199 @@ class FlashSaletimer extends Component
         }
 
         return $count > 0 ? round($avgPercentage / $count) : 0;
+    }
+
+    /**
+     * Buka modal pilih durasi untuk sebuah produk (seperti di halaman Shop).
+     */
+    public function openDuration($productId)
+    {
+        $product = Product::find($productId);
+        if (! $product) {
+            $this->dispatch('cart-error', message: 'Produk tidak ditemukan.');
+
+            return;
+        }
+
+        // Pakai daftarHarga() (tabel harga fleksibel) — SAMA seperti halaman Shop,
+        // jadi durasi apa pun yang di-set admin (mis. 2 bulan) ikut muncul.
+        $rows = $product->daftarHarga();
+
+        if ($rows->isEmpty()) {
+            $this->pushToCart($productId, 'bulan', 1);   // tidak ada harga → fallback
+
+            return;
+        }
+
+        $perBulan = (int) ($product->harga_perbulan ?? 0);
+
+        $packages = $rows->map(function ($r) {
+            $harga = (int) $r['harga'];
+            $val = (int) $r['durasi_value'];
+            $type = $r['durasi_type'];
+
+            // Harga setelah diskon promo/flash sale
+            $discounted = (int) round($this->getDiscountedPrice($harga));
+
+            // "Hemat" = selisih promo (tampil di SEMUA durasi jika produk kena promo)
+            $savings = max(0, $harga - $discounted);
+
+            return [
+                'duration_type' => $type,
+                'duration_value' => $val,
+                'price' => $harga,
+                'label' => $val.' '.ucfirst($type),
+                'savings' => $savings,
+                'discounted' => $discounted,
+            ];
+        })->values()->all();
+
+        $this->pickProductId = $productId;
+        $this->pickProductName = $product->nama_akun;
+        $this->pickProductImage = $product->image;
+        $this->pickPackages = $packages;
+        $this->pickPerBulan = $perBulan;
+        $this->pickIsCustom = false;
+        $this->pickType = $packages[0]['duration_type'];
+        $this->pickValue = (int) $packages[0]['duration_value'];
+        $this->showDurationModal = true;
+    }
+
+    public function selectPackage($type, $value)
+    {
+        $this->pickIsCustom = false;
+        $this->pickType = $type;
+        $this->pickValue = (int) $value;
+    }
+
+    /** Pilih durasi custom (jumlah bulan bebas): harga = bulan × harga per bulan. */
+    public function chooseCustom()
+    {
+        if ($this->pickPerBulan <= 0) {
+            return;
+        }
+        $this->pickIsCustom = true;
+        $this->pickType = 'bulan';
+        $this->pickValue = (int) $this->pickCustomMonths;
+    }
+
+    public function incCustom()
+    {
+        $this->pickCustomMonths = min(60, (int) $this->pickCustomMonths + 1);
+        $this->chooseCustom();
+    }
+
+    public function decCustom()
+    {
+        $this->pickCustomMonths = max(1, (int) $this->pickCustomMonths - 1);
+        $this->chooseCustom();
+    }
+
+    public function updatedPickCustomMonths($value)
+    {
+        $v = (int) $value;
+        $this->pickCustomMonths = max(1, min(60, $v ?: 1));
+        if ($this->pickIsCustom) {
+            $this->pickValue = $this->pickCustomMonths;
+        }
+    }
+
+    public function closeDuration()
+    {
+        $this->showDurationModal = false;
+    }
+
+    public function confirmAddToCart()
+    {
+        if (! $this->pickProductId || ! $this->pickType || ! $this->pickValue) {
+            return;
+        }
+
+        $this->pushToCart($this->pickProductId, $this->pickType, (int) $this->pickValue);
+        $this->showDurationModal = false;
+    }
+
+    /**
+     * Masukkan ke keranjang (struktur sama dengan halaman Shop).
+     * Harga tersimpan = harga dasar durasi (diskon promo diterapkan saat checkout).
+     */
+    private function pushToCart($productId, $durationType, $durationValue)
+    {
+        $product = Product::find($productId);
+        if (! $product) {
+            $this->dispatch('cart-error', message: 'Produk tidak ditemukan.');
+
+            return;
+        }
+
+        $price = (int) $product->hargaUntuk((int) $durationValue, $durationType);
+        // Durasi custom (admin belum set harga) → bulan × harga per bulan
+        if ($price <= 0 && $durationType === 'bulan') {
+            $perBulan = (int) ($product->harga_perbulan ?? 0);
+            if ($perBulan > 0 && (int) $durationValue > 0) {
+                $price = $perBulan * (int) $durationValue;
+            }
+        }
+        if ($price <= 0) {
+            $this->dispatch('cart-error', message: 'Harga paket belum tersedia.');
+
+            return;
+        }
+
+        $cart = session()->get('cart', []);
+        $cartKey = "{$productId}_{$durationType}_{$durationValue}";
+
+        if (isset($cart[$cartKey])) {
+            $cart[$cartKey]['quantity']++;
+            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
+        } else {
+            $cart[$cartKey] = [
+                'product_id' => $productId,
+                'product_name' => $product->nama_akun,
+                'product_image' => $product->image,
+                'duration_type' => $durationType,
+                'duration_value' => (int) $durationValue,
+                'price' => $price,
+                'quantity' => 1,
+                'subtotal' => $price,
+            ];
+        }
+
+        session()->put('cart', $cart);
+
+        $this->dispatch('cart-updated', count: array_sum(array_column($cart, 'quantity')));
+        $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
+    }
+
+    /**
+     * Diskon "sampai" terbesar: ambil angka TERBESAR dari 4 nilai
+     * (persen & nominal, member & non-member). Tentukan apakah nominal atau persen.
+     */
+    public function getBestDiscount()
+    {
+        if (! $this->flashSale) {
+            return null;
+        }
+
+        $memberNominal = (float) ($this->flashSale->diskon_member_nominal ?? 0);
+        $nonMemberNominal = (float) ($this->flashSale->diskon_non_member_nominal ?? 0);
+
+        $vals = [
+            (float) ($this->flashSale->diskon_member_persen ?? 0),
+            $memberNominal,
+            (float) ($this->flashSale->diskon_non_member_persen ?? 0),
+            $nonMemberNominal,
+        ];
+
+        $max = max($vals);
+        if ($max <= 0) {
+            return null;
+        }
+
+        // Angka terbesar itu nominal bila sama dengan salah satu nilai nominal ( > 0 ).
+        $isNominal = ($max == $memberNominal || $max == $nonMemberNominal) && $max > 0;
+
+        return ['value' => $max, 'isNominal' => $isNominal];
     }
 
     public function render()

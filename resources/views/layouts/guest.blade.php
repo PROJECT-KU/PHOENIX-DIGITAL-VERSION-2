@@ -41,6 +41,9 @@
 </head>
 
 <body class="index-page">
+    <!-- Garis animasi latar: membentang dari banner s/d footer, berjalan saat scroll -->
+    <canvas id="ph-page-lines" aria-hidden="true"></canvas>
+
     <header id="header" class="header sticky-top">
         <!-- Top Bar -->
         <div class="py-2 top-bar">
@@ -140,6 +143,7 @@
                         <ul>
                             <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
                             <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
+                            <li><a class="{{request()->routeIs('bundling.*') ? 'active' : ''}}" href="{{ route('bundling.product-bundlings') }}">Bundling</a></li>
                             <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
                             <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
                         </ul>
@@ -179,18 +183,15 @@
                                     <span class="pw-sub">Digital</span>
                                 </span>
                             </a>
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in nibh vehicula,
-                                facilisis magna ut, consectetur lorem. Proin eget tortor risus.</p>
+                            <p>Toko akun premium, lisensi, &amp; tools AI untuk riset dan produktivitas.
+                                Proses cepat, aman, dan bergaransi — teman hemat kebutuhan digital Anda.</p>
 
                             <div class="mt-4 social-links">
-                                <h5>Connect With Us</h5>
+                                <h5>Ikuti Kami</h5>
                                 <div class="social-icons">
-                                    <a href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
-                                    <a href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
-                                    <a href="#" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
-                                    <a href="#" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>
-                                    <a href="#" aria-label="Pinterest"><i class="bi bi-pinterest"></i></a>
-                                    <a href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+                                    <a href="https://web.facebook.com/profile.php?id=61586376808425" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                                    <a href="https://www.instagram.com/phoenixdigital.id/" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                                    <a href="https://www.tiktok.com/@phoenix_digitalwarehouse" target="_blank" rel="noopener" aria-label="TikTok"><i class="bi bi-tiktok"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -198,48 +199,33 @@
 
                     <div class="col-lg-2 col-md-6 col-sm-6">
                         <div class="footer-widget">
-                            <h4>Product</h4>
+                            <h4>Menu</h4>
                             <ul class="footer-links">
-                                <li><a href="category.html">New Arrivals</a></li>
-                                <li><a href="category.html">Bestsellers</a></li>
-                                <li><a href="category.html">Women's Clothing</a></li>
-                                <li><a href="category.html">Men's Clothing</a></li>
-                                <li><a href="category.html">Accessories</a></li>
-                                <li><a href="category.html">Sale</a></li>
+                                <li><a href="{{ route('homepage') }}">Beranda</a></li>
+                                <li><a href="{{ route('shop.index') }}">Shop</a></li>
+                                <li><a href="{{ route('bundling.product-bundlings') }}">Paket Bundling</a></li>
+                                <li><a href="{{ route('order.history') }}">Riwayat Pesanan</a></li>
+                                <li><a href="/about">Tentang Kami</a></li>
+                                <li><a href="{{ route('contact') }}">Kontak</a></li>
                             </ul>
                         </div>
                     </div>
 
                     <div class="col-lg-4 col-md-6">
                         <div class="footer-widget">
-                            <h4>Contact Information</h4>
+                            <h4>Kontak</h4>
                             <div class="footer-contact">
                                 <div class="contact-item">
                                     <i class="bi bi-geo-alt"></i>
-                                    <span>123 Fashion Street, New York, NY 10001</span>
+                                    <span>Jl. Durmo, Ngemplak, Mlati, Sleman, Yogyakarta</span>
                                 </div>
-                                <div class="contact-item">
-                                    <i class="bi bi-telephone"></i>
-                                    <span>+1 (555) 123-4567</span>
-                                </div>
-                                <div class="contact-item">
-                                    <i class="bi bi-envelope"></i>
-                                    <span>hello@example.com</span>
-                                </div>
-                                <div class="contact-item">
-                                    <i class="bi bi-clock"></i>
-                                    <span>Monday-Friday: 9am-6pm<br>Saturday: 10am-4pm<br>Sunday: Closed</span>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 app-buttons">
-                                <a href="#" class="app-btn">
-                                    <i class="bi bi-apple"></i>
-                                    <span>App Store</span>
+                                <a class="contact-item" href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20bertanya%20tentang%20produk." target="_blank" rel="noopener" style="text-decoration:none">
+                                    <i class="bi bi-whatsapp"></i>
+                                    <span>0895-0596-7995</span>
                                 </a>
-                                <a href="#" class="app-btn">
-                                    <i class="bi bi-google-play"></i>
-                                    <span>Google Play</span>
+                                <a class="contact-item" href="mailto:halo@phoenixdigital.id" style="text-decoration:none">
+                                    <i class="bi bi-envelope"></i>
+                                    <span>halo@phoenixdigital.id</span>
                                 </a>
                             </div>
                         </div>
@@ -253,7 +239,7 @@
                 <div class="row gy-3 align-items-center">
                     <div class="col-lg-6 col-md-12">
                         <div class="copyright">
-                            <p>© <span>Copyright</span> <strong class="sitename">Phoenix</strong>. All Rights Reserved.
+                            <p>© {{ date('Y') }} <strong class="sitename">Phoenix Digital</strong>. Semua hak dilindungi.
                             </p>
                         </div>
                         <div class="mt-1 credits">
@@ -270,19 +256,14 @@
                             class="flex-wrap gap-4 d-flex justify-content-lg-end justify-content-center align-items-center">
                             <div class="payment-methods">
                                 <div class="payment-icons">
-                                    <i class="bi bi-credit-card" aria-label="Credit Card"></i>
-                                    <i class="bi bi-paypal" aria-label="PayPal"></i>
-                                    <i class="bi bi-apple" aria-label="Apple Pay"></i>
-                                    <i class="bi bi-google" aria-label="Google Pay"></i>
-                                    <i class="bi bi-shop" aria-label="Shop Pay"></i>
-                                    <i class="bi bi-cash" aria-label="Cash on Delivery"></i>
+                                    <span class="pay-chip"><i class="bi bi-bank"></i> Transfer</span>
+                                    <span class="pay-chip"><i class="bi bi-qr-code"></i> QRIS</span>
                                 </div>
                             </div>
 
                             <div class="legal-links">
-                                <a href="tos.html">Terms</a>
-                                <a href="privacy.html">Privacy</a>
-                                <a href="tos.html">Cookies</a>
+                                <a href="{{ route('terms') }}">Syarat &amp; Ketentuan</a>
+                                <a href="{{ route('privacy') }}">Kebijakan Privasi</a>
                             </div>
                         </div>
                     </div>
@@ -296,7 +277,7 @@
     <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i
             class="bi bi-arrow-up-short"></i></a>
 
-    <a href="https://wa.me/6281234567890" target="_blank" id="wa-button"
+    <a href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20bertanya%20tentang%20produk." target="_blank" rel="noopener" id="wa-button"
         class="wa-button d-flex align-items-center justify-content-center">
         <i class="bi bi-whatsapp"></i>
     </a>
@@ -316,6 +297,96 @@
     <script src="{{ asset('niceshop/assets/js/main.js') }}"></script>
     <script src="{{ asset('niceshop/assets/js/custom.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Init hero banner carousel (andal saat load & navigasi) -->
+    <script>
+        (function () {
+            function initPhoenixHero() {
+                if (!window.Swiper) return;
+                document.querySelectorAll('.phoenix-hero-swiper').forEach(function (el) {
+                    if (el.swiper) return; // sudah diinit
+                    var multi = el.dataset.multi === '1';
+                    new Swiper(el, {
+                        loop: multi,
+                        speed: 700,
+                        grabCursor: true,
+                        slidesPerView: 1,
+                        autoplay: multi ? { delay: 5500, disableOnInteraction: false } : false,
+                        pagination: { el: el.querySelector('.swiper-pagination'), type: 'bullets', clickable: true }
+                    });
+                });
+            }
+            window.addEventListener('load', initPhoenixHero);
+            document.addEventListener('livewire:navigated', initPhoenixHero);
+        })();
+    </script>
+
+    <!-- Garis animasi latar (banner → footer): mengalir + "berjalan" saat scroll -->
+    <script>
+        (function () {
+            const canvas = document.getElementById('ph-page-lines');
+            if (!canvas || !canvas.getContext) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const ctx = canvas.getContext('2d');
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            let w = 0, h = 0;
+
+            function resize() {
+                w = window.innerWidth; h = window.innerHeight;
+                canvas.width = w * dpr; canvas.height = h * dpr;
+                canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            // Beberapa lengkung yang MEMUSAT & MEREKAH seperti bilah SAYAP (mirip logo),
+            // meliuk vertikal turun sepanjang dokumen (di-anchor docY - scrollY → "berjalan"
+            // saat scroll). Tiap bilah beda amplitudo & fase → merekah/menyatu seperti sayap.
+            const AMP_BASE = () => Math.min(w * 0.32, 420);
+            // amp = pengali ayunan, ph = geser fase, wd = tebal, col = warna
+            const blades = [
+                { amp: 0.78, ph: 0.00, wd: 5.5, col: 'rgba(251,169,25,0.55)' },  // amber (dalam, tebal)
+                { amp: 0.92, ph: 0.12, wd: 4.5, col: 'rgba(244,120,45,0.50)' },
+                { amp: 1.06, ph: 0.26, wd: 3.5, col: 'rgba(242,101,34,0.42)' },  // oranye
+                { amp: 1.22, ph: 0.42, wd: 2.5, col: 'rgba(132,204,22,0.36)' },  // lime (luar, tipis)
+            ];
+            let t = 0;
+            function draw() {
+                t += 0.004;
+                const sy = window.scrollY || window.pageYOffset || 0;
+                ctx.clearRect(0, 0, w, h);
+
+                const cx = w * 0.5;
+                const A = AMP_BASE();
+                const yStart = sy - 140, yEnd = sy + h + 140;
+
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(242,101,34,0.16)';
+                ctx.shadowBlur = 8;
+
+                for (const b of blades) {
+                    ctx.beginPath();
+                    for (let docY = yStart; docY <= yEnd; docY += 6) {
+                        const x = cx
+                            + Math.sin(docY * 0.0042 + t + b.ph) * (A * b.amp)
+                            + Math.sin(docY * 0.011 + t * 0.6 + b.ph) * (A * b.amp * 0.22);
+                        const vy = docY - sy;
+                        docY === yStart ? ctx.moveTo(x, vy) : ctx.lineTo(x, vy);
+                    }
+                    ctx.strokeStyle = b.col;
+                    ctx.lineWidth = b.wd;
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+    </script>
 
 
     <!-- Main JS File -->

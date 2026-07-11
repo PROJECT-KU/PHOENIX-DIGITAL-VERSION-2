@@ -84,6 +84,8 @@ use App\Livewire\Pages\Public\About\AboutPage;
 use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
+use App\Livewire\Pages\Public\Legal\PrivacyPage;
+use App\Livewire\Pages\Public\Legal\TermsPage;
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
@@ -118,6 +120,8 @@ Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
+Route::get('/terms', TermsPage::class)->name('terms');
+Route::get('/privacy', PrivacyPage::class)->name('privacy');
 Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')

@@ -39,11 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.addEventListener("cart-success", (event) => {
     Swal.fire({
-        icon: "success",
-        title: "Berhasil!",
-        text: event.detail.message,
-        timer: 1500,
+        toast: true,
+        position: "top-end",
         showConfirmButton: false,
+        timer: 2400,
+        timerProgressBar: true,
+        html:
+            '<div class="ph-toast">' +
+              '<span class="ph-toast-ic"><i class="bi bi-cart-check-fill"></i></span>' +
+              '<div class="ph-toast-txt">' +
+                '<strong>Masuk keranjang</strong>' +
+                '<span>' + (event.detail.message || 'Produk ditambahkan.') + '</span>' +
+              '</div>' +
+            '</div>',
+        customClass: { popup: 'ph-toast-popup' },
     });
 });
 
