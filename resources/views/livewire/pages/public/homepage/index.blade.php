@@ -15,4 +15,7 @@
     {{-- @include('livewire.pages.public.bundling.index') --}}
     <livewire:pages.public.bundling.index />
     {{-- end produk-bundling --}}
+    {{-- testimoni --}}
+    <livewire:components.testimonials />
+    {{-- end testimoni --}}
 </div>

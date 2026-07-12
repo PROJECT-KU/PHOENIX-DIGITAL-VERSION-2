@@ -222,7 +222,20 @@
         // 1) Daftarkan service worker (installable + siap push di masa depan)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(() => {});
+                navigator.serviceWorker.register('{{ asset('sw.js') }}').then((reg) => {
+                    reg.update().catch(() => {}); // cek versi baru tiap muat halaman
+                }).catch(() => {});
+
+                // Saat service worker BARU mengambil alih (mis. setelah deploy), muat ulang
+                // SEKALI agar kode/aset selalu terbaru — mencegah tampilan basi tanpa perlu
+                // hapus cache manual. Tidak reload saat install pertama & tidak berulang.
+                let phHadController = !!navigator.serviceWorker.controller;
+                let phReloaded = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!phHadController || phReloaded) return;
+                    phReloaded = true;
+                    window.location.reload();
+                });
             });
         }
 

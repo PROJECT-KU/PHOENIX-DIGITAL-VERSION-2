@@ -101,7 +101,8 @@ class FlashSaletimer extends Component
         if ($this->flashSale->tipe_diskon === 'persen') {
             $percentage = $this->flashSale->getDiskonValue($isMember);
 
-            return $originalPrice - ($originalPrice * ($percentage / 100));
+            // floor pada nilai diskon — sama persis dengan PromoService (tanpa pembulatan)
+            return $originalPrice - floor($originalPrice * $percentage / 100);
         }
 
         $discount = $this->flashSale->getDiskonValue($isMember);
@@ -166,7 +167,7 @@ class FlashSaletimer extends Component
             $type = $r['durasi_type'];
 
             // Harga setelah diskon promo/flash sale
-            $discounted = (int) round($this->getDiscountedPrice($harga));
+            $discounted = (int) $this->getDiscountedPrice($harga);
 
             // "Hemat" = selisih promo (tampil di SEMUA durasi jika produk kena promo)
             $savings = max(0, $harga - $discounted);
@@ -231,6 +232,37 @@ class FlashSaletimer extends Component
         }
     }
 
+    /**
+     * Harga durasi custom. Bila jumlah bulan cocok dengan paket yang sudah
+     * di-set admin (mis. 5 bulan), IKUTI harga paket itu agar seragam.
+     * Selain itu → bulan × harga per bulan.
+     */
+    public function customPricing(): array
+    {
+        $months = (int) $this->pickCustomMonths;
+
+        foreach ($this->pickPackages as $p) {
+            if (($p['duration_type'] ?? null) === 'bulan' && (int) ($p['duration_value'] ?? 0) === $months) {
+                return [
+                    'base' => (int) $p['price'],
+                    'discounted' => (int) ($p['discounted'] ?? $p['price']),
+                    'savings' => (int) ($p['savings'] ?? 0),
+                    'matched' => true,
+                ];
+            }
+        }
+
+        $base = $months * (int) $this->pickPerBulan;
+        $disc = (int) $this->getDiscountedPrice($base);
+
+        return [
+            'base' => $base,
+            'discounted' => $disc,
+            'savings' => max(0, $base - $disc),
+            'matched' => false,
+        ];
+    }
+
     public function closeDuration()
     {
         $this->showDurationModal = false;
@@ -277,8 +309,9 @@ class FlashSaletimer extends Component
         $cartKey = "{$productId}_{$durationType}_{$durationValue}";
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity']++;
-            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
+            // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.
+            $cart[$cartKey]['quantity'] = 1;
+            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['price'];
         } else {
             $cart[$cartKey] = [
                 'product_id' => $productId,
@@ -294,7 +327,7 @@ class FlashSaletimer extends Component
 
         session()->put('cart', $cart);
 
-        $this->dispatch('cart-updated', count: array_sum(array_column($cart, 'quantity')));
+        $this->dispatch('cart-updated', count: count($cart));
         $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
     }
 

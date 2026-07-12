@@ -49,8 +49,9 @@ class ProductBundlings extends Component
         $price = (int) preg_replace('/[^0-9]/', '', $bundling->harga_bundling);
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity']++;
-            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
+            // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.
+            $cart[$cartKey]['quantity'] = 1;
+            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['price'];
         } else {
             $cart[$cartKey] = [
                 'product_id' => $bundling->id,
@@ -79,7 +80,7 @@ class ProductBundlings extends Component
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
-        return array_sum(array_column($cart, 'quantity') ?: [0]);
+        return count($cart);
     }
 
     #[Layout('layouts.guest')]

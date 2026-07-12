@@ -1,5 +1,10 @@
 <section id="promo-cards" class="promo-cards section">
     <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="ph-sec-head">
+            <span class="ph-sec-eyebrow"><i class="bi bi-star-fill"></i> Rekomendasi</span>
+            <h2 class="ph-sec-title">Produk Terlaris</h2>
+            <p class="ph-sec-sub">Akun premium &amp; tools AI pilihan yang paling banyak diburu untuk riset dan produktivitas.</p>
+        </div>
         <div class="row gy-4">
             <style>
                 @media (max-width: 767.98px) {

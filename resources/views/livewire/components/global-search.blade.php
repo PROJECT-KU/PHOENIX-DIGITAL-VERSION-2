@@ -20,7 +20,16 @@
 
     @if (trim($searchQuery) !== '')
     <div class="ps-dropdown" x-show="open" x-transition.opacity style="display:none;">
-        @forelse ($results as $item)
+        @if ($results->isEmpty() && $bundlings->isEmpty())
+        <div class="ps-empty">
+            <i class="bi bi-search"></i>
+            <span>Tidak ada hasil cocok dengan "<strong>{{ $searchQuery }}</strong>"</span>
+        </div>
+        @else
+        {{-- Produk --}}
+        @if ($results->isNotEmpty())
+        <div class="ps-group-label">Produk</div>
+        @foreach ($results as $item)
         <a href="{{ route('shop.detail-product', $item->id) }}" class="ps-item">
             <span class="ps-thumb">
                 @if ($item->image)
@@ -35,17 +44,35 @@
             </span>
             <i class="bi bi-arrow-right-short ps-go"></i>
         </a>
-        @empty
-        <div class="ps-empty">
-            <i class="bi bi-search"></i>
-            <span>Tidak ada produk cocok dengan "<strong>{{ $searchQuery }}</strong>"</span>
-        </div>
-        @endforelse
+        @endforeach
+        @endif
+
+        {{-- Paket Bundling --}}
+        @if ($bundlings->isNotEmpty())
+        <div class="ps-group-label">Paket Bundling</div>
+        @foreach ($bundlings as $b)
+        <a href="{{ route('bundling.product-bundlings') }}?search={{ urlencode($b->nama_paket) }}" class="ps-item">
+            <span class="ps-thumb ps-thumb-bundle">
+                @if ($b->gambar)
+                <img src="{{ asset('storage/img/ProductBundlings/' . $b->gambar) }}" alt="{{ $b->nama_paket }}">
+                @else
+                <i class="bi bi-box2-heart-fill"></i>
+                @endif
+            </span>
+            <span class="ps-info">
+                <span class="ps-name">{{ $b->nama_paket }}</span>
+                <span class="ps-price">{{ $b->harga_bundling }} <small>/paket</small></span>
+            </span>
+            <i class="bi bi-arrow-right-short ps-go"></i>
+        </a>
+        @endforeach
+        @endif
 
         @if ($results->isNotEmpty())
         <button type="button" wire:click="search" class="ps-all">
-            Lihat semua hasil <i class="bi bi-arrow-right"></i>
+            Lihat semua produk <i class="bi bi-arrow-right"></i>
         </button>
+        @endif
         @endif
     </div>
     @endif

@@ -174,7 +174,7 @@
         <div class="footer-main">
             <div class="container">
                 <div class="row gy-4">
-                    <div class="col-lg-6 col-md-8">
+                    <div class="col-lg-4 col-md-12">
                         <div class="footer-widget footer-about">
                             <a href="/" class="logo phoenix-logo phoenix-logo--light d-inline-flex align-items-center">
                                 <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
@@ -197,7 +197,7 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-2 col-md-6 col-sm-6">
+                    <div class="col-lg-2 col-md-4 col-sm-6">
                         <div class="footer-widget">
                             <h4>Menu</h4>
                             <ul class="footer-links">
@@ -211,7 +211,20 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-3 col-md-4 col-sm-6">
+                        <div class="footer-widget">
+                            <h4>Bantuan &amp; Legal</h4>
+                            <ul class="footer-links">
+                                <li><a href="{{ route('faq') }}">FAQ — Pertanyaan Umum</a></li>
+                                <li><a href="{{ route('terms') }}">Syarat &amp; Ketentuan</a></li>
+                                <li><a href="{{ route('privacy') }}">Kebijakan Privasi</a></li>
+                                <li><a href="{{ route('terms') }}">Kebijakan Pengembalian</a></li>
+                                <li><a href="{{ route('contact') }}">Hubungi Kami</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-4">
                         <div class="footer-widget">
                             <h4>Kontak</h4>
                             <div class="footer-contact">
@@ -230,6 +243,26 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-services">
+            <div class="container">
+                <div class="fsv-inner">
+                    <div class="fsv-text">
+                        <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Layanan Lainnya</span>
+                        <h3>Butuh lebih dari sekadar akun digital?</h3>
+                        <p>Kami juga melayani pembuatan solusi digital untuk kebutuhan bisnis &amp; instansi Anda.</p>
+                        <div class="fsv-chips">
+                            <span class="fsv-chip"><i class="bi bi-code-slash"></i> Pengembangan Website</span>
+                            <span class="fsv-chip"><i class="bi bi-phone"></i> Aplikasi Mobile</span>
+                            <span class="fsv-chip"><i class="bi bi-camera-reels"></i> Konten Sosial Media</span>
+                        </div>
+                    </div>
+                    <a class="fsv-cta" href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20tertarik%20dengan%20layanan%20pengembangan%20website%2Faplikasi%20mobile%2Fkonten%20sosial%20media." target="_blank" rel="noopener">
+                        <i class="bi bi-whatsapp"></i> Hubungi Admin
+                    </a>
                 </div>
             </div>
         </div>
@@ -282,8 +315,8 @@
         <i class="bi bi-whatsapp"></i>
     </a>
 
-    <!-- Preloader -->
-    <div id="preloader"></div>
+    <!-- Preloader: animasi logo Phoenix menyusun sayap -->
+    @include('partials.phoenix-loader')
 
     <!-- Vendor JS Files -->
     <script src="{{ asset('niceshop/assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
@@ -318,6 +351,33 @@
             }
             window.addEventListener('load', initPhoenixHero);
             document.addEventListener('livewire:navigated', initPhoenixHero);
+        })();
+    </script>
+
+    <!-- Init testimoni slider (center slide membesar sendiri) -->
+    <script>
+        (function () {
+            function initPhoenixTestimonials() {
+                if (!window.Swiper) return;
+                document.querySelectorAll('.phoenix-tm-swiper').forEach(function (el) {
+                    if (el.swiper) { try { el.swiper.destroy(true, true); } catch (e) {} }
+                    var slides = el.querySelectorAll('.swiper-slide:not(.swiper-slide-duplicate)').length;
+                    new Swiper(el, {
+                        loop: slides > 2,
+                        centeredSlides: true,
+                        slidesPerView: 'auto',
+                        spaceBetween: 24,
+                        grabCursor: true,
+                        speed: 600,
+                        autoplay: slides > 1 ? { delay: 4000, disableOnInteraction: false } : false,
+                        pagination: { el: el.querySelector('.swiper-pagination'), clickable: true }
+                    });
+                });
+            }
+            window.addEventListener('load', initPhoenixTestimonials);
+            document.addEventListener('livewire:navigated', initPhoenixTestimonials);
+            // Re-init setelah pelanggan mengirim testimoni (jaga-jaga Swiper ter-morph)
+            window.addEventListener('tm-reinit', function () { setTimeout(initPhoenixTestimonials, 60); });
         })();
     </script>
 

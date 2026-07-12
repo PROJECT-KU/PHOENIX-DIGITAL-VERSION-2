@@ -368,8 +368,25 @@ Detail Pesanan || lemon
                                 <small class="d-block text-success fw-semibold">+ {{ $item->bonus_duration_value }} {{ $item->bonus_duration_type }} bonus</small>
                                 @endif
                             </td>
-                            <td class="text-end">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                            <td class="text-end fw-semibold">Rp {{ number_format($item->price * $item->quantity, 0, ',', '.') }}</td>
+                            @php
+                                // Harga ASLI (sebelum diskon) — dihitung dari produk; fallback ke harga tersimpan.
+                                $prod = $item->product;
+                                $hargaAsli = (int) $item->price;
+                                if ($prod) {
+                                    $inPkg = $prod->daftarHarga()->contains(fn ($r) => $r['durasi_type'] === $item->duration_type && (int) $r['durasi_value'] === (int) $item->duration_value);
+                                    if ($inPkg) {
+                                        $hargaAsli = (int) $prod->hargaUntuk((int) $item->duration_value, $item->duration_type);
+                                    } else {
+                                        $perB = (int) ($prod->harga_perbulan ?? 0);
+                                        $hargaAsli = ($item->duration_type === 'bulan' && $perB > 0) ? $perB * (int) $item->duration_value : (int) $item->price;
+                                    }
+                                    if ($hargaAsli <= 0) {
+                                        $hargaAsli = (int) $item->price;
+                                    }
+                                }
+                            @endphp
+                            <td class="text-end">Rp {{ number_format($hargaAsli, 0, ',', '.') }}</td>
+                            <td class="text-end fw-semibold">Rp {{ number_format($hargaAsli * $item->quantity, 0, ',', '.') }}</td>
                             <td class="text-center">
                                 {!! $item->getDeliveryStatusBadge() !!}
                                 @if ($item->processed_by && $item->processed_at)
@@ -468,8 +485,8 @@ Detail Pesanan || lemon
                 <div class="col-lg-5 col-md-7">
                     <div class="summary-card p-4">
                         <div class="summary-row">
-                            <span>Total</span>
-                            <span class="fw-semibold">Rp {{ number_format($order->items->sum(fn($i) => $i->price * $i->quantity), 0, ',', '.') }}</span>
+                            <span>Subtotal</span>
+                            <span class="fw-semibold">Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span>
                         </div>
                         @if($order->promo_discount > 0)
                         <div class="summary-row text-danger">
@@ -489,9 +506,15 @@ Detail Pesanan || lemon
                             <span class="fw-semibold">- Rp {{ number_format($order->referral_discount, 0, ',', '.') }}</span>
                         </div>
                         @endif
+                        @if($order->total_discount > 0)
+                        <div class="summary-row" style="border-top:1px dashed #e5e7eb; padding-top:.5rem;">
+                            <span class="fw-semibold">Setelah Diskon</span>
+                            <span class="fw-semibold">Rp {{ number_format($order->subtotal - $order->total_discount, 0, ',', '.') }}</span>
+                        </div>
+                        @endif
                         @if($order->unique_code > 0)
                         <div class="summary-row">
-                            <span>Kode Unik</span>
+                            <span>Kode Unik <i class="bi bi-info-circle" title="Untuk verifikasi pembayaran"></i></span>
                             <span class="fw-semibold">+ Rp {{ number_format($order->unique_code, 0, ',', '.') }}</span>
                         </div>
                         @endif

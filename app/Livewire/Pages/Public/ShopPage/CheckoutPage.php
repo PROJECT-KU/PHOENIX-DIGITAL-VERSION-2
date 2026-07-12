@@ -95,7 +95,17 @@ class CheckoutPage extends Component
 
     public function mount()
     {
-        $this->cart = session()->get('cart', []);
+        $cart = session()->get('cart', []);
+
+        // Akun digital: setiap baris selalu 1 item — samakan dengan keranjang
+        // agar sesi lama yang sempat menumpuk jumlah tidak menggelembungkan subtotal.
+        foreach ($cart as $key => $item) {
+            $cart[$key]['quantity'] = 1;
+            $cart[$key]['subtotal'] = (int) ($item['price'] ?? $item['subtotal'] ?? 0);
+        }
+        session()->put('cart', $cart);
+
+        $this->cart = $cart;
 
         if (empty($this->cart)) {
             session()->flash('error', 'Keranjang Anda kosong');

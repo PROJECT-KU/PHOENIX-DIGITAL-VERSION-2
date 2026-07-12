@@ -1,4 +1,5 @@
-<section id="best-sellers" class="bd-section section">
+<section id="best-sellers" @class(['bd-section section' => $bundlings->isNotEmpty()]) @if ($bundlings->isEmpty()) style="display:none" @endif>
+    @if ($bundlings->isNotEmpty())
     <div class="container">
         <div class="ph-sec-head">
             <span class="ph-sec-eyebrow"><i class="bi bi-box2-heart-fill"></i> Hemat Lebih</span>
@@ -137,5 +138,6 @@
                 </div>
             </div>
         </div>
+    @endif
     @endif
 </section>

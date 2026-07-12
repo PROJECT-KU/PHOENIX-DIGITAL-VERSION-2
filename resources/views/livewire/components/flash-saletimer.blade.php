@@ -165,14 +165,22 @@
                     {{-- Durasi custom (bila produk punya harga per bulan) --}}
                     @if ($pickPerBulan > 0)
                         @php
-                            $customBase = $pickCustomMonths * $pickPerBulan;
-                            $customDisc = (int) round($this->getDiscountedPrice($customBase));
+                            $cp = $this->customPricing();
+                            $customBase = $cp['base'];
+                            $customDisc = $cp['discounted'];
+                            $customSave = $cp['savings'];
                         @endphp
                         <div class="fs-opt fs-opt-custom {{ $pickIsCustom ? 'is-active' : '' }}">
                             <span class="fs-opt-radio" wire:click="chooseCustom"></span>
                             <span class="fs-opt-info" wire:click="chooseCustom">
                                 <span class="fs-opt-label">Durasi lain</span>
-                                <span class="fs-opt-sub">Rp{{ number_format($pickPerBulan, 0, ',', '.') }}/bulan</span>
+                                <span class="fs-opt-sub">
+                                    @if ($cp['matched'])
+                                        Sesuai paket {{ $pickCustomMonths }} bulan
+                                    @else
+                                        Rp{{ number_format($pickPerBulan, 0, ',', '.') }}/bulan
+                                    @endif
+                                </span>
                             </span>
                             <div class="fs-stepper">
                                 <button type="button" wire:click="decCustom" @disabled($pickCustomMonths <= 1)>−</button>
@@ -184,8 +192,8 @@
                             <div class="fs-custom-total">
                                 <span class="fs-custom-total-left">
                                     Total {{ $pickCustomMonths }} bulan
-                                    @if ($customBase > $customDisc)
-                                        <span class="fs-opt-save">Hemat Rp{{ number_format($customBase - $customDisc, 0, ',', '.') }}</span>
+                                    @if ($customSave > 0)
+                                        <span class="fs-opt-save">Hemat Rp{{ number_format($customSave, 0, ',', '.') }}</span>
                                     @endif
                                 </span>
                                 <span class="fs-custom-total-price">

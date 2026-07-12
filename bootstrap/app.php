@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\IdleTimeout::class,
             \App\Http\Middleware\EnsureGuestToken::class,
             \App\Http\Middleware\EnsureProfileComplete::class,
+            \App\Http\Middleware\KickScheduler::class,
         ]);
 
         $middleware->group('api', [

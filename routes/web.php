@@ -7,6 +7,9 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniCreate;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniEdit;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
@@ -93,8 +96,14 @@ use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
 use App\Livewire\Pages\Public\ShopPage\OrderHistory;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentPage;
+use App\Livewire\Pages\Public\ShopPage\PaymentExpired;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
 use Illuminate\Support\Facades\Route;
+
+// Service worker PWA — versi cache OTOMATIS mengikuti build (hash manifest Vite),
+// jadi setiap deploy cache lama dibuang sendiri tanpa perlu bump manual.
+// Pakai controller (bukan closure) agar `php artisan route:cache` tetap jalan.
+Route::get('/sw.js', \App\Http\Controllers\ServiceWorkerController::class)->name('sw.js');
 
 Route::get('/', Index::class)->name('homepage');
 
@@ -110,6 +119,7 @@ Route::get('/shop/product/{id}', ProductDetail::class)->name('shop.detail-produc
 Route::get('/cart', CartPage::class)->name('cart');
 Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
+Route::get('/order/expired/{order}', PaymentExpired::class)->name('order.expired');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
 Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
@@ -122,6 +132,7 @@ Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
 Route::get('/terms', TermsPage::class)->name('terms');
 Route::get('/privacy', PrivacyPage::class)->name('privacy');
+Route::get('/faq', \App\Livewire\Pages\Public\Legal\FaqPage::class)->name('faq');
 Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')
@@ -272,6 +283,14 @@ Route::middleware('permission:view_banners')->group(function () {
     Route::get('/admin/DataBanners/create', BannersCreate::class)->middleware('permission:create_banners')->name('admin.Banners.create');
     Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->middleware('permission:edit_banners')->name('admin.Banners.edit');
+});
+
+// Data Testimoni
+Route::middleware('permission:view_testimoni')->group(function () {
+    Route::get('/admin/DataTestimoni', TestimoniList::class)->name('admin.testimoni.index');
+    Route::get('/admin/DataTestimoni/create', TestimoniCreate::class)->middleware('permission:create_testimoni')->name('admin.testimoni.create');
+    Route::get('/admin/DataTestimoni/{testimoni}', TestimoniEdit::class)->name('admin.testimoni.show');
+    Route::get('/admin/DataTestimoni/{testimoni}/edit', TestimoniEdit::class)->middleware('permission:edit_testimoni')->name('admin.testimoni.edit');
 });
 
 // Data Product Bundling

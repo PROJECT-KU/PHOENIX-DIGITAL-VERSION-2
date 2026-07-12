@@ -1,9 +1,10 @@
-/* lemon PWA service worker
+/* Phoenix Digital PWA service worker
    - Konservatif: TIDAK meng-cache HTML halaman (auth/CSRF/Livewire tetap fresh).
    - Hanya cache aset statis + halaman offline sederhana.
-   - Siap untuk Web Push (badge di background) bila nanti diaktifkan. */
+   - Versi cache OTOMATIS mengikuti build (di-inject server dari hash manifest Vite),
+     jadi setiap deploy → cache lama otomatis dibuang. Tidak perlu bump manual. */
 
-const CACHE = 'lemon-v1';
+const CACHE = 'phoenix-__SW_VERSION__';
 const OFFLINE_URL = '/offline.html';
 const PRECACHE = [
   OFFLINE_URL,
@@ -62,7 +63,7 @@ self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
 
-  const title = data.title || 'lemon';
+  const title = data.title || 'Phoenix Digital';
   const options = {
     body: data.body || '',
     icon: '/icons/icon-192.png',

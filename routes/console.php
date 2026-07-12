@@ -26,6 +26,13 @@ Schedule::call(function () {
 })->everyMinute(); // Jalankan setiap menit
 
 /**
+ * Batalkan otomatis order pending yang sudah lewat batas waktu pembayaran
+ * (QRIS/order kedaluwarsa) — supaya tidak terus menggantung "pending"
+ * meski tidak ada yang membuka halaman pembayaran.
+ */
+Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping();
+
+/**
  * Notifikasi task: deadline mendekat (besok) & terlambat (lewat, belum selesai).
  * Status/lock task diturunkan real-time di model; command ini hanya mengirim notifikasi
  * sekali per task (dedup via kolom *_notified_at).

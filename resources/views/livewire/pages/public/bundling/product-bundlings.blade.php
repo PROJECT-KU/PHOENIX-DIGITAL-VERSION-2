@@ -158,10 +158,11 @@
         }
 
         .bdl-order-btn:hover {
+            background: linear-gradient(135deg, #fba919, #f26522);
+            color: #fff;
             transform: translateY(-2px);
             filter: brightness(1.04);
             box-shadow: 0 10px 24px rgba(242, 101, 34, .38);
-            color: #fff;
         }
 
         .bdl-order-btn:disabled {
@@ -201,6 +202,36 @@
         .bdl-page-title .breadcrumbs a { color: #f26522; }
         .bdl-page-title .breadcrumbs a:hover { color: #f4772b; }
         .bdl-page-title .breadcrumbs .current { color: #6b7280; }
+
+        /* ===== Empty state: vector + animasi ===== */
+        .bdl-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
+        .bdl-empty-art { margin-bottom: 6px; }
+        .bdl-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
+        .bdl-empty-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f; font-size: 1.35rem; margin: 4px 0 6px; }
+        .bdl-empty-sub { color: #6b7280; font-size: .95rem; line-height: 1.6; margin: 0 auto 18px; max-width: 400px; }
+        .bdl-empty-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fba919, #f26522); color: #fff; font-weight: 700; padding: .7rem 1.4rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(242, 101, 34, .28); text-decoration: none; border: 0; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+        .bdl-empty-btn:hover { color: #fff; transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 10px 24px rgba(242, 101, 34, .36); }
+
+        .be-box { animation: be-bob 3.4s ease-in-out infinite; }
+        .be-lid { animation: be-lidfloat 3.4s ease-in-out infinite; }
+        .be-glow, .be-shadow, .be-spark { transform-box: fill-box; transform-origin: center; }
+        .be-glow { animation: be-glowpulse 3.4s ease-in-out infinite; }
+        .be-shadow { animation: be-shadowpulse 3.4s ease-in-out infinite; }
+        .be-spark { animation: be-twinkle 2s ease-in-out infinite; }
+        .be-spark.s2 { animation-delay: .5s; }
+        .be-spark.s3 { animation-delay: 1s; }
+        .be-spark.s4 { animation-delay: 1.4s; }
+
+        @keyframes be-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+        @keyframes be-lidfloat { 0%, 100% { transform: translateY(-8px); } 50% { transform: translateY(-16px); } }
+        @keyframes be-glowpulse { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: .75; transform: scale(1.08); } }
+        @keyframes be-shadowpulse { 0%, 100% { opacity: .16; transform: scaleX(1); } 50% { opacity: .09; transform: scaleX(.82); } }
+        @keyframes be-twinkle { 0%, 100% { opacity: .25; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .be-box, .be-lid, .be-glow, .be-shadow, .be-spark { animation: none !important; }
+            .be-lid { transform: translateY(-10px); }
+        }
     </style>
     <!-- Page Title -->
     <div class="page-title bdl-page-title">
@@ -235,7 +266,7 @@
             </section>
 
             <section id="best-sellers" class="best-sellers section">
-                <div class="container" data-aos="fade-up" data-aos-delay="100" wire:ignore.self>
+                <div class="container" wire:ignore.self>
                     <div class="row g-4">
                         @forelse ($bundlings as $item)
                             @php
@@ -243,7 +274,7 @@
                                 $old = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_awal);
                                 $now = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_bundling);
                             @endphp
-                            <div class="col-12 col-md-6 col-xl-4" wire:key="bundling-{{ $item->id }}" data-aos="fade-up">
+                            <div class="col-12 col-md-6 col-xl-4" wire:key="bundling-{{ $item->id }}">
                                 <div class="bdl-card">
                                     <div class="bdl-eyebrow"><i class="bi bi-box2-heart-fill"></i> Paket Bundling</div>
                                     <h2 class="bdl-title">{{ $item->nama_paket }}</h2>
@@ -297,9 +328,69 @@
                             </div>
                         @empty
                             <div class="col-12">
-                                <div class="text-center alert alert-warning rounded-4">
-                                    <i class="bi bi-search"></i>
-                                    <p class="mt-2 mb-0">Tidak ada produk yang ditemukan</p>
+                                <div class="bdl-empty">
+                                    <div class="bdl-empty-art">
+                                        <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"
+                                            aria-label="Belum ada paket bundling">
+                                            <defs>
+                                                <radialGradient id="beGlow" cx="50%" cy="50%" r="50%">
+                                                    <stop offset="0%" stop-color="#fba919" stop-opacity=".55" />
+                                                    <stop offset="70%" stop-color="#fba919" stop-opacity="0" />
+                                                </radialGradient>
+                                                <linearGradient id="beLid" x1="0" y1="0" x2="1" y2="1">
+                                                    <stop offset="0%" stop-color="#fbc25a" />
+                                                    <stop offset="100%" stop-color="#f26522" />
+                                                </linearGradient>
+                                                <linearGradient id="beLeft" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stop-color="#fdc069" />
+                                                    <stop offset="100%" stop-color="#f7a23e" />
+                                                </linearGradient>
+                                                <linearGradient id="beRight" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stop-color="#f4772b" />
+                                                    <stop offset="100%" stop-color="#e15a18" />
+                                                </linearGradient>
+                                            </defs>
+
+                                            <ellipse class="be-glow" cx="120" cy="112" rx="80" ry="80" fill="url(#beGlow)" />
+                                            <ellipse class="be-shadow" cx="120" cy="182" rx="60" ry="8" fill="#e15a18" />
+
+                                            <g transform="translate(46,74)"><path class="be-spark s1" d="M0,-7 L1.8,-1.8 7,0 1.8,1.8 0,7 -1.8,1.8 -7,0 -1.8,-1.8Z" fill="#fba919" /></g>
+                                            <g transform="translate(198,92)"><path class="be-spark s2" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f26522" /></g>
+                                            <g transform="translate(190,142)"><path class="be-spark s3" d="M0,-5 L1.3,-1.3 5,0 1.3,1.3 0,5 -1.3,1.3 -5,0 -1.3,-1.3Z" fill="#fbaf45" /></g>
+                                            <g transform="translate(52,146)"><path class="be-spark s4" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f4772b" /></g>
+
+                                            <g class="be-box">
+                                                <path d="M66,100 L120,122 L120,176 L66,150 Z" fill="url(#beLeft)" />
+                                                <path d="M174,100 L120,122 L120,176 L174,150 Z" fill="url(#beRight)" />
+                                                <path d="M120,78 L174,100 L120,122 L66,100 Z" fill="#ffe9d0" />
+                                                <path d="M120,86 L162,103 L120,120 L78,103 Z" fill="#f6d3ac" />
+                                                <path d="M120,78 L174,100 L120,122 L66,100 Z" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width="1.5" />
+                                            </g>
+
+                                            <g class="be-lid">
+                                                <path d="M120,30 L166,50 L120,70 L74,50 Z" fill="url(#beLid)" />
+                                                <path d="M74,50 L74,58 L120,78 L120,70 Z" fill="#e15a18" />
+                                                <path d="M166,50 L166,58 L120,78 L120,70 Z" fill="#f4772b" />
+                                                <circle cx="120" cy="42" r="6" fill="#fff3e0" />
+                                                <circle cx="120" cy="42" r="6" fill="none" stroke="#f26522" stroke-opacity=".4" stroke-width="1.5" />
+                                            </g>
+                                        </svg>
+                                    </div>
+                                    @if ($search)
+                                        <h3 class="bdl-empty-title">Paket tidak ditemukan</h3>
+                                        <p class="bdl-empty-sub">Tidak ada paket bundling yang cocok dengan pencarian
+                                            <b>"{{ $search }}"</b>. Coba kata kunci lain, ya.</p>
+                                        <button type="button" class="bdl-empty-btn" wire:click="$set('search', '')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Reset Pencarian
+                                        </button>
+                                    @else
+                                        <h3 class="bdl-empty-title">Belum ada paket bundling</h3>
+                                        <p class="bdl-empty-sub">Saat ini belum ada paket bundling yang aktif. Sementara itu,
+                                            cek koleksi produk satuan kami, yuk!</p>
+                                        <a href="{{ url('/shop') }}" class="bdl-empty-btn">
+                                            <i class="bi bi-bag"></i> Lihat Produk Satuan
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         @endforelse
