@@ -35,7 +35,16 @@ class Testimonials extends Component
 
     public function submit(): void
     {
+        // Batasi agar tidak bisa di-spam (walau sudah dimoderasi admin).
+        $rlKey = 'testimoni-submit:'.request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 3)) {
+            $this->addError('pesan', 'Terlalu banyak kiriman. Coba lagi nanti.');
+
+            return;
+        }
+
         $this->validate();
+        \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 3600);
 
         Testimoni::create([
             'nama' => trim($this->nama),

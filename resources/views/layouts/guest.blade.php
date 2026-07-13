@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title')</title>
+    @include('partials.seo')
+    @include('partials.meta-pixel')
+    @include('partials.google-analytics')
     <!-- Favicons -->
     <link href="{{ asset('niceshop/assets/img/faviconphoenix.png') }}" rel="icon">
     <link href="{{ asset('niceshop/assets/img/faviconphoenix.png') }}" rel="apple-touch-icon">
@@ -144,6 +146,7 @@
                             <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
                             <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
                             <li><a class="{{request()->routeIs('bundling.*') ? 'active' : ''}}" href="{{ route('bundling.product-bundlings') }}">Bundling</a></li>
+                            <li><a class="{{request()->routeIs('services') ? 'active' : ''}}" href="{{ route('services') }}">Layanan</a></li>
                             <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
                             <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
                         </ul>
@@ -157,6 +160,16 @@
                         <a href="{{route('order.history')}}" class="ha-item ha-riwayat" title="Riwayat Pesanan">
                             <i class="bi bi-clock-history"></i>
                             <span class="ha-label">Riwayat</span>
+                        </a>
+                        <a href="{{ route('wishlist') }}" class="ha-item ha-wishlist" title="Wishlist"
+                            x-data="{ n: 0 }"
+                            x-init="n = (JSON.parse(localStorage.getItem('ph_wishlist')||'[]')).length"
+                            @ph-wishlist-changed.window="n = (JSON.parse(localStorage.getItem('ph_wishlist')||'[]')).length">
+                            <span class="ha-ic-wrap">
+                                <i class="bi bi-heart"></i>
+                                <span class="ha-badge" x-show="n > 0" x-cloak x-text="n"></span>
+                            </span>
+                            <span class="ha-label">Wishlist</span>
                         </a>
                         <livewire:components.cart-badge />
                         <!-- Mobile Navigation Toggle -->
@@ -204,7 +217,9 @@
                                 <li><a href="{{ route('homepage') }}">Beranda</a></li>
                                 <li><a href="{{ route('shop.index') }}">Shop</a></li>
                                 <li><a href="{{ route('bundling.product-bundlings') }}">Paket Bundling</a></li>
+                                <li><a href="{{ route('services') }}">Layanan Teknologi</a></li>
                                 <li><a href="{{ route('order.history') }}">Riwayat Pesanan</a></li>
+                                <li><a href="{{ route('track-order') }}">Lacak Pesanan</a></li>
                                 <li><a href="/about">Tentang Kami</a></li>
                                 <li><a href="{{ route('contact') }}">Kontak</a></li>
                             </ul>
@@ -260,8 +275,8 @@
                             <span class="fsv-chip"><i class="bi bi-camera-reels"></i> Konten Sosial Media</span>
                         </div>
                     </div>
-                    <a class="fsv-cta" href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20tertarik%20dengan%20layanan%20pengembangan%20website%2Faplikasi%20mobile%2Fkonten%20sosial%20media." target="_blank" rel="noopener">
-                        <i class="bi bi-whatsapp"></i> Hubungi Admin
+                    <a class="fsv-cta" href="{{ route('services') }}">
+                        <i class="bi bi-arrow-right-circle"></i> Lihat Layanan
                     </a>
                 </div>
             </div>

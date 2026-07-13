@@ -219,6 +219,17 @@ class CheckoutPage extends Component
             return;
         }
 
+        // Batasi percobaan agar kode tidak bisa ditebak (brute-force). Tidak mengubah
+        // logika validasi/perhitungan — hanya menahan bila terlalu sering mencoba.
+        $rlKey = 'promo-check:'.request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 8)) {
+            $this->isCheckingPromo = false;
+            $this->promoMessage = 'Terlalu banyak percobaan. Coba lagi dalam '.\Illuminate\Support\Facades\RateLimiter::availableIn($rlKey).' detik.';
+
+            return;
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 60);
+
         $customer = $this->foundCustomer;
         $result = $this->promoService->validateKodePromo(
             $this->kodePromo,
@@ -303,6 +314,16 @@ class CheckoutPage extends Component
 
             return;
         }
+
+        // Batasi percobaan agar kode referral tidak bisa ditebak (brute-force).
+        $rlKey = 'referral-check:'.request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 8)) {
+            $this->isCheckingReferral = false;
+            $this->referralMessage = 'Terlalu banyak percobaan. Coba lagi dalam '.\Illuminate\Support\Facades\RateLimiter::availableIn($rlKey).' detik.';
+
+            return;
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 60);
 
         $referrer = Customer::where('kode_ref', $this->referralCode)
             ->where('status_member', 'active')
@@ -398,6 +419,44 @@ class CheckoutPage extends Component
         } else {
             $this->uniqueCode = 0;
             $this->finalTotal = 0;
+        }
+    }
+
+    /**
+     * Simpan keranjang tertinggal (email + isi keranjang) untuk reminder.
+     * Terisolasi & try/catch — TIDAK memengaruhi perhitungan/alur checkout.
+     */
+    public function saveAbandonedCart($email = null): void
+    {
+        try {
+            $email = trim((string) $email);
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return;
+            }
+            $cart = session()->get('cart', []);
+            if (empty($cart)) {
+                return;
+            }
+            // Batasi agar tidak bisa dipakai spam email ke alamat sembarangan.
+            $rlKey = 'abandoned-cart:'.request()->ip();
+            if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 12)) {
+                return;
+            }
+            \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 300);
+            \App\Models\AbandonedCart::updateOrCreate(
+                ['email' => $email],
+                [
+                    'items' => array_values(array_map(fn ($i) => [
+                        'name' => $i['product_name'] ?? '',
+                        'qty' => (int) ($i['quantity'] ?? 1),
+                    ], $cart)),
+                    'total' => (int) array_sum(array_column($cart, 'subtotal')),
+                    'recovered_at' => null,
+                    'reminded_at' => null,
+                ]
+            );
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 

@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
             return [Limit::perMinute(100)->by($request->ip())];
         });
         Order::observe(OrderObserver::class);
+        Order::observe(\App\Observers\OrderEmailObserver::class);
 
         // Kirim Web Push otomatis untuk setiap notifikasi database (badge PWA di background).
         Event::listen(NotificationSent::class, SendWebPushNotification::class);

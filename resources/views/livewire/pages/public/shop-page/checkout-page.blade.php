@@ -59,7 +59,8 @@
                                         <div class="co-field">
                                             <label>Email <span class="text-danger">*</span></label>
                                             <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                                wire:model="email" placeholder="email@contoh.com" {{ $customerFound ? 'readonly' : '' }}>
+                                                wire:model="email" placeholder="email@contoh.com" {{ $customerFound ? 'readonly' : '' }}
+                                                x-on:blur="if ($event.target.value.includes('@')) $wire.saveAbandonedCart($event.target.value)">
                                             @error('email') <span class="co-err">{{ $message }}</span> @enderror
                                         </div>
                                     </div>

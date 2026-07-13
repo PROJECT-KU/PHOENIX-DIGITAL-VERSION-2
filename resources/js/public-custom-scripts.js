@@ -39,6 +39,10 @@ function phConfirm(opts) {
     });
 }
 
+// Ekspos ke global agar bisa dipanggil dari Alpine/blade (mis. wishlist).
+window.phToast = phToast;
+window.phConfirm = phConfirm;
+
 document.addEventListener("livewire:init", () => {
     Livewire.on("success-add-to-cart", (data) => {
         phToast(data.message || "Produk ditambahkan ke keranjang", "Masuk keranjang");

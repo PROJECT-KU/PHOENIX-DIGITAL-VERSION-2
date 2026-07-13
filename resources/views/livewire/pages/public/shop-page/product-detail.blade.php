@@ -166,10 +166,65 @@
                             <span wire:loading.remove wire:target="addToCart"><i class="bi bi-cart-plus"></i> Tambah ke Keranjang</span>
                             <span wire:loading wire:target="addToCart"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
                         </button>
+
+                        <button type="button" class="pd-wish"
+                            x-data="{ saved: false }"
+                            x-init="saved = (JSON.parse(localStorage.getItem('ph_wishlist')||'[]')).includes('{{ $product->id }}')"
+                            @click="
+                                let w = JSON.parse(localStorage.getItem('ph_wishlist')||'[]');
+                                if (w.includes('{{ $product->id }}')) { w = w.filter(i => i !== '{{ $product->id }}'); saved = false; }
+                                else { w.push('{{ $product->id }}'); saved = true; }
+                                localStorage.setItem('ph_wishlist', JSON.stringify(w));
+                                window.dispatchEvent(new Event('ph-wishlist-changed'));
+                                if (window.phToast) phToast(saved ? 'Ditambahkan ke wishlist' : 'Dihapus dari wishlist', 'Wishlist', saved ? 'bi-heart-fill' : 'bi-heart');
+                            ">
+                            <i class="bi" :class="saved ? 'bi-heart-fill' : 'bi-heart'"></i>
+                            <span x-text="saved ? 'Tersimpan di Wishlist' : 'Simpan ke Wishlist'"></span>
+                        </button>
                     </div>
 
                 </div>
             </div>
         </div>
     </section>
+
+    {{-- Ulasan & rating produk --}}
+    <section class="rev-section">
+        <div class="container">
+            <div style="max-width: 800px; margin: 0 auto;">
+                @livewire(\App\Livewire\Components\ProductReviews::class, ['productId' => $product->id], key('rev-'.$product->id))
+            </div>
+        </div>
+    </section>
+
+    {{-- Produk terkait / rekomendasi --}}
+    @if (count($this->relatedProducts))
+        <section class="rel-section">
+            <div class="container">
+                <div class="ph-sec-head" style="text-align:center;">
+                    <span class="ph-sec-eyebrow"><i class="bi bi-grid-3x3-gap"></i> Produk Lainnya</span>
+                    <h2 class="ph-sec-title">Mungkin Anda juga suka</h2>
+                </div>
+                <div class="rel-grid rel-scroll">
+                    @foreach ($this->relatedProducts as $rp)
+                        <a href="{{ route('shop.detail-product', $rp->id) }}" class="rel-card">
+                            <div class="rel-thumb">
+                                @if ($rp->image)
+                                    <img src="{{ asset('storage/img/Product/'.basename($rp->image)) }}" alt="{{ $rp->nama_akun }}" loading="lazy">
+                                @else
+                                    <span class="rel-noimg"><i class="bi bi-box-seam"></i></span>
+                                @endif
+                            </div>
+                            <div class="rel-body">
+                                <h3 class="rel-name">{{ $rp->nama_akun }}</h3>
+                                @if ($rp->harga_perbulan)
+                                    <div class="rel-price"><small>Mulai</small> Rp {{ number_format($rp->harga_perbulan, 0, ',', '.') }}</div>
+                                @endif
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 </main>

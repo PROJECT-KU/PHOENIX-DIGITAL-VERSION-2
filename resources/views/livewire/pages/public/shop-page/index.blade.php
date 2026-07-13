@@ -33,6 +33,31 @@
                 <!-- Category Product List Section -->
                 <section style="padding-top: 0;" id="category-product-list" class="category-product-list section">
                     <div class="container">
+                        {{-- Filter & urutkan (opsional) --}}
+                        <div class="shop-filter">
+                            <div class="shop-filter-controls">
+                                @if (count($categories))
+                                    <select wire:model.live="tipe" class="shop-select">
+                                        <option value="">Semua Kategori</option>
+                                        @foreach ($categories as $c)
+                                            <option value="{{ $c }}">{{ $c }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                                <select wire:model.live="sortBy" class="shop-select">
+                                    <option value="">Urutkan: Terbaru</option>
+                                    <option value="termurah">Harga: Termurah</option>
+                                    <option value="termahal">Harga: Termahal</option>
+                                    <option value="nama">Nama: A–Z</option>
+                                    <option value="terlama">Terlama</option>
+                                </select>
+                                @if ($tipe || $sortBy)
+                                    <button type="button" wire:click="resetFilters" class="shop-reset"><i class="bi bi-x-circle"></i> Reset</button>
+                                @endif
+                            </div>
+                            <div class="shop-filter-count">{{ $products->total() }} produk</div>
+                        </div>
+
                         <div class="row g-3 g-lg-4">
                             @forelse ($products as $item)
                                 @php

@@ -133,6 +133,10 @@ Route::get('/about', AboutPage::class)->name('about');
 Route::get('/terms', TermsPage::class)->name('terms');
 Route::get('/privacy', PrivacyPage::class)->name('privacy');
 Route::get('/faq', \App\Livewire\Pages\Public\Legal\FaqPage::class)->name('faq');
+Route::get('/layanan', \App\Livewire\Pages\Public\Services\ServicesPage::class)->name('services');
+Route::get('/lacak-pesanan', \App\Livewire\Pages\Public\ShopPage\TrackOrder::class)->name('track-order');
+Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)->name('wishlist');
+Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')
@@ -291,6 +295,11 @@ Route::middleware('permission:view_testimoni')->group(function () {
     Route::get('/admin/DataTestimoni/create', TestimoniCreate::class)->middleware('permission:create_testimoni')->name('admin.testimoni.create');
     Route::get('/admin/DataTestimoni/{testimoni}', TestimoniEdit::class)->name('admin.testimoni.show');
     Route::get('/admin/DataTestimoni/{testimoni}/edit', TestimoniEdit::class)->middleware('permission:edit_testimoni')->name('admin.testimoni.edit');
+});
+
+// Moderasi ulasan produk (izin tersendiri, tidak bergantung pada testimoni).
+Route::middleware('permission:view_productreview')->group(function () {
+    Route::get('/admin/ulasan-produk', \App\Livewire\Pages\Admin\ProductReview\ReviewModeration::class)->name('admin.reviews.index');
 });
 
 // Data Product Bundling

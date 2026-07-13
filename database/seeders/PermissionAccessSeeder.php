@@ -18,6 +18,7 @@ class PermissionAccessSeeder extends Seeder
         'pemesanantoko' => ['Pesanan Toko', ['view', 'create', 'edit', 'delete']],
         'customer' => ['Pelanggan', ['view', 'create', 'edit', 'delete']],
         'customer_message' => ['Pesan Pelanggan', ['view', 'delete']],
+        'productreview' => ['Moderasi Ulasan Produk', ['view']],
         'banners' => ['Banner', ['view', 'create', 'edit', 'delete']],
         'promo' => ['Promo', ['view', 'create', 'edit', 'delete']],
         'dataakun' => ['Data Akun', ['view', 'create', 'edit', 'delete']],

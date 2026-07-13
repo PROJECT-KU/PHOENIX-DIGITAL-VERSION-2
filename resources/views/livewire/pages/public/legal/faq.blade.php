@@ -57,4 +57,27 @@
             </div>
         </div>
     </div>
+
+    @php
+        $faqLd = [
+            ['Bagaimana cara memesan di Phoenix Digital?', 'Pilih produk atau paket bundling di halaman Shop, masukkan ke keranjang, lalu lanjut checkout. Isi nomor WhatsApp, nama, dan email, kemudian selesaikan pembayaran.'],
+            ['Metode pembayaran apa saja dan bagaimana agar aman?', 'Pembayaran hanya melalui Transfer Bank dan QRIS. Pastikan pembayaran selalu tertuju atas nama Phoenix Digital Warehouse. Selain nama itu dipastikan penipuan.'],
+            ['Berapa lama pesanan diproses?', 'Pesanan diproses setelah pembayaran terverifikasi. Detail akun atau lisensi dikirim melalui WhatsApp atau kanal yang disepakati secepatnya pada jam operasional.'],
+            ['Apakah akun bergaransi?', 'Ya. Setiap akun bergaransi selama masa aktif sesuai paket yang dibeli. Bila ada kendala pada masa garansi, hubungi kami dan tim akan membantu.'],
+            ['Berapa batas perangkat per akun?', 'Maksimal 2 (dua) perangkat per akun. Jika dipakai di lebih dari 2 perangkat, akun dapat terblokir otomatis oleh sistem penyedia dan menghanguskan garansi.'],
+            ['Bagaimana kebijakan pengembalian dana (refund)?', 'Jika akun belum diserahkan, dana dikembalikan 100%. Jika akun sudah diserahkan atau diaktifkan, pengembalian maksimal 50%.'],
+            ['Bagaimana data saya dijaga?', 'Kami hanya menggunakan data Anda untuk memproses pesanan dan layanan purnajual. Selengkapnya dijelaskan pada Kebijakan Privasi.'],
+        ];
+    @endphp
+    <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => collect($faqLd)->map(fn ($q) => [
+                '@type' => 'Question',
+                'name' => $q[0],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $q[1]],
+            ])->all(),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    </script>
 </main>

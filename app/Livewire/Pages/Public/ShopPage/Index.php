@@ -19,6 +19,28 @@ class Index extends Component
 
     public $search = '';
 
+    // Filter & urutkan (opsional). Bila kosong → perilaku daftar produk IDENTIK seperti semula.
+    public $tipe = '';
+
+    public $sortBy = '';
+
+    public function updatedTipe()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSortBy()
+    {
+        $this->resetPage();
+    }
+
+    public function resetFilters()
+    {
+        $this->tipe = '';
+        $this->sortBy = '';
+        $this->resetPage();
+    }
+
     // ---- Modal pilih durasi (seragam dengan Flash Sale) ----
     public bool $showDurationModal = false;
 
@@ -325,11 +347,24 @@ class Index extends Component
                     ->orWhere('deskripsi', 'like', "%{$this->search}%");
             });
         })
-            ->latest()
+            ->when($this->tipe, fn ($q) => $q->where('tipe_akun', $this->tipe))
+            ->when($this->sortBy, function ($q) {
+                match ($this->sortBy) {
+                    'termurah' => $q->orderBy('harga_perbulan', 'asc'),
+                    'termahal' => $q->orderBy('harga_perbulan', 'desc'),
+                    'nama' => $q->orderBy('nama_akun', 'asc'),
+                    'terlama' => $q->oldest(),
+                    default => $q->latest(),
+                };
+            }, fn ($q) => $q->latest()) // tanpa sort → tetap ->latest() (identik seperti semula)
             ->paginate($this->perPage);
+
+        $categories = Product::query()->whereNotNull('tipe_akun')
+            ->where('tipe_akun', '!=', '')->distinct()->orderBy('tipe_akun')->pluck('tipe_akun');
 
         return view('livewire.pages.public.shop-page.index', [
             'products' => $products,
+            'categories' => $categories,
         ]);
     }
 }

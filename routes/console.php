@@ -33,6 +33,16 @@ Schedule::call(function () {
 Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping();
 
 /**
+ * Kirim email pengingat ~10 menit sebelum batas waktu pembayaran habis.
+ */
+Schedule::command('payment:remind')->everyMinute()->withoutOverlapping();
+
+/**
+ * Ingatkan keranjang yang ditinggalkan (belum checkout) ~1 jam kemudian.
+ */
+Schedule::command('cart:remind-abandoned')->everyThirtyMinutes()->withoutOverlapping();
+
+/**
  * Notifikasi task: deadline mendekat (besok) & terlambat (lewat, belum selesai).
  * Status/lock task diturunkan real-time di model; command ini hanya mengirim notifikasi
  * sekali per task (dedup via kolom *_notified_at).

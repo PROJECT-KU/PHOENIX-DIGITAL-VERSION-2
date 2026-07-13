@@ -1,2 +1,11 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /checkout
+Disallow: /cart
+Disallow: /payment/
+Disallow: /order/
+Disallow: /admin
+Disallow: /s/
+Disallow: /e/
+
+Sitemap: https://phoenixdigital.id/sitemap.xml

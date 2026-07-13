@@ -293,12 +293,12 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyPermission(['view_banners', 'view_testimoni', 'view_customer_message']))
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
+                @if (auth()->user()->hasAnyPermission(['view_banners', 'view_testimoni', 'view_productreview', 'view_customer_message']))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>
                     </a>
@@ -313,6 +313,11 @@ new class extends Component
                         <li class="submenu-item {{ request()->routeIs('admin.testimoni.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.testimoni.index') }}" class="submenu-link">Data
                                 Testimoni</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_productreview'))
+                        <li class="submenu-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.reviews.index') }}" class="submenu-link">Moderasi Ulasan Produk</a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_customer_message'))

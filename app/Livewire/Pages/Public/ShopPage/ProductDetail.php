@@ -39,12 +39,62 @@ class ProductDetail extends Component
             $this->durationType = $rows->first()['durasi_type'];
             $this->durationValue = (int) $rows->first()['durasi_value'];
         }
+
+        $this->shareSeo();
+    }
+
+    /**
+     * SEO khusus halaman produk: judul & deskripsi dari nama produk + JSON-LD Product.
+     */
+    private function shareSeo(): void
+    {
+        $p = $this->product;
+        $name = trim(preg_replace('/\s+/', ' ', (string) $p->nama_akun));
+        $desc = $p->deskripsi
+            ? \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($p->deskripsi))), 155)
+            : 'Beli '.$name.' di Phoenix Digital — akun premium bergaransi, proses cepat & aman.';
+        $imgUrl = $p->image ? asset('storage/img/Product/'.basename($p->image)) : asset(config('seo.image'));
+
+        view()->share('seoTitle', $name.' — Akun Premium Bergaransi | Phoenix Digital');
+        view()->share('seoDescription', $desc);
+        view()->share('seoCrumbName', $name);
+        view()->share('seoKeywords', $name.', jual '.$name.', '.$name.' murah, '.$name.' bergaransi, akun premium murah, tools AI');
+        if ($p->image) {
+            view()->share('seoImage', 'storage/img/Product/'.basename($p->image));
+        }
+        view()->share('seoJsonLd', json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $p->nama_akun,
+            'description' => $desc,
+            'image' => $imgUrl,
+            'brand' => ['@type' => 'Brand', 'name' => 'Phoenix Digital'],
+            'offers' => [
+                '@type' => 'Offer',
+                'priceCurrency' => 'IDR',
+                'price' => (int) ($p->harga_perbulan ?? 0),
+                'availability' => 'https://schema.org/InStock',
+                'url' => url()->current(),
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     #[Computed]
     public function bestDiscount()
     {
         return $this->promoService->getBestProductDiscount($this->product->id, null);
+    }
+
+    /** Produk lain untuk rekomendasi — diurut dari harga paling mirip (read-only). */
+    #[Computed]
+    public function relatedProducts()
+    {
+        $price = (int) ($this->product->harga_perbulan ?? 0);
+
+        return Product::where('id', '!=', $this->product->id)
+            ->orderByRaw('ABS(COALESCE(harga_perbulan, 0) - ?) asc', [$price])
+            ->take(10)
+            ->get();
     }
 
     public function applyDiscount(int $harga): int

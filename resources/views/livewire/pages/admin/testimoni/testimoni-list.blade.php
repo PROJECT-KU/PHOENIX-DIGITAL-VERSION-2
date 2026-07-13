@@ -83,8 +83,8 @@ Data Testimoni || lemon
                                         style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
                                         onclick="showGlossyPreview('{{ asset('storage/img/testimoni/' . $item->foto) }}')">
                                     @else
-                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-light text-primary"
-                                        style="width: 50px; height: 50px;"><i class="bi bi-person-fill fs-4"></i></span>
+                                    <span class="rounded-circle bg-light text-primary d-inline-block text-center align-middle shadow-sm"
+                                        style="width: 50px; height: 50px;"><i class="bi bi-person-fill" style="font-size: 1.5rem; line-height: 50px;"></i></span>
                                     @endif
                                 </td>
                                 <td class="text-center text-warning text-nowrap">
