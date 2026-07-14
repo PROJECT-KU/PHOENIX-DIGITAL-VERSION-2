@@ -329,6 +329,26 @@ new class extends Component
                 </li>
                 @endif
 
+                @if (auth()->user()->hasPermission('view_blog'))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.blog.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)"
+                        class="sidebar-link {{ request()->routeIs('admin.blog.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-journal-richtext {{ request()->routeIs('admin.blog.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.blog.*') ? 'text-primary' : '' }}">
+                            Blog
+                        </span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.blog.index') || request()->routeIs('admin.blog.create') || request()->routeIs('admin.blog.edit') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.blog.index') }}" class="submenu-link">Semua Artikel</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.blog.categories') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.blog.categories') }}" class="submenu-link">Kategori</a>
+                        </li>
+                    </ul>
+                </li>
+                @endif
+
                 @if (auth()->user()->hasPermission('view_promo'))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.promo.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"

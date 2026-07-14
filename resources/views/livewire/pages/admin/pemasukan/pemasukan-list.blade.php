@@ -46,6 +46,17 @@ Pemasukan Lainnya || lemon
             line-height: 1;
         }
 
+        /* Thumbnail bukti (form + tabel) */
+        .pm-bukti { position: relative; width: 90px; height: 90px; border-radius: 10px; overflow: hidden; border: 1px solid #e6e8f2; background: #f8fafc; flex-shrink: 0; }
+        .pm-bukti img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+        .pm-bukti .pm-bukti-file { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: #475569; padding: 4px; }
+        .pm-bukti .pm-bukti-file i.bi { font-size: 1.4rem; color: #10b981; }
+        .pm-bukti .pm-bukti-file span { font-size: .6rem; text-align: center; line-height: 1.1; word-break: break-all; }
+        .pm-bukti-x { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border: none; border-radius: 50%; background: rgba(220,38,38,.92); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; cursor: pointer; line-height: 1; }
+        .pm-bukti-x:hover { background: #b91c1c; }
+        .pm-bukti-mini { width: 38px; height: 38px; border-radius: 8px; overflow: hidden; border: 1px solid #e6e8f2; display: inline-block; }
+        .pm-bukti-mini img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+
         .pm-badge {
             display: inline-flex;
             align-items: center;
@@ -195,7 +206,7 @@ Pemasukan Lainnya || lemon
                         </div>
                         @if (auth()->user()->hasPermission('create_pemasukan'))
                         <button type="button" wire:click="openCreate"
-                            class="btn btn-success d-flex align-items-center justify-content-center px-4">
+                            class="btn btn-primary d-flex align-items-center justify-content-center px-4">
                             <i class="bi bi-plus-lg"></i>
                             <span class="ms-2">Tambah Pemasukan</span>
                         </button>
@@ -223,36 +234,29 @@ Pemasukan Lainnya || lemon
         {{-- ===== Filter periode ===== --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 px-4">
-                <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2 text-dark fw-semibold flex-shrink-0">
                         <span class="pm-stat-ic" style="width:38px;height:38px;background:linear-gradient(135deg,#10b981,#059669);">
                             <i class="bi bi-funnel-fill" style="font-size:1rem;"></i>
                         </span>
                         <span>Periode</span>
                     </div>
-                    <div class="row g-2 flex-grow-1 w-100 align-items-stretch">
-                        <div class="col-6 col-md-5">
-                            <select wire:model.live="bulan" class="form-select rounded-3 h-100">
-                                @foreach ($daftarBulan as $num => $nama)
-                                <option value="{{ $num }}">{{ $nama }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-6 col-md-5">
-                            <select wire:model.live="tahun" class="form-select rounded-3 h-100">
-                                @foreach ($daftarTahun as $th)
-                                <option value="{{ $th }}">{{ $th }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-2">
-                            <button type="button" wire:click="resetFilter"
-                                class="btn btn-danger rounded-3 w-100 h-100 d-inline-flex align-items-center justify-content-center gap-1"
-                                title="Reset filter">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                                <span class="d-md-none">Reset</span>
-                            </button>
-                        </div>
+                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
+                            @foreach ($daftarBulan as $num => $nama)
+                            <option value="{{ $num }}">{{ $nama }}</option>
+                            @endforeach
+                        </select>
+                        <select wire:model.live="tahun" class="form-select rounded-3" style="min-width: 130px;">
+                            @foreach ($daftarTahun as $th)
+                            <option value="{{ $th }}">{{ $th }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" wire:click="resetFilter"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                            title="Reset filter">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="pm-hint mt-3">
@@ -276,6 +280,7 @@ Pemasukan Lainnya || lemon
                                 <th>Keterangan</th>
                                 <th>Nominal</th>
                                 <th>Diinput</th>
+                                <th>Bukti</th>
                                 @if (auth()->user()->hasPermission('edit_pemasukan') || auth()->user()->hasPermission('delete_pemasukan'))
                                 <th>Aksi</th>
                                 @endif
@@ -294,17 +299,41 @@ Pemasukan Lainnya || lemon
                                 <td>{{ $p->deskripsi ?: '—' }}</td>
                                 <td class="fw-bold text-success">Rp {{ number_format($p->nominal, 0, ',', '.') }}</td>
                                 <td>{{ $p->penginput->name ?? '—' }}</td>
+                                <td class="text-nowrap">
+                                    @php
+                                        $bk = $p->bukti ?? [];
+                                        $imgs = collect($bk)->filter(fn ($x) => in_array(strtolower(pathinfo($x, PATHINFO_EXTENSION)), ['jpg','jpeg','png','webp','gif']))->map(fn ($x) => \Storage::url($x))->values();
+                                        $docs = collect($bk)->reject(fn ($x) => in_array(strtolower(pathinfo($x, PATHINFO_EXTENSION)), ['jpg','jpeg','png','webp','gif']))->values();
+                                    @endphp
+                                    @if ($imgs->isNotEmpty() || $docs->isNotEmpty())
+                                        <div class="d-inline-flex gap-1 align-items-center justify-content-center flex-wrap">
+                                            @if ($imgs->isNotEmpty())
+                                            <a href="javascript:void(0)" role="button" class="pm-bukti-trigger position-relative d-inline-block {{ $imgs->count() > 1 ? 'me-2' : '' }}" title="Lihat bukti"
+                                                data-bukti='@json($imgs)'>
+                                                <img src="{{ $imgs->first() }}" alt="bukti"
+                                                    style="width:38px; height:38px; object-fit:cover; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in; display:block;">
+                                                @if ($imgs->count() > 1)<span class="badge bg-primary position-absolute" style="top:-5px; right:-6px; font-size:.5rem; z-index:3;">+{{ $imgs->count() - 1 }}</span>@endif
+                                            </a>
+                                            @endif
+                                            @foreach ($docs as $path)
+                                            <a href="{{ \Storage::url($path) }}" target="_blank" rel="noopener" class="btn btn-sm btn-light border p-1" title="{{ basename($path) }}"><i class="bi bi-file-earmark-text text-success"></i></a>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 @if (auth()->user()->hasPermission('edit_pemasukan') || auth()->user()->hasPermission('delete_pemasukan'))
                                 <td>
                                     <div class="d-inline-flex gap-1">
                                         @if (auth()->user()->hasPermission('edit_pemasukan'))
                                         <button type="button" wire:click="openEdit('{{ $p->id }}')"
-                                            class="btn btn-sm btn-primary pm-act" title="Edit">
+                                            class="btn btn-sm btn-warning text-white p-2" title="Update">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         @endif
                                         @if (auth()->user()->hasPermission('delete_pemasukan'))
-                                        <button type="button" class="btn btn-sm btn-danger pm-act delete-pemasukan-btn"
+                                        <button type="button" class="btn btn-sm btn-danger p-2 delete-pemasukan-btn"
                                             data-id="{{ $p->id }}" title="Hapus">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -315,7 +344,7 @@ Pemasukan Lainnya || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-cash-coin"></i>
@@ -345,7 +374,7 @@ Pemasukan Lainnya || lemon
                         <i class="bi bi-cash-coin"></i>
                     </span>
                     <div>
-                        <h5 class="fw-bold mb-0">{{ $editingId ? 'Edit' : 'Tambah' }} Pemasukan Lainnya</h5>
+                        <h5 class="fw-bold mb-0">{{ $editingId ? 'Update' : 'Tambah' }} Pemasukan Lainnya</h5>
                         <small class="text-muted">Pemasukan di luar pemesanan toko.</small>
                     </div>
                 </div>
@@ -390,6 +419,77 @@ Pemasukan Lainnya || lemon
                                 class="form-control rounded-3 @error('formDeskripsi') is-invalid @enderror"
                                 placeholder="mis. Pembuatan website UMKM"></textarea>
                             @error('formDeskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        {{-- ===== Bukti: file / gambar / foto langsung ===== --}}
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Bukti <span class="text-muted fw-normal">(opsional — file, gambar, atau foto langsung)</span></label>
+                            <div wire:loading.class="opacity-50" wire:target="tempUpload" class="d-flex flex-column flex-sm-row gap-2">
+                                {{-- Opsi 1: pilih file / gambar --}}
+                                <div class="flex-fill" style="border:1.5px dashed #d6d9e6; border-radius:12px; padding:16px; text-align:center; position:relative; background:#fbfcff;">
+                                    <input type="file" wire:model="tempUpload" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" multiple
+                                        style="position:absolute; inset:0; opacity:0; cursor:pointer;">
+                                    <i class="bi bi-paperclip" style="font-size:1.6rem; color:#10b981;"></i>
+                                    <div class="fw-semibold text-dark" style="font-size:.9rem;">Pilih file / gambar</div>
+                                    <div class="text-muted" style="font-size:.76rem;">Bisa banyak · gambar/PDF/DOC/XLS · maks 4 MB</div>
+                                </div>
+                                {{-- Opsi 2: ambil foto langsung dari kamera --}}
+                                <div class="flex-fill" x-data="pemasukanCamera()" wire:ignore>
+                                    <div @click="open()" class="h-100"
+                                        style="border:1.5px dashed #d6d9e6; border-radius:12px; padding:16px; text-align:center; cursor:pointer; background:#fbfcff;">
+                                        <i class="bi bi-camera" style="font-size:1.6rem; color:#10b981;"></i>
+                                        <div class="fw-semibold text-dark" style="font-size:.9rem;">Ambil foto</div>
+                                        <div class="text-muted" style="font-size:.76rem;">Langsung dari kamera</div>
+                                    </div>
+                                    <template x-teleport="body">
+                                        <div x-show="showModal" x-cloak @keydown.escape.window="close()">
+                                            <div @click="close()" style="position:fixed; inset:0; z-index:1080; background:rgba(0,0,0,.6);"></div>
+                                            <div style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1090; width:min(94vw,440px); max-height:92vh; overflow:auto; background:#fff; border-radius:14px; padding:16px; box-shadow:0 12px 40px rgba(0,0,0,.3);">
+                                                <div class="fw-bold mb-2 d-flex align-items-center gap-2"><i class="bi bi-camera" style="line-height:1;"></i><span>Ambil Foto</span></div>
+                                                <template x-if="error"><div class="alert alert-danger py-2 small mb-2" x-text="error"></div></template>
+                                                <video x-ref="video" autoplay playsinline muted x-show="!error" style="width:100%; border-radius:10px; background:#000; aspect-ratio:4/3; object-fit:cover;"></video>
+                                                <canvas x-ref="canvas" class="d-none"></canvas>
+                                                <div class="d-flex gap-2 mt-3">
+                                                    <button type="button" class="btn btn-danger flex-fill" @click="close()">Batal</button>
+                                                    <button type="button" class="btn btn-success flex-fill d-inline-flex align-items-center justify-content-center gap-1" @click="capture()" x-show="!error">
+                                                        <i class="bi bi-camera-fill"></i> <span>Jepret</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <div wire:loading wire:target="tempUpload" class="text-primary small mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Mengunggah...</div>
+                            @error('tempUpload.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
+                            @if (count($buktiLama) || count($buktiBaru))
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach ($buktiLama as $i => $path)
+                                    @php $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION)); $isImg = in_array($ext, ['jpg','jpeg','png','webp','gif']); @endphp
+                                    <div class="pm-bukti">
+                                        @if ($isImg)
+                                            <a href="{{ \Storage::url($path) }}" target="_blank" rel="noopener"><img src="{{ \Storage::url($path) }}" alt="bukti"></a>
+                                        @else
+                                            <a href="{{ \Storage::url($path) }}" target="_blank" rel="noopener" class="pm-bukti-file" title="{{ basename($path) }}"><i class="bi bi-file-earmark-text"></i><span>{{ \Illuminate\Support\Str::limit(basename($path), 9) }}</span></a>
+                                        @endif
+                                        <button type="button" wire:click="removeBuktiLama({{ $i }})" class="pm-bukti-x" title="Hapus"><i class="bi bi-x"></i></button>
+                                    </div>
+                                @endforeach
+                                @foreach ($buktiBaru as $i => $file)
+                                    @php $isImg = str_starts_with((string) $file->getMimeType(), 'image/'); @endphp
+                                    <div class="pm-bukti">
+                                        @if ($isImg)
+                                            <img src="{{ $file->temporaryUrl() }}" alt="bukti">
+                                        @else
+                                            <div class="pm-bukti-file" title="{{ $file->getClientOriginalName() }}"><i class="bi bi-file-earmark-text"></i><span>{{ \Illuminate\Support\Str::limit($file->getClientOriginalName(), 9) }}</span></div>
+                                        @endif
+                                        <button type="button" wire:click="removeBuktiBaru({{ $i }})" class="pm-bukti-x" title="Hapus"><i class="bi bi-x"></i></button>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="text-muted small mt-1">Total {{ count($buktiLama) + count($buktiBaru) }} bukti. Klik ✕ untuk menghapus.</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -438,8 +538,8 @@ Pemasukan Lainnya || lemon
             });
 
             const glossyConfig = {
-                background: 'rgba(255, 255, 255, 0.8)',
-                backdrop: 'rgba(16, 185, 129, 0.15)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
                 customClass: {
                     popup: 'swal-glossy-popup',
                     confirmButton: 'btn-glossy-confirm',
@@ -483,6 +583,137 @@ Pemasukan Lainnya || lemon
                 Swal.fire({ title: 'Gagal!', text: (e.detail && (e.detail.message || (e.detail[0] && e.detail[0].message))) || 'Terjadi kesalahan.', icon: 'error', timer: 2500, showConfirmButton: false, ...glossyConfig });
             });
         })();
+    </script>
+
+    {{-- Kamera "Ambil foto" — tampilan & perilaku sama seperti Pengeluaran --}}
+    <script>
+        window.PM_MAX_IMG_BYTES = 4 * 1024 * 1024;
+
+        window.pmShowUploadError = function (title, text) {
+            if (typeof Swal === 'undefined') { alert(title + '\n' + text); return; }
+            Swal.fire({
+                icon: 'error', title: title, text: text,
+                background: 'rgba(255, 255, 255, 0.92)', backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold', confirmButton: 'btn-glossy-confirm' },
+                buttonsStyling: false, confirmButtonText: 'Mengerti',
+            });
+        };
+
+        window.pemasukanCamera = function () {
+            return {
+                showModal: false,
+                stream: null,
+                error: '',
+                async open() {
+                    this.error = '';
+                    this.showModal = true;
+                    await this.$nextTick();
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        this.error = 'Browser tidak mendukung akses kamera. Pastikan situs dibuka via HTTPS atau localhost.';
+                        return;
+                    }
+                    try {
+                        try {
+                            this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                        } catch (e) {
+                            this.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                        }
+                        this.$refs.video.srcObject = this.stream;
+                    } catch (e) {
+                        this.error = 'Tidak bisa mengakses kamera: ' + (e.message || e.name) + '. Pastikan izin kamera diberikan dan tidak sedang dipakai aplikasi lain.';
+                    }
+                },
+                capture() {
+                    const v = this.$refs.video, c = this.$refs.canvas;
+                    if (!v || !v.videoWidth) { this.error = 'Kamera belum siap, coba sebentar lagi.'; return; }
+                    c.width = v.videoWidth;
+                    c.height = v.videoHeight;
+                    c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+                    c.toBlob((blob) => {
+                        if (!blob) { this.error = 'Gagal mengambil gambar.'; return; }
+                        if (window.PM_MAX_IMG_BYTES && blob.size > window.PM_MAX_IMG_BYTES) {
+                            this.close();
+                            window.pmShowUploadError('Ukuran foto terlalu besar', 'Maksimal 4 MB. Hasil foto ' + (blob.size / 1024 / 1024).toFixed(1) + ' MB. Coba lagi dengan objek lebih sederhana.');
+                            return;
+                        }
+                        const file = new File([blob], 'kamera-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+                        this.$wire.uploadMultiple('tempUpload', [file], () => {}, () => {}, () => {});
+                        this.close();
+                    }, 'image/jpeg', 0.9);
+                },
+                close() {
+                    if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+                    this.showModal = false;
+                },
+            };
+        };
+    </script>
+
+    {{-- Popup lihat bukti (gambar) — glossy, slider bila lebih dari satu (seperti Pengeluaran) --}}
+    <script>
+        window.pmShowBukti = function (images) {
+            if (!images || !images.length) return;
+            if (typeof Swal === 'undefined') { window.open(images[0], '_blank'); return; }
+
+            const glossy = {
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '1rem',
+            };
+
+            if (images.length === 1) {
+                Swal.fire(Object.assign({
+                    html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + images[0] + '" alt="Bukti pemasukan" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                }, glossy));
+                return;
+            }
+
+            let idx = 0;
+            const html =
+                '<div style="position:relative; max-width:80vw;">' +
+                '  <img id="pmBuktiImg" src="' + images[0] + '" style="max-width:100%; max-height:70vh; border-radius:12px; object-fit:contain;">' +
+                '  <button type="button" id="pmBuktiPrev" class="btn btn-light rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="position:absolute; top:50%; left:8px; transform:translateY(-50%); width:40px; height:40px;"><i class="bi bi-chevron-left"></i></button>' +
+                '  <button type="button" id="pmBuktiNext" class="btn btn-light rounded-circle shadow-sm d-inline-flex align-items-center justify-content-center" style="position:absolute; top:50%; right:8px; transform:translateY(-50%); width:40px; height:40px;"><i class="bi bi-chevron-right"></i></button>' +
+                '  <div id="pmBuktiCounter" class="mt-2 fw-semibold text-muted">1 / ' + images.length + '</div>' +
+                '</div>';
+
+            Swal.fire(Object.assign({
+                html: html,
+                didOpen: function () {
+                    const img = document.getElementById('pmBuktiImg');
+                    const counter = document.getElementById('pmBuktiCounter');
+                    const show = function (i) {
+                        idx = (i + images.length) % images.length;
+                        img.src = images[idx];
+                        counter.textContent = (idx + 1) + ' / ' + images.length;
+                    };
+                    document.getElementById('pmBuktiPrev').addEventListener('click', function () { show(idx - 1); });
+                    document.getElementById('pmBuktiNext').addEventListener('click', function () { show(idx + 1); });
+                    const onKey = function (e) {
+                        if (!document.getElementById('pmBuktiImg')) { document.removeEventListener('keydown', onKey); return; }
+                        if (e.key === 'ArrowLeft') show(idx - 1);
+                        if (e.key === 'ArrowRight') show(idx + 1);
+                    };
+                    document.addEventListener('keydown', onKey);
+                },
+            }, glossy));
+        };
+
+        if (!window.__pmBuktiBound) {
+            window.__pmBuktiBound = true;
+            document.addEventListener('click', function (e) {
+                const trigger = e.target.closest && e.target.closest('.pm-bukti-trigger');
+                if (!trigger) return;
+                e.preventDefault();
+                let images = [];
+                try { images = JSON.parse(trigger.getAttribute('data-bukti') || '[]'); } catch (_) { images = []; }
+                window.pmShowBukti(images);
+            });
+        }
     </script>
     @endpush
 </div>

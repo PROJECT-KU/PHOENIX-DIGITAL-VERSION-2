@@ -54,8 +54,9 @@ class GajiKaryawansList extends Component
 
     public function resetFilter()
     {
-        $this->bulan = '';
-        $this->tahun = '';
+        // Kembali ke periode berjalan (bulan & tahun sekarang), bukan dikosongkan.
+        $this->bulan = now()->month;
+        $this->tahun = now()->year;
         $this->resetPage();
     }
 
@@ -91,8 +92,11 @@ class GajiKaryawansList extends Component
             return;
         }
 
-        $bulan = (int) ($this->bulan ?: now()->month);
-        $tahun = (int) ($this->tahun ?: now()->year);
+        // Generate SELALU untuk BULAN BERJALAN (waktu nyata sekarang), menyalin dari
+        // bulan SEBELUMNYA — tidak terpengaruh filter yang sedang dipilih.
+        // Contoh: sekarang Juli → buat gaji Juli dari data Juni; sekarang Agustus → dari Juli.
+        $bulan = (int) now()->month;
+        $tahun = (int) now()->year;
 
         // Tanggal pembayaran draft = akhir bulan periode
         $tanggal = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
@@ -174,7 +178,7 @@ class GajiKaryawansList extends Component
                         'bonus_lainnya' => $ref->bonus_lainnya,
                         'task_budget' => 0, // pool budget kini per-periode di Setting, bukan per gaji
                         'bonus_penyelesaian_task' => 0,
-                        'tasks' => $tasksTemplate,
+                        'tasks' => [], // mulai kosong; diisi via fitur Penyelesaian Task
                         'uang_lembur' => $uangLembur,
                         'jam_lembur' => $jamLembur,
                         'jumlah_hadir_offline' => $jmlOff,

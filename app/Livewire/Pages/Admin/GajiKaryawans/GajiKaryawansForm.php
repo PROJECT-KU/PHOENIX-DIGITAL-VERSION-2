@@ -382,6 +382,12 @@ class GajiKaryawansForm extends Component
     // Dipakai seragam oleh seluruh input nominal di form gaji.
     private function formatRupiah($angka)
     {
+        // Nilai 0 / kosong ditampilkan sebagai input kosong (placeholder "0"),
+        // bukan angka "0" — supaya jelas field belum diisi.
+        if ((int) $angka === 0) {
+            return '';
+        }
+
         return $this->formatAngka($angka);
     }
 

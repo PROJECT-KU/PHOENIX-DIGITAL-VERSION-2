@@ -110,6 +110,7 @@ trait MergesPinjamanData
                     'status' => $statusMap[$l->nama_peminjam] ?? 'pending',
                     'penginput' => $l->namaPenginput,
                     'created_at' => $l->created_at_formatted,
+                    'created_sort' => optional($l->created_at)->timestamp ?? 0,
                     'edit_url' => route('admin.loan.edit', $l->id),
                     'delete_class' => 'delete-Loan-btn',
                 ];
@@ -140,6 +141,7 @@ trait MergesPinjamanData
                     'status' => $statusMap[$p->nama_pengembalian] ?? 'pending',
                     'penginput' => $p->namaPenginput,
                     'created_at' => $p->created_at_formatted,
+                    'created_sort' => optional($p->created_at)->timestamp ?? 0,
                     'edit_url' => route('admin.pengembalian.edit', $p->id),
                     'delete_class' => 'delete-pengembalian-btn',
                 ];
@@ -158,7 +160,10 @@ trait MergesPinjamanData
     {
         // PDF SELALU menggabungkan Peminjaman + Pengembalian (meski tidak sedang
         // search) agar pembaca laporan tidak bingung — keduanya tampil utuh.
-        $rows = $this->collectRows($jenisAktif, true)->values()->all();
+        // Khusus export: urutkan berdasarkan waktu dibuat (created_at), terbaru dulu.
+        $rows = $this->collectRows($jenisAktif, true)
+            ->sortByDesc('created_sort')
+            ->values()->all();
         $isSearching = ! empty($this->search);
 
         $totalPeminjaman = collect($rows)->where('jenis', 'peminjaman')->sum('nominal');
@@ -242,13 +247,15 @@ trait MergesPinjamanData
     {
         $term = '%'.$this->search.'%';
         $dateTerm = '%'.$this->normalizeDateSearch($this->search).'%';
+        $digits = preg_replace('/\D/', '', $this->search); // untuk nominal berformat (mis. "10.000.000")
         $statusNames = $this->namaCocokStatus($statusMap);
 
-        $query->where(function ($q) use ($term, $dateTerm, $statusNames, $kolomNama, $kolomTanggal) {
+        $query->where(function ($q) use ($term, $dateTerm, $digits, $statusNames, $kolomNama, $kolomTanggal) {
             $q->where($kolomNama, 'like', $term)
                 ->orWhere('deskripsi', 'like', $term)
                 ->orWhere('id_transaksi', 'like', $term)
                 ->orWhere('nominal', 'like', $term)
+                ->when($digits !== '', fn ($qq) => $qq->orWhereRaw('CAST(nominal AS CHAR) LIKE ?', ['%'.$digits.'%']))
                 ->orWhereHas('penginput', function ($q) use ($term) {
                     $q->where('name', 'like', $term);
                 })
@@ -311,7 +318,11 @@ trait MergesPinjamanData
             $hasil = str_replace($nama, $angka, $hasil);
         }
 
-        return preg_replace('/\s+/', ' ', $hasil);
+        $hasil = preg_replace('/\s+/', ' ', $hasil);
+
+        // Pad angka 1-digit (mis. hari "3") jadi 2-digit "03" agar cocok DATE_FORMAT %d
+        // dan tidak salah cocok (mis. "3 07" jangan ikut ke "13 07").
+        return preg_replace_callback('/\b(\d)\b/', fn ($m) => str_pad($m[1], 2, '0', STR_PAD_LEFT), $hasil);
     }
 
     protected function daftarBulan(): array

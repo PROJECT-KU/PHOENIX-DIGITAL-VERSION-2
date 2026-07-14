@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\Product;
 use Illuminate\Http\Response;
 
@@ -24,11 +25,19 @@ class SitemapController extends Controller
         $add(route('faq'), '0.5', 'monthly');
         $add(route('terms'), '0.3', 'yearly');
         $add(route('privacy'), '0.3', 'yearly');
+        $add(route('blog.index'), '0.8', 'daily');
 
         // Detail produk
         Product::query()->select('id')->orderByDesc('id')->chunk(500, function ($chunk) use ($add) {
             foreach ($chunk as $p) {
                 $add(route('shop.detail-product', $p->id), '0.7', 'weekly');
+            }
+        });
+
+        // Artikel blog yang sudah terbit
+        BlogPost::published()->select('slug')->orderByDesc('published_at')->chunk(500, function ($chunk) use ($add) {
+            foreach ($chunk as $post) {
+                $add(route('blog.show', $post->slug), '0.6', 'weekly');
             }
         });
 

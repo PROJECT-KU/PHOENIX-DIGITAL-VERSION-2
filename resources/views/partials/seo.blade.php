@@ -32,6 +32,8 @@
         'bundling.index' => 'Paket Bundling',
         'bundling.product-bundlings' => 'Paket Bundling',
         'services' => 'Layanan',
+        'blog.index' => 'Blog',
+        'blog.show' => $seoCrumbName ?? 'Artikel',
         'about' => 'Tentang Kami',
         'contact' => 'Kontak',
         'faq' => 'FAQ',

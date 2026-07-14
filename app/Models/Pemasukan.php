@@ -18,19 +18,27 @@ class Pemasukan extends Model
         'nominal',
         'kategori',
         'deskripsi',
+        'bukti',
         'penginput_id',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'nominal' => 'decimal:0',
+        'bukti' => 'array',
     ];
 
     protected static function booted(): void
     {
-        // Saat pemasukan dihapus, bersihkan cash flow terkait.
+        // Saat pemasukan dihapus, bersihkan cash flow & file bukti terkait.
         static::deleting(function (self $model) {
             $model->cashFlow()->delete();
+
+            foreach ((array) $model->bukti as $path) {
+                if ($path) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+                }
+            }
         });
     }
 

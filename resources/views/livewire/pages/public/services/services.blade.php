@@ -120,6 +120,10 @@
 @endphp
 
 <main class="svc-page">
+    <style>
+        /* Sembunyikan garis animasi latar khusus di halaman layanan */
+        #ph-page-lines { display: none !important; }
+    </style>
     <div class="svc-hero">
         <div class="container">
             <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Layanan Teknologi</span>

@@ -136,6 +136,8 @@ Route::get('/faq', \App\Livewire\Pages\Public\Legal\FaqPage::class)->name('faq')
 Route::get('/layanan', \App\Livewire\Pages\Public\Services\ServicesPage::class)->name('services');
 Route::get('/lacak-pesanan', \App\Livewire\Pages\Public\ShopPage\TrackOrder::class)->name('track-order');
 Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)->name('wishlist');
+Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blog.index');
+Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
 Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
@@ -300,6 +302,14 @@ Route::middleware('permission:view_testimoni')->group(function () {
 // Moderasi ulasan produk (izin tersendiri, tidak bergantung pada testimoni).
 Route::middleware('permission:view_productreview')->group(function () {
     Route::get('/admin/ulasan-produk', \App\Livewire\Pages\Admin\ProductReview\ReviewModeration::class)->name('admin.reviews.index');
+});
+
+// Blog / Artikel
+Route::middleware('permission:view_blog')->group(function () {
+    Route::get('/admin/blog', \App\Livewire\Pages\Admin\Blog\BlogList::class)->name('admin.blog.index');
+    Route::get('/admin/blog/kategori', \App\Livewire\Pages\Admin\Blog\CategoryList::class)->name('admin.blog.categories');
+    Route::get('/admin/blog/create', \App\Livewire\Pages\Admin\Blog\BlogCreate::class)->middleware('permission:create_blog')->name('admin.blog.create');
+    Route::get('/admin/blog/{post}/edit', \App\Livewire\Pages\Admin\Blog\BlogEdit::class)->middleware('permission:edit_blog')->name('admin.blog.edit');
 });
 
 // Data Product Bundling

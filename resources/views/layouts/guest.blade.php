@@ -218,6 +218,7 @@
                                 <li><a href="{{ route('shop.index') }}">Shop</a></li>
                                 <li><a href="{{ route('bundling.product-bundlings') }}">Paket Bundling</a></li>
                                 <li><a href="{{ route('services') }}">Layanan Teknologi</a></li>
+                                <li><a href="{{ route('blog.index') }}">Blog</a></li>
                                 <li><a href="{{ route('order.history') }}">Riwayat Pesanan</a></li>
                                 <li><a href="{{ route('track-order') }}">Lacak Pesanan</a></li>
                                 <li><a href="/about">Tentang Kami</a></li>

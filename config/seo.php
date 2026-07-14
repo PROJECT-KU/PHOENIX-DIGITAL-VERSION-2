@@ -36,6 +36,11 @@ return [
             'title' => 'Phoenix Digital — Akun Premium, Lisensi & Tools AI Bergaransi',
             'description' => 'Belanja akun premium, lisensi software, & tools AI dengan harga hemat. Proses cepat, aman, dan bergaransi. Phoenix Digital juga melayani jasa website & aplikasi.',
         ],
+        'blog.index' => [
+            'title' => 'Blog — Tips, Panduan & Info Akun Premium, Tools AI | Phoenix Digital',
+            'description' => 'Artikel & panduan seputar akun premium, tools AI, lisensi software, dan keamanan digital dari Phoenix Digital. Tips praktis agar Anda lebih produktif & hemat.',
+            'keywords' => 'blog akun premium, tips tools AI, panduan akun premium, artikel teknologi, keamanan digital, blog Phoenix Digital, tips langganan digital',
+        ],
         'shop.index' => [
             'title' => 'Shop — Jual Akun Premium & Tools AI Murah Bergaransi | Phoenix Digital',
             'description' => 'Jual akun premium & tools AI murah bergaransi: streaming, desain, produktivitas, & lisensi software. Proses cepat, aman, dan bergaransi di Phoenix Digital.',

@@ -1,4 +1,3 @@
-
 @section('title')
 Tambah Pinjaman || lemon
 @stop
@@ -13,7 +12,7 @@ Tambah Pinjaman || lemon
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Peminjaman', 'url' => route('admin.loan.index')],
-                        ['name' => 'Tambah Data Peminjaman'],
+                        ['name' => 'Tambah Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

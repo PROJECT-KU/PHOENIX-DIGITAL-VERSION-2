@@ -4,13 +4,16 @@ namespace App\Livewire\Pages\Admin\Pemasukan;
 
 use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Pemasukan;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class PemasukanList extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
@@ -33,6 +36,13 @@ class PemasukanList extends Component
     public $formKategori = '';
 
     public $formDeskripsi = '';
+
+    /* ===== Bukti (file/gambar/foto langsung) ===== */
+    public array $buktiLama = []; // path yang sudah tersimpan (mode edit)
+
+    public array $buktiBaru = []; // file baru yang belum tersimpan
+
+    public $tempUpload = [];       // penampung input file sebelum dipindah
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -99,7 +109,7 @@ class PemasukanList extends Component
             return;
         }
 
-        $this->reset(['editingId', 'formNominal', 'formKategori', 'formDeskripsi']);
+        $this->reset(['editingId', 'formNominal', 'formKategori', 'formDeskripsi', 'buktiLama', 'buktiBaru', 'tempUpload']);
         $this->resetErrorBag();
         $this->formTanggal = now()->toDateString();
         $this->showForm = true;
@@ -120,11 +130,13 @@ class PemasukanList extends Component
             return;
         }
 
+        $this->reset(['buktiBaru', 'tempUpload']);
         $this->editingId = $p->id;
         $this->formTanggal = $p->tanggal->toDateString();
         $this->formNominal = number_format((int) $p->nominal, 0, ',', '.');
         $this->formKategori = $p->kategori;
         $this->formDeskripsi = $p->deskripsi;
+        $this->buktiLama = $p->bukti ?? [];
         $this->resetErrorBag();
         $this->showForm = true;
     }
@@ -133,6 +145,36 @@ class PemasukanList extends Component
     {
         $this->showForm = false;
         $this->resetErrorBag();
+    }
+
+    /**
+     * Setiap file dipilih (file/gambar/kamera) → akumulasi ke $buktiBaru.
+     */
+    public function updatedTempUpload(): void
+    {
+        $this->validate(
+            ['tempUpload.*' => 'file|max:4096|mimes:jpg,jpeg,png,webp,gif,pdf,doc,docx,xls,xlsx'],
+            [],
+            ['tempUpload.*' => 'file bukti']
+        );
+
+        foreach ($this->tempUpload as $file) {
+            $this->buktiBaru[] = $file;
+        }
+
+        $this->tempUpload = [];
+    }
+
+    public function removeBuktiLama(int $index): void
+    {
+        unset($this->buktiLama[$index]);
+        $this->buktiLama = array_values($this->buktiLama);
+    }
+
+    public function removeBuktiBaru(int $index): void
+    {
+        unset($this->buktiBaru[$index]);
+        $this->buktiBaru = array_values($this->buktiBaru);
     }
 
     public function save(): void
@@ -158,11 +200,33 @@ class PemasukanList extends Component
             'formDeskripsi' => 'keterangan',
         ]);
 
+        // Validasi file bukti yang masih tertahan di input (jika ada).
+        if (! empty($this->tempUpload)) {
+            $this->updatedTempUpload();
+        }
+
+        // Susun daftar bukti akhir: yang lama dipertahankan + yang baru disimpan.
+        $paths = array_values($this->buktiLama);
+        foreach ($this->buktiBaru as $file) {
+            if ($file && ! is_string($file)) {
+                $paths[] = $file->store('pemasukan', 'public');
+            }
+        }
+
+        // Hapus file lama yang dibuang saat edit.
+        if ($this->editingId) {
+            $original = Pemasukan::find($this->editingId)?->bukti ?? [];
+            foreach (array_diff($original, $paths) as $dibuang) {
+                Storage::disk('public')->delete($dibuang);
+            }
+        }
+
         $data = [
             'tanggal' => $this->formTanggal,
             'nominal' => $this->toNumber($this->formNominal),
             'kategori' => $this->formKategori,
             'deskripsi' => $this->formDeskripsi,
+            'bukti' => $paths ?: null,
         ];
 
         if ($this->editingId) {
@@ -182,7 +246,7 @@ class PemasukanList extends Component
         $this->syncCashFlow($p);
 
         $this->showForm = false;
-        $this->reset(['editingId', 'formNominal', 'formKategori', 'formDeskripsi']);
+        $this->reset(['editingId', 'formNominal', 'formKategori', 'formDeskripsi', 'buktiLama', 'buktiBaru', 'tempUpload']);
         $this->resetPage();
         $this->dispatch('pemasukan-saved');
     }

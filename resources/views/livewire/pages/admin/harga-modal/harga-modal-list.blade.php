@@ -7,11 +7,12 @@ Harga Modal Produk || lemon
         .hm-act { width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px; }
         .hm-act i.bi { line-height:1; }
         .hm-ic { width:44px;height:44px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0; }
+        .hm-ic i.bi { display:inline-flex;align-items:center;justify-content:center;line-height:1; }
         .hm-hint { display:flex;align-items:center;gap:.5rem;background:rgba(245,158,11,.07);border:1px dashed rgba(245,158,11,.3);border-radius:10px;padding:.6rem .85rem;color:#475569;font-size:.82rem; }
         .hm-hint i.bi { color:#d97706; }
-        .hm-modal-overlay { position:fixed;inset:0;z-index:1080;background:rgba(30,41,59,.45);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:4vh 1rem;overflow-y:auto;animation:hmFade .18s ease; }
+        .hm-modal-overlay { position:fixed;inset:0;z-index:1080;background:rgba(15,23,42,.42);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 1rem;overflow-y:auto;animation:hmFade .18s ease; }
         @keyframes hmFade { from{opacity:0}to{opacity:1} }
-        .hm-modal { width:100%;max-width:480px;border-radius:1.25rem;background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(248,249,255,.98));box-shadow:0 24px 60px rgba(30,41,59,.28);border:1px solid rgba(108,99,255,.15);overflow:hidden;animation:hmPop .2s ease; }
+        .hm-modal { width:100%;max-width:480px;border-radius:28px;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 25px 50px -12px rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.5);overflow:hidden;animation:hmPop .2s ease; }
         @keyframes hmPop { from{transform:translateY(-12px) scale(.98);opacity:0}to{transform:none;opacity:1} }
         .hm-modal-head { display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.1rem 1.35rem;border-bottom:1px solid #eef0f6; }
         .hm-modal-body { padding:1.35rem; }
@@ -20,6 +21,15 @@ Harga Modal Produk || lemon
         .hm-rp-prefix { position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#a3a9bd;font-weight:600;pointer-events:none;z-index:2; }
         .hm-rp-input { width:100%;border:1.5px solid #e7e9f2;border-radius:12px;background:#fff;padding:12px 14px 12px 40px;font-weight:700;font-size:1.1rem;color:#1e293b;transition:.18s; }
         .hm-rp-input:focus { outline:none;border-color:#7c3aed;box-shadow:0 0 0 .18rem rgba(124,58,237,.12); }
+
+        /* Tombol pemilih produk (buka picker Swal, seperti Pengeluaran) */
+        .hm-picker-btn { cursor:pointer; }
+        .hm-picker-btn::after { content:"\F282"; font-family:"bootstrap-icons"; float:right; color:#94a3b8; font-size:.8rem; }
+        /* Isi picker di dalam Swal */
+        .hm-pick-list { max-height:320px; overflow-y:auto; text-align:left; display:flex; flex-direction:column; gap:.4rem; padding:.2rem; }
+        .hm-pick-item { display:block; width:100%; text-align:left; border:1px solid #e6e8f2; background:#fff; border-radius:12px; padding:.7rem .9rem; font-weight:600; color:#1e293b; font-size:.92rem; transition:all .15s ease; }
+        .hm-pick-item:hover { border-color:#7c3aed; background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(78,70,229,.04)); transform:translateY(-1px); }
+        .hm-pick-empty { text-align:center; color:#94a3b8; padding:1.5rem; font-size:.9rem; }
     </style>
 
     <div class="container-fluid">
@@ -37,7 +47,7 @@ Harga Modal Produk || lemon
                     <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
                         <div class="form-group position-relative flex-grow-1">
                             <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5" placeholder="Cari produk...">
+                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5" placeholder="Cari produk, durasi, harga, atau tanggal (mis. Juni 2026)...">
                             @if ($search)
                             <span wire:click="$set('search', '')" class="position-absolute end-0 top-50 translate-middle-y pe-3" style="cursor:pointer;z-index:10;">
                                 <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
@@ -93,10 +103,10 @@ Harga Modal Produk || lemon
                                 @if (auth()->user()->hasPermission('manage_harga_modal'))
                                 <td>
                                     <div class="d-inline-flex gap-1">
-                                        <button type="button" wire:click="openEdit('{{ $p->id }}')" class="btn btn-sm btn-primary hm-act" title="Edit">
+                                        <button type="button" wire:click="openEdit('{{ $p->id }}')" class="btn btn-sm btn-warning text-white p-2" title="Update">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-danger hm-act delete-hm-btn" data-id="{{ $p->id }}" title="Hapus">
+                                        <button type="button" class="btn btn-sm btn-danger p-2 delete-hm-btn" data-id="{{ $p->id }}" title="Hapus">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -131,7 +141,7 @@ Harga Modal Produk || lemon
                 <div class="d-flex align-items-center gap-2">
                     <span class="hm-ic" style="width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#d97706);"><i class="bi bi-tags-fill"></i></span>
                     <div>
-                        <h5 class="fw-bold mb-0">{{ $editingId ? 'Edit' : 'Tambah' }} Harga Modal</h5>
+                        <h5 class="fw-bold mb-0">{{ $editingId ? 'Update' : 'Tambah' }} Harga Modal</h5>
                         <small class="text-muted">Harga modal akun private (berlaku per tanggal).</small>
                     </div>
                 </div>
@@ -142,13 +152,16 @@ Harga Modal Produk || lemon
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-semibold">Produk (Private)</label>
-                            <select wire:model="formProductId" class="form-select rounded-3 @error('formProductId') is-invalid @enderror">
-                                <option value="">— Pilih produk —</option>
-                                @foreach ($products as $pr)
-                                <option value="{{ $pr->id }}">{{ $pr->nama_akun }}</option>
-                                @endforeach
-                            </select>
-                            @error('formProductId') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            @php $hmSelProduk = $products->firstWhere('id', $formProductId); @endphp
+                            <button type="button" onclick="hmProductPicker(this)"
+                                class="form-select text-start hm-picker-btn rounded-3 @error('formProductId') is-invalid @enderror" id="formProductId">
+                                @if ($hmSelProduk)
+                                    <span class="text-dark"><i class="bi bi-key-fill me-1" style="color:#d97706;"></i>{{ $hmSelProduk->nama_akun }}</span>
+                                @else
+                                    <span class="text-muted">— Pilih produk —</span>
+                                @endif
+                            </button>
+                            @error('formProductId') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-semibold">Durasi</label>
@@ -197,8 +210,50 @@ Harga Modal Produk || lemon
     @push('scripts')
     <script>
         (function () {
+            // Data produk untuk picker (diperbarui tiap render, di luar guard)
+            window.__hmProducts = @json($products->map(fn ($p) => ['id' => (string) $p->id, 'name' => $p->nama_akun])->values());
+
             if (window.__hmBound) return;
             window.__hmBound = true;
+
+            // Picker produk glossy — pola select2 Swal seperti Pengeluaran
+            window.hmProductPicker = function (btn) {
+                if (typeof Swal === 'undefined') return;
+                const el = btn.closest('[wire\\:id]'); if (!el) return;
+                const cid = el.getAttribute('wire:id');
+                const items = window.__hmProducts || [];
+                const esc = (s) => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+                const rows = items.length
+                    ? items.map(it => '<button type="button" class="hm-pick-item" data-id="' + esc(it.id) + '" data-search="' + esc((it.name || '').toLowerCase()) + '">' + esc(it.name) + '</button>').join('')
+                    : '<div class="hm-pick-empty">Tidak ada produk private</div>';
+                Swal.fire({
+                    title: 'Pilih Produk (Private)',
+                    html: '<input id="hmPickSearch" class="form-control mb-2" placeholder="Ketik untuk mencari...">' +
+                          '<div id="hmPickList" class="hm-pick-list">' + rows + '</div>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true, width: 480, padding: '1.25rem',
+                    didOpen: () => {
+                        const search = document.getElementById('hmPickSearch');
+                        const listEl = document.getElementById('hmPickList');
+                        if (search) {
+                            search.addEventListener('input', () => {
+                                const q = search.value.toLowerCase();
+                                listEl.querySelectorAll('.hm-pick-item').forEach(b => { b.style.display = b.dataset.search.includes(q) ? '' : 'none'; });
+                            });
+                            setTimeout(() => search.focus(), 100);
+                        }
+                        listEl.querySelectorAll('.hm-pick-item').forEach(b => {
+                            b.addEventListener('click', () => {
+                                if (window.Livewire) window.Livewire.find(cid).set('formProductId', b.dataset.id);
+                                Swal.close();
+                            });
+                        });
+                    }
+                });
+            };
+
             function fmt(d){ return d.replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
             document.addEventListener('input', function (e) {
                 var el = e.target.closest && e.target.closest('.rp-money');
@@ -215,8 +270,8 @@ Harga Modal Produk || lemon
                     if(r.isConfirmed){ const c=b.closest('[wire\\:id]'); if(c) window.Livewire.find(c.getAttribute('wire:id')).call('deleteHarga', b.getAttribute('data-id')); }
                 });
             });
-            window.addEventListener('hm-saved', function(){ Swal.fire({title:'Tersimpan!',icon:'success',timer:1800,showConfirmButton:false,...g}); });
-            window.addEventListener('hm-deleted', function(){ Swal.fire({title:'Terhapus!',icon:'success',timer:1800,showConfirmButton:false,...g}); });
+            window.addEventListener('hm-saved', function(){ Swal.fire({title:'Tersimpan!',text:'Harga modal berhasil disimpan.',icon:'success',timer:2000,showConfirmButton:false,...g}); });
+            window.addEventListener('hm-deleted', function(){ Swal.fire({title:'Terhapus!',text:'Harga modal berhasil dihapus.',icon:'success',timer:2000,showConfirmButton:false,...g}); });
             window.addEventListener('hm-error', function(e){ Swal.fire({title:'Gagal!',text:(e.detail&&(e.detail.message||(e.detail[0]&&e.detail[0].message)))||'Kesalahan.',icon:'error',timer:2400,showConfirmButton:false,...g}); });
             window.addEventListener('hm-deleteError', function(e){ Swal.fire({title:'Gagal!',text:(e.detail&&(e.detail.message||(e.detail[0]&&e.detail[0].message)))||'Kesalahan.',icon:'error',timer:2400,showConfirmButton:false,...g}); });
         })();

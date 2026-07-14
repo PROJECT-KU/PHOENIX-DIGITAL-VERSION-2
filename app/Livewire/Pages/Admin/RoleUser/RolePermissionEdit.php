@@ -42,6 +42,7 @@ class RolePermissionEdit extends Component
         // E-Commerce
         'banners'          => ['Data Banner', 'bi-shop', '#0d9488,#14b8a6'],
         'productreview'    => ['Moderasi Ulasan Produk', 'bi-star-half', '#0d9488,#14b8a6'],
+        'blog'             => ['Blog / Artikel', 'bi-journal-richtext', '#0d9488,#14b8a6'],
         'customer_message' => ['Pesan Masuk Pelanggan', 'bi-chat-dots', '#0d9488,#14b8a6'],
         // Promo
         'promo'            => ['Promo', 'bi-tag', '#d97706,#f59e0b'],

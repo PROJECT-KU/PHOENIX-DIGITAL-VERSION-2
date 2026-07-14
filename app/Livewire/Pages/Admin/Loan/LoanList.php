@@ -49,8 +49,9 @@ class LoanList extends Component
 
     public function resetFilter()
     {
-        $this->bulan = '';
-        $this->tahun = '';
+        // Kembali ke periode berjalan (bulan & tahun sekarang), bukan dikosongkan.
+        $this->bulan = now()->month;
+        $this->tahun = now()->year;
         $this->resetPage();
     }
 

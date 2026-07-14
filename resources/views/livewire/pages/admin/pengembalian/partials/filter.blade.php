@@ -23,14 +23,14 @@
                 class="btn btn-danger rounded-pill d-flex align-items-center justify-content-center gap-2 px-3">
                 <span wire:loading.remove wire:target="downloadPdf" class="d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-pdf"></i>
-                    <span class="d-none d-md-inline">Export PDF</span>
+                    <span>Export PDF</span>
                 </span>
             </button>
             @if (auth()->user()->hasPermission('create_loan'))
             <a class="btn btn-primary rounded-pill d-flex align-items-center justify-content-center gap-2 px-3"
                 href="{{ route('admin.pengembalian.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
-                <span class="d-none d-lg-inline">Tambah Pengembalian</span>
+                <span>Tambah Pengembalian</span>
             </a>
             @endif
         </div>
@@ -63,12 +63,11 @@
                         @endforeach
                     </select>
 
-                    @if ($bulan || $tahun)
-                    <button wire:click="resetFilter" type="button" class="btn btn-danger rounded-3"
-                        title="Reset filter">
+                    <button wire:click="resetFilter" type="button"
+                        class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                        title="Reset ke bulan &amp; tahun sekarang">
                         <i class="bi bi-x-circle"></i>
                     </button>
-                    @endif
                 </div>
             </div>
         </div>

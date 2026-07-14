@@ -127,12 +127,12 @@ class GajiKaryawans extends Model
 
     public function getTanggalTransaksiFormattedAttribute(): string
     {
-        return Carbon::parse($this->tanggal_transaksi)->translatedFormat('d F Y');
+        return Carbon::parse($this->tanggal_transaksi)->locale('id')->translatedFormat('d F Y');
     }
 
     public function getCreatedAtFormattedAttribute(): string
     {
-        return $this->created_at->translatedFormat('d F Y H:i');
+        return Carbon::parse($this->created_at)->locale('id')->translatedFormat('d F Y H:i');
     }
 
     public function getPeriodeLabelAttribute(): string

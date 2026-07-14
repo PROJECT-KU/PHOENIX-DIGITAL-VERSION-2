@@ -141,19 +141,22 @@
                     <div class="col-md-12 mb-3">
                         <label class="form-label">Nama Karyawan <span class="text-danger">*</span></label>
                         @if(isset($users) && $users->count())
-                        <select wire:model.live="nama_karyawan" class="form-select @error('nama_karyawan') is-invalid @enderror">
-                            <option value="">-- Pilih Nama Karyawan --</option>
-                            @foreach($users as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }}</option>
-                            @endforeach
-                        </select>
+                        @php $gajiSelUser = $users->firstWhere('id', $nama_karyawan); @endphp
+                        <button type="button" onclick="gajiKaryawanPicker(this)" id="nama_karyawan"
+                            class="form-select text-start gaji-picker-btn @error('nama_karyawan') is-invalid @enderror">
+                            @if ($gajiSelUser)
+                                <span class="text-dark d-inline-flex align-items-center gap-1"><i class="bi bi-person-fill" style="color:#7c3aed; line-height:1;"></i>{{ $gajiSelUser->name }}</span>
+                            @else
+                                <span class="text-muted">-- Pilih Nama Karyawan --</span>
+                            @endif
+                        </button>
                         @else
                         <select class="form-select" disabled>
                             <option>Tidak ada karyawan</option>
                         </select>
                         @endif
                         @error('nama_karyawan')
-                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                        <div class="text-danger small mt-1 d-block">{{ $message }}</div>
                         @enderror
                     </div>
 
@@ -283,9 +286,9 @@
 
                     {{-- ================== BONUS PENYELESAIAN TASK (read-only) ================== --}}
                     <div class="col-md-6 mb-3">
-                        <label class="form-label d-flex align-items-center gap-1">
-                            Bonus Penyelesaian Task
-                            <i class="bi bi-info-circle text-muted" title="Diatur di halaman Penyelesaian Task (pool bersama)"></i>
+                        <label class="form-label d-inline-flex align-items-center gap-1">
+                            <span>Bonus Penyelesaian Task</span>
+                            <i class="bi bi-info-circle text-muted" style="line-height:1;" title="Diatur di halaman Penyelesaian Task (pool bersama)"></i>
                         </label>
                         <div class="rp-wrap">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
@@ -359,7 +362,59 @@
                         @enderror
                     </div>
 
+                    <div class="col-md-6 mb-3">
+                        <label for="tunjangan_transport" class="form-label">Tunjangan Transport</label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">
+                                Rp
+                            </span>
+                            <input type="text" wire:model="tunjangan_transport"
+                                class="form-control @error('tunjangan_transport') is-invalid @enderror rupiah" id="tunjangan_transport" placeholder="0">
+                        </div>
+                        @error('tunjangan_transport')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <label for="tunjangan_makan" class="form-label">Tunjangan Makan</label>
+                        <div class="rp-wrap">
+                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                                style="pointer-events: none; z-index: 5;">
+                                Rp
+                            </span>
+                            <input type="text" wire:model="tunjangan_makan"
+                                class="form-control @error('tunjangan_makan') is-invalid @enderror rupiah" id="tunjangan_makan" placeholder="0">
+                        </div>
+                        @error('tunjangan_makan')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--================== LEMBUR & KEHADIRAN ==================-->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 form-section">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <span class="stat-icon-wrapper flex-shrink-0"
+                        style="width: 42px; height: 42px; font-size: 1.15rem; border-radius: 13px; background: linear-gradient(135deg,#0ea5e9,#2563eb); color:#fff;">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                    <h5 class="fw-bold mb-0">Lembur &amp; Kehadiran</h5>
+                </div>
+
+                <div class="row">
                     <!-- Lembur: jam (auto dari presensi) x tarif/jam = total otomatis -->
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-2 mt-1">
+                            <i class="bi bi-alarm text-primary d-inline-flex align-items-center" style="line-height: 1;"></i>
+                            <span class="fw-semibold d-inline-flex align-items-center">Lembur (dari data presensi)</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary fw-normal d-inline-flex align-items-center">otomatis per periode</span>
+                        </div>
+                    </div>
                     <div class="col-md-4 mb-3">
                         <label for="jam_lembur" class="form-label">Jam Lembur</label>
                         <div class="input-suffix-wrap">
@@ -401,7 +456,7 @@
 
                     <!-- ===== Presensi Offline: jumlah (auto dari presensi) x tarif = total ===== -->
                     <div class="col-12">
-                        <div class="d-flex align-items-center gap-2 mb-2 mt-1">
+                        <div class="d-flex align-items-center gap-2 mb-2 mt-2">
                             <i class="bi bi-building-check text-primary d-inline-flex align-items-center" style="line-height: 1;"></i>
                             <span class="fw-semibold d-inline-flex align-items-center">Uang Kehadiran (dari data presensi)</span>
                             <span class="badge bg-primary-subtle text-primary border border-primary fw-normal d-inline-flex align-items-center">
@@ -479,36 +534,6 @@
                                 value="{{ $uang_hadir_online }}" placeholder="0" readonly>
                         </div>
                         <div class="form-text text-muted" style="font-size: 0.78rem;">Otomatis = hari &times; tarif.</div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label for="tunjangan_transport" class="form-label">Tunjangan Transport</label>
-                        <div class="rp-wrap">
-                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" wire:model="tunjangan_transport"
-                                class="form-control @error('tunjangan_transport') is-invalid @enderror rupiah" id="tunjangan_transport" placeholder="0">
-                        </div>
-                        @error('tunjangan_transport')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label for="tunjangan_makan" class="form-label">Tunjangan Makan</label>
-                        <div class="rp-wrap">
-                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" wire:model="tunjangan_makan"
-                                class="form-control @error('tunjangan_makan') is-invalid @enderror rupiah" id="tunjangan_makan" placeholder="0">
-                        </div>
-                        @error('tunjangan_makan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
                 </div>
             </div>
@@ -817,6 +842,79 @@
         hitungLembur();
         hitungPresensi();
         hitungTotal();
+    });
+</script>
+@endpush
+
+@push('styles')
+<style>
+    .gaji-picker-btn { cursor:pointer; }
+    .gaji-picker-btn::after { content:"\F282"; font-family:"bootstrap-icons"; float:right; color:#94a3b8; font-size:.8rem; }
+    .gaji-pick-list { max-height:320px; overflow-y:auto; text-align:left; display:flex; flex-direction:column; gap:.4rem; padding:.2rem; }
+    .gaji-pick-item { display:block; width:100%; text-align:left; border:1px solid #e6e8f2; background:#fff; border-radius:12px; padding:.7rem .9rem; font-weight:600; color:#1e293b; font-size:.92rem; transition:all .15s ease; }
+    .gaji-pick-item:hover { border-color:#7c3aed; background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(78,70,229,.04)); transform:translateY(-1px); }
+    .gaji-pick-empty { text-align:center; color:#94a3b8; padding:1.5rem; font-size:.9rem; }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+    window.__gajiUsers = @json($users->map(fn ($u) => ['id' => (string) $u->id, 'name' => $u->name])->values());
+
+    if (!window.__gajiUserPickerBound) {
+        window.__gajiUserPickerBound = true;
+        window.gajiKaryawanPicker = function (btn) {
+            if (typeof Swal === 'undefined') return;
+            const el = btn.closest('[wire\\:id]'); if (!el) return;
+            const cid = el.getAttribute('wire:id');
+            const items = window.__gajiUsers || [];
+            const esc = (s) => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+            const rows = items.length
+                ? items.map(it => '<button type="button" class="gaji-pick-item" data-id="' + esc(it.id) + '" data-search="' + esc((it.name || '').toLowerCase()) + '">' + esc(it.name) + '</button>').join('')
+                : '<div class="gaji-pick-empty">Tidak ada karyawan</div>';
+            Swal.fire({
+                title: 'Pilih Nama Karyawan',
+                html: '<input id="gajiPickSearch" class="form-control mb-2" placeholder="Ketik untuk mencari...">' +
+                      '<div id="gajiPickList" class="gaji-pick-list">' + rows + '</div>',
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                buttonsStyling: false, showConfirmButton: false, showCloseButton: true, width: 480, padding: '1.25rem',
+                didOpen: () => {
+                    const search = document.getElementById('gajiPickSearch');
+                    const listEl = document.getElementById('gajiPickList');
+                    if (search) {
+                        search.addEventListener('input', () => {
+                            const q = search.value.toLowerCase();
+                            listEl.querySelectorAll('.gaji-pick-item').forEach(b => { b.style.display = b.dataset.search.includes(q) ? '' : 'none'; });
+                        });
+                        setTimeout(() => search.focus(), 100);
+                    }
+                    listEl.querySelectorAll('.gaji-pick-item').forEach(b => {
+                        b.addEventListener('click', () => {
+                            if (window.Livewire) window.Livewire.find(cid).set('nama_karyawan', b.dataset.id);
+                            Swal.close();
+                        });
+                    });
+                }
+            });
+        };
+    }
+
+    // Setiap update Livewire (mis. pilih karyawan / ganti periode) → hitung ulang total
+    // di klien, karena set() dari picker tidak memicu event input pada field readonly.
+    document.addEventListener('livewire:init', function () {
+        if (window.__gajiRecalcHook || typeof Livewire === 'undefined') return;
+        window.__gajiRecalcHook = true;
+        Livewire.hook('commit', function ({ succeed }) {
+            succeed(function () {
+                queueMicrotask(function () {
+                    if (typeof window.hitungLembur === 'function') window.hitungLembur();
+                    if (typeof window.hitungPresensi === 'function') window.hitungPresensi();
+                    if (typeof window.hitungTotal === 'function') window.hitungTotal();
+                });
+            });
+        });
     });
 </script>
 @endpush

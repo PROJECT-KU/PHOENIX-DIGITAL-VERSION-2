@@ -112,14 +112,14 @@ class Pengembalian extends Model
     public function getTanggalPengembalianFormattedAttribute(): string
     {
         return $this->tanggal_pengembalian
-            ? Carbon::parse($this->tanggal_pengembalian)->translatedFormat('d F Y')
+            ? Carbon::parse($this->tanggal_pengembalian)->locale('id')->translatedFormat('d F Y')
             : '-';
     }
 
     public function getCreatedAtFormattedAttribute(): string
     {
         return $this->created_at
-            ? Carbon::parse($this->created_at)->translatedFormat('d F Y H:i')
+            ? Carbon::parse($this->created_at)->locale('id')->translatedFormat('d F Y H:i')
             : '-';
     }
 

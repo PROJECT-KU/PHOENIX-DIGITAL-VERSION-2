@@ -157,13 +157,46 @@ class HargaModalList extends Component
     }
 
     #[Layout('livewire.layout.templateindex')]
+    /**
+     * Ubah nama bulan Indonesia → angka agar pencarian tanggal (mis. "Juni 2026") jalan.
+     */
+    protected function normalizeDateSearch(string $term): string
+    {
+        $bulan = [
+            'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
+            'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
+            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12',
+        ];
+
+        $hasil = mb_strtolower(trim($term));
+        foreach ($bulan as $nama => $angka) {
+            $hasil = str_replace($nama, $angka, $hasil);
+        }
+
+        return preg_replace('/\s+/', ' ', $hasil);
+    }
+
     public function render()
     {
         $prices = ProductModalPrice::query()
             ->with('product')
             ->when($this->search, function ($q) {
                 $term = '%'.$this->search.'%';
-                $q->whereHas('product', fn ($p) => $p->where('nama_akun', 'like', $term));
+                $digits = preg_replace('/\D/', '', $this->search); // untuk harga & angka durasi
+                $dateTerm = '%'.$this->normalizeDateSearch($this->search).'%';
+
+                $q->where(function ($sub) use ($term, $digits, $dateTerm) {
+                    $sub->whereHas('product', fn ($p) => $p->where('nama_akun', 'like', $term))
+                        ->orWhere('durasi_type', 'like', $term)
+                        ->orWhereRaw('CAST(durasi_value AS CHAR) LIKE ?', [$term])
+                        ->orWhereRaw("CONCAT(durasi_value, ' ', durasi_type) LIKE ?", [$term])
+                        ->orWhereRaw("DATE_FORMAT(berlaku_mulai, '%d %m %Y') LIKE ?", [$dateTerm])
+                        ->orWhereRaw("DATE_FORMAT(berlaku_mulai, '%Y-%m-%d') LIKE ?", [$dateTerm]);
+
+                    if ($digits !== '') {
+                        $sub->orWhereRaw('CAST(harga AS CHAR) LIKE ?', ['%'.$digits.'%']);
+                    }
+                });
             })
             ->join('products', 'products.id', '=', 'product_modal_prices.product_id')
             ->orderBy('products.nama_akun')
