@@ -17,6 +17,12 @@ class OrderReceiptController extends Controller
             ->with(['customer', 'items.product', 'items.ebooks'])
             ->firstOrFail();
 
+        // Struk hanya untuk pesanan SELESAI. Penjaga ditaruh di sini — bukan cuma
+        // menyembunyikan tombolnya — karena token-nya bisa dibuka langsung lewat
+        // URL /s/{token}. Tanpa ini, pesanan yang DIBATALKAN pun menyajikan struk
+        // bertuliskan "LUNAS" (17 pesanan cancelled sudah punya token).
+        abort_unless($order->status === 'completed', 404);
+
         $pdf = Pdf::loadView('exports.order-receipt-pdf', [
             'order' => $order,
         ]);

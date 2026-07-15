@@ -126,7 +126,7 @@ class Task extends Model
     /**
      * Status bonus DITURUNKAN otomatis dari waktu penyelesaian vs deadline.
      * - selesai <= deadline  -> tepat_waktu (100%)
-     * - selesai >  deadline  -> terlambat (60%)
+     * - selesai >  deadline  -> terlambat (alokasi x bobot/4 x faktor telat)
      * - belum selesai & lewat deadline -> tidak_selesai (0%)
      * - selain itu (masih berjalan) -> tidak_ada_info (dikecualikan dari pool)
      */
@@ -147,6 +147,44 @@ class Task extends Model
         }
 
         return 'tidak_ada_info';
+    }
+
+    /**
+     * Berapa HARI selesai melewati deadline. 0 = tepat waktu / belum selesai.
+     * Dipakai BonusTaskPeriodeAction untuk penalti bertingkat (ada masa tenggang).
+     */
+    public function hariTerlambat(): int
+    {
+        if ($this->progress !== 'selesai' || ! $this->completed_at || ! $this->deadline_selesai) {
+            return 0;
+        }
+
+        $batas = $this->deadline_selesai->copy()->startOfDay();
+        $selesai = $this->completed_at->copy()->startOfDay();
+
+        if ($selesai->lte($batas)) {
+            return 0;
+        }
+
+        // round(), BUKAN (int): Carbon 3 mengembalikan float. Kalau timezone
+        // sewaktu-waktu diganti ke zona ber-DST, 6 hari bisa jadi 5.958 dan
+        // (int) memotongnya ke 5 -> lolos dari penalti. Ini soal uang.
+        return (int) round($batas->diffInDays($selesai));
+    }
+
+    /**
+     * Periode gaji yang menanggung bonus task ini.
+     * Dasarnya tanggal SELESAI — bonus ikut gaji periode saat task benar-benar
+     * rampung (mis. deadline 10 Jun tapi selesai 30 Jun -> periode Juli, sebab
+     * gaji Juni sudah dibayar 20 Jun). Belum selesai -> pakai deadline sbg perkiraan.
+     *
+     * @return array{bulan: int, tahun: int}
+     */
+    public function periodeGaji(): array
+    {
+        return \App\Support\PeriodeGaji::dariTanggal(
+            $this->completed_at ?? $this->deadline_selesai ?? now()
+        );
     }
 
     /** Sudah melewati deadline & belum selesai. */

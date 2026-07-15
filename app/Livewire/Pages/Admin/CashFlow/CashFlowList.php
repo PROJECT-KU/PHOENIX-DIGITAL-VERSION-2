@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\PemesananRsc;
 use App\Models\Pengembalian;
 use App\Models\Spending;
+use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Livewire\Component;
@@ -23,7 +24,9 @@ class CashFlowList extends Component
 
     public $tahun;
 
-    // Mode periode: 'kalender' (1 s/d akhir bulan, default) atau 'siklus20' (tgl 20 s/d 19 bulan berikutnya)
+    // Mode periode: 'kalender' (1 s/d akhir bulan, default) atau 'siklus20' = siklus gaji
+    // (21 s/d 20, mengikuti setelan payroll_cutoff_day — sama persis dgn fitur Gaji).
+    // Nilai 'siklus20' dipertahankan apa adanya agar state/URL lama tidak rusak.
     public $modePeriode = 'kalender';
 
     public $produkPage = 1;
@@ -47,7 +50,7 @@ class CashFlowList extends Component
     }
 
     /**
-     * Apakah filter memakai siklus 20-20 (butuh bulan terpilih).
+     * Apakah filter memakai siklus gaji 21-20 (butuh bulan terpilih).
      */
     protected function usesSiklus(): bool
     {
@@ -55,17 +58,24 @@ class CashFlowList extends Component
     }
 
     /**
-     * Rentang siklus 20-20 untuk bulan/tahun terpilih:
-     * [mulai = tgl 20 bulan terpilih 00:00, akhirEksklusif = tgl 20 bulan berikutnya 00:00].
-     * Jadi mencakup tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya.
+     * Rentang siklus gaji untuk bulan/tahun terpilih — SATU sumber dengan fitur Gaji,
+     * yaitu setelan `payroll_cutoff_day` (default tgl 20). Mis. Juli = 21 Jun s/d 20 Jul.
+     *
+     * Sengaja tidak mematok angka 20 secara hardcode: kalau tanggal gajian diubah,
+     * cash flow ikut sendiri dan tidak diam-diam melenceng dari periode gaji.
+     *
+     * Dikembalikan sebagai [mulai, akhirEksklusif] agar kontrak lama
+     * (>= mulai, < akhirEksklusif) di filteredQuery/periodeLabel tetap berlaku.
      */
     protected function siklusRange(): array
     {
         $tahun = (int) ($this->tahun ?: now()->year);
-        $mulai = Carbon::create($tahun, (int) $this->bulan, 20)->startOfDay();
-        $akhirEksklusif = $mulai->copy()->addMonthNoOverflow();
+        $bulan = (int) $this->bulan;
 
-        return [$mulai, $akhirEksklusif];
+        return [
+            PeriodeGaji::mulai($bulan, $tahun),
+            PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+        ];
     }
 
     public function produkNext(): void
@@ -110,7 +120,19 @@ class CashFlowList extends Component
         $this->produkPage = min(max(1, (int) $this->produkPage), $produkTotalPages);
         $produkItems = array_slice($allProduk, ($this->produkPage - 1) * $this->produkPerPage, $this->produkPerPage);
 
+        // Rentang siklus dikirim dari sini supaya view TIDAK menghitung ulang sendiri —
+        // kalau view punya rumus sendiri, chip di layar bisa beda dgn data yg difilter.
+        // 'siklusAkhir' sudah inklusif (siap tampil), beda dgn akhirEksklusif utk query.
+        $siklusMulai = $siklusAkhir = null;
+        if ($this->usesSiklus()) {
+            [$m, $aEks] = $this->siklusRange();
+            $siklusMulai = $m;
+            $siklusAkhir = $aEks->copy()->subDay();
+        }
+
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
+            'siklusMulai' => $siklusMulai,
+            'siklusAkhir' => $siklusAkhir,
             'reports' => $query->paginate(10),
             'summary' => [
                 'income' => $totalIncome,
@@ -311,7 +333,7 @@ class CashFlowList extends Component
         if (! empty($privateIds)) {
             // Batas tanggal harga yang berlaku (akhir periode terpilih).
             if ($usesSiklus) {
-                // Akhir siklus = tgl 19 bulan berikutnya (sehari sebelum akhir eksklusif).
+                // Akhir siklus gaji = tgl gajian (sehari sebelum akhir eksklusif).
                 $hargaCutoff = $siklusAkhir->copy()->subDay()->toDateString();
             } elseif ($bulan && $tahun) {
                 $hargaCutoff = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();

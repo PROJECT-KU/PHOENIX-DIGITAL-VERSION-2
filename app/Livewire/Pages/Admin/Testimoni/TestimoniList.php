@@ -35,6 +35,15 @@ class TestimoniList extends Component
         $testimoni->status = $testimoni->status === 'active' ? 'non-active' : 'active';
         $testimoni->save();
 
+        // Testimoni DISETUJUI (dinyalakan) -> pengirimnya jadi member otomatis.
+        // customer hanya terisi bila nomornya cocok DAN punya pesanan selesai,
+        // jadi menyetujui testimoni tamu/buatan admin tidak mengaktifkan siapa pun.
+        // Dimatikan lagi TIDAK mencabut keanggotaan — poin & kode referral sudah
+        // terlanjur jadi haknya.
+        if ($testimoni->status === 'active' && $testimoni->customer && $testimoni->customer->aktifkanMember()) {
+            $this->dispatch('swal-success', message: $testimoni->customer->nama.' otomatis jadi Member 🎉');
+        }
+
         $this->dispatch('testimoni-status', active: $testimoni->status === 'active');
     }
 
@@ -68,7 +77,12 @@ class TestimoniList extends Component
 
     public function render()
     {
+        // customer + hitungan pesanan selesai dimuat sekalian (1 query) supaya
+        // admin bisa menilai keaslian testimoni tanpa membuka halaman lain.
         $Testimoni = Testimoni::query()
+            ->with(['customer' => fn ($q) => $q->withCount([
+                'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
+            ])])
             ->where(function ($q) {
                 $q->where('nama', 'like', "%{$this->searchTestimoni}%")
                     ->orWhere('peran', 'like', "%{$this->searchTestimoni}%")

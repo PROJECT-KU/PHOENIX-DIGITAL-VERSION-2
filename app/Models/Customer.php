@@ -22,9 +22,17 @@ class Customer extends Model
         'no_hp',
         'kode_ref',
         'status_member',
+        // Sebelumnya TIDAK ada di sini, padahal CustomerForm & aktifkanMember()
+        // sama-sama mengisinya saat member diaktifkan — Eloquent membuangnya
+        // diam-diam, sehingga member_since SELALU NULL (lihat PDW_0001 & PDW_0002).
+        'member_since',
         'point',
         'point_balance',
         'points_year',
+    ];
+
+    protected $casts = [
+        'member_since' => 'datetime',
     ];
 
     public function orders()
@@ -118,6 +126,82 @@ class Customer extends Model
     public function getPointValue(): int
     {
         return $this->point * 500;
+    }
+
+    /* ===== Pencocokan nomor WhatsApp (dipakai verifikasi ulasan) ===== */
+
+    /**
+     * Samakan nomor ke bentuk inti: buang non-digit, lalu awalan 62 / 0.
+     * "+62 895-421-735441", "0895421735441", "62895421735441" -> "895421735441".
+     * Logika yang sama dgn TrackOrder::localPhone().
+     */
+    public static function normalisasiNoHp($nomor): string
+    {
+        $d = preg_replace('/\D/', '', (string) $nomor);
+        $d = preg_replace('/^62/', '', $d);
+
+        return preg_replace('/^0/', '', $d);
+    }
+
+    /**
+     * Cari pelanggan dari nomor apa pun formatnya.
+     *
+     * Sengaja memakai whereIn dgn daftar varian — BUKAN memuat semua pelanggan
+     * lalu menyaring di PHP. Toko ini punya 10rb+ pelanggan; menyaring di PHP
+     * berarti menarik semuanya ke memori tiap kali ada yang menulis ulasan.
+     */
+    public static function cariDariNoHp($nomor): ?self
+    {
+        $inti = self::normalisasiNoHp($nomor);
+
+        if ($inti === '') {
+            return null;
+        }
+
+        return self::whereIn('no_hp', [
+            $inti,
+            '0'.$inti,
+            '62'.$inti,
+            '+62'.$inti,
+        ])->first();
+    }
+
+    /**
+     * Jumlah pesanan yang benar-benar SELESAI (bukan paid/pending/cancel).
+     * Inilah palang jadi member & angka pada label "Sudah belanja N×".
+     */
+    public function jumlahBelanjaSelesai(): int
+    {
+        return $this->orders()->where('status', 'completed')->count();
+    }
+
+    /**
+     * Aktifkan keanggotaan — langkahnya sama persis dgn form Pelanggan di admin:
+     * status active, terbitkan kode referral & member_since bila belum punya,
+     * lalu hitung poin dari transaksi tahun ini.
+     *
+     * Idempotent: yang sudah member dilewati, jadi aman dipanggil berulang
+     * (mis. admin menyetujui ulang ulasan yang sama).
+     *
+     * @return bool true bila BARU diaktifkan sekarang
+     */
+    public function aktifkanMember(): bool
+    {
+        if ($this->status_member === self::STATUS_MEMBER_ACTIVE) {
+            return false;
+        }
+
+        $data = ['status_member' => self::STATUS_MEMBER_ACTIVE];
+
+        if (empty($this->kode_ref)) {
+            $data['kode_ref'] = self::generateReferralCode();
+            $data['member_since'] = now();
+        }
+
+        $this->update($data);
+        $this->updatePoints();
+
+        return true;
     }
 
     /**

@@ -8,6 +8,16 @@
         $accent = '#4f46e5';
         $rupiah = fn ($v) => 'Rp '.number_format((float) $v, 0, ',', '.');
 
+        // Cap & tanda tangan di-embed base64 — DomPDF paling andal begini, dan
+        // slip tetap aman dicetak walau berkasnya hilang (blok @if di bawah).
+        $imgUri = function (string $file) {
+            $full = storage_path('app/public/img/archive/'.$file);
+
+            return is_file($full) ? 'data:image/png;base64,'.base64_encode(file_get_contents($full)) : null;
+        };
+        $cap = $imgUri('capacm.png');
+        $ttd = $imgUri('ttdberto.png');
+
         $namaBulan = [1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',9=>'September',10=>'Oktober',11=>'November',12=>'Desember'];
         $periode = ($g->periode_bulan && $g->periode_tahun) ? (($namaBulan[(int)$g->periode_bulan] ?? '').' '.$g->periode_tahun) : '-';
 
@@ -89,7 +99,14 @@
 
         .sign { width: 100%; margin-top: 34px; border-collapse: collapse; }
         .sign td { width: 50%; text-align: center; font-size: 10px; vertical-align: top; }
-        .sign .line { margin-top: 48px; border-top: 1px solid #9ca3af; padding-top: 4px; display: inline-block; min-width: 150px; }
+        /* Area tanda tangan. Tinggi dipakai SAMA di kiri & kanan supaya garis
+           dan nama sejajar — kiri sengaja kosong utk ttd manual karyawan. */
+        .sign .sign-stack { position: relative; height: 92px; width: 200px; margin: 0 auto; }
+        /* Cap sedikit di KIRI ttd & saling menimpa (keduanya PNG transparan). */
+        .sign .sign-cap { position: absolute; top: 0; left: 26px; width: 88px; opacity: .9; }
+        .sign .sign-ttd { position: absolute; top: 14px; left: 64px; width: 108px; }
+        .sign .line { border-top: 1px solid #9ca3af; padding-top: 4px; display: inline-block; min-width: 150px; }
+        .sign .role { color: #6b7280; font-size: 8.5px; margin-top: 2px; }
 
         .footer { margin-top: 22px; padding-top: 10px; border-top: 1px solid #e5e7eb;
             color: #9ca3af; font-size: 8.5px; text-align: center; }
@@ -186,11 +203,17 @@
         <tr>
             <td>
                 Diterima oleh,
+                <div class="sign-stack"></div>
                 <div class="line">{{ $g->karyawan->name ?? 'Karyawan' }}</div>
             </td>
             <td>
                 Hormat kami,
-                <div class="line">HRD / Keuangan</div>
+                <div class="sign-stack">
+                    @if($cap)<img src="{{ $cap }}" class="sign-cap" alt="">@endif
+                    @if($ttd)<img src="{{ $ttd }}" class="sign-ttd" alt="">@endif
+                </div>
+                <div class="line">Berto Juni Krisnanto</div>
+                <div class="role">Direktur Utama</div>
             </td>
         </tr>
     </table>

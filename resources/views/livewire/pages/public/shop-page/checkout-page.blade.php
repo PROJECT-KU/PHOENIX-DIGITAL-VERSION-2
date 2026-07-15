@@ -81,8 +81,9 @@
                                 <div class="row g-2 align-items-start">
                                     <div class="col-7">
                                         <input type="text" class="form-control @error('kodePromo') is-invalid @enderror"
-                                            wire:model="kodePromo" placeholder="Masukkan kode promo (opsional)"
-                                            @if ($promoValid) disabled @endif>
+                                            wire:model="kodePromo"
+                                            placeholder="{{ $promoBlokirGabung ? 'Tidak bisa digabung' : 'Masukkan kode promo (opsional)' }}"
+                                            @if ($promoValid || $promoBlokirGabung) disabled @endif>
                                         @error('kodePromo') <span class="co-err">{{ $message }}</span> @enderror
                                     </div>
                                     <div class="col-5">
@@ -92,7 +93,8 @@
                                             </button>
                                         @else
                                             <button type="button" class="co-btn co-btn-primary" wire:click="checkPromo"
-                                                wire:loading.attr="disabled" wire:target="checkPromo">
+                                                wire:loading.attr="disabled" wire:target="checkPromo"
+                                                @if ($promoBlokirGabung) disabled @endif>
                                                 <span wire:loading.remove wire:target="checkPromo"><i class="bi bi-check-circle-fill"></i> Pakai</span>
                                                 <span wire:loading wire:target="checkPromo"><span class="spinner-border spinner-border-sm"></span></span>
                                             </button>
@@ -100,7 +102,12 @@
                                     </div>
                                 </div>
 
-                                @if ($promoMessage)
+                                @if ($promoBlokirGabung)
+                                    <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
+                                        <i class="bi bi-info-circle me-1"></i>Promo <b>{{ $promoBlokirGabung }}</b> yang sedang
+                                        aktif tidak bisa digabung dengan promo lain.
+                                    </div>
+                                @elseif ($promoMessage)
                                     <div class="co-alert {{ $promoValid ? 'co-alert-ok' : 'co-alert-err' }}">{{ $promoMessage }}</div>
                                 @endif
 
@@ -161,7 +168,8 @@
                                         <div class="col-7">
                                             <input type="text" class="form-control" wire:model="referralCode"
                                                 placeholder="Kode referral" maxlength="9" style="text-transform: uppercase;"
-                                                {{ $referralValid ? 'readonly' : '' }}>
+                                                {{ $referralValid ? 'readonly' : '' }}
+                                                @if($promoBlokirReferral) disabled @endif>
                                         </div>
                                         <div class="col-5">
                                             @if (!$referralValid)
@@ -183,7 +191,34 @@
                                             {{ $referralMessage }}
                                         </div>
                                     @endif
-                                    <div class="co-note"><i class="bi bi-info-circle"></i> Punya kode referral dari teman? Masukkan untuk keuntungan bersama!</div>
+                                    @if($promoBlokirReferral)
+                                        <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
+                                            <i class="bi bi-info-circle me-1"></i>Kode referral tidak bisa dipakai bersama promo
+                                            <b>{{ $promoBlokirReferral }}</b> yang sedang aktif.
+                                        </div>
+                                    @else
+                                        <div class="co-note"><i class="bi bi-info-circle"></i> Punya kode referral dari teman? Masukkan untuk keuntungan bersama!</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Ajakan jadi member — hanya untuk yang BELUM member.
+                             Kebalikan dari card Poin di bawah, jadi keduanya tidak
+                             pernah muncul bersamaan. Pembeli baru (belum ada datanya)
+                             juga belum member, jadi ikut melihat ajakan ini. --}}
+                        @if (! $foundCustomer || $foundCustomer->status_member !== 'active')
+                            <div class="co-card co-member-cta">
+                                <div class="co-card-head"><i class="bi bi-stars"></i> Kamu Belum Jadi Member</div>
+                                <div class="co-card-body">
+                                    <p class="co-member-text">
+                                        Sayang banget 😢 — padahal tiap belanja <b>Rp 50.000</b> bisa jadi
+                                        <b>1 poin</b>, dan poinnya bikin belanja berikutnya
+                                        <b>lebih murah</b>. Gratis, lho!
+                                    </p>
+                                    <a href="{{ route('member.info') }}" class="co-member-btn">
+                                        <i class="bi bi-gift"></i> Lihat Syarat &amp; Keuntungannya
+                                    </a>
                                 </div>
                             </div>
                         @endif
@@ -193,9 +228,10 @@
                             <div class="co-card co-points">
                                 <div class="co-card-head"><i class="bi bi-star-fill"></i> Poin Member</div>
                                 <div class="co-card-body">
-                                    <div class="co-points-toggle">
-                                        <input class="form-check-input" type="checkbox" id="usePoints" role="switch" wire:model.live="usePoints">
-                                        <label class="form-check-label" for="usePoints" style="cursor:pointer;">
+                                    <div class="co-points-toggle" @if($promoBlokirPoin) style="opacity:.55;" @endif>
+                                        <input class="form-check-input" type="checkbox" id="usePoints" role="switch"
+                                            wire:model.live="usePoints" @if($promoBlokirPoin) disabled @endif>
+                                        <label class="form-check-label" for="usePoints" style="cursor:{{ $promoBlokirPoin ? 'not-allowed' : 'pointer' }};">
                                             <strong>Gunakan Poin Member</strong>
                                             <div style="font-size:.82rem;color:var(--ph-muted);">
                                                 Anda punya <b>{{ number_format($availablePoints, 0, ',', '.') }} poin</b>
@@ -203,6 +239,12 @@
                                             </div>
                                         </label>
                                     </div>
+                                    @if($promoBlokirPoin)
+                                        <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
+                                            <i class="bi bi-info-circle me-1"></i>Poin tidak bisa dipakai bersama promo
+                                            <b>{{ $promoBlokirPoin }}</b> yang sedang aktif.
+                                        </div>
+                                    @endif
                                     @if ($pointsExpireLabel)
                                         <div class="co-note" style="color:#b45309;"><i class="bi bi-clock-history" style="color:#b45309;"></i> Poin kadaluarsa pada <b>{{ $pointsExpireLabel }}</b></div>
                                     @endif

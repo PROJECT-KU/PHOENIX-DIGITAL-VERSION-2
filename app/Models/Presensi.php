@@ -120,6 +120,17 @@ class Presensi extends Model
         return static::rekapPeriode($userId, $start->toDateString(), $end->toDateString());
     }
 
+    /**
+     * Rekap presensi mengikuti PERIODE GAJI (bukan bulan kalender).
+     * Mis. periode Juli 2026 = 21 Juni 2026 s/d 20 Juli 2026.
+     */
+    public static function rekapPeriodeGaji($userId, int $bulan, int $tahun): array
+    {
+        [$start, $end] = \App\Support\PeriodeGaji::range($bulan, $tahun);
+
+        return static::rekapPeriode($userId, $start->toDateString(), $end->toDateString());
+    }
+
     public static function rekapPeriode($userId, $start, $end): array
     {
         $rows = static::where('user_id', $userId)

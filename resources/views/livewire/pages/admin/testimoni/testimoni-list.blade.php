@@ -66,13 +66,64 @@ Data Testimoni || lemon
                             @forelse ($Testimoni as $item)
                             <tr style="text-align: center;">
                                 <td>{{ $loop->iteration }}</td>
-                                <td class="fw-bold">
+                                <td class="fw-bold text-start">
                                     {{ $item->nama }}
                                     @if ($item->source === 'customer')
                                         <br>
                                         <span class="badge bg-info text-white mt-1" title="Dikirim langsung oleh pelanggan">
                                             <i class="bi bi-person-heart"></i> Dari Pelanggan
                                         </span>
+                                    @endif
+
+                                    {{-- Bekal admin menilai keaslian. Untuk SETIAP testimoni kiriman
+                                         pelanggan selalu tampil 2 keterangan — sudah belanja berapa kali
+                                         & sudah member atau belum — supaya penulis yang belum pernah
+                                         belanja langsung ketahuan. Testimoni buatan admin dilewati. --}}
+                                    @if ($item->source === 'customer')
+                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                            @if ($item->customer)
+                                                <span class="badge bg-success-subtle text-success border border-success rounded-pill d-inline-flex align-items-center gap-1"
+                                                    style="font-size:.66rem; line-height:1;" title="Nomor WhatsApp cocok dgn pelanggan terdaftar">
+                                                    <i class="bi bi-bag-check-fill"></i>Sudah belanja {{ $item->customer->belanja_selesai_count ?? 0 }}&times;
+                                                </span>
+                                                @if ($item->customer->status_member === 'active')
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill d-inline-flex align-items-center gap-1"
+                                                        style="font-size:.66rem; line-height:1;">
+                                                        <i class="bi bi-star-fill"></i>Sudah member
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill d-inline-flex align-items-center gap-1"
+                                                        style="font-size:.66rem; line-height:1;" title="Akan otomatis jadi member begitu testimoni ini diaktifkan">
+                                                        <i class="bi bi-hourglass-split"></i>Belum member
+                                                    </span>
+                                                @endif
+                                            @elseif ($item->no_hp)
+                                                <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill d-inline-flex align-items-center gap-1"
+                                                    style="font-size:.66rem; line-height:1;" title="Nomor tidak cocok dgn pelanggan mana pun, atau pesanannya belum ada yang Selesai">
+                                                    <i class="bi bi-x-circle-fill"></i>Belum pernah belanja
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill d-inline-flex align-items-center gap-1"
+                                                    style="font-size:.66rem; line-height:1;" title="Testimoni lama — dikirim sebelum nomor WhatsApp diwajibkan">
+                                                    <i class="bi bi-question-circle"></i>Tanpa nomor (data lama)
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        @if ($item->customer)
+                                            {{-- Info netral, BUKAN peringatan: orang lazim mengetik nama
+                                                 panggilan ("Pak Berto" vs "berto"), jadi ketidaksamaan
+                                                 nama itu wajar & bukan tanda kecurangan. Admin cukup
+                                                 diberi tahu pemilik nomornya, biar dia menilai sendiri. --}}
+                                            <div class="text-muted fw-normal mt-1" style="font-size:.68rem; line-height:1.35;">
+                                                <i class="bi bi-person-vcard me-1" style="vertical-align:-0.125em;"></i>Pemilik nomor: <b>{{ $item->customer->nama }}</b>
+                                                @if (mb_strtolower(trim($item->nama)) !== mb_strtolower(trim($item->customer->nama)))
+                                                    <div class="mt-1" style="opacity:.85;">
+                                                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>nama ketikan berbeda
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
                                     @endif
                                 </td>
                                 <td>{{ $item->peran ?: '-' }}</td>

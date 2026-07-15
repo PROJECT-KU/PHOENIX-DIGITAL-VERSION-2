@@ -87,7 +87,7 @@ Data Cash Flow || lemon
                         <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width: 175px;"
                             title="Cara menghitung periode">
                             <option value="kalender">📅 Kalender (1–akhir bln)</option>
-                            <option value="siklus20">🔄 Periode 20-19</option>
+                            <option value="siklus20">🔄 Siklus Gaji ({{ \App\Support\PeriodeGaji::cutoffDay() + 1 }}–{{ \App\Support\PeriodeGaji::cutoffDay() }})</option>
                         </select>
 
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
@@ -115,29 +115,23 @@ Data Cash Flow || lemon
                 </div>
 
                 @if($modePeriode === 'siklus20')
-                @php
-                $siklusInfo = null;
-                if ($bulan) {
-                $thn = (int) ($tahun ?: now()->year);
-                $mulaiS = \Carbon\Carbon::create($thn, (int) $bulan, 20);
-                $akhirS = $mulaiS->copy()->addMonthNoOverflow()->subDay();
-                $siklusInfo = $mulaiS->translatedFormat('d M Y') . ' – ' . $akhirS->translatedFormat('d M Y');
-                }
-                @endphp
                 <div class="mt-3 pt-3 border-top">
-                    @if($siklusInfo)
+                    @if($siklusMulai && $siklusAkhir)
                     <div class="siklus-chip d-inline-flex align-items-center gap-2">
                         <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
                             <i class="bi bi-calendar-range"></i>
                         </span>
                         <span class="siklus-chip-label">Periode</span>
-                        <span class="siklus-chip-date">{{ $mulaiS->translatedFormat('d M Y') }}</span>
+                        <span class="siklus-chip-date">{{ $siklusMulai->translatedFormat('d M Y') }}</span>
                         <i class="bi bi-arrow-right siklus-chip-arrow"></i>
-                        <span class="siklus-chip-date">{{ $akhirS->translatedFormat('d M Y') }}</span>
+                        <span class="siklus-chip-date">{{ $siklusAkhir->translatedFormat('d M Y') }}</span>
+                    </div>
+                    <div class="text-muted mt-2" style="font-size:.78rem;">
+                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Sama dengan periode di fitur <b>Gaji</b> — gajian tanggal {{ \App\Support\PeriodeGaji::cutoffDay() }}.
                     </div>
                     @else
                     <span class="text-muted" style="font-size:.85rem;">
-                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan awal siklus (tgl 20). Contoh: pilih Juli → 20 Jul s/d 19 Agu.
+                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Pilih <b>bulan</b> dulu. Siklus mengikuti tanggal gajian (tgl {{ \App\Support\PeriodeGaji::cutoffDay() }}) — contoh: pilih Juli → {{ \App\Support\PeriodeGaji::label(7, now()->year) }}.
                     </span>
                     @endif
                 </div>

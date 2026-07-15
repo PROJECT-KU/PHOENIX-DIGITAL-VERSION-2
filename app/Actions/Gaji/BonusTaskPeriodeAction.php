@@ -19,8 +19,39 @@ use Illuminate\Support\Facades\DB;
 class BonusTaskPeriodeAction
 {
     // Persentase pembayaran per status. 'terlambat' (selesai melebihi deadline)
-    // TIDAK pakai angka ini — dibayar = alokasi × (bobot/4), dihitung di distribusi().
+    // TIDAK pakai angka ini — dibayar = alokasi × (bobot/4) × faktorTelat(), di distribusi().
     public const STATUS_PERSEN = ['tepat_waktu' => 1.0, 'terlambat' => 0.6, 'tidak_selesai' => 0.0];
+
+    // Masa tenggang: telat s/d 5 hari TIDAK kena penalti tambahan (tetap bobot/4 penuh).
+    public const TENGGANG_TELAT_HARI = 5;
+
+    // Penalti bertingkat di ATAS masa tenggang: 'batas hari' => faktor pengali.
+    // Lebih dari batas terakhir memakai FAKTOR_TELAT_TERBURUK.
+    public const FAKTOR_TELAT = [15 => 0.75];
+
+    public const FAKTOR_TELAT_TERBURUK = 0.5;
+
+    /**
+     * Faktor penalti berdasar LAMA keterlambatan (hari), bukan batas periode gaji —
+     * batas periode itu kebetulan kalender, jadi telat 2 hari bisa terlihat lebih
+     * buruk dari telat 19 hari. Yang adil: makin lama telat, makin kecil.
+     *
+     * telat 1-5 hari -> 1.00 | 6-15 hari -> 0.75 | >15 hari -> 0.50
+     */
+    public static function faktorTelat(int $hariTelat): float
+    {
+        if ($hariTelat <= self::TENGGANG_TELAT_HARI) {
+            return 1.0;
+        }
+
+        foreach (self::FAKTOR_TELAT as $batas => $faktor) {
+            if ($hariTelat <= $batas) {
+                return $faktor;
+            }
+        }
+
+        return self::FAKTOR_TELAT_TERBURUK;
+    }
 
     public static function settingKey(int $bulan, int $tahun): string
     {
@@ -90,15 +121,21 @@ class BonusTaskPeriodeAction
                 $dikecualikan = $status === 'tidak_ada_info';
                 $alokasi = 0;
                 $dibayar = 0;
+                $hariTelat = $t->hariTerlambat();
+                $faktorTelat = $status === 'terlambat' ? self::faktorTelat($hariTelat) : 1.0;
 
+                // Uang TIDAK dibulatkan — pecahan rupiah dipotong (floor), tidak pernah
+                // dibulatkan ke atas. Jadi bonus tak pernah melebihi hak sebenarnya dan
+                // total tak pernah melampaui pool; sisa pecahan tetap di 'sisa'.
                 if ($adaGajiPending && ! $dikecualikan && $totalBobot > 0) {
-                    $alokasi = (int) round($sisaPool * $t->bobotPoin() / $totalBobot);
+                    $alokasi = (int) floor($sisaPool * $t->bobotPoin() / $totalBobot);
                     if ($status === 'terlambat') {
-                        // Selesai MELEBIHI deadline: dibayar = alokasi × (bobot / 4).
-                        // (ringan 1/4, sedang 2/4, berat 3/4 dari alokasinya.)
-                        $dibayar = (int) round($alokasi * $t->bobotPoin() / 4);
+                        // Selesai MELEBIHI deadline: dibayar = alokasi × (bobot/4) × faktor telat.
+                        // bobot/4 -> ringan 1/4, sedang 2/4, berat 3/4 dari alokasinya;
+                        // faktor telat -> penalti tambahan bila telat > 5 hari.
+                        $dibayar = (int) floor($alokasi * $t->bobotPoin() / 4 * $faktorTelat);
                     } else {
-                        $dibayar = (int) round($alokasi * (self::STATUS_PERSEN[$status] ?? 0));
+                        $dibayar = (int) floor($alokasi * (self::STATUS_PERSEN[$status] ?? 0));
                     }
                 }
 
@@ -127,6 +164,8 @@ class BonusTaskPeriodeAction
                     'alokasi' => $alokasi,
                     'dibayar' => $dibayar,
                     'dikecualikan' => $dikecualikan,
+                    'hari_terlambat' => $hariTelat,
+                    'faktor_telat' => $faktorTelat,
                 ];
                 $bonus += $dibayar;
             }

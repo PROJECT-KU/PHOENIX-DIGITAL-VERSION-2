@@ -133,6 +133,7 @@ Route::get('/about', AboutPage::class)->name('about');
 Route::get('/terms', TermsPage::class)->name('terms');
 Route::get('/privacy', PrivacyPage::class)->name('privacy');
 Route::get('/faq', \App\Livewire\Pages\Public\Legal\FaqPage::class)->name('faq');
+Route::get('/member', \App\Livewire\Pages\Public\Legal\MemberPage::class)->name('member.info');
 Route::get('/layanan', \App\Livewire\Pages\Public\Services\ServicesPage::class)->name('services');
 Route::get('/lacak-pesanan', \App\Livewire\Pages\Public\ShopPage\TrackOrder::class)->name('track-order');
 Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)->name('wishlist');

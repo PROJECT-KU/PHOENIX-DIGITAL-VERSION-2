@@ -222,6 +222,26 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    {{-- Info rentang periode gaji (siklus 21 s/d 20) --}}
+                    @if ($periode_bulan && $periode_tahun)
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 flex-wrap rounded-3 px-3 py-2"
+                            style="background: rgba(13,110,253,.06); border: 1px dashed rgba(13,110,253,.35);">
+                            <i class="bi bi-calendar-range text-primary" style="line-height:1;"></i>
+                            <span class="fw-semibold text-dark" style="font-size:.85rem;">
+                                Periode {{ $daftarBulan[(int) $periode_bulan] ?? '' }} {{ $periode_tahun }}:
+                                {{ \App\Support\PeriodeGaji::label((int) $periode_bulan, (int) $periode_tahun) }}
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary fw-normal" style="font-size:.7rem;">
+                                dibayar {{ \App\Support\PeriodeGaji::tanggalBayar((int) $periode_bulan, (int) $periode_tahun)->locale('id')->translatedFormat('j M Y') }}
+                            </span>
+                            <span class="text-muted" style="font-size:.75rem;">
+                                Presensi, lembur &amp; bonus task dihitung pada rentang ini.
+                            </span>
+                        </div>
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>

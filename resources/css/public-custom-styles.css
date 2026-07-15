@@ -1484,6 +1484,34 @@ body.index-page { background: #ffffff; }   /* putih bersih; flash sale & bundlin
 .tm-name { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--ph-ink); font-size: .95rem; }
 .tm-role { color: var(--ph-muted); font-size: .82rem; }
 
+/* Label pembeli sungguhan pada kartu testimoni.
+   Hijau sengaja dipakai (bukan oranye merek) — hijau dibaca universal sbg
+   "terpercaya" & menonjol di antara bintang oranye.
+   Baris sendiri + kalimat utuh + huruf .78rem: pembaca kami orang tua, jadi
+   keterbacaan dimenangkan atas keringkasan. */
+.tm-verified {
+    display: flex; align-items: center; gap: 9px; align-self: stretch;
+    margin-top: 9px; padding: 9px 13px; border-radius: 14px;
+    background: #e8f7ee; color: #0f7b3f; border: 1.5px solid #9ed9b8;
+    box-shadow: 0 3px 10px rgba(15, 123, 63, .10);
+}
+.tm-verified i { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+.tm-verified-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+/* "Pembeli Asli" dibuat sebesar nama pemberi testimoni (.95rem) — inilah yang
+   harus ditangkap mata lebih dulu oleh pembaca berusia lanjut. */
+.tm-verified-txt b { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: .95rem; letter-spacing: .01em; }
+.tm-verified-txt small { font-size: .8rem; font-weight: 600; opacity: .95; }
+
+/* Catatan privasi di bawah isian No. WhatsApp */
+.tm-privacy {
+    display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;
+    padding: 9px 11px; border-radius: 12px;
+    background: var(--ph-soft); border: 1px solid var(--ph-line);
+    color: var(--ph-muted); font-size: .78rem; line-height: 1.5;
+}
+.tm-privacy i { color: #0f7b3f; font-size: .9rem; flex-shrink: 0; margin-top: 1px; }
+.tm-privacy b { color: var(--ph-ink); }
+
 /* Slider testimoni: kartu tengah membesar sendiri */
 .phoenix-tm-swiper { padding: 18px 4px 6px; overflow: hidden; }
 .phoenix-tm-swiper .swiper-slide {
@@ -1816,6 +1844,20 @@ a.ct-info-item:hover .ct-info-ic { background: rgba(255, 255, 255, .3); }
 .co-applied-amt { font-weight: 800; color: #16a34a; white-space: nowrap; }
 
 .co-points { background: linear-gradient(120deg, #fff7ee, #fff); }
+
+/* Ajakan jadi member (hanya utk non-member). Sengaja segradasi dgn .co-points
+   supaya begitu dia jadi member, card di tempat yg sama terasa menyambung. */
+.co-member-cta { background: linear-gradient(120deg, #fff7ee, #fff); border-color: #ffd9b8; }
+.co-member-text { color: var(--ph-ink); font-size: .9rem; line-height: 1.65; margin: 0 0 14px; }
+.co-member-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    padding: 11px 18px; border-radius: 12px; border: 0;
+    background: var(--ph-grad); color: #fff; text-decoration: none;
+    font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .9rem; line-height: 1;
+    box-shadow: var(--ph-shadow); transition: transform .15s ease, filter .15s ease;
+}
+.co-member-btn:hover { color: #fff; transform: translateY(-1px); filter: brightness(1.05); }
+.co-member-btn i { font-size: 1rem; line-height: 1; }
 .co-points-toggle { display: flex; align-items: center; gap: 12px; }
 .co-points-toggle .form-check-input { width: 3em; height: 1.55em; cursor: pointer; }
 .co-points-toggle .form-check-input:checked { background-color: var(--ph-orange); border-color: var(--ph-orange); }

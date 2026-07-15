@@ -257,6 +257,77 @@ Penyelesaian Task || lemon
         .tw-thumb .cap { font-size: .68rem; color: #64748b; text-align: center; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .tw-thumb .rm { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: #fff; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: .6rem; box-shadow: 0 2px 5px rgba(239,68,68,.4); }
         .tw-thumb .badge-new { position: absolute; bottom: 24px; left: 4px; font-size: .58rem; background: #10b981; color: #fff; padding: 1px 5px; border-radius: 6px; }
+
+        /* Presisi ikon di dalam wrapper. Gaya global .stat-icon-wrapper sudah
+           align-items:center, tapi TANPA line-height:1 — <i> mewarisi
+           line-height body (1.5) sehingga glyph-nya turun sedikit dari tengah.
+           Sama persis dgn Peminjaman/Gaji/Cash Flow. */
+        .stat-icon-wrapper {
+            line-height: 1 !important;
+        }
+
+        .stat-icon-wrapper i {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .stat-icon-wrapper i::before {
+            display: block;
+            line-height: 1;
+        }
+
+        /* ===== Mobile ===== */
+        @media (max-width: 575.98px) {
+
+            /* Tombol aksi utama jadi selebar layar & rata tengah — seragam dgn
+               Peminjaman/Pengeluaran. Sebelumnya "Tambah Task" nyangkut rata
+               kiri sendirian karena text-md-end tidak berlaku di mobile. */
+            .pt-terapkan-btn,
+            .pt-add-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* Ringkasan 2x2: versi mendatar terlalu sesak — ikon 46px + jarak +
+               padding menyisakan ~74px saja untuk label & nominal, jadi
+               "Rp 923.078" terpaksa membelah baris. Ditumpuk ke bawah = lega. */
+            .pt-stat {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 8px;
+                padding: 14px 10px;
+                border-radius: 16px;
+            }
+
+            .pt-stat .ico {
+                width: 42px;
+                height: 42px;
+                font-size: 1.15rem;
+                border-radius: 12px;
+            }
+
+            .pt-stat .lbl {
+                font-size: .64rem;
+                letter-spacing: .3px;
+            }
+
+            .pt-stat .val {
+                font-size: 1rem;
+            }
+
+            /* Pil "Bonus Task": di mobile baris karyawan membungkus, jadi pil ini
+               turun & tersangkut sempit di kiri — sementara isinya rata KANAN
+               (text-align:right utk desktop). Dibuat selebar baris & rata tengah,
+               seragam dgn kartu ringkasan di atasnya. */
+            .pt-bonus-pill {
+                width: 100%;
+                text-align: center;
+                padding: 10px 14px;
+            }
+        }
     </style>
 
     @php
@@ -311,7 +382,7 @@ Penyelesaian Task || lemon
                         </div>
                     </div>
                     <div class="col-12 col-md-4 text-md-end">
-                        <button type="button" wire:click="openCreateTask" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-2 shadow-sm">
+                        <button type="button" wire:click="openCreateTask" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-2 shadow-sm pt-add-btn">
                             <i class="bi bi-plus-lg"></i> Tambah Task
                         </button>
                     </div>
@@ -405,6 +476,16 @@ Penyelesaian Task || lemon
                                 <div class="d-inline-flex flex-column align-items-center gap-1">
                                     <span class="badge bg-{{ $badgeProg[$t['progress']] ?? 'secondary' }}-subtle text-{{ $badgeProg[$t['progress']] ?? 'secondary' }} border border-{{ $badgeProg[$t['progress']] ?? 'secondary' }} rounded-pill text-nowrap">{{ $labelProg[$t['progress']] ?? ucfirst($t['progress']) }}</span>
                                     <span class="badge bg-{{ $badgeBonus[$t['bonus_status']] ?? 'secondary' }} rounded-pill text-nowrap">{{ $labelBonus[$t['bonus_status']] ?? $t['bonus_status'] }}</span>
+                                    @if($t['bonus_status'] === 'terlambat' && ($t['hari_terlambat'] ?? 0) > 0)
+                                    <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill text-nowrap d-inline-flex align-items-center gap-1" style="font-size:.68rem; line-height:1;">
+                                        <i class="bi bi-clock-history"></i>Telat {{ $t['hari_terlambat'] }} hari
+                                    </span>
+                                    @if(($t['faktor_telat'] ?? 1) < 1)
+                                    <span class="text-danger text-nowrap" style="font-size:.66rem;" title="Telat lebih dari 5 hari — bonus dikali {{ number_format($t['faktor_telat'], 2, ',', '.') }}">
+                                        penalti &times;{{ number_format($t['faktor_telat'], 2, ',', '.') }}
+                                    </span>
+                                    @endif
+                                    @endif
                                 </div>
                             </td>
                             <td>
@@ -553,11 +634,15 @@ Penyelesaian Task || lemon
                         @if($editingTaskId)
                         @foreach($editAttachments as $att)
                         <div class="tw-thumb">
-                            <a href="{{ Storage::url($att->path) }}" target="_blank" class="d-block text-decoration-none">
-                                <div class="media">
-                                    @if($att->isImage())<img src="{{ Storage::url($att->path) }}" alt="">@else<i class="bi bi-file-earmark-text"></i>@endif
-                                </div>
+                            @if($att->isImage())
+                            <a href="javascript:void(0)" role="button" class="ts-img-zoom d-block text-decoration-none" data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar">
+                                <div class="media"><img src="{{ Storage::url($att->path) }}" alt="" style="cursor:zoom-in;"></div>
                             </a>
+                            @else
+                            <a href="{{ Storage::url($att->path) }}" target="_blank" class="d-block text-decoration-none">
+                                <div class="media"><i class="bi bi-file-earmark-text"></i></div>
+                            </a>
+                            @endif
                             <div class="cap">{{ $att->name }}</div>
                             <button type="button" wire:click="removeAttachment('{{ $att->id }}')" class="rm" title="Hapus"><i class="bi bi-x"></i></button>
                         </div>
@@ -682,7 +767,7 @@ Penyelesaian Task || lemon
                     <div class="d-flex flex-wrap gap-2">
                         @foreach($activeTask->attachments as $att)
                         @if($att->isImage())
-                        <a href="{{ Storage::url($att->path) }}" target="_blank"><img src="{{ Storage::url($att->path) }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;"></a>
+                        <a href="javascript:void(0)" role="button" class="ts-img-zoom" data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar"><img src="{{ Storage::url($att->path) }}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:zoom-in;"></a>
                         @else
                         <a href="{{ Storage::url($att->path) }}" target="_blank" class="border rounded-3 px-2 py-1 d-inline-flex align-items-center gap-1 text-decoration-none" style="font-size:.78rem;"><i class="bi bi-file-earmark"></i>{{ Str::limit($att->name, 18) }}</a>
                         @endif
@@ -755,7 +840,7 @@ Penyelesaian Task || lemon
                             @endif
                             @if($c->file_path)
                                 @if($c->isImage())
-                                <a href="{{ Storage::url($c->file_path) }}" target="_blank"><img src="{{ Storage::url($c->file_path) }}" style="max-width:170px; border-radius:10px; margin-top:6px; display:block;"></a>
+                                <a href="javascript:void(0)" role="button" class="ts-img-zoom" data-img-url="{{ Storage::url($c->file_path) }}" title="Perbesar gambar"><img src="{{ Storage::url($c->file_path) }}" style="max-width:170px; border-radius:10px; margin-top:6px; display:block; cursor:zoom-in;"></a>
                                 @else
                                 <a href="{{ Storage::url($c->file_path) }}" target="_blank" class="d-inline-flex align-items-center gap-1 mt-1" style="font-size:.8rem;"><i class="bi bi-paperclip"></i>{{ $c->file_name }}</a>
                                 @endif
@@ -811,6 +896,32 @@ Penyelesaian Task || lemon
 </div>
 
 @push('scripts')
+    <script>
+        // Popup glossy untuk memperbesar lampiran/komentar gambar — SAMA PERSIS dgn
+        // Task Saya (kelas .ts-img-zoom & guard __tsImgZoomBound sengaja dipakai
+        // ulang, supaya kalau dua halaman ini pernah dimuat bersama tetap 1 handler).
+        if (!window.__tsImgZoomBound) {
+            window.__tsImgZoomBound = true;
+            document.addEventListener('click', function (e) {
+                const trigger = e.target.closest && e.target.closest('.ts-img-zoom');
+                if (!trigger) return;
+                e.preventDefault();
+                const url = trigger.getAttribute('data-img-url');
+                if (!url) return;
+                if (typeof Swal === 'undefined') { window.open(url, '_blank'); return; }
+                Swal.fire({
+                    html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + url + '" alt="Gambar" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    width: 'auto',
+                    padding: '1rem',
+                });
+            });
+        }
+    </script>
     <script>
         // Widget @mention untuk composer komentar (Alpine) — sama seperti Task Saya.
         window.tsMention = window.tsMention || function (members) {

@@ -1,4 +1,3 @@
-
 @section('title')
 Update Gaji Karyawan || lemon
 @stop
@@ -13,7 +12,7 @@ Update Gaji Karyawan || lemon
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Gaji Karyawan', 'url' => route('admin.gajikaryawan.index')],
-                        ['name' => 'Update Data Gaji Karyawan'],
+                        ['name' => 'Update Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

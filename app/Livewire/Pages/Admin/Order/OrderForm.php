@@ -394,7 +394,10 @@ class OrderForm extends Component
 
         $tempTotal = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
 
-        if ($this->usePoints && $this->pointsValue > 0) {
+        // Sama dgn checkout publik: promo yang melarang penggabungan dgn poin
+        // membatalkan pemakaian poin.
+        if ($this->usePoints && $this->pointsValue > 0
+            && $this->promoService->poinBolehDipakai($this->appliedPromos)) {
             $this->pointsDiscount = min($this->pointsValue, max(0, $tempTotal));
         } else {
             $this->pointsDiscount = 0;
@@ -662,6 +665,20 @@ class OrderForm extends Component
                 if (empty($promoData['promo_id'])) {
                     continue;
                 }
+                // Penjaga kuota — sama dgn checkout publik: kunci baris promo agar
+                // slot terakhir tidak bisa direbut dua pesanan sekaligus. Promo
+                // tanpa kuota (NULL) tidak dikunci, jadi alur lama tidak berubah.
+                $promo = Promo::find($promoData['promo_id']);
+                if ($promo && $promo->kuota !== null) {
+                    $promo = Promo::whereKey($promo->id)->lockForUpdate()->first();
+
+                    if ($promo->kuotaHabis()) {
+                        throw new \RuntimeException(
+                            'Kuota promo "'.$promo->nama_promo.'" sudah habis.'
+                        );
+                    }
+                }
+
                 $order->promos()->attach($promoData['promo_id'], [
                     'id' => (string) Str::uuid(),
                     'kode_promo' => $promoData['kode_promo'] ?? null,
@@ -669,10 +686,8 @@ class OrderForm extends Component
                     'nilai_diskon' => $promoData['nilai_diskon'] ?? 0,
                     'jumlah_diskon' => $promoData['jumlah_diskon'] ?? 0,
                 ]);
-                if ($promo = Promo::find($promoData['promo_id'])) {
-                    if (method_exists($promo, 'incrementUsage')) {
-                        $promo->incrementUsage($promoData['jumlah_diskon'] ?? 0);
-                    }
+                if ($promo) {
+                    $promo->incrementUsage($promoData['jumlah_diskon'] ?? 0);
                 }
             }
 

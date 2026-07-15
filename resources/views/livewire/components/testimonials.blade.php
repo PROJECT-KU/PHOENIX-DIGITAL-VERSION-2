@@ -37,6 +37,20 @@
                                             @if ($t->peran)
                                                 <span class="tm-role">{{ $t->peran }}</span>
                                             @endif
+
+                                            {{-- Label pembeli sungguhan. Sengaja kalimat utuh & baris
+                                                 sendiri — pembaca kami orang tua, "13×" di samping nama
+                                                 terlalu ringkas & tidak jelas artinya. Angkanya dihitung
+                                                 hidup dari pesanan 'completed', jadi ikut naik sendiri. --}}
+                                            @if ($t->customer_id && ($t->customer->belanja_selesai_count ?? 0) > 0)
+                                                <span class="tm-verified" title="Pembeli asli — pesanannya sudah selesai">
+                                                    <i class="bi bi-patch-check-fill"></i>
+                                                    <span class="tm-verified-txt">
+                                                        <b>Pembeli Asli</b>
+                                                        <small>Sudah belanja {{ $t->customer->belanja_selesai_count }} kali</small>
+                                                    </span>
+                                                </span>
+                                            @endif
                                         </span>
                                     </div>
                                 </div>
@@ -64,7 +78,17 @@
             <div class="tm-thanks" x-show="$wire.submitted" x-cloak>
                 <span class="tm-thanks-ic"><i class="bi bi-check-lg"></i></span>
                 <h4>Terima kasih! 🎉</h4>
-                <p>Testimoni Anda berhasil dikirim dan akan <b>tampil setelah disetujui admin</b>.</p>
+                {{-- Dua pesan, dipilih Alpine dari $wire.terverifikasi — layar ini
+                     memakai x-show (bukan render ulang Livewire), jadi cabangnya
+                     harus di sisi Alpine juga. --}}
+                <p x-show="$wire.terverifikasi" x-cloak>
+                    Testimoni Anda berhasil dikirim dan akan <b>tampil setelah disetujui admin</b>.
+                    Karena pesanan Anda sudah selesai, begitu disetujui Anda <b>otomatis jadi Member</b> —
+                    mulai kumpulkan poin untuk potongan belanja berikutnya. 🎁
+                </p>
+                <p x-show="!$wire.terverifikasi">
+                    Testimoni Anda berhasil dikirim dan akan <b>tampil setelah disetujui admin</b>.
+                </p>
                 <button type="button" class="ph-empty-btn" @click="open = false">Selesai</button>
             </div>
 
@@ -90,6 +114,21 @@
                         <input type="text" wire:model.defer="peran" class="form-control"
                             placeholder="Contoh: Mahasiswa / Peneliti">
                         @error('peran') <span class="tm-err">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="tm-form-row">
+                        <label>No. WhatsApp <span class="req">*</span></label>
+                        <input type="tel" inputmode="numeric" wire:model.defer="no_hp" class="form-control"
+                            placeholder="08xxxxxxxxxx" maxlength="20">
+                        @error('no_hp') <span class="tm-err">{{ $message }}</span> @enderror
+                        {{-- Jaminan yang SEMUANYA benar. Sengaja TIDAK menulis "terenkripsi":
+                             no_hp tersimpan apa adanya di database, jadi klaim itu bohong. --}}
+                        <div class="tm-privacy">
+                            <i class="bi bi-shield-lock-fill"></i>
+                            <span><b>Nomormu aman.</b> Tidak ditampilkan di testimoni &amp; tidak dibagikan ke
+                                siapa pun — hanya untuk mencocokkan pesananmu. Kalau pesananmu sudah selesai,
+                                testimoni ini bikin kamu <b>otomatis jadi Member</b>. 🎁</span>
+                        </div>
                     </div>
 
                     <div class="tm-form-row">

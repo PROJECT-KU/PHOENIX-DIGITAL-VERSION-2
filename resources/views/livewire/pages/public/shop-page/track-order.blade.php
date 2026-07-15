@@ -72,7 +72,9 @@
                                 </div>
 
                                 <div class="ph-empty-actions" style="margin-top:16px;">
-                                    @if ($order->share_token)
+                                    {{-- Struk hanya untuk pesanan SELESAI — dulu tampil di
+                                         semua status, termasuk pesanan yang dibatalkan. --}}
+                                    @if ($order->share_token && $order->status === 'completed')
                                         <a href="{{ route('order.receipt', $order->share_token) }}" class="ph-empty-btn">
                                             <i class="bi bi-file-earmark-text"></i> Lihat Struk
                                         </a>

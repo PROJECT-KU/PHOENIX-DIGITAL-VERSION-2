@@ -83,7 +83,20 @@ class PromoList extends Component
             ->latest()
             ->paginate(10);
 
-        return view('livewire.pages.admin.promo.promo-list', ['promos' => $promos])
-            ->layout('livewire.layout.templateindex');
+        // Kuota terpakai untuk SEMUA promo di halaman ini dalam 1 query — kalau
+        // memanggil $promo->kuotaTerpakai() per baris, jadi 10 query tambahan (N+1).
+        // Dasarnya sama persis dgn Promo::kuotaTerpakai(): pesanan non-cancelled.
+        $terpakai = \Illuminate\Support\Facades\DB::table('order_promo')
+            ->join('orders', 'orders.id', '=', 'order_promo.order_id')
+            ->whereIn('order_promo.promo_id', $promos->pluck('id'))
+            ->where('orders.status', '!=', 'cancelled')
+            ->selectRaw('order_promo.promo_id, COUNT(*) as jml')
+            ->groupBy('order_promo.promo_id')
+            ->pluck('jml', 'order_promo.promo_id');
+
+        return view('livewire.pages.admin.promo.promo-list', [
+            'promos' => $promos,
+            'kuotaTerpakai' => $terpakai,
+        ])->layout('livewire.layout.templateindex');
     }
 }

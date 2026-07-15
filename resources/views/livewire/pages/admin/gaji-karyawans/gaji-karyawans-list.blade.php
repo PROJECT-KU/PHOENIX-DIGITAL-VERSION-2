@@ -52,6 +52,20 @@ Data Gaji Karyawan || lemon
             border-radius: 14px;
             color: #fff;
         }
+
+        .grand-total-card .grand-total-label { font-size: 1.05rem; line-height: 1.3; }
+        .grand-total-card .grand-total-amount { letter-spacing: -.01em; }
+        .grand-total-card .gt-divider { display: none; width: 64px; height: 2px; background: rgba(255, 255, 255, .35); border-radius: 2px; margin: .2rem auto .15rem; }
+
+        /* Mobile: tumpuk ke tengah — ikon membesar, label jadi kapital kecil sbg
+           keterangan, nominal jadi bintang utama. Sama persis dgn Data Peminjaman. */
+        @media (max-width: 575.98px) {
+            .grand-total-card { border-radius: 22px; padding: 1.5rem 1.15rem !important; }
+            .grand-total-card .stat-icon-wrapper { width: 58px; height: 58px; font-size: 1.7rem; border-radius: 18px; }
+            .grand-total-card .grand-total-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .92; }
+            .grand-total-card .grand-total-amount { font-size: 1.95rem; margin-top: .05rem; }
+            .grand-total-card .gt-divider { display: block; }
+        }
     </style>
 
     <div class="container-fluid">
@@ -208,15 +222,16 @@ Data Gaji Karyawan || lemon
                 </div>
 
                 <!-- Grand Total -->
-                <div class="grand-total-card mt-3 p-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-3">
+                <div class="grand-total-card mt-3 p-4 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
+                    <div class="d-flex flex-column flex-sm-row align-items-center gap-2 gap-sm-3">
                         <span class="stat-icon-wrapper flex-shrink-0"
                             style="background: rgba(255,255,255,0.2); box-shadow: none;">
                             <i class="bi bi-cash-stack"></i>
                         </span>
-                        <span class="fw-semibold text-white" style="font-size: 1.05rem;">Total Keseluruhan Gaji</span>
+                        <span class="fw-semibold text-white grand-total-label">Total Keseluruhan Gaji</span>
                     </div>
-                    <h3 class="fw-bold mb-0 text-white">Rp {{ number_format($grandTotal, 0, ',', '.') }}</h3>
+                    <span class="gt-divider"></span>
+                    <h3 class="fw-bold mb-0 text-white grand-total-amount">Rp {{ number_format($grandTotal, 0, ',', '.') }}</h3>
                 </div>
 
                 @else

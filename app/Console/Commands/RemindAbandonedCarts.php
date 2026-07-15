@@ -25,8 +25,14 @@ class RemindAbandonedCarts extends Command
             ->chunkById(100, function ($carts) use (&$count) {
                 foreach ($carts as $cart) {
                     // Sudah beli setelah menyimpan keranjang? → dianggap pulih, tidak diingatkan.
+                    //
+                    // Pesanan 'cancelled' & 'draft' TIDAK dihitung pulih: dulu status
+                    // tidak dilihat sama sekali, sehingga pembeli yang justru MEMBATALKAN
+                    // pesanannya malah tidak pernah diingatkan — padahal dia yang paling
+                    // perlu ditarik kembali.
                     $recovered = Order::whereHas('customer', fn ($q) => $q->where('email', $cart->email))
                         ->where('created_at', '>=', $cart->updated_at)
+                        ->whereNotIn('status', ['cancelled', 'draft'])
                         ->exists();
 
                     if ($recovered) {

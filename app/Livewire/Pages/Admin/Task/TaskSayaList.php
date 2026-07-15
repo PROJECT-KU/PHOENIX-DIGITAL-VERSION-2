@@ -11,6 +11,7 @@ use App\Models\TaskCommentRead;
 use App\Models\User;
 use App\Notifications\TaskAssigned;
 use App\Notifications\TaskReopened;
+use App\Support\PeriodeGaji;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -222,7 +223,18 @@ class TaskSayaList extends Component
         if ($task->user_id !== auth()->id() || $task->isLocked() || $task->progress !== 'dikerjakan') {
             return;
         }
-        $task->update(['progress' => 'selesai', 'completed_at' => now()]);
+        // Bonus ikut periode gaji saat task BENAR-BENAR selesai, bukan deadline-nya.
+        // Mis. deadline 10 Jun tapi selesai 30 Jun -> masuk gaji Juli (21 Jun–20 Jul),
+        // sebab gaji Juni sudah dibayar 20 Jun & bonusnya akan terkunci di 0.
+        $selesaiPada = now();
+        $periode = PeriodeGaji::dariTanggal($selesaiPada);
+
+        $task->update([
+            'progress' => 'selesai',
+            'completed_at' => $selesaiPada,
+            'periode_bulan' => $periode['bulan'],
+            'periode_tahun' => $periode['tahun'],
+        ]);
         $this->dispatch('swal-success', message: 'Task ditandai selesai.');
     }
 
@@ -496,10 +508,14 @@ class TaskSayaList extends Component
         $categoryId = $this->t_category_id ?: null;
         $labelId = ($categoryId && $this->t_label_id) ? $this->t_label_id : null;
 
+        // Task baru belum selesai -> periode dipatok dari deadline sbg perkiraan,
+        // nanti ditandai ulang dari tanggal selesai saat tandaiSelesai().
+        $periodeTask = PeriodeGaji::dariTanggal($akhir);
+
         // Field bersama untuk semua sub-task dalam grup.
         $shared = [
-            'periode_bulan' => $akhir->month,
-            'periode_tahun' => $akhir->year,
+            'periode_bulan' => $periodeTask['bulan'],
+            'periode_tahun' => $periodeTask['tahun'],
             'nama' => $this->t_nama,
             'deskripsi' => $this->t_deskripsi,
             'task_category_id' => $categoryId,
@@ -659,12 +675,16 @@ class TaskSayaList extends Component
                 ->value('id');
         }
 
+        // Dibuka lagi -> completed_at dihapus, jadi periode kembali dipatok dari
+        // deadline baru; akan ditandai ulang dari tanggal selesai putaran ini.
+        $periodeReopen = PeriodeGaji::dariTanggal($deadline);
+
         $task->update([
             'progress' => 'dikerjakan',
             'completed_at' => null,
             'deadline_selesai' => $this->reopen_deadline,
-            'periode_bulan' => $deadline->month,
-            'periode_tahun' => $deadline->year,
+            'periode_bulan' => $periodeReopen['bulan'],
+            'periode_tahun' => $periodeReopen['tahun'],
             'task_category_label_id' => $labelId,
             // Buka lagi peluang notifikasi deadline/overdue untuk putaran revisi ini.
             'deadline_notified_at' => null,

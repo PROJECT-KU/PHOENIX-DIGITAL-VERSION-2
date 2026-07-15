@@ -41,7 +41,7 @@ class OrderStatusMail extends Mailable
                 'icon' => '✓', 'badgeBg' => '#ecfdf5', 'badgeColor' => '#10b981',
                 'heading' => 'Pembayaran Berhasil!',
                 'intro' => 'Terima kasih! Pembayaran Anda sudah kami terima dan pesanan sedang diproses. Detail akun akan dikirim via WhatsApp/email secepatnya pada jam operasional.',
-                'ctaText' => 'Lihat Struk',
+                'ctaText' => 'Lacak Pesanan',
             ],
             'cancelled' => [
                 'icon' => '⌛', 'badgeBg' => '#fef2f2', 'badgeColor' => '#ef4444',
@@ -61,7 +61,10 @@ class OrderStatusMail extends Mailable
         $ctaUrl = match ($this->type) {
             'reminder' => route('payment', $this->order),
             'cancelled' => route('shop.index'),
-            default => $this->order->share_token ? route('order.receipt', $this->order->share_token) : route('shop.index'),
+            // Dulu mengarah ke struk, tapi struk kini hanya untuk pesanan SELESAI —
+            // pesanan yang baru dibayar akan kena 404. Halaman lacak tetap berguna:
+            // pembeli melihat statusnya, dan tombol struk muncul di sana saat selesai.
+            default => route('track-order'),
         };
 
         return new Content(

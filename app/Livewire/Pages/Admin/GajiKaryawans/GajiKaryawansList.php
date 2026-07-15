@@ -98,8 +98,8 @@ class GajiKaryawansList extends Component
         $bulan = (int) now()->month;
         $tahun = (int) now()->year;
 
-        // Tanggal pembayaran draft = akhir bulan periode
-        $tanggal = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        // Tanggal pembayaran draft = tanggal gajian (cutoff, default tgl 20) pada periode tsb.
+        $tanggal = \App\Support\PeriodeGaji::tanggalBayar($bulan, $tahun)->toDateString();
 
         // Periode SEBELUMNYA (1 bulan sebelum periode target)
         $prev = Carbon::create($tahun, $bulan, 1)->subMonthNoOverflow();
@@ -146,7 +146,8 @@ class GajiKaryawansList extends Component
                     $tarifOn = (int) ($detail->tarif_presensi_online ?? 0);
                     $tarifLembur = (int) ($detail->tarif_lembur_per_jam ?? 0);
 
-                    $rekap = Presensi::rekapBulan($ref->nama_karyawan, $bulan, $tahun);
+                    // Ikuti PERIODE GAJI (21 bln sebelumnya s/d 20 bln ini), bukan bulan kalender.
+                    $rekap = Presensi::rekapPeriodeGaji($ref->nama_karyawan, $bulan, $tahun);
                     $jmlOff = (int) $rekap['hari_offline'];
                     $jmlOn = (int) $rekap['hari_online'];
                     $jamLembur = (int) round($rekap['jam_lembur']);

@@ -153,12 +153,26 @@ class GajiKaryawansForm extends Component
             $this->status = $this->gajikaryawan->status;
             $this->mode = 'edit';
 
+            // Gaji yang masih DRAFT (belum dibayar) disegarkan dari sumbernya:
+            // - tarif lembur & tarif hadir  -> data Karyawan (EmployeeDetail) terkini
+            // - jam lembur & jumlah hadir   -> fitur Presensi sesuai PERIODE GAJI (21 s/d 20)
+            // Ini penting untuk draft hasil "Generate Gaji" yang dibuat sebelum presensi lengkap.
+            // Gaji COMPLETED sengaja TIDAK diubah (nilai historis terkunci).
+            if ($this->status !== 'completed') {
+                $this->muatTarifKaryawan();
+                $this->muatDataPresensi();
+            }
+
             $this->hitungSisaPinjaman();
         } else {
             $this->mode = 'create';
-            $this->tanggal_transaksi = now()->format('Y-m-d');
             $this->periode_bulan = now()->month;
             $this->periode_tahun = now()->year;
+            // Default tanggal bayar = tanggal gajian (cutoff, default tgl 20) periode berjalan.
+            $this->tanggal_transaksi = \App\Support\PeriodeGaji::tanggalBayar(
+                (int) $this->periode_bulan,
+                (int) $this->periode_tahun
+            )->format('Y-m-d');
             $this->bonus_penyelesaian_task = 0;
             // Tarif diisi dari data karyawan saat karyawan dipilih; default 0.
             $this->jam_lembur = 0;
@@ -224,7 +238,8 @@ class GajiKaryawansForm extends Component
             return;
         }
 
-        $rekap = \App\Models\Presensi::rekapBulan(
+        // Ikuti PERIODE GAJI (21 bln sebelumnya s/d 20 bln ini), bukan bulan kalender.
+        $rekap = \App\Models\Presensi::rekapPeriodeGaji(
             $this->nama_karyawan,
             (int) $this->periode_bulan,
             (int) $this->periode_tahun
@@ -513,9 +528,11 @@ class GajiKaryawansForm extends Component
 
     private function creategajikaryawan(SyncCashFlowAction $action)
     {
+        $baru = null;
+
         try {
-            DB::transaction(function () use ($action) {
-                $gaji = GajiKaryawans::create(array_merge(
+            DB::transaction(function () use ($action, &$baru) {
+                $gaji = $baru = GajiKaryawans::create(array_merge(
                     ['id_transaksi' => Str::upper(Str::random(5))],
                     $this->payload()
                 ));
@@ -534,6 +551,9 @@ class GajiKaryawansForm extends Component
                 $this->syncPengembalianPinjaman($gaji, $action);
             });
 
+            // Gaji bisa langsung dibuat completed -> 'pending' sbg status "sebelum".
+            $this->beritahuKaryawanGajiLunas($baru, 'pending');
+
             session()->flash('success', 'Data Gaji Karyawan berhasil ditambahkan!');
 
             return redirect()->route('admin.gajikaryawan.index');
@@ -544,6 +564,10 @@ class GajiKaryawansForm extends Component
 
     private function updategajikaryawan(SyncCashFlowAction $action)
     {
+        // Ditangkap SEBELUM update — sesudahnya nilai lama sudah hilang, dan
+        // tanpa ini notifikasi akan terkirim ulang tiap kali gaji completed diedit.
+        $statusSebelum = $this->gajikaryawan->status;
+
         try {
             DB::transaction(function () use ($action) {
                 $this->gajikaryawan->update($this->payload());
@@ -560,6 +584,10 @@ class GajiKaryawansForm extends Component
                 $this->syncPengembalianPinjaman($this->gajikaryawan, $action);
             });
 
+            // Sesudah transaksi commit — kalau simpanan gagal & rollback, karyawan
+            // tidak boleh terlanjur dapat kabar gajinya cair.
+            $this->beritahuKaryawanGajiLunas($this->gajikaryawan, $statusSebelum);
+
             session()->flash('success', 'Perubahan Data Gaji Karyawan berhasil disimpan!');
 
             return redirect()->route('admin.gajikaryawan.index');
@@ -575,6 +603,22 @@ class GajiKaryawansForm extends Component
      * Agar tidak dobel hitung, beban gaji dinaikkan sebesar potongan ini
      * (lihat creategajikaryawan/updategajikaryawan), sehingga net kas tetap benar.
      */
+    /**
+     * Kirim notifikasi lonceng ke karyawan HANYA saat gajinya berpindah ke LUNAS.
+     * Dipakai bersama oleh jalur create & update supaya aturannya cuma di satu tempat.
+     *
+     * Sengaja tidak dikirim bila: gaji sudah completed sejak awal (mis. admin cuma
+     * mengedit catatan), atau statusnya masih pending.
+     */
+    private function beritahuKaryawanGajiLunas(?GajiKaryawans $gaji, ?string $statusSebelum): void
+    {
+        if (! $gaji || $gaji->status !== 'completed' || $statusSebelum === 'completed') {
+            return;
+        }
+
+        $gaji->karyawan?->notify(new \App\Notifications\GajiCompleted($gaji));
+    }
+
     private function syncPengembalianPinjaman(GajiKaryawans $gaji, SyncCashFlowAction $action): void
     {
         $nominal = $this->toNumber($this->potongan_pinjaman);

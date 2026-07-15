@@ -50,6 +50,14 @@ class CheckoutPage extends Component
 
     public $pointsDiscount = 0;
 
+    // Nama promo terpasang yang melarang penggabungan — null bila tidak ada.
+    // Dipakai view utk menonaktifkan input & menjelaskan alasannya ke pembeli.
+    public $promoBlokirGabung = null;
+
+    public $promoBlokirReferral = null;
+
+    public $promoBlokirPoin = null;
+
     // Promo
     public $kodePromo = '';
 
@@ -400,7 +408,14 @@ class CheckoutPage extends Component
 
         $tempTotal = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
 
-        if ($this->usePoints && $this->pointsValue > 0) {
+        // Promo terpasang bisa melarang penggabungan. Nama promo pelarangnya
+        // disimpan supaya UI bisa menonaktifkan input SEKALIGUS menyebut alasannya
+        // — kalau cuma diam-diam tidak berlaku, pembeli awam akan mengira bisa.
+        $this->promoBlokirGabung = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_other');
+        $this->promoBlokirReferral = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_referral');
+        $this->promoBlokirPoin = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_points');
+
+        if ($this->usePoints && $this->pointsValue > 0 && ! $this->promoBlokirPoin) {
             $this->pointsDiscount = min($this->pointsValue, max(0, $tempTotal));
         } else {
             $this->pointsDiscount = 0;
@@ -549,6 +564,24 @@ class CheckoutPage extends Component
 
             // Save promo usage to pivot table
             foreach ($this->appliedPromos as $promoData) {
+                $promo = Promo::find($promoData['promo_id']);
+
+                // Penjaga kuota. Promo dipasang di keranjang jauh sebelum bayar,
+                // jadi slot terakhir bisa saja diambil orang lain di sela itu.
+                // lockForUpdate() menahan checkout lain yg memakai promo SAMA
+                // sampai transaksi ini selesai, sehingga dua pembeli tidak bisa
+                // sama-sama lolos merebut slot terakhir.
+                // Promo tanpa kuota (kuota NULL) tidak dikunci -> alur lama utuh.
+                if ($promo && $promo->kuota !== null) {
+                    $promo = Promo::whereKey($promo->id)->lockForUpdate()->first();
+
+                    if ($promo->kuotaHabis()) {
+                        throw new \RuntimeException(
+                            'Kuota promo "'.$promo->nama_promo.'" baru saja habis. Silakan muat ulang halaman dan pesan kembali.'
+                        );
+                    }
+                }
+
                 $order->promos()->attach($promoData['promo_id'], [
                     'id' => Str::uuid(),
                     'kode_promo' => $promoData['kode_promo'] ?? null,
@@ -558,7 +591,6 @@ class CheckoutPage extends Component
                 ]);
 
                 // Increment promo usage
-                $promo = Promo::find($promoData['promo_id']);
                 if ($promo) {
                     $promo->incrementUsage($promoData['jumlah_diskon']);
                 }
