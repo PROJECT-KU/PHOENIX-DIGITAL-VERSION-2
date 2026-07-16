@@ -75,11 +75,14 @@ Data Testimoni || lemon
                                         </span>
                                     @endif
 
-                                    {{-- Bekal admin menilai keaslian. Untuk SETIAP testimoni kiriman
-                                         pelanggan selalu tampil 2 keterangan — sudah belanja berapa kali
-                                         & sudah member atau belum — supaya penulis yang belum pernah
-                                         belanja langsung ketahuan. Testimoni buatan admin dilewati. --}}
-                                    @if ($item->source === 'customer')
+                                    {{-- Bekal admin menilai keaslian: sudah belanja berapa kali & sudah
+                                         member atau belum, supaya penulis yang belum pernah belanja
+                                         langsung ketahuan.
+                                         Syaratnya ADA TAUTAN PELANGGAN atau kiriman pelanggan — bukan
+                                         source-nya. Testimoni yang diinput admin dari WhatsApp tetap
+                                         punya tautan pelanggan (source='admin'), dan dulu lencananya
+                                         tidak muncul sama sekali. --}}
+                                    @if ($item->customer_id || $item->source === 'customer')
                                         <div class="d-flex flex-wrap gap-1 mt-1">
                                             @if ($item->customer)
                                                 <span class="badge bg-success-subtle text-success border border-success rounded-pill d-inline-flex align-items-center gap-1"

@@ -1,5 +1,74 @@
 <form wire:submit.prevent="save">
+    <style>
+        .tf-pick-btn { cursor: pointer; text-align: left; }
+        .tf-pick-btn::after {
+            content: "\F282"; font-family: "bootstrap-icons"; float: right; color: #94a3b8; font-size: .8rem;
+        }
+        .tf-pick-list { max-height: 320px; overflow-y: auto; text-align: left; }
+        .tf-pick-item {
+            display: block; width: 100%; text-align: left; border: 1px solid #eef0f7; background: #fff;
+            border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; cursor: pointer; transition: .12s;
+        }
+        .tf-pick-item:hover { border-color: #c7d2fe; background: #f7f8ff; }
+        .tf-pick-name { font-weight: 700; color: #1e293b; font-size: .92rem; }
+        .tf-pick-sub { color: #64748b; font-size: .76rem; }
+        .tf-pick-empty { color: #94a3b8; font-size: .88rem; padding: 18px; text-align: center; }
+    </style>
+
     <div class="row g-4">
+        {{-- Tautan ke pelanggan: sumber label "Pembeli Asli" di homepage.
+             Nomor diambil dari data pelanggan, TIDAK diketik admin — salah satu
+             digit saja, tautannya meleset & labelnya diam-diam tidak muncul. --}}
+        <div class="col-12">
+            <label class="form-label fw-bold text-secondary">
+                Tautkan ke Pelanggan <span class="text-muted fw-normal" style="font-size:.8rem;">(opsional)</span>
+            </label>
+
+            <button type="button" onclick="tfPelangganPicker(this)"
+                class="form-control form-select tf-pick-btn @error('customer_id') is-invalid @enderror">
+                {{ $pelangganTerpilih?->nama ?? 'Pilih pelanggan — atau biarkan kosong' }}
+            </button>
+            @error('customer_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+
+            @if ($pelangganTerpilih)
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <span class="badge bg-success-subtle text-success border border-success rounded-pill d-inline-flex align-items-center gap-1"
+                        style="font-size:.72rem; line-height:1;">
+                        <i class="bi bi-bag-check-fill"></i>Sudah belanja {{ $pelangganTerpilih->belanja_selesai_count }} kali
+                    </span>
+                    @if ($pelangganTerpilih->status_member === 'active')
+                        <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill d-inline-flex align-items-center gap-1"
+                            style="font-size:.72rem; line-height:1;">
+                            <i class="bi bi-star-fill"></i>Sudah member
+                        </span>
+                    @else
+                        <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill d-inline-flex align-items-center gap-1"
+                            style="font-size:.72rem; line-height:1;"
+                            title="Otomatis jadi member begitu testimoni ini berstatus Aktif">
+                            <i class="bi bi-hourglass-split"></i>Belum member
+                        </span>
+                    @endif
+                    <span class="text-muted" style="font-size:.76rem;">
+                        <i class="bi bi-whatsapp me-1" style="vertical-align:-0.125em;"></i>{{ $no_hp }}
+                    </span>
+                    <button type="button" wire:click="lepasPelanggan"
+                        class="btn btn-sm btn-light-danger rounded-pill px-3 d-inline-flex align-items-center gap-1"
+                        style="line-height:1; font-size:.74rem;">
+                        <i class="bi bi-x-lg"></i>Lepas
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-1">
+                    <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Testimoni ini akan tampil dengan label
+                    <b>Pembeli Asli</b> di halaman depan.
+                </small>
+            @else
+                <small class="text-muted d-block mt-1">
+                    <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Kosongkan bila testimoni ini bukan dari
+                    pelanggan terdaftar. Hanya pelanggan dengan pesanan <b>Selesai</b> yang bisa dipilih.
+                </small>
+            @endif
+        </div>
+
         <div class="col-md-6">
             <label class="form-label fw-bold text-secondary">Nama <span class="text-danger">*</span></label>
             <input type="text" wire:model.defer="nama" class="form-control @error('nama') is-invalid @enderror"
@@ -160,3 +229,76 @@
     });
 </script>
 <!--================== END SWEET ALERT IMAGE UPLOAD ==================-->
+
+<!--================== PICKER PELANGGAN (Swal glossy, seragam dgn Pengeluaran) ==================-->
+@php
+    // Disiapkan di sini, bukan di dalam @json(...): direktif Blade memotong
+    // argumennya dgn mencocokkan kurung, jadi array multi-baris bikin parse error.
+    $tfPelangganJs = $daftarPelanggan->map(fn ($c) => [
+        'id' => $c->id,
+        'nama' => $c->nama,
+        'no_hp' => $c->no_hp,
+        'belanja' => $c->belanja_selesai_count,
+        'member' => $c->status_member === 'active',
+    ])->values();
+@endphp
+<script>
+    // Daftar pelanggan yg berhak label "Pembeli Asli" — hanya yg punya pesanan Selesai.
+    window.__tfPelanggan = @json($tfPelangganJs);
+
+    window.tfPelangganPicker = function (btn) {
+        if (typeof Swal === 'undefined') return;
+        const el = btn.closest('[wire\\:id]');
+        if (!el) return;
+        const cid = el.getAttribute('wire:id');
+        const items = window.__tfPelanggan || [];
+
+        const rows = items.length
+            ? items.map(function (it) {
+                const lencana = it.member
+                    ? '<span class="badge bg-primary-subtle text-primary border border-primary rounded-pill" style="font-size:.64rem;">member</span>'
+                    : '';
+                return '<button type="button" class="tf-pick-item" data-id="' + it.id + '" ' +
+                    'data-search="' + ((it.nama || '') + ' ' + (it.no_hp || '')).toLowerCase() + '">' +
+                    '<span class="tf-pick-name">' + it.nama + ' ' + lencana + '</span>' +
+                    '<span class="tf-pick-sub">' + it.no_hp + ' &middot; sudah belanja ' + it.belanja + ' kali</span>' +
+                    '</button>';
+            }).join('')
+            : '<div class="tf-pick-empty">Belum ada pelanggan dengan pesanan Selesai.</div>';
+
+        Swal.fire({
+            title: 'Pilih Pelanggan',
+            html: '<input id="tfPickSearch" class="form-control mb-2" placeholder="Ketik nama atau nomor...">' +
+                '<div id="tfPickList" class="tf-pick-list">' + rows + '</div>',
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdrop: 'rgba(139, 92, 246, 0.15)',
+            customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+            buttonsStyling: false,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: 480,
+            padding: '1.25rem',
+            didOpen: function () {
+                const search = document.getElementById('tfPickSearch');
+                const listEl = document.getElementById('tfPickList');
+                if (search) {
+                    search.addEventListener('input', function () {
+                        const q = search.value.toLowerCase();
+                        listEl.querySelectorAll('.tf-pick-item').forEach(function (b) {
+                            b.style.display = b.dataset.search.includes(q) ? '' : 'none';
+                        });
+                    });
+                    setTimeout(function () { search.focus(); }, 100);
+                }
+                listEl.querySelectorAll('.tf-pick-item').forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        // set() memicu updatedCustomerId() -> nama & no_hp terisi sendiri
+                        if (window.Livewire) window.Livewire.find(cid).set('customer_id', b.dataset.id);
+                        Swal.close();
+                    });
+                });
+            }
+        });
+    };
+</script>
+<!--================== END PICKER PELANGGAN ==================-->
