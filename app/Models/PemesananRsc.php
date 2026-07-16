@@ -42,9 +42,25 @@ class PemesananRsc extends Model
     ];
 
     // relationship
+    //
+    // Satu batch RSC bisa punya DUA baris cash flow: PEMASUKAN (kategori
+    // 'PemesananRSC') dan MODAL akun private (kategori 'Modal Akun Private').
+    // Relasinya sengaja DIBATASI per kategori supaya kedua sync tidak saling
+    // menimpa (updateOrCreate/delete pemasukan tidak menyentuh baris modal).
     public function cashFlow(): MorphOne
     {
-        return $this->morphOne(CashFlow::class, 'sourceable');
+        return $this->morphOne(CashFlow::class, 'sourceable')
+            ->where('category', 'PemesananRSC');
+    }
+
+    /**
+     * Baris cash flow MODAL akun private untuk batch ini (bila akunnya private).
+     * Dikelola SyncRscPrivateCostAction; terpisah dari pemasukan di atas.
+     */
+    public function cashFlowModal(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable')
+            ->where('category', 'Modal Akun Private');
     }
 
     /**

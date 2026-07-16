@@ -561,10 +561,14 @@ class PemesananrscForm extends Component
         $representatif = $rows->first();
         $totalBatch = (int) $rows->sum('total');
 
-        // Sisakan hanya cash flow milik baris representatif.
+        // Sisakan hanya cash flow milik baris representatif — pemasukan DAN modal.
+        // Modal hanya boleh menempel di representatif; bersihkan sisanya supaya
+        // tidak pernah terhitung dobel walau representatif berganti.
+        $modalAction = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
         foreach ($rows as $row) {
             if ($row->id !== $representatif->id) {
                 $action->delete($row);
+                $modalAction->delete($row);
             }
         }
 
@@ -577,6 +581,10 @@ class PemesananrscForm extends Component
             'category' => 'PemesananRSC',
             'description' => 'Pesanan Rumah Scopus - '.$this->nama_camp.' Batch '.$this->batch_camp,
         ]);
+
+        // Modal akun PRIVATE (bila akunnya private) — baris terpisah, idempoten.
+        // Non-private/tak layak → self-delete di dalam action, jadi aman dipanggil selalu.
+        app(\App\Actions\Finance\SyncRscPrivateCostAction::class)->execute($representatif);
     }
 
     private function createpemesananrsc(SyncCashFlowAction $action)
@@ -646,6 +654,10 @@ class PemesananrscForm extends Component
                 ->get()
                 ->each(function ($item) use ($action) {
                     $action->delete($item);
+                    // Bersihkan juga baris modal (bila item ini pemegangnya) supaya
+                    // tidak jadi cash flow yatim. syncRscBatchCashFlow() setelah ini
+                    // akan mencatat ulang modal pada representatif baru.
+                    app(\App\Actions\Finance\SyncRscPrivateCostAction::class)->delete($item);
                     $item->delete();
                 });
 

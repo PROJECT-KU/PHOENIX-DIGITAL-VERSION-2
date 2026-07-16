@@ -46,12 +46,18 @@ class DataAkunForm extends Component
     }
 
     /**
-     * Semua slot nama akun dari produk.
+     * Peta slot nama akun => id produk induknya.
      * Private -> 1 slot ("Nama 1"); Sharing -> 10 slot ("Nama 1".."Nama 10").
+     *
+     * Nama slot memang DIBANGKITKAN dari produk, jadi induknya sudah pasti —
+     * tidak perlu ditebak dari teks nama (rapuh: spasi/typo/huruf besar).
+     * Petanya dipakai mengisi product_id otomatis saat slot dipilih.
+     *
+     * @return array<string,string>  "Grammarly 1" => <uuid produk Grammarly>
      */
-    private function slotNames(): array
+    private function slotMap(): array
     {
-        $names = [];
+        $map = [];
         foreach (Product::orderBy('nama_akun')->get(['id', 'nama_akun', 'tipe_akun']) as $p) {
             $base = trim((string) $p->nama_akun);
             if ($base === '') {
@@ -59,11 +65,31 @@ class DataAkunForm extends Component
             }
             $max = $p->tipe_akun === 'private' ? 1 : 10;
             for ($n = 1; $n <= $max; $n++) {
-                $names[] = $base.' '.$n;
+                $map[$base.' '.$n] = (string) $p->id;
             }
         }
 
-        return $names;
+        return $map;
+    }
+
+    /**
+     * Semua slot nama akun dari produk (hanya namanya).
+     */
+    private function slotNames(): array
+    {
+        return array_keys($this->slotMap());
+    }
+
+    /**
+     * Id produk induk dari slot nama yang sedang dipilih.
+     *
+     * Null bila namanya bukan slot bawaan (mis. data lama yang diketik manual) —
+     * aman: akun tanpa tautan dianggap bukan-private, modalnya tidak dicatat dan
+     * penjualan RSC-nya tidak diakui ke produk mana pun.
+     */
+    private function productIdDariSlot(): ?string
+    {
+        return $this->slotMap()[trim((string) $this->nama_akun)] ?? null;
     }
 
     /**
@@ -117,6 +143,9 @@ class DataAkunForm extends Component
         try {
             DataAkun::create([
                 'nama_akun' => $this->nama_akun,
+                // Tautan ke produk induk diisi OTOMATIS dari slot yang dipilih —
+                // menentukan private/sharing & harga modal tanpa input tambahan.
+                'product_id' => $this->productIdDariSlot(),
                 'username_akun' => $this->username_akun,
                 'password_akun' => $this->password_akun,
                 'link_login_akun' => $this->link_login_akun,
@@ -142,6 +171,9 @@ class DataAkunForm extends Component
         try {
             $this->dataAkun->update([
                 'nama_akun' => $this->nama_akun,
+                // Tautan ke produk induk diisi OTOMATIS dari slot yang dipilih —
+                // menentukan private/sharing & harga modal tanpa input tambahan.
+                'product_id' => $this->productIdDariSlot(),
                 'username_akun' => $this->username_akun,
                 'password_akun' => $this->password_akun,
                 'link_login_akun' => $this->link_login_akun,

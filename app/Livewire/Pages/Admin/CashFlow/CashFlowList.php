@@ -10,6 +10,7 @@ use App\Models\OrderItem;
 use App\Models\PemesananRsc;
 use App\Models\Pengembalian;
 use App\Models\Spending;
+use App\Support\CashFlowInsight;
 use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -33,6 +34,9 @@ class CashFlowList extends Component
 
     public $produkPerPage = 8;
 
+    /** Analisa menyeluruh (PHP, instan). Kosong = tombol belum ditekan. */
+    public array $analisaLengkap = [];
+
     public function mount(): void
     {
         // Default ke periode bulan & tahun berjalan
@@ -46,7 +50,39 @@ class CashFlowList extends Component
         if (in_array($property, ['bulan', 'tahun', 'modePeriode'])) {
             $this->resetPage();
             $this->produkPage = 1;
+            // Analisa terikat ke periode. Tanpa ini, admin ganti bulan lalu
+            // membaca analisa bulan lama sebagai bulan baru.
+            $this->analisaLengkap = [];
         }
+    }
+
+    /**
+     * Tombol "Analisa Lengkap" — instan, gratis, nol data keluar dari server.
+     *
+     * Menghasilkan analisa menyeluruh berbasis aturan dari angka: keuangan +
+     * proyeksi ke depan, prospek produk, promo, task, kesehatan bisnis, dan
+     * rencana aksi. Dihitung saat diklik, bukan tiap render, supaya panel ringan.
+     */
+    public function analisaTanpaAi(): void
+    {
+        $this->analisaLengkap = $this->insight()->analisaLengkap();
+    }
+
+    /**
+     * Angka untuk panel Insight — periode ini, periode sebelumnya, per kuartal,
+     * dan sejak awal tahun.
+     *
+     * Dihitung TERPISAH dari filteredQuery()/hitungOmsetBersih(): dia cuma
+     * membaca ulang tabel cash_flows dgn rentang yang sama, tidak mengubah
+     * satu pun perilaku tabel, filter, periode, atau unduhan PDF yang sudah ada.
+     */
+    protected function insight(): CashFlowInsight
+    {
+        return new CashFlowInsight(
+            bulan: $this->bulan ? (int) $this->bulan : null,
+            tahun: $this->tahun ? (int) $this->tahun : null,
+            siklus: $this->usesSiklus(),
+        );
     }
 
     /**
@@ -102,6 +138,7 @@ class CashFlowList extends Component
         $this->modePeriode = 'kalender';
         $this->produkPage = 1;
         $this->resetPage();
+        $this->analisaLengkap = [];
     }
 
     public function render()
@@ -130,7 +167,15 @@ class CashFlowList extends Component
             $siklusAkhir = $aEks->copy()->subDay();
         }
 
+        // Angka + bacaan otomatis untuk panel Insight. Selalu dihitung — murah,
+        // hanya SUM/GROUP BY pada tabel cash_flows.
+        $insight = $this->insight();
+        $insightData = $insight->data();
+
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
+            'insightData' => $insightData,
+            'insightNarasi' => $insight->narasi($insightData),
+            'insightSaran' => $insight->saran($insightData),
             'siklusMulai' => $siklusMulai,
             'siklusAkhir' => $siklusAkhir,
             'reports' => $query->paginate(10),
@@ -375,12 +420,35 @@ class CashFlowList extends Component
                 $pidKey = (string) $it->product_id;
                 $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $unit * (int) $it->qty;
             }
+
+            // Modal PRIVATE dari Rumah Scopus (RSC): satu akun patungan per batch
+            // = satu modal (dari katalog Harga Modal, harga berlaku s/d tgl pesan).
+            // Wajib ada supaya penjualan RSC private (yg sudah diakui di Omset)
+            // tidak terlihat untung berlebih tanpa modalnya.
+            foreach ($this->modalRscPrivatePerProduk($privateIds) as $pidKey => $nilai) {
+                $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $nilai;
+            }
         }
 
         // Peta penjualan per produk
         $penjualanByProduct = [];
         foreach ($penjualanRows as $r) {
             $penjualanByProduct[(string) $r->product_id] = (float) $r->penjualan;
+        }
+
+        // Penjualan Rumah Scopus (RSC) IKUT diakui di sini, ditambahkan ke produk
+        // induk akunnya (pemesanan_rsc.akun → data_akuns.product_id).
+        //
+        // Kenapa perlu: akun sharing dibeli sekali (tercatat di Pengeluaran →
+        // pembelian akun) lalu dipakai juga untuk RSC. Kalau penjualan RSC tidak
+        // diakui, modal akun itu terlihat "belum tertutup" padahal sudah
+        // menghasilkan uang lewat RSC. Ini menambah sisi PENJUALAN saja —
+        // pengeluaran tidak disentuh, jadi tidak ada dobel hitung.
+        //
+        // Akun yang belum ditautkan ke produk sengaja dilewati (bukan dijadikan
+        // "Tanpa Produk"), supaya angka per produk tidak tertukar.
+        foreach ($this->penjualanRscPerProduk() as $pid => $nilai) {
+            $penjualanByProduct[$pid] = ($penjualanByProduct[$pid] ?? 0) + $nilai;
         }
 
         $penjualan = array_sum($penjualanByProduct);
@@ -432,6 +500,123 @@ class CashFlowList extends Component
             'margin' => $penjualan > 0 ? round(($bersih / $penjualan) * 100, 1) : 0,
             'per_produk' => $perProduk,
         ];
+    }
+
+    /**
+     * Penjualan Rumah Scopus (RSC) per produk pada periode terpilih.
+     *
+     * Pemesanan RSC memakai akun dari Data Akun; produk induknya diambil dari
+     * data_akuns.product_id. Nilainya = pemesanan_rsc.total.
+     *
+     * Syarat & tanggal dibuat SAMA PERSIS dengan pencatatan cash flow RSC supaya
+     * tidak melenceng dari uang yang benar-benar diakui:
+     *  - status 'baru'   → sama dgn SyncCashFlowAction::shouldRecord()
+     *  - tanggal_pemesanan → sama dgn tanggal cash flow RSC
+     *
+     * Akun tanpa tautan produk dilewati (tidak bisa diakui ke produk mana pun).
+     *
+     * @return array<string,float>  product_id => total penjualan RSC
+     */
+    protected function penjualanRscPerProduk(): array
+    {
+        $rows = PemesananRsc::query()
+            ->join('data_akuns', 'data_akuns.id', '=', 'pemesanan_rsc.akun')
+            ->where('pemesanan_rsc.status', 'baru')
+            ->whereNotNull('data_akuns.product_id')
+            ->when($this->usesSiklus(), function ($q) {
+                [$mulai, $akhir] = $this->siklusRange();
+                $q->whereDate('pemesanan_rsc.tanggal_pemesanan', '>=', $mulai->toDateString())
+                    ->whereDate('pemesanan_rsc.tanggal_pemesanan', '<', $akhir->toDateString());
+            }, function ($q) {
+                if ($this->tahun) {
+                    $q->whereYear('pemesanan_rsc.tanggal_pemesanan', $this->tahun);
+                }
+                if ($this->bulan) {
+                    $q->whereMonth('pemesanan_rsc.tanggal_pemesanan', $this->bulan);
+                }
+            })
+            ->selectRaw('data_akuns.product_id, COALESCE(SUM(pemesanan_rsc.total), 0) as penjualan')
+            ->groupBy('data_akuns.product_id')
+            ->get();
+
+        $peta = [];
+        foreach ($rows as $r) {
+            $peta[(string) $r->product_id] = (float) $r->penjualan;
+        }
+
+        return $peta;
+    }
+
+    /**
+     * Modal akun PRIVATE dari Rumah Scopus (RSC) per produk pada periode terpilih.
+     *
+     * Rumah Scopus = model patungan: SATU akun dipakai banyak peserta dalam satu
+     * batch camp. Jadi modalnya dihitung PER BATCH (satu akun = satu modal), bukan
+     * per peserta — kalau per peserta, modal akun yang dibeli sekali akan
+     * terhitung berkali-kali.
+     *
+     * Harga modal diambil dari katalog Harga Modal (ProductModalPrice) memakai
+     * durasi camp (tanggal_pemesanan → tanggal_berakhir, dibulatkan ke bulan) dan
+     * harga yang BERLAKU pada tanggal pemesanan — SATU sumber & pola sama dgn
+     * modal private Order. Durasi yang tidak ada di katalog → modal 0 (aman).
+     *
+     * @param  array<int,string>  $privateIds  id produk bertipe private
+     * @return array<string,float>  product_id => total modal
+     */
+    protected function modalRscPrivatePerProduk(array $privateIds): array
+    {
+        if (empty($privateIds)) {
+            return [];
+        }
+
+        $rows = PemesananRsc::query()
+            ->join('data_akuns', 'data_akuns.id', '=', 'pemesanan_rsc.akun')
+            ->where('pemesanan_rsc.status', 'baru')
+            ->whereIn('data_akuns.product_id', $privateIds)
+            ->when($this->usesSiklus(), function ($q) {
+                [$mulai, $akhir] = $this->siklusRange();
+                $q->whereDate('pemesanan_rsc.tanggal_pemesanan', '>=', $mulai->toDateString())
+                    ->whereDate('pemesanan_rsc.tanggal_pemesanan', '<', $akhir->toDateString());
+            }, function ($q) {
+                if ($this->tahun) {
+                    $q->whereYear('pemesanan_rsc.tanggal_pemesanan', $this->tahun);
+                }
+                if ($this->bulan) {
+                    $q->whereMonth('pemesanan_rsc.tanggal_pemesanan', $this->bulan);
+                }
+            })
+            ->get([
+                'data_akuns.product_id',
+                'pemesanan_rsc.nama_camp',
+                'pemesanan_rsc.batch_camp',
+                'pemesanan_rsc.tanggal_pemesanan',
+                'pemesanan_rsc.tanggal_berakhir',
+            ]);
+
+        // Satu modal per BATCH (nama_camp + batch_camp), pakai baris pertama batch.
+        $perBatch = $rows->groupBy(fn ($r) => $r->product_id.'|'.$r->nama_camp.'|'.$r->batch_camp)
+            ->map(fn ($grp) => $grp->first());
+
+        $produk = \App\Models\Product::whereIn('id', $privateIds)->get()->keyBy('id');
+
+        $peta = [];
+        foreach ($perBatch as $b) {
+            $p = $produk->get($b->product_id);
+            if (! $p) {
+                continue;
+            }
+
+            $mulai = Carbon::parse($b->tanggal_pemesanan);
+            $akhir = $b->tanggal_berakhir ? Carbon::parse($b->tanggal_berakhir) : $mulai->copy();
+            $bulanDurasi = max(1, (int) round($mulai->diffInDays($akhir) / 30));
+
+            $unit = $p->modalSatuan($bulanDurasi, 'bulan', $mulai->toDateString());
+
+            $pidKey = (string) $b->product_id;
+            $peta[$pidKey] = ($peta[$pidKey] ?? 0) + (float) $unit;
+        }
+
+        return $peta;
     }
 
     /**

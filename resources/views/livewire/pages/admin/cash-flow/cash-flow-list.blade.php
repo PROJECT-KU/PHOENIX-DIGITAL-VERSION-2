@@ -497,6 +497,9 @@ Data Cash Flow || lemon
 
             <livewire:pages.admin.cashflow.cashflow-detail />
         </div>
+
+        {{-- ================== INSIGHT CASH FLOW (paling bawah) ================== --}}
+        @include('livewire.pages.admin.cash-flow._insight')
     </div>
 
     @push('styles')

@@ -223,9 +223,13 @@ class PemesananrscList extends Component
             }
 
             $action = new SyncCashFlowAction;
+            $modalAction = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
 
             foreach ($pemesananList as $pemesanan) {
                 $action->delete($pemesanan);
+                // Hapus juga baris modal private (bila ada) supaya tidak jadi
+                // cash flow yatim setelah baris pemesanan dihapus.
+                $modalAction->delete($pemesanan);
             }
 
             PemesananRsc::where('nama_camp', $nama_camp)
