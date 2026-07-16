@@ -41,8 +41,25 @@ class TaskSayaList extends Component
     public $tahun = '';
 
     // Mode periode (sama seperti Cashflow): 'kalender' (1 s/d akhir bulan) atau
-    // 'siklus20' (tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya).
+    // 'siklus20' = siklus gaji 21–20 (mis. Juli = 21 Jun s/d 20 Jul), mengikuti
+    // PeriodeGaji. Nilai 'siklus20' dipertahankan apa adanya agar state/URL lama
+    // tidak rusak, walau maknanya kini siklus gaji.
     public $modePeriode = 'kalender';
+
+    // ===== Cara pandang task (murni tampilan — data & filter tidak berubah) =====
+    // 'daftar'    : tampilan asli (folder + kartu), tetap default agar kebiasaan
+    //               karyawan yang sudah ada tidak berubah.
+    // 'scrum'     : papan Kanban 3 kolom (Belum / Dikerjakan / Selesai).
+    // 'aktivitas' : grafik kontribusi ala GitHub + linimasa.
+    public string $tampilan = 'daftar';
+
+    /** Ganti cara pandang. Hanya mengubah tampilan, tidak menyentuh data/filter. */
+    public function gantiTampilan(string $mode): void
+    {
+        $this->tampilan = in_array($mode, ['daftar', 'scrum', 'aktivitas'], true)
+            ? $mode
+            : 'daftar';
+    }
 
     // ===== Modal beri/edit task ke bawahan (khusus atasan ber-izin assign_task) =====
     public bool $showTaskModal = false;
@@ -120,7 +137,7 @@ class TaskSayaList extends Component
     }
 
     /**
-     * Apakah filter memakai siklus 20-19 (butuh bulan terpilih). Sama seperti Cashflow.
+     * Apakah filter memakai siklus gaji 21–20 (butuh bulan terpilih). Sama seperti Cashflow.
      */
     protected function usesSiklus(): bool
     {
@@ -128,19 +145,30 @@ class TaskSayaList extends Component
     }
 
     /**
-     * Rentang siklus untuk bulan/tahun terpilih:
-     * [mulai = tgl 20 bulan terpilih, akhirEksklusif = tgl 20 bulan berikutnya].
-     * Jadi mencakup tgl 20 bulan terpilih s/d tgl 19 bulan berikutnya (persis Cashflow).
-     *
      * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    /**
+     * Rentang siklus gaji untuk bulan/tahun terpilih — SATU sumber dengan fitur
+     * Gaji & Cashflow, yaitu PeriodeGaji (setelan `payroll_cutoff_day`, default 20).
+     * Mis. Juli = 21 Jun s/d 20 Jul.
+     *
+     * Sebelumnya di sini dipatok "tgl 20 s/d 19 bulan berikutnya" — itu meleset
+     * dari periode gaji dan bikin task yang tampil di filter tidak sama dengan
+     * task yang dihitung bonusnya. Kolom periode_bulan/periode_tahun sendiri
+     * memang sudah memakai PeriodeGaji, jadi ini menyelaraskan filternya.
+     *
+     * Dikembalikan sebagai [mulai, akhirEksklusif] agar kontrak lama
+     * (>= mulai, < akhirEksklusif) di render() tetap berlaku apa adanya.
      */
     protected function siklusRange(): array
     {
         $tahun = (int) ($this->tahun ?: now()->year);
-        $mulai = Carbon::create($tahun, (int) $this->bulan, 20)->startOfDay();
-        $akhirEksklusif = $mulai->copy()->addMonthNoOverflow();
+        $bulan = (int) $this->bulan;
 
-        return [$mulai, $akhirEksklusif];
+        return [
+            PeriodeGaji::mulai($bulan, $tahun),
+            PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+        ];
     }
 
     protected function daftarBulan(): array
@@ -708,12 +736,87 @@ class TaskSayaList extends Component
     }
 
     #[Layout('livewire.layout.templateindex')]
+    /**
+     * Data untuk tampilan "Aktivitas" (ala GitHub) — HANYA dihitung saat mode itu
+     * dipilih, jadi tampilan lain tetap seringan sebelumnya.
+     *
+     * Memakai Task::visibleTo() yang SAMA dengan render(), jadi aturan siapa boleh
+     * melihat task siapa tetap persis seperti semula — tidak ada yang dilonggarkan.
+     *
+     * Grafik memakai satu TAHUN penuh (seperti GitHub yang per tahun). Tahun
+     * diambil dari filter tahun yang sudah ada; kalau kosong, tahun berjalan.
+     *
+     * @return array{tahun:int,perHari:array<string,int>,total:int,streak:int,
+     *               terbaik:array{tanggal:?string,jumlah:int},rataMingguan:float,
+     *               linimasa:\Illuminate\Support\Collection}
+     */
+    protected function dataAktivitas(): array
+    {
+        $tahun = (int) ($this->tahun ?: now()->year);
+        $awal = Carbon::create($tahun, 1, 1)->startOfDay();
+        $akhir = Carbon::create($tahun, 12, 31)->endOfDay();
+
+        $selesai = Task::visibleTo()
+            ->whereNotNull('completed_at')
+            ->whereBetween('completed_at', [$awal, $akhir])
+            ->with(['karyawan', 'category', 'label'])
+            ->orderByDesc('completed_at')
+            ->get();
+
+        // Jumlah task selesai per tanggal → sumber warna kotak heatmap.
+        $perHari = $selesai
+            ->groupBy(fn (Task $t) => $t->completed_at->toDateString())
+            ->map->count()
+            ->all();
+
+        // Hari paling produktif.
+        $terbaikTgl = null;
+        $terbaikJml = 0;
+        foreach ($perHari as $tgl => $jml) {
+            if ($jml > $terbaikJml) {
+                $terbaikJml = $jml;
+                $terbaikTgl = $tgl;
+            }
+        }
+
+        // Streak = rentetan hari berturut-turut ada task selesai (terpanjang di tahun ini).
+        $streak = 0;
+        $jalan = 0;
+        $kursor = $awal->copy();
+        $batas = $akhir->copy()->min(now()->endOfDay());
+        while ($kursor->lte($batas)) {
+            if (($perHari[$kursor->toDateString()] ?? 0) > 0) {
+                $jalan++;
+                $streak = max($streak, $jalan);
+            } else {
+                $jalan = 0;
+            }
+            $kursor->addDay();
+        }
+
+        // Rata-rata per minggu (dibagi minggu yang sudah berjalan di tahun itu).
+        $hariBerjalan = $tahun === (int) now()->year
+            ? max(1, $awal->diffInDays(now()) + 1)
+            : 365;
+        $rataMingguan = round($selesai->count() / max(1, $hariBerjalan / 7), 1);
+
+        return [
+            'tahun' => $tahun,
+            'perHari' => $perHari,
+            'total' => $selesai->count(),
+            'streak' => $streak,
+            'terbaik' => ['tanggal' => $terbaikTgl, 'jumlah' => $terbaikJml],
+            'rataMingguan' => $rataMingguan,
+            'linimasa' => $selesai->take(12),
+        ];
+    }
+
     public function render()
     {
         $tasks = Task::visibleTo()
             ->with(['groupComments', 'category', 'label', 'pemberi', 'karyawan'])
             ->when($this->usesSiklus(), function ($q) {
-                // Siklus 20-19: filter berdasarkan tanggal deadline_selesai.
+                // Siklus gaji 21–20: filter berdasarkan tanggal deadline_selesai.
                 [$mulai, $akhir] = $this->siklusRange();
                 $q->whereDate('deadline_selesai', '>=', $mulai->toDateString())
                     ->whereDate('deadline_selesai', '<', $akhir->toDateString());
@@ -771,7 +874,21 @@ class TaskSayaList extends Component
             ->pluck('last_read_at', 'group_id')
             ->all();
 
+        // Rentang siklus dikirim dari sini supaya view TIDAK menghitung ulang
+        // sendiri — kalau view punya rumus sendiri, chip di layar bisa beda dgn
+        // data yang benar-benar difilter. 'siklusAkhir' sudah inklusif (siap tampil).
+        $siklusMulai = $siklusAkhir = null;
+        if ($this->usesSiklus()) {
+            [$sm, $saEks] = $this->siklusRange();
+            $siklusMulai = $sm;
+            $siklusAkhir = $saEks->copy()->subDay();
+        }
+
         return view('livewire.pages.admin.task.task-saya-list', [
+            // Data aktivitas hanya dihitung bila mode itu yang dipilih.
+            'aktivitas' => $this->tampilan === 'aktivitas' ? $this->dataAktivitas() : null,
+            'siklusMulai' => $siklusMulai,
+            'siklusAkhir' => $siklusAkhir,
             'tasks' => $tasks,
             'activeTask' => $activeTask,
             'activeIsSolo' => $activeIsSolo,

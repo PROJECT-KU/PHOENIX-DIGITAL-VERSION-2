@@ -306,6 +306,122 @@ Task Saya || lemon
         .siklus-chip-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #7c3aed; }
         .siklus-chip-date { font-size: .88rem; font-weight: 700; color: #1e293b; }
         .siklus-chip-arrow { color: #94a3b8; font-size: .8rem; }
+
+        /* ===================== Pemilih cara pandang ===================== */
+        .tampilan-switch { display: inline-flex; gap: 4px; padding: 4px; border-radius: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .tampilan-btn { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: #64748b; font-weight: 700; font-size: .82rem; padding: 7px 14px; border-radius: 9px; line-height: 1; }
+        .tampilan-btn i.bi { display: block; line-height: 1; font-size: .95rem; }
+        .tampilan-btn:hover { color: #334155; }
+        .tampilan-btn.aktif { background: #fff; color: #7c3aed; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+        @media (max-width: 575.98px) { .tampilan-switch { width: 100%; } .tampilan-btn { flex: 1; justify-content: center; padding: 8px 6px; } .tampilan-btn span { display: none; } }
+
+        /* ===================== Papan Scrum ===================== */
+        .scrum-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
+        @media (max-width: 991.98px) { .scrum-board { grid-template-columns: 1fr; } }
+        .scrum-col { background: #f8fafc; border: 1px solid #e9edf3; border-radius: 14px; padding: 12px; }
+        .scrum-col-head { display: flex; align-items: center; gap: 8px; padding: 4px 4px 12px; border-bottom: 2px solid var(--k); margin-bottom: 12px; }
+        .scrum-col-ico { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--k) 15%, #fff); color: var(--k); flex-shrink: 0; }
+        .scrum-col-ico i.bi { display: block; line-height: 1; font-size: .85rem; }
+        .scrum-col-judul { font-weight: 800; font-size: .85rem; color: #1e293b; flex: 1; }
+        .scrum-col-badge { background: var(--k); color: #fff; font-weight: 800; font-size: .72rem; padding: 2px 9px; border-radius: 999px; }
+        .scrum-col-body { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
+        .scrum-card { background: #fff; border: 1px solid #e9edf3; border-left: 3px solid #cbd5e1; border-radius: 11px; padding: 11px 12px; }
+        .scrum-card.is-telat { border-left-color: #dc2626; background: rgba(254, 226, 226, .25); }
+        .scrum-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+        .scrum-tags { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+        /* Kategori (induk) & label (anak) — warna mengikuti kartu Daftar:
+           kategori biru, label cyan — supaya karyawan mengenali polanya. */
+        /* line-height:1 pada pill + ikon → tinggi kotak teks & ikon sama persis,
+           jadi align-items:center benar-benar melurusakan keduanya. Tinggi pill
+           diatur lewat padding, bukan line-height. */
+        .scrum-kategori { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, .1); border: 1px solid rgba(37, 99, 235, .25); padding: 4px 8px; border-radius: 999px; line-height: 1; }
+        .scrum-kategori i.bi { font-size: .66rem; }
+        .scrum-label { display: inline-flex; align-items: center; font-size: .66rem; font-weight: 700; color: #0e7490; background: rgba(6, 182, 212, .12); border: 1px solid rgba(6, 182, 212, .3); padding: 4px 8px; border-radius: 999px; line-height: 1; }
+        .scrum-bobot { font-size: .66rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; }
+        .scrum-bobot.bobot-ringan { background: rgba(5, 150, 105, .12); color: #059669; }
+        .scrum-bobot.bobot-sedang { background: rgba(217, 119, 6, .12); color: #d97706; }
+        .scrum-bobot.bobot-berat { background: rgba(220, 38, 38, .12); color: #dc2626; }
+        .scrum-card-judul { display: block; width: 100%; text-align: left; border: none; background: none; padding: 0; font-weight: 700; font-size: .88rem; color: #1e293b; line-height: 1.35; }
+        .scrum-card-judul:hover { color: #7c3aed; }
+        .scrum-card-meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
+        .scrum-meta-item { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; color: #64748b; }
+        .scrum-meta-item i.bi { line-height: 1; }
+        .scrum-card-aksi { margin-top: 10px; }
+        .scrum-btn { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 8px; font-weight: 700; font-size: .74rem; padding: 5px 11px; color: #fff; }
+        .scrum-btn i.bi { line-height: 1; }
+        .scrum-btn-mulai { background: #d97706; }
+        .scrum-btn-selesai { background: #059669; }
+        .scrum-btn:hover { filter: brightness(1.08); color: #fff; }
+        .scrum-kosong { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; color: #cbd5e1; font-size: .78rem; }
+        .scrum-kosong i.bi { font-size: 1.2rem; }
+
+        /* ===================== Aktivitas (ala GitHub) ===================== */
+        .akt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+        @media (max-width: 767.98px) { .akt-stats { grid-template-columns: repeat(2, 1fr); } }
+        .akt-stat { background: #fff; border: 1px solid #e9edf3; border-radius: 12px; padding: 14px; text-align: center; }
+        .akt-stat-angka { display: block; font-weight: 800; font-size: 1.5rem; color: #7c3aed; line-height: 1.1; }
+        .akt-stat-label { display: block; font-size: .72rem; color: #64748b; margin-top: 3px; }
+        .akt-graf-card, .akt-linimasa-card { background: #fff; border: 1px solid #e9edf3; border-radius: 14px; padding: 16px; }
+        .akt-graf-card { margin-bottom: 14px; }
+        .akt-graf-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .akt-scroll { overflow-x: auto; padding-bottom: 4px; }
+        .akt-graf { display: inline-block; min-width: max-content; }
+        .akt-bulan-row { display: flex; gap: 3px; margin-bottom: 4px; }
+        .akt-hari-spacer { width: 28px; flex-shrink: 0; }
+        .akt-bulan-cell { width: 13px; font-size: .62rem; color: #94a3b8; flex-shrink: 0; }
+        .akt-grid-row { display: flex; gap: 3px; }
+        .akt-hari-col { display: flex; flex-direction: column; gap: 3px; width: 28px; flex-shrink: 0; }
+        .akt-hari-label { height: 13px; font-size: .6rem; color: #94a3b8; line-height: 13px; }
+        .akt-minggu { display: flex; flex-direction: column; gap: 3px; }
+        .akt-kotak { width: 13px; height: 13px; border-radius: 3px; background: #ebedf0; flex-shrink: 0; }
+        .akt-kotak.akt-kosong { background: transparent; }
+        .akt-l0 { background: #ebedf0; }
+        .akt-l1 { background: #d8c7f5; }
+        .akt-l2 { background: #b18cf0; }
+        .akt-l3 { background: #8b5cf6; }
+        .akt-l4 { background: #6d28d9; }
+        .akt-legenda { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 10px; font-size: .68rem; color: #94a3b8; }
+        .akt-lini-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px dashed #eef0f4; }
+        .akt-lini-item:last-child { border-bottom: none; }
+        .akt-lini-dot { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: #059669; color: #fff; flex-shrink: 0; }
+        .akt-lini-dot.is-telat { background: #d97706; }
+        .akt-lini-dot i.bi { display: block; line-height: 1; font-size: .8rem; }
+        .akt-lini-judul { border: none; background: none; padding: 0; font-weight: 700; font-size: .86rem; color: #1e293b; text-align: left; }
+        .akt-lini-judul:hover { color: #7c3aed; }
+        .akt-lini-meta { font-size: .74rem; color: #64748b; margin-top: 2px; }
+
+        /* ===== Pelurus ikon (Scrum & Aktivitas) =====
+           Bootstrap Icons punya vertical-align:-.125em bawaan dan glyph-nya di
+           ::before, jadi align-items:center pada pembungkus SAJA belum cukup —
+           ikon tetap melorot sedikit dari teks. Kuncinya: <i>-nya JUGA dibuat
+           flex, sehingga glyph dipusatkan flexbox (mengabaikan metrik font).
+           Diletakkan paling akhir agar menang atas aturan di atas; font-size
+           masing-masing tetap dipakai karena tidak ditimpa di sini. */
+        .tampilan-btn i.bi,
+        .scrum-col-ico i.bi,
+        .scrum-kategori i.bi,
+        .scrum-meta-item i.bi,
+        .scrum-btn i.bi,
+        .scrum-kosong i.bi,
+        .akt-lini-dot i.bi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            vertical-align: 0;
+            flex-shrink: 0;
+        }
+
+        .tampilan-btn i.bi::before,
+        .scrum-col-ico i.bi::before,
+        .scrum-kategori i.bi::before,
+        .scrum-meta-item i.bi::before,
+        .scrum-btn i.bi::before,
+        .scrum-kosong i.bi::before,
+        .akt-lini-dot i.bi::before {
+            display: block;
+            line-height: 1;
+        }
     </style>
 
     @php
@@ -364,7 +480,7 @@ Task Saya || lemon
                         <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width:175px;"
                             title="Cara menghitung periode">
                             <option value="kalender">📅 Kalender (1–akhir bln)</option>
-                            <option value="siklus20">🔄 Periode 20-19</option>
+                            <option value="siklus20">🔄 Siklus Gaji (21–20)</option>
                         </select>
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width:160px;">
                             <option value="">Semua Bulan</option>
@@ -388,30 +504,25 @@ Task Saya || lemon
                     </div>
                 </div>
 
-                {{-- Info rentang siklus (persis Cashflow): tgl 20 bln terpilih s/d 19 bln berikutnya --}}
+                {{-- Info rentang siklus gaji (21–20, sama seperti Cashflow & Gaji).
+                     Rentangnya DIKIRIM dari komponen ($siklusMulai/$siklusAkhir) —
+                     view sengaja tidak menghitung sendiri supaya yang tampil di
+                     layar tidak pernah beda dengan data yang benar-benar difilter. --}}
                 @if($modePeriode === 'siklus20')
-                @php
-                    $mulaiS = $akhirS = null;
-                    if ($bulan) {
-                        $thn = (int) ($tahun ?: now()->year);
-                        $mulaiS = \Carbon\Carbon::create($thn, (int) $bulan, 20);
-                        $akhirS = $mulaiS->copy()->addMonthNoOverflow()->subDay();
-                    }
-                @endphp
                 <div class="mt-3 pt-3 border-top">
-                    @if($bulan)
+                    @if($siklusMulai && $siklusAkhir)
                     <div class="siklus-chip d-inline-flex align-items-center gap-2">
                         <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
                             <i class="bi bi-calendar-range"></i>
                         </span>
-                        <span class="siklus-chip-label">Periode</span>
-                        <span class="siklus-chip-date">{{ $mulaiS->translatedFormat('d M Y') }}</span>
+                        <span class="siklus-chip-label">Periode Gaji</span>
+                        <span class="siklus-chip-date">{{ $siklusMulai->translatedFormat('d M Y') }}</span>
                         <i class="bi bi-arrow-right siklus-chip-arrow"></i>
-                        <span class="siklus-chip-date">{{ $akhirS->translatedFormat('d M Y') }}</span>
+                        <span class="siklus-chip-date">{{ $siklusAkhir->translatedFormat('d M Y') }}</span>
                     </div>
                     @else
                     <span class="text-muted" style="font-size:.85rem;">
-                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan awal siklus (tgl 20). Contoh: pilih Juli → 20 Jul s/d 19 Agu.
+                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan siklus gaji. Contoh: pilih Juli → 21 Jun s/d 20 Jul.
                     </span>
                     @endif
                 </div>
@@ -419,6 +530,26 @@ Task Saya || lemon
             </div>
         </div>
 
+        {{-- ===== Pemilih cara pandang (murni tampilan; data & filter tidak berubah) ===== --}}
+        <div class="tampilan-switch mb-3">
+            @foreach ([
+                'daftar' => ['ikon' => 'bi-card-list', 'label' => 'Daftar'],
+                'scrum' => ['ikon' => 'bi-kanban', 'label' => 'Papan Scrum'],
+                'aktivitas' => ['ikon' => 'bi-grid-3x3', 'label' => 'Aktivitas'],
+            ] as $mode => $m)
+                <button type="button"
+                    class="tampilan-btn {{ $tampilan === $mode ? 'aktif' : '' }}"
+                    wire:click="gantiTampilan('{{ $mode }}')">
+                    <i class="bi {{ $m['ikon'] }}"></i><span>{{ $m['label'] }}</span>
+                </button>
+            @endforeach
+        </div>
+
+        @if ($tampilan === 'scrum')
+            @include('livewire.pages.admin.task.partials.task-scrum')
+        @elseif ($tampilan === 'aktivitas')
+            @include('livewire.pages.admin.task.partials.task-aktivitas')
+        @else
         <div class="row g-3">
             {{-- FOLDER (grup >1 penerima) selalu di ATAS — tetap di atas walau ada
                  sub-task yang sudah selesai — lalu SOLO di bawah (urutan mengikuti
@@ -456,6 +587,7 @@ Task Saya || lemon
             </div>
             @endforelse
         </div>
+        @endif
     </div>
 
     {{-- ===== Modal beri/edit task ke bawahan ===== --}}
