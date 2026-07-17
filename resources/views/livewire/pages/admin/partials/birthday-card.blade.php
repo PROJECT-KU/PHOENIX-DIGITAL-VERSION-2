@@ -1,4 +1,9 @@
-@if (auth()->check() && auth()->user()->isBirthday())
+{{-- Ucapan ulang tahun tampil untuk SEMUA karyawan, bukan hanya yang berulang
+     tahun — jadi rekan kerjanya ikut tahu & bisa mengucapkan. Bila ada beberapa
+     orang berulang tahun di hari yang sama, kartunya tampil satu per orang. --}}
+@php $ultahHariIni = auth()->check() ? \App\Models\User::ulangTahunHariIni() : collect(); @endphp
+
+@if ($ultahHariIni->isNotEmpty())
 <style>
     .bday-card {
         position: relative;
@@ -174,7 +179,8 @@
     }
 </style>
 
-<div class="bday-card mb-4">
+@foreach ($ultahHariIni as $ultah)
+<div class="bday-card mb-4" wire:key="bday-{{ $ultah->id }}">
     {{-- Kembang api --}}
     <span class="bday-firework" style="top: 22%; left: 12%;"></span>
     <span class="bday-firework" style="top: 30%; right: 16%; animation-delay: .7s;"></span>
@@ -190,7 +196,7 @@
 
     <div class="bday-content">
         <span class="bday-badge"><i class="bi bi-gift-fill"></i> Selamat Ulang Tahun</span>
-        <h2 class="bday-title">🎂 Selamat Ulang Tahun, {{ auth()->user()->name }}!</h2>
+        <h2 class="bday-title">🎂 Selamat Ulang Tahun, {{ $ultah->name }}!</h2>
         <p class="bday-wishes">
             Semoga <b class="text-white">panjang umur</b>, <b class="text-white">sehat selalu</b>,
             <b class="text-white">murah rezeki</b>, senantiasa dalam lindungan Allah, dan diberi kelancaran
@@ -208,4 +214,5 @@
         </div>
     </div>
 </div>
+@endforeach
 @endif

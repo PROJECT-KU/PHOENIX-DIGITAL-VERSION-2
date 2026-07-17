@@ -203,7 +203,16 @@ class ProfileSetting extends Component
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
-        return view('livewire.pages.admin.profile.profile-setting');
+        // NIK & masa kerja bersifat TAMPIL SAJA di profil — keduanya dikelola
+        // admin lewat menu Data Karyawan (NIK otomatis, tanggal bergabung diisi
+        // admin), jadi tidak ikut form simpan profil.
+        $detail = Auth::user()?->detail;
+
+        return view('livewire.pages.admin.profile.profile-setting', [
+            'nik' => $detail?->nik,
+            'masaKerja' => $detail?->masaKerja(),
+            'tanggalMulaiKerja' => $detail?->tanggalMulaiKerja(),
+        ]);
     }
 
     protected function rules()

@@ -16,7 +16,16 @@ class CustomerMessageDetail extends Component
         $this->message = $message;
         $this->status = $message->status;
         $this->priority = $message->priority;
+
+        // markAsRead mengubah pesan dari "belum dibaca" -> "dibaca". Bila memang
+        // baru saja beralih, beritahu sidebar agar badge helpdesk langsung
+        // berkurang tanpa perlu refresh.
+        $belumDibaca = is_null($this->message->read_at);
         $this->message->markAsRead();
+
+        if ($belumDibaca) {
+            $this->dispatch('sidebar-badge-updated');
+        }
     }
 
     public function updatedStatus($value)

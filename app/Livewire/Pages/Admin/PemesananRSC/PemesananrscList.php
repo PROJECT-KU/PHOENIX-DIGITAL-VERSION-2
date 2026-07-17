@@ -261,6 +261,10 @@ class PemesananrscList extends Component
                 DB::raw('COUNT(*) as total_peserta'),
                 DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
                 DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
+                // Waktu batch DIBUAT = created_at peserta paling awal di batch itu.
+                // Wajib diagregasi (MIN) karena query ini di-GROUP BY per batch;
+                // created_at mentah tidak boleh dipakai di ORDER BY tanpa agregat.
+                DB::raw('MIN(created_at) as batch_created'),
             ])
             ->with(['dataakun', 'users'])
             ->groupBy([
@@ -344,8 +348,25 @@ class PemesananrscList extends Component
             $query->where('batch_camp', $this->batchFilter);
         }
 
-        // 🔹 Ambil hasil
-        $pemesananrsc = $query->latest('tanggal_mulai_camp')->paginate($this->perPage);
+        // 🔹 Ambil hasil — urut dari batch yang PALING BARU DIBUAT.
+        // Dulu diurut tanggal_mulai_camp: batch yang baru diinput tapi campnya
+        // dijadwalkan lama tenggelam di bawah, padahal itu yang baru dikerjakan.
+        $pemesananrsc = $query->orderByDesc('batch_created')->paginate($this->perPage);
+
+        // 🔹 Peta akun TAMBAHAN per batch (hanya untuk batch di halaman ini) agar
+        // kolom Akun bisa menampilkan "akun utama + N akun lain" tanpa N+1 query.
+        // Key = "nama_camp|batch_camp".
+        $pasanganBatch = $pemesananrsc->map(fn ($i) => $i->nama_camp.'|'.$i->batch_camp)->all();
+        $akunTambahanPerBatch = empty($pasanganBatch)
+            ? collect()
+            : \App\Models\RscBatchAkun::whereIn(
+                DB::raw("CONCAT(nama_camp, '|', batch_camp)"),
+                $pasanganBatch
+            )
+                ->orderBy('id')
+                ->get(['nama_camp', 'batch_camp', 'nama_akun'])
+                ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
+                ->map(fn ($g) => $g->pluck('nama_akun')->filter()->values()->all());
 
         // 🔹 Data dropdown periode (seragam dengan Pesanan Toko)
         $months = collect(range(1, 12))->map(fn ($m) => [
@@ -365,6 +386,7 @@ class PemesananrscList extends Component
 
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-list', compact(
             'pemesananrsc',
+            'akunTambahanPerBatch',
             'months',
             'years',
         ));

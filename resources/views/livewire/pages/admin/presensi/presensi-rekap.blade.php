@@ -58,6 +58,46 @@ Rekap Presensi || lemon
             line-height: 1;
         }
 
+        /* Ikon funnel di wrapper filter benar-benar di tengah (glyph .bi ada di
+           ::before dengan vertical-align). Seragam dengan Cashflow. */
+        .stat-icon-wrapper i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .stat-icon-wrapper i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        /* Ikon reset (x-circle) di tengah tombolnya. */
+        .btn.btn-light-danger i.bi {
+            line-height: 1;
+            vertical-align: -.125em;
+        }
+
+        /* Titik "live" berdenyut untuk status Berjalan. */
+        .pr-live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(14, 165, 233, .55);
+            animation: pr-pulse 1.4s infinite;
+        }
+
+        @keyframes pr-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, .55); }
+            70% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+        }
+
         /* ===== Modal Presensi Manual ===== */
         .pr-modal-overlay {
             position: fixed;
@@ -267,41 +307,34 @@ Rekap Presensi || lemon
             @endforeach
         </div>
 
-        {{-- ===== Filter ===== --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        {{-- ===== Filter (seragam dengan Cashflow) ===== --}}
+        <div class="card border-0 shadow-sm rounded-4 stat-card mb-4">
             <div class="card-body p-3 px-4">
-                <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2 text-dark fw-semibold flex-shrink-0">
-                        <span class="pr-stat-ic" style="width:38px;height:38px;background:linear-gradient(135deg,#6c63ff,#4e46e5);">
-                            <i class="bi bi-funnel-fill" style="font-size:1rem;"></i>
+                        <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
+                            style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
+                            <i class="bi bi-funnel"></i>
                         </span>
                         <span>Filter</span>
                     </div>
-                    <div class="row g-2 flex-grow-1 w-100 align-items-stretch">
-                        <div class="col-6 col-md-3">
-                            <input type="date" wire:model.live="tanggalDari" class="form-control rounded-3 h-100"
-                                title="Dari tanggal">
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <input type="date" wire:model.live="tanggalSampai" class="form-control rounded-3 h-100"
-                                title="Sampai tanggal">
-                        </div>
-                        <div class="col-8 col-md-4">
-                            <select wire:model.live="filterTipe" class="form-select rounded-3 h-100">
-                                <option value="">Semua Jenis</option>
-                                <option value="hadir_offline">Hadir Offline</option>
-                                <option value="hadir_online">Hadir Online</option>
-                                <option value="lembur">Lembur</option>
-                            </select>
-                        </div>
-                        <div class="col-4 col-md-2">
-                            <button type="button" wire:click="resetFilter"
-                                class="btn btn-danger rounded-3 w-100 h-100 d-inline-flex align-items-center justify-content-center gap-1"
-                                title="Reset filter">
-                                <i class="bi bi-arrow-counterclockwise"></i>
-                                <span class="d-none d-md-inline">Reset</span>
-                            </button>
-                        </div>
+
+                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <input type="date" wire:model.live="tanggalDari" class="form-control rounded-3"
+                            style="min-width: 150px;" title="Dari tanggal">
+                        <input type="date" wire:model.live="tanggalSampai" class="form-control rounded-3"
+                            style="min-width: 150px;" title="Sampai tanggal">
+                        <select wire:model.live="filterTipe" class="form-select rounded-3" style="min-width: 160px;">
+                            <option value="">Semua Jenis</option>
+                            <option value="hadir_offline">Hadir Offline</option>
+                            <option value="hadir_online">Hadir Online</option>
+                            <option value="lembur">Lembur</option>
+                        </select>
+                        <button type="button" wire:click="resetFilter"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0"
+                            title="Reset filter">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -367,17 +400,30 @@ Rekap Presensi || lemon
                                 <td>{{ $p->jarak_masuk_meter !== null ? $p->jarak_masuk_meter . ' m' : '—' }}</td>
                                 <td>
                                     @if ($p->status === 'aktif')
-                                    <span class="badge bg-success">Berjalan</span>
+                                    <span class="badge pr-badge bg-info-subtle text-info border border-info">
+                                        <span class="pr-live-dot"></span> Berjalan
+                                    </span>
                                     @else
-                                    <span class="badge bg-secondary">Selesai</span>
+                                    <span class="badge pr-badge bg-success-subtle text-success border border-success">
+                                        <i class="bi bi-check-circle-fill"></i> Selesai
+                                    </span>
                                     @endif
                                 </td>
                                 @if (auth()->user()->hasPermission('view_all_presensi'))
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-danger pr-act delete-presensi-btn"
-                                        data-id="{{ $p->id }}" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
+                                    <div class="d-inline-flex gap-1">
+                                        @if ($p->waktu_pulang === null && auth()->user()->hasPermission('create_presensi_manual'))
+                                        <button type="button" wire:click="bukaKoreksi('{{ $p->id }}')"
+                                            class="btn btn-sm btn-warning text-white pr-act"
+                                            title="Tutup / koreksi jam pulang (lupa pulang)">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                        </button>
+                                        @endif
+                                        <button type="button" class="btn btn-sm btn-danger pr-act delete-presensi-btn"
+                                            data-id="{{ $p->id }}" title="Hapus">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                                 @endif
                             </tr>
@@ -508,6 +554,77 @@ Rekap Presensi || lemon
     @endif
     @endif
 
+    {{-- ===== Modal Koreksi "lupa pulang" ===== --}}
+    @if ($showKoreksi)
+    <div class="pr-modal-overlay" wire:key="pr-koreksi-modal">
+        <div class="pr-modal">
+            <div class="pr-modal-head">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="pr-stat-ic" style="width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#d97706);">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </span>
+                    <div>
+                        <h5 class="fw-bold mb-0">Koreksi Jam Pulang</h5>
+                        <small class="text-muted">Untuk presensi yang lupa diklik pulang.</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" wire:click="tutupKoreksi" aria-label="Tutup"></button>
+            </div>
+
+            <form wire:submit="simpanKoreksi">
+                <div class="pr-modal-body">
+                    @if ($koreksiInfo)
+                    <div class="d-flex flex-wrap gap-3 mb-3 p-3 rounded-3" style="background:#f8fafc;">
+                        <div><small class="text-muted d-block">Karyawan</small><span class="fw-semibold">{{ $koreksiInfo['nama'] }}</span></div>
+                        <div><small class="text-muted d-block">Tanggal</small><span class="fw-semibold">{{ $koreksiInfo['tanggal'] }}</span></div>
+                        <div><small class="text-muted d-block">Jam Masuk</small><span class="fw-semibold">{{ $koreksiInfo['jam_masuk'] }}</span></div>
+                    </div>
+                    @endif
+
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Jam Pulang <span class="text-danger">*</span></label>
+                            <input type="time" wire:model="koreksiJamPulang"
+                                class="form-control rounded-3 @error('koreksiJamPulang') is-invalid @enderror">
+                            @error('koreksiJamPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Alasan Koreksi <span class="text-danger">*</span></label>
+                            <textarea wire:model="koreksiCatatan" rows="2"
+                                class="form-control rounded-3 @error('koreksiCatatan') is-invalid @enderror"
+                                placeholder="mis. lupa klik pulang, sudah konfirmasi jam pulang via WhatsApp"></textarea>
+                            @error('koreksiCatatan') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="col-12">
+                            <div class="pr-modal-hint">
+                                <i class="bi bi-shield-check"></i>
+                                <span>Jam pulang diisi pada entri yang sama (bukan record baru). Durasi &amp; gaji
+                                    ikut dihitung ulang, dan alasan dicatat sebagai jejak audit oleh
+                                    <b>{{ auth()->user()->name }}</b>.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pr-modal-foot">
+                    <button type="button" wire:click="tutupKoreksi"
+                        class="btn btn-danger rounded-3 px-4 d-inline-flex align-items-center justify-content-center gap-2"
+                        style="height: 48px;">
+                        <i class="bi bi-x-lg"></i> <span>Batal</span>
+                    </button>
+                    <button type="submit"
+                        class="btn btn-primary rounded-3 px-4 flex-grow-1 d-inline-flex align-items-center justify-content-center"
+                        style="height: 48px;">
+                        <i class="bi bi-check2-circle me-2 fs-5"></i> <span>Simpan &amp; Tutup Presensi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT ==================-->
@@ -623,6 +740,12 @@ Rekap Presensi || lemon
                 Swal.fire({
                     title: 'Gagal!', text: (e.detail && (e.detail.message || (e.detail[0] && e.detail[0].message))) || 'Terjadi kesalahan.',
                     icon: 'error', timer: 2500, showConfirmButton: false, ...glossyConfig
+                });
+            });
+            window.addEventListener('presensi-koreksiSaved', function () {
+                Swal.fire({
+                    title: 'Terkoreksi!', text: 'Jam pulang diisi & presensi ditutup. Durasi dan gaji ikut dihitung ulang.',
+                    icon: 'success', timer: 2600, showConfirmButton: false, ...glossyConfig
                 });
             });
         })();

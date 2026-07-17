@@ -69,8 +69,8 @@ class Testimonials extends Component
             'no_hp' => trim($this->no_hp),
             'pesan' => trim($this->pesan),
             'rating' => $this->rating,
-            'status' => 'non-active', // menunggu persetujuan admin
-            'source' => 'customer',   // dikirim langsung oleh pelanggan
+            'status' => 'pending',  // masuk antrian moderasi admin
+            'source' => 'customer', // dikirim langsung oleh pelanggan
         ]);
 
         $this->terverifikasi = $berhak;

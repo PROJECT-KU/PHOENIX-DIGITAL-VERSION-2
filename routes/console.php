@@ -83,6 +83,13 @@ Schedule::command('tasks:notify-deadlines')->dailyAt('07:00');
 Schedule::command('notifications:prune')->dailyAt('00:05');
 
 /**
+ * Bersihkan Log Aktivitas agar tabel tidak membengkak: kunjungan biasa
+ * (type 'visit', tidak lambat) dibuang setelah 7 hari; error/auth/kunjungan
+ * lambat disimpan 30 hari.
+ */
+Schedule::command('activity-logs:prune')->dailyAt('00:15');
+
+/**
  * Hapus komentar task (chat + file/gambar) dari tahun-tahun sebelumnya agar DB & storage
  * tidak menumpuk. Idempoten: hanya menghapus yang dibuat sebelum awal tahun berjalan.
  */

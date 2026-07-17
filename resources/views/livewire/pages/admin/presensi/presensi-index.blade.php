@@ -161,6 +161,23 @@ Presensi || lemon
             align-items: center;
         }
 
+        /* Titik "live" berdenyut untuk status Berjalan. */
+        .pr-live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #0ea5e9;
+            display: inline-block;
+            box-shadow: 0 0 0 0 rgba(14, 165, 233, .55);
+            animation: pr-pulse 1.4s infinite;
+        }
+
+        @keyframes pr-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, .55); }
+            70% { box-shadow: 0 0 0 6px rgba(14, 165, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+        }
+
         .pr-live {
             padding: .55rem .9rem;
             border-radius: .75rem;
@@ -422,9 +439,13 @@ Presensi || lemon
                             <td>{{ $p->durasi_label }}</td>
                             <td>
                                 @if ($p->status === 'aktif')
-                                <span class="badge bg-success">Berjalan</span>
+                                <span class="badge pr-badge bg-info-subtle text-info border border-info">
+                                    <span class="pr-live-dot"></span> Berjalan
+                                </span>
                                 @else
-                                <span class="badge bg-secondary">Selesai</span>
+                                <span class="badge pr-badge bg-success-subtle text-success border border-success">
+                                    <i class="bi bi-check-circle-fill"></i> Selesai
+                                </span>
                                 @endif
                             </td>
                         </tr>

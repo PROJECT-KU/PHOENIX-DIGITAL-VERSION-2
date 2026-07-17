@@ -36,6 +36,18 @@ class PresensiRekap extends Component
 
     public string $manualCatatan = '';
 
+    /* ===== Koreksi presensi "lupa pulang" (tutup entri yang masih Berjalan) ===== */
+    public bool $showKoreksi = false;
+
+    public string $koreksiId = '';
+
+    public string $koreksiJamPulang = '';
+
+    public string $koreksiCatatan = '';
+
+    /** Info baris yang sedang dikoreksi (nama, tanggal, jam masuk) — tampil saja. */
+    public ?array $koreksiInfo = null;
+
     public function mount(): void
     {
         $this->tanggalDari = now()->startOfMonth()->toDateString();
@@ -163,6 +175,94 @@ class PresensiRekap extends Component
         $this->reset(['manualUserId', 'manualJamMasuk', 'manualJamPulang', 'manualCatatan']);
         $this->resetPage();
         $this->dispatch('presensi-manualSaved');
+    }
+
+    /**
+     * Buka modal koreksi untuk presensi yang MASIH BERJALAN (lupa klik pulang).
+     */
+    public function bukaKoreksi($id): void
+    {
+        if (! $this->bolehManual()) {
+            $this->dispatch('presensi-manualError', message: 'Anda tidak punya izin mengoreksi presensi.');
+
+            return;
+        }
+
+        $p = Presensi::visibleTo()->with('user')->find($id);
+        if (! $p || $p->waktu_pulang !== null) {
+            $this->dispatch('presensi-manualError', message: 'Presensi tidak ditemukan atau sudah selesai.');
+
+            return;
+        }
+
+        $this->koreksiId = (string) $p->id;
+        $this->koreksiJamPulang = now()->format('H:i');
+        $this->koreksiCatatan = '';
+        $this->koreksiInfo = [
+            'nama' => $p->user->name ?? '—',
+            'tanggal' => $p->waktu_masuk->translatedFormat('d M Y'),
+            'jam_masuk' => $p->waktu_masuk->format('H:i'),
+        ];
+        $this->showKoreksi = true;
+    }
+
+    public function tutupKoreksi(): void
+    {
+        $this->showKoreksi = false;
+        $this->reset(['koreksiId', 'koreksiJamPulang', 'koreksiCatatan', 'koreksiInfo']);
+    }
+
+    /**
+     * Isi jam pulang pada record yang menggantung -> durasi dihitung ulang,
+     * status jadi selesai, dan MASUK KEMBALI ke perhitungan gaji. Bukan record
+     * baru (tidak duplikat). Jejak audit ditambahkan ke catatan.
+     */
+    public function simpanKoreksi(): void
+    {
+        if (! $this->bolehManual()) {
+            $this->dispatch('presensi-manualError', message: 'Anda tidak punya izin mengoreksi presensi.');
+
+            return;
+        }
+
+        $this->validate([
+            'koreksiJamPulang' => ['required', 'date_format:H:i'],
+            'koreksiCatatan' => ['required', 'string', 'min:3', 'max:500'],
+        ], [
+            'koreksiJamPulang.required' => 'Jam pulang wajib diisi.',
+            'koreksiJamPulang.date_format' => 'Format jam pulang tidak valid.',
+            'koreksiCatatan.required' => 'Alasan koreksi wajib diisi.',
+            'koreksiCatatan.min' => 'Alasan minimal :min karakter.',
+        ]);
+
+        $p = Presensi::visibleTo()->find($this->koreksiId);
+        if (! $p || $p->waktu_pulang !== null) {
+            $this->dispatch('presensi-manualError', message: 'Presensi tidak ditemukan atau sudah selesai.');
+
+            return;
+        }
+
+        $masuk = $p->waktu_masuk;
+        // Tanggal pulang = tanggal masuk (kasus lupa pulang di hari yang sama).
+        $pulang = Carbon::parse($masuk->toDateString().' '.$this->koreksiJamPulang);
+
+        if ($pulang->lessThanOrEqualTo($masuk)) {
+            $this->addError('koreksiJamPulang', 'Jam pulang harus setelah jam masuk ('.$masuk->format('H:i').').');
+
+            return;
+        }
+
+        $jejak = '[Koreksi lupa pulang oleh '.(auth()->user()->name ?? 'admin').' pada '.now()->format('d M Y H:i').'] '.trim($this->koreksiCatatan);
+
+        $p->update([
+            'waktu_pulang' => $pulang,
+            'durasi_menit' => $masuk->diffInMinutes($pulang),
+            'status' => 'selesai',
+            'catatan' => trim(($p->catatan ? $p->catatan."\n" : '').$jejak),
+        ]);
+
+        $this->tutupKoreksi();
+        $this->dispatch('presensi-koreksiSaved');
     }
 
     protected function baseQuery()

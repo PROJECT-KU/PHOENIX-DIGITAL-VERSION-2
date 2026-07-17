@@ -657,7 +657,8 @@
 
 <!--================== PICKER AKUN & PIC (popup searchable) ==================-->
 <script>
-    window.__rscAkuns = {!! json_encode($akuns->map(fn ($a) => ['id' => (string) $a->id, 'name' => $a->nama_akun])->values()) !!};
+    {{-- Hanya akun status active yang boleh dipilih (utama & tambahan). --}}
+    window.__rscAkuns = {!! json_encode($akunsAktif->map(fn ($a) => ['id' => (string) $a->id, 'name' => $a->nama_akun])->values()) !!};
     window.__rscUsers = {!! json_encode($users->map(fn ($u) => ['id' => (string) $u->id, 'name' => $u->name])->values()) !!};
 
     if (!window.__rscPickerBound) {

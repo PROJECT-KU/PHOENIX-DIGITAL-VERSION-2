@@ -127,13 +127,26 @@ Pengaturan Profil || lemon
         }
 
         .stat-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             line-height: 1 !important;
         }
 
-        .stat-icon-wrapper i {
+        /* Glyph Bootstrap Icons digambar di ::before & punya vertical-align —
+           perlu i.bi jadi flex penuh + ::before block agar benar-benar di tengah. */
+        .stat-icon-wrapper i.bi {
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .stat-icon-wrapper i.bi::before {
+            display: block;
             line-height: 1;
         }
 
@@ -333,6 +346,80 @@ Pengaturan Profil || lemon
             color: #b45309;
             font-size: .9rem;
         }
+
+        /* ===== Kartu info NIK & Masa Kerja (read-only) ===== */
+        .pf-info-card {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            padding: 1rem 1.1rem;
+            border-radius: 16px;
+            height: 100%;
+            border: 1px solid #eef0f6;
+            background: #fff;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+        .pf-info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .07);
+        }
+
+        .pf-info-ico {
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        /* Ikon Bootstrap punya vertical-align & glyph di ::before — tanpa dua
+           lapis flex + line-height:1 ini, ikonnya tidak benar-benar di tengah. */
+        .pf-info-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .pf-info-ico i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .pf-info-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+
+        .pf-info-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1.05rem;
+            line-height: 1.25;
+        }
+
+        .pf-info-nik {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1.5px;
+            color: #4e46e5;
+        }
+
+        .pf-info-sub {
+            font-size: .76rem;
+            color: #94a3b8;
+        }
     </style>
 
     <div class="container-fluid">
@@ -521,11 +608,46 @@ Pengaturan Profil || lemon
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center gap-2 mb-4">
-                    <span class="d-inline-flex align-items-center justify-content-center rounded-3 text-white"
-                        style="width:44px;height:44px;background:linear-gradient(135deg,#6c63ff,#4e46e5);"><i class="bi bi-bank"></i></span>
+                    <span class="stat-icon-wrapper flex-shrink-0 text-white"
+                        style="width:44px;height:44px;font-size:1.2rem;border-radius:13px;background:linear-gradient(135deg,#6c63ff,#4e46e5);"><i class="bi bi-bank"></i></span>
                     <div>
                         <h5 class="fw-bold mb-0">Data Karyawan</h5>
                         <small class="text-muted">Rekening (Bank Mandiri), tanggal lahir, kontak &amp; alamat.</small>
+                    </div>
+                </div>
+
+                {{-- NIK & masa kerja: hanya tampil. Keduanya dikelola admin di menu
+                     Data Karyawan (NIK otomatis, tanggal bergabung diisi admin). --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="pf-info-card">
+                            <span class="pf-info-ico" style="background:linear-gradient(135deg,#6c63ff,#4e46e5); box-shadow:0 6px 14px rgba(108,99,255,.35);">
+                                <i class="bi bi-person-vcard-fill"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="pf-info-label">Nomor Induk Karyawan</div>
+                                <div class="pf-info-value pf-info-nik">{{ $nik ?? '—' }}</div>
+                                <div class="pf-info-sub">Dibuat otomatis oleh sistem</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="pf-info-card">
+                            <span class="pf-info-ico" style="background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 6px 14px rgba(16,185,129,.35);">
+                                <i class="bi bi-briefcase-fill"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="pf-info-label">Masa Kerja</div>
+                                <div class="pf-info-value">{{ $masaKerja ?? '—' }}</div>
+                                <div class="pf-info-sub">
+                                    @if($tanggalMulaiKerja)
+                                    Sejak {{ $tanggalMulaiKerja->translatedFormat('d M Y') }}
+                                    @else
+                                    Tanggal bergabung belum diisi
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

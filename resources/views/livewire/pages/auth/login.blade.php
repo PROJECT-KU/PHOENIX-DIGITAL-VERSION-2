@@ -25,7 +25,7 @@ new #[Layout('layouts.authentication')] class extends Component {
             // Ambil pesan asli (bisa "kredensial salah" atau "akun diblokir").
             $pesan = collect($e->errors())->flatten()->first();
             if (! $pesan || str_contains($pesan, 'match our records') || str_contains($pesan, 'credentials')) {
-                $pesan = 'Email atau kata sandi salah. Silakan periksa kembali.';
+                $pesan = 'NIK atau kata sandi salah. Silakan periksa kembali.';
             }
 
             // Akun terblokir -> Swal khusus; selain itu -> Swal login gagal biasa.
@@ -56,22 +56,24 @@ new #[Layout('layouts.authentication')] class extends Component {
         <form wire:submit="login"
             x-data
             x-init="
-                const savedEmail = localStorage.getItem('lemon_email');
-                if (savedEmail) { $wire.set('form.email', savedEmail); $wire.set('form.remember', true); }
+                const savedNik = localStorage.getItem('lemon_nik');
+                if (savedNik) { $wire.set('form.nik', savedNik); $wire.set('form.remember', true); }
             "
             x-on:submit="
-                if ($wire.get('form.remember')) { localStorage.setItem('lemon_email', $wire.get('form.email') || ''); }
-                else { localStorage.removeItem('lemon_email'); }
+                if ($wire.get('form.remember')) { localStorage.setItem('lemon_nik', $wire.get('form.nik') || ''); }
+                else { localStorage.removeItem('lemon_nik'); }
             ">
-            {{-- Email --}}
+            {{-- Nomor Induk Karyawan --}}
             <div class="mb-3">
-                <label class="lf-label" for="email">Email</label>
+                <label class="lf-label" for="nik">Nomor Induk Karyawan</label>
                 <div class="lf-field">
-                    <i class="bi bi-envelope lead-ico"></i>
-                    <input wire:model="form.email" id="email" type="email" name="email" class="lf-input"
-                        placeholder="contoh@email.com" required autofocus autocomplete="username">
+                    <i class="bi bi-person-vcard lead-ico"></i>
+                    <input wire:model="form.nik" id="nik" type="text" name="nik" class="lf-input"
+                        placeholder="ACM-XXXXXX" required autofocus autocomplete="username"
+                        style="text-transform:uppercase;"
+                        x-on:input="$el.value = $el.value.toUpperCase()">
                 </div>
-                <x-input-error :messages="$errors->get('form.email')" class="lf-error" />
+                <x-input-error :messages="$errors->get('form.nik')" class="lf-error" />
             </div>
 
             {{-- Password --}}
@@ -92,9 +94,15 @@ new #[Layout('layouts.authentication')] class extends Component {
                     <input wire:model="form.remember" type="checkbox" name="remember">
                     <span>Ingat saya</span>
                 </label>
-                @if (Route::has('password.request'))
-                <a class="lf-forgot" href="{{ route('password.request') }}" wire:navigate>Lupa sandi?</a>
-                @endif
+                <div class="d-flex gap-2">
+                    @if (Route::has('nik.request'))
+                    <a class="lf-forgot" href="{{ route('nik.request') }}" wire:navigate>Lupa NIK?</a>
+                    @endif
+                    @if (Route::has('password.request'))
+                    <span class="text-muted" style="font-size:.8rem;">·</span>
+                    <a class="lf-forgot" href="{{ route('password.request') }}" wire:navigate>Lupa sandi?</a>
+                    @endif
+                </div>
             </div>
 
             {{-- Tombol --}}

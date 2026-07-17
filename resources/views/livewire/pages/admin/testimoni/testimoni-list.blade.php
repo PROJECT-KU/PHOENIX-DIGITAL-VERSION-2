@@ -44,6 +44,76 @@ Data Testimoni || lemon
             </div>
         </div>
 
+        {{-- Tabs moderasi (seragam dengan Moderasi Ulasan Produk) --}}
+        <style>
+            .customer-glossy-tabs {
+                display: flex;
+                width: 100%;
+                gap: .5rem;
+                padding: .5rem;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.55);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.6);
+                box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+                overflow-x: auto;
+            }
+            .customer-glossy-tab {
+                flex: 1;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: .6rem;
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                font-weight: 600;
+                font-size: 1.05rem;
+                line-height: 1;
+                padding: .95rem 1.5rem;
+                border-radius: 999px;
+                cursor: pointer;
+                transition: all .25s ease;
+                text-transform: capitalize;
+                white-space: nowrap;
+            }
+            .customer-glossy-tab i { font-size: 1.25rem; line-height: 1; display: inline-flex; align-items: center; }
+            .customer-glossy-tab:hover:not(.active) { color: #4e46e5; background: rgba(108, 99, 255, 0.10); }
+            .customer-glossy-tab.active { color: #fff; background: linear-gradient(135deg, #6c63ff, #4e46e5); box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45); transform: translateY(-1px); }
+            .customer-glossy-tab .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.75rem; height: 1.75rem; padding: 0 .55rem; font-size: .82rem; font-weight: 800; line-height: 1; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #7c73ff, #4e46e5); border: 1px solid rgba(255, 255, 255, 0.45); box-shadow: 0 4px 10px rgba(78, 70, 229, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.45); transition: all .25s ease; }
+            .customer-glossy-tab:hover:not(.active) .tab-count { transform: scale(1.08); }
+            .customer-glossy-tab.active .tab-count { color: #4e46e5; background: linear-gradient(135deg, #ffffff, #eef0ff); border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.9); }
+            @media (max-width: 575.98px) {
+                .customer-glossy-tab { flex: 0 0 auto; justify-content: center; padding: .6rem .9rem; font-size: .9rem; }
+            }
+        </style>
+
+        <div class="mb-4">
+            <div class="customer-glossy-tabs">
+                <button type="button" class="customer-glossy-tab @if ($filter === 'pending') active @endif" wire:click="setFilter('pending')">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span>Menunggu</span>
+                    <span class="tab-count">{{ $tabCounts['pending'] }}</span>
+                </button>
+                <button type="button" class="customer-glossy-tab @if ($filter === 'active') active @endif" wire:click="setFilter('active')">
+                    <i class="bi bi-check-circle"></i>
+                    <span>Disetujui</span>
+                    <span class="tab-count">{{ $tabCounts['active'] }}</span>
+                </button>
+                <button type="button" class="customer-glossy-tab @if ($filter === 'non-active') active @endif" wire:click="setFilter('non-active')">
+                    <i class="bi bi-eye-slash"></i>
+                    <span>Ditolak</span>
+                    <span class="tab-count">{{ $tabCounts['non-active'] }}</span>
+                </button>
+                <button type="button" class="customer-glossy-tab @if ($filter === 'all') active @endif" wire:click="setFilter('all')">
+                    <i class="bi bi-list-check"></i>
+                    <span>Semua</span>
+                    <span class="tab-count">{{ $tabCounts['all'] }}</span>
+                </button>
+            </div>
+        </div>
+
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <div class="table-responsive">
@@ -148,19 +218,37 @@ Data Testimoni || lemon
                                 </td>
                                 <td class="text-truncate" style="max-width: 200px;">{{ $item->pesan }}</td>
                                 <td class="text-center">
-                                    <span class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
+                                    @php
+                                        $stMap = [
+                                            'pending' => ['warning', 'Menunggu'],
+                                            'active' => ['success', 'Disetujui'],
+                                            'non-active' => ['danger', 'Ditolak'],
+                                        ];
+                                        [$stColor, $stLabel] = $stMap[$item->status] ?? ['secondary', ucfirst($item->status)];
+                                    @endphp
+                                    <span class="badge bg-{{ $stColor }}-subtle text-{{ $stColor }} border border-{{ $stColor }} rounded-pill px-3 py-2">
+                                        {{ $stLabel }}
                                     </span>
                                 </td>
                                 @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
                                 <td class="text-center text-nowrap">
                                     @if (auth()->user()->hasPermission('edit_testimoni'))
-                                    <button type="button"
-                                        class="btn btn-sm p-2 {{ $item->status === 'active' ? 'btn-secondary' : 'btn-success' }}"
-                                        title="{{ $item->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}"
-                                        wire:click="toggleStatus('{{ $item->id }}')">
-                                        <i class="bi {{ $item->status === 'active' ? 'bi-eye-slash' : 'bi-check-circle' }}"></i>
+                                    {{-- Setujui: tampil kecuali sudah disetujui --}}
+                                    @if ($item->status !== 'active')
+                                    <button type="button" class="btn btn-sm btn-success p-2"
+                                        title="Setujui (tampilkan di publik)"
+                                        wire:click="approve('{{ $item->id }}')">
+                                        <i class="bi bi-check-circle"></i>
                                     </button>
+                                    @endif
+                                    {{-- Tolak: tampil kecuali sudah ditolak --}}
+                                    @if ($item->status !== 'non-active')
+                                    <button type="button" class="btn btn-sm btn-secondary p-2"
+                                        title="Tolak (sembunyikan dari publik)"
+                                        wire:click="reject('{{ $item->id }}')">
+                                        <i class="bi bi-eye-slash"></i>
+                                    </button>
+                                    @endif
                                     <a wire:navigate href="{{ route('admin.testimoni.edit', $item) }}"
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
@@ -247,17 +335,6 @@ Data Testimoni || lemon
                     }
                 });
             }
-        });
-    });
-
-    window.addEventListener('testimoni-status', (e) => {
-        Swal.fire({
-            title: e.detail.active ? 'Diaktifkan!' : 'Dinonaktifkan!',
-            text: e.detail.active ? 'Testimoni sekarang tampil di homepage.' : 'Testimoni disembunyikan dari homepage.',
-            icon: 'success',
-            timer: 2200,
-            showConfirmButton: false,
-            ...glossyConfigTestimoni
         });
     });
 

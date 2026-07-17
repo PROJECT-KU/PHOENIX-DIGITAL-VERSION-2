@@ -45,9 +45,17 @@ class DataAkunForm extends Component
         }
     }
 
+    /** Banyaknya slot nama akun per produk ("Nama 1".."Nama N"), private & sharing sama. */
+    private const SLOT_PER_PRODUK = 10;
+
     /**
      * Peta slot nama akun => id produk induknya.
-     * Private -> 1 slot ("Nama 1"); Sharing -> 10 slot ("Nama 1".."Nama 10").
+     * Tiap produk dapat SLOT_PER_PRODUK slot ("Nama 1".."Nama 10").
+     *
+     * Dulu produk private dibatasi 1 slot. Itu menyulitkan kenyataan: satu camp
+     * bisa memakai beberapa akun private berbeda (mis. 2 login Scopus), tapi
+     * hanya ada satu slot sehingga akun yang sama terpaksa dipilih dua kali —
+     * datanya jadi tidak mencerminkan akun yang benar-benar dipakai.
      *
      * Nama slot memang DIBANGKITKAN dari produk, jadi induknya sudah pasti —
      * tidak perlu ditebak dari teks nama (rapuh: spasi/typo/huruf besar).
@@ -63,8 +71,7 @@ class DataAkunForm extends Component
             if ($base === '') {
                 continue;
             }
-            $max = $p->tipe_akun === 'private' ? 1 : 10;
-            for ($n = 1; $n <= $max; $n++) {
+            for ($n = 1; $n <= self::SLOT_PER_PRODUK; $n++) {
                 $map[$base.' '.$n] = (string) $p->id;
             }
         }
@@ -93,6 +100,64 @@ class DataAkunForm extends Component
     }
 
     /**
+     * Slot nama yang dipilih menunjuk produk PRIVATE?
+     *
+     * Dipakai form (bukan cuma validasi) untuk melonggarkan username/password:
+     * akun private sering baru dibuat/dibeli belakangan, jadi kredensialnya
+     * belum ada saat data akun didaftarkan. Akun sharing kredensialnya sudah
+     * pasti ada karena memang dipakai bersama, jadi tetap wajib.
+     *
+     * Slot yang belum tertaut produk → dianggap bukan private (tetap wajib).
+     */
+    public function slotPrivate(): bool
+    {
+        $pid = $this->productIdDariSlot();
+
+        return $pid !== null
+            && Product::where('id', $pid)->value('tipe_akun') === 'private';
+    }
+
+    /**
+     * Segarkan baris modal cash flow batch RSC yang memakai akun ini —
+     * baik sebagai akun UTAMA maupun akun TAMBAHAN.
+     *
+     * Kenapa perlu: modal RSC dihitung dari tautan produk akun (private/sharing)
+     * dan harga katalognya. Baris cash flow-nya hanya ditulis saat batch RSC
+     * disimpan. Jadi kalau tautan produk diisi/diubah SETELAH batch dibuat,
+     * baris modalnya akan tertinggal (usang) sampai batch itu disimpan ulang.
+     * Dipanggil di sini supaya angkanya langsung benar tanpa admin sadar.
+     *
+     * Aman & idempoten: action-nya self-guard (bukan private / bukan 'baru' /
+     * harga katalog tak ada → barisnya dihapus).
+     */
+    private function segarkanModalRscTerkait(?string $akunId): void
+    {
+        if (! $akunId) {
+            return;
+        }
+
+        // Batch yang memakai akun ini sebagai akun TAMBAHAN.
+        $batchTambahan = \App\Models\RscBatchAkun::where('akun_id', $akunId)
+            ->get(['nama_camp', 'batch_camp']);
+
+        $reps = \App\Models\PemesananRsc::where(function ($q) use ($akunId, $batchTambahan) {
+            $q->where('akun', $akunId); // sebagai akun UTAMA
+            foreach ($batchTambahan as $b) {
+                $q->orWhere(fn ($x) => $x->where('nama_camp', $b->nama_camp)->where('batch_camp', $b->batch_camp));
+            }
+        })
+            ->orderBy('created_at')->orderBy('id')
+            ->get()
+            ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
+            ->map(fn ($grp) => $grp->first());
+
+        $action = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
+        foreach ($reps as $rep) {
+            $action->execute($rep);
+        }
+    }
+
+    /**
      * Slot yang boleh dipilih: kecuali yang sedang dipakai Data Akun berstatus AKTIF.
      * Saat edit, nama record ini sendiri tetap boleh dipilih.
      */
@@ -109,10 +174,26 @@ class DataAkunForm extends Component
 
     public function save()
     {
+        // Akun PRIVATE: username & password TIDAK wajib (kredensialnya sering
+        // baru ada setelah akunnya dibeli). Akun SHARING: tetap wajib.
+        $private = $this->slotPrivate();
+
+        if ($private) {
+            // Kosongkan string kosong jadi null dulu — aturan 'nullable' hanya
+            // melewati validasi berikutnya bila nilainya benar-benar null,
+            // sedangkan input kosong dari form berupa string '' (bukan null).
+            if (trim((string) $this->username_akun) === '') {
+                $this->username_akun = null;
+            }
+            if (trim((string) $this->password_akun) === '') {
+                $this->password_akun = null;
+            }
+        }
+
         $this->validate([
             'nama_akun' => 'required|min:3',
-            'username_akun' => 'required',
-            'password_akun' => 'required|min:6',
+            'username_akun' => $private ? 'nullable' : 'required',
+            'password_akun' => $private ? 'nullable|min:6' : 'required|min:6',
             'link_login_akun' => 'required|nullable|url',
             'pj_akun' => 'required',
             'harga_satuan' => 'required',
@@ -146,8 +227,10 @@ class DataAkunForm extends Component
                 // Tautan ke produk induk diisi OTOMATIS dari slot yang dipilih —
                 // menentukan private/sharing & harga modal tanpa input tambahan.
                 'product_id' => $this->productIdDariSlot(),
-                'username_akun' => $this->username_akun,
-                'password_akun' => $this->password_akun,
+                // Kolom username/password NOT NULL di DB, sedangkan akun private
+                // boleh dikosongkan → simpan string kosong, bukan null.
+                'username_akun' => $this->username_akun ?? '',
+                'password_akun' => $this->password_akun ?? '',
                 'link_login_akun' => $this->link_login_akun,
                 'pj_akun' => $this->pj_akun,
                 'harga_satuan' => $this->harga_satuan,
@@ -174,14 +257,21 @@ class DataAkunForm extends Component
                 // Tautan ke produk induk diisi OTOMATIS dari slot yang dipilih —
                 // menentukan private/sharing & harga modal tanpa input tambahan.
                 'product_id' => $this->productIdDariSlot(),
-                'username_akun' => $this->username_akun,
-                'password_akun' => $this->password_akun,
+                // Kolom username/password NOT NULL di DB, sedangkan akun private
+                // boleh dikosongkan → simpan string kosong, bukan null.
+                'username_akun' => $this->username_akun ?? '',
+                'password_akun' => $this->password_akun ?? '',
                 'link_login_akun' => $this->link_login_akun,
                 'pj_akun' => $this->pj_akun,
                 'harga_satuan' => $this->harga_satuan,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
             ]);
+
+            // Tautan produk akun ini menentukan modal batch RSC yang memakainya.
+            // Kalau tautannya baru diisi/diubah sekarang, batch RSC lama tidak
+            // tahu dan baris modalnya jadi usang — jadi disegarkan di sini.
+            $this->segarkanModalRscTerkait($this->dataAkun->id);
 
             session()->flash('successUpdated', 'Perubahan Data Akun berhasil disimpan!');
             $this->dispatch('DataAkun-updated');
@@ -214,6 +304,9 @@ class DataAkunForm extends Component
             'dataAkun' => $this->dataAkun,
             'users' => $users,
             'availableNames' => $this->availableNames(),
+            // Kredensial wajib hanya untuk akun SHARING. Dikirim dari sini supaya
+            // penanda * di form tidak pernah beda dengan aturan validasi di save().
+            'wajibKredensial' => ! $this->slotPrivate(),
         ]);
     }
 }

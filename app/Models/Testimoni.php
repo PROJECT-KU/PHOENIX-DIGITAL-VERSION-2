@@ -52,4 +52,28 @@ class Testimoni extends Model
     {
         return $this->customer_id !== null;
     }
+
+    /** Dikirim langsung oleh pelanggan (bukan diinput admin). */
+    public function dariPelanggan(): bool
+    {
+        return $this->source === 'customer';
+    }
+
+    /** Menunggu moderasi admin — sumber angka badge sidebar. */
+    public function scopeMenunggu($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /** Sudah disetujui admin (tampil di publik). */
+    public function scopeDisetujui($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /** Ditolak/disembunyikan admin. */
+    public function scopeDitolak($query)
+    {
+        return $query->where('status', 'non-active');
+    }
 }

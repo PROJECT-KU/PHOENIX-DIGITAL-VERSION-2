@@ -2,14 +2,17 @@
 
 namespace App\Livewire\Pages\Admin\CashFlow;
 
+use App\Actions\Finance\SyncRscPrivateCostAction;
 use App\Models\CashFlow;
 use App\Models\GajiKaryawans;
 use App\Models\Loan;
 use App\Models\Order;
 use App\Models\PemesananRsc;
 use App\Models\Pengembalian;
+use App\Models\Product;
 use App\Models\Spending;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 
 class CashFlowDetail extends Component
@@ -191,21 +194,75 @@ class CashFlowDetail extends Component
 
             $totals = ['Nominal Pengeluaran' => $this->rupiah($s->nominal)];
         } elseif ($s instanceof PemesananRsc) {
-            $jenis = 'Pesanan Rumah Scopus';
+            // Satu baris peserta bisa punya DUA cash flow: pemasukan penjualan dan
+            // modal akun private. Keduanya sampai ke sini, jadi angkanya harus
+            // dibedakan — kalau tidak, baris modal ikut memamerkan angka penjualan.
+            $isModal = $this->cashFlow->category === 'Modal Akun Private';
+            $jenis = $isModal ? 'Modal Akun Private (Rumah Scopus)' : 'Pesanan Rumah Scopus';
+
+            // Cash flow RSC dicatat per BATCH (bukan per peserta), jadi rinciannya
+            // menggambarkan batch: berapa peserta & berapa akun yang dipakai.
+            $jumlahPeserta = PemesananRsc::where('nama_camp', $s->nama_camp)
+                ->where('batch_camp', $s->batch_camp)
+                ->count();
+            $jumlahAkun = 1 + \App\Models\RscBatchAkun::where('nama_camp', $s->nama_camp)
+                ->where('batch_camp', $s->batch_camp)
+                ->count();
+
             $rows = [
                 'ID Transaksi' => $s->id_transaksi,
                 'Camp' => $s->nama_camp.' (Batch '.$s->batch_camp.')',
-                'Pembeli' => $s->nama_pembeli,
+                // Baris ini mewakili SATU peserta; batch bisa berisi banyak.
+                'Pembeli' => $jumlahPeserta > 1
+                    ? $s->nama_pembeli.' (+'.($jumlahPeserta - 1).' peserta lain)'
+                    : $s->nama_pembeli,
                 'Telp' => $s->telp_pembeli,
-                'Jumlah' => $s->jumlah_pemesanan,
-                'Tanggal Pesan' => optional($s->tanggal_pemesanan)->format('d M Y') ?? '-',
-                'PIC' => $s->pic,
+                'Metode Harga' => $s->metode_harga === 'per_akun' ? 'Per akun' : 'Per peserta',
+                // jumlah_pemesanan sebenarnya JUMLAH BULAN camp (dipakai addMonths()
+                // saat menghitung tanggal berakhir) — dulu dilabeli "Jumlah" begitu
+                // saja sehingga terbaca seperti kuantitas.
+                'Durasi' => $s->jumlah_pemesanan.' bulan',
+                'Jumlah Peserta' => $jumlahPeserta.' orang',
+                'Jumlah Akun' => $jumlahAkun.' akun (utama + tambahan)',
+                // tanggal_pemesanan TIDAK di-cast date di model PemesananRsc (masih
+                // string mentah dari DB), jadi optional(...)->format() memulangkan
+                // null → tampil "-". Diparse dulu supaya tanggal aslinya muncul.
+                'Tanggal Pesan' => $s->tanggal_pemesanan
+                    ? Carbon::parse($s->tanggal_pemesanan)->translatedFormat('d M Y')
+                    : '-',
+                // Kolom `pic` menyimpan ID user, bukan nama — ambil lewat relasi.
+                'PIC' => optional($s->users)->name ?? '-',
                 'Status' => ucfirst($s->status ?? '-'),
             ];
-            $totals = [
-                'Harga Satuan' => $this->rupiah($s->harga_satuan),
-                'Total' => $this->rupiah($s->total),
-            ];
+            // Baris cash flow ini milik SATU BATCH, jadi angkanya harus angka
+            // batch — bukan angka baris peserta yang kebetulan jadi representatif.
+            // SUM(total) sebatch inilah yang dipakai saat baris cash flow ditulis
+            // (lihat syncRscBatchCashFlow), sehingga totalnya pasti sama.
+            $totalBatch = (int) PemesananRsc::where('nama_camp', $s->nama_camp)
+                ->where('batch_camp', $s->batch_camp)
+                ->sum('total');
+
+            if ($isModal) {
+                [$items, $totals, $itemsNote] = $this->rincianModalRsc($s);
+            } elseif ($s->metode_harga === 'per_akun') {
+                // Mode per akun: grand total = durasi x harga SEMUA akun, lalu
+                // dibagi rata ke tiap peserta. Jadi total & harga_satuan baris
+                // peserta cuma pecahan — tak bermakna sendirian. Yang bermakna:
+                // harga gabungan semua akun per bulannya.
+                $bulan = max(1, (int) $s->jumlah_pemesanan);
+                $totals = [
+                    'Harga Semua Akun (per bulan)' => $this->rupiah(intdiv($totalBatch, $bulan)),
+                    'Durasi' => $bulan.' bulan',
+                    'Total Pemasukan' => $this->rupiah($totalBatch),
+                ];
+            } else {
+                // Mode per peserta: tiap peserta bayar harga_satuan x durasi.
+                $totals = [
+                    'Harga Satuan (per bulan)' => $this->rupiah($s->harga_satuan),
+                    'Total per Peserta' => $this->rupiah($s->total),
+                    'Total Pemasukan ('.$jumlahPeserta.' peserta)' => $this->rupiah($totalBatch),
+                ];
+            }
         }
 
         return [
@@ -215,6 +272,42 @@ class CashFlowDetail extends Component
             'totals' => $totals,
             'itemsNote' => $itemsNote,
         ];
+    }
+
+    /**
+     * Rincian baris MODAL akun private sebuah batch RSC.
+     *
+     * Sengaja memakai action yang sama dengan penulis baris cash flow-nya
+     * (SyncRscPrivateCostAction), bukan menghitung ulang di sini — supaya
+     * rincian yang ditampilkan tidak mungkin berbeda dari nominal barisnya.
+     *
+     * @return array{0: array, 1: array, 2: ?string} [items, totals, itemsNote]
+     */
+    protected function rincianModalRsc(PemesananRsc $s): array
+    {
+        $rincian = app(SyncRscPrivateCostAction::class)->rincianModal($s);
+
+        $nama = Product::whereIn('id', array_column($rincian, 'product_id'))
+            ->pluck('nama_akun', 'id');
+
+        $items = [];
+        foreach ($rincian as $r) {
+            $items[] = [
+                'nama' => ($nama[$r['product_id']] ?? 'Produk').' (private)',
+                'durasi' => $r['durasi_value'].' '.$r['durasi_type'],
+                'qty' => $r['jumlah'],
+                'harga' => $this->rupiah($r['satuan']),
+                'subtotal' => $this->rupiah($r['total']),
+            ];
+        }
+
+        $totals = ['Total Modal' => $this->rupiah($this->cashFlow->amount)];
+
+        $itemsNote = $s->metode_harga === 'per_akun'
+            ? 'Modal dihitung per AKUN private yang dipakai batch ini (utama + tambahan), memakai harga katalog modal saat tanggal pemesanan.'
+            : 'Modal dihitung per PESERTA (1 peserta = 1 akun), memakai harga katalog modal saat tanggal pemesanan.';
+
+        return [$items, $totals, $itemsNote];
     }
 
     protected function rupiah($value): string

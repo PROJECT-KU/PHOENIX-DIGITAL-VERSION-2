@@ -4,56 +4,61 @@ namespace App\Actions\Finance;
 
 use App\Models\DataAkun;
 use App\Models\PemesananRsc;
+use App\Models\RscBatchAkun;
 use Illuminate\Support\Carbon;
 
 /**
  * Catat biaya MODAL akun PRIVATE untuk satu batch Rumah Scopus (RSC) sebagai
  * expense di cash flow — sejajar dengan SyncOrderPrivateCostAction untuk Order.
  *
- * Rumah Scopus = model patungan: SATU akun dipakai banyak peserta dalam satu
- * batch. Jadi modal dicatat PER BATCH (satu akun = satu modal), memakai baris
- * REPRESENTATIF batch (sama seperti pemasukannya).
+ * ===================== JUMLAH AKUN (kunci hitungan) =====================
+ * Modal = JUMLAH AKUN PRIVATE yang benar-benar disediakan × harga modal katalog.
+ * Jumlah akunnya beda menurut metode harga:
  *
- * Harga modal dari katalog Harga Modal (ProductModalPrice) memakai durasi camp
- * dan harga yang BERLAKU pada tanggal pemesanan — satu sumber & pola sama dgn
- * modal private Order.
+ *   per_peserta : 1 peserta = 1 akun. Jumlah akun = JUMLAH PESERTA (baris batch),
+ *                 semuanya memakai produk akun UTAMA.
+ *   per_akun    : jumlah akun = akun UTAMA + akun TAMBAHAN (RscBatchAkun).
+ *                 TIAP akun dinilai sesuai produknya sendiri (batch boleh campur
+ *                 private & sharing); yang sharing dilewati.
+ *
+ * SHARING tidak pernah dicatat di sini — modalnya lewat Pengeluaran (pembelian
+ * akun), mencatat ulang = dobel. Yang dicatat cuma akun PRIVATE.
+ *
+ * Harga modal dari katalog Harga Modal (ProductModalPrice) memakai DURASI camp
+ * (kolom jumlah_pemesanan = jumlah bulan) & harga yang BERLAKU pada tanggal
+ * pemesanan — satu sumber & pola sama dgn modal private Order.
+ * ========================================================================
  *
  * Baris cash flow-nya terpisah dari pemasukan RSC (kategori beda), dikelola
- * lewat relasi cashFlowModal() yang sudah dibatasi ke 'Modal Akun Private',
- * jadi tidak saling menimpa dengan sync pemasukan.
- *
- * Idempoten: dipanggil ulang aman. Bila tak layak dicatat (akun bukan private,
- * status bukan 'baru', atau harga katalog belum ada) → baris modalnya dihapus.
+ * lewat relasi cashFlowModal(); idempoten (aman dipanggil berulang).
  */
 class SyncRscPrivateCostAction
 {
-    /** Kategori cash flow yg SAMA dengan modal private Order — supaya fitur Modal ikut membacanya. */
+    /** Kategori cash flow yg SAMA dgn modal private Order — supaya fitur Modal ikut membacanya. */
     private const KATEGORI = 'Modal Akun Private';
 
     /**
-     * @param  PemesananRsc  $rep  baris representatif batch (yang memegang cash flow)
+     * Catat/segarkan baris modal untuk batch (pakai baris representatif).
      */
     public function execute(PemesananRsc $rep): void
     {
-        $modal = $this->hitungModal($rep);
+        $total = array_sum($this->modalPerProduk($rep));
 
-        if ($modal <= 0) {
+        if ($total <= 0) {
             $rep->cashFlowModal()->delete();
 
             return;
         }
 
-        $akun = DataAkun::with('product')->find($rep->akun);
-        $namaProduk = optional(optional($akun)->product)->nama_akun ?? 'Akun Private';
-
         $rep->cashFlowModal()->updateOrCreate(
             ['sourceable_id' => $rep->id, 'sourceable_type' => PemesananRsc::class],
             [
-                'amount' => $modal,
+                'amount' => $total,
                 'type' => 'expense',
                 'transaction_date' => $rep->tanggal_pemesanan,
                 'category' => self::KATEGORI,
-                'description' => 'Modal RSC '.$namaProduk.' - '.$rep->nama_camp.' Batch '.$rep->batch_camp,
+                'description' => 'Modal RSC - '.$rep->nama_camp.' Batch '.$rep->batch_camp
+                    .' ('.($rep->metode_harga === 'per_akun' ? 'per akun' : 'per peserta').')',
             ]
         );
     }
@@ -65,27 +70,115 @@ class SyncRscPrivateCostAction
     }
 
     /**
-     * Modal batch = harga modal satuan (katalog) untuk durasi camp.
-     * 0 bila: akun tak tertaut produk, produk bukan private, status bukan 'baru',
-     * atau durasi tidak ada di katalog.
+     * Modal akun PRIVATE batch ini, DIPECAH per produk.
+     *
+     * Dipakai bersama:
+     *  - execute()                       → dijumlah jadi satu baris cash flow
+     *  - CashFlowList::modalRscPrivate() → diakumulasi per produk untuk omset
+     *
+     * Return kosong bila status bukan 'baru' atau tidak ada akun private.
+     *
+     * @param  PemesananRsc  $rep  baris representatif batch
+     * @return array<string,float>  product_id => total modal
      */
-    private function hitungModal(PemesananRsc $rep): float
+    public function modalPerProduk(PemesananRsc $rep): array
+    {
+        $peta = [];
+        foreach ($this->rincianModal($rep) as $r) {
+            $peta[$r['product_id']] = ($peta[$r['product_id']] ?? 0) + $r['total'];
+        }
+
+        return $peta;
+    }
+
+    /**
+     * RINCIAN modal private batch — dipecah per (produk, durasi, harga satuan),
+     * lengkap dengan jumlah akun. Dipakai fitur Modal untuk mengisi kolom
+     * Durasi / Modal Satuan / Order pada tabel Rincian (bukan cuma totalnya).
+     *
+     * modalPerProduk() adalah ringkasan dari sini, jadi angkanya pasti sejalan.
+     *
+     * @param  PemesananRsc  $rep  baris representatif batch
+     * @return array<int, array{product_id:string,durasi_value:int,durasi_type:string,satuan:float,jumlah:int,total:float}>
+     */
+    public function rincianModal(PemesananRsc $rep): array
     {
         if ($rep->status !== 'baru') {
-            return 0;
+            return [];
         }
 
-        $akun = DataAkun::with('product')->find($rep->akun);
-        $product = optional($akun)->product;
+        // Durasi dari jumlah_pemesanan (jumlah bulan camp). Fallback ke selisih
+        // tanggal bila kosong, supaya tetap dapat angka yang masuk akal.
+        $bulan = (int) $rep->jumlah_pemesanan;
+        if ($bulan < 1) {
+            $mulai = Carbon::parse($rep->tanggal_pemesanan);
+            $akhir = $rep->tanggal_berakhir ? Carbon::parse($rep->tanggal_berakhir) : $mulai->copy();
+            $bulan = max(1, (int) round($mulai->diffInDays($akhir) / 30));
+        }
+        $asOf = Carbon::parse($rep->tanggal_pemesanan)->toDateString();
 
-        if (! $product || $product->tipe_akun !== 'private') {
-            return 0;
+        $rincian = [];
+
+        // Tambahkan N akun private dari satu Data Akun ke rincian.
+        // Dikelompokkan per (produk|durasi|satuan) supaya kolom Durasi & Modal
+        // Satuan punya arti; kalau harga katalog beda, barisnya juga terpisah.
+        $tambahAkun = function (?string $akunId, int $qty) use (&$rincian, $bulan, $asOf) {
+            $akun = $akunId ? DataAkun::with('product')->find($akunId) : null;
+            $product = optional($akun)->product;
+            if (! $product || $product->tipe_akun !== 'private' || $qty < 1) {
+                return;
+            }
+
+            $satuan = (float) $product->modalSatuan($bulan, 'bulan', $asOf);
+            if ($satuan <= 0) {
+                return;
+            }
+
+            $k = $product->id.'|'.$bulan.'|'.$satuan;
+            if (! isset($rincian[$k])) {
+                $rincian[$k] = [
+                    'product_id' => (string) $product->id,
+                    'durasi_value' => $bulan,
+                    'durasi_type' => 'bulan',
+                    'satuan' => $satuan,
+                    'jumlah' => 0,
+                    'total' => 0.0,
+                ];
+            }
+            $rincian[$k]['jumlah'] += $qty;
+            $rincian[$k]['total'] += $satuan * $qty;
+        };
+
+        if ($rep->metode_harga === 'per_akun') {
+            // Akun utama + tiap akun tambahan, dinilai per produknya sendiri.
+            //
+            // SENGAJA TIDAK di-dedup: sisi PENJUALAN (sumHargaAkun() di form RSC)
+            // juga menjumlah per ENTRI akun, bukan per akun unik. Kalau modal
+            // di-dedup sementara penjualan tidak, batch yang menjual 2 entri akun
+            // hanya dihitung modal 1 akun → untung terlihat lebih besar dari
+            // kenyataan. Jadi modal mengikuti cara penjualan menghitung.
+            $akunIds = RscBatchAkun::where('nama_camp', $rep->nama_camp)
+                ->where('batch_camp', $rep->batch_camp)
+                ->pluck('akun_id')
+                ->prepend($rep->akun)
+                ->filter();
+
+            foreach ($akunIds as $akunId) {
+                $tambahAkun($akunId, 1);
+            }
+        } else {
+            // per_peserta: hitungan PER KEPALA. Modal = harga katalog akun UTAMA
+            // × jumlah peserta. Akun TAMBAHAN SENGAJA DIABAIKAN (baik private
+            // maupun sharing) — karena biayanya dihitung per orang, bukan per
+            // akun; berapa pun akun tambahan tidak menambah modal. (Sisi PENJUALAN
+            // per_peserta juga tak terpengaruh akun tambahan: "tidak memengaruhi
+            // harga".) Untuk memodalkan tiap akun fisik, pakai mode per_akun.
+            $jumlahPeserta = PemesananRsc::where('nama_camp', $rep->nama_camp)
+                ->where('batch_camp', $rep->batch_camp)
+                ->count();
+            $tambahAkun($rep->akun, max(1, $jumlahPeserta));
         }
 
-        $mulai = Carbon::parse($rep->tanggal_pemesanan);
-        $akhir = $rep->tanggal_berakhir ? Carbon::parse($rep->tanggal_berakhir) : $mulai->copy();
-        $bulan = max(1, (int) round($mulai->diffInDays($akhir) / 30));
-
-        return (float) $product->modalSatuan($bulan, 'bulan', $mulai->toDateString());
+        return array_values($rincian);
     }
 }

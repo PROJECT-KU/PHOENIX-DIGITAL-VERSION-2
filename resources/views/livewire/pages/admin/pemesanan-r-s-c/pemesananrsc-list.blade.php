@@ -194,7 +194,33 @@ Data Pesanan RSC || lemon
                                 <tr style="text-align: center;">
                                     <td>{{ $item->nama_camp }}</td>
                                     <td>#{{ $item->batch_camp }}</td>
-                                    <td>{{ $item->dataakun?->nama_akun ?? '-' }}</td>
+                                    <td>
+                                        @php
+                                            $key = $item->nama_camp.'|'.$item->batch_camp;
+                                            $tambahan = $akunTambahanPerBatch[$key] ?? [];
+                                            $utama = $item->dataakun?->nama_akun;
+                                            $totalAkun = ($utama ? 1 : 0) + count($tambahan);
+                                            // Newline ASLI ("\n"), bukan entity — {{ }} meng-escape '&' jadi
+                                            // '&#10;' tak akan jadi baris baru. title native menampilkan \n multi-baris.
+                                            $judulTambahan = "Akun tambahan:\n• ".implode("\n• ", $tambahan);
+                                        @endphp
+                                        @if($totalAkun <= 1)
+                                            {{-- Satu akun (atau kosong): tetap polos seperti biasa --}}
+                                            {{ $utama ?? '-' }}
+                                        @else
+                                            {{-- Lebih dari satu akun: akun utama tampil, sisanya ringkas di
+                                                 badge "+N". Nama akun tambahan muncul saat hover (title native
+                                                 agar tak terpotong tepi .table-responsive). --}}
+                                            <span class="d-inline-flex align-items-center gap-1">
+                                                <span class="fw-semibold text-dark">{{ $utama ?? '—' }}</span>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill rsc-akun-more"
+                                                    style="font-size:.66rem; cursor:help;"
+                                                    title="{{ $judulTambahan }}">
+                                                    +{{ count($tambahan) }}
+                                                </span>
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3 py-2">{{ $item->total_peserta }} Peserta</span>
                                     </td>

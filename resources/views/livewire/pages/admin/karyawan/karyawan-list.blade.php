@@ -30,6 +30,30 @@ Data Karyawan || lemon
             color: #fff;
             flex-shrink: 0;
         }
+
+        /* Nomor Induk Karyawan — monospace agar mudah dibaca & dibedakan. */
+        .kry-nik {
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            color: #4e46e5;
+            background: #eef2ff;
+            border-radius: 6px;
+            padding: 1px 7px;
+            margin-top: 2px;
+        }
+
+        /* Alamat dipangkas 2 baris; teks penuh muncul saat hover (title). */
+        .kry-alamat {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            max-width: 260px;
+        }
     </style>
 
     <div class="container-fluid">
@@ -132,6 +156,7 @@ Data Karyawan || lemon
                                 <th>Karyawan</th>
                                 <th>Jabatan</th>
                                 <th>Role</th>
+                                <th class="text-start">Kontak &amp; Alamat</th>
                                 <th>Info Bank</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_karyawan', 'delete_karyawan']))
                                 <th width="120">Aksi</th>
@@ -144,27 +169,50 @@ Data Karyawan || lemon
                             @endphp
                             @forelse($users as $user)
                             <tr style="text-align: center;">
-                                <td>
+                                <td class="text-start">
                                     <div class="d-flex align-items-center gap-3">
                                         <span class="kry-avatar" style="background: linear-gradient(135deg,{{ $avatarGrad[$loop->index % count($avatarGrad)] }});">
                                             {{ strtoupper(substr($user->name, 0, 1)) }}
                                         </span>
-                                        <div>
+                                        {{-- text-start: baris <tr> di-center, tanpa ini nama/email/NIK
+                                             ikut ter-center di lebar yang berbeda-beda tiap baris. --}}
+                                        <div class="text-start">
                                             <div class="fw-semibold text-dark d-flex align-items-center gap-2">
                                                 {{ $user->name }}
                                                 @if(($user->status ?? 'active') === 'blokir')
                                                 <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill" style="font-size:.66rem;"><i class="bi bi-lock-fill me-1"></i>Blokir</span>
                                                 @endif
                                             </div>
-                                            <small class="text-muted">{{ $user->email }}</small>
+                                            <small class="d-block text-muted">{{ $user->email }}</small>
+                                            @if($user->detail?->nik)
+                                            <span class="kry-nik">{{ $user->detail->nik }}</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
-                                <td class="text-muted">{{ $user->detail->jabatan ?? '-' }}</td>
+                                <td class="text-muted">
+                                    <div>{{ $user->detail->jabatan ?? '-' }}</div>
+                                    @if($user->detail?->masaKerja())
+                                    <small class="text-success fw-semibold"><i class="bi bi-briefcase me-1"></i>{{ $user->detail->masaKerja() }}</small>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge bg-gradient-blue rounded-pill px-3 py-2 text-capitalize">
                                         {{ $user->role->name ?? '-' }}
                                     </span>
+                                </td>
+                                <td class="text-start" style="font-size:.85rem;">
+                                    @if($user->detail?->phone)
+                                    <div class="text-dark"><i class="bi bi-telephone text-muted me-1"></i>{{ $user->detail->phone }}</div>
+                                    @endif
+                                    @if($user->detail?->alamat)
+                                    <div class="kry-alamat text-muted" title="{{ $user->detail->alamat }}">
+                                        <i class="bi bi-geo-alt me-1"></i>{{ $user->detail->alamat }}
+                                    </div>
+                                    @endif
+                                    @unless($user->detail?->phone || $user->detail?->alamat)
+                                    <span class="text-muted">-</span>
+                                    @endunless
                                 </td>
                                 <td>
                                     @if($user->detail && $user->detail->nama_bank)
@@ -194,7 +242,7 @@ Data Karyawan || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-people"></i>

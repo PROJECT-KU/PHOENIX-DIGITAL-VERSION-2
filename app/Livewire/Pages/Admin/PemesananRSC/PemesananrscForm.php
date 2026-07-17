@@ -622,11 +622,14 @@ class PemesananrscForm extends Component
                 ]);
             }
 
+            // Akun tambahan (kredensial saja) — WAJIB disimpan SEBELUM sync cash
+            // flow: modal akun private dihitung dari akun tambahan di database.
+            // Kalau sync jalan duluan, modalnya memakai daftar akun yang LAMA
+            // (akun yang baru dihapus masih terhitung, yang baru ditambah terlewat).
+            $this->simpanAkunTambahan();
+
             // Cash flow dicatat sekali per batch (total batch), bukan per peserta.
             $this->syncRscBatchCashFlow($action);
-
-            // Akun tambahan (kredensial saja).
-            $this->simpanAkunTambahan();
 
             DB::commit();
 
@@ -698,11 +701,14 @@ class PemesananrscForm extends Component
                 }
             }
 
+            // Akun tambahan (kredensial saja) — WAJIB disimpan SEBELUM sync cash
+            // flow: modal akun private dihitung dari akun tambahan di database.
+            // Kalau sync jalan duluan, modalnya memakai daftar akun yang LAMA
+            // (akun yang baru dihapus masih terhitung, yang baru ditambah terlewat).
+            $this->simpanAkunTambahan();
+
             // Cash flow dicatat sekali per batch (total batch), bukan per peserta.
             $this->syncRscBatchCashFlow($action);
-
-            // Akun tambahan (kredensial saja).
-            $this->simpanAkunTambahan();
 
             DB::commit();
             session()->flash('success', 'Berhasil Update data!');
@@ -739,12 +745,21 @@ class PemesananrscForm extends Component
     public function render()
     {
         $users = User::select('id', 'name')->orderBy('name')->get();
+
+        // $akuns (semua) hanya untuk MENAMPILKAN nama akun yang sudah terpilih —
+        // termasuk bila akun itu kini non-active (mis. saat mengedit batch lama),
+        // supaya pilihannya tidak terlihat hilang.
         $akuns = DataAkun::all();
+
+        // $akunsAktif = daftar yang boleh DIPILIH di picker (utama & tambahan):
+        // hanya status active. Akun non-active tak muncul saat memilih.
+        $akunsAktif = $akuns->where('status', 'active')->values();
 
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-form', [
             'pemesananrsc' => $this->pemesananrsc,
             'users' => $users,
             'akuns' => $akuns,
+            'akunsAktif' => $akunsAktif,
         ]);
     }
 }

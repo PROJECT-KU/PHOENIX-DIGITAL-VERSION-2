@@ -46,6 +46,20 @@ class AppServiceProvider extends ServiceProvider
         // Kirim Web Push otomatis untuk setiap notifikasi database (badge PWA di background).
         Event::listen(NotificationSent::class, SendWebPushNotification::class);
 
+        // Log Aktivitas — jejak auth. Listener PASIF (hanya membaca event, tidak
+        // mengubah alur login) & ActivityLogger menelan errornya sendiri, jadi
+        // ini tidak mengganggu proses autentikasi.
+        Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            \App\Support\ActivityLogger::auth('login', 'Login berhasil: '.($event->user->name ?? '-'));
+        });
+        Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event) {
+            \App\Support\ActivityLogger::auth('logout', 'Logout: '.($event->user->name ?? '-'));
+        });
+        Event::listen(\Illuminate\Auth\Events\Failed::class, function ($event) {
+            $email = $event->credentials['email'] ?? ($event->credentials['name'] ?? '-');
+            \App\Support\ActivityLogger::auth('login_failed', 'Login gagal untuk: '.$email, 'warning');
+        });
+
         // Email reset kata sandi kustom (desain lemon, seragam dengan login).
         ResetPassword::toMailUsing(function ($notifiable, string $token) {
             $url = route('password.reset', [

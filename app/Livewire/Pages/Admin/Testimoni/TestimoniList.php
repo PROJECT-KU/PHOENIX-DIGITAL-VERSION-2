@@ -12,39 +12,75 @@ class TestimoniList extends Component
 
     public $searchTestimoni = '';
 
+    // Tab moderasi aktif: pending (menunggu) | active (disetujui) | non-active (ditolak) | all
+    public string $filter = 'pending';
+
     public function updatedSearchTestimoni()
     {
         $this->resetPage();
     }
 
-    public function toggleStatus($id)
+    public function setFilter(string $f): void
+    {
+        $this->filter = $f;
+        $this->resetPage();
+    }
+
+    /**
+     * Setujui testimoni -> tampil di publik (status active).
+     * Logika auto-member dipertahankan persis seperti sebelumnya.
+     */
+    public function approve($id)
     {
         if (! auth()->user()->hasPermission('edit_testimoni')) {
-            $this->dispatch('testimoni-deleteError', message: 'Anda tidak memiliki izin mengubah status.');
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin memoderasi testimoni.');
 
             return;
         }
 
         $testimoni = Testimoni::find($id);
         if (! $testimoni) {
-            $this->dispatch('testimoni-deleteError', message: 'Data Testimoni tidak ditemukan!');
+            $this->dispatch('swal-error', message: 'Data Testimoni tidak ditemukan!');
 
             return;
         }
 
-        $testimoni->status = $testimoni->status === 'active' ? 'non-active' : 'active';
-        $testimoni->save();
+        $testimoni->update(['status' => 'active']);
+        $this->dispatch('sidebar-badge-updated');
 
-        // Testimoni DISETUJUI (dinyalakan) -> pengirimnya jadi member otomatis.
-        // customer hanya terisi bila nomornya cocok DAN punya pesanan selesai,
-        // jadi menyetujui testimoni tamu/buatan admin tidak mengaktifkan siapa pun.
-        // Dimatikan lagi TIDAK mencabut keanggotaan — poin & kode referral sudah
-        // terlanjur jadi haknya.
-        if ($testimoni->status === 'active' && $testimoni->customer && $testimoni->customer->aktifkanMember()) {
-            $this->dispatch('swal-success', message: $testimoni->customer->nama.' otomatis jadi Member 🎉');
+        // Pengirim jadi member otomatis bila nomornya cocok pelanggan yang
+        // punya pesanan selesai. Menyetujui testimoni tamu/admin tidak
+        // mengaktifkan siapa pun (customer null).
+        if ($testimoni->customer && $testimoni->customer->aktifkanMember()) {
+            $this->dispatch('swal-success', message: $testimoni->customer->nama.' disetujui & otomatis jadi Member 🎉');
+
+            return;
         }
 
-        $this->dispatch('testimoni-status', active: $testimoni->status === 'active');
+        $this->dispatch('swal-success', message: 'Testimoni disetujui & kini tampil di publik.');
+    }
+
+    /** Tolak testimoni -> disembunyikan dari publik (status non-active). */
+    public function reject($id)
+    {
+        if (! auth()->user()->hasPermission('edit_testimoni')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin memoderasi testimoni.');
+
+            return;
+        }
+
+        $testimoni = Testimoni::find($id);
+        if (! $testimoni) {
+            $this->dispatch('swal-error', message: 'Data Testimoni tidak ditemukan!');
+
+            return;
+        }
+
+        // Menolak TIDAK mencabut keanggotaan yang sudah terlanjur diberikan —
+        // poin & kode referral tetap hak pelanggan.
+        $testimoni->update(['status' => 'non-active']);
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Testimoni ditolak & disembunyikan dari publik.');
     }
 
     public function deleteTestimoni($id)
@@ -73,6 +109,8 @@ class TestimoniList extends Component
         $testimoni->delete();
 
         $this->dispatch('testimoni-deleted', id: $id);
+        // Menghapus kiriman pelanggan yang belum ditinjau juga mengurangi badge.
+        $this->dispatch('sidebar-badge-updated');
     }
 
     public function render()
@@ -83,17 +121,28 @@ class TestimoniList extends Component
             ->with(['customer' => fn ($q) => $q->withCount([
                 'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
             ])])
-            ->where(function ($q) {
-                $q->where('nama', 'like', "%{$this->searchTestimoni}%")
-                    ->orWhere('peran', 'like', "%{$this->searchTestimoni}%")
-                    ->orWhere('pesan', 'like', "%{$this->searchTestimoni}%")
-                    ->orWhere('status', 'like', "%{$this->searchTestimoni}%");
+            ->when($this->filter !== 'all', fn ($q) => $q->where('status', $this->filter))
+            ->when($this->searchTestimoni !== '', function ($q) {
+                $term = "%{$this->searchTestimoni}%";
+                $q->where(function ($sub) use ($term) {
+                    $sub->where('nama', 'like', $term)
+                        ->orWhere('peran', 'like', $term)
+                        ->orWhere('pesan', 'like', $term);
+                });
             })
             ->latest()
             ->paginate(10);
 
+        $tabCounts = [
+            'all' => Testimoni::count(),
+            'pending' => Testimoni::where('status', 'pending')->count(),
+            'active' => Testimoni::where('status', 'active')->count(),
+            'non-active' => Testimoni::where('status', 'non-active')->count(),
+        ];
+
         return view('livewire.pages.admin.testimoni.testimoni-list', [
             'Testimoni' => $Testimoni,
+            'tabCounts' => $tabCounts,
         ])
             ->layout('livewire.layout.templateindex');
     }

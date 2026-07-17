@@ -92,6 +92,22 @@ class User extends Authenticatable
         return $tgl->format('m-d') === now()->format('m-d');
     }
 
+    /**
+     * Semua karyawan yang berulang tahun HARI INI (cocok tanggal & bulan,
+     * tahun diabaikan). Dipakai dashboard agar seluruh karyawan ikut melihat
+     * ucapan untuk siapa pun yang berulang tahun, bukan hanya yang bersangkutan.
+     */
+    public static function ulangTahunHariIni()
+    {
+        return self::whereHas('detail', function ($q) {
+            $q->whereNotNull('tanggal_lahir')
+                ->whereMonth('tanggal_lahir', now()->month)
+                ->whereDay('tanggal_lahir', now()->day);
+        })
+            ->orderBy('name')
+            ->get();
+    }
+
     // Check permission
     public function hasPermission(string $permission): bool
     {

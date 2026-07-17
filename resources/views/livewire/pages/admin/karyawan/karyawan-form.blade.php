@@ -53,6 +53,86 @@
             padding-left: 42px;
         }
 
+        /* Textarea: ikon disejajarkan ke BARIS PERTAMA, bukan tengah kotak. */
+        .kry-field-area .kry-field-ico {
+            top: 13px;
+            transform: none;
+        }
+
+        /* ===== Kartu info read-only (NIK, masa kerja, tanggal dibuat) ===== */
+        .kry-info-card {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .9rem 1rem;
+            border-radius: 14px;
+            border: 1px solid #eef0f6;
+            background: #fff;
+            height: 100%;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+        .kry-info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .07);
+        }
+
+        .kry-info-ico {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.05rem;
+            flex-shrink: 0;
+        }
+
+        /* Glyph .bi digambar di ::before & punya vertical-align — perlu dua lapis
+           flex + line-height:1 agar benar-benar di tengah kotaknya. */
+        .kry-info-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .kry-info-ico i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .kry-info-label {
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+
+        .kry-info-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: .98rem;
+            line-height: 1.25;
+        }
+
+        .kry-info-nik {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1.2px;
+            color: #4e46e5;
+        }
+
+        .kry-info-sub {
+            font-size: .72rem;
+            color: #94a3b8;
+        }
+
         .kry-note {
             border-radius: 12px;
             padding: 11px 14px;
@@ -322,6 +402,131 @@
                         </span>
                     </div>
                     @error('password') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+            </div>
+        </div>
+
+        {{-- ===== Data Pribadi & Kepegawaian (paritas dengan halaman Profil) ===== --}}
+        <div class="kry-tarif-wrap mt-4">
+            <div class="kry-section-title mb-3">
+                <span class="kry-section-ico" style="background: linear-gradient(135deg,#0ea5e9,#2563eb);">
+                    <i class="bi bi-person-vcard"></i>
+                </span>
+                <div class="d-flex flex-column">
+                    <span>Data Pribadi &amp; Kepegawaian</span>
+                    <span class="text-muted fw-normal" style="font-size:.8rem;">
+                        Sama dengan yang ada di halaman Profil karyawan. Boleh dikosongkan.
+                    </span>
+                </div>
+            </div>
+
+            {{-- Info read-only: dikelola sistem, bukan diketik admin. --}}
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="kry-info-card">
+                        <span class="kry-info-ico" style="background:linear-gradient(135deg,#6c63ff,#4e46e5); box-shadow:0 6px 14px rgba(108,99,255,.35);">
+                            <i class="bi bi-person-vcard-fill"></i>
+                        </span>
+                        <div>
+                            <div class="kry-info-label">Nomor Induk Karyawan</div>
+                            <div class="kry-info-value kry-info-nik">{{ $nik ?: '—' }}</div>
+                            <div class="kry-info-sub">{{ $isEdit ? 'Otomatis, tidak bisa diubah' : 'Dibuat otomatis saat disimpan' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="kry-info-card">
+                        <span class="kry-info-ico" style="background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 6px 14px rgba(16,185,129,.35);">
+                            <i class="bi bi-briefcase-fill"></i>
+                        </span>
+                        <div>
+                            <div class="kry-info-label">Masa Kerja</div>
+                            <div class="kry-info-value">{{ $isEdit ? ($userModel->detail?->masaKerja() ?? '—') : '—' }}</div>
+                            <div class="kry-info-sub">{{ $isEdit ? 'Dihitung dari tanggal bergabung' : 'Tersedia setelah disimpan' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="kry-info-card">
+                        <span class="kry-info-ico" style="background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 6px 14px rgba(245,158,11,.35);">
+                            <i class="bi bi-calendar-plus-fill"></i>
+                        </span>
+                        <div>
+                            <div class="kry-info-label">Tanggal Dibuat</div>
+                            <div class="kry-info-value">
+                                {{ $isEdit && $userModel->created_at ? $userModel->created_at->translatedFormat('d M Y') : '—' }}
+                            </div>
+                            <div class="kry-info-sub">
+                                {{ $isEdit && $userModel->created_at ? 'Pukul '.$userModel->created_at->format('H:i') : 'Terisi saat disimpan' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Field yang bisa diisi admin. --}}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">Tanggal Bergabung</label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-calendar-check"></i></span>
+                        <input type="date" wire:model="tanggal_bergabung"
+                            class="form-control kry-input has-ico @error('tanggal_bergabung') is-invalid @enderror">
+                    </div>
+                    <small class="text-muted">Dasar masa kerja. Kosong = pakai tanggal dibuat.</small>
+                    @error('tanggal_bergabung') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">Tanggal Lahir</label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-cake2"></i></span>
+                        <input type="date" wire:model="tanggal_lahir"
+                            class="form-control kry-input has-ico @error('tanggal_lahir') is-invalid @enderror">
+                    </div>
+                    @error('tanggal_lahir') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">No. HP</label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-telephone"></i></span>
+                        <input type="text" placeholder="08xxxxxxxxxx" wire:model="phone"
+                            class="form-control kry-input has-ico @error('phone') is-invalid @enderror">
+                    </div>
+                    @error('phone') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">Nama Bank</label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-bank"></i></span>
+                        <input type="text" placeholder="mis. Bank Mandiri" wire:model="nama_bank"
+                            class="form-control kry-input has-ico @error('nama_bank') is-invalid @enderror">
+                    </div>
+                    @error('nama_bank') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">No. Rekening</label>
+                    <div class="kry-field">
+                        <span class="kry-field-ico"><i class="bi bi-credit-card"></i></span>
+                        <input type="text" placeholder="Nomor rekening" wire:model="nomor_rekening"
+                            class="form-control kry-input has-ico @error('nomor_rekening') is-invalid @enderror">
+                    </div>
+                    @error('nomor_rekening') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-dark">Alamat</label>
+                    <div class="kry-field kry-field-area">
+                        <span class="kry-field-ico"><i class="bi bi-geo-alt"></i></span>
+                        <textarea wire:model="alamat" rows="1" placeholder="Alamat lengkap"
+                            class="form-control kry-input has-ico @error('alamat') is-invalid @enderror"></textarea>
+                    </div>
+                    @error('alamat') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
             </div>
         </div>

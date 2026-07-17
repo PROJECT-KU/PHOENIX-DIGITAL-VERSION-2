@@ -61,6 +61,7 @@ use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
 // Data Spending
 use App\Livewire\Pages\Admin\Permission\PermissionCreate;
 use App\Livewire\Pages\Admin\Permission\PermissionEdit;
+use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
 use App\Livewire\Pages\Admin\Permission\PermissionList;
 // Data Product Admin
 use App\Livewire\Pages\Admin\Product\ProductCreate;
@@ -241,6 +242,11 @@ Route::middleware('permission:view_permission')->group(function () {
     Route::get('/admin/permission', PermissionList::class)->name('admin.account.permission');
     Route::get('/admin/permission/create', PermissionCreate::class)->middleware('permission:create_permission')->name('admin.account.permission.create');
     Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->middleware('permission:edit_permission')->name('admin.account.permission.edit');
+});
+
+// Log Aktivitas (error & auth) — untuk maintenance.
+Route::middleware('permission:view_activity_log')->group(function () {
+    Route::get('/admin/activity-log', ActivityLogList::class)->name('admin.account.activity-log');
 });
 
 // Karyawan

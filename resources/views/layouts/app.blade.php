@@ -318,9 +318,33 @@
         // Jalankan tiap kali Livewire selesai update (lonceng poll 30s / markAsRead / markAllRead).
         // lemonSyncBadge: update badge lokal cepat (dari DOM). lemonFetchBadgeSoon: rekonsiliasi
         // notifikasi pakai count fresh dari server (aman, menutup notif yg sudah dibaca).
+        // Jaga submenu SEKSI AKTIF tetap terbuka. Submenu dibuka oleh JS Mazer
+        // (class submenu-open + --submenu-height pada <ul>). Saat sidebar
+        // re-render karena badge (approve/reject/baca pesan), Livewire mem-morph
+        // DOM menu & status buka itu hilang -> submenu menutup sendiri. Di sini
+        // kita buka lagi lewat inline-style (mengalahkan semua CSS) setelah tiap
+        // commit selesai — termasuk commit re-render sidebar itu sendiri.
+        window.lemonKeepSidebarOpen = function () {
+            document.querySelectorAll('#sidebar .sidebar-item.has-sub.active > .submenu').forEach(function (sm) {
+                sm.classList.remove('submenu-closed');
+                sm.classList.add('submenu-open');
+                // Inline-style mengalahkan semua CSS (Mazer tak punya !important
+                // pada max-height/display untuk submenu di mode normal).
+                sm.style.maxHeight = '1500px';
+                sm.style.overflow = 'visible';
+                sm.style.display = 'block';
+            });
+        };
+
         document.addEventListener('livewire:init', () => {
             Livewire.hook('commit', ({ succeed }) => {
-                succeed(() => { setTimeout(window.lemonSyncBadge, 0); lemonFetchBadgeSoon(); });
+                succeed(() => {
+                    // Sinkron (setelah morph, sebelum paint) agar submenu tidak
+                    // sempat berkedip menutup saat badge di-update.
+                    window.lemonKeepSidebarOpen();
+                    setTimeout(window.lemonSyncBadge, 0);
+                    lemonFetchBadgeSoon();
+                });
             });
         });
 

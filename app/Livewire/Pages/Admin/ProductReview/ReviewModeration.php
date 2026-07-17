@@ -29,18 +29,23 @@ class ReviewModeration extends Component
     {
         ProductReview::whereKey($id)->update(['status' => 'approved']);
         $this->dispatch('swal-success', message: 'Ulasan disetujui & kini tampil di produk.');
+        // Sidebar komponen terpisah — beritahu agar badge langsung berkurang
+        // tanpa perlu refresh halaman.
+        $this->dispatch('sidebar-badge-updated');
     }
 
     public function reject($id): void
     {
         ProductReview::whereKey($id)->update(['status' => 'hidden']);
         $this->dispatch('swal-success', message: 'Ulasan disembunyikan.');
+        $this->dispatch('sidebar-badge-updated');
     }
 
     public function remove($id): void
     {
         ProductReview::whereKey($id)->delete();
         $this->dispatch('swal-success', message: 'Ulasan dihapus permanen.');
+        $this->dispatch('sidebar-badge-updated');
     }
 
     public function render()

@@ -1,6 +1,11 @@
 <?php
 
 use App\Livewire\Actions\Logout;
+use App\Models\CustomerMessage;
+use App\Models\Order;
+use App\Models\ProductReview;
+use App\Models\Testimoni;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -10,6 +15,56 @@ new class extends Component
         $logout();
 
         $this->redirect('/');
+    }
+
+    /**
+     * Segarkan badge saat komponen lain mengubah hal yang dihitung badge
+     * (mis. menyetujui testimoni, memproses pesanan) — tanpa refresh halaman.
+     *
+     * Body sengaja kosong: menerima event sudah memicu Livewire me-render ulang
+     * komponen ini, sehingga with() menghitung ulang angkanya.
+     */
+    #[On('sidebar-badge-updated')]
+    public function refreshBadge(): void
+    {
+        //
+    }
+
+    /**
+     * Jumlah Pesanan Toko berstatus "paid" — sudah dibayar tapi belum diproses,
+     * jadi perlu ditindaklanjuti. Ditampilkan sebagai badge di sidebar supaya
+     * tidak terlewat. Hanya dihitung bila user memang boleh melihat menunya.
+     */
+    public function with(): array
+    {
+        $login = auth()->check();
+
+        return [
+            'pesananTokoPaid' => $login && auth()->user()->hasPermission('view_pemesanantoko')
+                ? Order::paid()->count()
+                : 0,
+
+            // Testimoni menunggu moderasi (status 'pending'). Otomatis habis saat
+            // admin menyetujui (active) atau menolak (non-active) — seragam
+            // dengan Ulasan Produk.
+            'testimoniBaru' => $login && auth()->user()->hasPermission('view_testimoni')
+                ? Testimoni::menunggu()->count()
+                : 0,
+
+            // Ulasan produk menunggu moderasi. Di sini status 'pending' sudah
+            // jelas artinya (ditolak jadi 'hidden'), jadi tak perlu penanda
+            // tambahan seperti pada testimoni — badge otomatis habis saat
+            // admin menyetujui maupun menyembunyikan.
+            'ulasanBaru' => $login && auth()->user()->hasPermission('view_productreview')
+                ? ProductReview::where('status', 'pending')->count()
+                : 0,
+
+            // Pesan helpdesk yang belum dibaca admin. Otomatis berkurang saat
+            // admin membuka pesan (markAsRead di halaman detail).
+            'helpdeskBaru' => $login && auth()->user()->hasPermission('view_customer_message')
+                ? CustomerMessage::unread()->count()
+                : 0,
+        ];
     }
 }; ?>
 
@@ -184,6 +239,38 @@ new class extends Component
             color: #4d7c0f;
         }
 
+        /* ===== Badge jumlah (mis. Pesanan Toko yang sudah dibayar) ===== */
+        #sidebar .sidebar-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: .67rem;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, .45);
+        }
+
+        /* Menu dropdown punya chevron absolut di kanan (right:15px, lebar 20px) —
+           beri jarak agar badge tidak tertimpa chevron. */
+        #sidebar .sidebar-item.has-sub>.sidebar-link .sidebar-badge {
+            margin-right: 24px;
+        }
+
+        /* .submenu-link aslinya block; dijadikan flex HANYA saat memuat badge
+           supaya badge bisa didorong ke kanan tanpa mengubah submenu lain. */
+        #sidebar .submenu-link.has-badge {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
         #sidebar .submenu-item.active>.submenu-link {
             background: linear-gradient(135deg, #84cc16, #4d7c0f);
             color: #fff;
@@ -268,6 +355,12 @@ new class extends Component
                             class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}">
                             Pesanan
                         </span>
+                        @if ($pesananTokoPaid > 0)
+                        <span class="sidebar-badge ms-auto"
+                            title="{{ $pesananTokoPaid }} pesanan toko sudah dibayar, menunggu diproses">
+                            {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                        </span>
+                        @endif
                     </a>
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_pesananrsc'))
@@ -279,8 +372,16 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_pemesanantoko'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
-                            <a wire:navigate class="submenu-link" href="{{ route('admin.pesanantoko.index') }}">Pesanan
-                                Toko</a>
+                            <a wire:navigate class="submenu-link @if ($pesananTokoPaid > 0) has-badge @endif"
+                                href="{{ route('admin.pesanantoko.index') }}">
+                                <span>Pesanan Toko</span>
+                                @if ($pesananTokoPaid > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $pesananTokoPaid }} pesanan sudah dibayar, menunggu diproses">
+                                    {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_ebook'))
@@ -301,6 +402,20 @@ new class extends Component
                         <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>
+                        @php
+                            // Badge induk = gabungan semua yang butuh ditinjau di dalamnya.
+                            $ecommerceBaru = $testimoniBaru + $ulasanBaru + $helpdeskBaru;
+                            $ecommerceTitle = collect([
+                                $testimoniBaru > 0 ? $testimoniBaru.' testimoni belum ditinjau' : null,
+                                $ulasanBaru > 0 ? $ulasanBaru.' ulasan menunggu moderasi' : null,
+                                $helpdeskBaru > 0 ? $helpdeskBaru.' pesan helpdesk belum dibaca' : null,
+                            ])->filter()->implode(' • ');
+                        @endphp
+                        @if ($ecommerceBaru > 0)
+                        <span class="sidebar-badge ms-auto" title="{{ $ecommerceTitle }}">
+                            {{ $ecommerceBaru > 99 ? '99+' : $ecommerceBaru }}
+                        </span>
+                        @endif
                     </a>
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_banners'))
@@ -311,18 +426,44 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_testimoni'))
                         <li class="submenu-item {{ request()->routeIs('admin.testimoni.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.testimoni.index') }}" class="submenu-link">Data
-                                Testimoni</a>
+                            <a wire:navigate href="{{ route('admin.testimoni.index') }}"
+                                class="submenu-link @if ($testimoniBaru > 0) has-badge @endif">
+                                <span>Data Testimoni</span>
+                                @if ($testimoniBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $testimoniBaru }} testimoni pelanggan belum ditinjau">
+                                    {{ $testimoniBaru > 99 ? '99+' : $testimoniBaru }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_productreview'))
                         <li class="submenu-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.reviews.index') }}" class="submenu-link">Moderasi Ulasan Produk</a>
+                            <a wire:navigate href="{{ route('admin.reviews.index') }}"
+                                class="submenu-link @if ($ulasanBaru > 0) has-badge @endif">
+                                <span>Moderasi Ulasan Produk</span>
+                                @if ($ulasanBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $ulasanBaru }} ulasan menunggu moderasi">
+                                    {{ $ulasanBaru > 99 ? '99+' : $ulasanBaru }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_customer_message'))
                         <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Pelanggan (Helpdesk)</a>
+                            <a wire:navigate href="{{ route('admin.customer-message.index') }}"
+                                class="submenu-link @if ($helpdeskBaru > 0) has-badge @endif">
+                                <span>Pesan Pelanggan (Helpdesk)</span>
+                                @if ($helpdeskBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $helpdeskBaru }} pesan belum dibaca">
+                                    {{ $helpdeskBaru > 99 ? '99+' : $helpdeskBaru }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
                     </ul>
@@ -519,6 +660,12 @@ new class extends Component
                         <li class="submenu-item {{ request()->routeIs('admin.account.permission') || request()->routeIs('admin.account.permission.*')? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.account.permission') }}"
                                 class="submenu-link">Permission Akun</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_activity_log'))
+                        <li class="submenu-item {{ request()->routeIs('admin.account.activity-log') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.activity-log') }}"
+                                class="submenu-link">Log Aktivitas</a>
                         </li>
                         @endif
                     </ul>

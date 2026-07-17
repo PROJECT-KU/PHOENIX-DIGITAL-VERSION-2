@@ -188,6 +188,47 @@ class ModalList extends Component
             ->sum('amount');
     }
 
+    /**
+     * RINCIAN modal akun PRIVATE dari Rumah Scopus (RSC) pada bulan/tahun ini,
+     * dipecah per (produk, durasi, harga satuan) + jumlah akun.
+     *
+     * Memakai metode inti yang SAMA dengan pencatatan baris cash flow-nya
+     * (SyncRscPrivateCostAction::rincianModal) — jadi Rincian di sini pasti cocok
+     * dengan total "terpakai" (yang membaca baris cash flow RSC).
+     *
+     * Batch berbeda dgn (produk, durasi, satuan) sama digabung, jumlah akunnya
+     * dijumlahkan — supaya tabelnya ringkas tapi kolom Durasi/Satuan tetap benar.
+     *
+     * @return array<int, array{product_id:string,durasi_value:int,durasi_type:string,satuan:float,jumlah:int,total:float}>
+     */
+    private function modalRscRincianRange(int $bulan, int $tahun): array
+    {
+        $reps = \App\Models\PemesananRsc::where('status', 'baru')
+            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal_pemesanan', $tahun)->whereMonth('tanggal_pemesanan', $bulan))
+            ->orderBy('created_at')->orderBy('id')
+            ->get()
+            ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
+            ->map(fn ($grp) => $grp->first());
+
+        $action = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
+
+        $gabung = [];
+        foreach ($reps as $rep) {
+            foreach ($action->rincianModal($rep) as $r) {
+                $k = $r['product_id'].'|'.$r['durasi_value'].'|'.$r['satuan'];
+                if (! isset($gabung[$k])) {
+                    $gabung[$k] = $r;
+
+                    continue;
+                }
+                $gabung[$k]['jumlah'] += $r['jumlah'];
+                $gabung[$k]['total'] += $r['total'];
+            }
+        }
+
+        return array_values($gabung);
+    }
+
     private function syncCashFlow(Modal $m): void
     {
         app(SyncCashFlowAction::class)->execute($m, [
@@ -550,6 +591,23 @@ class ModalList extends Component
                     'total' => (float) $satuan * $qty,
                 ];
             }
+        }
+
+        // Modal private dari Rumah Scopus (RSC) — baris tersendiri, supaya Rincian
+        // cocok dengan total "terpakai" yg sudah memasukkan RSC. Kolom Durasi /
+        // Modal Satuan / Order ikut terisi seperti baris private dari Order.
+        foreach ($this->modalRscRincianRange($bulan, $tahun) as $r) {
+            if ($r['total'] <= 0) {
+                continue;
+            }
+            $akunPerProduk[] = [
+                'nama' => ($namaAll[$r['product_id']] ?? 'Produk').' (Rumah Scopus)',
+                'tipe' => 'private',
+                'durasi' => $r['durasi_value'].' '.$r['durasi_type'],
+                'satuan' => (float) $r['satuan'],
+                'jumlah' => (int) $r['jumlah'],
+                'total' => (float) $r['total'],
+            ];
         }
 
         usort($akunPerProduk, fn ($a, $b) => $b['total'] <=> $a['total']);

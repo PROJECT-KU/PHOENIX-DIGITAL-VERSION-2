@@ -18,24 +18,39 @@
                 @enderror
             </div>
 
+            {{-- Akun private: kredensial sering baru ada setelah akunnya dibeli,
+                 jadi tidak wajib. Akun sharing: tetap wajib. Penanda * & teks
+                 bantuannya ikut berubah supaya admin tidak menebak-nebak. --}}
             <div class="col-md-6">
-                <label for="username" class="form-label text-secondary fw-bold">Username Akun <span class="text-danger">*</span></label>
+                <label for="username" class="form-label text-secondary fw-bold">
+                    Username Akun
+                    @if ($wajibKredensial)<span class="text-danger">*</span>@endif
+                </label>
                 <input type="text" id="username" wire:model.defer="username_akun"
                     class="form-control shadow-none @error('username_akun') is-invalid @enderror"
-                    placeholder="Masukkan username">
+                    placeholder="{{ $wajibKredensial ? 'Masukkan username' : 'Boleh dikosongkan' }}">
                 @error('username_akun')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+                @unless ($wajibKredensial)
+                <small class="text-muted">Akun private — boleh diisi nanti setelah akunnya dibeli.</small>
+                @endunless
             </div>
 
             <div class="col-md-6">
-                <label for="password" class="form-label text-secondary fw-bold">Password <span class="text-danger">*</span></label>
+                <label for="password" class="form-label text-secondary fw-bold">
+                    Password
+                    @if ($wajibKredensial)<span class="text-danger">*</span>@endif
+                </label>
                 <input type="text" id="password" wire:model.defer="password_akun"
                     class="form-control shadow-none @error('password_akun') is-invalid @enderror"
-                    placeholder="Masukkan password">
+                    placeholder="{{ $wajibKredensial ? 'Masukkan password' : 'Boleh dikosongkan' }}">
                 @error('password_akun')
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
+                @unless ($wajibKredensial)
+                <small class="text-muted">Kalau diisi, minimal 6 karakter.</small>
+                @endunless
             </div>
 
             <div class="col-md-6">

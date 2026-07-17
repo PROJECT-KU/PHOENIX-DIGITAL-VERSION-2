@@ -550,15 +550,10 @@ class CashFlowList extends Component
     /**
      * Modal akun PRIVATE dari Rumah Scopus (RSC) per produk pada periode terpilih.
      *
-     * Rumah Scopus = model patungan: SATU akun dipakai banyak peserta dalam satu
-     * batch camp. Jadi modalnya dihitung PER BATCH (satu akun = satu modal), bukan
-     * per peserta — kalau per peserta, modal akun yang dibeli sekali akan
-     * terhitung berkali-kali.
-     *
-     * Harga modal diambil dari katalog Harga Modal (ProductModalPrice) memakai
-     * durasi camp (tanggal_pemesanan → tanggal_berakhir, dibulatkan ke bulan) dan
-     * harga yang BERLAKU pada tanggal pemesanan — SATU sumber & pola sama dgn
-     * modal private Order. Durasi yang tidak ada di katalog → modal 0 (aman).
+     * Hitungannya (jumlah akun × harga katalog, per_peserta vs per_akun) memakai
+     * SATU metode inti bersama dgn pencatatan baris cash flow-nya:
+     * SyncRscPrivateCostAction::modalPerProduk() — supaya angka di omset dan di
+     * fitur Modal tidak mungkin berbeda.
      *
      * @param  array<int,string>  $privateIds  id produk bertipe private
      * @return array<string,float>  product_id => total modal
@@ -569,51 +564,36 @@ class CashFlowList extends Component
             return [];
         }
 
-        $rows = PemesananRsc::query()
-            ->join('data_akuns', 'data_akuns.id', '=', 'pemesanan_rsc.akun')
-            ->where('pemesanan_rsc.status', 'baru')
-            ->whereIn('data_akuns.product_id', $privateIds)
+        // Ambil satu baris REPRESENTATIF tiap batch dalam periode (status 'baru').
+        // Batch-nya sendiri yang self-filter private di modalPerProduk(); di sini
+        // cukup persempit ke batch yang tanggalnya masuk periode.
+        $representatif = PemesananRsc::query()
+            ->where('status', 'baru')
             ->when($this->usesSiklus(), function ($q) {
                 [$mulai, $akhir] = $this->siklusRange();
-                $q->whereDate('pemesanan_rsc.tanggal_pemesanan', '>=', $mulai->toDateString())
-                    ->whereDate('pemesanan_rsc.tanggal_pemesanan', '<', $akhir->toDateString());
+                $q->whereDate('tanggal_pemesanan', '>=', $mulai->toDateString())
+                    ->whereDate('tanggal_pemesanan', '<', $akhir->toDateString());
             }, function ($q) {
                 if ($this->tahun) {
-                    $q->whereYear('pemesanan_rsc.tanggal_pemesanan', $this->tahun);
+                    $q->whereYear('tanggal_pemesanan', $this->tahun);
                 }
                 if ($this->bulan) {
-                    $q->whereMonth('pemesanan_rsc.tanggal_pemesanan', $this->bulan);
+                    $q->whereMonth('tanggal_pemesanan', $this->bulan);
                 }
             })
-            ->get([
-                'data_akuns.product_id',
-                'pemesanan_rsc.nama_camp',
-                'pemesanan_rsc.batch_camp',
-                'pemesanan_rsc.tanggal_pemesanan',
-                'pemesanan_rsc.tanggal_berakhir',
-            ]);
-
-        // Satu modal per BATCH (nama_camp + batch_camp), pakai baris pertama batch.
-        $perBatch = $rows->groupBy(fn ($r) => $r->product_id.'|'.$r->nama_camp.'|'.$r->batch_camp)
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get()
+            ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
             ->map(fn ($grp) => $grp->first());
 
-        $produk = \App\Models\Product::whereIn('id', $privateIds)->get()->keyBy('id');
+        $action = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
 
         $peta = [];
-        foreach ($perBatch as $b) {
-            $p = $produk->get($b->product_id);
-            if (! $p) {
-                continue;
+        foreach ($representatif as $rep) {
+            foreach ($action->modalPerProduk($rep) as $pid => $modal) {
+                $peta[$pid] = ($peta[$pid] ?? 0) + $modal;
             }
-
-            $mulai = Carbon::parse($b->tanggal_pemesanan);
-            $akhir = $b->tanggal_berakhir ? Carbon::parse($b->tanggal_berakhir) : $mulai->copy();
-            $bulanDurasi = max(1, (int) round($mulai->diffInDays($akhir) / 30));
-
-            $unit = $p->modalSatuan($bulanDurasi, 'bulan', $mulai->toDateString());
-
-            $pidKey = (string) $b->product_id;
-            $peta[$pidKey] = ($peta[$pidKey] ?? 0) + (float) $unit;
         }
 
         return $peta;
