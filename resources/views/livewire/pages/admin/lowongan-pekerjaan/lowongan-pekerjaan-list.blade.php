@@ -1,3 +1,7 @@
+
+@section('title')
+Data Lowongan Pekerjaan || lemon
+@stop
 <div>
     <div class="container-fluid">
         <!--================== HEADER + TOOLBAR (SATU CARD) ==================-->

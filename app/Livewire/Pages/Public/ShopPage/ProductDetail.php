@@ -3,6 +3,8 @@
 namespace App\Livewire\Pages\Public\ShopPage;
 
 use App\Models\Product;
+use App\Services\PromoService;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -16,15 +18,168 @@ class ProductDetail extends Component
 
     public ?int $durationValue = null;
 
+    public int $pickCustomMonths = 3;
+
+    public bool $isCustom = false;
+
+    protected PromoService $promoService;
+
+    public function boot(PromoService $promoService)
+    {
+        $this->promoService = $promoService;
+    }
+
     public function mount($id)
     {
         $this->product = Product::findOrFail($id);
+
+        // Pilih paket pertama sebagai default
+        $rows = $this->product->daftarHarga();
+        if ($rows->isNotEmpty()) {
+            $this->durationType = $rows->first()['durasi_type'];
+            $this->durationValue = (int) $rows->first()['durasi_value'];
+        }
+
+        $this->shareSeo();
+    }
+
+    /**
+     * SEO khusus halaman produk: judul & deskripsi dari nama produk + JSON-LD Product.
+     */
+    private function shareSeo(): void
+    {
+        $p = $this->product;
+        $name = trim(preg_replace('/\s+/', ' ', (string) $p->nama_akun));
+        $desc = $p->deskripsi
+            ? \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags($p->deskripsi))), 155)
+            : 'Beli '.$name.' di Phoenix Digital — akun premium bergaransi, proses cepat & aman.';
+        $imgUrl = $p->image ? asset('storage/img/Product/'.basename($p->image)) : asset(config('seo.image'));
+
+        view()->share('seoTitle', $name.' — Akun Premium Bergaransi | Phoenix Digital');
+        view()->share('seoDescription', $desc);
+        view()->share('seoCrumbName', $name);
+        view()->share('seoKeywords', $name.', jual '.$name.', '.$name.' murah, '.$name.' bergaransi, akun premium murah, tools AI');
+        if ($p->image) {
+            view()->share('seoImage', 'storage/img/Product/'.basename($p->image));
+        }
+        view()->share('seoJsonLd', json_encode([
+            '@context' => 'https://schema.org',
+            '@type' => 'Product',
+            'name' => $p->nama_akun,
+            'description' => $desc,
+            'image' => $imgUrl,
+            'brand' => ['@type' => 'Brand', 'name' => 'Phoenix Digital'],
+            'offers' => [
+                '@type' => 'Offer',
+                'priceCurrency' => 'IDR',
+                'price' => (int) ($p->harga_perbulan ?? 0),
+                'availability' => 'https://schema.org/InStock',
+                'url' => url()->current(),
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    #[Computed]
+    public function bestDiscount()
+    {
+        return $this->promoService->getBestProductDiscount($this->product->id, null);
+    }
+
+    /** Produk lain untuk rekomendasi — diurut dari harga paling mirip (read-only). */
+    #[Computed]
+    public function relatedProducts()
+    {
+        $price = (int) ($this->product->harga_perbulan ?? 0);
+
+        return Product::where('id', '!=', $this->product->id)
+            ->orderByRaw('ABS(COALESCE(harga_perbulan, 0) - ?) asc', [$price])
+            ->take(10)
+            ->get();
+    }
+
+    public function applyDiscount(int $harga): int
+    {
+        $best = $this->bestDiscount;
+        if (! $best || empty($best['value'])) {
+            return $harga;
+        }
+        if (($best['type'] ?? '') === 'persen') {
+            // floor pada nilai diskon — sama persis dengan PromoService (tanpa pembulatan)
+            return (int) ($harga - floor($harga * $best['value'] / 100));
+        }
+
+        return (int) max(0, $harga - $best['value']);
+    }
+
+    public function selectedHarga(): int
+    {
+        if ($this->isCustom) {
+            return $this->customPricing()['base'];
+        }
+
+        foreach ($this->product->daftarHarga() as $r) {
+            if ($r['durasi_type'] === $this->durationType && (int) $r['durasi_value'] === (int) $this->durationValue) {
+                return (int) $r['harga'];
+            }
+        }
+
+        return (int) ($this->product->harga_awal ?? 0);
+    }
+
+    /**
+     * Harga durasi custom. Bila jumlah bulan cocok dengan paket "bulan" yang sudah ada,
+     * ikuti harga paket itu; selain itu = bulan × harga per bulan.
+     */
+    public function customPricing(): array
+    {
+        $months = (int) $this->pickCustomMonths;
+
+        foreach ($this->product->daftarHarga() as $r) {
+            if ($r['durasi_type'] === 'bulan' && (int) $r['durasi_value'] === $months) {
+                $base = (int) $r['harga'];
+                $disc = $this->applyDiscount($base);
+
+                return ['base' => $base, 'discounted' => $disc, 'savings' => max(0, $base - $disc), 'matched' => true];
+            }
+        }
+
+        // Hitung per bulan lalu dikali agar hemat konsisten (mis. 7.631 × 4 = 30.524),
+        // tidak ada selisih akibat pembulatan pada total.
+        $perBulan = (int) ($this->product->harga_perbulan ?? 0);
+        $discPerBulan = $this->applyDiscount($perBulan);
+        $base = $months * $perBulan;
+        $disc = $months * $discPerBulan;
+
+        return ['base' => $base, 'discounted' => $disc, 'savings' => max(0, $base - $disc), 'matched' => false];
     }
 
     public function selectPackage(string $type, int $value)
     {
+        $this->isCustom = false;
         $this->durationType = $type;
         $this->durationValue = $value;
+    }
+
+    public function chooseCustom()
+    {
+        if ((int) ($this->product->harga_perbulan ?? 0) <= 0) {
+            return;
+        }
+        $this->isCustom = true;
+        $this->durationType = 'bulan';
+        $this->durationValue = (int) $this->pickCustomMonths;
+    }
+
+    public function incCustom()
+    {
+        $this->pickCustomMonths = min(60, $this->pickCustomMonths + 1);
+        $this->chooseCustom();
+    }
+
+    public function decCustom()
+    {
+        $this->pickCustomMonths = max(1, $this->pickCustomMonths - 1);
+        $this->chooseCustom();
     }
 
     public function addToCart()
@@ -39,6 +194,14 @@ class ProductDetail extends Component
 
         $price = $this->getPrice($this->product, $this->durationType, $this->durationValue);
 
+        // Durasi custom (admin belum set harga) → bulan × harga per bulan
+        if (! $price && $this->durationType === 'bulan') {
+            $perBulan = (int) ($this->product->harga_perbulan ?? 0);
+            if ($perBulan > 0 && $this->durationValue > 0) {
+                $price = $perBulan * $this->durationValue;
+            }
+        }
+
         if (! $price) {
             $this->dispatch('cart-error', message: 'Paket tidak valid.');
 
@@ -50,8 +213,9 @@ class ProductDetail extends Component
         $imageName = $this->product->image ? basename($this->product->image) : null;
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity'] += $this->quantity;
-            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
+            // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.
+            $cart[$cartKey]['quantity'] = 1;
+            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['price'];
         } else {
             $cart[$cartKey] = [
                 'product_id' => $this->product->id,
@@ -68,36 +232,21 @@ class ProductDetail extends Component
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
-
         $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
     }
 
     private function getPrice(Product $product, string $durationType, int $durationValue)
     {
-        if ($durationType === 'bulan') {
-            return match ($durationValue) {
-                1 => $product->harga_perbulan,
-                5 => $product->harga_5_perbulan,
-                10 => $product->harga_10_perbulan,
-                default => null
-            };
-        }
-        // if ($durationType === 'bulan') {
-        //     return $product->harga_perbulan * $durationValue;
-        // }
+        $harga = $product->hargaUntuk($durationValue, $durationType);
 
-        if ($durationType === 'tahun') {
-            return $product->harga_pertahun;
-        }
-
-        return null;
+        return $harga > 0 ? $harga : null;
     }
 
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
 
-        return array_sum(array_column($cart, 'quantity') ?: [0]);
+        return count($cart);
     }
 
     #[Layout('layouts.guest')]

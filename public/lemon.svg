@@ -1,0 +1,24 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="lemon">
+  <defs>
+    <linearGradient id="peel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fde047"/><stop offset="1" stop-color="#eab308"/>
+    </linearGradient>
+    <radialGradient id="flesh" cx="42%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#fef9c3"/><stop offset="1" stop-color="#fde68a"/>
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="60" r="54" fill="url(#peel)"/>
+  <circle cx="60" cy="60" r="47" fill="#fffef2"/>
+  <circle cx="60" cy="60" r="41" fill="url(#flesh)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(0 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(36 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(72 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(108 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(144 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(180 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(216 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(252 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(288 60 60)"/>
+  <line x1="60" y1="60" x2="60" y2="20" stroke="#fffef2" stroke-width="3.4" stroke-linecap="round" transform="rotate(324 60 60)"/>
+  <circle cx="60" cy="60" r="6" fill="#fffef2"/>
+</svg>

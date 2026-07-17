@@ -12,6 +12,7 @@ class DataAkun extends Model
 
     protected $fillable = [
         'nama_akun',
+        'product_id',
         'username_akun',
         'password_akun',
         'link_login_akun',
@@ -33,6 +34,25 @@ class DataAkun extends Model
     public function pj()
     {
         return $this->belongsTo(User::class, 'pj_akun');
+    }
+
+    /**
+     * Produk induk akun ini (mis. "Grammarly 1" → produk "Grammarly").
+     * Boleh kosong: akun lama yang belum ditautkan tetap jalan.
+     */
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    /**
+     * Akun ini private? Diambil dari produk induknya — TIDAK ada penanda
+     * terpisah di sini, supaya tidak mungkin bentrok dengan produk.
+     * Belum ditautkan → dianggap bukan private (aman: modal tidak dicatat).
+     */
+    public function isPrivate(): bool
+    {
+        return optional($this->product)->tipe_akun === 'private';
     }
 
     // scope

@@ -118,14 +118,14 @@ class Loan extends Model
     public function getTanggalPeminjamFormattedAttribute(): string
     {
         return $this->tanggal_peminjam
-            ? Carbon::parse($this->tanggal_peminjam)->translatedFormat('d F Y')
+            ? Carbon::parse($this->tanggal_peminjam)->locale('id')->translatedFormat('d F Y')
             : '-';
     }
 
     public function getCreatedAtFormattedAttribute(): string
     {
         return $this->created_at
-            ? Carbon::parse($this->created_at)->translatedFormat('d F Y H:i')
+            ? Carbon::parse($this->created_at)->locale('id')->translatedFormat('d F Y H:i')
             : '-';
     }
 

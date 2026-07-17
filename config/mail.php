@@ -48,6 +48,17 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
 
+        // Email KHUSUS PUBLIC (halo@phoenixdigital.id). Dashboard tetap pakai 'smtp'.
+        'phoenix' => [
+            'transport' => 'smtp',
+            'host' => env('PHOENIX_MAIL_HOST', 'smtp.hostinger.com'),
+            'port' => env('PHOENIX_MAIL_PORT', 465),
+            'encryption' => env('PHOENIX_MAIL_ENCRYPTION', 'ssl'),
+            'username' => env('PHOENIX_MAIL_USERNAME', 'halo@phoenixdigital.id'),
+            'password' => env('PHOENIX_MAIL_PASSWORD'),
+            'timeout' => null,
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],

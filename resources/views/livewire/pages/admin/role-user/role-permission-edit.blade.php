@@ -1,3 +1,7 @@
+
+@section('title')
+Kelola Role & Hak Akses || lemon
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

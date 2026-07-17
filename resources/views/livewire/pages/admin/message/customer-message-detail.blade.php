@@ -1,3 +1,6 @@
+@section('title')
+Detail Pesan Pelanggan || lemon
+@stop
 <div>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
@@ -10,7 +13,7 @@
                             @php
                             $breadcrumbs = [
                             ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                            ['name' => 'Pesan Masuk', 'url' => route('admin.message.index')],
+                            ['name' => 'Pesan Pelanggan', 'url' => route('admin.customer-message.index')],
                             ['name' => 'Detail']
                             ];
                             @endphp

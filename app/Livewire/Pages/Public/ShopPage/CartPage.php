@@ -21,14 +21,71 @@ class CartPage extends Component
 
     private function loadCart()
     {
-        $this->cart = session()->get('cart', []);
+        $cart = $this->normalizeCart(session()->get('cart', []));
+        session()->put('cart', $cart);
+
+        $this->cart = $cart;
         $this->calculateTotal();
+    }
+
+    /**
+     * Pastikan harga item benar:
+     * - Durasi yang ADA di paket → pakai harga paket.
+     * - Durasi DI LUAR paket (custom) → harga per bulan × jumlah bulan.
+     */
+    private function normalizeCart(array $cart): array
+    {
+        foreach ($cart as $key => $item) {
+            // Akun digital: setiap baris selalu 1 item.
+            $cart[$key]['quantity'] = 1;
+
+            if (($item['type'] ?? 'product') !== 'product' || empty($item['product_id'])) {
+                // Bundling / item non-produk: subtotal = harga baris.
+                $cart[$key]['subtotal'] = (int) ($item['price'] ?? $item['subtotal'] ?? 0);
+
+                continue;
+            }
+
+            $product = \App\Models\Product::find($item['product_id']);
+            if (! $product) {
+                $cart[$key]['subtotal'] = (int) ($item['price'] ?? 0);
+
+                continue;
+            }
+
+            $type = $item['duration_type'] ?? null;
+            $value = (int) ($item['duration_value'] ?? 0);
+            if (! $type || $value < 1) {
+                $cart[$key]['subtotal'] = (int) ($item['price'] ?? 0);
+
+                continue;
+            }
+
+            $inPackages = $product->daftarHarga()
+                ->contains(fn ($r) => $r['durasi_type'] === $type && (int) $r['durasi_value'] === $value);
+
+            if ($inPackages) {
+                $unit = (int) $product->hargaUntuk($value, $type);
+            } else {
+                $perBulan = (int) ($product->harga_perbulan ?? 0);
+                $unit = ($type === 'bulan' && $perBulan > 0) ? $perBulan * $value : (int) ($item['price'] ?? 0);
+            }
+
+            if ($unit > 0) {
+                $cart[$key]['price'] = $unit;
+                $cart[$key]['subtotal'] = $unit;
+            } else {
+                $cart[$key]['subtotal'] = (int) ($item['price'] ?? 0);
+            }
+        }
+
+        return $cart;
     }
 
     private function calculateTotal()
     {
         $this->total = array_sum(array_column($this->cart, 'subtotal'));
-        $this->totalQuantity = array_sum(array_column($this->cart, 'quantity'));
+        $this->totalQuantity = count($this->cart);
     }
 
     public function updateQuantity($cartKey, $quantity)

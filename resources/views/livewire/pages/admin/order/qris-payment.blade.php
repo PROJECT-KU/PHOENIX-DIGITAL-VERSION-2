@@ -1,3 +1,7 @@
+
+@section('title')
+Pembayaran QRIS || lemon
+@stop
 <div id="qrisRoot" data-expires="{{ optional($order->expired_at)->toIso8601String() }}"
     @if ($order->status === 'pending' && ! $this->isExpired()) wire:poll.5s.keep-alive="checkPayment" @endif>
 
@@ -317,6 +321,13 @@
             border: none !important;
             font-weight: 600 !important;
         }
+
+        /* Mobile: saat kolom info menumpuk (full-width), pusatkan isinya agar sisi
+           kanan tidak kosong. */
+        @media (max-width: 767.98px) {
+            .qris-info-col { text-align: center; }
+            .qris-info-col .qris-note { justify-content: center; }
+        }
     </style>
 
     <div class="container py-4" style="max-width: 760px;">
@@ -365,7 +376,7 @@
                 </div>
 
                 {{-- Info --}}
-                <div class="col-md-6">
+                <div class="col-md-6 qris-info-col">
                     <div class="mb-3" data-when-active>
                         <span class="qris-status-pill"><span class="dot"></span> Menunggu pembayaran…</span>
                     </div>

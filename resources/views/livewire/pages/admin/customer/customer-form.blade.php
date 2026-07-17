@@ -14,13 +14,10 @@
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="email" class="form-label">Email Pelangan</label>
-                            <input class="form-control" type="email" wire:model="email" placeholder="email@example.com">
+                            <label for="email" class="form-label">Email Pelanggan <span class="text-muted small">(opsional)</span></label>
+                            <input class="form-control" type="email" wire:model="email" placeholder="email@example.com (opsional)">
                         </div>
                     </div>
-                </div>
-
-                <div class="row g-4">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="phone" class="form-label">Nomor Handphone</label>
@@ -35,9 +32,6 @@
                             <option value="active">Active</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="row g-4">
                     <div class="col-md-4">
                         <div class="form-group">
                             <label for="tanggal_daftar" class="form-label">Tanggal Daftar</label>
@@ -79,29 +73,24 @@
         [x-cloak] {
             display: none !important;
         }
+
+        /* Badge promo di riwayat pesanan boleh membungkus teks agar tidak melebihi card
+           (mis. nama promo yang panjang). */
+        .riwayat-promo .badge {
+            white-space: normal;
+            text-align: left;
+            word-break: break-word;
+            max-width: 100%;
+        }
     </style>
     @if ($customer)
-    @php
-    $customerOrders = \App\Models\Order::with('items')
-    ->whereHas('customer', function ($q) use ($customer) {
-    $q->where('no_hp', $customer->no_hp);
-    })
-    ->latest()
-    ->get();
-
-    // Total keseluruhan yang benar-benar dibayarkan (pesanan yang sudah dibayar)
-    $paidOrders = $customerOrders->filter(function ($o) {
-    return $o->paid_at !== null || in_array($o->status, ['paid', 'processing', 'completed']);
-    });
-    $grandTotalPaid = $paidOrders->sum('total');
-    @endphp
 
     <div class="card border-0 shadow-sm rounded-4 mt-4" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
         <div class="card-header bg-primary bg-opacity-10 p-3 border-0 rounded-top-4 d-flex align-items-center justify-content-between">
             <h5 class="mb-0 text-primary fw-bold">
                 <i class="bi bi-bag-check me-2"></i>Riwayat Pesanan
             </h5>
-            <span class="badge rounded-pill bg-primary">{{ $customerOrders->count() }} Pesanan</span>
+            <span class="badge rounded-pill bg-primary">{{ $totalPesanan }} Pesanan</span>
         </div>
         <div class="card-body p-4">
             @forelse ($customerOrders as $order)
@@ -173,7 +162,7 @@
                 @endphp
 
                 @if (!empty($promoCodes) || $flashSales->isNotEmpty() || $autoPromos->isNotEmpty() || $pointsUsed > 0 || $order->referral_code)
-                <div class="d-flex flex-wrap gap-2 mt-3">
+                <div class="riwayat-promo d-flex flex-wrap gap-2 mt-3">
                     @foreach ($flashSales as $fs)
                     <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger fw-semibold">
                         <i class="bi bi-lightning-charge-fill me-1"></i>Flash Sale{{ $fs ? ': ' . $fs : '' }}
@@ -247,12 +236,18 @@
             </div>
             @endforelse
 
-            @if ($customerOrders->isNotEmpty())
-            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mt-4 p-3 rounded-3"
+            @if ($customerOrders->hasPages())
+            <div class="mt-4">{{ $customerOrders->links('vendor.pagination') }}</div>
+            @endif
+
+            @if ($totalPesanan > 0)
+            <div class="d-flex flex-column flex-sm-row align-items-center align-items-sm-center justify-content-sm-between text-center text-sm-start gap-1 gap-sm-2 mt-4 p-3 rounded-3"
                 style="background: linear-gradient(135deg, rgba(108, 99, 255, 0.12), rgba(78, 70, 229, 0.12));">
-                <span class="fw-bold text-primary">
-                    <i class="bi bi-cash-stack me-2"></i>Total Keseluruhan Dibayarkan
-                    <small class="text-muted fw-normal">({{ $paidOrders->count() }} pesanan terbayar)</small>
+                <span class="fw-bold text-primary d-inline-flex align-items-start justify-content-center gap-2">
+                    <i class="bi bi-cash-stack" style="line-height:1.4;"></i>
+                    <span>Total Keseluruhan Dibayarkan
+                        <small class="text-muted fw-normal d-block d-sm-inline">({{ $paidOrdersCount }} pesanan terbayar)</small>
+                    </span>
                 </span>
                 <span class="fw-bold fs-4 text-primary">Rp {{ number_format($grandTotalPaid, 0, ',', '.') }}</span>
             </div>

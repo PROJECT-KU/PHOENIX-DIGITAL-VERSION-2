@@ -77,7 +77,7 @@
     <table class="header">
         <tr>
             <td>
-                <div class="brand">Phoenix Digital<small>SISTEM MANAJEMEN KEUANGAN</small></div>
+                <table style="border-collapse:collapse; border:none; margin:0;"><tr><td style="width:86px; vertical-align:middle; padding:0 12px 0 0; border:none;"><img src="{{ storage_path('app/public/img/archive/logo-icon.png') }}" style="width:72px; height:66px;" alt=""></td><td style="vertical-align:middle; border:none; padding:0;"><div class="brand">PT. Asthana Cipta Mandiri<small>SISTEM MANAJEMEN KEUANGAN</small></div></td></tr></table>
             </td>
             <td class="doc-title">
                 <h1>LAPORAN CASHFLOW</h1>
@@ -134,7 +134,7 @@
                     <div class="sub t-in">{{ $rupiah($omset['penjualan']) }}</div>
                 </td>
                 <td class="last" style="width: 30%;">
-                    <div class="label">Total Modal (Harga Awal)</div>
+                    <div class="label">Total Modal (Pembelian Akun)</div>
                     <div class="sub t-ex">{{ $rupiah($omset['modal']) }}</div>
                 </td>
             </tr>
@@ -184,7 +184,7 @@
     </table>
 
     <div class="footer">
-        Laporan ini dibuat otomatis oleh sistem Phoenix Digital &middot; Periode {{ $periode }}.
+        Laporan ini dibuat otomatis oleh sistem PT. Asthana Cipta Mandiri &middot; Periode {{ $periode }}.
     </div>
 </body>
 

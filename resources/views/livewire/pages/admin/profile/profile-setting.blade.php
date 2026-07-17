@@ -1,3 +1,7 @@
+
+@section('title')
+Pengaturan Profil || lemon
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>
@@ -123,13 +127,26 @@
         }
 
         .stat-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             line-height: 1 !important;
         }
 
-        .stat-icon-wrapper i {
+        /* Glyph Bootstrap Icons digambar di ::before & punya vertical-align —
+           perlu i.bi jadi flex penuh + ::before block agar benar-benar di tengah. */
+        .stat-icon-wrapper i.bi {
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .stat-icon-wrapper i.bi::before {
+            display: block;
             line-height: 1;
         }
 
@@ -210,6 +227,199 @@
             cursor: pointer;
             z-index: 5;
         }
+
+        /* ===== Field bank terkunci (glossy) ===== */
+        .bank-locked-field {
+            border-radius: 14px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%);
+            box-shadow: 0 8px 20px rgba(29, 78, 216, .22);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bank-locked-field::after {
+            content: "";
+            position: absolute;
+            top: -40%;
+            right: -10%;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(255, 255, 255, .18), transparent 70%);
+            pointer-events: none;
+        }
+
+        .bank-locked-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            background: rgba(255, 255, 255, .16);
+            border: 1px solid rgba(255, 255, 255, .25);
+            color: #fde68a;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .bank-locked-logo i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .bank-locked-logo i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .bank-locked-chip {
+            font-size: .72rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            background: #fde68a;
+            padding: 5px 11px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        /* ===== Input berformat (rekening / no. hp) ===== */
+        .fmt-input {
+            font-weight: 700;
+            font-size: 1.02rem;
+            letter-spacing: 1.5px;
+            color: #1e293b;
+        }
+
+        .fmt-input::placeholder {
+            letter-spacing: 1px;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        .fmt-input:focus {
+            border-color: #6c63ff;
+            box-shadow: 0 0 0 0.18rem rgba(108, 99, 255, 0.12);
+        }
+
+        /* ===== Peringatan profil belum lengkap ===== */
+        .profile-warn {
+            border-radius: 16px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 1px solid #fde68a;
+            box-shadow: 0 8px 22px rgba(217, 119, 6, .12);
+        }
+
+        .profile-warn-ico {
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            font-size: 1.35rem;
+            box-shadow: 0 6px 14px rgba(217, 119, 6, .35);
+        }
+
+        .profile-warn-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .profile-warn-ico i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .profile-warn-title {
+            color: #92400e;
+            font-size: 1rem;
+        }
+
+        .profile-warn-text {
+            color: #b45309;
+            font-size: .9rem;
+        }
+
+        /* ===== Kartu info NIK & Masa Kerja (read-only) ===== */
+        .pf-info-card {
+            display: flex;
+            align-items: center;
+            gap: .9rem;
+            padding: 1rem 1.1rem;
+            border-radius: 16px;
+            height: 100%;
+            border: 1px solid #eef0f6;
+            background: #fff;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+
+        .pf-info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .07);
+        }
+
+        .pf-info-ico {
+            width: 46px;
+            height: 46px;
+            border-radius: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+
+        /* Ikon Bootstrap punya vertical-align & glyph di ::before — tanpa dua
+           lapis flex + line-height:1 ini, ikonnya tidak benar-benar di tengah. */
+        .pf-info-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+            vertical-align: 0;
+        }
+
+        .pf-info-ico i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .pf-info-label {
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 2px;
+        }
+
+        .pf-info-value {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: 1.05rem;
+            line-height: 1.25;
+        }
+
+        .pf-info-nik {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1.5px;
+            color: #4e46e5;
+        }
+
+        .pf-info-sub {
+            font-size: .76rem;
+            color: #94a3b8;
+        }
     </style>
 
     <div class="container-fluid">
@@ -237,12 +447,32 @@
                 <i class="bi bi-person-circle"></i>
                 <span>Pengaturan Profil</span>
             </button>
+            <button type="button" class="profile-tab @if ($activeTab === 'tab-karyawan') active @endif"
+                wire:click="setTab('tab-karyawan')">
+                <i class="bi bi-bank"></i>
+                <span>Data Karyawan @unless (auth()->user()->profileComplete())<span class="badge bg-danger ms-1">!</span>@endunless</span>
+            </button>
             <button type="button" class="profile-tab @if ($activeTab === 'tab-password') active @endif"
                 wire:click="setTab('tab-password')">
                 <i class="bi bi-shield-lock"></i>
                 <span>Ganti Password</span>
             </button>
         </div>
+
+        @if (session('profile_incomplete'))
+        <div class="profile-warn d-flex align-items-center gap-3 mb-4">
+            <span class="profile-warn-ico d-inline-flex align-items-center justify-content-center flex-shrink-0">
+                <i class="bi bi-shield-exclamation"></i>
+            </span>
+            <div class="lh-sm">
+                <div class="fw-bold profile-warn-title">Lengkapi Profil Anda</div>
+                <div class="profile-warn-text">
+                    Isi <b>No. Rekening</b>, <b>Tanggal Lahir</b>, <b>No. HP</b>, dan <b>Alamat</b> pada tab
+                    <b>Data Karyawan</b> untuk membuka akses ke seluruh fitur.
+                </div>
+            </div>
+        </div>
+        @endif
 
         @if($activeTab === 'tab-profile')
         <div class="row g-4">
@@ -370,6 +600,128 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+        @endif
+
+        @if($activeTab === 'tab-karyawan')
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <span class="stat-icon-wrapper flex-shrink-0 text-white"
+                        style="width:44px;height:44px;font-size:1.2rem;border-radius:13px;background:linear-gradient(135deg,#6c63ff,#4e46e5);"><i class="bi bi-bank"></i></span>
+                    <div>
+                        <h5 class="fw-bold mb-0">Data Karyawan</h5>
+                        <small class="text-muted">Rekening (Bank Mandiri), tanggal lahir, kontak &amp; alamat.</small>
+                    </div>
+                </div>
+
+                {{-- NIK & masa kerja: hanya tampil. Keduanya dikelola admin di menu
+                     Data Karyawan (NIK otomatis, tanggal bergabung diisi admin). --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="pf-info-card">
+                            <span class="pf-info-ico" style="background:linear-gradient(135deg,#6c63ff,#4e46e5); box-shadow:0 6px 14px rgba(108,99,255,.35);">
+                                <i class="bi bi-person-vcard-fill"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="pf-info-label">Nomor Induk Karyawan</div>
+                                <div class="pf-info-value pf-info-nik">{{ $nik ?? '—' }}</div>
+                                <div class="pf-info-sub">Dibuat otomatis oleh sistem</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="pf-info-card">
+                            <span class="pf-info-ico" style="background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 6px 14px rgba(16,185,129,.35);">
+                                <i class="bi bi-briefcase-fill"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="pf-info-label">Masa Kerja</div>
+                                <div class="pf-info-value">{{ $masaKerja ?? '—' }}</div>
+                                <div class="pf-info-sub">
+                                    @if($tanggalMulaiKerja)
+                                    Sejak {{ $tanggalMulaiKerja->translatedFormat('d M Y') }}
+                                    @else
+                                    Tanggal bergabung belum diisi
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form wire:submit="updateDataKaryawan">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nama Bank</label>
+                            <div class="bank-locked-field d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="bank-locked-logo d-inline-flex align-items-center justify-content-center">
+                                        <i class="bi bi-bank2"></i>
+                                    </span>
+                                    <div class="lh-1">
+                                        <div class="fw-bold text-white" style="font-size:1.02rem;">Bank Mandiri</div>
+                                        <small class="text-white-50">Rekening penerima gaji</small>
+                                    </div>
+                                </div>
+                                <span class="bank-locked-chip d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-lock-fill"></i> Terkunci
+                                </span>
+                            </div>
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Bank tidak dapat diubah.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">No. Rekening <span class="text-danger">*</span></label>
+                            <div class="field-icon-wrap" wire:ignore
+                                x-data="{ format(v){ return v.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim(); } }">
+                                <span class="field-icon"><i class="bi bi-credit-card-2-front"></i></span>
+                                <input type="text"
+                                    class="form-control fmt-input @error('nomor_rekening') is-invalid @enderror"
+                                    placeholder="1234 5678 9012 3" inputmode="numeric" autocomplete="off"
+                                    value="{{ $nomor_rekening }}"
+                                    x-init="$el.value = format($el.value)"
+                                    @input="$el.value = format($el.value); $wire.set('nomor_rekening', $el.value.replace(/\D/g,''), false);">
+                            </div>
+                            @error('nomor_rekening') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Otomatis dikelompokkan tiap 4 digit.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tanggal Lahir <span class="text-danger">*</span></label>
+                            <input type="date" wire:model="tanggal_lahir" class="form-control @error('tanggal_lahir') is-invalid @enderror" max="{{ now()->toDateString() }}">
+                            @error('tanggal_lahir') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">No. HP <span class="text-danger">*</span></label>
+                            <div class="field-icon-wrap" wire:ignore
+                                x-data="{ format(v){ return v.replace(/\D/g,'').slice(0,15).replace(/(.{4})/g,'$1 ').trim(); } }">
+                                <span class="field-icon"><i class="bi bi-telephone"></i></span>
+                                <input type="text"
+                                    class="form-control fmt-input @error('phone') is-invalid @enderror"
+                                    placeholder="0812 3456 7890" inputmode="numeric" autocomplete="off"
+                                    value="{{ $phone }}"
+                                    x-init="$el.value = format($el.value)"
+                                    @input="$el.value = format($el.value); $wire.set('phone', $el.value.replace(/\D/g,''), false);">
+                            </div>
+                            @error('phone') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Contoh: 0812 3456 7890</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Alamat <span class="text-danger">*</span></label>
+                            <textarea wire:model="alamat" rows="2" class="form-control @error('alamat') is-invalid @enderror" placeholder="Alamat lengkap"></textarea>
+                            @error('alamat') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                        <button type="submit"
+                            class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
+                            style="height: 52px;">
+                            <i class="bi bi-check2-circle me-2 fs-5"></i>
+                            <span>Simpan Data Karyawan</span>
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
         @endif

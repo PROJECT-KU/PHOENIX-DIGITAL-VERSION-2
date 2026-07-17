@@ -4,11 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 
 class OrderItem extends Model
 {
     use HasUuids;
+
+    protected static function booted(): void
+    {
+        // Sinkron biaya modal akun private saat item dibuat/diubah.
+        static::saved(function (self $item) {
+            if ($item->order) {
+                app(\App\Actions\Finance\SyncOrderPrivateCostAction::class)->execute($item->order);
+            }
+        });
+
+        // Hapus cash flow biaya modal (akun private) saat item dihapus.
+        static::deleting(function (self $item) {
+            $item->cashFlow()->delete();
+        });
+    }
+
+    /** Cash flow expense = modal akun private (per order item). */
+    public function cashFlow(): MorphOne
+    {
+        return $this->morphOne(CashFlow::class, 'sourceable');
+    }
 
     protected $fillable = [
         'order_id',

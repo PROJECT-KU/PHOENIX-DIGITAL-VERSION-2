@@ -1,3 +1,7 @@
+
+@section('title')
+Detail Pesanan || lemon
+@stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
         <div class="card-body p-4 d-flex align-items-center">
@@ -209,6 +213,18 @@
                         @endif
                     </span>
                 </div>
+                @if($order->bukti_pembayaran)
+                <div class="info-row">
+                    <span class="info-label">Bukti Pembayaran</span>
+                    <span class="info-value">
+                        <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
+                            data-bukti-url="{{ Storage::url($order->bukti_pembayaran) }}" title="Perbesar bukti pembayaran">
+                            <img src="{{ Storage::url($order->bukti_pembayaran) }}" alt="Bukti pembayaran"
+                                style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
+                        </a>
+                    </span>
+                </div>
+                @endif
                 <div class="info-row">
                     <span class="info-label">Status</span>
                     <span class="info-value">
@@ -352,8 +368,25 @@
                                 <small class="d-block text-success fw-semibold">+ {{ $item->bonus_duration_value }} {{ $item->bonus_duration_type }} bonus</small>
                                 @endif
                             </td>
-                            <td class="text-end">Rp {{ number_format($item->price, 0, ',', '.') }}</td>
-                            <td class="text-end fw-semibold">Rp {{ number_format($item->price * $item->quantity, 0, ',', '.') }}</td>
+                            @php
+                                // Harga ASLI (sebelum diskon) — dihitung dari produk; fallback ke harga tersimpan.
+                                $prod = $item->product;
+                                $hargaAsli = (int) $item->price;
+                                if ($prod) {
+                                    $inPkg = $prod->daftarHarga()->contains(fn ($r) => $r['durasi_type'] === $item->duration_type && (int) $r['durasi_value'] === (int) $item->duration_value);
+                                    if ($inPkg) {
+                                        $hargaAsli = (int) $prod->hargaUntuk((int) $item->duration_value, $item->duration_type);
+                                    } else {
+                                        $perB = (int) ($prod->harga_perbulan ?? 0);
+                                        $hargaAsli = ($item->duration_type === 'bulan' && $perB > 0) ? $perB * (int) $item->duration_value : (int) $item->price;
+                                    }
+                                    if ($hargaAsli <= 0) {
+                                        $hargaAsli = (int) $item->price;
+                                    }
+                                }
+                            @endphp
+                            <td class="text-end">Rp {{ number_format($hargaAsli, 0, ',', '.') }}</td>
+                            <td class="text-end fw-semibold">Rp {{ number_format($hargaAsli * $item->quantity, 0, ',', '.') }}</td>
                             <td class="text-center">
                                 {!! $item->getDeliveryStatusBadge() !!}
                                 @if ($item->processed_by && $item->processed_at)
@@ -452,8 +485,8 @@
                 <div class="col-lg-5 col-md-7">
                     <div class="summary-card p-4">
                         <div class="summary-row">
-                            <span>Total</span>
-                            <span class="fw-semibold">Rp {{ number_format($order->items->sum(fn($i) => $i->price * $i->quantity), 0, ',', '.') }}</span>
+                            <span>Subtotal</span>
+                            <span class="fw-semibold">Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span>
                         </div>
                         @if($order->promo_discount > 0)
                         <div class="summary-row text-danger">
@@ -473,9 +506,15 @@
                             <span class="fw-semibold">- Rp {{ number_format($order->referral_discount, 0, ',', '.') }}</span>
                         </div>
                         @endif
+                        @if($order->total_discount > 0)
+                        <div class="summary-row" style="border-top:1px dashed #e5e7eb; padding-top:.5rem;">
+                            <span class="fw-semibold">Setelah Diskon</span>
+                            <span class="fw-semibold">Rp {{ number_format($order->subtotal - $order->total_discount, 0, ',', '.') }}</span>
+                        </div>
+                        @endif
                         @if($order->unique_code > 0)
                         <div class="summary-row">
-                            <span>Kode Unik</span>
+                            <span>Kode Unik <i class="bi bi-info-circle" title="Untuk verifikasi pembayaran"></i></span>
                             <span class="fw-semibold">+ Rp {{ number_format($order->unique_code, 0, ',', '.') }}</span>
                         </div>
                         @endif
@@ -553,6 +592,30 @@
     };
 
     let waData = {};
+
+    // Popup glossy untuk memperbesar bukti pembayaran (seragam dgn fitur lain).
+    if (!window.__buktiZoomBound) {
+        window.__buktiZoomBound = true;
+        document.addEventListener('click', function (e) {
+            const trigger = e.target.closest && e.target.closest('.bukti-zoom-trigger');
+            if (!trigger) return;
+            e.preventDefault();
+            const url = trigger.getAttribute('data-bukti-url');
+            if (!url) return;
+            if (typeof Swal === 'undefined') { window.open(url, '_blank'); return; }
+            Swal.fire({
+                // Gambar dibatasi ke ukuran layar agar muat tanpa perlu scroll.
+                html: '<div style="display:flex; align-items:center; justify-content:center; width:100%;"><img src="' + url + '" alt="Bukti pembayaran" style="max-width:88vw; max-height:82vh; width:auto; height:auto; object-fit:contain; border-radius:12px;"></div>',
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                showConfirmButton: false,
+                showCloseButton: true,
+                width: 'auto',
+                padding: '1rem',
+            });
+        });
+    }
 
     document.addEventListener('livewire:init', () => {
         Livewire.on('close-wa-modal', () => {

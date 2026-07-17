@@ -4,9 +4,7 @@ namespace App\Livewire\Pages\Admin\PemesananRSC;
 
 use App\Actions\Finance\SyncCashFlowAction;
 use App\Exports\CampBatchExport;
-use App\Models\DataAkun;
 use App\Models\PemesananRsc;
-use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
@@ -23,6 +21,11 @@ class PemesananrscList extends Component
 
     // 🔹 State/Filter properties
     public $search = '';
+
+    // Filter periode (seragam dengan Pesanan Toko).
+    public $filterMonth = '';
+
+    public $filterYear = '';
 
     public $statusFilter = '';
 
@@ -90,33 +93,9 @@ class PemesananrscList extends Component
 
         $this->showExportModal = false;
 
-        $conditions = collect($this->selectedBatches)->map(function ($item) {
-            [$nama, $batch] = explode('|', $item);
-
-            return ['nama_camp' => $nama, 'batch_camp' => $batch];
-        });
-
-        $invoiceItems = PemesananRsc::query()
-            ->where(function ($query) use ($conditions) {
-                foreach ($conditions as $condition) {
-                    $query->orWhere(function ($q) use ($condition) {
-                        $q->where('nama_camp', $condition['nama_camp'])
-                            ->where('batch_camp', $condition['batch_camp']);
-                    });
-                }
-            })
-            ->selectRaw('
-                nama_camp, 
-                batch_camp, 
-                MIN(tanggal_mulai_camp) as periode_mulai, 
-                MAX(tanggal_akhir_camp) as periode_akhir,
-                COUNT(id) as total_peserta, 
-                SUM(total) as total_harga,
-                MAX(harga_satuan) as harga_satuan')
-            ->groupBy('nama_camp', 'batch_camp')
-            ->orderBy('nama_camp')
-            ->orderBy('batch_camp')
-            ->get();
+        // Sumber tunggal item invoice (sama dgn preview) — termasuk daftar akun
+        // untuk batch metode "per_akun".
+        $invoiceItems = PemesananRsc::invoiceItemsFor($this->selectedBatches);
 
         $data = [
             'invoiceNumber' => 'INV-'.date('Y').'-'.rand(1000, 9999),
@@ -149,6 +128,23 @@ class PemesananrscList extends Component
     // 🔹 Reset page saat filter berubah
     public function updatingSearch()
     {
+        $this->resetPage();
+    }
+
+    public function updatingFilterMonth()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterYear()
+    {
+        $this->resetPage();
+    }
+
+    // Reset filter periode (seragam dengan Pesanan Toko).
+    public function resetFilters()
+    {
+        $this->reset(['search', 'filterMonth', 'filterYear']);
         $this->resetPage();
     }
 
@@ -209,7 +205,7 @@ class PemesananrscList extends Component
     public function deleteBatch($nama_camp, $batch_camp)
     {
         if (! auth()->user()->hasPermission('delete_pesananrsc')) {
-            $this->dispatch('show-alert', ['type' => 'error', 'message' => 'Anda tidak memiliki izin menghapus data pesanan RSC.']);
+            $this->dispatch('batch-delete-error', message: 'Anda tidak memiliki izin menghapus data pesanan RSC.');
 
             return;
         }
@@ -221,15 +217,19 @@ class PemesananrscList extends Component
                 ->get();
 
             if ($pemesananList->isEmpty()) {
-                session()->flash('error', 'Data tidak ditemukan!');
+                $this->dispatch('batch-delete-error', message: 'Data tidak ditemukan!');
 
                 return;
             }
 
             $action = new SyncCashFlowAction;
+            $modalAction = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
 
             foreach ($pemesananList as $pemesanan) {
                 $action->delete($pemesanan);
+                // Hapus juga baris modal private (bila ada) supaya tidak jadi
+                // cash flow yatim setelah baris pemesanan dihapus.
+                $modalAction->delete($pemesanan);
             }
 
             PemesananRsc::where('nama_camp', $nama_camp)
@@ -238,14 +238,14 @@ class PemesananrscList extends Component
 
             DB::commit();
 
-            session()->flash('success', 'Batch berhasil dihapus beserta '.$pemesananList->count().' peserta!');
+            $this->dispatch('batch-deleted', message: 'Batch berhasil dihapus beserta '.$pemesananList->count().' peserta.');
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal menghapus batch: '.$e->getMessage());
+            $this->dispatch('batch-delete-error', message: 'Gagal menghapus batch: '.$e->getMessage());
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $query = PemesananRsc::query()
@@ -261,6 +261,10 @@ class PemesananrscList extends Component
                 DB::raw('COUNT(*) as total_peserta'),
                 DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
                 DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
+                // Waktu batch DIBUAT = created_at peserta paling awal di batch itu.
+                // Wajib diagregasi (MIN) karena query ini di-GROUP BY per batch;
+                // created_at mentah tidak boleh dipakai di ORDER BY tanpa agregat.
+                DB::raw('MIN(created_at) as batch_created'),
             ])
             ->with(['dataakun', 'users'])
             ->groupBy([
@@ -273,17 +277,37 @@ class PemesananrscList extends Component
                 'status',
             ]);
 
-        // 🔍 Filter: Pencarian umum
+        // 🔍 Filter: Pencarian umum (mencari SEMUA data).
+        // Memakai subquery per-batch agar batch tetap tampil utuh (jumlah peserta
+        // & daftar nama tidak terpotong) meski yang cocok hanya satu peserta.
         if (! empty($this->search)) {
-            $query->where(function ($q) {
-                $search = '%'.$this->search.'%';
+            $search = '%'.$this->search.'%';
 
-                $q->where('nama_camp', 'like', $search)
-                    ->orWhere('batch_camp', 'like', $search)
-                    ->orWhereRaw("DATE_FORMAT(tanggal_mulai_camp, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereRaw("DATE_FORMAT(tanggal_akhir_camp, '%d %M %Y') LIKE ?", [$search])
-                    ->orWhereHas('users', fn ($q) => $q->where('name', 'like', $search))
-                    ->orWhereHas('dataakun', fn ($q) => $q->where('nama_akun', 'like', $search));
+            $query->whereIn(DB::raw("CONCAT(nama_camp, '|', batch_camp)"), function ($sub) use ($search) {
+                $sub->select(DB::raw("CONCAT(pr.nama_camp, '|', pr.batch_camp)"))
+                    ->from('pemesanan_rsc as pr')
+                    ->leftJoin('users as u', 'u.id', '=', 'pr.pic')
+                    ->leftJoin('data_akuns as da', 'da.id', '=', 'pr.akun')
+                    ->where(function ($q) use ($search) {
+                        $q->where('pr.nama_camp', 'like', $search)
+                            ->orWhere('pr.batch_camp', 'like', $search)
+                            ->orWhere('pr.id_transaksi', 'like', $search)
+                            ->orWhere('pr.nama_pembeli', 'like', $search)
+                            ->orWhere('pr.telp_pembeli', 'like', $search)
+                            ->orWhere('pr.jumlah_pemesanan', 'like', $search)
+                            ->orWhere('pr.status', 'like', $search)
+                            ->orWhere('pr.deskripsi', 'like', $search)
+                            ->orWhere('pr.harga_satuan', 'like', $search)
+                            ->orWhere('pr.total', 'like', $search)
+                            ->orWhere('pr.username', 'like', $search)
+                            ->orWhere('pr.link_akses', 'like', $search)
+                            ->orWhereRaw("DATE_FORMAT(pr.tanggal_mulai_camp, '%d %M %Y') LIKE ?", [$search])
+                            ->orWhereRaw("DATE_FORMAT(pr.tanggal_akhir_camp, '%d %M %Y') LIKE ?", [$search])
+                            ->orWhereRaw("DATE_FORMAT(pr.tanggal_pemesanan, '%d %M %Y') LIKE ?", [$search])
+                            ->orWhereRaw("DATE_FORMAT(pr.tanggal_berakhir, '%d %M %Y') LIKE ?", [$search])
+                            ->orWhere('u.name', 'like', $search)
+                            ->orWhere('da.nama_akun', 'like', $search);
+                    });
             });
         }
 
@@ -301,6 +325,14 @@ class PemesananrscList extends Component
             $query->whereDate('tanggal_akhir_camp', '<=', $this->endDate);
         }
 
+        // 🔹 Filter periode (bulan/tahun) berdasarkan tanggal mulai camp
+        if (! empty($this->filterMonth)) {
+            $query->whereMonth('tanggal_mulai_camp', $this->filterMonth);
+        }
+        if (! empty($this->filterYear)) {
+            $query->whereYear('tanggal_mulai_camp', $this->filterYear);
+        }
+
         // 🔹 Filter status
         if (! empty($this->statusFilter)) {
             $query->where('status', $this->statusFilter);
@@ -316,25 +348,47 @@ class PemesananrscList extends Component
             $query->where('batch_camp', $this->batchFilter);
         }
 
-        // 🔹 Ambil hasil
-        $pemesananrsc = $query->latest('tanggal_mulai_camp')->paginate($this->perPage);
+        // 🔹 Ambil hasil — urut dari batch yang PALING BARU DIBUAT.
+        // Dulu diurut tanggal_mulai_camp: batch yang baru diinput tapi campnya
+        // dijadwalkan lama tenggelam di bawah, padahal itu yang baru dikerjakan.
+        $pemesananrsc = $query->orderByDesc('batch_created')->paginate($this->perPage);
 
-        // 🔹 Data dropdown
-        $users = User::select('id', 'name')->orderBy('name')->get();
-        $dataakun = DataAkun::select('id', 'nama_akun')->orderBy('nama_akun')->get();
-        $statusOptions = ['habis', 'pengganti', 'perpanjang', 'baru'];
-        $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
-        $kategoriList = PemesananRsc::select('nama_camp')->distinct()->whereNotNull('nama_camp')->orderBy('nama_camp')->pluck('nama_camp');
-        $batchList = PemesananRsc::select('batch_camp')->distinct()->whereNotNull('batch_camp')->orderBy('batch_camp')->pluck('batch_camp');
+        // 🔹 Peta akun TAMBAHAN per batch (hanya untuk batch di halaman ini) agar
+        // kolom Akun bisa menampilkan "akun utama + N akun lain" tanpa N+1 query.
+        // Key = "nama_camp|batch_camp".
+        $pasanganBatch = $pemesananrsc->map(fn ($i) => $i->nama_camp.'|'.$i->batch_camp)->all();
+        $akunTambahanPerBatch = empty($pasanganBatch)
+            ? collect()
+            : \App\Models\RscBatchAkun::whereIn(
+                DB::raw("CONCAT(nama_camp, '|', batch_camp)"),
+                $pasanganBatch
+            )
+                ->orderBy('id')
+                ->get(['nama_camp', 'batch_camp', 'nama_akun'])
+                ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
+                ->map(fn ($g) => $g->pluck('nama_akun')->filter()->values()->all());
+
+        // 🔹 Data dropdown periode (seragam dengan Pesanan Toko)
+        $months = collect(range(1, 12))->map(fn ($m) => [
+            'value' => $m,
+            'label' => \Carbon\Carbon::create()->month($m)->locale('id')->isoFormat('MMMM'),
+        ]);
+
+        $years = PemesananRsc::selectRaw('YEAR(tanggal_mulai_camp) as tahun')
+            ->whereNotNull('tanggal_mulai_camp')
+            ->distinct()
+            ->orderByDesc('tahun')
+            ->pluck('tahun');
+
+        if ($years->isEmpty()) {
+            $years = collect([now()->year]);
+        }
 
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-list', compact(
             'pemesananrsc',
-            'users',
-            'statusOptions',
-            'jenisPengeluaranOptions',
-            'dataakun',
-            'kategoriList',
-            'batchList'
+            'akunTambahanPerBatch',
+            'months',
+            'years',
         ));
     }
 }

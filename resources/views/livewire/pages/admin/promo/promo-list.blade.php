@@ -1,3 +1,7 @@
+
+@section('title')
+Data Promo || lemon
+@stop
 <div>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -70,6 +74,21 @@
                                     {{ $item->nama_promo }}
                                     @if ($item->show_on_homepage) <br>
                                     <span class="badge bg-info">Homepage</span>
+                                    @endif
+                                    @if (!is_null($item->kuota))
+                                    @php
+                                        $pakai = (int) ($kuotaTerpakai[$item->id] ?? 0);
+                                        $sisa = max($item->kuota - $pakai, 0);
+                                    @endphp
+                                    <br>
+                                    {{-- d-inline-flex + line-height:1, BUKAN vertical-align: .badge
+                                         bawaan Bootstrap sudah line-height:1, sehingga -0.125em
+                                         (yg dikalibrasi utk line-height normal) justru menurunkan ikon. --}}
+                                    <span class="badge {{ $sisa === 0 ? 'bg-danger' : 'bg-success-subtle text-success border border-success' }} rounded-pill mt-1 d-inline-flex align-items-center gap-1"
+                                        style="line-height:1;"
+                                        title="Kuota terpakai {{ $pakai }} dari {{ $item->kuota }}{{ $item->untuk_pembeli_pertama ? ' — khusus pembeli pertama' : '' }}">
+                                        <i class="bi bi-people-fill"></i>{{ $sisa === 0 ? 'Kuota habis' : 'Sisa '.$sisa.'/'.$item->kuota }}
+                                    </span>
                                     @endif
                                 </td>
 

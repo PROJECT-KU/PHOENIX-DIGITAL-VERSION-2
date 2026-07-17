@@ -1,75 +1,58 @@
-<!--================== JS UNTUK SLEECT 2 ==================-->
-@assets
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-@endassets
-<!--================== END JS UNTUK SELECT 2 ==================-->
-
 <form wire:submit.prevent="save">
     <div class="d-flex flex-column gap-4">
 
-        <!--================== CSS UNTUK SELECT 2 ==================-->
         <style>
-            .select2-container--default .select2-selection--single {
-                background-color: #ffffff !important;
-                border: 1px solid #dee2e6 !important;
+            /* ===== Tombol pemicu picker (seragam dgn form Order) ===== */
+            .of-picker-btn {
+                cursor: pointer;
                 border-radius: 12px !important;
-                /* Lengkungan disamakan dengan input lain */
-                min-height: 45px !important;
-                /* Tinggi disesuaikan agar tidak kurus */
-                padding: 0.375rem 0.75rem !important;
+                min-height: 45px;
+            }
+
+            .of-picker-btn::after {
+                content: "\F282";
+                font-family: "bootstrap-icons";
+                float: right;
+                color: #94a3b8;
+                font-size: .8rem;
+            }
+
+            /* Daftar di dalam SweetAlert picker */
+            .of-pick-list {
+                max-height: 320px;
+                overflow-y: auto;
+                text-align: left;
                 display: flex;
-                align-items: center;
-                box-shadow: none !important;
-                transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+                flex-direction: column;
+                gap: .4rem;
+                padding: .2rem;
             }
 
-            .select2-container--default .select2-selection--single .select2-selection__rendered {
-                color: #212529 !important;
-                padding-left: 0 !important;
-                font-size: 1rem;
-                line-height: normal !important;
+            .of-pick-item {
+                display: block;
+                width: 100%;
+                text-align: left;
+                border: 1px solid #e6e8f2;
+                background: #fff;
+                border-radius: 12px;
+                padding: .7rem .9rem;
+                font-weight: 600;
+                color: #1e293b;
+                font-size: .92rem;
+                transition: all .15s ease;
             }
 
-            .select2-container--default .select2-selection--single .select2-selection__placeholder {
-                color: #9ca3af !important;
-                /* Warna teks placeholder (abu-abu pudar) */
+            .of-pick-item:hover {
+                border-color: #6c63ff;
+                background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04));
+                transform: translateY(-1px);
             }
 
-            .select2-container--default .select2-selection--single .select2-selection__arrow {
-                height: 100% !important;
-                right: 15px !important;
-                top: 0 !important;
-                display: flex;
-                align-items: center;
-            }
-
-            /* Efek Focus saat diklik (meniru form-control bootstrap) */
-            .select2-container--default.select2-container--focus .select2-selection--single,
-            .select2-container--default.select2-container--open .select2-selection--single {
-                border-color: #7c3aed !important;
-                box-shadow: 0 0 0 0.25rem rgba(108, 99, 255, 0.25) !important;
-                /* Shadow ungu/biru */
-                outline: 0;
-            }
-
-            .select2-dropdown {
-                border: 1px solid #dee2e6 !important;
-                border-radius: 0.5rem !important;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
-            }
-
-            .select2-container--default .select2-search--dropdown .select2-search__field {
-                border-radius: 0.375rem !important;
-                border: 1px solid #ced4da !important;
-                padding: 6px 12px;
-            }
-
-            .select2-container--default .select2-results__option--highlighted[aria-selected] {
-                background-color: #ffc107 !important;
-                /* Warna hover opsi kuning */
-                color: #000 !important;
+            .of-pick-empty {
+                text-align: center;
+                color: #94a3b8;
+                padding: 1.5rem;
+                font-size: .9rem;
             }
 
             /* Slot produk bundling — rapi & mudah dibaca */
@@ -181,31 +164,15 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-md-7">
                             <label class="slot-label">Pilih Produk</label>
-                            <div wire:ignore x-data x-init="
-                                let $select = $($el).find('select');
-                                $select.select2({
-                                    placeholder: '-- Pilih Product --',
-                                    allowClear: true,
-                                    width: '100%',
-                                    dropdownParent: $($el)
-                                });
-                                $select.on('change', function () {
-                                    $wire.set('{{ $field }}', $(this).val(), false);
-                                });
-                                $select.on('select2:open', function () {
-                                    $($el).closest('.card').css('z-index', 1060);
-                                });
-                                $select.on('select2:close', function () {
-                                    $($el).closest('.card').css('z-index', '');
-                                });
-                            ">
-                                <select id="{{ $field }}" class="form-select select2-bundling">
-                                    <option value="">-- Pilih Product --</option>
-                                    @foreach($products as $product)
-                                    <option value="{{ $product->id }}" @selected($product->id == $$field)>{{ $product->nama_akun }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            @php $selBundleProd = $products->firstWhere('id', $$field); @endphp
+                            <button type="button" onclick="bundlingProductPicker(this, '{{ $field }}')"
+                                class="form-select text-start of-picker-btn">
+                                @if ($selBundleProd)
+                                <span class="text-dark">{{ $selBundleProd->nama_akun }}</span>
+                                @else
+                                <span class="text-muted">-- Pilih Produk --</span>
+                                @endif
+                            </button>
                         </div>
                         <div class="col-7 col-md-3">
                             <label class="slot-label">Durasi</label>
@@ -234,21 +201,29 @@
             <div class="row g-4">
                 <div class="col-md-6">
                     <label for="harga_awal" class="form-label fw-semibold text-muted">Harga Awal <span class="text-danger">*</span></label>
-                    <input type="text" id="harga_awal" wire:model.defer="harga_awal"
-                        class="form-control @error('harga_awal') is-invalid @enderror rupiah"
-                        placeholder="Rp 0">
+                    <div class="position-relative">
+                        <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                            style="pointer-events: none; z-index: 5;">Rp</span>
+                        <input type="text" id="harga_awal" wire:model.defer="harga_awal"
+                            class="form-control ps-5 @error('harga_awal') is-invalid @enderror rupiah"
+                            placeholder="0">
+                    </div>
                     @error('harga_awal')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="col-md-6">
                     <label for="harga_bundling" class="form-label fw-semibold text-muted">Harga Bundling <span class="text-danger">*</span></label>
-                    <input type="text" id="harga_bundling" wire:model.defer="harga_bundling"
-                        class="form-control @error('harga_bundling') is-invalid @enderror rupiah"
-                        placeholder="Rp 0">
+                    <div class="position-relative">
+                        <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
+                            style="pointer-events: none; z-index: 5;">Rp</span>
+                        <input type="text" id="harga_bundling" wire:model.defer="harga_bundling"
+                            class="form-control ps-5 @error('harga_bundling') is-invalid @enderror rupiah"
+                            placeholder="0">
+                    </div>
                     @error('harga_bundling')
-                    <div class="invalid-feedback">{{ $message }}</div>
+                    <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -333,6 +308,72 @@
     </div>
 </form>
 
+<!--================== PICKER PRODUK (SERAGAM DGN ORDER) ==================-->
+@push('scripts')
+<script>
+    window.__pbProducts = @json($products->map(fn ($p) => ['id' => (string) $p->id, 'name' => $p->nama_akun])->values());
+
+    if (!window.__pbPickerBound) {
+        window.__pbPickerBound = true;
+
+        const pbGlossy = {
+            background: 'rgba(255, 255, 255, 0.92)',
+            backdrop: 'rgba(139, 92, 246, 0.15)',
+            customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+            buttonsStyling: false,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: 480,
+            padding: '1.25rem',
+        };
+
+        window.bundlingProductPicker = function(btn, field) {
+            if (typeof Swal === 'undefined') return;
+            const comp = btn.closest('[wire\\:id]');
+            if (!comp) return;
+            const cid = comp.getAttribute('wire:id');
+
+            const items = window.__pbProducts || [];
+            const rows = items.length
+                ? items.map(it =>
+                    `<button type="button" class="of-pick-item" data-id="${it.id}" data-search="${it.name.toLowerCase()}">${it.name}</button>`).join('')
+                : '<div class="of-pick-empty">Tidak ada data produk</div>';
+
+            Swal.fire({
+                title: 'Pilih Produk Akun',
+                html: `<input id="pbPickSearch" class="form-control mb-2" placeholder="Ketik untuk mencari...">
+                       <div id="pbPickList" class="of-pick-list">
+                            <button type="button" class="of-pick-item text-muted" data-id="" data-search="">-- Kosongkan pilihan --</button>
+                            ${rows}
+                       </div>`,
+                ...pbGlossy,
+                didOpen: () => {
+                    const search = document.getElementById('pbPickSearch');
+                    const listEl = document.getElementById('pbPickList');
+                    if (search) {
+                        search.addEventListener('input', () => {
+                            const q = search.value.toLowerCase();
+                            listEl.querySelectorAll('.of-pick-item').forEach(b => {
+                                if (b.dataset.id === '') return;
+                                b.style.display = b.dataset.search.includes(q) ? '' : 'none';
+                            });
+                        });
+                        setTimeout(() => search.focus(), 100);
+                    }
+                    listEl.querySelectorAll('.of-pick-item').forEach(b => {
+                        b.addEventListener('click', () => {
+                            Livewire.find(cid).set(field, b.dataset.id);
+                            Swal.close();
+                        });
+                    });
+                }
+            });
+        };
+    }
+</script>
+@endpush
+<!--================== END PICKER PRODUK ==================-->
+
 <!--================== SWEET ALERT IMAGE UPLOAD ==================-->
 @push('scripts')
 <script>
@@ -376,7 +417,7 @@
                 rupiah += separator + ribuan.join('.');
             }
 
-            e.target.value = rupiah ? 'Rp ' + rupiah : '';
+            e.target.value = rupiah ? rupiah : '';
         });
     });
 </script>

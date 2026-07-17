@@ -37,11 +37,28 @@ class GajiKaryawansForm extends Component
 
     public $bonus_lainnya;
 
+    // Bonus penyelesaian task diatur di halaman "Penyelesaian Task" (pool bersama).
+    // Di form ini nilainya read-only (carried), tetap masuk perhitungan total.
+    public $bonus_penyelesaian_task = 0;
+
     public $jam_lembur;
 
     public $tarif_lembur;
 
     public $uang_lembur;
+
+    // Presensi (ditarik otomatis dari fitur presensi berdasarkan karyawan + periode)
+    public $jumlah_hadir_offline = 0;
+
+    public $tarif_hadir_offline;
+
+    public $uang_hadir_offline;
+
+    public $jumlah_hadir_online = 0;
+
+    public $tarif_hadir_online;
+
+    public $uang_hadir_online;
 
     public $tunjangan_kesehatan;
 
@@ -100,12 +117,26 @@ class GajiKaryawansForm extends Component
             $this->gaji_pokok = $this->formatRupiah($this->gajikaryawan->gaji_pokok);
             $this->bonus_kinerja = $this->formatRupiah($this->gajikaryawan->bonus_kinerja);
             $this->bonus_lainnya = $this->formatRupiah($this->gajikaryawan->bonus_lainnya);
+            $this->bonus_penyelesaian_task = (int) $this->gajikaryawan->bonus_penyelesaian_task;
             $this->jam_lembur = $this->gajikaryawan->jam_lembur ?: null;
             // Tarif/jam diturunkan dari data historis bila ada, agar nilai lama tetap akurat
             $this->tarif_lembur = ($this->gajikaryawan->jam_lembur > 0)
                 ? $this->formatAngka((int) round($this->gajikaryawan->uang_lembur / $this->gajikaryawan->jam_lembur))
                 : $this->formatAngka(Setting::get('tarif_lembur_per_jam', 15000));
             $this->uang_lembur = $this->formatAngka($this->gajikaryawan->uang_lembur);
+
+            // Presensi: tampilkan nilai historis tersimpan (tarif diturunkan dari uang/jumlah)
+            $this->jumlah_hadir_offline = (int) ($this->gajikaryawan->jumlah_hadir_offline ?? 0);
+            $this->tarif_hadir_offline = ($this->gajikaryawan->jumlah_hadir_offline > 0)
+                ? $this->formatAngka((int) round($this->gajikaryawan->uang_hadir_offline / $this->gajikaryawan->jumlah_hadir_offline))
+                : $this->formatAngka(Setting::get('tarif_presensi_offline', 0));
+            $this->uang_hadir_offline = $this->formatAngka($this->gajikaryawan->uang_hadir_offline);
+            $this->jumlah_hadir_online = (int) ($this->gajikaryawan->jumlah_hadir_online ?? 0);
+            $this->tarif_hadir_online = ($this->gajikaryawan->jumlah_hadir_online > 0)
+                ? $this->formatAngka((int) round($this->gajikaryawan->uang_hadir_online / $this->gajikaryawan->jumlah_hadir_online))
+                : $this->formatAngka(Setting::get('tarif_presensi_online', 0));
+            $this->uang_hadir_online = $this->formatAngka($this->gajikaryawan->uang_hadir_online);
+
             $this->tunjangan_kesehatan = $this->formatRupiah($this->gajikaryawan->tunjangan_kesehatan);
             $this->tunjangan_thr = $this->formatRupiah($this->gajikaryawan->tunjangan_thr);
             $this->tunjangan_ketenagakerjaan = $this->formatRupiah($this->gajikaryawan->tunjangan_ketenagakerjaan);
@@ -122,15 +153,36 @@ class GajiKaryawansForm extends Component
             $this->status = $this->gajikaryawan->status;
             $this->mode = 'edit';
 
+            // Gaji yang masih DRAFT (belum dibayar) disegarkan dari sumbernya:
+            // - tarif lembur & tarif hadir  -> data Karyawan (EmployeeDetail) terkini
+            // - jam lembur & jumlah hadir   -> fitur Presensi sesuai PERIODE GAJI (21 s/d 20)
+            // Ini penting untuk draft hasil "Generate Gaji" yang dibuat sebelum presensi lengkap.
+            // Gaji COMPLETED sengaja TIDAK diubah (nilai historis terkunci).
+            if ($this->status !== 'completed') {
+                $this->muatTarifKaryawan();
+                $this->muatDataPresensi();
+            }
+
             $this->hitungSisaPinjaman();
         } else {
             $this->mode = 'create';
-            $this->tanggal_transaksi = now()->format('Y-m-d');
             $this->periode_bulan = now()->month;
             $this->periode_tahun = now()->year;
-            $this->jam_lembur = null;
-            $this->tarif_lembur = $this->formatAngka(Setting::get('tarif_lembur_per_jam', 15000));
+            // Default tanggal bayar = tanggal gajian (cutoff, default tgl 20) periode berjalan.
+            $this->tanggal_transaksi = \App\Support\PeriodeGaji::tanggalBayar(
+                (int) $this->periode_bulan,
+                (int) $this->periode_tahun
+            )->format('Y-m-d');
+            $this->bonus_penyelesaian_task = 0;
+            // Tarif diisi dari data karyawan saat karyawan dipilih; default 0.
+            $this->jam_lembur = 0;
+            $this->tarif_lembur = $this->formatAngka(0);
             $this->uang_lembur = $this->formatAngka(0);
+
+            $this->tarif_hadir_offline = $this->formatAngka(0);
+            $this->tarif_hadir_online = $this->formatAngka(0);
+            $this->uang_hadir_offline = $this->formatAngka(0);
+            $this->uang_hadir_online = $this->formatAngka(0);
         }
 
         $this->calculateTotal();
@@ -155,6 +207,63 @@ class GajiKaryawansForm extends Component
         }
 
         $this->hitungSisaPinjaman();
+        $this->muatTarifKaryawan();
+        $this->muatDataPresensi();
+    }
+
+    /**
+     * Ambil tarif bonus milik karyawan terpilih (offline/online/lembur).
+     * Tidak diisi -> 0 (tanpa bonus).
+     */
+    private function muatTarifKaryawan(): void
+    {
+        if (! $this->nama_karyawan) {
+            return;
+        }
+
+        $detail = \App\Models\EmployeeDetail::where('user_id', $this->nama_karyawan)->first();
+
+        $this->tarif_hadir_offline = $this->formatAngka((int) ($detail->tarif_presensi_offline ?? 0));
+        $this->tarif_hadir_online = $this->formatAngka((int) ($detail->tarif_presensi_online ?? 0));
+        $this->tarif_lembur = $this->formatAngka((int) ($detail->tarif_lembur_per_jam ?? 0));
+    }
+
+    /**
+     * Tarik jumlah kehadiran (offline/online) & jam lembur dari fitur presensi
+     * untuk karyawan + periode terpilih. Hanya sesi yang sudah absen pulang.
+     */
+    private function muatDataPresensi(): void
+    {
+        if (! $this->nama_karyawan || ! $this->periode_bulan || ! $this->periode_tahun) {
+            return;
+        }
+
+        // Ikuti PERIODE GAJI (21 bln sebelumnya s/d 20 bln ini), bukan bulan kalender.
+        $rekap = \App\Models\Presensi::rekapPeriodeGaji(
+            $this->nama_karyawan,
+            (int) $this->periode_bulan,
+            (int) $this->periode_tahun
+        );
+
+        $this->jumlah_hadir_offline = $rekap['hari_offline'];
+        $this->jumlah_hadir_online = $rekap['hari_online'];
+        $this->jam_lembur = (int) round($rekap['jam_lembur']);
+
+        $this->hitungUangPresensi();
+        $this->hitungUangLembur();
+        $this->calculateTotal();
+    }
+
+    /**
+     * Uang presensi = jumlah kehadiran x tarif per kehadiran (offline & online terpisah).
+     */
+    private function hitungUangPresensi(): void
+    {
+        $tarifOff = (int) $this->toNumber($this->tarif_hadir_offline);
+        $tarifOn = (int) $this->toNumber($this->tarif_hadir_online);
+
+        $this->uang_hadir_offline = $this->formatAngka((int) $this->jumlah_hadir_offline * $tarifOff);
+        $this->uang_hadir_online = $this->formatAngka((int) $this->jumlah_hadir_online * $tarifOn);
     }
 
     private function resetBankData()
@@ -207,14 +316,26 @@ class GajiKaryawansForm extends Component
 
     public function updated($propertyName)
     {
+        // Periode berubah -> tarik ulang data presensi karyawan
+        if (in_array($propertyName, ['periode_bulan', 'periode_tahun'])) {
+            $this->muatDataPresensi();
+        }
+
         // Jam lembur / tarif berubah -> hitung ulang uang lembur
         if (in_array($propertyName, ['jam_lembur', 'tarif_lembur'])) {
             $this->hitungUangLembur();
         }
 
+        // Tarif presensi berubah -> hitung ulang uang presensi
+        if (in_array($propertyName, ['tarif_hadir_offline', 'tarif_hadir_online'])) {
+            $this->hitungUangPresensi();
+        }
+
         if (in_array($propertyName, [
             'gaji_pokok', 'bonus_kinerja', 'bonus_lainnya', 'uang_lembur',
             'jam_lembur', 'tarif_lembur',
+            'tarif_hadir_offline', 'tarif_hadir_online',
+            'uang_hadir_offline', 'uang_hadir_online',
             'tunjangan_kesehatan', 'tunjangan_thr', 'tunjangan_ketenagakerjaan',
             'tunjangan_lainnya', 'tunjangan_transport', 'tunjangan_makan',
             'potongan', 'potongan_bpjs_kesehatan', 'potongan_bpjs_ketenagakerjaan',
@@ -223,6 +344,7 @@ class GajiKaryawansForm extends Component
             $this->calculateTotal();
         }
     }
+
 
     /**
      * Uang lembur = jumlah jam lembur x tarif per jam.
@@ -241,7 +363,10 @@ class GajiKaryawansForm extends Component
             $this->toNumber($this->gaji_pokok) +
             $this->toNumber($this->bonus_kinerja) +
             $this->toNumber($this->bonus_lainnya) +
+            (int) $this->bonus_penyelesaian_task +
             $this->toNumber($this->uang_lembur) +
+            $this->toNumber($this->uang_hadir_offline) +
+            $this->toNumber($this->uang_hadir_online) +
             $this->toNumber($this->tunjangan_kesehatan) +
             $this->toNumber($this->tunjangan_thr) +
             $this->toNumber($this->tunjangan_ketenagakerjaan) +
@@ -272,6 +397,12 @@ class GajiKaryawansForm extends Component
     // Dipakai seragam oleh seluruh input nominal di form gaji.
     private function formatRupiah($angka)
     {
+        // Nilai 0 / kosong ditampilkan sebagai input kosong (placeholder "0"),
+        // bukan angka "0" — supaya jelas field belum diisi.
+        if ((int) $angka === 0) {
+            return '';
+        }
+
         return $this->formatAngka($angka);
     }
 
@@ -295,16 +426,10 @@ class GajiKaryawansForm extends Component
 
     public function save(SyncCashFlowAction $syncCashFlow)
     {
-        // Pastikan uang lembur & total dihitung otomatis (jam x tarif)
+        // Pastikan uang lembur & presensi & total dihitung otomatis
         $this->hitungUangLembur();
+        $this->hitungUangPresensi();
         $this->calculateTotal();
-
-        // Simpan tarif lembur sebagai default global yang baru (dinamis).
-        // Hanya saat create agar membuka/menyimpan data lama tidak mengubah default.
-        $tarif = (int) $this->toNumber($this->tarif_lembur);
-        if ($this->mode === 'create' && $tarif > 0) {
-            Setting::set('tarif_lembur_per_jam', $tarif);
-        }
 
         $this->validate([
             'nama_karyawan' => 'required',
@@ -377,8 +502,13 @@ class GajiKaryawansForm extends Component
             'gaji_pokok' => $this->toNumber($this->gaji_pokok),
             'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
             'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
+            'bonus_penyelesaian_task' => (int) $this->bonus_penyelesaian_task,
             'uang_lembur' => $this->toNumber($this->uang_lembur),
             'jam_lembur' => (int) $this->toNumber($this->jam_lembur),
+            'jumlah_hadir_offline' => (int) $this->jumlah_hadir_offline,
+            'uang_hadir_offline' => $this->toNumber($this->uang_hadir_offline),
+            'jumlah_hadir_online' => (int) $this->jumlah_hadir_online,
+            'uang_hadir_online' => $this->toNumber($this->uang_hadir_online),
             'tunjangan_kesehatan' => $this->toNumber($this->tunjangan_kesehatan),
             'tunjangan_thr' => $this->toNumber($this->tunjangan_thr),
             'tunjangan_ketenagakerjaan' => $this->toNumber($this->tunjangan_ketenagakerjaan),
@@ -398,9 +528,11 @@ class GajiKaryawansForm extends Component
 
     private function creategajikaryawan(SyncCashFlowAction $action)
     {
+        $baru = null;
+
         try {
-            DB::transaction(function () use ($action) {
-                $gaji = GajiKaryawans::create(array_merge(
+            DB::transaction(function () use ($action, &$baru) {
+                $gaji = $baru = GajiKaryawans::create(array_merge(
                     ['id_transaksi' => Str::upper(Str::random(5))],
                     $this->payload()
                 ));
@@ -419,6 +551,9 @@ class GajiKaryawansForm extends Component
                 $this->syncPengembalianPinjaman($gaji, $action);
             });
 
+            // Gaji bisa langsung dibuat completed -> 'pending' sbg status "sebelum".
+            $this->beritahuKaryawanGajiLunas($baru, 'pending');
+
             session()->flash('success', 'Data Gaji Karyawan berhasil ditambahkan!');
 
             return redirect()->route('admin.gajikaryawan.index');
@@ -429,6 +564,10 @@ class GajiKaryawansForm extends Component
 
     private function updategajikaryawan(SyncCashFlowAction $action)
     {
+        // Ditangkap SEBELUM update — sesudahnya nilai lama sudah hilang, dan
+        // tanpa ini notifikasi akan terkirim ulang tiap kali gaji completed diedit.
+        $statusSebelum = $this->gajikaryawan->status;
+
         try {
             DB::transaction(function () use ($action) {
                 $this->gajikaryawan->update($this->payload());
@@ -445,6 +584,10 @@ class GajiKaryawansForm extends Component
                 $this->syncPengembalianPinjaman($this->gajikaryawan, $action);
             });
 
+            // Sesudah transaksi commit — kalau simpanan gagal & rollback, karyawan
+            // tidak boleh terlanjur dapat kabar gajinya cair.
+            $this->beritahuKaryawanGajiLunas($this->gajikaryawan, $statusSebelum);
+
             session()->flash('success', 'Perubahan Data Gaji Karyawan berhasil disimpan!');
 
             return redirect()->route('admin.gajikaryawan.index');
@@ -460,6 +603,22 @@ class GajiKaryawansForm extends Component
      * Agar tidak dobel hitung, beban gaji dinaikkan sebesar potongan ini
      * (lihat creategajikaryawan/updategajikaryawan), sehingga net kas tetap benar.
      */
+    /**
+     * Kirim notifikasi lonceng ke karyawan HANYA saat gajinya berpindah ke LUNAS.
+     * Dipakai bersama oleh jalur create & update supaya aturannya cuma di satu tempat.
+     *
+     * Sengaja tidak dikirim bila: gaji sudah completed sejak awal (mis. admin cuma
+     * mengedit catatan), atau statusnya masih pending.
+     */
+    private function beritahuKaryawanGajiLunas(?GajiKaryawans $gaji, ?string $statusSebelum): void
+    {
+        if (! $gaji || $gaji->status !== 'completed' || $statusSebelum === 'completed') {
+            return;
+        }
+
+        $gaji->karyawan?->notify(new \App\Notifications\GajiCompleted($gaji));
+    }
+
     private function syncPengembalianPinjaman(GajiKaryawans $gaji, SyncCashFlowAction $action): void
     {
         $nominal = $this->toNumber($this->potongan_pinjaman);

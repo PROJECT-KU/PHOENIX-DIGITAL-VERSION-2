@@ -24,8 +24,15 @@ class GajiKaryawans extends Model
         'gaji_pokok',
         'bonus_kinerja',
         'bonus_lainnya',
+        'task_budget',
+        'bonus_penyelesaian_task',
+        'tasks',
         'uang_lembur',
         'jam_lembur',
+        'jumlah_hadir_offline',
+        'uang_hadir_offline',
+        'jumlah_hadir_online',
+        'uang_hadir_online',
         'tunjangan_kesehatan',
         'tunjangan_thr',
         'tunjangan_ketenagakerjaan',
@@ -44,6 +51,7 @@ class GajiKaryawans extends Model
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
+        'tasks' => 'array',
     ];
 
     protected static function booted(): void
@@ -77,6 +85,36 @@ class GajiKaryawans extends Model
         return $this->nama_karyawan?->name ?? '-tidak ada-';
     }
 
+    /**
+     * Hitung ulang total gaji dari nilai kolom tersimpan (Σ pendapatan − Σ potongan).
+     * Rumus harus konsisten dengan GajiKaryawansForm::calculateTotal().
+     * Dipakai saat bonus penyelesaian task diperbarui dari luar form (halaman pool).
+     */
+    public function hitungTotalDariKolom(): int
+    {
+        $pendapatan = (int) $this->gaji_pokok
+            + (int) $this->bonus_kinerja
+            + (int) $this->bonus_lainnya
+            + (int) $this->bonus_penyelesaian_task
+            + (int) $this->uang_lembur
+            + (int) $this->uang_hadir_offline
+            + (int) $this->uang_hadir_online
+            + (int) $this->tunjangan_kesehatan
+            + (int) $this->tunjangan_thr
+            + (int) $this->tunjangan_ketenagakerjaan
+            + (int) $this->tunjangan_lainnya
+            + (int) $this->tunjangan_transport
+            + (int) $this->tunjangan_makan;
+
+        $potongan = (int) $this->potongan
+            + (int) $this->potongan_bpjs_kesehatan
+            + (int) $this->potongan_bpjs_ketenagakerjaan
+            + (int) $this->potongan_pinjaman
+            + (int) $this->pph21;
+
+        return $pendapatan - $potongan;
+    }
+
     public function getTotalFormattedAttribute(): string
     {
         return 'Rp '.number_format($this->total ?? 0, 0, ',', '.');
@@ -89,12 +127,12 @@ class GajiKaryawans extends Model
 
     public function getTanggalTransaksiFormattedAttribute(): string
     {
-        return Carbon::parse($this->tanggal_transaksi)->translatedFormat('d F Y');
+        return Carbon::parse($this->tanggal_transaksi)->locale('id')->translatedFormat('d F Y');
     }
 
     public function getCreatedAtFormattedAttribute(): string
     {
-        return $this->created_at->translatedFormat('d F Y H:i');
+        return Carbon::parse($this->created_at)->locale('id')->translatedFormat('d F Y H:i');
     }
 
     public function getPeriodeLabelAttribute(): string
@@ -124,7 +162,9 @@ class GajiKaryawans extends Model
      * agar data gaji rahasia tidak bocor ke karyawan lain.
      *
      * - user dengan permission "view_all_gajikaryawan" (admin/finance) -> semua data
-     * - selain itu -> hanya gaji miliknya sendiri (nama_karyawan = id user)
+     * - selain itu -> hanya gaji miliknya sendiri (nama_karyawan = id user) yang
+     *   sudah "completed"; gaji "pending" (masih draft/diproses) TIDAK ditampilkan
+     *   ke karyawan (dashboard maupun list) sampai difinalkan admin
      * - tidak login -> tidak ada data
      */
     public function scopeVisibleTo($query, ?User $user = null)
@@ -139,7 +179,8 @@ class GajiKaryawans extends Model
             return $query;
         }
 
-        return $query->where('nama_karyawan', $user->id);
+        return $query->where('nama_karyawan', $user->id)
+            ->where('status', 'completed');
     }
 
     // Scope filter status

@@ -1,3 +1,7 @@
+
+@section('title')
+Data Role || lemon
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

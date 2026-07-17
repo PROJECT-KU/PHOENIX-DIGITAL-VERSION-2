@@ -8,12 +8,26 @@
             </div>
             <div class="card-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-12">
+                    <div class="col-md-7">
                         <label for="namaAkun" class="form-label fw-semibold text-muted">Nama Akun <span class="text-danger">*</span></label>
                         <input type="text" id="namaAkun" wire:model.defer="nama_akun"
                             class="form-control @error('nama_akun') is-invalid @enderror"
                             placeholder="Masukkan nama akun">
                         @error('nama_akun')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="col-md-5">
+                        <label for="tipeAkun" class="form-label fw-semibold text-muted">Tipe Akun <span class="text-danger">*</span></label>
+                        <select id="tipeAkun" wire:model="tipe_akun"
+                            class="form-select @error('tipe_akun') is-invalid @enderror">
+                            <option value="sharing">Sharing (1 akun banyak orang)</option>
+                            <option value="private">Private (1 akun 1 orang)</option>
+                        </select>
+                        <div class="form-text text-muted" style="font-size:.78rem;">
+                            Menentukan cara hitung modal: <b>sharing</b> = total pembelian akun; <b>private</b> = modal satuan &times; jumlah order.
+                        </div>
+                        @error('tipe_akun')
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -30,7 +44,7 @@
             <div class="card-body p-4">
                 <div class="row g-4">
 
-                    <div class="col-md-6" x-data>
+                    <div class="col-md-12" x-data>
                         <label for="hargaAwal" class="form-label fw-semibold text-muted">Harga Awal</label>
                         <div class="position-relative">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
@@ -56,110 +70,67 @@
                         @enderror
                     </div>
 
-                    <div class="col-md-6" x-data>
-                        <label for="hargaPerbulan" class="form-label fw-semibold text-muted">Harga / Bulan</label>
+                </div>
+
+                <hr class="my-3">
+
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <label class="form-label fw-semibold text-muted mb-0">Harga per Durasi <span class="text-danger">*</span></label>
+                    <button type="button" wire:click="addPrice"
+                        class="btn btn-sm btn-success rounded-3 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-plus-lg"></i> Tambah Durasi
+                    </button>
+                </div>
+                @error('prices') <div class="text-danger small mb-2">{{ $message }}</div> @enderror
+
+                <style>
+                    /* Mobile: beri jarak & pemisah antar baris katalog harga agar tidak mepet. */
+                    @media (max-width: 767.98px) {
+                        .price-row-sep {
+                            margin-top: .85rem !important;
+                            padding-top: .85rem;
+                            border-top: 1px dashed #e6e8f2;
+                        }
+                    }
+                </style>
+
+                @foreach ($prices as $i => $row)
+                <div class="price-row row g-2 align-items-end mb-2 {{ $i > 0 ? 'price-row-sep' : '' }}" wire:key="price-{{ $i }}">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Durasi</label>
+                        <input type="number" min="1" wire:model="prices.{{ $i }}.durasi_value"
+                            class="form-control @error('prices.'.$i.'.durasi_value') is-invalid @enderror" placeholder="1">
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Satuan</label>
+                        <select wire:model="prices.{{ $i }}.durasi_type" class="form-select">
+                            <option value="bulan">Bulan</option>
+                            <option value="tahun">Tahun</option>
+                        </select>
+                    </div>
+                    <div class="col-9 col-md-5" x-data>
+                        <label class="form-label small text-muted mb-1 {{ $i > 0 ? 'd-md-none' : '' }}">Harga</label>
                         <div class="position-relative">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" id="hargaPerbulan"
-                                value="{{ $harga_perbulan ? number_format($harga_perbulan, 0, ',', '.') : '' }}"
-                                class="form-control @error('harga_perbulan') is-invalid @enderror"
-                                placeholder="0"
-                                @input="
-                            let number = $el.value.replace(/[^0-9]/g, '');
-                            if(number){
-                                $el.value = new Intl.NumberFormat('id-ID').format(number);
-                            } else {
-                                $el.value = '';
-                            }
-                            @this.set('harga_perbulan', number)
-                        ">
+                                style="pointer-events: none; z-index: 5;">Rp</span>
+                            <input type="text"
+                                value="{{ ($row['harga'] ?? '') !== '' ? number_format((int) $row['harga'], 0, ',', '.') : '' }}"
+                                class="form-control @error('prices.'.$i.'.harga') is-invalid @enderror" placeholder="0"
+                                @input="let n = $el.value.replace(/[^0-9]/g, ''); $el.value = n ? new Intl.NumberFormat('id-ID').format(n) : ''; @this.set('prices.{{ $i }}.harga', n)">
                         </div>
-                        @error('harga_perbulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
                     </div>
-
-                    <div class="col-md-6" x-data>
-                        <label for="harga5Bulan" class="form-label fw-semibold text-muted">Harga / 5 Bulan</label>
-                        <div class="position-relative">
-                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" id="harga5Bulan"
-                                value="{{ $harga_5_perbulan ? number_format($harga_5_perbulan, 0, ',', '.') : '' }}"
-                                class="form-control @error('harga_5_perbulan') is-invalid @enderror"
-                                placeholder="0"
-                                @input="
-                            let number = $el.value.replace(/[^0-9]/g, '');
-                            if(number){
-                                $el.value = new Intl.NumberFormat('id-ID').format(number);
-                            } else {
-                                $el.value = '';
-                            }
-                            @this.set('harga_5_perbulan', number)
-                        ">
-                        </div>
-                        @error('harga_5_perbulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                    <div class="col-3 col-md-1">
+                        <label class="form-label small text-muted mb-1 d-block invisible {{ $i > 0 ? 'd-md-none' : '' }}">.</label>
+                        <button type="button" wire:click="removePrice({{ $i }})"
+                            class="btn btn-outline-danger w-100 d-inline-flex align-items-center justify-content-center"
+                            style="height: 38px;" title="Hapus durasi">
+                            <i class="bi bi-trash"></i>
+                        </button>
                     </div>
-
-                    <div class="col-md-6" x-data>
-                        <label for="harga10Bulan" class="form-label fw-semibold text-muted">Harga / 10 Bulan</label>
-                        <div class="position-relative">
-                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" id="harga10Bulan"
-                                value="{{ $harga_10_perbulan ? number_format($harga_10_perbulan, 0, ',', '.') : '' }}"
-                                class="form-control @error('harga_10_perbulan') is-invalid @enderror"
-                                placeholder="0"
-                                @input="
-                            let number = $el.value.replace(/[^0-9]/g, '');
-                            if(number){
-                                $el.value = new Intl.NumberFormat('id-ID').format(number);
-                            } else {
-                                $el.value = '';
-                            }
-                            @this.set('harga_10_perbulan', number)
-                        ">
-                        </div>
-                        @error('harga_10_perbulan')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-12" x-data>
-                        <label for="hargaPertahun" class="form-label fw-semibold text-muted">Harga / Tahun</label>
-                        <div class="position-relative">
-                            <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
-                                style="pointer-events: none; z-index: 5;">
-                                Rp
-                            </span>
-                            <input type="text" id="hargaPertahun"
-                                value="{{ $harga_pertahun ? number_format($harga_pertahun, 0, ',', '.') : '' }}"
-                                class="form-control @error('harga_pertahun') is-invalid @enderror"
-                                placeholder="0"
-                                @input="
-                            let number = $el.value.replace(/[^0-9]/g, '');
-                            if(number){
-                                $el.value = new Intl.NumberFormat('id-ID').format(number);
-                            } else {
-                                $el.value = '';
-                            }
-                            @this.set('harga_pertahun', number)
-                        ">
-                        </div>
-                        @error('harga_pertahun')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
+                </div>
+                @endforeach
+                <div class="form-text text-muted">
+                    Tambahkan durasi apa pun (mis. 2, 3, 6 bulan). Untuk akun <b>private</b>, durasi ini juga dipakai mencocokkan modal.
                 </div>
             </div>
         </div>
@@ -322,6 +293,18 @@
                     }
                 }
             }, true);
+        }
+
+        // Tampilkan pesan error saat penyimpanan gagal (sebelumnya gagal senyap).
+        if (window.Livewire) {
+            Livewire.on('product-save-error', (event) => {
+                const msg = (event && event.message) ? event.message : 'Terjadi kesalahan saat menyimpan data.';
+                ToastGlossy.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan',
+                    text: msg
+                });
+            });
         }
 
     });

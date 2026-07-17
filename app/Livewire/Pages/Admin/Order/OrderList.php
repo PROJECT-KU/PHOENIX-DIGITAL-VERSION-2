@@ -86,10 +86,14 @@ class OrderList extends Component
         $this->resetPage();
     }
 
-    public function getOrdersProperty()
+    /**
+     * Query dasar Order dengan filter search + periode (bulan/tahun) diterapkan,
+     * TANPA filter tab. Dipakai bersama oleh daftar & penghitung tab agar angka
+     * di tab ikut berubah saat difilter/dicari.
+     */
+    protected function baseOrderQuery()
     {
         return Order::query()
-            ->with('customer', 'items')
             ->when($this->search, function ($q) {
                 $term = $this->search;
                 $q->where(function ($sub) use ($term) {
@@ -111,6 +115,18 @@ class OrderList extends Component
                         });
                 });
             })
+            ->when($this->filterMonth, function ($q) {
+                $q->whereMonth('created_at', $this->filterMonth);
+            })
+            ->when($this->filterYear, function ($q) {
+                $q->whereYear('created_at', $this->filterYear);
+            });
+    }
+
+    public function getOrdersProperty()
+    {
+        return $this->baseOrderQuery()
+            ->with('customer', 'items')
             ->when($this->activeTab === 'processing', function ($q) {
                 $q->where('status', 'processing');
             })
@@ -131,22 +147,19 @@ class OrderList extends Component
             ->when($this->activeTab !== 'draft', function ($q) {
                 $q->where('status', '!=', 'draft');
             })
-            ->when($this->filterMonth, function ($q) {
-                $q->whereMonth('created_at', $this->filterMonth);
-            })
-            ->when($this->filterYear, function ($q) {
-                $q->whereYear('created_at', $this->filterYear);
-            })
             ->latest()
             ->paginate(10);
     }
 
     // Tab "Akun Habis" menampilkan ITEM yang habis (bukan order),
     // karena satu order bisa terdiri dari beberapa item dengan masa aktif berbeda.
-    public function getHabisItemsProperty()
+    /**
+     * Query dasar item "Akun Habis" dengan filter search + periode diterapkan,
+     * dipakai bersama oleh daftar & penghitung tab habis.
+     */
+    protected function baseHabisQuery()
     {
         return OrderItem::query()
-            ->with('order.customer', 'product')
             ->where(function ($q) {
                 $q->where('subscription_status', 'habis')
                     ->orWhere(function ($q2) {
@@ -176,7 +189,13 @@ class OrderList extends Component
                     $q2->when($this->filterMonth, fn ($x) => $x->whereMonth('created_at', $this->filterMonth))
                         ->when($this->filterYear, fn ($x) => $x->whereYear('created_at', $this->filterYear));
                 });
-            })
+            });
+    }
+
+    public function getHabisItemsProperty()
+    {
+        return $this->baseHabisQuery()
+            ->with('order.customer', 'product')
             ->orderBy('end_date', 'desc')
             ->paginate(10);
     }
@@ -184,11 +203,7 @@ class OrderList extends Component
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
-        $habisItemsCount = OrderItem::where('subscription_status', 'habis')
-            ->orWhere(function ($q) {
-                $q->whereNotNull('end_date')->where('end_date', '<', now());
-            })
-            ->count();
+        $habisItemsCount = $this->baseHabisQuery()->count();
 
         $months = collect(range(1, 12))->map(fn ($m) => [
             'value' => $m,
@@ -209,13 +224,15 @@ class OrderList extends Component
             'habisItems' => $this->activeTab === 'habis' ? $this->habisItems : null,
             'months' => $months,
             'years' => $years,
+            // Penghitung tab ikut menerapkan filter search + periode agar angka
+            // berubah sesuai data yang ditampilkan saat difilter/dicari.
             'tabCounts' => [
-                'all' => Order::where('status', '!=', 'draft')->count(),
-                'neworder' => Order::whereIn('status', ['pending', 'paid'])->count(),
-                'processing' => Order::where('status', 'processing')->count(),
-                'completed' => Order::where('status', 'completed')->count(),
-                'cancelled' => Order::where('status', 'cancelled')->count(),
-                'draft' => Order::where('status', 'draft')->count(),
+                'all' => $this->baseOrderQuery()->where('status', '!=', 'draft')->count(),
+                'neworder' => $this->baseOrderQuery()->whereIn('status', ['pending', 'paid'])->count(),
+                'processing' => $this->baseOrderQuery()->where('status', 'processing')->count(),
+                'completed' => $this->baseOrderQuery()->where('status', 'completed')->count(),
+                'cancelled' => $this->baseOrderQuery()->where('status', 'cancelled')->count(),
+                'draft' => $this->baseOrderQuery()->where('status', 'draft')->count(),
                 'habis' => $habisItemsCount,
             ],
         ]);

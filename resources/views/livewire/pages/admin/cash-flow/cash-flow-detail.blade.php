@@ -1,3 +1,7 @@
+
+@section('title')
+Detail Cash Flow || lemon
+@stop
 <div>
     @if($isOpen && $cashFlow)
     @php $isIncome = $cashFlow->type === 'income'; @endphp
@@ -80,9 +84,29 @@
                     <div class="row g-3 mb-4">
                         @foreach($detail['rows'] as $label => $value)
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between border-bottom pb-2">
+                            <div class="d-flex justify-content-between align-items-center border-bottom pb-2">
                                 <span class="text-muted">{{ $label }}</span>
+                                @if ($label === 'Metode Bayar' && $value && $value !== '-')
+                                @php
+                                $ic = str_contains(strtolower($value), 'qris') ? 'bi-qr-code-scan' : 'bi-bank';
+                                @endphp
+                                <span class="badge bg-primary-subtle text-primary border border-primary d-inline-flex align-items-center gap-1">
+                                    <i class="bi {{ $ic }}"></i> {{ $value }}
+                                </span>
+                                @elseif ($label === 'Status' && $value && $value !== '-')
+                                @php
+                                $sc = strtolower($value);
+                                $col = 'secondary';
+                                if ($sc === 'pending') $col = 'warning';
+                                elseif ($sc === 'processing') $col = 'info';
+                                elseif ($sc === 'paid') $col = 'success';
+                                elseif ($sc === 'cancelled') $col = 'danger';
+                                elseif ($sc === 'completed') $col = 'primary';
+                                @endphp
+                                <span class="badge bg-{{ $col }}">{{ strtoupper($value) }}</span>
+                                @else
                                 <span class="fw-semibold text-dark text-end">{{ $value ?: '-' }}</span>
+                                @endif
                             </div>
                         </div>
                         @endforeach

@@ -56,8 +56,9 @@ class Contact extends Component
 
         RateLimiter::hit($key);
 
-        $this->reset(['name', 'email', 'no_telp', 'message']);
-        session()->flash('success', 'Terima kasih! Pesan Anda telah kami terima.');
+        // Catatan: field dikosongkan via JS (lihat handler 'contact-success' di blade)
+        // untuk menghindari re-render yang mengganggu widget intl-tel-input.
+        $this->dispatch('contact-success', message: 'Terima kasih! Pesan Anda telah kami terima.');
     }
 
     #[Layout('layouts.guest')]

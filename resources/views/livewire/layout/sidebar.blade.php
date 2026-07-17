@@ -1,6 +1,11 @@
 <?php
 
 use App\Livewire\Actions\Logout;
+use App\Models\CustomerMessage;
+use App\Models\Order;
+use App\Models\ProductReview;
+use App\Models\Testimoni;
+use Livewire\Attributes\On;
 use Livewire\Volt\Component;
 
 new class extends Component
@@ -11,15 +16,304 @@ new class extends Component
 
         $this->redirect('/');
     }
+
+    /**
+     * Segarkan badge saat komponen lain mengubah hal yang dihitung badge
+     * (mis. menyetujui testimoni, memproses pesanan) — tanpa refresh halaman.
+     *
+     * Body sengaja kosong: menerima event sudah memicu Livewire me-render ulang
+     * komponen ini, sehingga with() menghitung ulang angkanya.
+     */
+    #[On('sidebar-badge-updated')]
+    public function refreshBadge(): void
+    {
+        //
+    }
+
+    /**
+     * Jumlah Pesanan Toko berstatus "paid" — sudah dibayar tapi belum diproses,
+     * jadi perlu ditindaklanjuti. Ditampilkan sebagai badge di sidebar supaya
+     * tidak terlewat. Hanya dihitung bila user memang boleh melihat menunya.
+     */
+    public function with(): array
+    {
+        $login = auth()->check();
+
+        return [
+            'pesananTokoPaid' => $login && auth()->user()->hasPermission('view_pemesanantoko')
+                ? Order::paid()->count()
+                : 0,
+
+            // Testimoni menunggu moderasi (status 'pending'). Otomatis habis saat
+            // admin menyetujui (active) atau menolak (non-active) — seragam
+            // dengan Ulasan Produk.
+            'testimoniBaru' => $login && auth()->user()->hasPermission('view_testimoni')
+                ? Testimoni::menunggu()->count()
+                : 0,
+
+            // Ulasan produk menunggu moderasi. Di sini status 'pending' sudah
+            // jelas artinya (ditolak jadi 'hidden'), jadi tak perlu penanda
+            // tambahan seperti pada testimoni — badge otomatis habis saat
+            // admin menyetujui maupun menyembunyikan.
+            'ulasanBaru' => $login && auth()->user()->hasPermission('view_productreview')
+                ? ProductReview::where('status', 'pending')->count()
+                : 0,
+
+            // Pesan helpdesk yang belum dibaca admin. Otomatis berkurang saat
+            // admin membuka pesan (markAsRead di halaman detail).
+            'helpdeskBaru' => $login && auth()->user()->hasPermission('view_customer_message')
+                ? CustomerMessage::unread()->count()
+                : 0,
+        ];
+    }
 }; ?>
 
 <div id="sidebar">
+    <style>
+        /* ============ Sidebar — tema lemon (seragam dengan halaman login) ============ */
+        #sidebar .sidebar-wrapper {
+            background: #ffffff;
+            border-right: 1px solid #eef0f4;
+        }
+
+        /* ----- Brand: logo & teks persis seperti login ----- */
+        #sidebar .sidebar-header {
+            padding: 1.15rem 1.1rem .5rem;
+        }
+
+        #sidebar .logo {
+            padding: 0;
+        }
+
+        #sidebar .lemon-brand-side {
+            display: inline-flex;
+            align-items: center;
+            gap: .65rem;
+        }
+
+        #sidebar .lemon-logo {
+            width: 44px;
+            height: 44px;
+            margin: 0;
+            flex-shrink: 0;
+            filter: drop-shadow(0 8px 14px rgba(202, 138, 4, .35));
+        }
+
+        #sidebar .lemon-spin {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: lemonBob 4s ease-in-out infinite;
+        }
+
+        #sidebar .lemon-pulse {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: lemonJuice 4s ease-in-out infinite;
+        }
+
+        @keyframes lemonBob {
+            0%, 100% { transform: rotate(-8deg) translateY(0); }
+            50% { transform: rotate(8deg) translateY(-5px); }
+        }
+
+        @keyframes lemonJuice {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #sidebar .lsb-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+
+        #sidebar .lemon-brand {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -.5px;
+            line-height: 1;
+            margin: 0;
+            background: linear-gradient(135deg, #ca8a04, #4d7c0f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+        }
+
+        #sidebar .lemon-by {
+            font-size: .6rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #a3a3a3;
+            margin: 3px 0 0;
+            white-space: nowrap;
+        }
+
+        /* ----- Judul section ----- */
+        #sidebar .sidebar-title {
+            color: #a0a6b4;
+            font-size: .68rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-weight: 700;
+            padding: 0 1.1rem;
+            margin: 1.35rem 0 .35rem;
+        }
+
+        /* ----- Item menu ----- */
+        #sidebar .sidebar-menu {
+            padding: 0 .35rem;
+        }
+
+        #sidebar .sidebar-item {
+            margin: 3px .3rem;
+        }
+
+        #sidebar .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            border-radius: 12px;
+            padding: .68rem .85rem;
+            color: #556070;
+            font-weight: 600;
+            font-size: .93rem;
+            transition: background .18s ease, color .18s ease;
+        }
+
+        #sidebar .sidebar-link i {
+            font-size: 1.08rem;
+            color: #9aa0ae;
+            min-width: 20px;
+            text-align: center;
+            transition: color .18s ease;
+        }
+
+        #sidebar .sidebar-link:hover {
+            background: rgba(132, 204, 22, .10);
+            color: #4d7c0f;
+        }
+
+        #sidebar .sidebar-link:hover i {
+            color: #65a30d;
+        }
+
+        /* Aktif — item sederhana (Dashboard, Task) jadi pil gradien lime */
+        #sidebar .sidebar-item.active:not(.has-sub)>.sidebar-link {
+            background: linear-gradient(135deg, #84cc16, #4d7c0f);
+            color: #fff;
+            box-shadow: 0 8px 16px rgba(101, 163, 13, .28);
+        }
+
+        #sidebar .sidebar-item.active:not(.has-sub)>.sidebar-link i {
+            color: #fff;
+        }
+
+        /* Aktif — parent (punya submenu): sorotan lembut */
+        #sidebar .sidebar-item.has-sub.active>.sidebar-link {
+            background: rgba(132, 204, 22, .10);
+        }
+
+        /* Recolor semua text-primary di sidebar jadi lime (state aktif parent) */
+        #sidebar .text-primary {
+            color: #4d7c0f !important;
+        }
+
+        #sidebar i.text-primary {
+            color: #65a30d !important;
+        }
+
+        /* ----- Submenu ----- */
+        #sidebar .submenu-link {
+            border-radius: 10px;
+            padding: .5rem .8rem .5rem 2.7rem;
+            color: #6b7280;
+            font-weight: 500;
+            font-size: .88rem;
+            transition: background .16s ease, color .16s ease;
+        }
+
+        #sidebar .submenu-link:hover {
+            background: rgba(132, 204, 22, .08);
+            color: #4d7c0f;
+        }
+
+        /* ===== Badge jumlah (mis. Pesanan Toko yang sudah dibayar) ===== */
+        #sidebar .sidebar-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 19px;
+            height: 19px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: .67rem;
+            font-weight: 700;
+            line-height: 1;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, .45);
+        }
+
+        /* Menu dropdown punya chevron absolut di kanan (right:15px, lebar 20px) —
+           beri jarak agar badge tidak tertimpa chevron. */
+        #sidebar .sidebar-item.has-sub>.sidebar-link .sidebar-badge {
+            margin-right: 24px;
+        }
+
+        /* .submenu-link aslinya block; dijadikan flex HANYA saat memuat badge
+           supaya badge bisa didorong ke kanan tanpa mengubah submenu lain. */
+        #sidebar .submenu-link.has-badge {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        #sidebar .submenu-item.active>.submenu-link {
+            background: linear-gradient(135deg, #84cc16, #4d7c0f);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 8px 16px rgba(101, 163, 13, .28);
+        }
+
+        #sidebar .submenu-item.active>.submenu-link:hover {
+            color: #fff;
+        }
+
+        /* ----- Logout ----- */
+        #sidebar .sidebar-item button.sidebar-link {
+            color: #e11d48;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link i {
+            color: #f43f5e;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link:hover {
+            background: rgba(244, 63, 94, .10);
+            color: #be123c;
+        }
+
+        #sidebar .sidebar-item button.sidebar-link:hover i {
+            color: #e11d48;
+        }
+
+        #sidebar .sidebar-toggler .sidebar-hide {
+            color: #9aa0ae;
+        }
+    </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="logo">
-                    <a href="{{ route('admin.dashboard') }}" class="" wire:navigate>
-                        <small>Phoenix</small>
+                    <a href="{{ route('admin.dashboard') }}" class="lemon-brand-side text-decoration-none" wire:navigate>
+                        @include('livewire.pages.auth.partials.lemon-logo')
+                        <span class="lsb-text">
+                            <span class="lemon-brand">lemon</span>
+                            <span class="lemon-by">by acm</span>
+                        </span>
                     </a>
                 </div>
                 <div class="sidebar-toggler x">
@@ -40,6 +334,16 @@ new class extends Component
                 </li>
                 @endif
 
+                @if (auth()->user()->hasPermission('view_task'))
+                <li class="sidebar-item {{ request()->routeIs('admin.task-saya.*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.task-saya.index') }}" class="sidebar-link" wire:navigate>
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Task Saya</span>
+                    </a>
+                </li>
+
+                @endif
+
                 @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko', 'view_ebook']))
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'active open' : '' }}">
@@ -51,6 +355,12 @@ new class extends Component
                             class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}">
                             Pesanan
                         </span>
+                        @if ($pesananTokoPaid > 0)
+                        <span class="sidebar-badge ms-auto"
+                            title="{{ $pesananTokoPaid }} pesanan toko sudah dibayar, menunggu diproses">
+                            {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                        </span>
+                        @endif
                     </a>
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_pesananrsc'))
@@ -62,8 +372,16 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_pemesanantoko'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
-                            <a wire:navigate class="submenu-link" href="{{ route('admin.pesanantoko.index') }}">Pesanan
-                                Toko</a>
+                            <a wire:navigate class="submenu-link @if ($pesananTokoPaid > 0) has-badge @endif"
+                                href="{{ route('admin.pesanantoko.index') }}">
+                                <span>Pesanan Toko</span>
+                                @if ($pesananTokoPaid > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $pesananTokoPaid }} pesanan sudah dibayar, menunggu diproses">
+                                    {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_ebook'))
@@ -76,14 +394,28 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyPermission(['view_banners', 'view_customer_message']))
-                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
+                @if (auth()->user()->hasAnyPermission(['view_banners', 'view_testimoni', 'view_productreview', 'view_customer_message']))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-shop {{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*')  ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.Banners.*') || request()->routeIs('admin.testimoni.*') || request()->routeIs('admin.reviews.*') || request()->routeIs('admin.customer-message.*') ? 'text-primary' : '' }}">
                             E-Commerce
                         </span>
+                        @php
+                            // Badge induk = gabungan semua yang butuh ditinjau di dalamnya.
+                            $ecommerceBaru = $testimoniBaru + $ulasanBaru + $helpdeskBaru;
+                            $ecommerceTitle = collect([
+                                $testimoniBaru > 0 ? $testimoniBaru.' testimoni belum ditinjau' : null,
+                                $ulasanBaru > 0 ? $ulasanBaru.' ulasan menunggu moderasi' : null,
+                                $helpdeskBaru > 0 ? $helpdeskBaru.' pesan helpdesk belum dibaca' : null,
+                            ])->filter()->implode(' • ');
+                        @endphp
+                        @if ($ecommerceBaru > 0)
+                        <span class="sidebar-badge ms-auto" title="{{ $ecommerceTitle }}">
+                            {{ $ecommerceBaru > 99 ? '99+' : $ecommerceBaru }}
+                        </span>
+                        @endif
                     </a>
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_banners'))
@@ -92,11 +424,68 @@ new class extends Component
                                 Banner</a>
                         </li>
                         @endif
-                        @if (auth()->user()->hasPermission('view_customer_message'))
-                        <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.customer-message.index') }}" class="submenu-link">Pesan Pelanggan (Helpdesk)</a>
+                        @if (auth()->user()->hasPermission('view_testimoni'))
+                        <li class="submenu-item {{ request()->routeIs('admin.testimoni.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.testimoni.index') }}"
+                                class="submenu-link @if ($testimoniBaru > 0) has-badge @endif">
+                                <span>Data Testimoni</span>
+                                @if ($testimoniBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $testimoniBaru }} testimoni pelanggan belum ditinjau">
+                                    {{ $testimoniBaru > 99 ? '99+' : $testimoniBaru }}
+                                </span>
+                                @endif
+                            </a>
                         </li>
                         @endif
+                        @if (auth()->user()->hasPermission('view_productreview'))
+                        <li class="submenu-item {{ request()->routeIs('admin.reviews.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.reviews.index') }}"
+                                class="submenu-link @if ($ulasanBaru > 0) has-badge @endif">
+                                <span>Moderasi Ulasan Produk</span>
+                                @if ($ulasanBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $ulasanBaru }} ulasan menunggu moderasi">
+                                    {{ $ulasanBaru > 99 ? '99+' : $ulasanBaru }}
+                                </span>
+                                @endif
+                            </a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_customer_message'))
+                        <li class="submenu-item {{ request()->routeIs('admin.customer-message.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.customer-message.index') }}"
+                                class="submenu-link @if ($helpdeskBaru > 0) has-badge @endif">
+                                <span>Pesan Pelanggan (Helpdesk)</span>
+                                @if ($helpdeskBaru > 0)
+                                <span class="sidebar-badge ms-auto"
+                                    title="{{ $helpdeskBaru }} pesan belum dibaca">
+                                    {{ $helpdeskBaru > 99 ? '99+' : $helpdeskBaru }}
+                                </span>
+                                @endif
+                            </a>
+                        </li>
+                        @endif
+                    </ul>
+                </li>
+                @endif
+
+                @if (auth()->user()->hasPermission('view_blog'))
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.blog.*') ? 'active open' : '' }}">
+                    <a href="javascript:void(0)"
+                        class="sidebar-link {{ request()->routeIs('admin.blog.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-journal-richtext {{ request()->routeIs('admin.blog.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.blog.*') ? 'text-primary' : '' }}">
+                            Blog
+                        </span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.blog.index') || request()->routeIs('admin.blog.create') || request()->routeIs('admin.blog.edit') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.blog.index') }}" class="submenu-link">Semua Artikel</a>
+                        </li>
+                        <li class="submenu-item {{ request()->routeIs('admin.blog.categories') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.blog.categories') }}" class="submenu-link">Kategori</a>
+                        </li>
                     </ul>
                 </li>
                 @endif
@@ -134,17 +523,17 @@ new class extends Component
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_dataakun'))
                         <li class="submenu-item {{ request()->routeIs('admin.DataAkun.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
+                            <a wire:navigate href="{{ route('admin.DataAkun.index') }}" class="submenu-link">Data Akun</a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_product'))
                         <li class="submenu-item {{ request()->routeIs('admin.product.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
+                            <a wire:navigate href="{{ route('admin.product.index') }}" class="submenu-link">Product</a>
                         </li>
                         @endif
                         @if (auth()->user()->hasPermission('view_bundlings'))
                         <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
+                            <a wire:navigate href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
                         </li>
                         @endif
                     </ul>
@@ -170,18 +559,18 @@ new class extends Component
                 @endif
 
                 <!-- section menu data dan laporan -->
-                @if (auth()->user()->hasAnyPermission(['view_cashflow', 'view_spending', 'view_loan', 'view_gajikaryawan']))
+                @if (auth()->user()->hasAnyPermission(['view_cashflow', 'view_spending', 'view_modal', 'view_pemasukan', 'view_harga_modal', 'view_loan', 'view_gajikaryawan']))
                 <li class="mt-4 sidebar-title">Data &amp; Laporan</li>
                 <li
                     class="sidebar-item has-sub
-                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
+                    {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'active open' : '' }}">
 
                     <a href="#"
-                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-cash-coin {{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.pengembalian.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.spending.*') || request()->routeIs('admin.cashflow.*') || request()->routeIs('admin.loan.*') || request()->routeIs('admin.gajikaryawan.*') || request()->routeIs('admin.penyelesaian-task.*') || request()->routeIs('admin.pengembalian.*') || request()->routeIs('admin.modal.*') || request()->routeIs('admin.pemasukan.*') || request()->routeIs('admin.hargamodal.*') ? 'text-primary' : '' }}">
                             Keuangan
                         </span>
                     </a>
@@ -201,6 +590,27 @@ new class extends Component
                             </a>
                         </li>
                         @endif
+                        @if (auth()->user()->hasPermission('view_modal'))
+                        <li class="submenu-item {{ request()->routeIs('admin.modal.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.modal.index') }}" class="submenu-link">
+                                Modal
+                            </a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_pemasukan'))
+                        <li class="submenu-item {{ request()->routeIs('admin.pemasukan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.pemasukan.index') }}" class="submenu-link">
+                                Pemasukan Lainnya
+                            </a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_harga_modal'))
+                        <li class="submenu-item {{ request()->routeIs('admin.hargamodal.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.hargamodal.index') }}" class="submenu-link">
+                                Harga Modal Akun
+                            </a>
+                        </li>
+                        @endif
                         @if (auth()->user()->hasPermission('view_loan'))
                         <li
                             class="submenu-item {{ request()->routeIs('admin.loan.*') || request()->routeIs('admin.pengembalian.*') ? 'active' : '' }}">
@@ -215,6 +625,13 @@ new class extends Component
                                 Gaji Karyawan
                             </a>
                         </li>
+                        @if (auth()->user()->hasPermission('manage_task'))
+                        <li class="submenu-item {{ request()->routeIs('admin.penyelesaian-task.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.penyelesaian-task.index') }}" class="submenu-link">
+                                Penyelesaian Task
+                            </a>
+                        </li>
+                        @endif
                         @endif
                     </ul>
                 </li>
@@ -245,10 +662,42 @@ new class extends Component
                                 class="submenu-link">Permission Akun</a>
                         </li>
                         @endif
+                        @if (auth()->user()->hasPermission('view_activity_log'))
+                        <li class="submenu-item {{ request()->routeIs('admin.account.activity-log') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.account.activity-log') }}"
+                                class="submenu-link">Log Aktivitas</a>
+                        </li>
+                        @endif
                     </ul>
                 </li>
 
                 <!-- section karir & karyawan-->
+                @if (auth()->user()->hasPermission('view_presensi'))
+                <li class="mt-4 sidebar-title">Kepegawaian</li>
+                <li class="sidebar-item has-sub {{ request()->routeIs('admin.presensi.*') ? 'active open' : '' }}">
+                    <a href="#"
+                        class="sidebar-link {{ request()->routeIs('admin.presensi.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-fingerprint {{ request()->routeIs('admin.presensi.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.presensi.*') ? 'text-primary' : '' }}">Presensi</span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.index') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.index') }}" class="submenu-link">Presensi Saya</a>
+                        </li>
+                        @if (auth()->user()->hasPermission('view_all_presensi'))
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.rekap') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.rekap') }}" class="submenu-link">Rekap Presensi</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('manage_presensi_setting'))
+                        <li class="submenu-item {{ request()->routeIs('admin.presensi.pengaturan') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.presensi.pengaturan') }}" class="submenu-link">Pengaturan</a>
+                        </li>
+                        @endif
+                    </ul>
+                </li>
+                @endif
+
                 @if (auth()->user()->hasAnyPermission(['view_karyawan', 'view_lowongan', 'view_pelamar', 'view_message']))
                 <li class="mt-4 sidebar-title">Karyawan & Karir</li>
                 <li

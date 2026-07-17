@@ -18,6 +18,8 @@ class CustomerMessageList extends Component
 
     public $filterMonth = '';
 
+    public $filterYear = '';
+
     public $filterStatus = '';
 
     public function updatingSearch()
@@ -56,6 +58,11 @@ class CustomerMessageList extends Component
         $this->resetPage();
     }
 
+    public function updatingFilterYear()
+    {
+        $this->resetPage();
+    }
+
     public function updatingFilterStatus()
     {
         $this->resetPage();
@@ -63,7 +70,7 @@ class CustomerMessageList extends Component
 
     public function resetFilters()
     {
-        $this->reset(['search', 'filterMonth', 'filterStatus']);
+        $this->reset(['search', 'filterMonth', 'filterYear', 'filterStatus']);
         $this->resetPage();
     }
 
@@ -121,6 +128,10 @@ class CustomerMessageList extends Component
             $query->whereMonth('created_at', $this->filterMonth);
         }
 
+        if ($this->filterYear) {
+            $query->whereYear('created_at', $this->filterYear);
+        }
+
         // Gunakan scope yang sudah ada
         if ($this->filterStatus === 'unread') {
             $query->unread();
@@ -133,18 +144,20 @@ class CustomerMessageList extends Component
         // Gunakan scope unread
         $unreadCount = CustomerMessage::unread()->count();
 
-        $months = collect();
-        for ($i = 0; $i < 12; $i++) {
-            $date = now()->subMonths($i);
-            $months->push([
-                'value' => $date->format('m'),
-                'label' => $date->locale('id')->isoFormat('MMMM YYYY'),
-            ]);
-        }
+        // Daftar bulan (1–12) dan tahun dipisah, seragam dengan filter Cashflow.
+        $months = collect(range(1, 12))->map(fn ($m) => [
+            'value' => $m,
+            'label' => \Carbon\Carbon::create()->month($m)->locale('id')->isoFormat('MMMM'),
+        ]);
+
+        // 6 tahun terakhir hingga tahun berjalan (seragam dengan filter Cashflow).
+        $tahunSekarang = (int) now()->year;
+        $years = collect(range($tahunSekarang, $tahunSekarang - 5));
 
         return view('livewire.pages.admin.message.customer-message-list', [
             'messages' => $dataPesan,
             'months' => $months,
+            'years' => $years,
             'unreadCount' => $unreadCount,
         ])
             ->layout('livewire.layout.templateindex');

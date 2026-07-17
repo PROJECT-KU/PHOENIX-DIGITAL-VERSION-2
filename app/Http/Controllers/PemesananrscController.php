@@ -16,34 +16,9 @@ class PemesananrscController extends Controller
             return 'Silakan pilih batch terlebih dahulu.';
         }
 
-        $conditions = collect($selectedBatches)->map(function ($item) {
-            [$nama, $batch] = explode('|', $item);
-
-            return ['nama_camp' => $nama, 'batch_camp' => $batch];
-        });
-
-        $invoiceItems = PemesananRsc::query()
-            ->where(function ($query) use ($conditions) {
-                foreach ($conditions as $condition) {
-                    $query->orWhere(function ($q) use ($condition) {
-                        $q->where('nama_camp', $condition['nama_camp'])
-                            ->where('batch_camp', $condition['batch_camp']);
-                    });
-                }
-            })
-            ->selectRaw('
-                nama_camp, 
-                batch_camp, 
-                MIN(tanggal_mulai_camp) as periode_mulai, 
-                MAX(tanggal_akhir_camp) as periode_akhir,
-                COUNT(id) as total_peserta, 
-                SUM(total) as total_harga,
-                MAX(harga_satuan) as harga_satuan
-            ')
-            ->groupBy('nama_camp', 'batch_camp')
-            ->orderBy('nama_camp')
-            ->orderBy('batch_camp')
-            ->get();
+        // Sumber tunggal item invoice (sama dgn unduh invoice) — termasuk daftar
+        // akun untuk batch metode "per_akun".
+        $invoiceItems = PemesananRsc::invoiceItemsFor($selectedBatches);
 
         $data = [
             'invoiceNumber' => 'INV-PREVIEW',

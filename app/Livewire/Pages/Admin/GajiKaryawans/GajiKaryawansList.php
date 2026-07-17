@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Pages\Admin\GajiKaryawans;
 
+use App\Models\EmployeeDetail;
 use App\Models\GajiKaryawans;
+use App\Models\Presensi;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -52,8 +54,9 @@ class GajiKaryawansList extends Component
 
     public function resetFilter()
     {
-        $this->bulan = '';
-        $this->tahun = '';
+        // Kembali ke periode berjalan (bulan & tahun sekarang), bukan dikosongkan.
+        $this->bulan = now()->month;
+        $this->tahun = now()->year;
         $this->resetPage();
     }
 
@@ -89,11 +92,14 @@ class GajiKaryawansList extends Component
             return;
         }
 
-        $bulan = (int) ($this->bulan ?: now()->month);
-        $tahun = (int) ($this->tahun ?: now()->year);
+        // Generate SELALU untuk BULAN BERJALAN (waktu nyata sekarang), menyalin dari
+        // bulan SEBELUMNYA — tidak terpengaruh filter yang sedang dipilih.
+        // Contoh: sekarang Juli → buat gaji Juli dari data Juni; sekarang Agustus → dari Juli.
+        $bulan = (int) now()->month;
+        $tahun = (int) now()->year;
 
-        // Tanggal pembayaran draft = akhir bulan periode
-        $tanggal = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        // Tanggal pembayaran draft = tanggal gajian (cutoff, default tgl 20) pada periode tsb.
+        $tanggal = \App\Support\PeriodeGaji::tanggalBayar($bulan, $tahun)->toDateString();
 
         // Periode SEBELUMNYA (1 bulan sebelum periode target)
         $prev = Carbon::create($tahun, $bulan, 1)->subMonthNoOverflow();
@@ -133,8 +139,28 @@ class GajiKaryawansList extends Component
                         continue;
                     }
 
-                    // Komponen tetap disalin; komponen per-periode di-reset ke 0
+                    // ===== Presensi & lembur: SELALU ambil fresh untuk PERIODE TARGET
+                    // (bukan salinan bulan sebelumnya) + tarif TERKINI dari profil karyawan.
+                    $detail = EmployeeDetail::where('user_id', $ref->nama_karyawan)->first();
+                    $tarifOff = (int) ($detail->tarif_presensi_offline ?? 0);
+                    $tarifOn = (int) ($detail->tarif_presensi_online ?? 0);
+                    $tarifLembur = (int) ($detail->tarif_lembur_per_jam ?? 0);
+
+                    // Ikuti PERIODE GAJI (21 bln sebelumnya s/d 20 bln ini), bukan bulan kalender.
+                    $rekap = Presensi::rekapPeriodeGaji($ref->nama_karyawan, $bulan, $tahun);
+                    $jmlOff = (int) $rekap['hari_offline'];
+                    $jmlOn = (int) $rekap['hari_online'];
+                    $jamLembur = (int) round($rekap['jam_lembur']);
+
+                    $uangOff = $jmlOff * $tarifOff;
+                    $uangOn = $jmlOn * $tarifOn;
+                    $uangLembur = $jamLembur * $tarifLembur;
+
+                    // Komponen tetap disalin; komponen per-periode di-reset / diisi dari data terkini.
+                    // Bonus penyelesaian task mulai 0 — dihitung dari fitur Penyelesaian Task
+                    // (tabel `tasks` mandiri) lalu diterapkan via tombol "Terapkan ke Gaji".
                     $pendapatan = (int) $ref->gaji_pokok + (int) $ref->bonus_kinerja + (int) $ref->bonus_lainnya
+                        + $uangLembur + $uangOff + $uangOn
                         + (int) $ref->tunjangan_kesehatan + (int) $ref->tunjangan_ketenagakerjaan
                         + (int) $ref->tunjangan_lainnya + (int) $ref->tunjangan_transport + (int) $ref->tunjangan_makan;
                     $potongan = (int) $ref->potongan + (int) $ref->potongan_bpjs_kesehatan
@@ -151,8 +177,15 @@ class GajiKaryawansList extends Component
                         'gaji_pokok' => $ref->gaji_pokok,
                         'bonus_kinerja' => $ref->bonus_kinerja,
                         'bonus_lainnya' => $ref->bonus_lainnya,
-                        'uang_lembur' => 0,
-                        'jam_lembur' => 0,
+                        'task_budget' => 0, // pool budget kini per-periode di Setting, bukan per gaji
+                        'bonus_penyelesaian_task' => 0,
+                        'tasks' => [], // mulai kosong; diisi via fitur Penyelesaian Task
+                        'uang_lembur' => $uangLembur,
+                        'jam_lembur' => $jamLembur,
+                        'jumlah_hadir_offline' => $jmlOff,
+                        'uang_hadir_offline' => $uangOff,
+                        'jumlah_hadir_online' => $jmlOn,
+                        'uang_hadir_online' => $uangOn,
                         'tunjangan_kesehatan' => $ref->tunjangan_kesehatan,
                         'tunjangan_thr' => 0,
                         'tunjangan_ketenagakerjaan' => $ref->tunjangan_ketenagakerjaan,

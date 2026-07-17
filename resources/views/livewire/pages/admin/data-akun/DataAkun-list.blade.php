@@ -1,3 +1,7 @@
+
+@section('title')
+Data Data Akun || lemon
+@stop
 <div wire:poll.60s>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -112,8 +116,27 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center text-muted">
-                                    Belum ada data akun
+                                <td colspan="{{ auth()->user()->hasAnyPermission(['edit_dataakun', 'delete_dataakun']) ? 8 : 7 }}" class="text-center py-5">
+                                    <div class="d-flex flex-column align-items-center justify-content-center">
+                                        <div class="empty-state-icon-wrapper mb-3">
+                                            <i class="bi bi-{{ $searchDataAkun ? 'search' : 'person-badge' }}"></i>
+                                        </div>
+                                        @if ($searchDataAkun)
+                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
+                                            Akun Tidak Ditemukan
+                                        </h5>
+                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                            Tidak ada akun yang cocok dengan pencarian "{{ $searchDataAkun }}".
+                                        </p>
+                                        @else
+                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
+                                            Belum Ada Data Akun
+                                        </h5>
+                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                            Silakan klik tombol tambah data untuk memasukkan akun baru.
+                                        </p>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             @endforelse

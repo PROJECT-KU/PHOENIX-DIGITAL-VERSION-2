@@ -270,6 +270,27 @@
         box-shadow: none !important;
     }
 
+    /* ===== Rapikan SEMUA pagination di layar mobile (vendor & pager kustom) ===== */
+    @media (max-width: 575.98px) {
+        .pagination {
+            gap: 4px;
+            row-gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .page-item .page-link {
+            padding: 6px 11px !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+            line-height: 1.2 !important;
+        }
+
+        .page-item .page-link:hover {
+            transform: none;
+        }
+    }
+
     /* POSISI PAGINATION (ATAS) & TEKS "SHOWING" (BAWAH) */
     nav .d-sm-flex {
         display: flex !important;

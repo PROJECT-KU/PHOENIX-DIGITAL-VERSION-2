@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pesanan || lemon
+@stop
 <div wire:poll.15s="watchNewPayments">
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -68,7 +72,8 @@
                             @endforeach
                         </select>
                         @if ($search || $filterMonth || $filterYear)
-                        <button wire:click="resetFilters" type="button" class="btn btn-danger rounded-3"
+                        <button wire:click="resetFilters" type="button"
+                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
                             title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>

@@ -2,10 +2,14 @@
 
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
+use App\Http\Controllers\PushSubscriptionController;
 // Data Banners
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniCreate;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniEdit;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
@@ -57,6 +61,7 @@ use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
 // Data Spending
 use App\Livewire\Pages\Admin\Permission\PermissionCreate;
 use App\Livewire\Pages\Admin\Permission\PermissionEdit;
+use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
 use App\Livewire\Pages\Admin\Permission\PermissionList;
 // Data Product Admin
 use App\Livewire\Pages\Admin\Product\ProductCreate;
@@ -83,6 +88,8 @@ use App\Livewire\Pages\Public\About\AboutPage;
 use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
+use App\Livewire\Pages\Public\Legal\PrivacyPage;
+use App\Livewire\Pages\Public\Legal\TermsPage;
 use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
@@ -90,8 +97,14 @@ use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
 use App\Livewire\Pages\Public\ShopPage\OrderHistory;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentPage;
+use App\Livewire\Pages\Public\ShopPage\PaymentExpired;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
 use Illuminate\Support\Facades\Route;
+
+// Service worker PWA — versi cache OTOMATIS mengikuti build (hash manifest Vite),
+// jadi setiap deploy cache lama dibuang sendiri tanpa perlu bump manual.
+// Pakai controller (bukan closure) agar `php artisan route:cache` tetap jalan.
+Route::get('/sw.js', \App\Http\Controllers\ServiceWorkerController::class)->name('sw.js');
 
 Route::get('/', Index::class)->name('homepage');
 
@@ -107,6 +120,7 @@ Route::get('/shop/product/{id}', ProductDetail::class)->name('shop.detail-produc
 Route::get('/cart', CartPage::class)->name('cart');
 Route::get('/checkout', CheckoutPage::class)->name('checkout');
 Route::get('/payment/{order}', PaymentPage::class)->name('payment');
+Route::get('/order/expired/{order}', PaymentExpired::class)->name('order.expired');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
 Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
@@ -117,6 +131,16 @@ Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');
+Route::get('/terms', TermsPage::class)->name('terms');
+Route::get('/privacy', PrivacyPage::class)->name('privacy');
+Route::get('/faq', \App\Livewire\Pages\Public\Legal\FaqPage::class)->name('faq');
+Route::get('/member', \App\Livewire\Pages\Public\Legal\MemberPage::class)->name('member.info');
+Route::get('/layanan', \App\Livewire\Pages\Public\Services\ServicesPage::class)->name('services');
+Route::get('/lacak-pesanan', \App\Livewire\Pages\Public\ShopPage\TrackOrder::class)->name('track-order');
+Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)->name('wishlist');
+Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blog.index');
+Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
+Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
 Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 
 Route::view('profile', 'profile')
@@ -133,6 +157,46 @@ Route::middleware('permission:view_dashboard')->group(function () {
 // Profil — semua pengguna yang login boleh mengakses profilnya sendiri
 Route::middleware('auth')->group(function () {
     Route::get('/admin/profile', ProfileSetting::class)->name('admin.account.profile');
+
+    // Manifest PWA — hanya user yang sudah login yang bisa install aplikasi.
+    // Tamu yang akses langsung akan di-redirect ke login (manifest tak valid → tak bisa install).
+    Route::get('/manifest.webmanifest', function () {
+        return response()->json([
+            'name' => 'lemon by acm',
+            'short_name' => 'lemon',
+            'description' => 'Aplikasi admin lemon by acm',
+            'start_url' => '/admin/dashboard?source=pwa',
+            'scope' => '/',
+            'display' => 'standalone',
+            'orientation' => 'portrait-primary',
+            'background_color' => '#fffdf2',
+            'theme_color' => '#84cc16',
+            'lang' => 'id',
+            'dir' => 'ltr',
+            'icons' => [
+                ['src' => '/icons/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => '/icons/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => '/icons/icon-maskable-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+            ],
+        ])->header('Content-Type', 'application/manifest+json');
+    })->name('pwa.manifest');
+
+    // Langganan Web Push (aktifkan/matikan notifikasi perangkat)
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+
+    // Jumlah notifikasi belum dibaca (bulan berjalan) — untuk sinkron badge saat app fokus.
+    Route::get('/notifications/unread-count', function () {
+        $u = auth()->user();
+        $count = $u
+            ? $u->unreadNotifications()
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
+                ->count()
+            : 0;
+
+        return response()->json(['count' => $count]);
+    })->name('notifications.unread-count');
 });
 
 // Pesanan RSC
@@ -180,11 +244,27 @@ Route::middleware('permission:view_permission')->group(function () {
     Route::get('/admin/permission/{permission}/edit', PermissionEdit::class)->middleware('permission:edit_permission')->name('admin.account.permission.edit');
 });
 
+// Log Aktivitas (error & auth) — untuk maintenance.
+Route::middleware('permission:view_activity_log')->group(function () {
+    Route::get('/admin/activity-log', ActivityLogList::class)->name('admin.account.activity-log');
+});
+
 // Karyawan
 Route::middleware('permission:view_karyawan')->group(function () {
     Route::get('/admin/karyawan', KaryawanList::class)->name('admin.karyawan.index');
     Route::get('/admin/karyawan/create', KaryawanCreate::class)->middleware('permission:create_karyawan')->name('admin.karyawan.create');
     Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->middleware('permission:edit_karyawan')->name('admin.karyawan.edit');
+});
+
+// Presensi
+Route::middleware('permission:view_presensi')->group(function () {
+    Route::get('/admin/presensi', \App\Livewire\Pages\Admin\Presensi\PresensiIndex::class)->name('admin.presensi.index');
+});
+Route::middleware('permission:view_all_presensi')->group(function () {
+    Route::get('/admin/presensi/rekap', \App\Livewire\Pages\Admin\Presensi\PresensiRekap::class)->name('admin.presensi.rekap');
+});
+Route::middleware('permission:manage_presensi_setting')->group(function () {
+    Route::get('/admin/presensi/pengaturan', \App\Livewire\Pages\Admin\Presensi\PresensiSetting::class)->name('admin.presensi.pengaturan');
 });
 
 // Data Akun
@@ -218,6 +298,27 @@ Route::middleware('permission:view_banners')->group(function () {
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->middleware('permission:edit_banners')->name('admin.Banners.edit');
 });
 
+// Data Testimoni
+Route::middleware('permission:view_testimoni')->group(function () {
+    Route::get('/admin/DataTestimoni', TestimoniList::class)->name('admin.testimoni.index');
+    Route::get('/admin/DataTestimoni/create', TestimoniCreate::class)->middleware('permission:create_testimoni')->name('admin.testimoni.create');
+    Route::get('/admin/DataTestimoni/{testimoni}', TestimoniEdit::class)->name('admin.testimoni.show');
+    Route::get('/admin/DataTestimoni/{testimoni}/edit', TestimoniEdit::class)->middleware('permission:edit_testimoni')->name('admin.testimoni.edit');
+});
+
+// Moderasi ulasan produk (izin tersendiri, tidak bergantung pada testimoni).
+Route::middleware('permission:view_productreview')->group(function () {
+    Route::get('/admin/ulasan-produk', \App\Livewire\Pages\Admin\ProductReview\ReviewModeration::class)->name('admin.reviews.index');
+});
+
+// Blog / Artikel
+Route::middleware('permission:view_blog')->group(function () {
+    Route::get('/admin/blog', \App\Livewire\Pages\Admin\Blog\BlogList::class)->name('admin.blog.index');
+    Route::get('/admin/blog/kategori', \App\Livewire\Pages\Admin\Blog\CategoryList::class)->name('admin.blog.categories');
+    Route::get('/admin/blog/create', \App\Livewire\Pages\Admin\Blog\BlogCreate::class)->middleware('permission:create_blog')->name('admin.blog.create');
+    Route::get('/admin/blog/{post}/edit', \App\Livewire\Pages\Admin\Blog\BlogEdit::class)->middleware('permission:edit_blog')->name('admin.blog.edit');
+});
+
 // Data Product Bundling
 Route::middleware('permission:view_bundlings')->group(function () {
     Route::get('/admin/DataBundlings', ProductBundlingsList::class)->name('admin.Bundlings.index');
@@ -239,6 +340,21 @@ Route::middleware('permission:view_spending')->group(function () {
     Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->middleware('permission:edit_spending')->name('admin.spending.edit');
 });
 
+// Data Modal
+Route::middleware('permission:view_modal')->group(function () {
+    Route::get('/admin/modal', \App\Livewire\Pages\Admin\Modal\ModalList::class)->name('admin.modal.index');
+});
+
+// Data Pemasukan Lainnya
+Route::middleware('permission:view_pemasukan')->group(function () {
+    Route::get('/admin/pemasukan', \App\Livewire\Pages\Admin\Pemasukan\PemasukanList::class)->name('admin.pemasukan.index');
+});
+
+// Harga Modal Akun (private)
+Route::middleware('permission:view_harga_modal')->group(function () {
+    Route::get('/admin/harga-modal', \App\Livewire\Pages\Admin\HargaModal\HargaModalList::class)->name('admin.hargamodal.index');
+});
+
 // Data Loan & Pengembalian (satu modul Peminjaman)
 Route::middleware('permission:view_loan')->group(function () {
     Route::get('/admin/loan', LoanList::class)->name('admin.loan.index');
@@ -255,6 +371,16 @@ Route::middleware('permission:view_gajikaryawan')->group(function () {
     Route::get('/admin/GajiKaryawan', GajiKaryawansList::class)->name('admin.gajikaryawan.index');
     Route::get('/admin/GajiKaryawan/create', GajiKaryawansCreate::class)->middleware('permission:create_gajikaryawan')->name('admin.gajikaryawan.create');
     Route::get('/admin/GajiKaryawan/{gajikaryawan}/edit', GajiKaryawansEdit::class)->middleware('permission:edit_gajikaryawan')->name('admin.gajikaryawan.edit');
+});
+
+// Penyelesaian Task (admin): kelola task + pool bonus per periode
+Route::middleware('permission:manage_task')->group(function () {
+    Route::get('/admin/penyelesaian-task', \App\Livewire\Pages\Admin\PenyelesaianTask\PenyelesaianTaskList::class)->name('admin.penyelesaian-task.index');
+});
+
+// Task Saya (semua karyawan): lihat & kerjakan task miliknya
+Route::middleware('permission:view_task')->group(function () {
+    Route::get('/admin/task-saya', \App\Livewire\Pages\Admin\Task\TaskSayaList::class)->name('admin.task-saya.index');
 });
 
 // Lowongan Pekerjaan

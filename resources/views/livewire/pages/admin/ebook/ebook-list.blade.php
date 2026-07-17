@@ -1,3 +1,7 @@
+
+@section('title')
+Data Ebook || lemon
+@stop
 <div>
     <style>
         .ebook-dl-btn {

@@ -70,15 +70,19 @@ class OrderDetail extends Component
                 ->exists();
 
             if (! $masihAdaBelumDelivered) {
+                // Saat pesanan selesai (semua item terkirim), catat WAKTU penyelesaian
+                // sebagai tanggal bayar bila belum ada — agar tanggal bayar punya jam/waktu.
                 $this->order->update([
                     'status' => 'completed',
+                    'paid_at' => $this->order->paid_at ?: now(),
                 ]);
             }
 
             $syncCashFlow->execute($this->order, [
                 'amount' => $this->order->total,
                 'type' => 'income',
-                'date' => $this->order->created_at,
+                // Tanggal uang masuk = tanggal bayar (saat completed). Fallback ke tanggal dibuat.
+                'date' => $this->order->paid_at ?: $this->order->created_at,
                 'category' => 'e-commerce',
                 'description' => $this->order->deskripsi ?? 'Pembelian akun dari e-commerce',
             ]);

@@ -25,6 +25,17 @@ class ProfileSetting extends Component
 
     public $current_profile_photo;
 
+    // Data karyawan (self-service)
+    public string $nama_bank = 'Bank Mandiri';
+
+    public $nomor_rekening = '';
+
+    public $tanggal_lahir = '';
+
+    public $phone = '';
+
+    public $alamat = '';
+
     // ubah password
     public $current_password = '';
 
@@ -41,6 +52,48 @@ class ProfileSetting extends Component
         $this->name = $user->name;
         $this->email = $user->email;
         $this->current_profile_photo = $user->profile_photo;
+
+        $d = $user->detail;
+        $this->nomor_rekening = $d?->nomor_rekening ?? '';
+        $this->tanggal_lahir = $d?->tanggal_lahir?->format('Y-m-d') ?? '';
+        $this->phone = $d?->phone ?? '';
+        $this->alamat = $d?->alamat ?? '';
+    }
+
+    public function updateDataKaryawan()
+    {
+        $this->validate([
+            'nomor_rekening' => 'required|numeric',
+            'tanggal_lahir' => 'required|date|before:today',
+            'phone' => 'required|string|max:20',
+            'alamat' => 'required|string|max:500',
+        ], [
+            'nomor_rekening.required' => 'No. Rekening harus diisi.',
+            'nomor_rekening.numeric' => 'No. Rekening hanya boleh angka.',
+            'tanggal_lahir.required' => 'Tanggal lahir harus diisi.',
+            'tanggal_lahir.before' => 'Tanggal lahir tidak valid.',
+            'phone.required' => 'No. HP harus diisi.',
+            'alamat.required' => 'Alamat harus diisi.',
+        ]);
+
+        try {
+            $user = Auth::user();
+            \App\Models\EmployeeDetail::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'jabatan' => $user->detail?->jabatan ?: '-',
+                    'nama_bank' => 'Bank Mandiri',
+                    'nomor_rekening' => $this->nomor_rekening,
+                    'tanggal_lahir' => $this->tanggal_lahir,
+                    'phone' => $this->phone,
+                    'alamat' => $this->alamat,
+                ]
+            );
+
+            $this->dispatch('swal-success', message: 'Data karyawan berhasil disimpan.');
+        } catch (Exception $e) {
+            $this->dispatch('swal-error', message: 'Data karyawan gagal disimpan.');
+        }
     }
 
     public function setTab(string $tab): void
@@ -150,7 +203,16 @@ class ProfileSetting extends Component
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
-        return view('livewire.pages.admin.profile.profile-setting');
+        // NIK & masa kerja bersifat TAMPIL SAJA di profil — keduanya dikelola
+        // admin lewat menu Data Karyawan (NIK otomatis, tanggal bergabung diisi
+        // admin), jadi tidak ikut form simpan profil.
+        $detail = Auth::user()?->detail;
+
+        return view('livewire.pages.admin.profile.profile-setting', [
+            'nik' => $detail?->nik,
+            'masaKerja' => $detail?->masaKerja(),
+            'tanggalMulaiKerja' => $detail?->tanggalMulaiKerja(),
+        ]);
     }
 
     protected function rules()

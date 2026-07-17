@@ -1,60 +1,75 @@
+
+@section('title')
+Data Pinjaman || lemon
+@stop
 <div>
     <!--================== GLOSSY TABS STYLE ==================-->
     <style>
         .loan-tabs {
             display: flex;
-            flex-wrap: wrap;
             width: 100%;
-            gap: 6px;
-            padding: 6px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 18px;
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.08);
+            gap: .5rem;
+            padding: .5rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+            overflow-x: auto;
         }
 
         .loan-tab {
+            flex: 1;
             display: inline-flex;
-            flex: 1 1 0;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: 13px;
+            gap: .6rem;
+            border: none;
+            background: transparent;
+            color: #6b7280;
             font-weight: 600;
-            font-size: 0.95rem;
-            color: #64748b;
+            font-size: 1.05rem;
+            line-height: 1;
+            padding: .95rem 1.5rem;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all .25s ease;
             text-decoration: none;
             white-space: nowrap;
-            transition: 0.3s;
         }
 
         .loan-tab i {
-            font-size: 1.05rem;
+            font-size: 1.25rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
         }
 
-        .loan-tab:hover {
-            color: #7c3aed;
-            background: rgba(139, 92, 246, 0.08);
-            transform: translateY(-1px);
+        .loan-tab:hover:not(.active) {
+            color: #4e46e5;
+            background: rgba(108, 99, 255, 0.10);
         }
 
         .loan-tab.active {
             color: #fff;
-            background: linear-gradient(135deg, #7c3aed, #4f46e5);
-            box-shadow: 0 6px 16px rgba(124, 58, 237, 0.3);
+            background: linear-gradient(135deg, #6c63ff, #4e46e5);
+            box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45);
+            transform: translateY(-1px);
         }
 
-        @media (max-width: 575px) {
+        @media (max-width: 575.98px) {
             .loan-tabs {
-                width: 100%;
+                gap: .35rem;
+                padding: .35rem;
             }
-
             .loan-tab {
-                flex: 1 1 auto;
-                justify-content: center;
-                padding: 10px 14px;
+                padding: .6rem .35rem;
+                font-size: .82rem;
+                gap: .35rem;
+            }
+            .loan-tab i {
+                font-size: 1rem;
             }
         }
 
@@ -90,6 +105,18 @@
             font-size: 1.3rem;
             border-radius: 14px;
             color: #fff;
+        }
+
+        .grand-total-card .grand-total-label { font-size: 1.05rem; line-height: 1.3; }
+        .grand-total-card .grand-total-amount { letter-spacing: -.01em; }
+        .grand-total-card .gt-divider { display: none; width: 64px; height: 2px; background: rgba(255, 255, 255, .35); border-radius: 2px; margin: .2rem auto .15rem; }
+
+        @media (max-width: 575.98px) {
+            .grand-total-card { border-radius: 22px; padding: 1.5rem 1.15rem !important; }
+            .grand-total-card .stat-icon-wrapper { width: 58px; height: 58px; font-size: 1.7rem; border-radius: 18px; }
+            .grand-total-card .grand-total-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .92; }
+            .grand-total-card .grand-total-amount { font-size: 1.95rem; margin-top: .05rem; }
+            .grand-total-card .gt-divider { display: block; }
         }
     </style>
 
@@ -181,15 +208,16 @@
                 </div>
 
                 <!-- Grand Total -->
-                <div class="grand-total-card mt-3 p-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-3">
+                <div class="grand-total-card mt-3 p-4 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
+                    <div class="d-flex flex-column flex-sm-row align-items-center gap-2 gap-sm-3">
                         <span class="stat-icon-wrapper flex-shrink-0"
                             style="background: rgba(255,255,255,0.2); box-shadow: none;">
                             <i class="bi bi-wallet2"></i>
                         </span>
-                        <span class="fw-semibold text-white" style="font-size: 1.05rem;">Total Sisa Peminjaman Keseluruhan</span>
+                        <span class="fw-semibold text-white grand-total-label">Total Sisa Peminjaman Keseluruhan</span>
                     </div>
-                    <h3 class="fw-bold mb-0 text-white">Rp {{ number_format($grandSisa, 0, ',', '.') }}</h3>
+                    <span class="gt-divider"></span>
+                    <h3 class="fw-bold mb-0 text-white grand-total-amount">Rp {{ number_format($grandSisa, 0, ',', '.') }}</h3>
                 </div>
 
                 @else

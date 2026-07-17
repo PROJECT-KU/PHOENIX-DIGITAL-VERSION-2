@@ -22,8 +22,17 @@ class Customer extends Model
         'no_hp',
         'kode_ref',
         'status_member',
+        // Sebelumnya TIDAK ada di sini, padahal CustomerForm & aktifkanMember()
+        // sama-sama mengisinya saat member diaktifkan — Eloquent membuangnya
+        // diam-diam, sehingga member_since SELALU NULL (lihat PDW_0001 & PDW_0002).
+        'member_since',
         'point',
         'point_balance',
+        'points_year',
+    ];
+
+    protected $casts = [
+        'member_since' => 'datetime',
     ];
 
     public function orders()
@@ -73,11 +82,15 @@ class Customer extends Model
      */
     public function updatePoints(): void
     {
+        // Pastikan poin tahun lalu sudah kadaluarsa sebelum menambah poin baru.
+        $this->applyYearlyExpiry();
+
         $calculation = $this->calculateYearlyPoints();
 
         $this->update([
             'point' => $this->point + $calculation['points'],
             'point_balance' => $calculation['balance'],
+            'points_year' => now()->year,
         ]);
 
         if ($calculation['total_amount'] > 0) {
@@ -115,6 +128,126 @@ class Customer extends Model
         return $this->point * 500;
     }
 
+    /* ===== Pencocokan nomor WhatsApp (dipakai verifikasi ulasan) ===== */
+
+    /**
+     * Samakan nomor ke bentuk inti: buang non-digit, lalu awalan 62 / 0.
+     * "+62 895-421-735441", "0895421735441", "62895421735441" -> "895421735441".
+     * Logika yang sama dgn TrackOrder::localPhone().
+     */
+    public static function normalisasiNoHp($nomor): string
+    {
+        $d = preg_replace('/\D/', '', (string) $nomor);
+        $d = preg_replace('/^62/', '', $d);
+
+        return preg_replace('/^0/', '', $d);
+    }
+
+    /**
+     * Cari pelanggan dari nomor apa pun formatnya.
+     *
+     * Sengaja memakai whereIn dgn daftar varian — BUKAN memuat semua pelanggan
+     * lalu menyaring di PHP. Toko ini punya 10rb+ pelanggan; menyaring di PHP
+     * berarti menarik semuanya ke memori tiap kali ada yang menulis ulasan.
+     */
+    public static function cariDariNoHp($nomor): ?self
+    {
+        $inti = self::normalisasiNoHp($nomor);
+
+        if ($inti === '') {
+            return null;
+        }
+
+        return self::whereIn('no_hp', [
+            $inti,
+            '0'.$inti,
+            '62'.$inti,
+            '+62'.$inti,
+        ])->first();
+    }
+
+    /**
+     * Jumlah pesanan yang benar-benar SELESAI (bukan paid/pending/cancel).
+     * Inilah palang jadi member & angka pada label "Sudah belanja N×".
+     */
+    public function jumlahBelanjaSelesai(): int
+    {
+        return $this->orders()->where('status', 'completed')->count();
+    }
+
+    /**
+     * Aktifkan keanggotaan — langkahnya sama persis dgn form Pelanggan di admin:
+     * status active, terbitkan kode referral & member_since bila belum punya,
+     * lalu hitung poin dari transaksi tahun ini.
+     *
+     * Idempotent: yang sudah member dilewati, jadi aman dipanggil berulang
+     * (mis. admin menyetujui ulang ulasan yang sama).
+     *
+     * @return bool true bila BARU diaktifkan sekarang
+     */
+    public function aktifkanMember(): bool
+    {
+        if ($this->status_member === self::STATUS_MEMBER_ACTIVE) {
+            return false;
+        }
+
+        $data = ['status_member' => self::STATUS_MEMBER_ACTIVE];
+
+        if (empty($this->kode_ref)) {
+            $data['kode_ref'] = self::generateReferralCode();
+            $data['member_since'] = now();
+        }
+
+        $this->update($data);
+        $this->updatePoints();
+
+        return true;
+    }
+
+    /**
+     * Tanggal kadaluarsa poin: akhir tahun kalender berjalan (31 Desember).
+     * Poin di-reset tiap 1 Januari, jadi poin yang ada sekarang berlaku sampai
+     * 31 Desember tahun ini.
+     */
+    public function pointsExpireAt(): \Carbon\Carbon
+    {
+        return \Carbon\Carbon::create(now()->year, 12, 31)->endOfDay();
+    }
+
+    /**
+     * Label tanggal kadaluarsa poin (mis. "31 Desember 2026").
+     */
+    public function pointsExpireLabel(string $format = 'd F Y'): string
+    {
+        return $this->pointsExpireAt()->locale('id')->translatedFormat($format);
+    }
+
+    /**
+     * Terapkan kadaluarsa tahunan secara lazy: bila poin milik tahun sebelumnya,
+     * nolkan (sudah kadaluarsa). Dipanggil di titik baca/pakai poin sebagai
+     * pengaman bila command terjadwal terlewat. Mengembalikan true bila di-reset.
+     */
+    public function applyYearlyExpiry(): bool
+    {
+        $currentYear = now()->year;
+
+        if ((int) $this->points_year === $currentYear) {
+            return false;
+        }
+
+        // Poin lama (tahun sebelumnya) dianggap kadaluarsa. Untuk data lama yang
+        // belum punya points_year (null), adopsi ke tahun berjalan tanpa menolkan.
+        if ($this->points_year !== null && (int) $this->points_year < $currentYear) {
+            $this->point = 0;
+            $this->point_balance = 0;
+        }
+
+        $this->points_year = $currentYear;
+        $this->save();
+
+        return true;
+    }
+
     /**
      * Generate unique referral code
      */
@@ -141,7 +274,10 @@ class Customer extends Model
      */
     public function addReferralPoints(int $points = 2): void
     {
+        // Poin referral juga masuk tahun berjalan (kadaluarsa akhir tahun ini).
+        $this->applyYearlyExpiry();
         $this->increment('point', $points);
+        $this->update(['points_year' => now()->year]);
     }
 
     /**

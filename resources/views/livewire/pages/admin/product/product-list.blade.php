@@ -1,3 +1,7 @@
+
+@section('title')
+Data Produk || lemon
+@stop
 <div>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -122,17 +126,26 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="{{ auth()->user()->hasAnyPermission(['edit_product', 'delete_product']) ? 9 : 8 }}" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-box-seam"></i>
+                                            <i class="bi bi-{{ $searchDataProduct ? 'search' : 'box-seam' }}"></i>
                                         </div>
+                                        @if ($searchDataProduct)
+                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
+                                            Produk Tidak Ditemukan
+                                        </h5>
+                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
+                                            Tidak ada produk yang cocok dengan pencarian "{{ $searchDataProduct }}".
+                                        </p>
+                                        @else
                                         <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
                                             Belum Ada Data Produk
                                         </h5>
                                         <p class="text-muted mb-0" style="font-size: 0.95rem;">
                                             Silakan klik tombol tambah data untuk memasukkan produk baru.
                                         </p>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

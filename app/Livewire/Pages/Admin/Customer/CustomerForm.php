@@ -3,10 +3,14 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
+use App\Models\Order;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class CustomerForm extends Component
 {
+    use WithPagination;
+
     public ?Customer $customer = null;
 
     public $name = '';
@@ -44,9 +48,13 @@ class CustomerForm extends Component
 
     public function save()
     {
+        // Email opsional: string kosong dinormalkan ke null agar aturan "nullable"
+        // melewati validasi email/unique (mis. pelanggan dari checkout tanpa email).
+        $this->email = filled($this->email) ? trim($this->email) : null;
+
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:customers,email,' . ($this->customer->id ?? null),
+            'email' => 'nullable|email|unique:customers,email,' . ($this->customer->id ?? null),
             'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:15',
             'statusMember' => 'required|string',
         ]);
@@ -132,6 +140,31 @@ class CustomerForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.customer.customer-form');
+        $customerOrders = collect();
+        $totalPesanan = 0;
+        $paidOrdersCount = 0;
+        $grandTotalPaid = 0;
+
+        if ($this->customer) {
+            $base = Order::whereHas('customer', fn ($q) => $q->where('no_hp', $this->customer->no_hp));
+
+            $totalPesanan = (clone $base)->count();
+
+            $paidCondition = function ($q) {
+                $q->whereNotNull('paid_at')->orWhereIn('status', ['paid', 'processing', 'completed']);
+            };
+            $paidBase = (clone $base)->where($paidCondition);
+            $paidOrdersCount = (clone $paidBase)->count();
+            $grandTotalPaid = (float) (clone $paidBase)->sum('total');
+
+            $customerOrders = (clone $base)->with('items')->latest()->paginate(5);
+        }
+
+        return view('livewire.pages.admin.customer.customer-form', [
+            'customerOrders' => $customerOrders,
+            'totalPesanan' => $totalPesanan,
+            'paidOrdersCount' => $paidOrdersCount,
+            'grandTotalPaid' => $grandTotalPaid,
+        ]);
     }
 }

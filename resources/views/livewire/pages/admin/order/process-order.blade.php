@@ -1,3 +1,7 @@
+
+@section('title')
+Proses Pesanan || lemon
+@stop
 <div class="container-fluid">
     <style>
         /* Tombol pemicu picker (mirip form-select) */

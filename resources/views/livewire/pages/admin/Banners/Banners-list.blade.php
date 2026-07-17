@@ -1,3 +1,7 @@
+
+@section('title')
+Data Banner || lemon
+@stop
 <div>
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">

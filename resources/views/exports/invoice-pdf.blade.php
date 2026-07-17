@@ -2,273 +2,315 @@
 <html>
 
 <head>
-    <title>Invoice</title>
+    <meta charset="utf-8">
+    <title>Invoice — Phoenix Digital</title>
+    @php
+        // Embed logo/cap/ttd sebagai base64 agar aman dirender DomPDF.
+        $imgUri = function ($path) {
+            $full = storage_path('app/public/img/archive/'.$path);
+            if (! is_file($full)) {
+                return null;
+            }
+            return 'data:image/png;base64,'.base64_encode(file_get_contents($full));
+        };
+        $logo = $imgUri('phoenix.png');
+        $cap = $imgUri('cap.png');
+        $ttd = $imgUri('ttd.png');
+    @endphp
     <style>
-        @page {
-            margin: 0px;
-            box-sizing: border-box;
-            padding: 0px;
-        }
+        @page { margin: 130px 40px 120px 40px; }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            margin: 0px;
-            padding: 0px;
+            font-family: 'Helvetica', Arial, sans-serif;
+            font-size: 11px;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
         }
 
-        /* Layout untuk konten agar tidak tertutup header/footer gambar */
-        .content {
-            margin-top: 100px;
-            margin-left: 40px;
-            margin-right: 40px;
-            margin-bottom: 50px;
+        /* ===== Header (fixed, tiap halaman) ===== */
+        .doc-header {
+            position: fixed;
+            top: -105px; left: 0; right: 0;
+            height: 105px;
+            padding: 0;
         }
-
-        .header-wrapper {
+        .doc-header-bar {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
+        .doc-header-bar td { vertical-align: middle; border: none; }
+        .brand-logo { width: 132px; height: auto; }
+        .brand-name { font-size: 20px; font-weight: bold; color: #0f172a; letter-spacing: .5px; }
+        .brand-sub { font-size: 9px; color: #6b7280; letter-spacing: 1.5px; text-transform: uppercase; }
+        .invoice-word {
+            text-align: right;
+            font-size: 34px;
+            font-weight: bold;
+            color: #ea8a00;
+            letter-spacing: 3px;
+        }
+        .header-rule { height: 3px; background: #ea8a00; margin-top: 8px; }
+        .header-rule-soft { height: 1px; background: #f6d9ac; margin-top: 2px; }
 
-        .header-wrapper td {
+        /* ===== Footer (fixed) ===== */
+        .doc-footer {
+            position: fixed;
+            bottom: -95px; left: 0; right: 0;
+            height: 90px;
+        }
+        .footer-band {
+            background: #0f172a;
+            color: #fff;
+            padding: 12px 40px;
+            font-size: 10px;
+        }
+        .footer-band .accent { color: #f5a524; font-weight: bold; }
+        .footer-strip { height: 5px; background: #ea8a00; }
+
+        /* ===== Meta (nomor & tanggal) ===== */
+        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+        .meta-table td { border: none; padding: 0; vertical-align: top; }
+        .bill-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #ea8a00; font-weight: bold; margin-bottom: 3px; }
+        .bill-to { font-size: 11px; line-height: 1.55; color: #374151; }
+        .bill-to strong { color: #111827; }
+        .meta-box { border-collapse: collapse; float: right; }
+        .meta-box td {
+            border: 1px solid #e5e7eb;
+            padding: 6px 12px;
+            font-size: 10px;
+        }
+        .meta-box .mk { background: #faf3e6; color: #92660b; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; }
+        .meta-box .mv { color: #1f2937; font-weight: bold; }
+
+        /* ===== Tabel item ===== */
+        .items { width: 100%; border-collapse: collapse; margin-top: 4px; }
+        .items thead th {
+            background: #ea8a00;
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            padding: 9px 8px;
+            text-align: center;
             border: none;
-            padding: 10px;
+        }
+        .items tbody td {
+            padding: 9px 8px;
+            font-size: 10.5px;
+            border-bottom: 1px solid #eef0f4;
             vertical-align: middle;
         }
+        .items tbody tr.alt td { background: #fbf7f0; }
+        .items .camp-name { font-weight: bold; color: #111827; }
+        .items .camp-batch { color: #9ca3af; font-size: 9px; }
 
-        .header-title {
-            font-size: 64px;
-            font-weight: bold;
-            color: #000;
-            width: 60%;
-            text-align: left;
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+
+        /* ===== Total ===== */
+        .total-wrap { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        .total-wrap > tbody > tr > td { border: none; padding: 0; vertical-align: top; }
+        .total-box { border-collapse: collapse; width: 100%; }
+        .total-box td { padding: 7px 12px; font-size: 11px; }
+        .total-box .tl { color: #6b7280; }
+        .total-box .tv { text-align: right; font-weight: bold; color: #111827; }
+        .total-box .grand-l {
+            background: #0f172a; color: #fff; font-weight: bold; font-size: 12px;
+            text-transform: uppercase; letter-spacing: .5px;
+        }
+        .total-box .grand-v {
+            background: #ea8a00; color: #fff; font-weight: bold; font-size: 13px; text-align: right;
         }
 
-        .header-logo {
-            width: 150px;
-            text-align: right;
-        }
-
-        .header-image {
-            position: fixed;
-            top: -170px;
-            left: 0;
-            width: 100%;
-            height: auto;
-            transform: rotate(180deg);
-            z-index: -1;
-        }
-
-        .footer-image {
-            position: fixed;
-            bottom: -130;
-            left: 0;
-            width: 100%;
-            height: auto;
-            z-index: -1;
-        }
-
-        .contact {
-            background-color: orange;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            padding: 12px 50px;
-            z-index: 1;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .table-contact {
-            width: 30%;
-            position: fixed;
-            bottom: 48px;
-            left: 0;
-            z-index: 1;
-        }
-
-        th {
-            border-top: 1px solid orange;
-            border-bottom: 1px solid orange;
-            padding: 8px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        td {
-            border: none;
-            padding: 4px;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        /* Helper Classes */
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-bold {
-            font-weight: bold;
-        }
-
-        .mb-2 {
-            margin-bottom: 10px;
-        }
-
-        .invoice-meta {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .invoice-meta td {
-            border: none;
-            padding: 2px;
-        }
+        /* ===== Pembayaran & TTD ===== */
+        .pay-table { width: 100%; border-collapse: collapse; margin-top: 34px; }
+        .pay-table td { border: none; vertical-align: top; }
+        .pay-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #ea8a00; font-weight: bold; margin-bottom: 6px; }
+        .pay-body { font-size: 11px; line-height: 1.6; color: #374151; }
+        .pay-body strong { color: #111827; }
+        .sign-area { text-align: center; }
+        .sign-stack { position: relative; height: 108px; width: 210px; margin: 4px auto 0; }
+        .sign-cap { position: absolute; top: 0; left: 26px; width: 118px; opacity: .9; }
+        .sign-ttd { position: absolute; top: 14px; left: 55px; width: 120px; }
+        .sign-name { font-weight: bold; color: #111827; font-size: 11px; }
+        .sign-role { color: #6b7280; font-size: 9.5px; }
+        .thanks { margin-top: 26px; text-align: center; color: #9ca3af; font-size: 10px; font-style: italic; }
     </style>
 </head>
 
 <body>
-    {{-- Gambar Header Full Width --}}
-    <img src="{{ public_path('assets/img/footer-invoice.png') }}" class="header-image">
-
-    <div class="content">
-        <table class="header-wrapper">
+    {{-- ===== Header fixed ===== --}}
+    <div class="doc-header">
+        <table class="doc-header-bar">
             <tr>
-                <td class="header-title">INVOICE</td>
-                <td class="header-logo">
-                    <img src="{{ public_path('assets/img/logophoenix2.png')}}" style="object-fit: cover; height:auto; width:100%;">
+                <td style="width: 55%;">
+                    @if($logo)
+                        <img src="{{ $logo }}" class="brand-logo">
+                    @else
+                        <div class="brand-name">Phoenix Digital</div>
+                        <div class="brand-sub">Digital Solution Partner</div>
+                    @endif
+                </td>
+                <td style="width: 45%;">
+                    <div class="invoice-word">INVOICE</div>
                 </td>
             </tr>
         </table>
-        {{-- Judul & Alamat --}}
-        <table class=" invoice-meta">
-            <tr>
-                <td width="60%">
-                    <strong>Kepada:</strong><br>
-                    Pimpinan Rumah Scopus<br>
-                    Bangunsari, Jl. Bangunsari, Bangun Kerto,<br>
-                    Turi, Sleman Regency, DIY 55551<br>
-                    081226883280
-                </td>
-                <td width="40%" class="text-right" style="vertical-align: top;">
-                    <table style="border-collapse:collapse;">
-                        <tr>
-                            <td style="border: 1px solid #000;text-align:center;">{{$invoiceNumber}}</td>
-                            <td style="border: 1px solid#000;text-align:center;">{{$date}}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
+        <div class="header-rule"></div>
+        <div class="header-rule-soft"></div>
+    </div>
 
-        {{-- Tabel Item --}}
-        <table>
-            <thead>
+    {{-- ===== Footer fixed ===== --}}
+    <div class="doc-footer">
+        <div class="footer-strip"></div>
+        <div class="footer-band">
+            <table style="width:100%; border-collapse:collapse;">
                 <tr>
-                    <th width="5%">No</th>
-                    <th width="30%">Deskripsi</th>
-                    <th width="15%">Periode</th>
-                    <th width="20%">Jumlah Peserta</th>
-                    <th width="15%">Harga Satuan</th>
-                    <th width="15%">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($items as $index => $item)
-                <tr>
-                    <td class="text-center">{{ $loop->iteration }}</td>
-                    <td>
-                        <strong>{{ $item->nama_camp }}</strong> <br>
-                        <small>Batch #{{ $item->batch_camp }}</small>
+                    <td style="border:none; color:#fff;">
+                        <span class="accent">PHOENIX DIGITAL</span> &nbsp;•&nbsp; Digital Solution Partner
                     </td>
-                    <td class="text-center">1 Bulan</td> {{-- Atau hitung diff date --}}
-                    <td class="text-center">{{ $item->total_peserta }}</td>
-                    <td class="text-center">Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}</td>
-                    <td class="text-center">Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
-                </tr>
-                @endforeach
-
-                {{-- Grand Total --}}
-                <tr>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                </tr>
-                <tr style="margin-top: 100px;">
-                    <td colspan="5" class="text-right text-bold" style="font-size: 16px; padding:10px;">Total Biaya</td>
-                    <td class="text-center text-bold" style="background-color: yellow; font-size:16px; padding:10px;">
-                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <hr style="color: orange;">
-
-        {{-- Informasi Pembayaran & TTD --}}
-        <div style="margin-top: 30px;">
-            <table style="border: none;">
-                <tr>
-                    <td style="border: none; width: 60%;">
-                        <strong>Instruksi Pembayaran:</strong><br>
-                        Pembayaran dapat dilakukan melalui transfer bank:<br>
-                        <strong>Bank BRI</strong><br>
-                        No. Rek: 3584-0103-4310-539<br>
-                        A.n: Biwi Faiza Tu Zulaikhah YS
-                    </td>
-                    <td style="border: none; width: 40%; text-align: center;">
-                        <p>Hormat Kami,</p>
-
-                        <div style="position: relative; height: 100px; width: 200px; margin: 0 auto;">
-                            <img src="{{ public_path('assets/img/stempel.png') }}"
-                                style="position: absolute; top: 0; left: 10px; width: 100px; opacity: 0.8; z-index:100;">
-
-                            <img src="{{ public_path('assets/img/ttd.png') }}"
-                                style="position: absolute; top: 10px; right: 20px; width: 120px;">
-                        </div>
-
-                        <br>
-                        <strong>Biwi Fa'iza Tu Zulaikhah</strong><br>
-                        <small>Finance Dept.</small>
+                    <td style="border:none; text-align:right; color:#cbd5e1;">
+                        Contact Center: +62 895-0596-7995
                     </td>
                 </tr>
             </table>
         </div>
     </div>
-    <div>
-        <table class="table-contact">
-            <tr class="contact">
-                <td class="text-right">
-                    <img src="{{ public_path('assets/img/wa.png') }}" style="width: 20px; height:auto;">
-                </td>
-                <td style="text-align: left; vertical-align: middle;">
-                    Contact center: +6289505967995
-                </td>
+
+    {{-- ===== Konten ===== --}}
+    <table class="meta-table">
+        <tr>
+            <td style="width: 58%;">
+                <div class="bill-label">Ditagihkan Kepada</div>
+                <div class="bill-to">
+                    <strong>Pimpinan Rumah Scopus</strong><br>
+                    Bangunsari, Jl. Bangunsari, Bangun Kerto,<br>
+                    Turi, Sleman Regency, DIY 55551<br>
+                    Telp: 0812-2688-3280
+                </div>
+            </td>
+            <td style="width: 42%;">
+                <table class="meta-box">
+                    <tr>
+                        <td class="mk">No. Invoice</td>
+                        <td class="mv">{{ $invoiceNumber }}</td>
+                    </tr>
+                    <tr>
+                        <td class="mk">Tanggal</td>
+                        <td class="mv">{{ $date }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th style="width:6%;">No</th>
+                <th style="width:32%; text-align:left;">Deskripsi</th>
+                <th style="width:17%;">Periode</th>
+                <th style="width:13%;">Jumlah</th>
+                <th style="width:17%;">Harga Satuan</th>
+                <th style="width:15%;">Total</th>
             </tr>
-        </table>
-    </div>
+        </thead>
+        <tbody>
+            @foreach($items as $index => $item)
+            @php
+                $perAkun = ($item->metode_harga ?? 'per_peserta') === 'per_akun';
+                $bulan = max((int) ($item->jumlah_pemesanan ?? 1), 1);
+                $sumHargaAkun = $perAkun && ! empty($item->akun_list) ? collect($item->akun_list)->sum('harga') : 0;
+            @endphp
+            <tr class="{{ $loop->even ? 'alt' : '' }}">
+                <td class="text-center">{{ $loop->iteration }}</td>
+                <td>
+                    <span class="camp-name">{{ $item->nama_camp }}</span><br>
+                    <span class="camp-batch">Batch #{{ $item->batch_camp }} · {{ $perAkun ? 'Basis Akun' : 'Basis Peserta' }} · {{ $bulan }} bln</span>
+                    @if($perAkun && ! empty($item->akun_list))
+                    <div style="margin-top:4px;">
+                        @foreach($item->akun_list as $ak)
+                        <div style="font-size:9px; color:#4b5563;">• {{ $ak['nama'] }} — <strong>Rp {{ number_format($ak['harga'], 0, ',', '.') }}</strong>/bln</div>
+                        @endforeach
+                    </div>
+                    @endif
+                </td>
+                <td class="text-center">
+                    @if(!empty($item->periode_mulai) && !empty($item->periode_akhir))
+                        {{ \Carbon\Carbon::parse($item->periode_mulai)->format('d M Y') }}<br>
+                        <span style="color:#9ca3af;">s/d</span> {{ \Carbon\Carbon::parse($item->periode_akhir)->format('d M Y') }}
+                    @else
+                        —
+                    @endif
+                </td>
+                <td class="text-center">
+                    @if($perAkun)
+                        {{ $item->jumlah_akun }} akun
+                    @else
+                        {{ $item->total_peserta }} peserta
+                    @endif
+                </td>
+                <td class="text-right">
+                    @if($perAkun)
+                        Rp {{ number_format($sumHargaAkun, 0, ',', '.') }}
+                        <br><span style="color:#9ca3af; font-size:8.5px;">total akun / bln</span>
+                    @else
+                        Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}
+                        <br><span style="color:#9ca3af; font-size:8.5px;">/ peserta · {{ $bulan }} bln</span>
+                    @endif
+                </td>
+                <td class="text-right" style="font-weight:bold;">Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 
-    {{-- Gambar Footer Full Width --}}
-    <img src="{{ public_path('assets/img/footer-invoice.png') }}" class="footer-image">
+    <table class="total-wrap">
+        <tr>
+            <td style="width: 60%;">&nbsp;</td>
+            <td style="width: 40%;">
+                <table class="total-box">
+                    <tr>
+                        <td class="tl">Subtotal</td>
+                        <td class="tv">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="grand-l">Total Biaya</td>
+                        <td class="grand-v">Rp {{ number_format($grandTotal, 0, ',', '.') }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
+    <table class="pay-table">
+        <tr>
+            <td style="width: 58%;">
+                <div class="pay-title">Instruksi Pembayaran</div>
+                <div class="pay-body">
+                    Pembayaran dapat dilakukan melalui transfer bank:<br>
+                    <strong>Bank BRI</strong><br>
+                    No. Rekening: <strong>3584-0103-4310-539</strong><br>
+                    a.n. Biwi Faiza Tu Zulaikhah YS
+                </div>
+            </td>
+            <td style="width: 42%;" class="sign-area">
+                <div style="font-size:11px; color:#374151;">Hormat Kami,</div>
+                <div class="sign-stack">
+                    @if($cap)<img src="{{ $cap }}" class="sign-cap">@endif
+                    @if($ttd)<img src="{{ $ttd }}" class="sign-ttd">@endif
+                </div>
+                <div class="sign-name">Biwi Fa'iza Tu Zulaikhah</div>
+                <div class="sign-role">Finance Dept. — Phoenix Digital</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="thanks">Terima kasih atas kepercayaan Anda kepada Phoenix Digital.</div>
 </body>
 
 </html>

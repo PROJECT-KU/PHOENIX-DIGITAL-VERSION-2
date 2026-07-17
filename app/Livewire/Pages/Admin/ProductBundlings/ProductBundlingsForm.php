@@ -63,8 +63,9 @@ class ProductBundlingsForm extends Component
             $this->product_3 = $this->product_bundlings->product_3;
             $this->product_4 = $this->product_bundlings->product_4;
             $this->product_5 = $this->product_bundlings->product_5;
-            $this->harga_awal = $this->product_bundlings->harga_awal;
-            $this->harga_bundling = $this->product_bundlings->harga_bundling;
+            // Tampilkan angka saja di field (prefix "Rp" ditampilkan terpisah, seragam dgn Product)
+            $this->harga_awal = $this->stripRupiah($this->product_bundlings->harga_awal);
+            $this->harga_bundling = $this->stripRupiah($this->product_bundlings->harga_bundling);
             $this->existingImage = $this->product_bundlings->gambar;
             $this->deskripsi = $this->product_bundlings->deskripsi;
             $this->status = $this->product_bundlings->status;
@@ -150,8 +151,8 @@ class ProductBundlingsForm extends Component
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
                 'durations' => $this->buildDurations(),
-                'harga_awal' => $this->harga_awal,
-                'harga_bundling' => $this->harga_bundling,
+                'harga_awal' => $this->formatRupiah($this->harga_awal),
+                'harga_bundling' => $this->formatRupiah($this->harga_bundling),
                 'gambar' => $filename,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
@@ -178,8 +179,8 @@ class ProductBundlingsForm extends Component
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
                 'durations' => $this->buildDurations(),
-                'harga_awal' => $this->harga_awal,
-                'harga_bundling' => $this->harga_bundling,
+                'harga_awal' => $this->formatRupiah($this->harga_awal),
+                'harga_bundling' => $this->formatRupiah($this->harga_bundling),
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
             ];
@@ -224,6 +225,28 @@ class ProductBundlingsForm extends Component
         $this->gambar = '';
         $this->deskripsi = '';
         $this->status = '';
+    }
+
+    /**
+     * Ambil angka saja dari string harga (mis. "Rp 10.000" -> "10.000") untuk
+     * ditampilkan di field (prefix "Rp" ditampilkan terpisah, seragam dgn Product).
+     */
+    private function stripRupiah($value): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+
+        return $digits === '' ? '' : number_format((int) $digits, 0, ',', '.');
+    }
+
+    /**
+     * Susun kembali ke format tersimpan "Rp 10.000" agar konsisten dengan data
+     * lama & tampilan daftar bundling.
+     */
+    private function formatRupiah($value): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+
+        return $digits === '' ? '' : 'Rp '.number_format((int) $digits, 0, ',', '.');
     }
 
     public function render()

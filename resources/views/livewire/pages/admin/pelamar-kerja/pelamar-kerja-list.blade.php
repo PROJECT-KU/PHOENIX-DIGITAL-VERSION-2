@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pelamar Kerja || lemon
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

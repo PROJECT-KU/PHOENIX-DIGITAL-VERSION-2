@@ -1,3 +1,7 @@
+
+@section('title')
+Detail Pesan Masuk || lemon
+@stop
 <div class="container-fluid">
     <!--================== HEADER ==================-->
     <div class="card border-0 shadow-sm rounded-4 mb-4">

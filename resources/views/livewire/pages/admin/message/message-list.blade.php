@@ -1,3 +1,7 @@
+
+@section('title')
+Data Pesan Masuk || lemon
+@stop
 <div>
     <!--================== GLOSSY STYLE ==================-->
     <style>

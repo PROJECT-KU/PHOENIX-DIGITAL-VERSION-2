@@ -1,3 +1,6 @@
+@section('title')
+Tambah Pinjaman || lemon
+@stop
 <div class="container-fluid">
     <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
         <div class="card-body p-4 d-flex align-items-center">
@@ -9,7 +12,7 @@
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                         ['name' => 'Data Peminjaman', 'url' => route('admin.loan.index')],
-                        ['name' => 'Tambah Data Peminjaman'],
+                        ['name' => 'Tambah Data'],
                         ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />

@@ -69,6 +69,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pemicu Scheduler Berbasis Trafik
+    |--------------------------------------------------------------------------
+    | Untuk shared hosting tanpa cron: bila true, scheduler dijalankan otomatis
+    | dari trafik situs (maks. sekali per menit, setelah respons terkirim).
+    | Setel SCHEDULER_TRAFFIC_KICK=false di .env bila sudah memasang cron asli.
+    */
+    'scheduler_traffic_kick' => env('SCHEDULER_TRAFFIC_KICK', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

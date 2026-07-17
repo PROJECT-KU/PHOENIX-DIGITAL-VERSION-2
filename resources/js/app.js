@@ -120,10 +120,28 @@ document.addEventListener("livewire:init", () => {
     });
 
     Livewire.on("success-upload-excel", (data) => {
-        Toast.fire({
-            icon: "success",
-            title: data.message || "Berhasil upload file excel data peserta",
-        });
+        if (typeof window.fireGlossySwal === "function") {
+            window.fireGlossySwal(
+                "Berhasil!",
+                data.message || "Berhasil upload file excel data peserta",
+                "success"
+            );
+        } else {
+            Swal.fire({
+                icon: "success",
+                title: "Berhasil!",
+                text: data.message || "Berhasil upload file excel data peserta",
+                background: "rgba(255, 255, 255, 0.9)",
+                backdrop: "rgba(139, 92, 246, 0.15)",
+                customClass: {
+                    popup: "swal-glossy-popup rounded-4 shadow-lg border-0",
+                    title: "fw-bold",
+                },
+                buttonsStyling: false,
+                timer: 2500,
+                showConfirmButton: false,
+            });
+        }
     });
 
     // customer event
@@ -147,11 +165,24 @@ document.addEventListener("livewire:init", () => {
     });
     Livewire.on("will-delete-customer-data", (data) => {
         Swal2.fire({
-            icon: "question",
-            title: "Yakin ingin hapus data pelanggan " + data["nama"] + " ?",
+            icon: "warning",
+            title: "Yakin hapus data?",
+            text:
+                "Data pelanggan " +
+                data["nama"] +
+                " tidak bisa dikembalikan!",
             showCancelButton: true,
+            confirmButtonText: "Ya, hapus!",
             cancelButtonText: "Batal",
-            confirmButtonText: "Ya, hapus",
+            background: "rgba(255, 255, 255, 0.8)",
+            backdrop: "rgba(139, 92, 246, 0.15)",
+            customClass: {
+                popup: "swal-glossy-popup",
+                confirmButton: "btn-glossy-confirm",
+                cancelButton: "btn-glossy-cancel",
+                title: "swal-glossy-title",
+            },
+            buttonsStyling: false,
         }).then((result) => {
             if (result.isConfirmed) {
                 Livewire.dispatch("delete-customer", { id: data["id"] });

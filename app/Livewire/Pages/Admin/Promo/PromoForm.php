@@ -36,6 +36,9 @@ class PromoForm extends Component
 
     public $untuk_pembeli_pertama = false;
 
+    /** Kosong = tanpa batas kuota. */
+    public $kuota = '';
+
     public $min_pembelian = "";
 
     public $mulai_promo = '';
@@ -56,8 +59,6 @@ class PromoForm extends Component
 
     public $badge_text = '';
 
-    public $badge_color = '#ff6b6b';
-
     public $selectedProducts = [];
 
     public $allProducts = [];
@@ -77,6 +78,7 @@ class PromoForm extends Component
             $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal ? number_format($promo->diskon_non_member_nominal, 0, '', '.') : '';
             $this->untuk_member = $promo->untuk_member;
             $this->untuk_pembeli_pertama = $promo->untuk_pembeli_pertama;
+            $this->kuota = $promo->kuota !== null ? number_format($promo->kuota, 0, '', '.') : '';
             $this->min_pembelian = $promo->min_pembelian ? number_format($promo->min_pembelian, 0, '', '.') : '';
             $this->mulai_promo = $promo->mulai_promo ? $promo->mulai_promo->format('Y-m-d\TH:i') : '';
             $this->selesai_promo = $promo->selesai_promo ? $promo->selesai_promo->format('Y-m-d\TH:i') : '';
@@ -87,7 +89,6 @@ class PromoForm extends Component
             $this->can_stack_with_points = $promo->can_stack_with_points;
             $this->show_on_homepage = $promo->show_on_homepage;
             $this->badge_text = $promo->badge_text ?? '';
-            $this->badge_color = $promo->badge_color ?? '#FF6B6B';
             $this->mode = 'edit';
             $this->selectedProducts = $promo->products->pluck('id')->toArray();
         } else {
@@ -103,6 +104,29 @@ class PromoForm extends Component
         if ($this->tipe_promo === 'flash_sale') {
             $this->kode_promo = '';
         }
+    }
+
+    /**
+     * Dua aksi terpisah, BUKAN satu tombol yang menebak keadaan.
+     *
+     * Checkbox produk memakai wire:model deferred, jadi saat admin menyalakan
+     * saklar satu per satu server tidak tahu apa-apa dan tidak me-render ulang —
+     * label tombol "Pilih/Hapus Semua" jadi basi & terbalik. Dua tombol tetap
+     * benar apa pun keadaan saklarnya.
+     *
+     * Nilai dijadikan string karena checkbox Livewire mengirim value sbg string.
+     */
+    public function pilihSemuaProduk(): void
+    {
+        $this->selectedProducts = collect($this->allProducts)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    }
+
+    public function hapusSemuaProduk(): void
+    {
+        $this->selectedProducts = [];
     }
 
     public function rules()
@@ -122,6 +146,18 @@ class PromoForm extends Component
     private function cleanNumber($value)
     {
         return empty($value) ? 0 : (int) str_replace('.', '', $value);
+    }
+
+    /**
+     * Kuota kosong = TANPA BATAS (null) — sengaja TIDAK pakai cleanNumber(),
+     * karena itu memulangkan 0 untuk input kosong, dan kuota 0 berarti promo
+     * langsung mati. Beda arti yang berbahaya.
+     */
+    private function cleanKuota($value): ?int
+    {
+        $v = trim((string) $value);
+
+        return $v === '' ? null : max((int) str_replace('.', '', $v), 0);
     }
 
     public function save()
@@ -157,6 +193,7 @@ class PromoForm extends Component
                 'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
+                'kuota' => $this->cleanKuota($this->kuota),
                 'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
@@ -167,7 +204,6 @@ class PromoForm extends Component
                 'can_stack_with_points' => $this->can_stack_with_points,
                 'show_on_homepage' => $this->show_on_homepage,
                 'badge_text' => $this->badge_text,
-                'badge_color' => $this->badge_color,
             ];
 
             $promo = Promo::create($data);
@@ -198,6 +234,7 @@ class PromoForm extends Component
                 'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
+                'kuota' => $this->cleanKuota($this->kuota),
                 'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
@@ -208,7 +245,6 @@ class PromoForm extends Component
                 'can_stack_with_points' => $this->can_stack_with_points,
                 'show_on_homepage' => $this->show_on_homepage,
                 'badge_text' => $this->badge_text,
-                'badge_color' => $this->badge_color,
             ];
 
             $this->promo->update($data);
@@ -226,6 +262,11 @@ class PromoForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.promo.promo-form');
+        // Info "sudah terpakai" hanya ada artinya saat mengedit promo yang sudah
+        // berjalan. Dihitung dari pesanan nyata, jadi selalu ikut kondisi terkini.
+        return view('livewire.pages.admin.promo.promo-form', [
+            'kuotaTerpakai' => $this->promo?->kuotaTerpakai(),
+            'kuotaSisa' => $this->promo?->sisaKuota(),
+        ]);
     }
 }

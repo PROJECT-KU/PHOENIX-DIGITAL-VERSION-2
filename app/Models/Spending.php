@@ -17,17 +17,38 @@ class Spending extends Model
         'tanggal_transaksi',
         'nominal',
         'deskripsi',
+        'gambar',
+        'gambar_list',
         'status',
         'penginput_id',
         'pic_pembeli_id',
         'jenis_pengeluaran',
+        'product_id',
+        'durasi_value',
+        'durasi_type',
         'id_transaksi',
     ];
 
     protected $casts = [
         'tanggal_transaksi' => 'date',
         'nominal' => 'decimal:0',
+        'gambar_list' => 'array',
     ];
+
+    /**
+     * Semua gambar/bukti sebagai array path. Memakai gambar_list bila ada; jika
+     * belum (data lama), jatuh ke kolom tunggal "gambar".
+     *
+     * @return array<int, string>
+     */
+    public function getImagesAttribute(): array
+    {
+        if (! empty($this->gambar_list) && is_array($this->gambar_list)) {
+            return array_values($this->gambar_list);
+        }
+
+        return $this->gambar ? [$this->gambar] : [];
+    }
 
     const STATUS_PENDING = 'pending';
 
@@ -47,6 +68,11 @@ class Spending extends Model
     public function picPembeli(): BelongsTo
     {
         return $this->belongsTo(User::class, 'pic_pembeli_id');
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     // scope

@@ -18,7 +18,7 @@ class CartBadge extends Component
     public function updateCount()
     {
         $cart = session()->get('cart', []);
-        $this->cartCount = array_sum(array_column($cart, 'quantity'));
+        $this->cartCount = count($cart);
     }
 
     public function render()

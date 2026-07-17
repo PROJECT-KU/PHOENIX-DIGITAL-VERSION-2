@@ -189,17 +189,20 @@ class PaymentService
     {
         try {
 
-            $response = Http::get(
-                'https://qris.interactive.co.id/restapi/qris/show_qris.php',
-                [
-                    'do' => 'create-invoice',
-                    'apikey' => config('services.qris.apikey'),
-                    'mID' => config('services.qris.mid'),
-                    'cliTrxNumber' => $order->order_number,
-                    'cliTrxAmount' => (int) $order->total,
-                    'useTip' => 'no',
-                ]
-            );
+            $response = Http::connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 300, throw: false)
+                ->get(
+                    'https://qris.interactive.co.id/restapi/qris/show_qris.php',
+                    [
+                        'do' => 'create-invoice',
+                        'apikey' => config('services.qris.apikey'),
+                        'mID' => config('services.qris.mid'),
+                        'cliTrxNumber' => $order->order_number,
+                        'cliTrxAmount' => (int) $order->total,
+                        'useTip' => 'no',
+                    ]
+                );
 
             $result = $response->json();
 

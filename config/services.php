@@ -31,6 +31,13 @@ return [
         ],
     ],
 
+    // Web Push (VAPID) — notifikasi PWA di background & badge iPhone
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:admin@lemon.app'),
+    ],
+
     // QRIS Dinamis (qris.online / OkeConnect)
     'qris' => [
         'base_url' => env('QRIS_BASE_URL', 'https://qris.interactive.co.id/restapi/qris'),

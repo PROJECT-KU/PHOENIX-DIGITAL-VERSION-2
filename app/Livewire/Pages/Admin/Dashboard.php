@@ -213,21 +213,31 @@ class Dashboard extends Component
         $recentCustomers = Customer::latest('created_at')->take(5)->get();
 
         // ==========================================
-        // DATA UNTUK VISITOR
+        // DISTRIBUSI METODE PEMBAYARAN (data nyata dari tabel orders)
         // ==========================================
+        $paymentData = Order::query()
+            ->whereNotNull('payment_method')
+            ->selectRaw('payment_method, COUNT(*) as total')
+            ->groupBy('payment_method')
+            ->orderByDesc('total')
+            ->pluck('total', 'payment_method');
 
-        // Ambil data dari session, jika tidak ada buat array kosong
-        $visitors = session()->get('temp_visitors', []);
+        $labelMap = [
+            'qris' => 'QRIS',
+            'qris_dinamis' => 'QRIS Dinamis',
+            'qris_statis' => 'QRIS Statis',
+            'bank_transfer' => 'Transfer Bank',
+            'transfer' => 'Transfer',
+            'va' => 'Virtual Account',
+            'ewallet' => 'E-Wallet',
+            'cash' => 'Tunai',
+            'manual' => 'Manual',
+        ];
 
-        // Simulasi deteksi negara (hanya untuk contoh)
-        $country = ['Indonesia', 'USA', 'India', 'Europe'][array_rand(['Indonesia', 'USA', 'India', 'Europe'])];
-
-        // Tambahkan kunjungan baru ke session
-        $visitors[] = $country;
-        session()->put('temp_visitors', $visitors);
-
-        // Hitung jumlah per negara
-        $visitorData = array_count_values($visitors);
+        $paymentLabels = $paymentData->keys()
+            ->map(fn ($m) => $labelMap[strtolower((string) $m)] ?? \Illuminate\Support\Str::title(str_replace('_', ' ', (string) $m)))
+            ->all();
+        $paymentCounts = $paymentData->values()->map(fn ($v) => (int) $v)->all();
 
         return view('livewire.pages.admin.dashboard', [
             'user' => $authUser,
@@ -245,8 +255,8 @@ class Dashboard extends Component
             // Variabel Baru untuk Tabel
             'recentOrders' => $recentOrders,
             'recentCustomers' => $recentCustomers,
-            'countries' => array_keys($visitorData),
-            'counts' => array_values($visitorData),
+            'countries' => $paymentLabels,
+            'counts' => $paymentCounts,
         ])
             ->layout('livewire.layout.templateindex');
     }

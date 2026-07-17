@@ -2,11 +2,16 @@
 
 namespace App\Providers;
 
+use App\Listeners\SendWebPushNotification;
 use App\Models\Order;
 use App\Models\Promo;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Events\NotificationSent;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -36,6 +41,42 @@ class AppServiceProvider extends ServiceProvider
             return [Limit::perMinute(100)->by($request->ip())];
         });
         Order::observe(OrderObserver::class);
+        Order::observe(\App\Observers\OrderEmailObserver::class);
+
+        // Kirim Web Push otomatis untuk setiap notifikasi database (badge PWA di background).
+        Event::listen(NotificationSent::class, SendWebPushNotification::class);
+
+        // Log Aktivitas — jejak auth. Listener PASIF (hanya membaca event, tidak
+        // mengubah alur login) & ActivityLogger menelan errornya sendiri, jadi
+        // ini tidak mengganggu proses autentikasi.
+        Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            \App\Support\ActivityLogger::auth('login', 'Login berhasil: '.($event->user->name ?? '-'));
+        });
+        Event::listen(\Illuminate\Auth\Events\Logout::class, function ($event) {
+            \App\Support\ActivityLogger::auth('logout', 'Logout: '.($event->user->name ?? '-'));
+        });
+        Event::listen(\Illuminate\Auth\Events\Failed::class, function ($event) {
+            $email = $event->credentials['email'] ?? ($event->credentials['name'] ?? '-');
+            \App\Support\ActivityLogger::auth('login_failed', 'Login gagal untuk: '.$email, 'warning');
+        });
+
+        // Email reset kata sandi kustom (desain lemon, seragam dengan login).
+        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+            $url = route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ]);
+
+            $expire = config('auth.passwords.'.config('auth.defaults.passwords').'.expire', 60);
+
+            return (new MailMessage)
+                ->subject('Reset Kata Sandi — lemon by ACM')
+                ->view('emails.reset-password', [
+                    'url' => $url,
+                    'user' => $notifiable,
+                    'expire' => $expire,
+                ]);
+        });
 
         // Blade directive untuk check permission
         Blade::if('hasPermission', function ($permission) {
