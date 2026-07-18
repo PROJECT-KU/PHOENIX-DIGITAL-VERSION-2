@@ -63,7 +63,9 @@
                                 @php
                                     $bestDiscount = $this->getBestDiscount($item->id);
                                     $isFlash = $bestDiscount && ($bestDiscount['promo']->tipe_promo ?? null) === 'flash_sale';
-                                    $originalPrice = (int) $item->harga_perbulan;
+                                    // Produk JASA: harga per bulan = 0. Pakai harga paket terkecil (per pengecekan).
+                                    $isJasa = (bool) $item->butuh_file;
+                                    $originalPrice = $isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan;
                                     if ($bestDiscount) {
                                         if ($bestDiscount['type'] === 'persen') {
                                             $discountedPrice = (int) round(
@@ -118,11 +120,14 @@
                                                 class="fs-name">{{ $item->nama_akun }}</a>
 
                                             <div class="fs-price">
+                                                @if ($isJasa)
+                                                    <small class="text-muted me-1">Mulai</small>
+                                                @endif
                                                 <span class="fs-price-sale">Rp{{ number_format($discountedPrice, 0, ',', '.') }}</span>
                                                 @if ($discountedPrice < $originalPrice)
                                                     <span class="fs-price-orig">Rp{{ number_format($originalPrice, 0, ',', '.') }}</span>
                                                 @endif
-                                                <small>/bln</small>
+                                                <small>{{ $isJasa ? '/cek' : '/bln' }}</small>
                                             </div>
 
                                             <div class="fs-actions">

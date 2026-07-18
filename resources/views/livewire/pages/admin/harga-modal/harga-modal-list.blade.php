@@ -163,6 +163,15 @@ Harga Modal Produk || lemon
                             </button>
                             @error('formProductId') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
+                        @if ($this->formIsJasa)
+                        {{-- Produk jasa: modal per 1× pengecekan (durasi dikunci) --}}
+                        <div class="col-12">
+                            <div class="alert alert-warning border-0 rounded-3 mb-0 d-flex align-items-center gap-2 py-2 px-3" style="background:#fff7ed;color:#b45309;">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <span class="small">Produk <b>jasa</b>: modal dihitung <b>per 1× pengecekan</b>. Sistem otomatis mengalikan sesuai paket (5×, 10×, dst).</span>
+                            </div>
+                        </div>
+                        @else
                         <div class="col-6">
                             <label class="form-label fw-semibold">Durasi</label>
                             <input type="number" min="1" wire:model="formDurasiValue" class="form-control rounded-3 @error('formDurasiValue') is-invalid @enderror">
@@ -175,8 +184,9 @@ Harga Modal Produk || lemon
                                 <option value="tahun">Tahun</option>
                             </select>
                         </div>
+                        @endif
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Harga Modal / Akun</label>
+                            <label class="form-label fw-semibold">{{ $this->formIsJasa ? 'Harga Modal / 1× Pengecekan' : 'Harga Modal / Akun' }}</label>
                             <div class="hm-rp-field">
                                 <span class="hm-rp-prefix">Rp</span>
                                 <input type="text" inputmode="numeric" wire:model="formHarga" class="hm-rp-input rp-money @error('formHarga') is-invalid @enderror" placeholder="0">

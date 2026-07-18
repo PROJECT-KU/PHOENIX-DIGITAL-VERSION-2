@@ -575,20 +575,33 @@ class ModalList extends Component
                 $orderQty[$o->product_id.'|'.$o->duration_value.'|'.$o->duration_type] = (int) $o->qty;
             }
 
+            // Produk jasa: modal per 1× pengecekan × jumlah pengecekan (durasi_value).
+            $jasaIds = \App\Models\Product::where('butuh_file', true)->pluck('id')->map(fn ($v) => (string) $v)->all();
+
             // Hanya produk yang BENAR-BENAR ada order di periode ini (bukan carry-forward harga saja).
             foreach ($orderQty as $k => $qty) {
                 if ($qty <= 0) {
                     continue;
                 }
                 [$pid, $dv, $dt] = explode('|', $k);
-                $satuan = $unitMap[$k] ?? 0;
+
+                if (in_array((string) $pid, $jasaIds, true)) {
+                    // JASA: satuan = modal 1× pengecekan; total = satuan × jml cek × qty.
+                    $satuan = $unitMap[$pid.'|1|kali'] ?? 0;
+                    $total = (float) $satuan * max(1, (int) $dv) * $qty;
+                } else {
+                    // Non-jasa: satuan tepat pada (durasi_value, durasi_type).
+                    $satuan = $unitMap[$k] ?? 0;
+                    $total = (float) $satuan * $qty;
+                }
+
                 $akunPerProduk[] = [
                     'nama' => $namaAll[$pid] ?? 'Produk',
                     'tipe' => 'private',
                     'durasi' => $dv.' '.$dt,
                     'satuan' => (float) $satuan,
                     'jumlah' => (int) $qty,
-                    'total' => (float) $satuan * $qty,
+                    'total' => $total,
                 ];
             }
         }

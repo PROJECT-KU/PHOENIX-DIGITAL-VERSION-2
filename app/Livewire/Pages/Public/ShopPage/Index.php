@@ -341,7 +341,7 @@ class Index extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
-        $products = Product::when($this->search, function ($query) {
+        $products = Product::with('prices')->when($this->search, function ($query) {
             $query->where(function ($q) {
                 $q->where('nama_akun', 'like', "%{$this->search}%")
                     ->orWhere('deskripsi', 'like', "%{$this->search}%");

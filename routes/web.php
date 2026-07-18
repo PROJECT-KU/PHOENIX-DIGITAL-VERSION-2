@@ -123,6 +123,10 @@ Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::get('/order/expired/{order}', PaymentExpired::class)->name('order.expired');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+
+// JASA cek plagiasi — link permanen ber-token (unggah + progress + unduh hasil)
+Route::get('/cek/{token}', \App\Livewire\Pages\Public\ShopPage\JasaCekPage::class)->name('jasa.cek');
+Route::get('/cek/{token}/hasil/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilPublik'])->name('jasa.cek.hasil');
 Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
@@ -214,6 +218,9 @@ Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
     Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
+    // Unduh berkas pengecekan jasa (file masuk customer & file hasil) — disk privat
+    Route::get('/admin/pesanantoko/upload/{upload}/berkas', [\App\Http\Controllers\JasaCekController::class, 'unduhBerkasAdmin'])->name('admin.jasa.berkas');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAdmin'])->name('admin.jasa.hasil');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 });
 

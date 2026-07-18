@@ -45,6 +45,22 @@ class Product extends Model
     }
 
     /**
+     * Modal untuk SATU baris order (per 1 quantity), sesuai jenis produk:
+     *  - JASA (butuh_file): modal per 1× pengecekan × jumlah pengecekan (durasi_value).
+     *    Cukup 1 entri modal "1 kali" di katalog untuk semua paket (1x/5x/10x).
+     *  - Non-jasa: modal satuan tepat pada (durasi_value, durasi_type) — perilaku lama.
+     * Caller mengalikan hasil ini dengan quantity item.
+     */
+    public function modalItem(int $durasiValue, string $durasiType, $asOf = null): int
+    {
+        if ($this->butuh_file) {
+            return $this->modalSatuan(1, 'kali', $asOf) * max(1, $durasiValue);
+        }
+
+        return $this->modalSatuan($durasiValue, $durasiType, $asOf);
+    }
+
+    /**
      * Harga untuk durasi tertentu. Ambil dari tabel harga fleksibel;
      * fallback ke kolom lama bila belum ada barisnya.
      */
@@ -103,6 +119,9 @@ class Product extends Model
     protected $fillable = [
         'nama_akun',
         'tipe_akun',
+        'butuh_file',
+        'jasa_mode',
+        'addon_mode',
         'image',
         'harga_awal',
         'harga_perbulan',
@@ -111,6 +130,62 @@ class Product extends Model
         'harga_pertahun',
         'deskripsi',
     ];
+
+    protected $casts = [
+        'butuh_file' => 'boolean',
+    ];
+
+    /** Add-on opsional produk jasa (dinamis, diatur admin). */
+    public function addons(): HasMany
+    {
+        return $this->hasMany(ProductAddon::class);
+    }
+
+    /** Add-on aktif, terurut — untuk ditampilkan ke customer. */
+    public function addonAktif()
+    {
+        return $this->addons
+            ->where('aktif', true)
+            ->sortBy('urutan')
+            ->values();
+    }
+
+    /** Produk jasa yang dijual PER HALAMAN (mis. parafrase). */
+    public function jasaPerHalaman(): bool
+    {
+        return (bool) $this->butuh_file && $this->jasa_mode === 'halaman';
+    }
+
+    /** Add-on hanya boleh pilih salah satu? (mis. tingkat target parafrase) */
+    public function addonPilihSatu(): bool
+    {
+        return $this->addon_mode === 'tunggal';
+    }
+
+    /** Harga per halaman (produk jasa mode 'halaman'). */
+    public function hargaPerHalaman(): int
+    {
+        $row = $this->prices->firstWhere('durasi_type', 'halaman');
+
+        return $row ? (int) $row->harga : 0;
+    }
+
+    /** Paket JASA (produk butuh_file) — per jumlah pengecekan (durasi_type 'kali'). */
+    public function paketJasa()
+    {
+        return $this->prices
+            ->whereIn('durasi_type', ['kali', 'sekali'])
+            ->sortBy('durasi_value')
+            ->values();
+    }
+
+    /** Harga paket jasa terkecil (untuk ringkasan). Null bila bukan jasa/tak ada. */
+    public function hargaSekali(): ?int
+    {
+        $row = $this->paketJasa()->first();
+
+        return $row ? (int) $row->harga : null;
+    }
 
     // Helper format rupiah
     public function numberFormatted($value)

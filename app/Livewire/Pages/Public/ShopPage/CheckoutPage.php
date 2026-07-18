@@ -485,6 +485,17 @@ class CheckoutPage extends Component
             return redirect()->route('shop.index');
         }
 
+        // Email UNIQUE antar pelanggan. Pelanggan dikenali via no_hp (updateOrCreate),
+        // jadi bila email yang diketik sudah dipakai pelanggan LAIN (no_hp berbeda),
+        // penyimpanan akan gagal diam-diam karena constraint unik — tanpa keterangan.
+        // Cegah lebih awal dengan pesan jelas di kolom email.
+        $pemilikEmail = Customer::where('email', $this->email)->first();
+        if ($pemilikEmail && $pemilikEmail->no_hp !== $this->no_hp) {
+            $this->addError('email', 'Email ini sudah terdaftar dengan nomor HP lain. Gunakan email lain, atau isi nomor HP yang terdaftar dengan email ini.');
+
+            return;
+        }
+
         if ($this->finalTotal <= 0 && ! $this->usePoints) {
             session()->flash('error', 'Total pembayaran tidak valid');
 
@@ -534,6 +545,9 @@ class CheckoutPage extends Component
                 'total' => $this->finalTotal,
                 'unique_code' => $this->uniqueCode,
                 'status' => 'pending',
+                // Pemesanan dari PUBLIC (jasa maupun non-jasa) selalu QRIS dinamis.
+                // Bila akhirnya lunas penuh dengan poin, ditimpa jadi 'points' di bawah.
+                'payment_method' => 'qris_dinamis',
                 'customer_notes' => $this->customer_notes,
                 'expired_at' => now()->addHours(24),
                 'used_points' => $this->usePoints,
@@ -548,7 +562,7 @@ class CheckoutPage extends Component
             ]);
 
             foreach ($finalCart as $item) {
-                OrderItem::create([
+                $orderItem = OrderItem::create([
                     'id' => Str::uuid(),
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
@@ -559,7 +573,19 @@ class CheckoutPage extends Component
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
+                    // Khusus JASA (kosong/null untuk produk biasa).
+                    'addons' => $item['addons'] ?? null,
+                    'addons_total' => (int) ($item['addons_total'] ?? 0),
+                    'jumlah_halaman' => $item['jumlah_halaman'] ?? null,
+                    'halaman_dikecualikan' => $item['halaman_dikecualikan'] ?? null,
+                    'halaman_dihitung' => $item['halaman_dihitung'] ?? null,
                 ]);
+
+                // Jasa per halaman: file yang diunggah SEBELUM bayar dipindahkan
+                // menjadi pengecekan pesanan ini, siap diproses admin.
+                if (! empty($item['draft_upload_id'])) {
+                    $this->pindahkanDraftUpload($item['draft_upload_id'], $order->id);
+                }
             }
 
             // Save promo usage to pivot table
@@ -629,7 +655,49 @@ class CheckoutPage extends Component
             }
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Bila lolos pre-check tapi email tetap bentrok (mis. balapan antar
+            // pembeli), tampilkan pesan ramah di kolom email, bukan SQL mentah.
+            if (str_contains($e->getMessage(), 'customers_email_unique')) {
+                $this->addError('email', 'Email ini sudah terdaftar dengan nomor HP lain. Gunakan email lain, atau isi nomor HP yang terdaftar dengan email ini.');
+
+                return;
+            }
+
             session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Pindahkan file draft (diunggah sebelum bayar, jasa per halaman) menjadi
+     * OrderUpload milik pesanan — langsung berstatus 'menunggu' agar terpantau
+     * admin lewat badge. Terisolasi: kegagalan di sini tak membatalkan checkout.
+     */
+    private function pindahkanDraftUpload(string $draftId, string $orderId): void
+    {
+        try {
+            $draft = \App\Models\JasaDraftUpload::find($draftId);
+            if (! $draft) {
+                return;
+            }
+
+            $tujuan = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->path);
+            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($draft->path)) {
+                \Illuminate\Support\Facades\Storage::disk('local')->move($draft->path, $tujuan);
+            }
+
+            \App\Models\OrderUpload::create([
+                'order_id' => $orderId,
+                'path' => $tujuan,
+                'nama_asli' => $draft->nama_asli,
+                'ukuran' => $draft->ukuran,
+                'mime' => $draft->mime,
+                'status' => 'menunggu',
+            ]);
+
+            $draft->delete();
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 

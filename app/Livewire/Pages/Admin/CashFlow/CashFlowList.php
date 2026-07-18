@@ -349,7 +349,11 @@ class CashFlowList extends Component
             ->get();
 
         // ===== Modal per produk =====
-        $privateIds = \App\Models\Product::where('tipe_akun', 'private')->pluck('id')->all();
+        // Produk JASA (butuh_file) juga bermodal (per pengecekan, dari katalog),
+        // jadi diperlakukan seperti private walau tipe_akun-nya bukan 'private'.
+        $jasaIds = \App\Models\Product::where('butuh_file', true)->pluck('id')->all();
+        $privateIds = \App\Models\Product::where('tipe_akun', 'private')->pluck('id')
+            ->merge($jasaIds)->unique()->values()->all();
 
         // Modal produk NON-private (sharing / tanpa produk) = total pembelian akun periode terpilih
         $modalNonPrivateRows = Spending::query()
@@ -415,9 +419,17 @@ class CashFlowList extends Component
                 ->get();
 
             foreach ($privItems as $it) {
-                $k = $it->product_id.'|'.$it->duration_value.'|'.$it->duration_type;
-                $unit = $unitMap[$k] ?? 0;
                 $pidKey = (string) $it->product_id;
+
+                if (in_array($it->product_id, $jasaIds, true)) {
+                    // JASA: modal per 1× pengecekan × jumlah pengecekan (durasi_value).
+                    $perCheck = $unitMap[$it->product_id.'|1|kali'] ?? 0;
+                    $unit = $perCheck * max(1, (int) $it->duration_value);
+                } else {
+                    // Non-jasa: modal satuan tepat pada (durasi_value, durasi_type).
+                    $unit = $unitMap[$it->product_id.'|'.$it->duration_value.'|'.$it->duration_type] ?? 0;
+                }
+
                 $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $unit * (int) $it->qty;
             }
 

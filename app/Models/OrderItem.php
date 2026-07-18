@@ -40,6 +40,11 @@ class OrderItem extends Model
         'product_image',
         'duration_type',
         'duration_value',
+        'addons',
+        'addons_total',
+        'jumlah_halaman',
+        'halaman_dikecualikan',
+        'halaman_dihitung',
         'bonus_duration_value',
         'bonus_duration_type',
         'price',
@@ -66,6 +71,10 @@ class OrderItem extends Model
     ];
 
     protected $casts = [
+        'addons' => 'array',
+        'addons_total' => 'integer',
+        'jumlah_halaman' => 'integer',
+        'halaman_dihitung' => 'integer',
         'account_password' => 'encrypted',
         'start_date' => 'date',
         'end_date' => 'date',

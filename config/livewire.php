@@ -65,7 +65,10 @@ return [
 
     'temporary_file_upload' => [
         'disk' => null,        // Example: 'local', 's3'              | Default: 'default'
-        'rules' => null,       // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
+        // Batas unggah sementara dinaikkan ke 20MB agar SEIRAMA dengan validasi
+        // aplikasi (dokumen jasa & hasil pengecekan: 'max:20480'). Default Livewire
+        // 12MB akan menolak file 12–20MB dengan pesan "failed to upload".
+        'rules' => ['required', 'file', 'max:20480'], // 20MB
         'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
         'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'
         'preview_mimes' => [   // Supported file types for temporary pre-signed file URLs...

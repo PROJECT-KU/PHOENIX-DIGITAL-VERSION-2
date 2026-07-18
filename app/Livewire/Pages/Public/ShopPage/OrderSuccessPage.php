@@ -24,6 +24,9 @@ class OrderSuccessPage extends Component
             return redirect()->route('payment', $order);
         }
 
+        // Untuk pesanan jasa: unggah & unduh hasil dipindah ke halaman pengecekan
+        // ber-link permanen (/cek/{token}) — halaman ini hanya menautkan ke sana.
+        $order->load(['items.product']);
         $this->order = $order;
     }
 

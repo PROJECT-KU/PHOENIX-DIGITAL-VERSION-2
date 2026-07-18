@@ -35,6 +35,28 @@ class HargaModalList extends Component
         $this->resetPage();
     }
 
+    /** Produk jasa: modal dicatat PER PENGECEKAN (1 kali). Kunci durasinya. */
+    public function updatedFormProductId($value): void
+    {
+        $p = $value ? Product::find($value) : null;
+        if ($p && $p->butuh_file) {
+            $this->formDurasiType = 'kali';
+            $this->formDurasiValue = 1;
+        } elseif ($this->formDurasiType === 'kali') {
+            // Pindah dari jasa ke non-jasa: kembalikan default.
+            $this->formDurasiType = 'bulan';
+            $this->formDurasiValue = 1;
+        }
+    }
+
+    /** Apakah produk yang dipilih di form adalah produk jasa? */
+    public function getFormIsJasaProperty(): bool
+    {
+        return $this->formProductId
+            ? (bool) optional(Product::find($this->formProductId))->butuh_file
+            : false;
+    }
+
     private function bolehKelola(): bool
     {
         return auth()->user()?->hasPermission('manage_harga_modal') ?? false;
@@ -102,7 +124,7 @@ class HargaModalList extends Component
         $this->validate([
             'formProductId' => ['required', 'exists:products,id'],
             'formDurasiValue' => ['required', 'integer', 'min:1'],
-            'formDurasiType' => ['required', 'in:bulan,tahun'],
+            'formDurasiType' => ['required', 'in:bulan,tahun,kali'],
             'formHarga' => ['required', 'numeric', 'min:1'],
             'formBerlakuMulai' => ['required', 'date'],
         ], [], [
@@ -206,7 +228,11 @@ class HargaModalList extends Component
             ->select('product_modal_prices.*')
             ->paginate(12);
 
-        $products = Product::where('tipe_akun', 'private')->orderBy('nama_akun')->get(['id', 'nama_akun']);
+        // Produk yang punya modal: private + jasa (butuh_file, modal per pengecekan).
+        $products = Product::where('tipe_akun', 'private')
+            ->orWhere('butuh_file', true)
+            ->orderBy('nama_akun')
+            ->get(['id', 'nama_akun', 'butuh_file']);
 
         return view('livewire.pages.admin.harga-modal.harga-modal-list', [
             'prices' => $prices,

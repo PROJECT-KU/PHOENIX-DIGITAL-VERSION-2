@@ -21,12 +21,15 @@ class SyncOrderPrivateCostAction
 
         foreach ($order->items as $item) {
             $product = $item->product;
-            $isPrivate = $product && $product->tipe_akun === 'private';
+            // Produk jasa (butuh_file) juga punya modal (per pengecekan), walau
+            // tipe_akun-nya bukan 'private' — ikutkan agar omset bersihnya benar.
+            $adaModal = $product && ($product->tipe_akun === 'private' || $product->butuh_file);
 
             $amount = 0;
-            if ($paid && $isPrivate) {
+            if ($paid && $adaModal) {
                 // Harga yang BERLAKU pada tanggal order (tidak berubah retroaktif).
-                $unit = $product->modalSatuan((int) $item->duration_value, (string) $item->duration_type, $tanggal);
+                // modalItem() otomatis: jasa = per 1× pengecekan × jumlah pengecekan.
+                $unit = $product->modalItem((int) $item->duration_value, (string) $item->duration_type, $tanggal);
                 $amount = $unit * (int) $item->quantity;
             }
 
