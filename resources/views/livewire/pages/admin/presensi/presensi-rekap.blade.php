@@ -165,6 +165,95 @@ Rekap Presensi || lemon
             font-size: .82rem;
         }
 
+        /* ===== Modal Koreksi: header hangat & kartu konteks ===== */
+        .pr-modal-head--warn {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-bottom: 1px solid #fde68a;
+        }
+
+        .pr-krek-ctx {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .6rem;
+            margin-bottom: 1.25rem;
+        }
+
+        @media (max-width: 480px) {
+            .pr-krek-ctx { grid-template-columns: 1fr; }
+        }
+
+        .pr-krek-ctx-item {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            background: #f8fafc;
+            border: 1px solid #eef0f6;
+            border-radius: 12px;
+            padding: .6rem .7rem;
+        }
+
+        .pr-krek-ctx-ic {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .95rem;
+            flex-shrink: 0;
+        }
+
+        .pr-krek-ctx-ic i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .pr-krek-ctx-ic i.bi::before {
+            display: block;
+            line-height: 1;
+        }
+
+        .pr-krek-ctx-lbl {
+            font-size: .66rem;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #94a3b8;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+        .pr-krek-ctx-val {
+            font-weight: 700;
+            color: #1e293b;
+            font-size: .92rem;
+            line-height: 1.15;
+        }
+
+        /* Input jam dengan ikon jam di depannya. */
+        .pr-krek-time {
+            position: relative;
+        }
+
+        .pr-krek-time .bi {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .pr-krek-time input {
+            padding-left: 38px;
+        }
+
         .pr-modal-hint i.bi {
             color: #6c63ff;
         }
@@ -307,7 +396,7 @@ Rekap Presensi || lemon
             @endforeach
         </div>
 
-        {{-- ===== Filter (seragam dengan Cashflow) ===== --}}
+        {{-- ===== Filter Periode (seragam dengan Cashflow) ===== --}}
         <div class="card border-0 shadow-sm rounded-4 stat-card mb-4">
             <div class="card-body p-3 px-4">
                 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
@@ -316,27 +405,63 @@ Rekap Presensi || lemon
                             style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
                             <i class="bi bi-funnel"></i>
                         </span>
-                        <span>Filter</span>
+                        <span>Filter Periode</span>
                     </div>
 
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                        <input type="date" wire:model.live="tanggalDari" class="form-control rounded-3"
-                            style="min-width: 150px;" title="Dari tanggal">
-                        <input type="date" wire:model.live="tanggalSampai" class="form-control rounded-3"
-                            style="min-width: 150px;" title="Sampai tanggal">
-                        <select wire:model.live="filterTipe" class="form-select rounded-3" style="min-width: 160px;">
+                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width: 165px;"
+                            title="Cara menghitung periode">
+                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
+                            <option value="siklus20">🔄 Siklus Gaji ({{ $cutoffDay + 1 }}–{{ $cutoffDay }})</option>
+                        </select>
+
+                        <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 135px;">
+                            <option value="">Semua Bulan</option>
+                            @foreach($daftarBulan as $num => $nama)
+                            <option value="{{ $num }}">{{ $nama }}</option>
+                            @endforeach
+                        </select>
+
+                        <select wire:model.live="tahun" class="form-select rounded-3" style="min-width: 110px;">
+                            <option value="">Semua Tahun</option>
+                            @foreach($daftarTahun as $th)
+                            <option value="{{ $th }}">{{ $th }}</option>
+                            @endforeach
+                        </select>
+
+                        <select wire:model.live="filterTipe" class="form-select rounded-3" style="min-width: 135px;">
                             <option value="">Semua Jenis</option>
                             <option value="hadir_offline">Hadir Offline</option>
                             <option value="hadir_online">Hadir Online</option>
                             <option value="lembur">Lembur</option>
                         </select>
+
+                        @if($bulan || $tahun || $filterTipe || $modePeriode !== 'kalender')
                         <button type="button" wire:click="resetFilter"
                             class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center flex-shrink-0"
                             title="Reset filter">
                             <i class="bi bi-x-circle"></i>
                         </button>
+                        @endif
                     </div>
                 </div>
+
+                @if($modePeriode === 'siklus20')
+                <div class="mt-3 pt-3 border-top">
+                    @if($periodeMulai && $periodeAkhir)
+                    <div class="text-muted" style="font-size:.82rem;">
+                        <i class="bi bi-calendar-range me-1" style="vertical-align:-0.125em;"></i>
+                        Periode <b>{{ $periodeMulai->translatedFormat('d M Y') }}</b>
+                        s/d <b>{{ $periodeAkhir->translatedFormat('d M Y') }}</b> —
+                        sama dengan periode di fitur <b>Gaji</b> (gajian tanggal {{ $cutoffDay }}).
+                    </div>
+                    @else
+                    <span class="text-muted" style="font-size:.82rem;">
+                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Pilih <b>bulan</b> dulu untuk melihat rentang siklus gajinya.
+                    </span>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
 
@@ -558,14 +683,14 @@ Rekap Presensi || lemon
     @if ($showKoreksi)
     <div class="pr-modal-overlay" wire:key="pr-koreksi-modal">
         <div class="pr-modal">
-            <div class="pr-modal-head">
+            <div class="pr-modal-head pr-modal-head--warn">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="pr-stat-ic" style="width:42px;height:42px;background:linear-gradient(135deg,#f59e0b,#d97706);">
+                    <span class="pr-stat-ic" style="width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 6px 14px rgba(245,158,11,.35);">
                         <i class="bi bi-box-arrow-right"></i>
                     </span>
                     <div>
-                        <h5 class="fw-bold mb-0">Koreksi Jam Pulang</h5>
-                        <small class="text-muted">Untuk presensi yang lupa diklik pulang.</small>
+                        <h5 class="fw-bold mb-0" style="color:#854d0e;">Koreksi Jam Pulang</h5>
+                        <small style="color:#a16207;">Untuk presensi yang lupa diklik pulang.</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close" wire:click="tutupKoreksi" aria-label="Tutup"></button>
@@ -574,19 +699,41 @@ Rekap Presensi || lemon
             <form wire:submit="simpanKoreksi">
                 <div class="pr-modal-body">
                     @if ($koreksiInfo)
-                    <div class="d-flex flex-wrap gap-3 mb-3 p-3 rounded-3" style="background:#f8fafc;">
-                        <div><small class="text-muted d-block">Karyawan</small><span class="fw-semibold">{{ $koreksiInfo['nama'] }}</span></div>
-                        <div><small class="text-muted d-block">Tanggal</small><span class="fw-semibold">{{ $koreksiInfo['tanggal'] }}</span></div>
-                        <div><small class="text-muted d-block">Jam Masuk</small><span class="fw-semibold">{{ $koreksiInfo['jam_masuk'] }}</span></div>
+                    <div class="pr-krek-ctx">
+                        <div class="pr-krek-ctx-item">
+                            <span class="pr-krek-ctx-ic" style="background:linear-gradient(135deg,#6c63ff,#4e46e5);"><i class="bi bi-person-fill"></i></span>
+                            <div class="min-w-0">
+                                <div class="pr-krek-ctx-lbl">Karyawan</div>
+                                <div class="pr-krek-ctx-val text-truncate">{{ $koreksiInfo['nama'] }}</div>
+                            </div>
+                        </div>
+                        <div class="pr-krek-ctx-item">
+                            <span class="pr-krek-ctx-ic" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);"><i class="bi bi-calendar-event-fill"></i></span>
+                            <div class="min-w-0">
+                                <div class="pr-krek-ctx-lbl">Tanggal</div>
+                                <div class="pr-krek-ctx-val">{{ $koreksiInfo['tanggal'] }}</div>
+                            </div>
+                        </div>
+                        <div class="pr-krek-ctx-item">
+                            <span class="pr-krek-ctx-ic" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="bi bi-box-arrow-in-right"></i></span>
+                            <div class="min-w-0">
+                                <div class="pr-krek-ctx-lbl">Jam Masuk</div>
+                                <div class="pr-krek-ctx-val">{{ $koreksiInfo['jam_masuk'] }}</div>
+                            </div>
+                        </div>
                     </div>
                     @endif
 
                     <div class="row g-3">
-                        <div class="col-md-5">
+                        <div class="col-12">
                             <label class="form-label fw-semibold">Jam Pulang <span class="text-danger">*</span></label>
-                            <input type="time" wire:model="koreksiJamPulang"
-                                class="form-control rounded-3 @error('koreksiJamPulang') is-invalid @enderror">
-                            @error('koreksiJamPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="pr-krek-time">
+                                <i class="bi bi-clock-history"></i>
+                                <input type="time" wire:model="koreksiJamPulang"
+                                    class="form-control rounded-3 @error('koreksiJamPulang') is-invalid @enderror">
+                            </div>
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Durasi kerja dihitung dari jam masuk sampai jam ini.</small>
+                            @error('koreksiJamPulang') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-12">

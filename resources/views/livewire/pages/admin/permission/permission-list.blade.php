@@ -34,6 +34,23 @@ Data Hak Akses || lemon
             border-radius: 999px;
             font-weight: 600;
         }
+
+        /* Select filter group: melebar penuh di mobile, ringkas di desktop.
+           (Bootstrap versi ini tak punya utility min-w-0, jadi didefinisikan.) */
+        .min-w-0 {
+            min-width: 0 !important;
+        }
+
+        .pl-group-select {
+            min-width: 0;
+        }
+
+        @media (min-width: 576px) {
+            .pl-group-select {
+                min-width: 160px;
+                max-width: 190px;
+            }
+        }
     </style>
 
     @php
@@ -82,21 +99,24 @@ Data Hak Akses || lemon
                             @endif
                         </div>
 
-                        <!-- Filter Group -->
-                        <select wire:model.live="filterGroup" class="form-select text-capitalize" style="max-width: 180px;">
-                            <option value="">Semua Group</option>
-                            @foreach ($groups as $group)
-                            <option value="{{ $group['value'] }}">{{ str_replace('_', ' ', $group['label']) }}</option>
-                            @endforeach
-                        </select>
+                        <!-- Filter Group + Reset (satu baris, rapi di mobile) -->
+                        <div class="d-flex gap-2">
+                            <select wire:model.live="filterGroup"
+                                class="form-select text-capitalize pl-group-select flex-grow-1 flex-sm-grow-0">
+                                <option value="">Semua Group</option>
+                                @foreach ($groups as $group)
+                                <option value="{{ $group['value'] }}">{{ str_replace('_', ' ', $group['label']) }}</option>
+                                @endforeach
+                            </select>
 
-                        @if ($search || $filterGroup)
-                        <button wire:click="resetFilters" type="button"
-                            class="btn btn-light d-inline-flex align-items-center justify-content-center px-3"
-                            title="Reset filter">
-                            <i class="bi bi-arrow-clockwise"></i>
-                        </button>
-                        @endif
+                            @if ($search || $filterGroup)
+                            <button wire:click="resetFilters" type="button"
+                                class="btn btn-light border d-inline-flex align-items-center justify-content-center px-3 flex-shrink-0"
+                                title="Reset filter">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                            @endif
+                        </div>
 
                         @if (auth()->user()->hasPermission('create_permission'))
                         <a wire:navigate href="{{ route('admin.account.permission.create') }}"

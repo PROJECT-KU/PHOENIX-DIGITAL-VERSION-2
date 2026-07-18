@@ -73,13 +73,26 @@ class ActivityLogList extends Component
         }
 
         $hari = max(0, (int) $hari);
-        $batas = now()->subDays($hari);
 
-        $jumlah = ActivityLog::where('created_at', '<', $batas)->count();
-        ActivityLog::where('created_at', '<', $batas)->delete();
+        // 0 hari = hapus SEMUA log. >0 = hapus yang lebih lama dari N hari.
+        $query = $hari === 0
+            ? ActivityLog::query()
+            : ActivityLog::where('created_at', '<', now()->subDays($hari));
+
+        $jumlah = (int) $query->count();
+        $query->delete();
 
         $this->resetPage();
-        $this->dispatch('swal-success', message: $jumlah.' log lebih lama dari '.$hari.' hari berhasil dihapus.');
+
+        if ($jumlah === 0) {
+            $this->dispatch('swal-error', message: 'Tidak ada log yang cocok untuk dihapus. Semua log masih lebih baru dari '.$hari.' hari — pilih "Hapus SEMUA" bila ingin mengosongkan.');
+
+            return;
+        }
+
+        $this->dispatch('swal-success', message: $hari === 0
+            ? $jumlah.' log berhasil dihapus (semua).'
+            : $jumlah.' log lebih lama dari '.$hari.' hari berhasil dihapus.');
     }
 
     #[Layout('livewire.layout.templateindex')]

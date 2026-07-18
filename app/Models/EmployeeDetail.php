@@ -26,19 +26,17 @@ class EmployeeDetail extends Model
     }
 
     /**
-     * Buat Nomor Induk Karyawan otomatis: "ACM-XXXXXX" (6 karakter acak,
-     * tanpa O/0/I/1 agar tidak ambigu). Dijamin unik.
+     * Buat Nomor Induk Karyawan otomatis: "ACM-NNNNNN" (6 digit angka ACAK).
+     *
+     * Sengaja ACAK, bukan berurutan: NIK dipakai sebagai identitas login, jadi
+     * nomor berurutan mudah ditebak/dienumerasi orang luar (bahkan bisa dipakai
+     * mengunci banyak akun via 3x gagal login). Acak menutup celah itu.
+     * Dijamin unik.
      */
     public static function generateNik(): string
     {
-        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
         do {
-            $s = '';
-            for ($i = 0; $i < 6; $i++) {
-                $s .= $chars[random_int(0, strlen($chars) - 1)];
-            }
-            $nik = 'ACM-'.$s;
+            $nik = 'ACM-'.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (self::where('nik', $nik)->exists());
 
         return $nik;

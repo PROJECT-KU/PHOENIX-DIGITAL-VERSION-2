@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Presensi;
 
 use App\Models\Presensi;
 use App\Models\User;
+use App\Support\PeriodeGaji;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -15,9 +16,13 @@ class PresensiRekap extends Component
 
     public string $search = '';
 
-    public string $tanggalDari = '';
+    // Filter periode SERAGAM dengan Cashflow: pilih bulan & tahun, dengan mode
+    // 'kalender' (1 s/d akhir bulan) atau 'siklus20' (siklus gaji 21-20).
+    public $bulan;
 
-    public string $tanggalSampai = '';
+    public $tahun;
+
+    public string $modePeriode = 'kalender';
 
     public string $filterTipe = '';
 
@@ -50,13 +55,14 @@ class PresensiRekap extends Component
 
     public function mount(): void
     {
-        $this->tanggalDari = now()->startOfMonth()->toDateString();
-        $this->tanggalSampai = now()->toDateString();
+        // Default ke bulan & tahun berjalan (seragam dgn Cashflow).
+        $this->bulan = now()->month;
+        $this->tahun = now()->year;
     }
 
     public function updated($prop): void
     {
-        if (in_array($prop, ['search', 'tanggalDari', 'tanggalSampai', 'filterTipe'], true)) {
+        if (in_array($prop, ['search', 'bulan', 'tahun', 'modePeriode', 'filterTipe'], true)) {
             $this->resetPage();
         }
     }
@@ -64,9 +70,51 @@ class PresensiRekap extends Component
     public function resetFilter(): void
     {
         $this->reset(['search', 'filterTipe']);
-        $this->tanggalDari = now()->startOfMonth()->toDateString();
-        $this->tanggalSampai = now()->toDateString();
+        $this->bulan = '';
+        $this->tahun = '';
+        $this->modePeriode = 'kalender';
         $this->resetPage();
+    }
+
+    /**
+     * Rentang tanggal [mulai, akhirInklusif] dari bulan/tahun/mode terpilih.
+     * Bulan kosong = tanpa batas (semua data). Siklus mengikuti setelan gaji
+     * (payroll_cutoff_day) — SATU sumber dengan fitur Gaji & Cashflow.
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    protected function periodeRange(): array
+    {
+        if (empty($this->bulan)) {
+            return [null, null];
+        }
+
+        $bulan = (int) $this->bulan;
+        $tahun = (int) ($this->tahun ?: now()->year);
+
+        if ($this->modePeriode === 'siklus20') {
+            return [PeriodeGaji::mulai($bulan, $tahun), PeriodeGaji::akhir($bulan, $tahun)];
+        }
+
+        $mulai = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+
+        return [$mulai, (clone $mulai)->endOfMonth()];
+    }
+
+    protected function daftarBulan(): array
+    {
+        return [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+    }
+
+    protected function daftarTahun(): array
+    {
+        $tahunSekarang = (int) now()->year;
+
+        return range($tahunSekarang, $tahunSekarang - 5);
     }
 
     public function deletePresensi($id): void
@@ -163,13 +211,10 @@ class PresensiRekap extends Component
             'dibuat_oleh' => auth()->id(),
         ]);
 
-        // Lebarkan filter agar entri yang baru dibuat langsung terlihat di tabel.
-        if ($this->manualTanggal < $this->tanggalDari) {
-            $this->tanggalDari = $this->manualTanggal;
-        }
-        if ($this->manualTanggal > $this->tanggalSampai) {
-            $this->tanggalSampai = $this->manualTanggal;
-        }
+        // Arahkan filter ke periode entri yang baru dibuat agar langsung terlihat.
+        $mt = Carbon::parse($this->manualTanggal);
+        $this->bulan = $mt->month;
+        $this->tahun = $mt->year;
 
         $this->showManual = false;
         $this->reset(['manualUserId', 'manualJamMasuk', 'manualJamPulang', 'manualCatatan']);
@@ -267,11 +312,13 @@ class PresensiRekap extends Component
 
     protected function baseQuery()
     {
+        [$mulai, $akhir] = $this->periodeRange();
+
         return Presensi::query()
             ->visibleTo()
             ->with(['user', 'dibuatOleh'])
-            ->when($this->tanggalDari, fn ($q) => $q->whereDate('tanggal', '>=', $this->tanggalDari))
-            ->when($this->tanggalSampai, fn ($q) => $q->whereDate('tanggal', '<=', $this->tanggalSampai))
+            ->when($mulai, fn ($q) => $q->whereDate('tanggal', '>=', $mulai->toDateString()))
+            ->when($akhir, fn ($q) => $q->whereDate('tanggal', '<=', $akhir->toDateString()))
             ->when($this->filterTipe, fn ($q) => $q->where('tipe', $this->filterTipe))
             ->when($this->search, function ($q) {
                 $term = $this->search;
@@ -298,10 +345,17 @@ class PresensiRekap extends Component
                 ->get(['id', 'name'])
             : collect();
 
+        [$periodeMulai, $periodeAkhir] = $this->periodeRange();
+
         return view('livewire.pages.admin.presensi.presensi-rekap', [
             'presensis' => $presensis,
             'stats' => $stats,
             'karyawanList' => $karyawanList,
+            'daftarBulan' => $this->daftarBulan(),
+            'daftarTahun' => $this->daftarTahun(),
+            'periodeMulai' => $periodeMulai,
+            'periodeAkhir' => $periodeAkhir,
+            'cutoffDay' => PeriodeGaji::cutoffDay(),
         ]);
     }
 }
