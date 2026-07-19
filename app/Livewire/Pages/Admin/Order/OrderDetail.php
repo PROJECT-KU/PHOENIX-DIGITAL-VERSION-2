@@ -33,6 +33,34 @@ class OrderDetail extends Component
 
     public bool $persenTerbacaOtomatis = false;
 
+    /** Format laporan plagiasi tak dikenali — admin isi persen manual. */
+    public bool $persenGagalBaca = false;
+
+    /** Hasil cek AI (PDF) + persentasenya. */
+    public $hasilAiFile;
+
+    public $persentaseAiInput = null;
+
+    public bool $persenAiTerbacaOtomatis = false;
+
+    /** Format laporan AI tak dikenali — admin perlu mengisi persen manual. */
+    public bool $persenAiGagalBaca = false;
+
+    /** Asal laporan AI yang terbaca: 'turnitin' | 'gptzero' | null. */
+    public ?string $sumberAi = null;
+
+    /**
+     * Arti angkanya berbeda per sumber — Turnitin = persen teks AI, GPTZero =
+     * probabilitas dokumen AI. Ditampilkan apa adanya agar tak menyesatkan.
+     */
+    public ?string $labelAi = null;
+
+    /** Persen yang ditemukan saat berkas memuat >1 laporan — admin memilih. */
+    public array $pilihanAi = [];
+
+    /** Dokumen DOCX hasil parafrase yang dikerjakan tim. */
+    public $hasilDocxFile;
+
     public function mount(Order $order)
     {
         // Auto-update: tandai item yang end_date-nya sudah lewat menjadi 'habis'
@@ -204,21 +232,101 @@ class OrderDetail extends Component
     public function bukaUploadHasil(string $uploadId): void
     {
         $this->uploadAktifId = $uploadId;
-        $this->reset('hasilFile', 'persentaseInput');
-        $this->persenTerbacaOtomatis = false;
+        $this->resetFormHasil();
+
+        // Pra-isi dengan persen yang SUDAH tersimpan. Tanpa ini, saat admin
+        // menekan "Ganti" hanya untuk salah satu berkas, kolom persen slot
+        // lain tampil kosong lalu ikut tersimpan sebagai null — persen yang
+        // sudah benar jadi hilang padahal berkasnya tidak diganti.
+        $up = $this->pengecekan($uploadId);
+        $this->persentaseInput = $up->persentase;
+        $this->persentaseAiInput = $up->persentase_ai;
     }
 
     public function tutupUploadHasil(): void
     {
         $this->uploadAktifId = null;
-        $this->reset('hasilFile', 'persentaseInput');
+        $this->resetFormHasil();
+    }
+
+    /**
+     * Slot unggah hasil mana yang perlu ditampilkan admin.
+     *
+     * Disesuaikan dengan yang BENAR-BENAR dibeli customer, supaya admin tak
+     * disodori kolom yang tak relevan (mis. pesanan cek AI polos dulu tetap
+     * menampilkan 3 slot):
+     *   - parafrase (per halaman) → ketiganya (DOCX + plagiasi + AI)
+     *   - selain itu → plagiasi bila ada layanan/add-on pengecekan kemiripan,
+     *     AI bila ada layanan/add-on deteksi AI.
+     *
+     * Slot yang SUDAH berisi berkas selalu ditampilkan, apa pun aturannya —
+     * kalau disembunyikan, hasil yang terlanjur tersimpan jadi tak bisa
+     * diunduh maupun diganti.
+     *
+     * @param  string  $jenis  'plagiasi' | 'ai' | 'docx'
+     */
+    public function slotTampil(string $jenis): bool
+    {
+        $up = $this->uploadAktifId ? OrderUpload::find($this->uploadAktifId) : null;
+
+        $sudahBerisi = match ($jenis) {
+            'plagiasi' => (bool) optional($up)->hasil_path,
+            'ai' => (bool) optional($up)->hasil_ai_path,
+            'docx' => (bool) optional($up)->hasil_docx_path,
+            default => false,
+        };
+
+        if ($sudahBerisi) {
+            return true;
+        }
+
+        // Parafrase butuh ketiganya: dokumen hasil + bukti plagiasi + bukti AI.
+        if ($this->order->adaParafrase()) {
+            return true;
+        }
+
+        return match ($jenis) {
+            'plagiasi' => $this->order->punyaLayananJasa('pakai_exclude'),
+            'ai' => $this->order->punyaLayananJasa('cek_ai'),
+            default => false,
+        };
+    }
+
+    /** Nomor urut slot yang tampil (1,2,3) — mengikuti slot yang benar-benar ada. */
+    public function nomorSlot(string $jenis): int
+    {
+        $urutan = ['plagiasi', 'ai', 'docx'];
+        $no = 0;
+
+        foreach ($urutan as $j) {
+            if ($this->slotTampil($j)) {
+                $no++;
+            }
+            if ($j === $jenis) {
+                return $no;
+            }
+        }
+
+        return $no;
+    }
+
+    private function resetFormHasil(): void
+    {
+        $this->reset('hasilFile', 'persentaseInput', 'hasilAiFile', 'persentaseAiInput', 'hasilDocxFile');
         $this->persenTerbacaOtomatis = false;
+        $this->persenGagalBaca = false;
+        $this->persenAiTerbacaOtomatis = false;
+        $this->persenAiGagalBaca = false;
+        $this->sumberAi = null;
+        $this->labelAi = null;
+        $this->pilihanAi = [];
     }
 
     /** Saat admin memilih file hasil PDF, coba baca persen kemiripan untuk pra-isi. */
     public function updatedHasilFile(): void
     {
         $this->persenTerbacaOtomatis = false;
+        $this->persenGagalBaca = false;
 
         if (! $this->hasilFile) {
             return;
@@ -230,8 +338,60 @@ class OrderDetail extends Component
             if (! is_null($persen)) {
                 $this->persentaseInput = $persen;
                 $this->persenTerbacaOtomatis = true;
+
+                return;
             }
         }
+
+        // Berkas BARU tapi persennya tak terbaca (DOCX / format tak dikenal):
+        // kosongkan agar angka milik berkas LAMA tidak ikut terbawa.
+        $this->persentaseInput = null;
+        $this->persenGagalBaca = true;
+    }
+
+    /** Saat admin memilih PDF hasil cek AI, coba baca persen AI untuk pra-isi. */
+    public function updatedHasilAiFile(): void
+    {
+        $this->persenAiTerbacaOtomatis = false;
+        $this->persenAiGagalBaca = false;
+        $this->sumberAi = null;
+        $this->labelAi = null;
+        $this->pilihanAi = [];
+
+        if (! $this->hasilAiFile) {
+            return;
+        }
+
+        if (strtolower((string) $this->hasilAiFile->getClientOriginalExtension()) === 'pdf') {
+            $baca = PlagiarismReader::bacaAi($this->hasilAiFile->getRealPath());
+
+            // Berkas memuat beberapa laporan bertumpuk. Pra-isi dengan nilai
+            // lapisan teratas (yang terlihat saat PDF dibuka), tapi tampilkan
+            // semua temuan agar admin bisa mengoreksi bila perlu.
+            if ($baca && ! empty($baca['ambigu'])) {
+                $this->persentaseAiInput = $baca['persen'];
+                $this->sumberAi = $baca['sumber'];
+                $this->labelAi = $baca['label'];
+                $this->pilihanAi = $baca['nilai'];
+
+                return;
+            }
+
+            if ($baca) {
+                $this->persentaseAiInput = $baca['persen'];
+                $this->persenAiTerbacaOtomatis = true;
+                $this->sumberAi = $baca['sumber'];
+                $this->labelAi = $baca['label'];
+
+                return;
+            }
+        }
+
+        // Gagal dibaca: KOSONGKAN isian. Kalau angka lama dibiarkan, admin
+        // mengira itu hasil berkas yang baru diunggah padahal bukan — persen
+        // yang salah bisa ikut tampil ke customer.
+        $this->persentaseAiInput = null;
+        $this->persenAiGagalBaca = true;
     }
 
     /** Simpan file hasil + persen (dikonfirmasi admin) → status selesai. */
@@ -242,33 +402,73 @@ class OrderDetail extends Component
         }
 
         $this->validate([
-            'hasilFile' => ['required', 'file', 'mimes:pdf,docx', 'max:20480'],
+            'hasilFile' => ['nullable', 'file', 'mimes:pdf,docx', 'max:20480'],
+            'hasilAiFile' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'hasilDocxFile' => ['nullable', 'file', 'mimes:docx', 'max:20480'],
             'persentaseInput' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'persentaseAiInput' => ['nullable', 'integer', 'min:0', 'max:100'],
         ], [
-            'hasilFile.required' => 'Pilih file hasil dulu.',
-            'hasilFile.mimes' => 'Format hasil harus PDF atau DOCX.',
+            'hasilFile.mimes' => 'Hasil cek plagiasi harus PDF atau DOCX.',
+            'hasilAiFile.mimes' => 'Hasil cek AI harus PDF.',
+            'hasilDocxFile.mimes' => 'Dokumen hasil harus DOCX.',
             'hasilFile.max' => 'Ukuran file maksimal 20 MB.',
+            'hasilAiFile.max' => 'Ukuran file maksimal 20 MB.',
+            'hasilDocxFile.max' => 'Ukuran file maksimal 20 MB.',
             'persentaseInput.integer' => 'Persen harus angka 0–100.',
+            'persentaseAiInput.integer' => 'Persen AI harus angka 0–100.',
         ]);
 
         $up = $this->pengecekan($this->uploadAktifId);
 
-        // Hapus hasil lama bila mengganti.
-        if ($up->hasil_path && Storage::disk('local')->exists($up->hasil_path)) {
-            Storage::disk('local')->delete($up->hasil_path);
+        // Minimal satu berkas hasil harus ada (baru atau sudah tersimpan).
+        $adaBaru = $this->hasilFile || $this->hasilAiFile || $this->hasilDocxFile;
+        $adaLama = $up->hasil_path || $up->hasil_ai_path || $up->hasil_docx_path;
+        if (! $adaBaru && ! $adaLama) {
+            $this->addError('hasilFile', 'Unggah minimal satu berkas hasil.');
+
+            return;
         }
 
-        $path = $this->hasilFile->store('order-uploads/'.$this->order->id.'/hasil', 'local');
+        // Hapus berkas lama yang digantikan (hemat ruang disk).
+        if ($this->hasilFile) {
+            $this->hapusBerkasLama($up->hasil_path);
+        }
 
-        $up->update([
-            'hasil_path' => $path,
-            'hasil_nama' => $this->hasilFile->getClientOriginalName(),
-            'hasil_ukuran' => $this->hasilFile->getSize(),
-            'hasil_mime' => $this->hasilFile->getMimeType(),
+        $folder = 'order-uploads/'.$this->order->id.'/hasil';
+        $data = [
             'persentase' => $this->persentaseInput === '' || is_null($this->persentaseInput) ? null : (int) $this->persentaseInput,
+            'persentase_ai' => $this->persentaseAiInput === '' || is_null($this->persentaseAiInput) ? null : (int) $this->persentaseAiInput,
             'status' => 'selesai',
             'selesai_at' => now(),
-        ]);
+        ];
+
+        // 1) Hasil cek plagiasi
+        if ($this->hasilFile) {
+            $data['hasil_path'] = $this->hasilFile->store($folder, 'local');
+            $data['hasil_nama'] = $this->hasilFile->getClientOriginalName();
+            $data['hasil_ukuran'] = $this->hasilFile->getSize();
+            $data['hasil_mime'] = $this->hasilFile->getMimeType();
+        }
+
+        // 2) Hasil cek AI
+        if ($this->hasilAiFile) {
+            $this->hapusBerkasLama($up->hasil_ai_path);
+            $data['hasil_ai_path'] = $this->hasilAiFile->store($folder, 'local');
+            $data['hasil_ai_nama'] = $this->hasilAiFile->getClientOriginalName();
+            $data['hasil_ai_ukuran'] = $this->hasilAiFile->getSize();
+            $data['hasil_ai_mime'] = $this->hasilAiFile->getMimeType();
+        }
+
+        // 3) Dokumen hasil parafrase (DOCX)
+        if ($this->hasilDocxFile) {
+            $this->hapusBerkasLama($up->hasil_docx_path);
+            $data['hasil_docx_path'] = $this->hasilDocxFile->store($folder, 'local');
+            $data['hasil_docx_nama'] = $this->hasilDocxFile->getClientOriginalName();
+            $data['hasil_docx_ukuran'] = $this->hasilDocxFile->getSize();
+            $data['hasil_docx_mime'] = $this->hasilDocxFile->getMimeType();
+        }
+
+        $up->update($data);
 
         // Beri tahu customer via email bahwa hasil siap + link unduh.
         $this->kirimEmailHasil($up);
@@ -310,6 +510,14 @@ class OrderDetail extends Component
             Mail::mailer('phoenix')->to($email)->send(new JasaHasilMail($this->order, $up));
         } catch (\Throwable $e) {
             report($e);
+        }
+    }
+
+    /** Hapus berkas lama di disk privat bila ada. */
+    private function hapusBerkasLama(?string $path): void
+    {
+        if ($path && Storage::disk('local')->exists($path)) {
+            Storage::disk('local')->delete($path);
         }
     }
 

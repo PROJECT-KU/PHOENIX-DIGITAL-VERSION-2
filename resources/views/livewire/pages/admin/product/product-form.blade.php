@@ -105,6 +105,44 @@
                         transition: border-color .18s, background .18s, box-shadow .18s;
                     }
                     .ad-mode-opt:hover { border-color: #86efac; background: #f8fefb; }
+
+                    /* Toggle "pengecekan kemiripan" — dipakai di kartu cara jual & tiap add-on */
+                    .exc-tg {
+                        display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px;
+                        border: 1.5px solid #e5e7eb; border-radius: 11px; background: #fff; cursor: pointer;
+                        transition: border-color .18s, background .18s, box-shadow .18s;
+                    }
+                    .exc-tg:hover { border-color: #fcd34d; background: #fffdf6; }
+                    .exc-tg.is-on { border-color: #f59e0b; background: #fffbeb; box-shadow: 0 2px 8px rgba(245,158,11,.10); }
+                    .exc-tg input { position: absolute; opacity: 0; width: 0; height: 0; }
+                    .exc-tg-box {
+                        flex-shrink: 0; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px;
+                        border: 1.5px solid #cbd5e1; background: #fff; color: transparent;
+                        display: flex; align-items: center; justify-content: center; transition: all .16s;
+                    }
+                    /* Glyph Bootstrap Icons dirender lewat ::before — elemen <i> harus
+                       jadi kotak flex penuh agar centangnya benar-benar di tengah. */
+                    .exc-tg-box i.bi {
+                        font-size: .68rem; line-height: 1; width: 100%; height: 100%;
+                        display: flex; align-items: center; justify-content: center;
+                    }
+                    .exc-tg-box i.bi::before { display: block; line-height: 1; }
+                    .exc-tg.is-on .exc-tg-box { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+                    .exc-tg-txt { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+                    .exc-tg-txt b { font-size: .82rem; color: #1e293b; line-height: 1.35; }
+                    .exc-tg.is-on .exc-tg-txt b { color: #b45309; }
+                    .exc-tg-txt small { font-size: .71rem; color: #94a3b8; line-height: 1.45; }
+                    /* Varian deteksi AI — biru, agar tak tertukar dengan toggle kemiripan */
+                    .exc-tg.is-ai:hover { border-color: #93c5fd; background: #f8fbff; }
+                    .exc-tg.is-ai.is-on { border-color: #2563eb; background: #eff6ff; box-shadow: 0 2px 8px rgba(37,99,235,.10); }
+                    .exc-tg.is-ai.is-on .exc-tg-box { background: #2563eb; border-color: #2563eb; }
+                    .exc-tg.is-ai.is-on .exc-tg-txt b { color: #1d4ed8; }
+
+                    /* Versi ramping di dalam kartu add-on */
+                    .exc-tg.is-mini { padding: 8px 11px; gap: 8px; }
+                    .exc-tg.is-mini .exc-tg-box { width: 17px; height: 17px; border-radius: 5px; }
+                    .exc-tg.is-mini .exc-tg-txt b { font-size: .77rem; }
+                    .exc-tg.is-mini .exc-tg-txt small { font-size: .68rem; }
                     .ad-mode-opt.is-on { border-color: #16a34a; background: #f0fdf4; box-shadow: 0 2px 8px rgba(22,163,74,.10); }
                     .ad-mode-opt input { position: absolute; opacity: 0; width: 0; height: 0; }
                     .ad-mode-opt > i.bi { font-size: 1.05rem; color: #94a3b8; display: flex; line-height: 1; flex-shrink: 0; }
@@ -410,6 +448,28 @@
                             <i class="bi bi-check-circle-fill jmode-check"></i>
                         </label>
                     </div>
+
+                    {{-- Exclude hanya relevan untuk pengecekan kemiripan.
+                         Cek AI menilai teks utuh, jadi panelnya disembunyikan. --}}
+                    @if ($jasa_mode === 'paket')
+                    <label class="exc-tg {{ $pakai_exclude ? 'is-on' : '' }}" style="margin-top:12px;">
+                        <input type="checkbox" wire:model.live="pakai_exclude">
+                        <span class="exc-tg-box"><i class="bi bi-check-lg"></i></span>
+                        <span class="exc-tg-txt">
+                            <b>Pengecekan kemiripan</b>
+                            <small>Customer bisa memilih bagian yang dikecualikan — daftar pustaka, kutipan, source. Matikan untuk cek AI, karena AI menilai seluruh teks.</small>
+                        </span>
+                    </label>
+
+                    <label class="exc-tg is-ai {{ $cek_ai ? 'is-on' : '' }}" style="margin-top:9px;">
+                        <input type="checkbox" wire:model.live="cek_ai">
+                        <span class="exc-tg-box"><i class="bi bi-check-lg"></i></span>
+                        <span class="exc-tg-txt">
+                            <b>Deteksi AI</b>
+                            <small>Dokumen yang diunggah <b>wajib berbahasa Inggris</b> — sistem otomatis menolak dokumen berbahasa lain, karena deteksi AI hanya akurat untuk teks Inggris.</small>
+                        </span>
+                    </label>
+                    @endif
                 </div>
 
                 @if ($jasa_mode === 'halaman')
@@ -575,6 +635,27 @@
                                         @input="let n = $el.value.replace(/[^0-9]/g,''); $el.value = n ? new Intl.NumberFormat('id-ID').format(n) : ''; @this.set('addons.{{ $i }}.harga', n)">
                                 </div>
                                 @error('addons.'.$i.'.harga') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Add-on pengecekan kemiripan memunculkan panel exclude di /cek --}}
+                            <div class="col-12">
+                                <label class="exc-tg is-mini {{ ($ad['pakai_exclude'] ?? false) ? 'is-on' : '' }}">
+                                    <input type="checkbox" wire:model.live="addons.{{ $i }}.pakai_exclude">
+                                    <span class="exc-tg-box"><i class="bi bi-check-lg"></i></span>
+                                    <span class="exc-tg-txt">
+                                        <b>Pengecekan kemiripan</b>
+                                        <small>Memunculkan pilihan “Kecualikan dari pemeriksaan” untuk customer</small>
+                                    </span>
+                                </label>
+
+                                <label class="exc-tg is-mini is-ai {{ ($ad['cek_ai'] ?? false) ? 'is-on' : '' }}" style="margin-top:7px;">
+                                    <input type="checkbox" wire:model.live="addons.{{ $i }}.cek_ai">
+                                    <span class="exc-tg-box"><i class="bi bi-check-lg"></i></span>
+                                    <span class="exc-tg-txt">
+                                        <b>Deteksi AI</b>
+                                        <small>Dokumen wajib bahasa Inggris — selain itu ditolak otomatis</small>
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>

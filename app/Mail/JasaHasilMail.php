@@ -28,9 +28,15 @@ class JasaHasilMail extends Mailable
     {
         $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigital.id');
 
+        // Parafrase menghasilkan dokumen kerja (DOCX), bukan sekadar laporan
+        // pengecekan — subjeknya menyesuaikan agar tidak membingungkan customer.
+        $judul = $this->upload->hasil_docx_path
+            ? 'Dokumen Hasil Sudah Siap'
+            : 'Hasil Pengecekan Sudah Siap';
+
         return new Envelope(
             from: new Address($from, 'Phoenix Digital'),
-            subject: 'Hasil Cek Plagiasi Sudah Siap — '.$this->order->order_number,
+            subject: $judul.' — '.$this->order->order_number,
         );
     }
 

@@ -6,6 +6,7 @@ use App\Models\JasaDraftUpload;
 use App\Models\Product;
 use App\Services\PromoService;
 use App\Support\PdfPageCounter;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -36,6 +37,22 @@ class ProductDetail extends Component
 
     /** Halaman yang tak perlu dikerjakan, mis. "1,2,12" atau "1-3,12". */
     public string $halamanDikecualikan = '';
+
+    /**
+     * File KERJA (DOCX) untuk jasa parafrase — yang benar-benar dikerjakan tim.
+     * PDF hanya dipakai menghitung halaman; PDF tak bisa dikonversi balik ke
+     * DOCX tanpa merusak format, jadi customer mengunggah keduanya.
+     */
+    public $dokumenKerja;
+
+    public ?string $draftNamaKerja = null;
+
+    // Bagian dokumen yang TIDAK perlu diparafrase (default: ketiganya).
+    public bool $excludeCover = true;
+
+    public bool $excludeDaftarIsi = true;
+
+    public bool $excludeDaftarPustaka = true;
 
     public ?string $durationType = null;
 
@@ -193,6 +210,26 @@ class ProductDetail extends Component
             : array_values(array_merge($this->selectedAddons, [$addonId]));
     }
 
+    /**
+     * Dokumen harus berbahasa Inggris? Berlaku bila produknya sendiri layanan
+     * deteksi AI, ATAU customer memilih add-on deteksi AI. Dipakai untuk
+     * memberi tahu syarat ini SEBELUM customer membayar.
+     */
+    public function wajibInggris(): bool
+    {
+        if (! $this->product->butuh_file) {
+            return false;
+        }
+
+        if ($this->product->cek_ai) {
+            return true;
+        }
+
+        return $this->product->addonAktif()
+            ->whereIn('id', $this->selectedAddons)
+            ->contains(fn ($a) => (bool) $a->cek_ai);
+    }
+
     /** Total tambahan harga dari add-on terpilih. */
     #[Computed]
     public function addonsTotal(): int
@@ -207,7 +244,16 @@ class ProductDetail extends Component
     {
         return $this->product->addonAktif()
             ->whereIn('id', $this->selectedAddons)
-            ->map(fn ($a) => ['id' => $a->id, 'nama' => $a->nama, 'harga' => (int) $a->harga])
+            // pakai_exclude ikut disimpan sebagai RIWAYAT: sifat add-on saat
+            // dibeli. Tanpa ini, mengubah/menyimpan ulang produk di admin bisa
+            // mengubah tampilan pesanan lama (mis. panel exclude ikut hilang).
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'nama' => $a->nama,
+                'harga' => (int) $a->harga,
+                'pakai_exclude' => (bool) $a->pakai_exclude,
+                'cek_ai' => (bool) $a->cek_ai,
+            ])
             ->values()->all();
     }
 
@@ -258,14 +304,85 @@ class ProductDetail extends Component
         $this->reset('dokumenJasa');
     }
 
+    /**
+     * Unggah file KERJA (DOCX). Disimpan menempel pada draft yang sama dengan
+     * PDF penghitung halaman, jadi PDF harus diunggah lebih dulu.
+     */
+    public function updatedDokumenKerja(): void
+    {
+        try {
+            $this->validateOnly('dokumenKerja', [
+                'dokumenKerja' => ['required', 'file', 'mimes:docx', 'max:20480'],
+            ], [
+                'dokumenKerja.mimes' => 'File kerja harus DOCX (dokumen Word yang bisa diedit).',
+                'dokumenKerja.max' => 'Ukuran file maksimal 20 MB.',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->reset('dokumenKerja');
+            throw $e;
+        }
+
+        if (! $this->draftUploadId) {
+            $this->reset('dokumenKerja');
+            $this->addError('dokumenKerja', 'Unggah file PDF dulu agar jumlah halaman terbaca.');
+
+            return;
+        }
+
+        $draft = JasaDraftUpload::find($this->draftUploadId);
+        if (! $draft) {
+            $this->reset('dokumenKerja');
+
+            return;
+        }
+
+        // Ganti file kerja lama bila customer mengunggah ulang.
+        if ($draft->kerja_path && Storage::disk('local')->exists($draft->kerja_path)) {
+            Storage::disk('local')->delete($draft->kerja_path);
+        }
+
+        $path = $this->dokumenKerja->store('jasa-draft', 'local');
+
+        $draft->update([
+            'kerja_path' => $path,
+            'kerja_nama' => $this->dokumenKerja->getClientOriginalName(),
+            'kerja_ukuran' => $this->dokumenKerja->getSize(),
+            'kerja_mime' => $this->dokumenKerja->getMimeType(),
+        ]);
+
+        $this->draftNamaKerja = $draft->kerja_nama;
+        $this->reset('dokumenKerja');
+    }
+
+    /** Buang file kerja saja (PDF & halaman tetap). */
+    public function hapusDraftKerja(): void
+    {
+        if ($this->draftUploadId) {
+            $draft = JasaDraftUpload::find($this->draftUploadId);
+            if ($draft && $draft->kerja_path) {
+                if (Storage::disk('local')->exists($draft->kerja_path)) {
+                    Storage::disk('local')->delete($draft->kerja_path);
+                }
+                $draft->update(['kerja_path' => null, 'kerja_nama' => null, 'kerja_ukuran' => null, 'kerja_mime' => null]);
+            }
+        }
+        $this->draftNamaKerja = null;
+    }
+
     /** Buang file draft yang sudah diunggah (customer ingin ganti). */
     public function hapusDraft(): void
     {
         if ($this->draftUploadId) {
-            optional(JasaDraftUpload::find($this->draftUploadId))->delete();
+            $draft = JasaDraftUpload::find($this->draftUploadId);
+            // Buang juga file kerja yang menempel pada draft ini.
+            if ($draft && $draft->kerja_path && Storage::disk('local')->exists($draft->kerja_path)) {
+                Storage::disk('local')->delete($draft->kerja_path);
+            }
+            optional($draft)->delete();
         }
         $this->draftUploadId = null;
         $this->draftNamaFile = null;
+        $this->draftNamaKerja = null;
         $this->jumlahHalaman = 0;
         $this->halamanDikecualikan = '';
         unset($this->halamanExclude, $this->halamanDihitung, $this->hargaPerHalamanTotal);
@@ -470,6 +587,14 @@ class ProductDetail extends Component
             return;
         }
 
+        // File kerja (DOCX) wajib: PDF hanya acuan halaman, tim mengerjakan DOCX.
+        $draft = JasaDraftUpload::find($this->draftUploadId);
+        if (! $draft || ! $draft->kerja_path) {
+            $this->dispatch('cart-error', message: 'Unggah juga file DOCX-nya — itu yang akan dikerjakan tim.');
+
+            return;
+        }
+
         $dihitung = $this->halamanDihitung();
         if ($dihitung < 1) {
             $this->dispatch('cart-error', message: 'Semua halaman dikecualikan. Sisakan minimal 1 halaman untuk dikerjakan.');
@@ -500,6 +625,9 @@ class ProductDetail extends Component
             'jumlah_halaman' => $this->jumlahHalaman,
             'halaman_dikecualikan' => $excludeList ? implode(',', $excludeList) : null,
             'halaman_dihitung' => $dihitung,
+            'exclude_cover' => $this->excludeCover,
+            'exclude_daftar_isi' => $this->excludeDaftarIsi,
+            'exclude_daftar_pustaka' => $this->excludeDaftarPustaka,
             'draft_upload_id' => $this->draftUploadId,
         ];
 
@@ -508,9 +636,13 @@ class ProductDetail extends Component
         // Reset agar customer bisa mengunggah dokumen berikutnya.
         $this->draftUploadId = null;
         $this->draftNamaFile = null;
+        $this->draftNamaKerja = null;
         $this->jumlahHalaman = 0;
         $this->halamanDikecualikan = '';
         $this->selectedAddons = [];
+        $this->excludeCover = true;
+        $this->excludeDaftarIsi = true;
+        $this->excludeDaftarPustaka = true;
         unset($this->halamanExclude, $this->halamanDihitung, $this->hargaPerHalamanTotal);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());

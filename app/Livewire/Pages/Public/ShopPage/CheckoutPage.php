@@ -525,7 +525,9 @@ class CheckoutPage extends Component
             );
 
             if ($this->usePoints && $customer->status_member === 'active' && $customer->point > 0) {
-                $customer->usePoints();
+                // Potong sebesar diskon yang benar-benar dipakai saja — sisa
+                // poin customer tidak ikut hangus.
+                $customer->usePoints((int) $this->pointsDiscount);
             }
 
             $orderNumber = $this->generateOrderNumber();
@@ -584,7 +586,7 @@ class CheckoutPage extends Component
                 // Jasa per halaman: file yang diunggah SEBELUM bayar dipindahkan
                 // menjadi pengecekan pesanan ini, siap diproses admin.
                 if (! empty($item['draft_upload_id'])) {
-                    $this->pindahkanDraftUpload($item['draft_upload_id'], $order->id);
+                    $this->pindahkanDraftUpload($item['draft_upload_id'], $order->id, $item);
                 }
             }
 
@@ -673,7 +675,7 @@ class CheckoutPage extends Component
      * OrderUpload milik pesanan — langsung berstatus 'menunggu' agar terpantau
      * admin lewat badge. Terisolasi: kegagalan di sini tak membatalkan checkout.
      */
-    private function pindahkanDraftUpload(string $draftId, string $orderId): void
+    private function pindahkanDraftUpload(string $draftId, string $orderId, array $item = []): void
     {
         try {
             $draft = \App\Models\JasaDraftUpload::find($draftId);
@@ -681,18 +683,42 @@ class CheckoutPage extends Component
                 return;
             }
 
-            $tujuan = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->path);
-            if (\Illuminate\Support\Facades\Storage::disk('local')->exists($draft->path)) {
-                \Illuminate\Support\Facades\Storage::disk('local')->move($draft->path, $tujuan);
+            $disk = \Illuminate\Support\Facades\Storage::disk('local');
+
+            // PDF acuan halaman.
+            $tujuanPdf = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->path);
+            if ($disk->exists($draft->path)) {
+                $disk->move($draft->path, $tujuanPdf);
+            }
+
+            // File KERJA (DOCX) — inilah yang dikerjakan tim, jadi jadi file utama.
+            $tujuanKerja = null;
+            if ($draft->kerja_path && $disk->exists($draft->kerja_path)) {
+                $tujuanKerja = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->kerja_path);
+                $disk->move($draft->kerja_path, $tujuanKerja);
             }
 
             \App\Models\OrderUpload::create([
                 'order_id' => $orderId,
-                'path' => $tujuan,
-                'nama_asli' => $draft->nama_asli,
-                'ukuran' => $draft->ukuran,
-                'mime' => $draft->mime,
+                // Bila ada file kerja (parafrase), itu yang jadi berkas utama;
+                // bila tidak (jasa lain), tetap file yang diunggah customer.
+                'path' => $tujuanKerja ?: $tujuanPdf,
+                'nama_asli' => $tujuanKerja ? $draft->kerja_nama : $draft->nama_asli,
+                'ukuran' => $tujuanKerja ? $draft->kerja_ukuran : $draft->ukuran,
+                'mime' => $tujuanKerja ? $draft->kerja_mime : $draft->mime,
+                // PDF acuan halaman disimpan mendampingi (bila file utama = DOCX).
+                'pdf_path' => $tujuanKerja ? $tujuanPdf : null,
+                'pdf_nama' => $tujuanKerja ? $draft->nama_asli : null,
                 'status' => 'menunggu',
+                // Instruksi PARAFRASE: bagian dokumen & nomor halaman yang dilewati.
+                // Setelan khas pengecekan plagiasi (kutipan/sumber kecil) dimatikan
+                // agar ringkasannya tidak menampilkan hal yang tak relevan.
+                'exclude_cover' => (bool) ($item['exclude_cover'] ?? false),
+                'exclude_daftar_isi' => (bool) ($item['exclude_daftar_isi'] ?? false),
+                'exclude_bibliografi' => (bool) ($item['exclude_daftar_pustaka'] ?? false),
+                'exclude_kutipan' => false,
+                'exclude_sumber_kecil' => false,
+                'halaman_dikecualikan' => $item['halaman_dikecualikan'] ?? null,
             ]);
 
             $draft->delete();

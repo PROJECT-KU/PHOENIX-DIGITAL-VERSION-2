@@ -567,16 +567,18 @@ class ModalList extends Component
                         });
                 })
                 ->whereIn('order_items.product_id', $privateIds)
-                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty')
+                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty, COALESCE(SUM(COALESCE(order_items.halaman_dihitung, order_items.jumlah_halaman) * order_items.quantity), 0) as halaman')
                 ->groupBy('order_items.product_id', 'order_items.duration_value', 'order_items.duration_type')
                 ->get();
             $orderQty = [];
+            $orderHalaman = [];
             foreach ($privOrders as $o) {
                 $orderQty[$o->product_id.'|'.$o->duration_value.'|'.$o->duration_type] = (int) $o->qty;
+                $orderHalaman[$o->product_id.'|'.$o->duration_value.'|'.$o->duration_type] = (int) $o->halaman;
             }
 
-            // Produk jasa: modal per 1× pengecekan × jumlah pengecekan (durasi_value).
             $jasaIds = \App\Models\Product::where('butuh_file', true)->pluck('id')->map(fn ($v) => (string) $v)->all();
+            $jasaHalamanIds = \App\Models\Product::where('butuh_file', true)->where('jasa_mode', 'halaman')->pluck('id')->map(fn ($v) => (string) $v)->all();
 
             // Hanya produk yang BENAR-BENAR ada order di periode ini (bukan carry-forward harga saja).
             foreach ($orderQty as $k => $qty) {
@@ -585,22 +587,32 @@ class ModalList extends Component
                 }
                 [$pid, $dv, $dt] = explode('|', $k);
 
-                if (in_array((string) $pid, $jasaIds, true)) {
-                    // JASA: satuan = modal 1× pengecekan; total = satuan × jml cek × qty.
+                if (in_array((string) $pid, $jasaHalamanIds, true)) {
+                    // JASA PER HALAMAN: satuan = modal 1 halaman; jumlah = total halaman DIKERJAKAN.
+                    $satuan = $unitMap[$pid.'|1|halaman'] ?? 0;
+                    $jumlah = (int) ($orderHalaman[$k] ?? 0);
+                    $durasi = 'per halaman';
+                    $total = (float) $satuan * $jumlah;
+                } elseif (in_array((string) $pid, $jasaIds, true)) {
+                    // JASA PAKET: satuan = modal 1× pengecekan; total = satuan × jml cek × qty.
                     $satuan = $unitMap[$pid.'|1|kali'] ?? 0;
+                    $jumlah = (int) $qty;
+                    $durasi = $dv.' '.$dt;
                     $total = (float) $satuan * max(1, (int) $dv) * $qty;
                 } else {
                     // Non-jasa: satuan tepat pada (durasi_value, durasi_type).
                     $satuan = $unitMap[$k] ?? 0;
+                    $jumlah = (int) $qty;
+                    $durasi = $dv.' '.$dt;
                     $total = (float) $satuan * $qty;
                 }
 
                 $akunPerProduk[] = [
                     'nama' => $namaAll[$pid] ?? 'Produk',
                     'tipe' => 'private',
-                    'durasi' => $dv.' '.$dt,
+                    'durasi' => $durasi,
                     'satuan' => (float) $satuan,
-                    'jumlah' => (int) $qty,
+                    'jumlah' => $jumlah,
                     'total' => $total,
                 ];
             }

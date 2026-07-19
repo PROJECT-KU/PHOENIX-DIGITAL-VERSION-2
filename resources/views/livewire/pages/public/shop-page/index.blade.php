@@ -135,8 +135,14 @@
                                                     wire:loading.attr="disabled"
                                                     wire:target="openDuration('{{ $item->id }}')" class="fs-btn-cart">
                                                     <span wire:loading.remove
-                                                        wire:target="openDuration('{{ $item->id }}')"><i
-                                                            class="bi bi-cart-plus"></i> Keranjang</span>
+                                                        wire:target="openDuration('{{ $item->id }}')">
+                                                        @if ($isJasa)
+                                                            {{-- Jasa: harga ditentukan di halaman produk (unggah file / add-on) --}}
+                                                            <i class="bi bi-sliders"></i> Atur Pesanan
+                                                        @else
+                                                            <i class="bi bi-cart-plus"></i> Keranjang
+                                                        @endif
+                                                    </span>
                                                     <span wire:loading wire:target="openDuration('{{ $item->id }}')"><span
                                                             class="spinner-border spinner-border-sm"></span></span>
                                                 </button>

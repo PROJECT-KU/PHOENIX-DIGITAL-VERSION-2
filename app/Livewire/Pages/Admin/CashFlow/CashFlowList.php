@@ -352,6 +352,8 @@ class CashFlowList extends Component
         // Produk JASA (butuh_file) juga bermodal (per pengecekan, dari katalog),
         // jadi diperlakukan seperti private walau tipe_akun-nya bukan 'private'.
         $jasaIds = \App\Models\Product::where('butuh_file', true)->pluck('id')->all();
+        // Jasa PER HALAMAN (parafrase): modal = per halaman × jumlah halaman dikerjakan.
+        $jasaHalamanIds = \App\Models\Product::where('butuh_file', true)->where('jasa_mode', 'halaman')->pluck('id')->all();
         $privateIds = \App\Models\Product::where('tipe_akun', 'private')->pluck('id')
             ->merge($jasaIds)->unique()->values()->all();
 
@@ -414,23 +416,28 @@ class CashFlowList extends Component
                     $applyOrderPeriode($q);
                 })
                 ->whereIn('order_items.product_id', $privateIds)
-                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty')
+                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty, COALESCE(SUM(COALESCE(order_items.halaman_dihitung, order_items.jumlah_halaman) * order_items.quantity), 0) as halaman')
                 ->groupBy('order_items.product_id', 'order_items.duration_value', 'order_items.duration_type')
                 ->get();
 
             foreach ($privItems as $it) {
                 $pidKey = (string) $it->product_id;
 
-                if (in_array($it->product_id, $jasaIds, true)) {
-                    // JASA: modal per 1× pengecekan × jumlah pengecekan (durasi_value).
+                if (in_array($it->product_id, $jasaHalamanIds, true)) {
+                    // JASA PER HALAMAN: modal per 1 halaman × jumlah halaman DIKERJAKAN.
+                    $perHalaman = $unitMap[$it->product_id.'|1|halaman'] ?? 0;
+                    $tambah = $perHalaman * (int) $it->halaman;
+                } elseif (in_array($it->product_id, $jasaIds, true)) {
+                    // JASA PAKET: modal per 1× pengecekan × jumlah pengecekan × qty.
                     $perCheck = $unitMap[$it->product_id.'|1|kali'] ?? 0;
-                    $unit = $perCheck * max(1, (int) $it->duration_value);
+                    $tambah = $perCheck * max(1, (int) $it->duration_value) * (int) $it->qty;
                 } else {
-                    // Non-jasa: modal satuan tepat pada (durasi_value, durasi_type).
+                    // Non-jasa: modal satuan tepat pada (durasi_value, durasi_type) × qty.
                     $unit = $unitMap[$it->product_id.'|'.$it->duration_value.'|'.$it->duration_type] ?? 0;
+                    $tambah = $unit * (int) $it->qty;
                 }
 
-                $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $unit * (int) $it->qty;
+                $modalByProduct[$pidKey] = ($modalByProduct[$pidKey] ?? 0) + $tambah;
             }
 
             // Modal PRIVATE dari Rumah Scopus (RSC): satu akun patungan per batch

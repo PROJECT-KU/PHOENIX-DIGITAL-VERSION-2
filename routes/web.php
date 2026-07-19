@@ -127,6 +127,8 @@ Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.succe
 // JASA cek plagiasi — link permanen ber-token (unggah + progress + unduh hasil)
 Route::get('/cek/{token}', \App\Livewire\Pages\Public\ShopPage\JasaCekPage::class)->name('jasa.cek');
 Route::get('/cek/{token}/hasil/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilPublik'])->name('jasa.cek.hasil');
+Route::get('/cek/{token}/hasil-ai/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAiPublik'])->name('jasa.cek.hasil-ai');
+Route::get('/cek/{token}/hasil-docx/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilDocxPublik'])->name('jasa.cek.hasil-docx');
 Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
@@ -145,7 +147,9 @@ Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)
 Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blog.index');
 Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
 Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
-Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
+// Preview invoice DIPINDAH ke grup 'permission:view_pesananrsc' di bawah.
+// Sebelumnya terdaftar di blok publik tanpa auth sama sekali, sehingga siapa
+// pun bisa menarik PDF invoice berisi data camp & peserta tanpa login.
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
@@ -210,6 +214,7 @@ Route::middleware('permission:view_pesananrsc')->group(function () {
     Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
         ->middleware('permission:edit_pesananrsc')->name('admin.pesananrsc.edit');
     Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
+    Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 });
 
 // Pesanan Toko
@@ -220,6 +225,9 @@ Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
     // Unduh berkas pengecekan jasa (file masuk customer & file hasil) — disk privat
     Route::get('/admin/pesanantoko/upload/{upload}/berkas', [\App\Http\Controllers\JasaCekController::class, 'unduhBerkasAdmin'])->name('admin.jasa.berkas');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil-ai', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAiAdmin'])->name('admin.jasa.hasil-ai');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil-docx', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilDocxAdmin'])->name('admin.jasa.hasil-docx');
+    Route::get('/admin/pesanantoko/upload/{upload}/pdf', [\App\Http\Controllers\JasaCekController::class, 'unduhPdfAdmin'])->name('admin.jasa.pdf');
     Route::get('/admin/pesanantoko/upload/{upload}/hasil', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAdmin'])->name('admin.jasa.hasil');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 });

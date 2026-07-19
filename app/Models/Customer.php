@@ -106,16 +106,31 @@ class Customer extends Model
     /**
      * Gunakan poin (reset ke 0)
      */
-    public function usePoints(): bool
+    /**
+     * Tukarkan poin sebesar nilai diskon yang BENAR-BENAR dipakai.
+     *
+     * Sebelumnya seluruh poin dinolkan berapa pun yang terpakai, sehingga
+     * customer berpoin Rp100.000 yang belanja Rp30.000 kehilangan sisa
+     * Rp70.000-nya. Kini hanya poin senilai diskonnya yang dipotong.
+     *
+     * point_balance sengaja TIDAK disentuh — itu sisa rupiah menuju poin
+     * berikutnya (hasil belanja), bukan saldo yang ditukarkan.
+     *
+     * @param  int  $nilaiDipakai  Rupiah diskon yang dipakai; 0 = pakai semua
+     *                             (perilaku lama, untuk pemanggil yang belum
+     *                             mengirim nilainya).
+     */
+    public function usePoints(int $nilaiDipakai = 0): bool
     {
         if ($this->point <= 0) {
             return false;
         }
 
-        $this->update([
-            'point' => 0,
-            'point_balance' => 0,
-        ]);
+        $poinTerpakai = $nilaiDipakai > 0
+            ? min($this->point, (int) ceil($nilaiDipakai / self::NILAI_PER_POIN))
+            : $this->point;
+
+        $this->update(['point' => max(0, $this->point - $poinTerpakai)]);
 
         return true;
     }
@@ -125,8 +140,11 @@ class Customer extends Model
      */
     public function getPointValue(): int
     {
-        return $this->point * 500;
+        return $this->point * self::NILAI_PER_POIN;
     }
+
+    /** Nilai tukar 1 poin dalam rupiah. */
+    public const NILAI_PER_POIN = 500;
 
     /* ===== Pencocokan nomor WhatsApp (dipakai verifikasi ulasan) ===== */
 

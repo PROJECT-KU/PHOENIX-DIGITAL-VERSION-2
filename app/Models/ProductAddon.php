@@ -21,12 +21,16 @@ class ProductAddon extends Model
         'harga',
         'urutan',
         'aktif',
+        'pakai_exclude',
+        'cek_ai',
     ];
 
     protected $casts = [
         'harga' => 'integer',
         'urutan' => 'integer',
         'aktif' => 'boolean',
+        'pakai_exclude' => 'boolean',
+        'cek_ai' => 'boolean',
     ];
 
     public function product()

@@ -21,12 +21,17 @@ class JasaDraftUpload extends Model
         'ukuran',
         'mime',
         'jumlah_halaman',
+        'kerja_path',
+        'kerja_nama',
+        'kerja_ukuran',
+        'kerja_mime',
         'session_token',
     ];
 
     protected $casts = [
         'ukuran' => 'integer',
         'jumlah_halaman' => 'integer',
+        'kerja_ukuran' => 'integer',
     ];
 
     public function product()

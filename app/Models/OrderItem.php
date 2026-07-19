@@ -139,6 +139,43 @@ class OrderItem extends Model
             ->where('end_date', '<', now());
     }
 
+    /**
+     * Daftar halaman yang dilewati dalam bentuk ringkas & mudah dibaca:
+     * "1,2,28,29,30,31,32,33" → "1, 2, 28–33". Nomor berurutan digabung
+     * jadi rentang agar customer tak perlu memindai deretan angka panjang.
+     */
+    public function halamanDikecualikanRingkas(): ?string
+    {
+        if (! $this->halaman_dikecualikan) {
+            return null;
+        }
+
+        $nomor = collect(preg_split('/\D+/', $this->halaman_dikecualikan, -1, PREG_SPLIT_NO_EMPTY))
+            ->map(fn ($n) => (int) $n)
+            ->filter(fn ($n) => $n > 0)
+            ->unique()->sort()->values()->all();
+
+        if (empty($nomor)) {
+            return null;
+        }
+
+        $bagian = [];
+        $awal = $akhir = $nomor[0];
+
+        foreach (array_slice($nomor, 1) as $n) {
+            if ($n === $akhir + 1) {
+                $akhir = $n;
+
+                continue;
+            }
+            $bagian[] = $awal === $akhir ? (string) $awal : $awal.'–'.$akhir;
+            $awal = $akhir = $n;
+        }
+        $bagian[] = $awal === $akhir ? (string) $awal : $awal.'–'.$akhir;
+
+        return implode(', ', $bagian);
+    }
+
     // Methods
     public function getDurationLabel()
     {

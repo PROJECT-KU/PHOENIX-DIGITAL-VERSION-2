@@ -69,6 +69,26 @@
         .cek-amb-unit button + button { border-left:1px solid var(--ph-line); }
         .cek-amb-unit button:hover { color:#b45309; background:#fff7ed; }
         .cek-amb-unit button.is-on { background:#f59e0b; color:#fff; }
+        /* Rincian "Layanan Anda" — berlabel & berwarna agar jelas jenisnya */
+        .lyn-item { padding-bottom:11px; margin-bottom:11px; border-bottom:1px solid var(--ph-line); }
+        .lyn-item:last-child { border-bottom:0; padding-bottom:0; margin-bottom:0; }
+        .lyn-name { font-weight:800; font-size:.92rem; color:#1e293b; margin-bottom:8px; }
+        .lyn-row { display:flex; align-items:flex-start; gap:9px; margin-top:6px; }
+        .lyn-key { flex-shrink:0; width:74px; padding-top:3px; font-size:.68rem; font-weight:700;
+            letter-spacing:.04em; text-transform:uppercase; color:#94a3b8; }
+        .lyn-vals { display:flex; flex-wrap:wrap; gap:5px; min-width:0; }
+        .lyn-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:99px;
+            font-size:.76rem; font-weight:600; line-height:1.4; border:1px solid transparent; white-space:nowrap; }
+        .lyn-chip i.bi { font-size:.62rem; display:flex; align-items:center; line-height:1; }
+        .lyn-chip i.bi::before { display:block; line-height:1; }
+        .lyn-chip.is-scope { background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; }
+        .lyn-chip.is-skip { background:#f1f5f9; border-color:#e2e8f0; color:#64748b; }
+        .lyn-chip.is-addon { background:#fffbeb; border-color:#fde68a; color:#b45309; }
+        @media (max-width:479px) {
+            .lyn-row { flex-direction:column; gap:3px; }
+            .lyn-key { width:auto; padding-top:0; }
+        }
+
         /* Panel jaminan privasi */
         .cek-trust { margin-top:14px; padding:15px 16px; border:1px solid #bbf7d0; border-radius:16px; background:linear-gradient(180deg,#f0fdf4,#fff); }
         .cek-trust-head { display:flex; align-items:center; gap:8px; font-weight:800; font-size:.88rem; color:#15803d; margin-bottom:10px; }
@@ -159,7 +179,10 @@
                             </label>
                             @error('dokumen') <div style="color:#dc2626; font-size:.8rem; margin-top:8px;">{{ $message }}</div> @enderror
 
-                            {{-- Pengaturan pemeriksaan — langsung tampil, tanpa kotak berlapis --}}
+                            {{-- Pengaturan pemeriksaan — hanya untuk layanan yang memakai exclude.
+                                 Cek AI menilai teks utuh, jadi panel ini disembunyikan kecuali
+                                 customer membeli add-on cek plagiasi. --}}
+                            @if ($perluExclude)
                             <div class="cek-set">
                                 <span class="cek-set-label">Kecualikan dari pemeriksaan</span>
                                 <span class="cek-set-hint">Bagian yang dicentang tidak dihitung sebagai kemiripan. Biarkan apa adanya bila ragu.</span>
@@ -225,6 +248,7 @@
                                 </div>
                                 @endif
                             </div>
+                            @endif
 
                             <div class="cek-set">
                                 <span class="cek-set-label">Catatan untuk admin</span>
@@ -251,29 +275,55 @@
                 </div>
                 @endif
 
-                {{-- ===== Rincian layanan yang dipesan (add-on & halaman) ===== --}}
+                {{-- ===== Rincian layanan yang dipesan =====
+                     Ditampilkan untuk SEMUA pesanan jasa — dulu hanya muncul bila ada
+                     add-on/halaman, sehingga layanan polos (mis. cek AI tanpa add-on)
+                     tak punya keterangan apa pun tentang apa yang dibeli. --}}
                 @php
                     $itemJasa = $order->items->filter(fn ($i) => (bool) optional($i->product)->butuh_file);
-                    $adaRincian = $itemJasa->contains(fn ($i) => ! empty($i->addons) || $i->jumlah_halaman);
+                    $adaRincian = $itemJasa->isNotEmpty();
                 @endphp
                 @if ($adaRincian)
                 <div class="pay-card" style="margin-top:14px;">
                     <div class="pay-card-head"><i class="bi bi-list-ul"></i> Layanan Anda</div>
                     <div class="pay-card-body">
                         @foreach ($itemJasa as $it)
-                        <div style="margin-bottom:8px;">
-                            <div style="font-weight:700; font-size:.88rem;">{{ $it->product_name }}</div>
-                            <div class="cek-set-vals" style="margin-top:5px;">
-                                @if ($it->jumlah_halaman)
-                                <span class="cek-c">{{ $it->halaman_dihitung ?? $it->jumlah_halaman }} dari {{ $it->jumlah_halaman }} halaman</span>
-                                @endif
-                                @if ($it->halaman_dikecualikan)
-                                <span class="cek-c off">Lewati hal. {{ $it->halaman_dikecualikan }}</span>
-                                @endif
-                                @foreach (($it->addons ?? []) as $ad)
-                                <span class="cek-c">{{ $ad['nama'] ?? '-' }}</span>
-                                @endforeach
+                        <div class="lyn-item">
+                            <div class="lyn-name">{{ $it->product_name }}</div>
+
+                            {{-- Cakupan pengerjaan (halaman) --}}
+                            @if ($it->jumlah_halaman)
+                            <div class="lyn-row">
+                                <span class="lyn-key">Dikerjakan</span>
+                                <span class="lyn-chip is-scope">{{ $it->halaman_dihitung ?? $it->jumlah_halaman }} dari {{ $it->jumlah_halaman }} halaman</span>
                             </div>
+                            @else
+                            {{-- Jasa paket: tampilkan jumlah pengecekan yang dibeli --}}
+                            <div class="lyn-row">
+                                <span class="lyn-key">Paket</span>
+                                <span class="lyn-chip is-scope">{{ $it->duration_value }}× pengecekan</span>
+                            </div>
+                            @endif
+
+                            {{-- Halaman yang tidak dikerjakan --}}
+                            @if ($it->halaman_dikecualikan)
+                            <div class="lyn-row">
+                                <span class="lyn-key">Dilewati</span>
+                                <span class="lyn-chip is-skip">Halaman {{ $it->halamanDikecualikanRingkas() ?? $it->halaman_dikecualikan }}</span>
+                            </div>
+                            @endif
+
+                            {{-- Tambahan berbayar (add-on) --}}
+                            @if (! empty($it->addons))
+                            <div class="lyn-row">
+                                <span class="lyn-key">Tambahan</span>
+                                <span class="lyn-vals">
+                                    @foreach ($it->addons as $ad)
+                                    <span class="lyn-chip is-addon"><i class="bi bi-plus-lg"></i> {{ $ad['nama'] ?? '-' }}</span>
+                                    @endforeach
+                                </span>
+                            </div>
+                            @endif
                         </div>
                         @endforeach
                     </div>
@@ -319,18 +369,33 @@
 
                             @if (in_array($up->status, ['menunggu', 'diproses']))
                             <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                                <i class="bi bi-clock"></i> Perkiraan 5–15 menit. Hasil akan muncul otomatis di halaman ini.
+                                <i class="bi bi-clock"></i> Perkiraan {{ $estimasiWaktu }}. Hasil akan muncul otomatis di halaman ini.
                             </div>
                             @endif
 
                             @if ($up->status === 'selesai')
                             <div class="cek-meta">
                                 @if (! is_null($up->persentase))
-                                <span class="cek-persen"><i class="bi bi-graph-up"></i> Kemiripan: {{ $up->persentase }}%</span>
+                                <span class="cek-persen"><i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%</span>
                                 @endif
-                                <a class="cek-dl" href="{{ route('jasa.cek.hasil', ['token' => $order->share_token, 'upload' => $up->id]) }}">
-                                    <i class="bi bi-download"></i> Unduh Hasil
+                                @if (! is_null($up->persentase_ai))
+                                <span class="cek-persen" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-robot"></i> AI: {{ $up->persentase_ai }}%</span>
+                                @endif
+                                @if ($up->hasil_docx_path)
+                                <a class="cek-dl" href="{{ route('jasa.cek.hasil-docx', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                    <i class="bi bi-file-earmark-word"></i> Dokumen Hasil
                                 </a>
+                                @endif
+                                @if ($up->hasil_path)
+                                <a class="cek-dl" href="{{ route('jasa.cek.hasil', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                    <i class="bi bi-download"></i> Hasil Plagiasi
+                                </a>
+                                @endif
+                                @if ($up->hasil_ai_path)
+                                <a class="cek-dl" style="background:#0ea5e9;" href="{{ route('jasa.cek.hasil-ai', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                    <i class="bi bi-robot"></i> Hasil AI
+                                </a>
+                                @endif
                             </div>
                             @endif
 
@@ -340,7 +405,7 @@
                             </div>
                             @endif
 
-                            @if ($up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->catatan)
+                            @if ($up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan || $up->catatan)
                             <div class="cek-excl" style="margin-top:8px;">
                                 <i class="bi bi-sliders"></i> Kecualikan: {{ $up->ringkasanExclude() }}
                                 @if ($up->catatan) <br><i class="bi bi-chat-left-text"></i> Catatan: {{ $up->catatan }} @endif

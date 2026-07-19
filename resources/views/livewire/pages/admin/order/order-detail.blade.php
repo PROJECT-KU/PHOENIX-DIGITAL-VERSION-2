@@ -411,6 +411,20 @@ Detail Pesanan || lemon
             .pcek .pcek-form-btns { width: 100%; margin-left: 0; }
             .pcek .pcek-form-btns .pcek-btn { flex: 1; }
         }
+        /* Baris aksi form hasil — dua tombol mengisi penuh, tanpa ruang kosong */
+        .pcek .pcek-aksi { display: flex; gap: 8px; margin-top: 14px; }
+        .pcek .pcek-aksi .pcek-btn { flex: 1; }
+        .pcek .pcek-aksi .pcek-btn.success { flex: 2; }
+
+        /* Slot berkas hasil (plagiasi / AI / dokumen) */
+        .pcek .pcek-slot { display: flex; gap: 11px; padding: 13px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+        .pcek .pcek-slot-no { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: .76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .pcek .pcek-slot-body { flex: 1; min-width: 0; }
+        .pcek .pcek-slot-lbl { display: block; font-size: .82rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
+        .pcek .pcek-slot-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
+        .pcek .pcek-slot .pcek-drop { padding: 12px 10px; }
+        .pcek .pcek-slot .pcek-persen-wrap { max-width: 150px; }
+
         /* Persen kemiripan */
         .pcek .pcek-lbl { display: block; font-size: .78rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
         .pcek .pcek-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
@@ -419,6 +433,11 @@ Detail Pesanan || lemon
         .pcek .pcek-persen-num:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .13); }
         .pcek .pcek-persen-suffix { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); min-width: 34px; text-align: center; padding: 6px 8px; border-radius: 8px; background: #dcfce7; color: #15803d; font-size: .82rem; font-weight: 700; pointer-events: none; }
         .pcek .pcek-auto { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #15803d; line-height: 1.45; }
+        .pcek .pcek-manual { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #b45309; line-height: 1.45; }
+        .pcek .pcek-pilih { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .pcek .pcek-pilih-btn { padding: 3px 12px; border-radius: 99px; border: 1px solid #fbbf24;
+            background: #fffbeb; color: #b45309; font-size: .78rem; font-weight: 700; cursor: pointer; }
+        .pcek .pcek-pilih-btn:hover { background: #fde68a; }
         .pcek .pcek-auto i.bi { flex-shrink: 0; margin-top: .12rem; display: flex; line-height: 1; }
         .pcek .pcek-auto i.bi::before { display: block; line-height: 1; }
     </style>
@@ -518,11 +537,18 @@ Detail Pesanan || lemon
                 </div>
 
                 {{-- Persen kemiripan bila sudah selesai --}}
-                @if ($up->status === 'selesai' && ! is_null($up->persentase))
-                <div class="mt-2">
+                @if ($up->status === 'selesai' && (! is_null($up->persentase) || ! is_null($up->persentase_ai)))
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                    @if (! is_null($up->persentase))
                     <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-graph-up"></i> Kemiripan: {{ $up->persentase }}%
+                        <i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%
                     </span>
+                    @endif
+                    @if (! is_null($up->persentase_ai))
+                    <span class="badge bg-info-subtle text-info rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-robot"></i> AI: {{ $up->persentase_ai }}%
+                    </span>
+                    @endif
                 </div>
                 @endif
 
@@ -531,6 +557,12 @@ Detail Pesanan || lemon
                     <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost">
                         <i class="bi bi-download"></i> File Customer
                     </a>
+                    @if ($up->pdf_path)
+                    {{-- Parafrase: PDF acuan jumlah halaman (file utama = DOCX kerja) --}}
+                    <a href="{{ route('admin.jasa.pdf', $up) }}" class="pcek-btn ghost" title="PDF acuan jumlah halaman">
+                        <i class="bi bi-filetype-pdf"></i> PDF Acuan
+                    </a>
+                    @endif
 
                     @if ($up->status === 'menunggu')
                     <button type="button" wire:click="mulaiProses('{{ $up->id }}')" class="pcek-btn primary">
@@ -546,9 +578,21 @@ Detail Pesanan || lemon
                     @endif
 
                     @if ($up->status === 'selesai')
+                    @if ($up->hasil_path)
                     <a href="{{ route('admin.jasa.hasil', $up) }}" class="pcek-btn primary">
-                        <i class="bi bi-file-earmark-check"></i> Unduh Hasil
+                        <i class="bi bi-file-earmark-check"></i> Hasil Plagiasi
                     </a>
+                    @endif
+                    @if ($up->hasil_ai_path)
+                    <a href="{{ route('admin.jasa.hasil-ai', $up) }}" class="pcek-btn ghost">
+                        <i class="bi bi-robot"></i> Hasil AI
+                    </a>
+                    @endif
+                    @if ($up->hasil_docx_path)
+                    <a href="{{ route('admin.jasa.hasil-docx', $up) }}" class="pcek-btn ghost">
+                        <i class="bi bi-file-earmark-word"></i> Dokumen Hasil
+                    </a>
+                    @endif
                     <button type="button" wire:click="bukaUploadHasil('{{ $up->id }}')" class="pcek-btn ghost">
                         <i class="bi bi-arrow-repeat"></i> Ganti Hasil
                     </button>
@@ -579,56 +623,166 @@ Detail Pesanan || lemon
                         <button type="button" wire:click="tutupUploadHasil" class="pcek-form-x" title="Tutup"><i class="bi bi-x-lg"></i></button>
                     </div>
 
-                    {{-- Dropzone hasil --}}
-                    <label class="pcek-drop">
-                        <input type="file" wire:model="hasilFile" accept=".pdf,.docx" class="pcek-drop-input">
+                    {{-- Hasil cek PLAGIASI — hanya bila layanannya memang dibeli --}}
+                    @if ($this->slotTampil('plagiasi'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('plagiasi') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Hasil Cek Plagiasi <span>PDF / DOCX</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilFile" accept=".pdf,.docx" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah &amp; membaca…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilFile" class="pcek-drop-state">
+                                    @if ($hasilFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
-                        <span wire:loading wire:target="hasilFile" class="pcek-drop-state">
-                            <i class="bi bi-arrow-repeat pcek-spin"></i>
-                            <span class="nm">Mengunggah &amp; membaca file…</span>
-                        </span>
-
-                        <span wire:loading.remove wire:target="hasilFile" class="pcek-drop-state">
-                            @if ($hasilFile)
-                            <i class="bi bi-file-earmark-check ok"></i>
-                            <span class="nm">{{ $hasilFile->getClientOriginalName() }}</span>
-                            <span class="chg">Ganti</span>
-                            @else
-                            <i class="bi bi-cloud-arrow-up up"></i>
-                            <span class="nm">Pilih file hasil atau seret ke sini</span>
-                            <span class="hint">PDF / DOCX · maks 20 MB</span>
-                            @endif
-                        </span>
-                    </label>
-                    @error('hasilFile') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
-
-                    {{-- Persen kemiripan + aksi dalam satu baris --}}
-                    <div class="pcek-form-foot">
-                        <div class="pcek-persen">
-                            <label class="pcek-lbl">Persen kemiripan <span>boleh dikosongkan</span></label>
-                            <div class="pcek-persen-wrap">
-                                <input type="number" min="0" max="100" wire:model="persentaseInput" class="pcek-persen-num" placeholder="23">
-                                <span class="pcek-persen-suffix">%</span>
+                            <div class="pcek-persen mt-2">
+                                <label class="pcek-lbl">Persen plagiasi <span>boleh dikosongkan</span></label>
+                                <div class="pcek-persen-wrap">
+                                    <input type="number" min="0" max="100" wire:model="persentaseInput" class="pcek-persen-num" placeholder="23">
+                                    <span class="pcek-persen-suffix">%</span>
+                                </div>
+                                @if ($persenTerbacaOtomatis)
+                                <div class="pcek-auto"><i class="bi bi-magic"></i><span>Terbaca otomatis — mohon dicek.</span></div>
+                                @elseif ($persenGagalBaca)
+                                <div class="pcek-manual"><i class="bi bi-pencil-square"></i><span>Persen tak terbaca dari berkas ini — isi manual dari PDF.</span></div>
+                                @endif
+                                @error('persentaseInput') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>
                         </div>
+                    </div>
 
-                        <div class="pcek-form-btns">
-                            <button type="button" wire:click="tutupUploadHasil" class="pcek-btn ghost">Batal</button>
-                            <button type="button" wire:click="simpanHasil" wire:loading.attr="disabled" wire:target="simpanHasil,hasilFile"
-                                class="pcek-btn success">
-                                <span wire:loading.remove wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-check-lg"></i> Simpan Hasil</span>
-                                <span wire:loading wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-hourglass-split"></i> Menyimpan…</span>
-                            </button>
+                    @endif
+
+                    {{-- Hasil cek AI — hanya bila layanannya memang dibeli --}}
+                    @if ($this->slotTampil('ai'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('ai') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Hasil Cek AI <span>PDF</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilAiFile" accept=".pdf" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilAiFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah &amp; membaca…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilAiFile" class="pcek-drop-state">
+                                    @if ($hasilAiFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilAiFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_ai_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_ai_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilAiFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
+                            <div class="pcek-persen mt-2">
+                                <label class="pcek-lbl">Persen AI <span>boleh dikosongkan</span></label>
+                                <div class="pcek-persen-wrap">
+                                    <input type="number" min="0" max="100" wire:model="persentaseAiInput" class="pcek-persen-num" placeholder="8">
+                                    <span class="pcek-persen-suffix">%</span>
+                                </div>
+                                @if ($persenAiTerbacaOtomatis)
+                                <div class="pcek-auto">
+                                    <i class="bi bi-magic"></i>
+                                    <span>
+                                        Terbaca otomatis dari <b>{{ $sumberAi === 'gptzero' ? 'GPTZero' : 'Turnitin' }}</b>
+                                        ({{ $labelAi ?? 'Persen AI' }}) — mohon dicek.
+                                        @if ($sumberAi === 'gptzero')
+                                        <br><span class="text-muted">Catatan: GPTZero melaporkan <i>probabilitas dokumen dibuat AI</i>, bukan persentase teks AI.</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                @elseif (count($pilihanAi) > 1)
+                                <div class="pcek-manual">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>
+                                        Berkas memuat <b>{{ count($pilihanAi) }} laporan bertumpuk</b>
+                                        ({{ implode('%, ', $pilihanAi) }}%). Diisi <b>{{ end($pilihanAi) }}%</b> —
+                                        nilai lapisan teratas, yang tampak saat PDF dibuka.
+                                        Nilai lain tersembunyi di bawahnya; ganti bila perlu:
+                                        <span class="pcek-pilih">
+                                            @foreach ($pilihanAi as $nilai)
+                                            <button type="button" class="pcek-pilih-btn"
+                                                wire:click="$set('persentaseAiInput', {{ $nilai }})">{{ $nilai }}%</button>
+                                            @endforeach
+                                        </span>
+                                    </span>
+                                </div>
+                                @elseif ($persenAiGagalBaca)
+                                <div class="pcek-manual"><i class="bi bi-pencil-square"></i><span>Format laporan tak dikenali — isi persen manual dari PDF.</span></div>
+                                @endif
+                                @error('persentaseAiInput') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
                         </div>
                     </div>
 
-                    @if ($persenTerbacaOtomatis)
-                    <div class="pcek-auto">
-                        <i class="bi bi-magic"></i>
-                        <span>Terbaca otomatis dari PDF — mohon dicek dulu sebelum simpan.</span>
+                    @endif
+
+                    {{-- Dokumen hasil parafrase — khusus jasa per halaman --}}
+                    @if ($this->slotTampil('docx'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('docx') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Dokumen Hasil (Parafrase) <span>DOCX</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilDocxFile" accept=".docx" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilDocxFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilDocxFile" class="pcek-drop-state">
+                                    @if ($hasilDocxFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilDocxFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_docx_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_docx_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilDocxFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
                     </div>
                     @endif
-                    @error('persentaseInput') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
+
+                    {{-- Aksi — kedua tombol mengisi penuh lebar form --}}
+                    <div class="pcek-aksi">
+                        <button type="button" wire:click="tutupUploadHasil" class="pcek-btn ghost">Batal</button>
+                        <button type="button" wire:click="simpanHasil" wire:loading.attr="disabled"
+                            wire:target="simpanHasil,hasilFile,hasilAiFile,hasilDocxFile" class="pcek-btn success">
+                            <span wire:loading.remove wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-check-lg"></i> Simpan Hasil</span>
+                            <span wire:loading wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-hourglass-split"></i> Menyimpan…</span>
+                        </button>
+                    </div>
                 </div>
                 @endif
             </div>
@@ -670,7 +824,8 @@ Detail Pesanan || lemon
                                 {{ $item->product->nama_akun ?? '-' }}
                                 {{-- Add-on & jumlah halaman (khusus produk jasa) --}}
                                 @if (! empty($item->addons) || $item->jumlah_halaman)
-                                <div class="mt-1 d-flex flex-wrap gap-1 justify-content-center">
+                                {{-- Rata kiri, seragam dengan badge ebook/bonus di kolom yang sama --}}
+                                <div class="mt-1 d-flex flex-wrap gap-1">
                                     @if ($item->jumlah_halaman)
                                     <span class="badge bg-info-subtle text-info border border-info rounded-pill" style="font-size:.68rem;">
                                         <i class="bi bi-file-earmark-text"></i>

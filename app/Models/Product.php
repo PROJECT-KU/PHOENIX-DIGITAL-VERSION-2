@@ -61,6 +61,30 @@ class Product extends Model
     }
 
     /**
+     * Modal untuk SATU baris order (per 1 quantity), memakai data item nyata.
+     * Diperlukan karena jasa PER HALAMAN (parafrase) bergantung jumlah halaman
+     * yang DIKERJAKAN (halaman_dihitung), bukan hanya durasi item.
+     *  - Parafrase : modal per 1 halaman × jumlah halaman dikerjakan.
+     *  - Paket cek : modal per 1× pengecekan × jumlah pengecekan.
+     *  - Non-jasa  : modal satuan tepat pada (durasi_value, durasi_type).
+     * Caller mengalikan hasil ini dengan quantity item.
+     */
+    public function modalOrderItem(OrderItem $item, $asOf = null): int
+    {
+        if ($this->butuh_file) {
+            if ($this->jasaPerHalaman()) {
+                $halaman = $item->halaman_dihitung ?? $item->jumlah_halaman ?? 0;
+
+                return $this->modalSatuan(1, 'halaman', $asOf) * max(0, (int) $halaman);
+            }
+
+            return $this->modalSatuan(1, 'kali', $asOf) * max(1, (int) $item->duration_value);
+        }
+
+        return $this->modalSatuan((int) $item->duration_value, (string) $item->duration_type, $asOf);
+    }
+
+    /**
      * Harga untuk durasi tertentu. Ambil dari tabel harga fleksibel;
      * fallback ke kolom lama bila belum ada barisnya.
      */
@@ -122,6 +146,8 @@ class Product extends Model
         'butuh_file',
         'jasa_mode',
         'addon_mode',
+        'pakai_exclude',
+        'cek_ai',
         'image',
         'harga_awal',
         'harga_perbulan',
@@ -133,6 +159,8 @@ class Product extends Model
 
     protected $casts = [
         'butuh_file' => 'boolean',
+        'pakai_exclude' => 'boolean',
+        'cek_ai' => 'boolean',
     ];
 
     /** Add-on opsional produk jasa (dinamis, diatur admin). */

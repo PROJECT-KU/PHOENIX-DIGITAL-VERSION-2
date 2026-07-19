@@ -15,14 +15,28 @@ class OrderUpload extends Model
         'nama_asli',
         'ukuran',
         'mime',
+        'pdf_path',
+        'pdf_nama',
         'status',
         'hasil_path',
         'hasil_nama',
         'hasil_ukuran',
         'hasil_mime',
         'persentase',
+        'hasil_ai_path',
+        'hasil_ai_nama',
+        'hasil_ai_ukuran',
+        'hasil_ai_mime',
+        'persentase_ai',
+        'hasil_docx_path',
+        'hasil_docx_nama',
+        'hasil_docx_ukuran',
+        'hasil_docx_mime',
         'exclude_bibliografi',
         'exclude_kutipan',
+        'exclude_cover',
+        'exclude_daftar_isi',
+        'halaman_dikecualikan',
         'exclude_sumber_kecil',
         'ambang_sumber_kecil',
         'catatan',
@@ -34,8 +48,13 @@ class OrderUpload extends Model
         'ukuran' => 'integer',
         'hasil_ukuran' => 'integer',
         'persentase' => 'integer',
+        'hasil_ai_ukuran' => 'integer',
+        'persentase_ai' => 'integer',
+        'hasil_docx_ukuran' => 'integer',
         'exclude_bibliografi' => 'boolean',
         'exclude_kutipan' => 'boolean',
+        'exclude_cover' => 'boolean',
+        'exclude_daftar_isi' => 'boolean',
         'exclude_sumber_kecil' => 'boolean',
         'diproses_at' => 'datetime',
         'selesai_at' => 'datetime',
@@ -132,16 +151,65 @@ class OrderUpload extends Model
     public function daftarExclude(): array
     {
         $out = [];
+        // Bagian dokumen (parafrase)
+        if ($this->exclude_cover) {
+            $out[] = 'Cover';
+        }
+        if ($this->exclude_daftar_isi) {
+            $out[] = 'Daftar Isi';
+        }
+        // Dipakai kedua jenis jasa
         if ($this->exclude_bibliografi) {
             $out[] = 'Daftar Pustaka';
         }
+        // Khusus pengecekan plagiasi
         if ($this->exclude_kutipan) {
             $out[] = 'Kutipan';
         }
         if ($this->exclude_sumber_kecil) {
             $out[] = 'Source'.($this->ambang_sumber_kecil ? ' < '.$this->ambang_sumber_kecil : '');
         }
+        // Nomor halaman yang diminta customer untuk dilewati
+        if ($this->halaman_dikecualikan) {
+            $out[] = 'Halaman '.$this->halamanDikecualikanRingkas();
+        }
 
         return $out;
+    }
+
+    /**
+     * Ringkas deret halaman jadi rentang: "1,2,28,29,30,31,32,33" → "1–2, 28–33".
+     * Mudah dibaca customer & tim, tanpa deretan angka panjang.
+     */
+    public function halamanDikecualikanRingkas(): ?string
+    {
+        if (! $this->halaman_dikecualikan) {
+            return null;
+        }
+
+        $nomor = collect(preg_split('/\D+/', $this->halaman_dikecualikan, -1, PREG_SPLIT_NO_EMPTY))
+            ->map(fn ($n) => (int) $n)
+            ->filter(fn ($n) => $n > 0)
+            ->unique()->sort()->values()->all();
+
+        if (empty($nomor)) {
+            return null;
+        }
+
+        $bagian = [];
+        $awal = $akhir = $nomor[0];
+
+        foreach (array_slice($nomor, 1) as $n) {
+            if ($n === $akhir + 1) {
+                $akhir = $n;
+
+                continue;
+            }
+            $bagian[] = $awal === $akhir ? (string) $awal : $awal.'–'.$akhir;
+            $awal = $akhir = $n;
+        }
+        $bagian[] = $awal === $akhir ? (string) $awal : $awal.'–'.$akhir;
+
+        return implode(', ', $bagian);
     }
 }

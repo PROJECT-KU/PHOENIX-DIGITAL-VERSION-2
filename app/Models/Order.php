@@ -62,6 +62,60 @@ class Order extends Model
         });
     }
 
+    /**
+     * Pesanan ini memuat layanan jasa bertanda $kolom ('pakai_exclude' | 'cek_ai')?
+     *
+     * Diperiksa pada produknya SENDIRI maupun add-on yang dibeli — cukup salah
+     * satu bernilai true. Sifat add-on dibaca dari riwayat pesanan bila ada
+     * (paling andal, tak terpengaruh perubahan katalog), lalu jatuh ke katalog
+     * lewat id, lalu NAMA — id add-on pesanan lama bisa sudah berubah.
+     *
+     * Sumber tunggal untuk: panel exclude & syarat bahasa di halaman /cek,
+     * serta slot unggah hasil di admin.
+     */
+    public function punyaLayananJasa(string $kolom): bool
+    {
+        $this->loadMissing('items.product');
+
+        foreach ($this->items as $item) {
+            if (optional($item->product)->butuh_file && $item->product->{$kolom}) {
+                return true;
+            }
+
+            foreach (($item->addons ?? []) as $addon) {
+                if (array_key_exists($kolom, $addon)) {
+                    if ($addon[$kolom]) {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                $katalog = ! empty($addon['id'])
+                    ? ProductAddon::find($addon['id'])
+                    : null;
+
+                if (! $katalog && ! empty($addon['nama'])) {
+                    $katalog = ProductAddon::whereRaw('LOWER(nama) = ?', [mb_strtolower($addon['nama'])])->first();
+                }
+
+                if ($katalog && $katalog->{$kolom}) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** Pesanan memuat jasa PER HALAMAN (parafrase)? */
+    public function adaParafrase(): bool
+    {
+        $this->loadMissing('items.product');
+
+        return $this->items->contains(fn ($i) => (bool) optional($i->product)->jasaPerHalaman());
+    }
+
     // URL struk publik berbasis token pendek (tanpa expose UUID)
     public function getReceiptUrl(): ?string
     {

@@ -26,6 +26,12 @@ class ProductForm extends Component
     // Mode add-on: 'multi' (boleh pilih beberapa) | 'tunggal' (pilih salah satu).
     public $addon_mode = 'multi';
 
+    /** Layanan ini memakai pilihan "Kecualikan dari pemeriksaan"? */
+    public bool $pakai_exclude = true;
+
+    /** Layanan ini deteksi AI? (dokumen wajib bahasa Inggris) */
+    public bool $cek_ai = false;
+
     // Harga per halaman (dipakai bila jasa_mode = 'halaman').
     public $harga_per_halaman = '';
 
@@ -54,12 +60,16 @@ class ProductForm extends Component
             $this->butuh_file = (bool) $product->butuh_file;
             $this->jasa_mode = $product->jasa_mode ?: 'paket';
             $this->addon_mode = $product->addon_mode ?: 'multi';
+            $this->pakai_exclude = (bool) $product->pakai_exclude;
+            $this->cek_ai = (bool) $product->cek_ai;
             $this->harga_per_halaman = (string) ($product->hargaPerHalaman() ?: '');
             $this->addons = $product->addons()->orderBy('urutan')->get()
                 ->map(fn ($a) => [
                     'nama' => $a->nama,
                     'keterangan' => $a->keterangan,
                     'harga' => (string) $a->harga,
+                    'pakai_exclude' => (bool) $a->pakai_exclude,
+                    'cek_ai' => (bool) $a->cek_ai,
                 ])->all();
             $this->image = null;
             $this->existingImage = $product->image;
@@ -88,7 +98,7 @@ class ProductForm extends Component
     /** Tambah baris add-on kosong. */
     public function addAddon()
     {
-        $this->addons[] = ['nama' => '', 'keterangan' => '', 'harga' => ''];
+        $this->addons[] = ['nama' => '', 'keterangan' => '', 'harga' => '', 'pakai_exclude' => false, 'cek_ai' => false];
     }
 
     public function removeAddon($index)
@@ -212,6 +222,8 @@ class ProductForm extends Component
                 'butuh_file' => (bool) $this->butuh_file,
                 'jasa_mode' => $this->butuh_file ? $this->jasa_mode : 'paket',
                 'addon_mode' => $this->addon_mode,
+                'pakai_exclude' => $this->butuh_file && $this->pakai_exclude,
+                'cek_ai' => $this->butuh_file && $this->cek_ai,
                 'image' => $filename,
                 'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
@@ -239,6 +251,8 @@ class ProductForm extends Component
                 'butuh_file' => (bool) $this->butuh_file,
                 'jasa_mode' => $this->butuh_file ? $this->jasa_mode : 'paket',
                 'addon_mode' => $this->addon_mode,
+                'pakai_exclude' => $this->butuh_file && $this->pakai_exclude,
+                'cek_ai' => $this->butuh_file && $this->cek_ai,
                 'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
             ];
@@ -320,11 +334,21 @@ class ProductForm extends Component
      */
     private function syncAddons(Product $product): void
     {
-        $product->addons()->delete();
-
         if (! $this->butuh_file) {
+            $product->addons()->delete();
+
             return;
         }
+
+        /*
+         * PENTING: add-on TIDAK dihapus-lalu-dibuat-ulang. Pesanan menyimpan
+         * id add-on sebagai riwayat (order_items.addons), jadi membuat ulang
+         * akan memberi UUID baru dan memutus kaitan pesanan lama — akibatnya
+         * sifat add-on (mis. pakai_exclude) tak lagi terbaca di halaman /cek.
+         * Baris yang sudah ada diperbarui di tempat; yang hilang saja dihapus.
+         */
+        $lama = $product->addons()->get()->keyBy(fn ($a) => mb_strtolower($a->nama));
+        $terpakai = [];
 
         foreach (array_values($this->addons) as $i => $row) {
             $nama = trim((string) ($row['nama'] ?? ''));
@@ -332,14 +356,28 @@ class ProductForm extends Component
                 continue;
             }
 
-            $product->addons()->create([
+            $data = [
                 'nama' => $nama,
                 'keterangan' => trim((string) ($row['keterangan'] ?? '')) ?: null,
                 'harga' => $this->toNumber($row['harga'] ?? 0),
                 'urutan' => $i,
                 'aktif' => true,
-            ]);
+                'pakai_exclude' => (bool) ($row['pakai_exclude'] ?? false),
+                'cek_ai' => (bool) ($row['cek_ai'] ?? false),
+            ];
+
+            if ($ada = $lama->get(mb_strtolower($nama))) {
+                $ada->update($data);          // id dipertahankan
+                $terpakai[] = $ada->id;
+
+                continue;
+            }
+
+            $terpakai[] = $product->addons()->create($data)->id;
         }
+
+        // Sisanya benar-benar dihapus admin.
+        $product->addons()->whereNotIn('id', $terpakai ?: ['-'])->delete();
     }
 
     private function resetForm()
@@ -348,6 +386,8 @@ class ProductForm extends Component
         $this->butuh_file = false;
         $this->jasa_mode = 'paket';
         $this->addon_mode = 'multi';
+        $this->pakai_exclude = true;
+        $this->cek_ai = false;
         $this->harga_per_halaman = '';
         $this->addons = [];
         $this->image = null;

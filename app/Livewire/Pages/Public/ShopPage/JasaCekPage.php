@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Public\ShopPage;
 
 use App\Models\Order;
 use App\Models\OrderUpload;
+use App\Support\LanguageDetector;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -89,7 +90,28 @@ class JasaCekPage extends Component
 
             throw $e; // biarkan Livewire menampilkan pesan errornya
         }
+
+        /*
+         * Cek bahasa juga SEKETIKA di sini, bukan hanya saat tombol Kirim.
+         * Kalau ditunda, file terlanjur tampak diterima (nama file muncul,
+         * tanpa peringatan) sehingga customer mengira dokumennya sah.
+         */
+        if ($this->perluInggris() && $this->dokumen) {
+            $bahasa = LanguageDetector::adalahInggris(
+                $this->dokumen->getRealPath(),
+                $this->dokumen->getClientOriginalExtension()
+            );
+
+            if ($bahasa === false) {
+                $this->reset('dokumen');
+                $this->dispatch('cek-file-ditolak');
+                $this->addError('dokumen', self::PESAN_WAJIB_INGGRIS);
+            }
+        }
     }
+
+    /** Satu sumber kalimat penolakan, dipakai saat pilih file & saat kirim. */
+    private const PESAN_WAJIB_INGGRIS = 'Layanan cek AI hanya untuk dokumen berbahasa Inggris. Dokumen ini terbaca bukan bahasa Inggris — mohon unggah versi bahasa Inggrisnya.';
 
     public function uploadDokumen()
     {
@@ -125,6 +147,29 @@ class JasaCekPage extends Component
         ]);
 
         $file = $this->dokumen;
+
+        /*
+         * Layanan deteksi AI hanya andal untuk teks berbahasa Inggris, jadi
+         * dokumen bukan-Inggris ditolak di sini — sebelum tersimpan dan
+         * memakan kuota — daripada diproses lalu hasilnya keliru.
+         * Detektor sengaja hati-hati: bila RAGU (null) dokumen dibiarkan lolos
+         * agar dokumen sah tak ikut tertolak.
+         */
+        if ($this->perluInggris()) {
+            $bahasa = LanguageDetector::adalahInggris(
+                $file->getRealPath(),
+                $file->getClientOriginalExtension()
+            );
+
+            if ($bahasa === false) {
+                $this->reset('dokumen');
+                $this->dispatch('cek-file-ditolak');
+                $this->addError('dokumen', self::PESAN_WAJIB_INGGRIS);
+
+                return;
+            }
+        }
+
         // Disk PRIVAT — file tak boleh diakses lewat URL publik (privasi + audit).
         $path = $file->store('order-uploads/'.$this->order->id.'/masuk', 'local');
 
@@ -135,11 +180,14 @@ class JasaCekPage extends Component
             'ukuran' => $file->getSize(),
             'mime' => $file->getMimeType(),
             'status' => 'menunggu',
-            'exclude_bibliografi' => $this->exclude_bibliografi,
-            'exclude_kutipan' => $this->exclude_kutipan,
-            'exclude_sumber_kecil' => $this->exclude_sumber_kecil,
+            // Pengecekan yang tak memakai exclude (mis. cek AI tanpa add-on
+            // plagiasi) disimpan tanpa pengecualian apa pun — panelnya memang
+            // tidak ditampilkan, jadi nilainya tidak boleh ikut terbawa.
+            'exclude_bibliografi' => $this->perluExclude() && $this->exclude_bibliografi,
+            'exclude_kutipan' => $this->perluExclude() && $this->exclude_kutipan,
+            'exclude_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil,
             // Simpan sebagai teks siap tampil, mis. "5%" atau "10 kata".
-            'ambang_sumber_kecil' => $this->exclude_sumber_kecil
+            'ambang_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil
                 ? (int) $this->ambang_nilai.($this->ambang_satuan === 'persen' ? '%' : ' kata')
                 : null,
             'catatan' => $this->catatan ?: null,
@@ -156,18 +204,49 @@ class JasaCekPage extends Component
         $this->dispatch('cek-success', message: 'Dokumen berhasil diunggah. Silakan tunggu, hasil akan muncul di halaman ini.');
     }
 
+    /**
+     * Apakah pesanan ini memakai pilihan "Kecualikan dari pemeriksaan"?
+     *
+     * Exclude hanya bermakna untuk pengecekan KEMIRIPAN. Cek AI menilai teks
+     * secara utuh, jadi panelnya tidak ditampilkan — kecuali customer membeli
+     * add-on cek plagiasi, yang membuat exclude jadi relevan lagi.
+     * Penandanya diatur admin per produk & per add-on (kolom pakai_exclude).
+     */
+    public function perluExclude(): bool
+    {
+        return $this->order->punyaLayananJasa('pakai_exclude');
+    }
+
+    /**
+     * Apakah pesanan ini mengandung layanan DETEKSI AI?
+     * Ditandai admin per produk & per add-on (kolom cek_ai) — sama seperti
+     * pakai_exclude, sifatnya juga ikut tersimpan di riwayat pesanan.
+     */
+    public function perluInggris(): bool
+    {
+        return $this->order->punyaLayananJasa('cek_ai');
+    }
+
     #[Layout('layouts.guest')]
     public function render()
     {
         // Selalu ambil data terbaru saat render (termasuk saat polling).
         $this->order->load('uploads');
 
+        // Estimasi pengerjaan berbeda per jenis jasa: pengecekan plagiasi cepat
+        // (otomatis via Turnitin), sedangkan parafrase dikerjakan manual per
+        // halaman sehingga butuh hitungan hari.
+        $adaPerHalaman = $this->order->items
+            ->contains(fn ($i) => optional($i->product)->jasaPerHalaman());
+
         return view('livewire.pages.public.shop-page.jasa-cek-page', [
             'order' => $this->order,
+            'estimasiWaktu' => $adaPerHalaman ? '5–7 hari kerja' : '5–15 menit',
             'kuota' => $this->order->kuotaPengecekan(),
             'terpakai' => $this->order->terpakaiPengecekan(),
             'sisa' => $this->order->sisaKuota(),
             'pengecekan' => $this->order->uploads->sortByDesc('created_at')->values(),
+            'perluExclude' => $this->perluExclude(),
         ]);
     }
 }

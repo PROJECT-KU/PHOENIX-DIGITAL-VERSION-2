@@ -2,6 +2,16 @@
     <style>
         /* ===== Blok JASA di halaman produk (upload per halaman & add-on) ===== */
         .jd-hint { font-size:.83rem; color:var(--ph-muted); line-height:1.55; margin:0 0 10px; }
+
+        /* Syarat bahasa untuk layanan deteksi AI — ditegaskan sebelum bayar */
+        .jd-lang { display:flex; align-items:flex-start; gap:11px; margin-top:22px;
+            padding:13px 15px; border:1px solid #bfdbfe; border-radius:13px; background:#eff6ff; }
+        .jd-lang > i.bi { flex-shrink:0; margin-top:1px; font-size:1rem; color:#2563eb;
+            display:flex; align-items:center; line-height:1; }
+        .jd-lang > i.bi::before { display:block; line-height:1; }
+        .jd-lang span { display:flex; flex-direction:column; gap:3px; min-width:0;
+            font-size:.8rem; color:#1e40af; line-height:1.55; }
+        .jd-lang b { font-size:.86rem; color:#1d4ed8; }
         .jd-drop { position:relative; display:block; padding:20px 16px; border:2px dashed #fcd9a8; border-radius:14px; background:#fffdf8; text-align:center; cursor:pointer; transition:border-color .2s, background .2s; }
         .jd-drop:hover { border-color:#f59e0b; background:#fff7ed; }
         .jd-drop-input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
@@ -23,6 +33,29 @@
         .jd-file-x { flex-shrink:0; width:30px; height:30px; border:0; border-radius:8px; background:#fff; color:#94a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; }
         .jd-file-x:hover { background:#fee2e2; color:#dc2626; }
         .jd-file-x i.bi { display:flex; line-height:1; font-size:.8rem; }
+        /* Penanda langkah unggah (PDF lalu DOCX) */
+        .jd-step { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+        .jd-step-no { width:24px; height:24px; flex-shrink:0; border-radius:50%; background:#f59e0b; color:#fff;
+            font-size:.76rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .jd-step-txt { display:flex; flex-direction:column; min-width:0; }
+        .jd-step-txt b { font-size:.87rem; color:#1e293b; }
+        .jd-step-txt small { font-size:.75rem; color:var(--ph-muted); line-height:1.35; }
+
+        /* Chip bagian dokumen yang dikecualikan (cover / daftar isi / daftar pustaka) */
+        .jd-bagian { display:flex; flex-wrap:wrap; gap:8px; }
+        .jd-bagian-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:99px;
+            border:1.5px solid var(--ph-line); background:#fff; color:#64748b; font-size:.82rem; font-weight:600;
+            cursor:pointer; user-select:none; transition:border-color .18s, background .18s, color .18s; }
+        .jd-bagian-chip:hover { border-color:#fcd9a8; color:#b45309; }
+        .jd-bagian-chip.is-on { border-color:#f59e0b; background:#fffbeb; color:#b45309; }
+        .jd-bagian-chip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+        .jd-bagian-box { width:17px; height:17px; flex-shrink:0; border:1.5px solid #cbd5e1; border-radius:5px;
+            background:#fff; display:flex; align-items:center; justify-content:center; transition:background .18s, border-color .18s; }
+        .jd-bagian-box i.bi { font-size:.62rem; color:#fff; opacity:0; display:flex; line-height:1; }
+        .jd-bagian-box i.bi::before { display:block; line-height:1; }
+        .jd-bagian-chip.is-on .jd-bagian-box { background:#f59e0b; border-color:#f59e0b; }
+        .jd-bagian-chip.is-on .jd-bagian-box i.bi { opacity:1; }
+
         /* Halaman yang dikecualikan (tidak ditagih) */
         .jd-exc { margin-top:12px; padding:14px 15px; border:1px solid var(--ph-line); border-radius:14px; background:#fcfcfd; }
         .jd-exc-head { display:flex; flex-direction:column; gap:2px; margin-bottom:10px; }
@@ -192,8 +225,17 @@
                         <p class="jd-hint">
                             Harga dihitung dari <b>jumlah halaman</b> dokumen Anda
                             (<b>Rp {{ number_format($product->hargaPerHalaman(), 0, ',', '.') }}</b> / halaman).
-                            Unggah <b>PDF</b> dulu agar harganya muncul.
+                            Siapkan <b>2 file dari dokumen yang sama</b>: PDF untuk menghitung halaman,
+                            dan DOCX yang akan dikerjakan tim kami.
                         </p>
+
+                        <div class="jd-step">
+                            <span class="jd-step-no">1</span>
+                            <div class="jd-step-txt">
+                                <b>File PDF</b>
+                                <small>Untuk menghitung halaman &amp; menentukan harga</small>
+                            </div>
+                        </div>
 
                         @if (! $draftUploadId)
                         <label class="jd-drop">
@@ -218,6 +260,66 @@
                             <button type="button" wire:click="hapusDraft" class="jd-file-x" title="Ganti file">
                                 <i class="bi bi-x-lg"></i>
                             </button>
+                        </div>
+
+                        {{-- Langkah 2: file kerja DOCX (yang benar-benar diparafrase) --}}
+                        <div class="jd-step" style="margin-top:16px;">
+                            <span class="jd-step-no">2</span>
+                            <div class="jd-step-txt">
+                                <b>File DOCX</b>
+                                <small>Dokumen Word yang akan dikerjakan tim — formatnya tetap utuh</small>
+                            </div>
+                        </div>
+
+                        @if (! $draftNamaKerja)
+                        <label class="jd-drop">
+                            <input type="file" wire:model="dokumenKerja" accept=".docx" class="jd-drop-input">
+                            <span wire:loading wire:target="dokumenKerja" class="jd-drop-state">
+                                <i class="bi bi-arrow-repeat jd-spin"></i> Mengunggah…
+                            </span>
+                            <span wire:loading.remove wire:target="dokumenKerja" class="jd-drop-state">
+                                <i class="bi bi-file-earmark-word jd-drop-ic"></i>
+                                <span class="jd-drop-title">Pilih file DOCX atau seret ke sini</span>
+                                <span class="jd-drop-hint">Hanya DOCX &middot; maksimal 20 MB</span>
+                            </span>
+                        </label>
+                        @error('dokumenKerja') <div class="jd-err">{{ $message }}</div> @enderror
+                        @else
+                        <div class="jd-file">
+                            <i class="bi bi-file-earmark-check"></i>
+                            <div class="jd-file-txt">
+                                <b>{{ $draftNamaKerja }}</b>
+                                <small>File kerja siap</small>
+                            </div>
+                            <button type="button" wire:click="hapusDraftKerja" class="jd-file-x" title="Ganti file">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        @endif
+
+                        {{-- Bagian dokumen yang tak perlu diparafrase --}}
+                        <div class="jd-exc" style="margin-top:16px;">
+                            <div class="jd-exc-head">
+                                <b>Bagian yang tidak perlu diparafrase</b>
+                                <small>Biasanya bagian ini dibiarkan apa adanya. Hilangkan centang bila Anda ingin bagian itu tetap dikerjakan.</small>
+                            </div>
+                            <div class="jd-bagian">
+                                <label class="jd-bagian-chip {{ $excludeCover ? 'is-on' : '' }}">
+                                    <input type="checkbox" wire:model.live="excludeCover">
+                                    <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
+                                    <span>Cover</span>
+                                </label>
+                                <label class="jd-bagian-chip {{ $excludeDaftarIsi ? 'is-on' : '' }}">
+                                    <input type="checkbox" wire:model.live="excludeDaftarIsi">
+                                    <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
+                                    <span>Daftar Isi</span>
+                                </label>
+                                <label class="jd-bagian-chip {{ $excludeDaftarPustaka ? 'is-on' : '' }}">
+                                    <input type="checkbox" wire:model.live="excludeDaftarPustaka">
+                                    <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
+                                    <span>Daftar Pustaka</span>
+                                </label>
+                            </div>
                         </div>
 
                         {{-- Halaman yang tak perlu dikerjakan (tidak ditagih) --}}
@@ -323,6 +425,21 @@
                                 </div>
                             @endif
                         </div>
+                    </div>
+                    @endif
+
+                    {{-- Syarat bahasa diberitahukan SEBELUM bayar, bukan saat unggah.
+                         Deteksi AI hanya akurat untuk teks Inggris, jadi dokumen
+                         berbahasa lain akan ditolak sistem di halaman unggah. --}}
+                    @if ($this->wajibInggris())
+                    <div class="jd-lang">
+                        <i class="bi bi-translate"></i>
+                        <span>
+                            <b>Dokumen wajib berbahasa Inggris</b>
+                            Layanan deteksi AI hanya akurat untuk teks berbahasa Inggris. Dokumen
+                            berbahasa lain akan ditolak saat diunggah, jadi pastikan Anda sudah
+                            punya versi bahasa Inggrisnya sebelum memesan.
+                        </span>
                     </div>
                     @endif
 

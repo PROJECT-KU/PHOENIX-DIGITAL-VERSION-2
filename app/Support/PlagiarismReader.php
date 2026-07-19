@@ -70,6 +70,141 @@ class PlagiarismReader
         return null;
     }
 
+    /**
+     * Persen teks terdeteksi AI dari PDF laporan "AI Writing" Turnitin.
+     * Sama seperti persen plagiasi: hanya diambil bila menempel pada frasa
+     * penandanya — bila ragu kembalikan null agar admin mengisi manual.
+     */
+    public static function persenAiDariPdf(string $absolutePath): ?int
+    {
+        return self::bacaAi($absolutePath)['persen'] ?? null;
+    }
+
+    /**
+     * Baca laporan AI beserta SUMBERNYA. Sumber penting karena artinya berbeda:
+     *  - Turnitin  : persentase teks yang terdeteksi AI.
+     *  - GPTZero   : PROBABILITAS dokumen dibuat AI — laporannya sendiri menegaskan
+     *                ini "not a percentage of AI text in the document".
+     * Keduanya angka 0-100, tapi label ke admin/customer harus dibedakan supaya
+     * tidak menyesatkan.
+     *
+     * @return array{persen:int, sumber:string, label:string}|null
+     */
+    public static function bacaAi(string $absolutePath): ?array
+    {
+        $norm = self::teksPdf($absolutePath);
+        if ($norm === null) {
+            return null;
+        }
+
+        // Turnitin — persentase teks AI.
+        $polaTurnitin = [
+            '/(\d{1,3})\s*%\s*detected\s+as\s+ai/i',              // "14% detected as AI"
+            '/detected\s+as\s+ai[^0-9%]{0,15}(\d{1,3})\s*%/i',
+            '/(\d{1,3})\s*%\s*ai[\s-]*generated/i',               // "14% AI-generated"
+            '/ai[\s-]*generated[^0-9%]{0,15}(\d{1,3})\s*%/i',
+            '/ai\s+writing[^0-9%]{0,20}(\d{1,3})\s*%/i',          // "AI Writing ... 14%"
+            '/(\d{1,3})\s*%\s*ai\s+writing/i',
+        ];
+
+        // GPTZero — probabilitas dokumen AI.
+        $polaGptZero = [
+            '/ai\s*probability[^0-9%]{0,15}(\d{1,3})\s*%/i',      // "AI Probability 16%"
+            '/(\d{1,3})\s*%\s*ai\s*probability/i',
+            '/probability[^0-9%]{0,15}(\d{1,3})\s*%[^0-9%]{0,40}ai\s+generated/i',
+        ];
+
+        foreach ([
+            ['turnitin', 'Persen teks AI', $polaTurnitin],
+            ['gptzero', 'Probabilitas AI', $polaGptZero],
+        ] as [$sumber, $label, $polaSumber]) {
+            $nilai = self::semuaNilai($norm, $polaSumber);
+
+            if (count($nilai) === 1) {
+                return ['persen' => $nilai[0], 'sumber' => $sumber, 'label' => $label, 'ambigu' => false];
+            }
+
+            /*
+             * Satu berkas bisa memuat LEBIH DARI SATU laporan — mis. dua submission
+             * Turnitin yang saling TERTIMPA di koordinat sama. Yang digambar paling
+             * akhir berada di lapisan atas, dan itulah yang dilihat admin saat PDF
+             * dibuka; nilai sebelumnya tertutup di bawahnya.
+             *
+             * Jadi yang dipra-isi adalah nilai TERAKHIR (yang tampak), bukan yang
+             * pertama ketemu. Tetap ditandai ambigu supaya admin sadar ada nilai
+             * lain di berkas itu dan bisa menggantinya bila perlu.
+             */
+            if (count($nilai) > 1) {
+                return [
+                    'persen' => end($nilai),
+                    'sumber' => $sumber,
+                    'label' => $label,
+                    'ambigu' => true,
+                    'nilai' => $nilai,
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Semua persen unik yang cocok dengan sekumpulan pola, URUT SESUAI POSISI
+     * KEMUNCULAN di dalam PDF — bukan urut angka. Urutan ini penting: pada PDF
+     * yang laporannya saling tertimpa, yang muncul belakangan digambar di
+     * lapisan atas dan itulah yang terlihat.
+     */
+    private static function semuaNilai(string $norm, array $pola): array
+    {
+        $temuan = []; // offset => persen
+
+        foreach ($pola as $p) {
+            if (preg_match_all($p, $norm, $mm, PREG_OFFSET_CAPTURE)) {
+                foreach ($mm[1] as $cocok) {
+                    if (! is_null($n = self::batasi((int) $cocok[0]))) {
+                        $temuan[(int) $cocok[1]] = $n;
+                    }
+                }
+            }
+        }
+
+        ksort($temuan); // urut posisi di dokumen
+
+        // Buang duplikat tapi PERTAHANKAN kemunculan TERAKHIR tiap angka,
+        // agar nilai lapisan teratas tetap berada di akhir daftar.
+        $nilai = [];
+        foreach ($temuan as $n) {
+            if (($k = array_search($n, $nilai, true)) !== false) {
+                unset($nilai[$k]);
+            }
+            $nilai[] = $n;
+        }
+
+        return array_values($nilai);
+    }
+
+    /** Ambil teks PDF yang sudah dinormalkan spasinya; null bila gagal. */
+    private static function teksPdf(string $absolutePath): ?string
+    {
+        if (! is_file($absolutePath)) {
+            return null;
+        }
+
+        // Lihat catatan di persenDariPdf(): PDF besar dilewati agar tidak
+        // menghabiskan memori (fatal error yang tak tertangkap try/catch).
+        if (filesize($absolutePath) > 8 * 1024 * 1024) {
+            return null;
+        }
+
+        try {
+            $text = (new Parser)->parseFile($absolutePath)->getText();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return $text ? preg_replace('/\s+/', ' ', $text) : null;
+    }
+
     private static function batasi(int $n): ?int
     {
         if ($n < 0 || $n > 100) {
