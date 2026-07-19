@@ -360,6 +360,11 @@ class CashFlowList extends Component
         // Modal produk NON-private (sharing / tanpa produk) = total pembelian akun periode terpilih
         $modalNonPrivateRows = Spending::query()
             ->where('jenis_pengeluaran', 'pembelian_akun')
+            // HANYA pembelian yang sudah selesai = biaya nyata. Tanpa filter ini
+            // pembelian berstatus 'pending' ikut terhitung, sehingga modal di
+            // Omset Bersih lebih besar daripada "modal terpakai" di fitur Modal
+            // (yang memang hanya menghitung completed) — dua angka untuk hal sama.
+            ->where('status', 'completed')
             ->when($usesSiklus, function ($q) use ($siklusMulai, $siklusAkhir) {
                 $q->where('tanggal_transaksi', '>=', $siklusMulai->toDateString())
                     ->where('tanggal_transaksi', '<', $siklusAkhir->toDateString());

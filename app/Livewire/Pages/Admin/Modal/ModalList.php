@@ -653,36 +653,22 @@ class ModalList extends Component
                 continue;
             }
 
-            $nCek = (int) ($addon['jumlah'][$pid] ?? 0);
-            $nama = $namaAll[$pid] ?? 'Produk';
+            $nCek = max(1, (int) ($addon['jumlah'][$pid] ?? 1));
 
             /*
-             * Add-on pemeriksaan = pengecekan 1× BIASA untuk produk itu, jadi
-             * digabungkan ke baris "1 kali" miliknya — bukan baris terpisah.
-             * Baris terpisah membuat admin membaca totalnya kurang (mis. 5+2=7)
-             * padahal modal sebenarnya 8.
+             * Baris TERSENDIRI supaya jelas asalnya dari add-on (bukan dari
+             * pesanan langsung produk itu). Nama tetap sama dengan produknya
+             * dan barisnya dikelompokkan berdampingan oleh pengurutan di bawah,
+             * sehingga totalnya tetap mudah dijumlahkan.
              */
-            $ketemu = false;
-            foreach ($akunPerProduk as $i => $r) {
-                if ($r['nama'] === $nama && $r['durasi'] === '1 kali') {
-                    $akunPerProduk[$i]['jumlah'] += $nCek;
-                    $akunPerProduk[$i]['total'] += (float) $nilai;
-                    $ketemu = true;
-                    break;
-                }
-            }
-
-            // Produk itu belum punya baris "1 kali" pada periode ini → buat.
-            if (! $ketemu) {
-                $akunPerProduk[] = [
-                    'nama' => $nama,
-                    'tipe' => 'private',
-                    'durasi' => '1 kali',
-                    'satuan' => $nCek > 0 ? (float) $nilai / $nCek : (float) $nilai,
-                    'jumlah' => max(1, $nCek),
-                    'total' => (float) $nilai,
-                ];
-            }
+            $akunPerProduk[] = [
+                'nama' => $namaAll[$pid] ?? 'Produk',
+                'tipe' => 'private',
+                'durasi' => 'add-on',
+                'satuan' => (float) $nilai / $nCek,
+                'jumlah' => $nCek,
+                'total' => (float) $nilai,
+            ];
         }
 
         /*
