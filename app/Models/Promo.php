@@ -24,6 +24,7 @@ class Promo extends Model
         'diskon_non_member_nominal',
         'untuk_member',
         'untuk_pembeli_pertama',
+        'kuota',
         'min_pembelian',
         'mulai_promo',
         'selesai_promo',
@@ -35,7 +36,6 @@ class Promo extends Model
         'show_on_homepage',
         'banner_image',
         'badge_text',
-        'badge_color',
         'total_penggunaan',
         'total_diskon_diberikan',
     ];
@@ -49,12 +49,13 @@ class Promo extends Model
         'can_stack_with_referral' => 'boolean',
         'can_stack_with_points' => 'boolean',
         'show_on_homepage' => 'boolean',
-        'diskon_member_persen' => 'decimal:2',
-        'diskon_member_nominal' => 'decimal:0',
-        'diskon_non_member_persen' => 'decimal:2',
-        'diskon_non_member_nominal' => 'decimal:0',
-        'min_pembelian' => 'decimal:0',
-        'total_diskon_diberikan' => 'decimal:0',
+        'diskon_member_persen' => 'integer',
+        'diskon_member_nominal' => 'integer',
+        'diskon_non_member_persen' => 'integer',
+        'diskon_non_member_nominal' => 'integer',
+        'min_pembelian' => 'integer',
+        'kuota' => 'integer',
+        'total_diskon_diberikan' => 'integer',
     ];
 
     // Relationships
@@ -72,11 +73,37 @@ class Promo extends Model
     }
 
     // Scopes
+    /**
+     * Masih ada sisa kuota (atau memang tanpa batas).
+     * Versi SQL dari kuotaHabis() — dasarnya sama persis: pesanan non-cancelled.
+     */
+    public function scopeKuotaTersedia($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('promos.kuota')
+                ->orWhereRaw('promos.kuota > (
+                    SELECT COUNT(*) FROM order_promo
+                    INNER JOIN orders ON orders.id = order_promo.order_id
+                    WHERE order_promo.promo_id = promos.id
+                      AND orders.status <> ?
+                )', ['cancelled']);
+        });
+    }
+
+    /**
+     * Promo yang benar-benar bisa dipakai sekarang.
+     *
+     * Kuota ikut disaring di sini supaya promo yang kuotanya sudah habis
+     * BERHENTI dipajang di publik — kalau tidak, flash sale "20 pembeli
+     * pertama" yg habis tgl 15 tetap tampil beserta hitung mundur sampai
+     * tgl 20, padahal di kasir sudah ditolak. Itu menipu pembeli.
+     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true)
             ->where('mulai_promo', '<=', now())
-            ->where('selesai_promo', '>=', now());
+            ->where('selesai_promo', '>=', now())
+            ->kuotaTersedia();
     }
 
     public function scopeFlashSale($query)
@@ -168,6 +195,13 @@ class Promo extends Model
             return false;
         }
 
+        // Kuota habis -> promo tidak bisa dipakai lagi. Dicek di sini (bukan hanya
+        // di validateKodePromo) supaya SEMUA jalur ikut terjaga: flash sale,
+        // auto promo, promo produk, maupun kode promo.
+        if ($this->kuotaHabis()) {
+            return false;
+        }
+
         return true;
     }
 
@@ -186,6 +220,38 @@ class Promo extends Model
     {
         $this->increment('total_penggunaan');
         $this->increment('total_diskon_diberikan', $discountAmount);
+    }
+
+    /* ===== Kuota promo ===== */
+
+    /**
+     * Jumlah slot kuota yang sudah terpakai.
+     *
+     * Dihitung dari pesanan NYATA (pivot order_promo), BUKAN dari kolom
+     * total_penggunaan — kolom itu terbukti bisa melenceng (pernah tercatat 11
+     * padahal pesanan aslinya cuma 9), sehingga tidak layak jadi dasar kuota.
+     *
+     * Pesanan 'cancelled' tidak dihitung -> slotnya kembali ke kuota.
+     * JOIN ke orders sekaligus membuang baris pivot yatim (pesanan terhapus).
+     */
+    public function kuotaTerpakai(): int
+    {
+        return (int) \Illuminate\Support\Facades\DB::table('order_promo')
+            ->join('orders', 'orders.id', '=', 'order_promo.order_id')
+            ->where('order_promo.promo_id', $this->id)
+            ->where('orders.status', '!=', 'cancelled')
+            ->count();
+    }
+
+    /** NULL = promo tanpa batas kuota. */
+    public function sisaKuota(): ?int
+    {
+        return $this->kuota === null ? null : max($this->kuota - $this->kuotaTerpakai(), 0);
+    }
+
+    public function kuotaHabis(): bool
+    {
+        return $this->kuota !== null && $this->kuotaTerpakai() >= $this->kuota;
     }
 
     public function scopeAutoPromo($query)
@@ -209,20 +275,5 @@ class Promo extends Model
     public function isAutomatic(): bool
     {
         return in_array($this->tipe_promo, ['flash_sale', 'auto_promo']);
-    }
-
-    // Helper method - untuk display badge text
-    public function getDisplayBadge(): string
-    {
-        if ($this->badge_text) {
-            return $this->badge_text;
-        }
-
-        return match ($this->tipe_promo) {
-            'flash_sale' => 'FLASH SALE',
-            'auto_promo' => 'PROMO',
-            'kode_promo' => 'KODE PROMO',
-            default => 'DISKON'
-        };
     }
 }

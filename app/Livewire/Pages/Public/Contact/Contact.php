@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Public\Contact;
 
 use App\Models\CustomerMessage;
+use App\Models\Banners;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
@@ -13,6 +14,8 @@ class Contact extends Component
     public $name;
 
     public $email;
+
+    public $no_telp;
 
     public $message;
 
@@ -27,7 +30,7 @@ class Contact extends Component
             return;
         }
 
-        $key = 'contact-form:'.$request->ip();
+        $key = 'contact-form:' . $request->ip();
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             $this->addError('rate_limit', "Terlalu banyak percobaan. Silakan tunggu $seconds detik lagi.");
@@ -38,12 +41,14 @@ class Contact extends Component
         $validated = $this->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
+            'no_telp' => ['required', 'string', 'regex:/^\+[1-9]\d{6,14}$/'],
             'message' => 'required|string|max:2000',
         ]);
 
         CustomerMessage::create([
             'name' => $this->name,
             'email' => $this->email,
+            'no_telp' => $this->no_telp,
             'message' => $this->message,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
@@ -51,13 +56,17 @@ class Contact extends Component
 
         RateLimiter::hit($key);
 
-        $this->reset(['name', 'email', 'message']);
-        session()->flash('success', 'Terima kasih! Pesan Anda telah kami terima.');
+        // Catatan: field dikosongkan via JS (lihat handler 'contact-success' di blade)
+        // untuk menghindari re-render yang mengganggu widget intl-tel-input.
+        $this->dispatch('contact-success', message: 'Terima kasih! Pesan Anda telah kami terima.');
     }
 
     #[Layout('layouts.guest')]
     public function render()
     {
-        return view('livewire.pages.public.contact.contact');
+        $banners = Banners::where('status', 'active')->get();
+        return view('livewire.pages.public.contact.contact', [
+            'banners' => $banners,
+        ]);
     }
 }

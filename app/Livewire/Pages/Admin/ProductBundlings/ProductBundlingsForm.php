@@ -26,6 +26,9 @@ class ProductBundlingsForm extends Component
 
     public $product_5 = '';
 
+    // Durasi per produk: ['product_1' => ['value'=>1,'type'=>'bulan'], ...]
+    public $durations = [];
+
     public $harga_awal = '';
 
     public $harga_bundling = '';
@@ -47,6 +50,12 @@ class ProductBundlingsForm extends Component
     public function mount()
     {
         $this->products = Product::all();
+
+        // Default durasi tiap slot
+        foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $f) {
+            $this->durations[$f] = ['value' => 1, 'type' => 'bulan'];
+        }
+
         if ($this->product_bundlings) {
             $this->nama_paket = $this->product_bundlings->nama_paket;
             $this->product_1 = $this->product_bundlings->product_1;
@@ -54,12 +63,20 @@ class ProductBundlingsForm extends Component
             $this->product_3 = $this->product_bundlings->product_3;
             $this->product_4 = $this->product_bundlings->product_4;
             $this->product_5 = $this->product_bundlings->product_5;
-            $this->harga_awal = $this->product_bundlings->harga_awal;
-            $this->harga_bundling = $this->product_bundlings->harga_bundling;
+            // Tampilkan angka saja di field (prefix "Rp" ditampilkan terpisah, seragam dgn Product)
+            $this->harga_awal = $this->stripRupiah($this->product_bundlings->harga_awal);
+            $this->harga_bundling = $this->stripRupiah($this->product_bundlings->harga_bundling);
             $this->existingImage = $this->product_bundlings->gambar;
             $this->deskripsi = $this->product_bundlings->deskripsi;
             $this->status = $this->product_bundlings->status;
             $this->mode = 'edit';
+
+            foreach (($this->product_bundlings->durations ?? []) as $f => $d) {
+                $this->durations[$f] = [
+                    'value' => (int) ($d['value'] ?? 1),
+                    'type' => $d['type'] ?? 'bulan',
+                ];
+            }
         }
     }
 
@@ -102,6 +119,22 @@ class ProductBundlingsForm extends Component
         }
     }
 
+    // Hanya simpan durasi untuk slot produk yang terisi
+    private function buildDurations(): array
+    {
+        $out = [];
+        foreach (['product_1', 'product_2', 'product_3', 'product_4', 'product_5'] as $f) {
+            if (! empty($this->$f)) {
+                $out[$f] = [
+                    'value' => (int) ($this->durations[$f]['value'] ?? 1),
+                    'type' => $this->durations[$f]['type'] ?? 'bulan',
+                ];
+            }
+        }
+
+        return $out;
+    }
+
     private function createProductBundlings()
     {
         try {
@@ -117,8 +150,9 @@ class ProductBundlingsForm extends Component
                 'product_3' => $this->product_3,
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
-                'harga_awal' => $this->harga_awal,
-                'harga_bundling' => $this->harga_bundling,
+                'durations' => $this->buildDurations(),
+                'harga_awal' => $this->formatRupiah($this->harga_awal),
+                'harga_bundling' => $this->formatRupiah($this->harga_bundling),
                 'gambar' => $filename,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
@@ -144,8 +178,9 @@ class ProductBundlingsForm extends Component
                 'product_3' => $this->product_3,
                 'product_4' => $this->product_4,
                 'product_5' => $this->product_5,
-                'harga_awal' => $this->harga_awal,
-                'harga_bundling' => $this->harga_bundling,
+                'durations' => $this->buildDurations(),
+                'harga_awal' => $this->formatRupiah($this->harga_awal),
+                'harga_bundling' => $this->formatRupiah($this->harga_bundling),
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
             ];
@@ -190,6 +225,28 @@ class ProductBundlingsForm extends Component
         $this->gambar = '';
         $this->deskripsi = '';
         $this->status = '';
+    }
+
+    /**
+     * Ambil angka saja dari string harga (mis. "Rp 10.000" -> "10.000") untuk
+     * ditampilkan di field (prefix "Rp" ditampilkan terpisah, seragam dgn Product).
+     */
+    private function stripRupiah($value): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+
+        return $digits === '' ? '' : number_format((int) $digits, 0, ',', '.');
+    }
+
+    /**
+     * Susun kembali ke format tersimpan "Rp 10.000" agar konsisten dengan data
+     * lama & tampilan daftar bundling.
+     */
+    private function formatRupiah($value): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', (string) $value);
+
+        return $digits === '' ? '' : 'Rp '.number_format((int) $digits, 0, ',', '.');
     }
 
     public function render()

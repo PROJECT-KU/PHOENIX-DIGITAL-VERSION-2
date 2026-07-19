@@ -77,6 +77,10 @@ class PromoService
         $promos = [];
         $totalDiscount = 0;
 
+        // Minimum pembelian diukur dari TOTAL keranjang — arti yang sama dgn
+        // jalur kode promo (applyKodePromo membandingkan ke $subtotal keranjang).
+        $subtotal = array_sum(array_column($cart, 'subtotal'));
+
         // Get all active automatic promos (flash_sale + auto_promo)
         $automaticPromos = Promo::active()
             ->automaticPromos()
@@ -86,7 +90,14 @@ class PromoService
 
         foreach ($cart as $item) {
             // Find applicable promos for this product
-            $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer) {
+            $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer, $subtotal) {
+                // Minimum pembelian: sebelumnya TIDAK pernah dicek untuk flash sale /
+                // auto promo — promo bersyarat "min belanja 100rb" tetap memberi
+                // diskon di keranjang 10rb. Hanya jalur kode promo yang menegakkannya.
+                if ($subtotal < (int) $promo->min_pembelian) {
+                    return false;
+                }
+
                 // Check if promo applies to this product
                 // Jika products kosong = berlaku untuk semua produk
                 $appliesToProduct = $promo->products->isEmpty()
@@ -96,8 +107,9 @@ class PromoService
             });
 
             foreach ($productPromos as $promo) {
-                // Check if can stack
-                if (! $promo->can_stack_with_other && ! empty($promos)) {
+                // Dua arah: promo ini mengizinkan gabung, DAN promo yg sudah
+                // terpasang juga mengizinkan. Dulu hanya arah pertama yg dicek.
+                if (! $this->bolehGabungPromo($promo, $promos)) {
                     continue;
                 }
 
@@ -171,11 +183,13 @@ class PromoService
             ];
         }
 
-        // Check stacking rules
-        if (! $promo->can_stack_with_other && ! empty($existingPromos)) {
+        // Check stacking rules — dua arah. Sebelumnya hanya saklar kode promo ini
+        // yang dilihat, sehingga promo otomatis yang MELARANG penggabungan tetap
+        // bisa ditumpuki kode promo yang kebetulan mengizinkan.
+        if (! $this->bolehGabungPromo($promo, $existingPromos)) {
             return [
                 'success' => false,
-                'message' => 'Promo ini tidak dapat digabungkan dengan promo lain',
+                'message' => 'Promo ini tidak dapat digabungkan dengan promo yang sedang aktif',
             ];
         }
 
@@ -215,6 +229,96 @@ class PromoService
     /**
      * Calculate referral discount
      */
+    /**
+     * Bolehkah promo BARU ditumpuk di atas promo yang sudah terpasang?
+     *
+     * Harus DUA ARAH:
+     *   1. promo baru mengizinkan penggabungan, DAN
+     *   2. semua promo yang sudah terpasang juga mengizinkan.
+     *
+     * Sebelumnya hanya arah (1) yang dicek, sehingga promo yang melarang
+     * penggabungan tetap bisa ditumpuki promo lain yang kebetulan mengizinkan —
+     * larangannya jadi tidak berarti. Pola yang benar ini sudah dipakai aturan
+     * referral (calculateReferralDiscount), tinggal disamakan.
+     */
+    public function bolehGabungPromo(Promo $baru, array $terpasang): bool
+    {
+        if (empty($terpasang)) {
+            return true;
+        }
+
+        if (! $baru->can_stack_with_other) {
+            return false;
+        }
+
+        foreach ($terpasang as $promoData) {
+            if (empty($promoData['promo_id'])) {
+                continue;
+            }
+
+            $lama = Promo::find($promoData['promo_id']);
+            if ($lama && ! $lama->can_stack_with_other) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Nama promo terpasang yang MELARANG aturan tertentu — atau null bila tidak ada.
+     *
+     * Dipakai UI checkout untuk menonaktifkan input sekaligus menyebut alasannya,
+     * supaya pembeli tidak menyangka fitur itu bisa dipakai lalu bingung sendiri.
+     *
+     * @param  string  $aturan  can_stack_with_other | can_stack_with_referral | can_stack_with_points
+     */
+    public function promoPelarang(array $appliedPromos, string $aturan): ?string
+    {
+        $diizinkan = ['can_stack_with_other', 'can_stack_with_referral', 'can_stack_with_points'];
+        if (! in_array($aturan, $diizinkan, true)) {
+            return null;
+        }
+
+        foreach ($appliedPromos as $promoData) {
+            if (empty($promoData['promo_id'])) {
+                continue;
+            }
+
+            $promo = Promo::find($promoData['promo_id']);
+            if ($promo && ! $promo->{$aturan}) {
+                return $promo->nama_promo;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Bolehkah POIN dipakai bersama promo yang sedang terpasang?
+     *
+     * Meniru aturan can_stack_with_referral: cukup SATU promo yang melarang,
+     * poin tidak boleh dipakai sama sekali.
+     *
+     * Sebelumnya aturan `can_stack_with_points` TIDAK PERNAH ditegakkan di mana
+     * pun — admin mematikannya, tapi checkout tetap memotong poin. Ini uang.
+     */
+    public function poinBolehDipakai(array $appliedPromos): bool
+    {
+        foreach ($appliedPromos as $promoData) {
+            if (empty($promoData['promo_id'])) {
+                continue;
+            }
+
+            $promo = Promo::find($promoData['promo_id']);
+            if ($promo && ! $promo->can_stack_with_points) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private function calculateReferralDiscount(float $subtotal, array $appliedPromos): float
     {
         // Check if any promo doesn't allow stacking with referral
@@ -243,6 +347,15 @@ class PromoService
             return [
                 'valid' => false,
                 'message' => 'Kode promo tidak ditemukan atau sudah tidak aktif',
+            ];
+        }
+
+        // Dicek terpisah SEBELUM canBeUsedBy() — kalau tidak, pembeli cuma dapat
+        // pesan "tidak memenuhi syarat" padahal masalahnya kuota sudah habis.
+        if ($promo->kuotaHabis()) {
+            return [
+                'valid' => false,
+                'message' => 'Kuota promo ini sudah habis',
             ];
         }
 
@@ -280,9 +393,11 @@ class PromoService
      */
     public function getActiveFlashSales(): Collection
     {
+        // Flash sale SELALU tampil di homepage — tidak lagi menunggu saklar
+        // "show_on_homepage". Saklar itu tetap berlaku untuk tipe promo lain
+        // (lihat getHomepagePromos).
         return Promo::active()
             ->flashSale()
-            ->homepage()
             ->orderBy('prioritas', 'desc')
             ->get();
     }

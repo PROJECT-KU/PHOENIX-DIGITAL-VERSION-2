@@ -7,7 +7,7 @@ use Livewire\Component;
 
 class PemesananrscCreate extends Component
 {
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-create');

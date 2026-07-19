@@ -65,7 +65,31 @@ return [
     |
     */
 
-    'timezone' => env('APP_TIMEZONE', 'UTC'),
+    'timezone' => 'Asia/Jakarta',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Batas Ukuran Unggahan (MB)
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai form lamaran kerja (CV & surat lamaran). Ditaruh di config, BUKAN
+    | dibaca env() langsung dari kode: setelah `php artisan config:cache` di
+    | produksi, env() tak lagi membaca .env sehingga nilainya diam-diam kembali
+    | ke bawaan — perubahan di .env produksi tak akan berpengaruh.
+    |
+    */
+
+    'max_upload_mb' => (int) env('MAX_UPLOAD_MB', 2),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pemicu Scheduler Berbasis Trafik
+    |--------------------------------------------------------------------------
+    | Untuk shared hosting tanpa cron: bila true, scheduler dijalankan otomatis
+    | dari trafik situs (maks. sekali per menit, setelah respons terkirim).
+    | Setel SCHEDULER_TRAFFIC_KICK=false di .env bila sudah memasang cron asli.
+    */
+    'scheduler_traffic_kick' => env('SCHEDULER_TRAFFIC_KICK', true),
 
     /*
     |--------------------------------------------------------------------------

@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class PaymentService
 {
@@ -49,7 +50,7 @@ class PaymentService
                     'id' => $item->product_id,
                     'price' => (int) $item->price,
                     'quantity' => $item->quantity,
-                    'name' => $item->product_name.' - '.$item->getDurationLabel(),
+                    'name' => $item->product_name . ' - ' . $item->getDurationLabel(),
                 ];
             }
 
@@ -108,7 +109,7 @@ class PaymentService
                 'payment' => $payment,
             ];
         } catch (\Exception $e) {
-            Log::error('Payment creation failed: '.$e->getMessage());
+            Log::error('Payment creation failed: ' . $e->getMessage());
 
             return [
                 'success' => false,
@@ -153,7 +154,7 @@ class PaymentService
 
             return ['success' => true];
         } catch (\Exception $e) {
-            Log::error('Payment callback error: '.$e->getMessage());
+            Log::error('Payment callback error: ' . $e->getMessage());
 
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -182,5 +183,110 @@ class PaymentService
 
         // Send WhatsApp (optional)
         // Implement WhatsApp API here
+    }
+
+    public function createQrisPayment(Order $order)
+    {
+        try {
+
+            $response = Http::connectTimeout(10)
+                ->timeout(20)
+                ->retry(2, 300, throw: false)
+                ->get(
+                    'https://qris.interactive.co.id/restapi/qris/show_qris.php',
+                    [
+                        'do' => 'create-invoice',
+                        'apikey' => config('services.qris.apikey'),
+                        'mID' => config('services.qris.mid'),
+                        'cliTrxNumber' => $order->order_number,
+                        'cliTrxAmount' => (int) $order->total,
+                        'useTip' => 'no',
+                    ]
+                );
+
+            $result = $response->json();
+
+            if (($result['status'] ?? null) !== 'success') {
+                throw new \Exception(
+                    $result['data']['qris_status'] ?? 'Gagal membuat QRIS'
+                );
+            }
+
+            $payment = Payment::create([
+                'id' => Str::uuid(),
+                'order_id' => $order->id,
+                'payment_gateway' => 'interactive',
+                'transaction_id' => $result['data']['qris_invoiceid'],
+                'payment_method' => 'qris',
+                'amount' => $order->total,
+                'status' => 'pending',
+                'gateway_response' => $result,
+                'expired_at' => now()->addMinutes(30),
+            ]);
+
+            $order->update([
+                'payment_gateway' => 'interactive',
+                'payment_reference' => $result['data']['qris_invoiceid'],
+            ]);
+
+            return [
+                'success' => true,
+                'payment' => $payment,
+                'qris_content' => $result['data']['qris_content'],
+                'invoice_id' => $result['data']['qris_invoiceid'],
+                'nmid' => $result['data']['qris_nmid'],
+                'request_date' => $result['data']['qris_request_date'],
+            ];
+        } catch (\Exception $e) {
+
+            Log::error('QRIS Create Error: ' . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function checkQrisPayment(Payment $payment)
+    {
+        try {
+            $response = Http::timeout(20)->get(
+                'https://qris.interactive.co.id/restapi/qris/checkpaid_qris.php',
+                [
+                    'do' => 'checkStatus',
+                    'apikey' => config('services.qris.apikey'),
+                    'mID' => config('services.qris.mid'),
+                    'invid' => $payment->transaction_id,
+                    'trxvalue' => (int) $payment->amount,
+                    'trxdate' => $payment->created_at->format('Y-m-d'),
+                ]
+            );
+
+            $result = $response->json();
+
+            if (
+                ($result['status'] ?? null) === 'success'
+                && ($result['data']['qris_status'] ?? null) === 'paid'
+            ) {
+
+                $order = $payment->order;
+
+                $payment->update([
+                    'gateway_response' => $result,
+                ]);
+
+                $this->markAsPaid($order, $payment);
+
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+
+            Log::error('QRIS Check Error: ' . $e->getMessage());
+
+            return false;
+        }
     }
 }

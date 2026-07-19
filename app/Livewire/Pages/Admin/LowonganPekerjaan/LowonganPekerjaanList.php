@@ -16,7 +16,7 @@ class LowonganPekerjaanList extends Component
 
     public $search = '';
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $dataLowongan = Lowongan::latest()
@@ -31,11 +31,17 @@ class LowonganPekerjaanList extends Component
     #[On('delete-lowongan-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_lowongan')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus data lowongan.');
+
+            return;
+        }
+
         try {
             Lowongan::findOrFail($id)->delete();
-            session()->flash('success', 'berhasil menghapus data lowongan');
+            $this->dispatch('swal-success', message: 'Data lowongan berhasil dihapus.');
         } catch (\Exception $e) {
-            session()->flash('error', 'gagal menghapus data lowongan');
+            $this->dispatch('swal-error', message: 'Gagal menghapus data lowongan.');
         }
     }
 

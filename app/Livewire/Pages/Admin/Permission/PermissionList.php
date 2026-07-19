@@ -35,6 +35,12 @@ class PermissionList extends Component
     #[On('delete-permission-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_permission')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus permission.');
+
+            return;
+        }
+
         try {
             $permission = Permission::findOrFail($id);
 
@@ -42,31 +48,19 @@ class PermissionList extends Component
             $usedByRoles = $permission->roles()->count();
 
             if ($usedByRoles > 0) {
-                $this->dispatch('swal-confirm', [
-                    'type' => 'error',
-                    'title' => 'Gagal!',
-                    'message' => 'Permission \''.$permission->display_name.'\' masih digunakan oleh '.$usedByRoles.' role. Hapus dari role terlebih dahulu.',
-                ]);
+                $this->dispatch('swal-error', message: 'Permission \'' . $permission->display_name . '\' masih digunakan oleh ' . $usedByRoles . ' role. Hapus dari role terlebih dahulu.');
 
                 return;
             }
 
             $permission->delete();
-            $this->dispatch('swal-alert', [
-                'type' => 'success',
-                'title' => 'Berhasil!',
-                'message' => 'Permission berhasil dihapus.',
-            ]);
+            $this->dispatch('swal-success', message: 'Permission berhasil dihapus.');
         } catch (\Exception $e) {
-            $this->dispatch('swal-alert', [
-                'type' => 'error',
-                'title' => 'Gagal!',
-                'message' => 'Permission gagal dihapus.',
-            ]);
+            $this->dispatch('swal-error', message: 'Permission gagal dihapus.');
         }
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $permisionsData = Permission::latest();
@@ -77,21 +71,25 @@ class PermissionList extends Component
 
         $permissions = $permisionsData
             ->where('display_name', 'like', "%{$this->search}%")
-            ->paginate(8);
+            ->paginate(10);
+
+        $groups = Permission::query()
+            ->whereNotNull('group')
+            ->select('group')
+            ->distinct()
+            ->orderBy('group')
+            ->get()
+            ->map(fn($item) => [
+                'value' => $item->group,
+                'label' => $item->group,
+            ])
+            ->toArray();
 
         return view('livewire.pages.admin.permission.permission-list', [
             'permissions' => $permissions,
-            'groups' => Permission::query()
-                ->whereNotNull('group')
-                ->select('group')
-                ->distinct()
-                ->orderBy('group')
-                ->get()
-                ->map(fn ($item) => [
-                    'value' => $item->group,
-                    'label' => $item->group,
-                ])
-                ->toArray(),
+            'groups' => $groups,
+            'totalPermission' => Permission::count(),
+            'totalGroup' => count($groups),
         ]);
     }
 }

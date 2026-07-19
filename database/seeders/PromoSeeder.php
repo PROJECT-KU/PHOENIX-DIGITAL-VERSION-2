@@ -35,7 +35,6 @@ class PromoSeeder extends Seeder
             'can_stack_with_points' => true,
             'show_on_homepage' => true,
             'badge_text' => 'FLASH SALE',
-            'badge_color' => '#FF6B6B',
         ]);
 
         // Attach ke semua produk
@@ -113,7 +112,6 @@ class PromoSeeder extends Seeder
             'can_stack_with_points' => true,
             'show_on_homepage' => true,
             'badge_text' => 'MEMBER ONLY',
-            'badge_color' => '#4ECDC4',
         ]);
 
         $memberFlashSale->products()->attach($allProducts->pluck('id'));

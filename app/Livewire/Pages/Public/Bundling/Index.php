@@ -10,6 +10,13 @@ use Livewire\Attributes\On;
 
 class Index extends Component
 {
+    public $perPage = 8;
+
+    // Modal detail bundling
+    public bool $showBundleDetail = false;
+
+    public ?array $detailBundle = null;
+
     use WithPagination;
 
     public function addToCart($bundlingId)
@@ -27,8 +34,9 @@ class Index extends Component
         $price = (int) preg_replace('/[^0-9]/', '', $bundling->harga_bundling);
 
         if (isset($cart[$cartKey])) {
-            $cart[$cartKey]['quantity']++;
-            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['quantity'] * $cart[$cartKey]['price'];
+            // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.
+            $cart[$cartKey]['quantity'] = 1;
+            $cart[$cartKey]['subtotal'] = $cart[$cartKey]['price'];
         } else {
             $cart[$cartKey] = [
                 'product_id' => $bundling->id,
@@ -50,20 +58,69 @@ class Index extends Component
 
         session()->put('cart', $cart);
 
+        // Bila ditambah dari popup detail → tutup popup (kembali ke homepage bundling)
+        $this->showBundleDetail = false;
+
         $this->dispatch('cart-updated', count: $this->getCartCount());
-        $this->dispatch('success-add-to-cart');
+        $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
+    }
+
+    /** Buka modal detail bundling. */
+    public function openDetail($bundlingId)
+    {
+        $bundling = ProductBundlings::find($bundlingId);
+        if (! $bundling) {
+            $this->dispatch('cart-error', message: 'Bundling tidak ditemukan.');
+
+            return;
+        }
+
+        $durs = $bundling->durations ?? [];
+        $products = [];
+        foreach ([1, 2, 3, 4, 5] as $i) {
+            $p = $bundling->{'product'.$i};
+            if ($p) {
+                $dur = $durs['product_'.$i] ?? null;
+                $products[] = [
+                    'nama' => $p->nama_akun,
+                    'dur_value' => (int) ($dur['value'] ?? 1),
+                    'dur_type' => ucfirst($dur['type'] ?? 'bulan'),
+                ];
+            }
+        }
+
+        $this->detailBundle = [
+            'id' => $bundling->id,
+            'nama' => $bundling->nama_paket,
+            'gambar' => $bundling->gambar,
+            'deskripsi' => $bundling->deskripsi,
+            'produk' => $products,
+            'harga_awal' => $bundling->harga_awal,
+            'harga_bundling' => $bundling->harga_bundling,
+        ];
+        $this->showBundleDetail = true;
+    }
+
+    public function closeDetail()
+    {
+        $this->showBundleDetail = false;
     }
 
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
-        return array_sum(array_column($cart, 'quantity') ?: [0]);
+        return count($cart);
+    }
+
+    public function loadMore()
+    {
+        $this->perPage += 12;
     }
 
     #[Layout('layouts.guest')]
     public function render()
     {
-        $bundlings = ProductBundlings::latest()->take(3)->get();
+        $bundlings = ProductBundlings::where('status', 'active')->latest()->paginate($this->perPage);
 
         return view('livewire.pages.public.bundling.index', [
             'bundlings' => $bundlings

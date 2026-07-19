@@ -15,7 +15,7 @@ class LowonganPekerjaanEdit extends Component
         $this->lowongan = $lowongan;
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.lowongan-pekerjaan.lowongan-pekerjaan-edit');

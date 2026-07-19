@@ -3,7 +3,7 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
-use Livewire\Attributes\Layout;
+use App\Models\Promo;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -21,6 +21,12 @@ class CustomerList extends Component
     #[On('delete-customer')]
     public function deleteCustomer($id)
     {
+        if (! auth()->user()->hasPermission('delete_customer')) {
+            $this->dispatch('customer-delete-error', message: 'Anda tidak memiliki izin menghapus pelanggan.');
+
+            return;
+        }
+
         Customer::findOrFail($id)->delete();
 
         $this->dispatch('customer-deleted');
@@ -32,14 +38,16 @@ class CustomerList extends Component
         $this->resetPage();
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $customers = Customer::query()
             ->where(function ($query) {
                 $query->where('nama', 'like', "%{$this->searchCustomer}%")
                     ->orWhere('email', 'like', "%{$this->searchCustomer}%")
-                    ->orWhere('no_hp', 'like', "%{$this->searchCustomer}%");
+                    ->orWhere('no_hp', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('kode_ref', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('status_member', 'like', "%{$this->searchCustomer}%")
+                    ->orWhere('point', 'like', "%{$this->searchCustomer}%");
             })
             ->when($this->activeTab === 'member', function ($q) {
                 $q->where('status_member', 'active');
@@ -47,8 +55,21 @@ class CustomerList extends Component
             ->latest()
             ->paginate(10);
 
+        // Pengaman kadaluarsa tahunan: nolkan poin milik tahun sebelumnya pada
+        // baris halaman ini (self-healing bila command terjadwal terlewat).
+        foreach ($customers as $customer) {
+            $customer->applyYearlyExpiry();
+        }
+
+        $activePromos = Promo::active()
+            ->orderByDesc('prioritas')
+            ->orderByDesc('mulai_promo')
+            ->get();
+
         return view('livewire.pages.admin.customer.customer-list', [
             'customers' => $customers,
-        ]);
+            'activePromos' => $activePromos,
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

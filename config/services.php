@@ -31,4 +31,21 @@ return [
         ],
     ],
 
+    // Web Push (VAPID) — notifikasi PWA di background & badge iPhone
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:admin@lemon.app'),
+    ],
+
+    // QRIS Dinamis (qris.online / OkeConnect)
+    'qris' => [
+        'base_url' => env('QRIS_BASE_URL', 'https://qris.interactive.co.id/restapi/qris'),
+        'mid' => env('QRIS_MID'),
+        'nmid' => env('QRIS_NMID'),
+        'apikey' => env('QRIS_APIKEY'),
+        // Masa berlaku QR (menit)
+        'expiry_minutes' => (int) env('QRIS_EXPIRY_MINUTES', 30),
+    ],
+
 ];

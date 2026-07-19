@@ -2,15 +2,12 @@
 
 namespace App\Livewire\Pages\Admin\Spending;
 
-use App\Exports\SpendingExport;
 use App\Models\Spending;
-use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Maatwebsite\Excel\Facades\Excel;
 
 class SpendingList extends Component
 {
@@ -20,58 +17,38 @@ class SpendingList extends Component
 
     public $search = '';
 
-    public $statusFilter = '';
+    public $bulan = '';
 
-    public $startDate = '';
-
-    public $endDate = '';
-
-    public $penginputFilter = '';
-
-    public $picPembeliFilter = '';
+    public $tahun = '';
 
     public $jenisPengeluaran = '';
 
-    public $perPage = 10;
-
     protected $queryString = [
         'search' => ['except' => ''],
-        'statusFilter' => ['except' => ''],
-        'startDate' => ['except' => ''],
-        'endDate' => ['except' => ''],
-        'penginputFilter' => ['except' => ''],
-        'picPembeliFilter' => ['except' => ''],
+        'bulan' => ['except' => ''],
+        'tahun' => ['except' => ''],
         'jenisPengeluaran' => ['except' => ''],
         'page' => ['except' => 1],
     ];
 
-    // method filtering
+    public function mount()
+    {
+        // Default ke periode bulan & tahun berjalan (seperti cashflow)
+        $this->bulan = now()->month;
+        $this->tahun = now()->year;
+    }
+
     public function updatingSearch()
     {
         $this->resetPage();
     }
 
-    public function updatingStatusFilter()
+    public function updatingBulan()
     {
         $this->resetPage();
     }
 
-    public function updatingStartDate()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingEndDate()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingPenginputFilter()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingPicPembeliFilter()
+    public function updatingTahun()
     {
         $this->resetPage();
     }
@@ -81,119 +58,255 @@ class SpendingList extends Component
         $this->resetPage();
     }
 
-    public function clearFilters()
+    public function resetFilter()
     {
-        $this->search = '';
-        $this->statusFilter = '';
-        $this->startDate = '';
-        $this->endDate = '';
-        $this->penginputFilter = '';
-        $this->picPembeliFilter = '';
-        $this->jenisPengeluaran = '';
+        $this->bulan = '';
+        $this->tahun = '';
         $this->resetPage();
     }
 
     #[On('delete-spending-data')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_spending')) {
+            $this->dispatch('spending-delete-error', message: 'Anda tidak memiliki izin menghapus data pengeluaran.');
+
+            return;
+        }
+
         try {
             $spending = Spending::findOrFail($id);
             $spending->delete();
 
-            $this->dispatch('show-alert', [
-                'type' => 'success',
-                'message' => 'Berhasil menghapus data pengeluaran',
-            ]);
+            $this->dispatch('spending-deleted');
         } catch (\Exception $e) {
-            $this->dispatch('show-alert', [
-                'type' => 'error',
-                'message' => 'Gagal menghapus data pengeluaran',
-            ]);
+            $this->dispatch('spending-delete-error', message: 'Gagal menghapus data pengeluaran');
         }
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        $query = Spending::with(['penginput', 'picPembeli']);
-
         // default jenisPengeluaran kalau belum dipilih
         if (empty($this->jenisPengeluaran)) {
             $this->jenisPengeluaran = 'lainnya';
         }
 
-        // Filter berdasarkan jenis pengeluaran
-        if ($this->jenisPengeluaran === 'pembelian_akun') {
-            $query->where('jenis_pengeluaran', 'pembelian_akun');
-        } else {
-            $query->where('jenis_pengeluaran', 'lainnya');
-        }
+        $isSearching = ! empty($this->search);
 
-        // Search filter
-        if (! empty($this->search)) {
-            $query->where(function ($q) {
-                $q->where('deskripsi', 'like', '%'.$this->search.'%')
-                    ->orWhere('nominal', 'like', '%'.$this->search.'%')
-                    ->orWhere('id_transaksi', 'like', '%'.$this->search.'%')
-                    ->orWhereHas('penginput', function ($q) {
-                        $q->where('name', 'like', '%'.$this->search.'%');
-                    })
-                    ->orWhereHas('picPembeli', function ($q) {
-                        $q->where('name', 'like', '%'.$this->search.'%');
-                    });
-            });
-        }
+        // Urutkan dari yang paling baru ditambahkan (berlaku untuk "lainnya" & "pembelian_akun").
+        $spendings = $this->buildFilteredQuery()
+            ->orderByDesc('created_at')
+            ->paginate(10);
 
-        if (! empty($this->statusFilter)) {
-            $query->byStatus($this->statusFilter);
-        }
-        if (! empty($this->startDate) && ! empty($this->endDate)) {
-            $query->byDateRange($this->startDate, $this->endDate);
-        }
-        if (! empty($this->penginputFilter)) {
-            $query->byPenginput($this->penginputFilter);
-        }
-        if (! empty($this->picPembeliFilter)) {
-            $query->byPicPembeli($this->picPembeliFilter);
-        }
-        if (! empty($this->jenisPengeluaran)) {
-            $query->byJenisPengeluaran($this->jenisPengeluaran);
-        }
-
-        $spendings = $query->orderBy('tanggal_transaksi', 'desc')
-            ->paginate($this->perPage);
-
-        // Ambil total pengeluaran per jenis
-        $totalSpendings = Spending::select(
+        // Total pengeluaran per jenis: ikut hasil pencarian bila sedang mencari,
+        // selain itu mengikuti periode terpilih.
+        $totalQuery = Spending::select(
             'jenis_pengeluaran as jenisPengeluaran',
             DB::raw('SUM(nominal) as total_pengeluaran')
-        )
-            ->groupBy('jenis_pengeluaran')
-            ->get();
+        );
+        if ($isSearching) {
+            $this->applySearch($totalQuery);
+        } else {
+            $this->applyPeriode($totalQuery);
+        }
+        $totalSpendings = $totalQuery->groupBy('jenis_pengeluaran')->get();
 
-        $users = User::select('id', 'name')->orderBy('name')->get();
-        $statusOptions = ['pending', 'completed'];
-        $jenisPengeluaranOptions = ['pembelian_akun', 'lainnya'];
-
-        return view('livewire.pages.admin.spending.spending-list', compact('spendings', 'users', 'statusOptions', 'jenisPengeluaranOptions', 'totalSpendings'));
+        return view('livewire.pages.admin.spending.spending-list', [
+            'spendings' => $spendings,
+            'totalSpendings' => $totalSpendings,
+            'daftarBulan' => $this->daftarBulan(),
+            'daftarTahun' => $this->daftarTahun(),
+        ])->layout('livewire.layout.templateindex');
     }
 
-    public function exportExcel()
+    /**
+     * Query data pengeluaran sesuai state aktif:
+     * - sedang mencari  -> seluruh data yang cocok pencarian (lintas jenis & periode)
+     * - tanpa mencari   -> jenis pengeluaran (tab) + periode (bulan/tahun) terpilih
+     * Dipakai bersama oleh tabel daftar maupun export PDF agar selalu konsisten.
+     */
+    protected function buildFilteredQuery()
     {
-        try {
-            $jenis = $this->jenisPengeluaran ?? null;
-            $start = $this->startDate ?? null;
-            $end = $this->endDate ?? null;
-
-            $filename = 'pengeluaran_'.($jenis ?? 'semua').'_'.now()->format('Ymd_His').'.xlsx';
-
-            return Excel::download(new SpendingExport($jenis, $start, $end), $filename);
-
-        } catch (\Exception $e) {
-            $this->dispatch('show-alert', [
-                'type' => 'error',
-                'message' => 'Gagal mengekspor data: '.$e->getMessage(),
-            ]);
+        if (empty($this->jenisPengeluaran)) {
+            $this->jenisPengeluaran = 'lainnya';
         }
+
+        $jenis = $this->jenisPengeluaran === 'pembelian_akun' ? 'pembelian_akun' : 'lainnya';
+
+        $query = Spending::with(['penginput', 'picPembeli', 'product']);
+
+        if (! empty($this->search)) {
+            $this->applySearch($query);
+        } else {
+            $query->where('jenis_pengeluaran', $jenis);
+            $this->applyPeriode($query);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Terapkan kondisi pencarian ke query (lintas semua data).
+     */
+    protected function applySearch($query): void
+    {
+        $term = '%' . $this->search . '%';
+
+        // Untuk pencarian tanggal: ubah nama bulan Indonesia jadi angka
+        // contoh: "Juni 2026" -> "06 2026", lalu cocokkan ke format tanggal.
+        $dateTerm = '%' . $this->normalizeDateSearch($this->search) . '%';
+
+        $query->where(function ($q) use ($term, $dateTerm) {
+            $q->where('deskripsi', 'like', $term)
+                ->orWhere('nominal', 'like', $term)
+                ->orWhere('id_transaksi', 'like', $term)
+                ->orWhere('status', 'like', $term)
+                ->orWhereHas('penginput', function ($q) use ($term) {
+                    $q->where('name', 'like', $term);
+                })
+                ->orWhereHas('picPembeli', function ($q) use ($term) {
+                    $q->where('name', 'like', $term);
+                })
+                // Waktu Transaksi (tanggal bulan tahun)
+                ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%d %m %Y') LIKE ?", [$dateTerm])
+                ->orWhereRaw("DATE_FORMAT(tanggal_transaksi, '%Y-%m-%d') LIKE ?", [$dateTerm])
+                // Waktu Data Dibuat (tanggal bulan tahun jam)
+                ->orWhereRaw("DATE_FORMAT(created_at, '%d %m %Y') LIKE ?", [$dateTerm])
+                ->orWhereRaw("DATE_FORMAT(created_at, '%Y-%m-%d') LIKE ?", [$dateTerm]);
+        });
+    }
+
+    /**
+     * Ubah kata pencarian tanggal berbahasa Indonesia menjadi format angka.
+     * Contoh: "Juni 2026" -> "06 2026", "15 Januari" -> "15 01".
+     */
+    protected function normalizeDateSearch(string $term): string
+    {
+        $bulan = [
+            'januari' => '01', 'februari' => '02', 'maret' => '03', 'april' => '04',
+            'mei' => '05', 'juni' => '06', 'juli' => '07', 'agustus' => '08',
+            'september' => '09', 'oktober' => '10', 'november' => '11', 'desember' => '12',
+        ];
+
+        $hasil = mb_strtolower(trim($term));
+
+        foreach ($bulan as $nama => $angka) {
+            $hasil = str_replace($nama, $angka, $hasil);
+        }
+
+        // Rapikan spasi ganda
+        return preg_replace('/\s+/', ' ', $hasil);
+    }
+
+    protected function applyPeriode($query): void
+    {
+        if ($this->tahun) {
+            $query->whereYear('tanggal_transaksi', $this->tahun);
+        }
+        if ($this->bulan) {
+            $query->whereMonth('tanggal_transaksi', $this->bulan);
+        }
+    }
+
+    /**
+     * Export PDF mengikuti data yang sedang tampil:
+     * - sedang mencari -> hanya data hasil pencarian
+     * - filter periode -> hanya data periode tersebut (sesuai tab jenis)
+     * - tanpa keduanya -> data default (jenis tab + periode berjalan)
+     */
+    public function downloadPdf()
+    {
+        // Export selalu mencakup SEMUA kategori (Pembelian Akun + Lainnya).
+        // Hanya mengikuti pencarian atau periode, bukan tab jenis yang aktif.
+        $query = Spending::with(['penginput', 'picPembeli', 'product']);
+
+        if (! empty($this->search)) {
+            $this->applySearch($query);
+        } else {
+            $this->applyPeriode($query);
+        }
+
+        // Urutkan dari yang paling baru ditambahkan (seragam dengan tampilan list).
+        $records = $query->orderByDesc('created_at')->get();
+
+        $rows = $records->map(function (Spending $s) {
+            $isAkun = $s->jenis_pengeluaran === 'pembelian_akun';
+
+            return [
+                'id_transaksi' => $s->id_transaksi,
+                'tanggal' => $s->tanggal_transaksi_formatted,
+                'jenis' => $isAkun ? 'Pembelian Akun' : 'Lainnya',
+                'is_akun' => $isAkun,
+                'deskripsi' => $s->deskripsi ?: '-',
+                'status' => ucfirst($s->status),
+                'penginput' => $s->namaPenginput,
+                'pic' => $isAkun ? ($s->namaPicPembeli ?: '-') : '-',
+                'nominal' => (float) $s->nominal,
+            ];
+        })->toArray();
+
+        if (! empty($this->search)) {
+            $konteks = 'Hasil Pencarian: "' . $this->search . '" (Semua Kategori)';
+        } else {
+            $konteks = 'Semua Kategori — ' . $this->periodeLabel();
+        }
+
+        $pdf = Pdf::loadView('livewire.pages.admin.spending.spending-report-pdf', [
+            'konteks' => $konteks,
+            'rows' => $rows,
+            'summary' => [
+                'total' => $records->sum(fn (Spending $s) => (float) $s->nominal),
+                'count' => $records->count(),
+                'pembelian_akun' => $records->where('jenis_pengeluaran', 'pembelian_akun')->sum(fn (Spending $s) => (float) $s->nominal),
+                'lainnya' => $records->where('jenis_pengeluaran', 'lainnya')->sum(fn (Spending $s) => (float) $s->nominal),
+            ],
+        ])->setPaper('a4', 'landscape');
+
+        $filename = 'laporan-pengeluaran-' . now()->format('Ymd-His') . '.pdf';
+
+        return response()->streamDownload(fn () => print ($pdf->output()), $filename);
+    }
+
+    protected function periodeLabel(): string
+    {
+        $namaBulan = $this->bulan ? ($this->daftarBulan()[(int) $this->bulan] ?? '') : '';
+
+        if ($this->bulan && $this->tahun) {
+            return $namaBulan . ' ' . $this->tahun;
+        }
+        if ($this->tahun) {
+            return 'Tahun ' . $this->tahun;
+        }
+        if ($this->bulan) {
+            return 'Bulan ' . $namaBulan;
+        }
+
+        return 'Semua Periode';
+    }
+
+    protected function daftarBulan(): array
+    {
+        return [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+    }
+
+    protected function daftarTahun(): array
+    {
+        $tahunSekarang = (int) now()->year;
+
+        // 6 tahun terakhir hingga tahun berjalan
+        return range($tahunSekarang, $tahunSekarang - 5);
     }
 }

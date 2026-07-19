@@ -16,14 +16,26 @@ class PelamarKerjaList extends Component
 
     public $perPage = 10;
 
+    public $search = '';
+
     public $filterMonth = '';
 
     public $filterJob = '';
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         $query = JobApplication::with('job')->latest();
+
+        // Pencarian: nama, email, telepon, atau posisi lowongan
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('email', 'like', "%{$this->search}%")
+                    ->orWhere('phone', 'like', "%{$this->search}%")
+                    ->orWhereHas('job', fn ($j) => $j->where('title', 'like', "%{$this->search}%"));
+            });
+        }
 
         // Filter berdasarkan bulan
         if ($this->filterMonth) {
@@ -37,8 +49,8 @@ class PelamarKerjaList extends Component
 
         $dataPelamar = $query->paginate($this->perPage);
 
-        // Get data untuk filter dropdown
-        $jobList = Lowongan::where('is_active', true)
+        // Get data untuk filter dropdown (is_active = enum string 'active')
+        $jobList = Lowongan::where('is_active', 'active')
             ->orderBy('title')
             ->get();
 
@@ -62,6 +74,12 @@ class PelamarKerjaList extends Component
     #[On('confirm-delete')]
     public function delete($id)
     {
+        if (! auth()->user()->hasPermission('delete_pelamar')) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus data pelamar.');
+
+            return;
+        }
+
         try {
             $application = JobApplication::findOrFail($id);
 
@@ -83,10 +101,15 @@ class PelamarKerjaList extends Component
 
             $application->delete();
 
-            $this->dispatch('application-deleted');
+            $this->dispatch('swal-success', message: 'Data pelamar berhasil dihapus.');
         } catch (\Exception $e) {
-            $this->dispatch('application-error', ['message' => 'Gagal menghapus data pelamar']);
+            $this->dispatch('swal-error', message: 'Gagal menghapus data pelamar.');
         }
+    }
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
     }
 
     public function updatingFilterMonth()
@@ -101,7 +124,7 @@ class PelamarKerjaList extends Component
 
     public function resetFilters()
     {
-        $this->reset(['filterMonth', 'filterJob']);
+        $this->reset(['search', 'filterMonth', 'filterJob']);
         $this->resetPage();
     }
 }

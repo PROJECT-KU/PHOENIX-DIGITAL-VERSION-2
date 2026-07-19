@@ -11,6 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -37,6 +38,12 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\LastUserActivity::class,
             \App\Http\Middleware\IdleTimeout::class,
             \App\Http\Middleware\EnsureGuestToken::class,
+            \App\Http\Middleware\EnsureProfileComplete::class,
+            \App\Http\Middleware\KickScheduler::class,
+
+            // Catat request lambat ke Log Aktivitas (diukur di terminate,
+            // setelah response terkirim — tidak menambah waktu tunggu).
+            \App\Http\Middleware\TrackRequestPerformance::class,
         ]);
 
         $middleware->group('api', [
@@ -53,6 +60,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Catat setiap error ke Log Aktivitas (public & admin) untuk maintenance.
+        // report() hanya MENAMBAH pencatatan — penanganan error bawaan Laravel
+        // tetap berjalan (tidak return false). ActivityLogger menelan errornya
+        // sendiri, jadi ini tidak dapat mengganggu alur aplikasi mana pun.
+        $exceptions->report(function (\Throwable $e) {
+            \App\Support\ActivityLogger::exception($e);
+        });
     })
     ->create();

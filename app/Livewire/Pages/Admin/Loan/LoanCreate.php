@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class LoanCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.loan.loan-create');
+        return view('livewire.pages.admin.loan.loan-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

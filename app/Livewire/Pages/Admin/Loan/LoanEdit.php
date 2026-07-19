@@ -22,9 +22,9 @@ class LoanEdit extends Component
         }
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.loan.loan-edit');
+        return view('livewire.pages.admin.loan.loan-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

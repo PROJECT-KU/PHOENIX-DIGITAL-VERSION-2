@@ -14,11 +14,51 @@ class CustomerMessageList extends Component
 
     public $perPage = 10;
 
+    public $search = '';
+
     public $filterMonth = '';
+
+    public $filterYear = '';
 
     public $filterStatus = '';
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function getQueuePositionForItem($item)
+    {
+        return \App\Models\CustomerMessage::where('status', '!=', 'closed')
+            ->whereNull('read_at')
+            ->where('created_at', '<', $item->created_at)
+            ->count() + 1;
+    }
+
+    public function updateStatus($id, $value)
+    {
+        $message = CustomerMessage::find($id);
+        if ($message) {
+            $message->update(['status' => $value]);
+            $this->dispatch('toast-success', message: 'Status diperbarui!');
+        }
+    }
+
+    public function updatePriority($id, $value)
+    {
+        $message = CustomerMessage::find($id);
+        if ($message) {
+            $message->update(['priority' => $value]);
+            $this->dispatch('toast-success', message: 'Prioritas diperbarui!');
+        }
+    }
+
     public function updatingFilterMonth()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterYear()
     {
         $this->resetPage();
     }
@@ -30,28 +70,66 @@ class CustomerMessageList extends Component
 
     public function resetFilters()
     {
-        $this->reset(['filterMonth', 'filterStatus']);
+        $this->reset(['search', 'filterMonth', 'filterYear', 'filterStatus']);
         $this->resetPage();
     }
 
-    #[On('delete-customer-message-data')]
     public function delete($id)
     {
-        try {
-            CustomerMessage::findOrFail($id)->delete();
-            session()->flash('success', 'berhasil menghapus data lowongan');
-        } catch (\Exception $e) {
-            session()->flash('error', 'gagal menghapus data lowongan');
+        if (! auth()->user()->hasPermission('delete_customer_message')) {
+            $this->dispatch('CustomerMessage-deleteError', message: 'Anda tidak memiliki izin menghapus pesan pelanggan.');
+
+            return;
         }
+
+        $customerMessage = CustomerMessage::find($id);
+
+        // 1. Pastikan data ditemukan
+        if (! $customerMessage) {
+            $this->dispatch('CustomerMessage-deleteError', message: 'Data Pesan Pelanggan tidak ditemukan!');
+            return;
+        }
+
+        // 2. Pengecekan read_at (Jika masih null, batalkan penghapusan)
+        if (is_null($customerMessage->read_at)) {
+            $this->dispatch('CustomerMessage-deleteError', message: 'Pesan belum dibaca dan tidak bisa dihapus!');
+            return;
+        }
+
+        // 3. Hapus file fisik jika ada
+        if ($customerMessage->gambar) {
+            $filePath = storage_path('app/public/img/customer-messages/' . $customerMessage->gambar);
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+        }
+
+        // 4. Hapus record dari DB
+        $customerMessage->delete();
+
+        $this->dispatch('CustomerMessage-deleted', id: $id);
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $query = CustomerMessage::latest();
 
+        // Pencarian: tiket, nama, email, atau isi pesan
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('ticket', 'like', "%{$this->search}%")
+                    ->orWhere('name', 'like', "%{$this->search}%")
+                    ->orWhere('email', 'like', "%{$this->search}%")
+                    ->orWhere('message', 'like', "%{$this->search}%");
+            });
+        }
+
         if ($this->filterMonth) {
             $query->whereMonth('created_at', $this->filterMonth);
+        }
+
+        if ($this->filterYear) {
+            $query->whereYear('created_at', $this->filterYear);
         }
 
         // Gunakan scope yang sudah ada
@@ -66,19 +144,22 @@ class CustomerMessageList extends Component
         // Gunakan scope unread
         $unreadCount = CustomerMessage::unread()->count();
 
-        $months = collect();
-        for ($i = 0; $i < 12; $i++) {
-            $date = now()->subMonths($i);
-            $months->push([
-                'value' => $date->format('m'),
-                'label' => $date->locale('id')->isoFormat('MMMM YYYY'),
-            ]);
-        }
+        // Daftar bulan (1–12) dan tahun dipisah, seragam dengan filter Cashflow.
+        $months = collect(range(1, 12))->map(fn ($m) => [
+            'value' => $m,
+            'label' => \Carbon\Carbon::create()->month($m)->locale('id')->isoFormat('MMMM'),
+        ]);
+
+        // 6 tahun terakhir hingga tahun berjalan (seragam dengan filter Cashflow).
+        $tahunSekarang = (int) now()->year;
+        $years = collect(range($tahunSekarang, $tahunSekarang - 5));
 
         return view('livewire.pages.admin.message.customer-message-list', [
             'messages' => $dataPesan,
             'months' => $months,
+            'years' => $years,
             'unreadCount' => $unreadCount,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

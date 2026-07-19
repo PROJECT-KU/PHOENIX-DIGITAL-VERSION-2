@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Loan extends Model
@@ -51,6 +52,34 @@ class Loan extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * Scope kepemilikan data (row-level security) untuk peminjaman.
+     * Dipakai SEMUA jalur baca (tabel, pencarian, total, export PDF) agar
+     * data pinjaman tidak bocor antar karyawan.
+     *
+     * Catatan: kolom `user_id` di tabel ini = PENGINPUT (admin/finance), bukan
+     * peminjam. Peminjam diidentifikasi lewat `nama_peminjam` (disalin dari
+     * nama user terpilih saat input), sehingga scope karyawan dicocokkan ke nama.
+     *
+     * - punya "view_all_loan" (admin/finance) -> semua data
+     * - selain itu -> hanya pinjaman atas namanya sendiri
+     * - tidak login -> tidak ada data
+     */
+    public function scopeVisibleTo($query, ?User $user = null)
+    {
+        $user ??= auth()->user();
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->canViewAll('loan')) {
+            return $query;
+        }
+
+        return $query->where('nama_peminjam', $user->name);
+    }
+
     // Scopes
     public function scopeByStatus($query, string $status)
     {
@@ -89,20 +118,67 @@ class Loan extends Model
     public function getTanggalPeminjamFormattedAttribute(): string
     {
         return $this->tanggal_peminjam
-            ? Carbon::parse($this->tanggal_peminjam)->translatedFormat('d F Y')
+            ? Carbon::parse($this->tanggal_peminjam)->locale('id')->translatedFormat('d F Y')
             : '-';
     }
 
     public function getCreatedAtFormattedAttribute(): string
     {
         return $this->created_at
-            ? Carbon::parse($this->created_at)->translatedFormat('d F Y H:i')
+            ? Carbon::parse($this->created_at)->locale('id')->translatedFormat('d F Y H:i')
             : '-';
     }
 
     public function getTotalBorrowerLoanFormattedAttribute()
     {
         return 'Rp '.number_format($this->total_borrower_loan, 0, ',', '.');
+    }
+
+    /**
+     * Tentukan status peminjaman OTOMATIS dari total pinjaman vs total pengembalian.
+     * - belum ada pengembalian       -> pending
+     * - sudah mencicil sebagian       -> berjalan
+     * - pengembalian >= total pinjaman -> lunas
+     */
+    public static function statusDari($totalPinjaman, $totalPengembalian): string
+    {
+        $totalPinjaman = (float) $totalPinjaman;
+        $totalPengembalian = (float) $totalPengembalian;
+
+        if ($totalPinjaman <= 0 || $totalPengembalian <= 0) {
+            return self::STATUS_PENDING;
+        }
+
+        if ($totalPengembalian < $totalPinjaman) {
+            return self::STATUS_BERJALAN;
+        }
+
+        return self::STATUS_LUNAS;
+    }
+
+    /**
+     * Peta status otomatis per nama peminjam (lintas waktu / seluruh riwayat).
+     * Mengembalikan array ['Nama Peminjam' => 'pending|berjalan|lunas'].
+     * Dipakai bersama oleh daftar peminjaman, pengembalian, dan export.
+     */
+    public static function statusMap(): array
+    {
+        $pinjaman = static::query()
+            ->select('nama_peminjam', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_peminjam')
+            ->pluck('total', 'nama_peminjam');
+
+        $pengembalian = DB::table('pengembalians')
+            ->select('nama_pengembalian', DB::raw('SUM(nominal) as total'))
+            ->groupBy('nama_pengembalian')
+            ->pluck('total', 'nama_pengembalian');
+
+        $map = [];
+        foreach ($pinjaman as $nama => $total) {
+            $map[$nama] = static::statusDari($total, $pengembalian[$nama] ?? 0);
+        }
+
+        return $map;
     }
 
     protected static function boot()
@@ -134,6 +210,11 @@ class Loan extends Model
             if (auth()->check()) {
                 $model->user_id = auth()->id();
             }
+        });
+
+        // Saat peminjaman dihapus, hapus juga catatan cash flow terkait
+        static::deleting(function ($model) {
+            $model->cashFlow()->delete();
         });
     }
 }

@@ -20,8 +20,6 @@ class LoanForm extends Component
 
     public $deskripsi;
 
-    public $status = 'pending';
-
     public $mode = 'create'; // 'create' | 'edit'
 
     protected function rules()
@@ -31,7 +29,6 @@ class LoanForm extends Component
             'tanggal_peminjam' => 'required|date',
             'nominal' => 'required|numeric|min:0',
             'deskripsi' => 'nullable|string',
-            'status' => 'required|in:pending,berjalan,lunas',
         ];
     }
 
@@ -45,8 +42,6 @@ class LoanForm extends Component
             'nominal.required' => 'Nominal harus diisi.',
             'nominal.numeric' => 'Nominal harus berupa angka.',
             'nominal.min' => 'Nominal tidak boleh kurang dari 0.',
-            'status.required' => 'Status harus dipilih.',
-            'status.in' => 'Status tidak valid.',
         ];
     }
 
@@ -70,7 +65,6 @@ class LoanForm extends Component
         $this->tanggal_peminjam = $loan->tanggal_peminjam->format('Y-m-d');
         $this->nominal = (string) intval($loan->nominal);
         $this->deskripsi = $loan->deskripsi;
-        $this->status = $loan->status;
     }
 
     public function save(SyncCashFlowAction $syncCashFlow)
@@ -93,7 +87,6 @@ class LoanForm extends Component
                         'tanggal_peminjam' => $this->tanggal_peminjam,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
-                        'status' => $this->status,
                     ]);
                 } else {
                     // PERBAIKAN: Tambahkan id_transaksi manual
@@ -103,7 +96,6 @@ class LoanForm extends Component
                         'tanggal_peminjam' => $this->tanggal_peminjam,
                         'nominal' => $this->nominal,
                         'deskripsi' => $this->deskripsi,
-                        'status' => $this->status,
                     ]);
                 }
 
@@ -142,18 +134,15 @@ class LoanForm extends Component
         $this->tanggal_peminjam = now()->format('Y-m-d');
         $this->nominal = '';
         $this->deskripsi = null;
-        $this->status = 'pending';
         $this->mode = 'create';
     }
 
     public function render()
     {
         $users = User::select('id', 'name')->orderBy('name')->get();
-        $statusOptions = ['pending', 'berjalan', 'lunas'];
 
         return view('livewire.pages.admin.loan.loan-form', [
             'users' => $users,
-            'statusOptions' => $statusOptions,
         ]);
     }
 }

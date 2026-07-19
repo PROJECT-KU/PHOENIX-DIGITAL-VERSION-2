@@ -15,9 +15,9 @@ class DataAkunEdit extends Component
         $this->dataAkun = $dataAkun;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.data-akun.DataAkun-edit');
+        return view('livewire.pages.admin.data-akun.DataAkun-edit')
+            ->layout('livewire.layout.templateindex');
     }
 }

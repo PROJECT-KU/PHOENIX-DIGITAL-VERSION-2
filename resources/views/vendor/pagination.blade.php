@@ -1,7 +1,7 @@
 @if ($paginator->hasPages())
-    <nav class="d-flex justify-content-between align-items-center">
+    <nav class="pagination-wrap d-flex flex-column flex-sm-row justify-content-sm-between align-items-center gap-2">
         {{-- Info Artikel --}}
-        <div class="small text-muted">
+        <div class="small text-muted text-center text-sm-start order-2 order-sm-1">
             Menampilkan
             <span class="fw-semibold">{{ $paginator->firstItem() }}</span>
             sampai
@@ -12,7 +12,7 @@
         </div>
 
         {{-- Link Pagination --}}
-        <ul class="pagination mb-0">
+        <ul class="pagination mb-0 flex-wrap justify-content-center order-1 order-sm-2">
             {{-- Previous Page Link --}}
             @if ($paginator->onFirstPage())
                 <li class="page-item disabled" aria-disabled="true">

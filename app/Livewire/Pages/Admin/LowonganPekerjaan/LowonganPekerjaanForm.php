@@ -11,15 +11,15 @@ class LowonganPekerjaanForm extends Component
 {
     public ?Lowongan $lowongan = null;
 
-    public string $title;
+    public string $title = '';
 
     public string $isActive = 'active';
 
-    public string $slug;
+    public string $slug = '';
 
-    public string $requirements;
+    public string $requirements = '';
 
-    public string $descriptions;
+    public string $descriptions = '';
 
     public $lowonganId = null;
 
@@ -89,10 +89,10 @@ class LowonganPekerjaanForm extends Component
                 'descriptions' => $this->descriptions,
             ]);
             $this->resetForm();
-            session()->flash('success', 'berhasil menambah data lowongan');
+            session()->flash('success', 'Berhasil menambah data lowongan');
             $this->redirectRoute('admin.lowongan.index', navigate: true);
         } catch (Exception $e) {
-            dump($e->getMessage());
+            session()->flash('error', 'Gagal menambah data lowongan: '.$e->getMessage());
         }
     }
 
@@ -107,10 +107,10 @@ class LowonganPekerjaanForm extends Component
                 'requirements' => $this->requirements,
             ]);
             $this->resetForm();
-            session()->flash('success', 'berhasil update data lowongan');
+            session()->flash('success', 'Berhasil memperbarui data lowongan');
             $this->redirectRoute('admin.lowongan.index', navigate: true);
         } catch (Exception $e) {
-            dump($e->getMessage());
+            session()->flash('error', 'Gagal memperbarui data lowongan: '.$e->getMessage());
         }
     }
 

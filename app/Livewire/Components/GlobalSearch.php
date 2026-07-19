@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\Product;
+use App\Models\ProductBundlings;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -30,6 +32,30 @@ class GlobalSearch extends Component
 
     public function render()
     {
-        return view('livewire.components.global-search');
+        $results = collect();
+        $bundlings = collect();
+        $q = trim($this->searchQuery);
+
+        if (mb_strlen($q) >= 1) {
+            $results = Product::where('nama_akun', 'like', "%{$q}%")
+                ->orWhere('deskripsi', 'like', "%{$q}%")
+                ->latest()
+                ->take(5)
+                ->get();
+
+            $bundlings = ProductBundlings::where('status', 'active')
+                ->where(function ($query) use ($q) {
+                    $query->where('nama_paket', 'like', "%{$q}%")
+                        ->orWhere('deskripsi', 'like', "%{$q}%");
+                })
+                ->latest()
+                ->take(3)
+                ->get();
+        }
+
+        return view('livewire.components.global-search', [
+            'results' => $results,
+            'bundlings' => $bundlings,
+        ]);
     }
 }

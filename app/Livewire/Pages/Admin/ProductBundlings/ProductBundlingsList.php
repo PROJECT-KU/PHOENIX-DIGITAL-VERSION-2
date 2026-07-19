@@ -21,6 +21,12 @@ class ProductBundlingsList extends Component
 
     public function deleteProductBundlings($id)
     {
+        if (! auth()->user()->hasPermission('delete_bundlings')) {
+            $this->dispatch('delete-error', message: 'Anda tidak memiliki izin menghapus bundling.');
+
+            return;
+        }
+
         $ProductBundlings = ProductBundlings::find($id);
 
         if (! $ProductBundlings) {
@@ -31,7 +37,7 @@ class ProductBundlingsList extends Component
 
         // Hapus file fisik jika ada
         if ($ProductBundlings->gambar) {
-            $filePath = storage_path('app/public/img/ProductBundlings/'.$ProductBundlings->gambar);
+            $filePath = storage_path('app/public/img/ProductBundlings/' . $ProductBundlings->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -43,25 +49,31 @@ class ProductBundlingsList extends Component
         $this->dispatch('ProductBundlings-deleted', id: $id);
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
+        $search = trim($this->searchProductBundlings);
+
         $ProductBundlings = ProductBundlings::query()
-            ->where('nama_paket', 'like', "%{$this->searchProductBundlings}%")
-            ->where('product_1', 'like', "%{$this->searchProductBundlings}%")
-            ->where('product_2', 'like', "%{$this->searchProductBundlings}%")
-            ->where('product_3', 'like', "%{$this->searchProductBundlings}%")
-            ->where('product_4', 'like', "%{$this->searchProductBundlings}%")
-            ->where('product_5', 'like', "%{$this->searchProductBundlings}%")
-            ->where('harga_awal', 'like', "%{$this->searchProductBundlings}%")
-            ->where('harga_bundling', 'like', "%{$this->searchProductBundlings}%")
-            ->orWhere('deskripsi', 'like', "%{$this->searchProductBundlings}%")
-            ->orWhere('status', 'like', "%{$this->searchProductBundlings}%")
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_paket', 'like', "%{$search}%")
+                        ->orWhere('harga_awal', 'like', "%{$search}%")
+                        ->orWhere('harga_bundling', 'like', "%{$search}%")
+                        ->orWhere('deskripsi', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('product1', fn ($p) => $p->where('nama_akun', 'like', "%{$search}%"))
+                        ->orWhereHas('product2', fn ($p) => $p->where('nama_akun', 'like', "%{$search}%"))
+                        ->orWhereHas('product3', fn ($p) => $p->where('nama_akun', 'like', "%{$search}%"))
+                        ->orWhereHas('product4', fn ($p) => $p->where('nama_akun', 'like', "%{$search}%"))
+                        ->orWhereHas('product5', fn ($p) => $p->where('nama_akun', 'like', "%{$search}%"));
+                });
+            })
             ->latest()
             ->paginate(10);
 
         return view('livewire.pages.admin.ProductBundlings.ProductBundlings-list', [
             'ProductBundlings' => $ProductBundlings,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

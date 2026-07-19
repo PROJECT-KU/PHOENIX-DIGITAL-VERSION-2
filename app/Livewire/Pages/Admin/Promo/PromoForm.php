@@ -24,19 +24,22 @@ class PromoForm extends Component
 
     public $tipe_diskon = 'persen';
 
-    public $diskon_member_persen = 0;
+    public $diskon_member_persen = "";
 
-    public $diskon_member_nominal = 0;
+    public $diskon_member_nominal = "";
 
-    public $diskon_non_member_persen = 0;
+    public $diskon_non_member_persen = "";
 
-    public $diskon_non_member_nominal = 0;
+    public $diskon_non_member_nominal = "";
 
     public $untuk_member = 'semua';
 
     public $untuk_pembeli_pertama = false;
 
-    public $min_pembelian = 0;
+    /** Kosong = tanpa batas kuota. */
+    public $kuota = '';
+
+    public $min_pembelian = "";
 
     public $mulai_promo = '';
 
@@ -56,8 +59,6 @@ class PromoForm extends Component
 
     public $badge_text = '';
 
-    public $badge_color = '#ff6b6b';
-
     public $selectedProducts = [];
 
     public $allProducts = [];
@@ -72,14 +73,15 @@ class PromoForm extends Component
             $this->tipe_promo = $promo->tipe_promo;
             $this->tipe_diskon = $promo->tipe_diskon;
             $this->diskon_member_persen = $promo->diskon_member_persen;
-            $this->diskon_member_nominal = $promo->diskon_member_nominal;
+            $this->diskon_member_nominal = $promo->diskon_member_nominal ? number_format($promo->diskon_member_nominal, 0, '', '.') : '';
             $this->diskon_non_member_persen = $promo->diskon_non_member_persen;
-            $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal;
+            $this->diskon_non_member_nominal = $promo->diskon_non_member_nominal ? number_format($promo->diskon_non_member_nominal, 0, '', '.') : '';
             $this->untuk_member = $promo->untuk_member;
             $this->untuk_pembeli_pertama = $promo->untuk_pembeli_pertama;
-            $this->min_pembelian = $promo->min_pembelian;
-            $this->mulai_promo = $promo->mulai_promo->format('Y-m-d\TH:i');
-            $this->selesai_promo = $promo->selesai_promo->format('Y-m-d\TH:i');
+            $this->kuota = $promo->kuota !== null ? number_format($promo->kuota, 0, '', '.') : '';
+            $this->min_pembelian = $promo->min_pembelian ? number_format($promo->min_pembelian, 0, '', '.') : '';
+            $this->mulai_promo = $promo->mulai_promo ? $promo->mulai_promo->format('Y-m-d\TH:i') : '';
+            $this->selesai_promo = $promo->selesai_promo ? $promo->selesai_promo->format('Y-m-d\TH:i') : '';
             $this->is_active = $promo->is_active;
             $this->prioritas = $promo->prioritas;
             $this->can_stack_with_other = $promo->can_stack_with_other;
@@ -87,13 +89,14 @@ class PromoForm extends Component
             $this->can_stack_with_points = $promo->can_stack_with_points;
             $this->show_on_homepage = $promo->show_on_homepage;
             $this->badge_text = $promo->badge_text ?? '';
-            $this->badge_color = $promo->badge_color ?? '#FF6B6B';
             $this->mode = 'edit';
             $this->selectedProducts = $promo->products->pluck('id')->toArray();
+        } else {
+            $this->mulai_promo = '';
+            $this->selesai_promo = '';
         }
+
         $this->allProducts = Product::orderBy('nama_akun')->get();
-        $this->mulai_promo = now()->format('Y-m-d\TH:i');
-        $this->selesai_promo = now()->addDays(7)->format('Y-m-d\TH:i');
     }
 
     public function updatedTipePromo()
@@ -101,6 +104,29 @@ class PromoForm extends Component
         if ($this->tipe_promo === 'flash_sale') {
             $this->kode_promo = '';
         }
+    }
+
+    /**
+     * Dua aksi terpisah, BUKAN satu tombol yang menebak keadaan.
+     *
+     * Checkbox produk memakai wire:model deferred, jadi saat admin menyalakan
+     * saklar satu per satu server tidak tahu apa-apa dan tidak me-render ulang —
+     * label tombol "Pilih/Hapus Semua" jadi basi & terbalik. Dua tombol tetap
+     * benar apa pun keadaan saklarnya.
+     *
+     * Nilai dijadikan string karena checkbox Livewire mengirim value sbg string.
+     */
+    public function pilihSemuaProduk(): void
+    {
+        $this->selectedProducts = collect($this->allProducts)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    }
+
+    public function hapusSemuaProduk(): void
+    {
+        $this->selectedProducts = [];
     }
 
     public function rules()
@@ -115,6 +141,23 @@ class PromoForm extends Component
         ];
 
         return $rules;
+    }
+
+    private function cleanNumber($value)
+    {
+        return empty($value) ? 0 : (int) str_replace('.', '', $value);
+    }
+
+    /**
+     * Kuota kosong = TANPA BATAS (null) — sengaja TIDAK pakai cleanNumber(),
+     * karena itu memulangkan 0 untuk input kosong, dan kuota 0 berarti promo
+     * langsung mati. Beda arti yang berbahaya.
+     */
+    private function cleanKuota($value): ?int
+    {
+        $v = trim((string) $value);
+
+        return $v === '' ? null : max((int) str_replace('.', '', $v), 0);
     }
 
     public function save()
@@ -144,13 +187,14 @@ class PromoForm extends Component
                 'deskripsi' => $this->deskripsi,
                 'tipe_promo' => $this->tipe_promo,
                 'tipe_diskon' => $this->tipe_diskon,
-                'diskon_member_persen' => $this->diskon_member_persen,
-                'diskon_member_nominal' => $this->diskon_member_nominal,
-                'diskon_non_member_persen' => $this->diskon_non_member_persen,
-                'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
+                'diskon_member_persen' => (int) $this->diskon_member_persen,
+                'diskon_member_nominal' => $this->cleanNumber($this->diskon_member_nominal),
+                'diskon_non_member_persen' => (int) $this->diskon_non_member_persen,
+                'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'kuota' => $this->cleanKuota($this->kuota),
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,
@@ -160,7 +204,6 @@ class PromoForm extends Component
                 'can_stack_with_points' => $this->can_stack_with_points,
                 'show_on_homepage' => $this->show_on_homepage,
                 'badge_text' => $this->badge_text,
-                'badge_color' => $this->badge_color,
             ];
 
             $promo = Promo::create($data);
@@ -168,12 +211,11 @@ class PromoForm extends Component
             // Sync products
             $promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil dibuat');
+            session()->flash('successCreated', 'Promo berhasil dibuat');
 
             return redirect()->route('admin.promo.index');
-
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorCreated', 'Gagal menambahkan Data Promo: ' . $e->getMessage());
         }
     }
 
@@ -186,13 +228,14 @@ class PromoForm extends Component
                 'deskripsi' => $this->deskripsi,
                 'tipe_promo' => $this->tipe_promo,
                 'tipe_diskon' => $this->tipe_diskon,
-                'diskon_member_persen' => $this->diskon_member_persen,
-                'diskon_member_nominal' => $this->diskon_member_nominal,
-                'diskon_non_member_persen' => $this->diskon_non_member_persen,
-                'diskon_non_member_nominal' => $this->diskon_non_member_nominal,
+                'diskon_member_persen' => (int) $this->diskon_member_persen,
+                'diskon_member_nominal' => $this->cleanNumber($this->diskon_member_nominal),
+                'diskon_non_member_persen' => (int) $this->diskon_non_member_persen,
+                'diskon_non_member_nominal' => $this->cleanNumber($this->diskon_non_member_nominal),
                 'untuk_member' => $this->untuk_member,
                 'untuk_pembeli_pertama' => $this->untuk_pembeli_pertama,
-                'min_pembelian' => $this->min_pembelian,
+                'kuota' => $this->cleanKuota($this->kuota),
+                'min_pembelian' => $this->cleanNumber($this->min_pembelian),
                 'mulai_promo' => $this->mulai_promo,
                 'selesai_promo' => $this->selesai_promo,
                 'is_active' => $this->is_active,
@@ -202,7 +245,6 @@ class PromoForm extends Component
                 'can_stack_with_points' => $this->can_stack_with_points,
                 'show_on_homepage' => $this->show_on_homepage,
                 'badge_text' => $this->badge_text,
-                'badge_color' => $this->badge_color,
             ];
 
             $this->promo->update($data);
@@ -210,17 +252,21 @@ class PromoForm extends Component
             // Sync products
             $this->promo->products()->sync($this->selectedProducts);
 
-            session()->flash('success', 'Promo berhasil diupdate');
+            session()->flash('successUpdated', 'Promo berhasil diupdate');
 
             return redirect()->route('admin.promo.index');
-
-        } catch (Exception $e) {
-            dump($e->getMessage());
+        } catch (\Exception $e) {
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Promo: ' . $e->getMessage());
         }
     }
 
     public function render()
     {
-        return view('livewire.pages.admin.promo.promo-form');
+        // Info "sudah terpakai" hanya ada artinya saat mengedit promo yang sudah
+        // berjalan. Dihitung dari pesanan nyata, jadi selalu ikut kondisi terkini.
+        return view('livewire.pages.admin.promo.promo-form', [
+            'kuotaTerpakai' => $this->promo?->kuotaTerpakai(),
+            'kuotaSisa' => $this->promo?->sisaKuota(),
+        ]);
     }
 }

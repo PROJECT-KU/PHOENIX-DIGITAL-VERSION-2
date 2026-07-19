@@ -15,11 +15,11 @@ class BannersEdit extends Component
         $this->Banners = $Banners;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         return view('livewire.pages.admin.Banners.Banners-edit', [
             'Banners' => $this->Banners,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

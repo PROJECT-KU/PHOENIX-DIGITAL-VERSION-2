@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Actions\Finance\SyncOrderPrivateCostAction;
 use App\Models\Customer;
 use App\Models\Order;
 use Illuminate\Support\Facades\Log;
@@ -13,7 +14,7 @@ class OrderObserver
      */
     public function created(Order $order): void
     {
-        //
+        app(SyncOrderPrivateCostAction::class)->execute($order);
     }
 
     /**
@@ -21,6 +22,8 @@ class OrderObserver
      */
     public function updated(Order $order): void
     {
+        app(SyncOrderPrivateCostAction::class)->execute($order);
+
         if (
             in_array($order->status, ['paid', 'processing', 'completed']) &&
             ! $order->points_calculated &&

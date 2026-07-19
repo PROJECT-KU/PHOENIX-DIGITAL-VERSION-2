@@ -1,11 +1,15 @@
 <main class="main">
     <!-- Page Title -->
-    <div class="page-title light-background">
+    <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
-            <h1 class="mb-2 mb-lg-0 text-muted">Shopping</h1>
+            <div class="ph-page-head">
+                <span class="ph-sec-eyebrow"><i class="bi bi-bag-fill"></i> Katalog</span>
+                <h1>Shop</h1>
+                <p>Pilihan akun premium &amp; tools AI untuk riset dan produktivitas Anda.</p>
+            </div>
             <nav class="breadcrumbs">
                 <ol>
-                    <li><a href="/">Home</a></li>
+                    <li><a href="/">Beranda</a></li>
                     <li class="current">Shop</li>
                 </ol>
             </nav>
@@ -29,343 +33,121 @@
                 <!-- Category Product List Section -->
                 <section style="padding-top: 0;" id="category-product-list" class="category-product-list section">
                     <div class="container">
-                        <div class="row g-4">
+                        {{-- Filter & urutkan (opsional) --}}
+                        <div class="shop-filter">
+                            <div class="shop-filter-controls">
+                                @if (count($categories))
+                                    <select wire:model.live="tipe" class="shop-select">
+                                        <option value="">Semua Kategori</option>
+                                        @foreach ($categories as $c)
+                                            <option value="{{ $c }}">{{ $c }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                                <select wire:model.live="sortBy" class="shop-select">
+                                    <option value="">Urutkan: Terbaru</option>
+                                    <option value="termurah">Harga: Termurah</option>
+                                    <option value="termahal">Harga: Termahal</option>
+                                    <option value="nama">Nama: A–Z</option>
+                                    <option value="terlama">Terlama</option>
+                                </select>
+                                @if ($tipe || $sortBy)
+                                    <button type="button" wire:click="resetFilters" class="shop-reset"><i class="bi bi-x-circle"></i> Reset</button>
+                                @endif
+                            </div>
+                            <div class="shop-filter-count">{{ $products->total() }} produk</div>
+                        </div>
+
+                        <div class="row g-3 g-lg-4">
                             @forelse ($products as $item)
                                 @php
                                     $bestDiscount = $this->getBestDiscount($item->id);
+                                    $isFlash = $bestDiscount && ($bestDiscount['promo']->tipe_promo ?? null) === 'flash_sale';
+                                    // Produk JASA: harga per bulan = 0. Pakai harga paket terkecil (per pengecekan).
+                                    $isJasa = (bool) $item->butuh_file;
+                                    $originalPrice = $isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan;
+                                    if ($bestDiscount) {
+                                        if ($bestDiscount['type'] === 'persen') {
+                                            $discountedPrice = (int) round(
+                                                $originalPrice - ($originalPrice * $bestDiscount['value']) / 100,
+                                            );
+                                        } else {
+                                            $discountedPrice = (int) max(0, $originalPrice - $bestDiscount['value']);
+                                        }
+                                    } else {
+                                        $discountedPrice = $originalPrice;
+                                    }
                                 @endphp
                                 <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $item->id }}">
-                                    <div class="product-card">
-                                        <div class="product-image">
+                                    <div class="fs-card">
+                                        <div class="fs-card-media">
                                             @if ($item->image)
-                                                <div>
-                                                    <img src="{{ asset('storage/img/Product/' . $item->image) }}"
-                                                        class="img-fluid" alt="{{ $item->nama_akun }}">
-                                                </div>
+                                                <img src="{{ asset('storage/img/Product/' . $item->image) }}"
+                                                    alt="{{ $item->nama_akun }}">
                                             @else
-                                                <div>
-                                                    <img class="img-fluid" style="object-fit: cover"
-                                                        src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                                        alt="">
-                                                </div>
+                                                <img src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
+                                                    alt="{{ $item->nama_akun }}">
                                             @endif
 
-                                            <!-- Promo Badge -->
                                             @if ($bestDiscount)
-                                                <div class="discount-badge"
-                                                    style="background: {{ $bestDiscount['promo']->badge_color ?? '#FF6B6B' }};">
-                                                    @if ($bestDiscount['type'] === 'persen')
-                                                        @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
-                                                            diskon
-                                                            {{ number_format($bestDiscount['non_member_value'], 0) }}-{{ number_format($bestDiscount['member_value'], 0) }}%
+                                                @if ($isFlash)
+                                                    <span class="fs-badge fs-badge-flash"><i
+                                                            class="bi bi-lightning-charge-fill"></i>
+                                                        @if ($bestDiscount['type'] === 'persen')
+                                                            Diskon s.d. {{ number_format($bestDiscount['value'], 0) }}%
                                                         @else
-                                                            diskon{{ number_format($bestDiscount['value'], 0) }}%
+                                                            Diskon s.d. Rp{{ number_format($bestDiscount['value'], 0, ',', '.') }}
                                                         @endif
-                                                    @else
-                                                        diskon Rp{{ number_format($bestDiscount['value'], 0) }}
-                                                    @endif
-                                                </div>
-                                            @endif
-
-                                            <div class="product-overlay">
-                                                <div class="product-actions">
-                                                    <a href="{{ route('shop.detail-product', $item->id) }}"
-                                                        class="action-btn" data-bs-toggle="tooltip"
-                                                        title="Detail Product">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    <button type="button" class="action-btn" data-bs-toggle="modal"
-                                                        data-bs-target="#selectPackageModal{{ $item->id }}"
-                                                        title="Tambah ke Keranjang">
-                                                        <i class="bi bi-cart-plus"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="product-details">
-                                            <h4 class="product-title">
-                                                <a href="{{ route('shop.detail-product', $item->id) }}">
-                                                    {{ $item->nama_akun }}
-                                                </a>
-                                            </h4>
-                                            <div class="product-meta">
-                                                @if ($bestDiscount)
-                                                    <div class="product-price flex-column align-items-start">
-                                                        @php
-                                                            $originalPrice = $item->harga_perbulan;
-                                                            if ($bestDiscount['type'] === 'persen') {
-                                                                $discountedPrice =
-                                                                    $originalPrice -
-                                                                    ($originalPrice * $bestDiscount['value']) / 100;
-                                                            } else {
-                                                                $discountedPrice = max(
-                                                                    0,
-                                                                    $originalPrice - $bestDiscount['value'],
-                                                                );
-                                                            }
-                                                        @endphp
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <span class="text-danger small d-block">
-                                                                <del>Rp
-                                                                    {{ number_format($originalPrice, 0, ',', '.') }}</del>
-                                                            </span>
-                                                            <div class="d-flex align-items-baseline gap-2">
-                                                                <span class="sale-price fs-6 text-dark small fw-bold">Rp
-                                                                    {{ number_format($discountedPrice, 0, ',', '.') }}/bulan
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    </span>
                                                 @else
-                                                    <div class="product-price text-muted">
-                                                        Mulai Rp
-                                                        {{ number_format($item->harga_perbulan, 0, ',', '.') }}/bulan
-                                                    </div>
+                                                    <span class="fs-badge">
+                                                        @if ($bestDiscount['type'] === 'persen')
+                                                            @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
+                                                                Diskon {{ number_format($bestDiscount['non_member_value'], 0) }}–{{ number_format($bestDiscount['member_value'], 0) }}%
+                                                            @else
+                                                                Diskon {{ number_format($bestDiscount['value'], 0) }}%
+                                                            @endif
+                                                        @else
+                                                            Diskon Rp{{ number_format($bestDiscount['value'], 0, ',', '.') }}
+                                                        @endif
+                                                    </span>
                                                 @endif
-                                            </div>
+                                            @endif
                                         </div>
-                                    </div>
-                                </div>
 
-                                <!-- Modal Pilih Paket -->
-                                <div class="modal fade" id="selectPackageModal{{ $item->id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title text-dark">Pilih Paket {{ $item->nama_akun }}
-                                                </h5>
-                                                <button type="button" class="btn-close"
-                                                    data-bs-dismiss="modal"></button>
+                                        <div class="fs-card-body">
+                                            <a href="{{ route('shop.detail-product', $item->id) }}"
+                                                class="fs-name">{{ $item->nama_akun }}</a>
+
+                                            <div class="fs-price">
+                                                @if ($isJasa)
+                                                    <small class="text-muted me-1">Mulai</small>
+                                                @endif
+                                                <span class="fs-price-sale">Rp{{ number_format($discountedPrice, 0, ',', '.') }}</span>
+                                                @if ($discountedPrice < $originalPrice)
+                                                    <span class="fs-price-orig">Rp{{ number_format($originalPrice, 0, ',', '.') }}</span>
+                                                @endif
+                                                <small>{{ $isJasa ? '/cek' : '/bln' }}</small>
                                             </div>
-                                            <div class="modal-body">
-                                                <div class="gap-2 d-flex flex-column">
-                                                    @if ($item->harga_perbulan)
-                                                        @php
-                                                            $price = $item->harga_perbulan;
-                                                            if ($bestDiscount) {
-                                                                if ($bestDiscount['type'] === 'persen') {
-                                                                    $discountedPrice =
-                                                                        $price -
-                                                                        ($price * $bestDiscount['value']) / 100;
-                                                                } else {
-                                                                    $discountedPrice = max(
-                                                                        0,
-                                                                        $price - $bestDiscount['value'],
-                                                                    );
-                                                                }
-                                                                $totalSaving =
-                                                                    $item->harga_perbulan * 1 - $discountedPrice;
-                                                            }
-                                                        @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
-                                                            wire:click="addToCart('{{ $item->id }}', 'bulan', 1)"
-                                                            data-bs-dismiss="modal">
-                                                            <div
-                                                                class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0 text-dark">Paket 1 Bulan</p>
-                                                                <div class="text-end">
-                                                                    @if ($bestDiscount)
-                                                                        <div
-                                                                            class="d-flex align-items-center justify-content-end gap-2">
-                                                                            <small
-                                                                                class="text-danger fs-6 text-decoration-line-through">
-                                                                                Rp
-                                                                                {{ number_format($price, 0, ',', '.') }}
-                                                                            </small>
-                                                                            <strong class="text-dark fs-5">
-                                                                                Rp
-                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @else
-                                                                        <strong>Rp
-                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    @endif
 
-                                                    @if ($item->harga_5_perbulan)
-                                                        @php
-                                                            $price = $item->harga_5_perbulan;
-                                                            $saving = $item->harga_perbulan * 5 - $price;
-                                                            if ($bestDiscount) {
-                                                                if ($bestDiscount['type'] === 'persen') {
-                                                                    $discountedPrice =
-                                                                        $price -
-                                                                        ($price * $bestDiscount['value']) / 100;
-                                                                } else {
-                                                                    $discountedPrice = max(
-                                                                        0,
-                                                                        $price - $bestDiscount['value'],
-                                                                    );
-                                                                }
-                                                                $totalSaving =
-                                                                    $item->harga_perbulan * 5 - $discountedPrice;
-                                                            }
-                                                        @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
-                                                            wire:click="addToCart('{{ $item->id }}', 'bulan', 5)"
-                                                            data-bs-dismiss="modal">
-                                                            <div
-                                                                class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0 text-dark">Paket 5 Bulan</p>
-                                                                <div class="text-end">
-                                                                    @if ($bestDiscount)
-                                                                        <div
-                                                                            class="d-flex align-items-center justify-content-end gap-2">
-                                                                            <small
-                                                                                class="text-danger fs-6 text-decoration-line-through">
-                                                                                Rp
-                                                                                {{ number_format($price, 0, ',', '.') }}
-                                                                            </small>
-                                                                            <strong class="text-dark fs-5">
-                                                                                Rp
-                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @else
-                                                                        <strong>Rp
-                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($saving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    @endif
-
-                                                    @if ($item->harga_10_perbulan)
-                                                        @php
-                                                            $price = $item->harga_10_perbulan;
-                                                            $saving = $item->harga_perbulan * 10 - $price;
-                                                            if ($bestDiscount) {
-                                                                if ($bestDiscount['type'] === 'persen') {
-                                                                    $discountedPrice =
-                                                                        $price -
-                                                                        ($price * $bestDiscount['value']) / 100;
-                                                                } else {
-                                                                    $discountedPrice = max(
-                                                                        0,
-                                                                        $price - $bestDiscount['value'],
-                                                                    );
-                                                                }
-                                                                $totalSaving =
-                                                                    $item->harga_perbulan * 10 - $discountedPrice;
-                                                            }
-                                                        @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
-                                                            wire:click="addToCart('{{ $item->id }}', 'bulan', 10)"
-                                                            data-bs-dismiss="modal">
-                                                            <div
-                                                                class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0 text-dark">Paket 10 Bulan</p>
-                                                                <div class="text-end">
-                                                                    @if ($bestDiscount)
-                                                                        <div
-                                                                            class="d-flex align-items-center justify-content-end gap-2">
-                                                                            <small
-                                                                                class="text-danger fs-6 text-decoration-line-through">
-                                                                                Rp
-                                                                                {{ number_format($price, 0, ',', '.') }}
-                                                                            </small>
-                                                                            <strong class="text-dark fs-5">
-                                                                                Rp
-                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @else
-                                                                        <strong>Rp
-                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($saving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    @endif
-
-                                                    @if ($item->harga_pertahun)
-                                                        @php
-                                                            $price = $item->harga_pertahun;
-                                                            $saving = $item->harga_perbulan * 12 - $price;
-                                                            if ($bestDiscount) {
-                                                                if ($bestDiscount['type'] === 'persen') {
-                                                                    $discountedPrice =
-                                                                        $price -
-                                                                        ($price * $bestDiscount['value']) / 100;
-                                                                } else {
-                                                                    $discountedPrice = max(
-                                                                        0,
-                                                                        $price - $bestDiscount['value'],
-                                                                    );
-                                                                }
-                                                                $totalSaving =
-                                                                    $item->harga_perbulan * 12 - $discountedPrice;
-                                                            }
-                                                        @endphp
-                                                        <button type="button" class="btn btn-outline-light w-100"
-                                                            wire:click="addToCart('{{ $item->id }}', 'tahun', 1)"
-                                                            data-bs-dismiss="modal">
-                                                            <div
-                                                                class="d-flex w-100 justify-content-between align-items-center">
-                                                                <p class="mb-0 text-dark">Paket 1 Tahun</p>
-                                                                <div class="text-end">
-                                                                    @if ($bestDiscount)
-                                                                        <div
-                                                                            class="d-flex align-items-center justify-content-end gap-2">
-                                                                            <small
-                                                                                class="text-danger fs-6 text-decoration-line-through">
-                                                                                Rp
-                                                                                {{ number_format($price, 0, ',', '.') }}
-                                                                            </small>
-                                                                            <strong class="text-dark fs-5">
-                                                                                Rp
-                                                                                {{ number_format($discountedPrice, 0, ',', '.') }}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($totalSaving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @else
-                                                                        <strong>Rp
-                                                                            {{ number_format($price, 0, ',', '.') }}</strong>
-                                                                        <small class="d-block text-muted">
-                                                                            hemat hingga Rp
-                                                                            {{ number_format($saving, 0, ',', '.') }}
-                                                                            untuk member
-                                                                        </small>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </button>
-                                                    @endif
-                                                </div>
+                                            <div class="fs-actions">
+                                                <button type="button" wire:click="openDuration('{{ $item->id }}')"
+                                                    wire:loading.attr="disabled"
+                                                    wire:target="openDuration('{{ $item->id }}')" class="fs-btn-cart">
+                                                    <span wire:loading.remove
+                                                        wire:target="openDuration('{{ $item->id }}')">
+                                                        @if ($isJasa)
+                                                            {{-- Jasa: harga ditentukan di halaman produk (unggah file / add-on) --}}
+                                                            <i class="bi bi-sliders"></i> Atur Pesanan
+                                                        @else
+                                                            <i class="bi bi-cart-plus"></i> Keranjang
+                                                        @endif
+                                                    </span>
+                                                    <span wire:loading wire:target="openDuration('{{ $item->id }}')"><span
+                                                            class="spinner-border spinner-border-sm"></span></span>
+                                                </button>
+                                                <a href="{{ route('shop.detail-product', $item->id) }}"
+                                                    class="fs-btn-view">Lihat</a>
                                             </div>
                                         </div>
                                     </div>
@@ -380,41 +162,121 @@
                             @endforelse
                         </div>
 
-                        <div class="mt-5">
-                            {{ $products->links('vendor.pagination') }}
-                        </div>
+                        @if ($products->hasPages())
+                            <div class="mt-5 ph-pagination">
+                                {{ $products->links('pagination.ph') }}
+                            </div>
+                        @endif
                     </div>
                 </section>
             </section>
         </div>
     </section>
     <!-- end list product -->
-    <style>
-        .discount-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #FF6B6B;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 25px;
-            font-weight: bold;
-            font-size: 14px;
-            z-index: 10;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            animation: pulse 2s ease-in-out infinite;
-        }
 
-        @keyframes pulse {
+    {{-- ===== Modal Pilih Durasi (seragam dengan Flash Sale) ===== --}}
+    @if ($showDurationModal)
+        <div class="fs-modal-overlay" wire:key="shop-dur-modal" wire:click.self="closeDuration">
+            <div class="fs-modal">
+                <button type="button" class="fs-modal-close" wire:click="closeDuration" aria-label="Tutup"><i
+                        class="bi bi-x-lg"></i></button>
 
-            0%,
-            100% {
-                transform: scale(1);
-            }
+                <div class="fs-modal-head">
+                    <div class="fs-modal-thumb">
+                        @if ($pickProductImage)
+                            <img src="{{ asset('storage/img/Product/' . $pickProductImage) }}"
+                                alt="{{ $pickProductName }}">
+                        @else
+                            <i class="bi bi-box-seam"></i>
+                        @endif
+                    </div>
+                    <div class="fs-modal-title">
+                        <span class="fs-modal-eyebrow">
+                            @if ($pickIsFlash)
+                                <i class="bi bi-lightning-charge-fill"></i> Flash Sale
+                            @else
+                                <i class="bi bi-box-seam"></i> Pilih Paket
+                            @endif
+                        </span>
+                        <h4>{{ $pickProductName }}</h4>
+                        <p>Pilih durasi langganan</p>
+                    </div>
+                </div>
 
-            50% {
-                transform: scale(1.05);
-            }
-        }
-    </style>
+                <div class="fs-modal-options">
+                    @foreach ($pickPackages as $p)
+                        @php $active = ($pickType === $p['duration_type'] && (int) $pickValue === (int) $p['duration_value']); @endphp
+                        <button type="button" class="fs-opt {{ $active ? 'is-active' : '' }}"
+                            wire:click="selectPackage('{{ $p['duration_type'] }}', {{ $p['duration_value'] }})">
+                            <span class="fs-opt-radio"></span>
+                            <span class="fs-opt-info">
+                                <span class="fs-opt-label">{{ $p['label'] }}</span>
+                                @if (!empty($p['savings']) && $p['savings'] > 0)
+                                    <span class="fs-opt-save">Hemat Rp{{ number_format($p['savings'], 0, ',', '.') }}</span>
+                                @endif
+                            </span>
+                            <span class="fs-opt-price">
+                                @if (($p['discounted'] ?? $p['price']) < $p['price'])
+                                    <span class="fs-opt-orig">Rp{{ number_format($p['price'], 0, ',', '.') }}</span>
+                                @endif
+                                <span class="fs-opt-now">Rp{{ number_format($p['discounted'] ?? $p['price'], 0, ',', '.') }}</span>
+                            </span>
+                        </button>
+                    @endforeach
+
+                    {{-- Durasi custom (bila produk punya harga per bulan) --}}
+                    @if ($pickPerBulan > 0)
+                        @php
+                            $cp = $this->customPricing();
+                            $customBase = $cp['base'];
+                            $customDisc = $cp['discounted'];
+                            $customSave = $cp['savings'];
+                        @endphp
+                        <div class="fs-opt fs-opt-custom {{ $pickIsCustom ? 'is-active' : '' }}">
+                            <span class="fs-opt-radio" wire:click="chooseCustom"></span>
+                            <span class="fs-opt-info" wire:click="chooseCustom">
+                                <span class="fs-opt-label">Durasi lain</span>
+                                <span class="fs-opt-sub">
+                                    @if ($cp['matched'])
+                                        Sesuai paket {{ $pickCustomMonths }} bulan
+                                    @else
+                                        Rp{{ number_format($pickPerBulan, 0, ',', '.') }}/bulan
+                                    @endif
+                                </span>
+                            </span>
+                            <div class="fs-stepper">
+                                <button type="button" wire:click="decCustom" @disabled($pickCustomMonths <= 1)>−</button>
+                                <span class="fs-stepper-val">{{ $pickCustomMonths }} bln</span>
+                                <button type="button" wire:click="incCustom" @disabled($pickCustomMonths >= 60)>+</button>
+                            </div>
+                        </div>
+                        @if ($pickIsCustom)
+                            <div class="fs-custom-total">
+                                <span class="fs-custom-total-left">
+                                    Total {{ $pickCustomMonths }} bulan
+                                    @if ($customSave > 0)
+                                        <span class="fs-opt-save">Hemat Rp{{ number_format($customSave, 0, ',', '.') }}</span>
+                                    @endif
+                                </span>
+                                <span class="fs-custom-total-price">
+                                    @if ($customDisc < $customBase)
+                                        <span class="fs-opt-orig">Rp{{ number_format($customBase, 0, ',', '.') }}</span>
+                                    @endif
+                                    <span class="fs-opt-now">Rp{{ number_format($customDisc, 0, ',', '.') }}</span>
+                                </span>
+                            </div>
+                        @endif
+                    @endif
+                </div>
+
+                <button type="button" class="fs-modal-add" wire:click="confirmAddToCart" wire:loading.attr="disabled"
+                    wire:target="confirmAddToCart">
+                    <span wire:loading.remove wire:target="confirmAddToCart"><i class="bi bi-cart-plus"></i> Tambah ke
+                        Keranjang</span>
+                    <span wire:loading wire:target="confirmAddToCart"><span
+                            class="spinner-border spinner-border-sm"></span> Memproses…</span>
+                </button>
+            </div>
+        </div>
+    @endif
 </main>

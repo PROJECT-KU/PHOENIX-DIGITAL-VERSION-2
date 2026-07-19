@@ -46,7 +46,17 @@ class CheckoutPage extends Component
 
     public $pointsValue = 0;
 
+    public $pointsExpireLabel = '';
+
     public $pointsDiscount = 0;
+
+    // Nama promo terpasang yang melarang penggabungan — null bila tidak ada.
+    // Dipakai view utk menonaktifkan input & menjelaskan alasannya ke pembeli.
+    public $promoBlokirGabung = null;
+
+    public $promoBlokirReferral = null;
+
+    public $promoBlokirPoin = null;
 
     // Promo
     public $kodePromo = '';
@@ -93,7 +103,17 @@ class CheckoutPage extends Component
 
     public function mount()
     {
-        $this->cart = session()->get('cart', []);
+        $cart = session()->get('cart', []);
+
+        // Akun digital: setiap baris selalu 1 item — samakan dengan keranjang
+        // agar sesi lama yang sempat menumpuk jumlah tidak menggelembungkan subtotal.
+        foreach ($cart as $key => $item) {
+            $cart[$key]['quantity'] = 1;
+            $cart[$key]['subtotal'] = (int) ($item['price'] ?? $item['subtotal'] ?? 0);
+        }
+        session()->put('cart', $cart);
+
+        $this->cart = $cart;
 
         if (empty($this->cart)) {
             session()->flash('error', 'Keranjang Anda kosong');
@@ -163,6 +183,9 @@ class CheckoutPage extends Component
         $customer = Customer::where('no_hp', $this->no_hp)->first();
 
         if ($customer) {
+            // Pastikan poin tahun lalu sudah kadaluarsa sebelum ditampilkan.
+            $customer->applyYearlyExpiry();
+
             $this->foundCustomer = $customer;
             $this->nama = $customer->nama;
             $this->email = $customer->email;
@@ -174,9 +197,11 @@ class CheckoutPage extends Component
                 $this->showPointsOption = true;
                 $this->availablePoints = $customer->point;
                 $this->pointsValue = $customer->getPointValue();
+                $this->pointsExpireLabel = $customer->pointsExpireLabel();
             } else {
                 $this->showPointsOption = false;
                 $this->usePoints = false;
+                $this->pointsExpireLabel = '';
             }
 
             session()->flash('info', 'Data pelanggan ditemukan dan diisi otomatis');
@@ -201,6 +226,17 @@ class CheckoutPage extends Component
 
             return;
         }
+
+        // Batasi percobaan agar kode tidak bisa ditebak (brute-force). Tidak mengubah
+        // logika validasi/perhitungan — hanya menahan bila terlalu sering mencoba.
+        $rlKey = 'promo-check:'.request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 8)) {
+            $this->isCheckingPromo = false;
+            $this->promoMessage = 'Terlalu banyak percobaan. Coba lagi dalam '.\Illuminate\Support\Facades\RateLimiter::availableIn($rlKey).' detik.';
+
+            return;
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 60);
 
         $customer = $this->foundCustomer;
         $result = $this->promoService->validateKodePromo(
@@ -287,6 +323,16 @@ class CheckoutPage extends Component
             return;
         }
 
+        // Batasi percobaan agar kode referral tidak bisa ditebak (brute-force).
+        $rlKey = 'referral-check:'.request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 8)) {
+            $this->isCheckingReferral = false;
+            $this->referralMessage = 'Terlalu banyak percobaan. Coba lagi dalam '.\Illuminate\Support\Facades\RateLimiter::availableIn($rlKey).' detik.';
+
+            return;
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 60);
+
         $referrer = Customer::where('kode_ref', $this->referralCode)
             ->where('status_member', 'active')
             ->first();
@@ -362,7 +408,14 @@ class CheckoutPage extends Component
 
         $tempTotal = $this->subtotal - $this->promoDiscount - $this->referralDiscount;
 
-        if ($this->usePoints && $this->pointsValue > 0) {
+        // Promo terpasang bisa melarang penggabungan. Nama promo pelarangnya
+        // disimpan supaya UI bisa menonaktifkan input SEKALIGUS menyebut alasannya
+        // — kalau cuma diam-diam tidak berlaku, pembeli awam akan mengira bisa.
+        $this->promoBlokirGabung = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_other');
+        $this->promoBlokirReferral = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_referral');
+        $this->promoBlokirPoin = $this->promoService->promoPelarang($this->appliedPromos, 'can_stack_with_points');
+
+        if ($this->usePoints && $this->pointsValue > 0 && ! $this->promoBlokirPoin) {
             $this->pointsDiscount = min($this->pointsValue, max(0, $tempTotal));
         } else {
             $this->pointsDiscount = 0;
@@ -384,6 +437,44 @@ class CheckoutPage extends Component
         }
     }
 
+    /**
+     * Simpan keranjang tertinggal (email + isi keranjang) untuk reminder.
+     * Terisolasi & try/catch — TIDAK memengaruhi perhitungan/alur checkout.
+     */
+    public function saveAbandonedCart($email = null): void
+    {
+        try {
+            $email = trim((string) $email);
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return;
+            }
+            $cart = session()->get('cart', []);
+            if (empty($cart)) {
+                return;
+            }
+            // Batasi agar tidak bisa dipakai spam email ke alamat sembarangan.
+            $rlKey = 'abandoned-cart:'.request()->ip();
+            if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 12)) {
+                return;
+            }
+            \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 300);
+            \App\Models\AbandonedCart::updateOrCreate(
+                ['email' => $email],
+                [
+                    'items' => array_values(array_map(fn ($i) => [
+                        'name' => $i['product_name'] ?? '',
+                        'qty' => (int) ($i['quantity'] ?? 1),
+                    ], $cart)),
+                    'total' => (int) array_sum(array_column($cart, 'subtotal')),
+                    'recovered_at' => null,
+                    'reminded_at' => null,
+                ]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     public function checkout()
     {
         $this->validate();
@@ -392,6 +483,17 @@ class CheckoutPage extends Component
             session()->flash('error', 'Keranjang Anda kosong');
 
             return redirect()->route('shop.index');
+        }
+
+        // Email UNIQUE antar pelanggan. Pelanggan dikenali via no_hp (updateOrCreate),
+        // jadi bila email yang diketik sudah dipakai pelanggan LAIN (no_hp berbeda),
+        // penyimpanan akan gagal diam-diam karena constraint unik — tanpa keterangan.
+        // Cegah lebih awal dengan pesan jelas di kolom email.
+        $pemilikEmail = Customer::where('email', $this->email)->first();
+        if ($pemilikEmail && $pemilikEmail->no_hp !== $this->no_hp) {
+            $this->addError('email', 'Email ini sudah terdaftar dengan nomor HP lain. Gunakan email lain, atau isi nomor HP yang terdaftar dengan email ini.');
+
+            return;
         }
 
         if ($this->finalTotal <= 0 && ! $this->usePoints) {
@@ -423,7 +525,9 @@ class CheckoutPage extends Component
             );
 
             if ($this->usePoints && $customer->status_member === 'active' && $customer->point > 0) {
-                $customer->usePoints();
+                // Potong sebesar diskon yang benar-benar dipakai saja — sisa
+                // poin customer tidak ikut hangus.
+                $customer->usePoints((int) $this->pointsDiscount);
             }
 
             $orderNumber = $this->generateOrderNumber();
@@ -443,6 +547,9 @@ class CheckoutPage extends Component
                 'total' => $this->finalTotal,
                 'unique_code' => $this->uniqueCode,
                 'status' => 'pending',
+                // Pemesanan dari PUBLIC (jasa maupun non-jasa) selalu QRIS dinamis.
+                // Bila akhirnya lunas penuh dengan poin, ditimpa jadi 'points' di bawah.
+                'payment_method' => 'qris_dinamis',
                 'customer_notes' => $this->customer_notes,
                 'expired_at' => now()->addHours(24),
                 'used_points' => $this->usePoints,
@@ -457,7 +564,7 @@ class CheckoutPage extends Component
             ]);
 
             foreach ($finalCart as $item) {
-                OrderItem::create([
+                $orderItem = OrderItem::create([
                     'id' => Str::uuid(),
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
@@ -468,11 +575,41 @@ class CheckoutPage extends Component
                     'price' => $item['price'],
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
+                    // Khusus JASA (kosong/null untuk produk biasa).
+                    'addons' => $item['addons'] ?? null,
+                    'addons_total' => (int) ($item['addons_total'] ?? 0),
+                    'jumlah_halaman' => $item['jumlah_halaman'] ?? null,
+                    'halaman_dikecualikan' => $item['halaman_dikecualikan'] ?? null,
+                    'halaman_dihitung' => $item['halaman_dihitung'] ?? null,
                 ]);
+
+                // Jasa per halaman: file yang diunggah SEBELUM bayar dipindahkan
+                // menjadi pengecekan pesanan ini, siap diproses admin.
+                if (! empty($item['draft_upload_id'])) {
+                    $this->pindahkanDraftUpload($item['draft_upload_id'], $order->id, $item);
+                }
             }
 
             // Save promo usage to pivot table
             foreach ($this->appliedPromos as $promoData) {
+                $promo = Promo::find($promoData['promo_id']);
+
+                // Penjaga kuota. Promo dipasang di keranjang jauh sebelum bayar,
+                // jadi slot terakhir bisa saja diambil orang lain di sela itu.
+                // lockForUpdate() menahan checkout lain yg memakai promo SAMA
+                // sampai transaksi ini selesai, sehingga dua pembeli tidak bisa
+                // sama-sama lolos merebut slot terakhir.
+                // Promo tanpa kuota (kuota NULL) tidak dikunci -> alur lama utuh.
+                if ($promo && $promo->kuota !== null) {
+                    $promo = Promo::whereKey($promo->id)->lockForUpdate()->first();
+
+                    if ($promo->kuotaHabis()) {
+                        throw new \RuntimeException(
+                            'Kuota promo "'.$promo->nama_promo.'" baru saja habis. Silakan muat ulang halaman dan pesan kembali.'
+                        );
+                    }
+                }
+
                 $order->promos()->attach($promoData['promo_id'], [
                     'id' => Str::uuid(),
                     'kode_promo' => $promoData['kode_promo'] ?? null,
@@ -482,7 +619,6 @@ class CheckoutPage extends Component
                 ]);
 
                 // Increment promo usage
-                $promo = Promo::find($promoData['promo_id']);
                 if ($promo) {
                     $promo->incrementUsage($promoData['jumlah_diskon']);
                 }
@@ -521,7 +657,76 @@ class CheckoutPage extends Component
             }
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Bila lolos pre-check tapi email tetap bentrok (mis. balapan antar
+            // pembeli), tampilkan pesan ramah di kolom email, bukan SQL mentah.
+            if (str_contains($e->getMessage(), 'customers_email_unique')) {
+                $this->addError('email', 'Email ini sudah terdaftar dengan nomor HP lain. Gunakan email lain, atau isi nomor HP yang terdaftar dengan email ini.');
+
+                return;
+            }
+
             session()->flash('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * Pindahkan file draft (diunggah sebelum bayar, jasa per halaman) menjadi
+     * OrderUpload milik pesanan — langsung berstatus 'menunggu' agar terpantau
+     * admin lewat badge. Terisolasi: kegagalan di sini tak membatalkan checkout.
+     */
+    private function pindahkanDraftUpload(string $draftId, string $orderId, array $item = []): void
+    {
+        try {
+            $draft = \App\Models\JasaDraftUpload::find($draftId);
+            if (! $draft) {
+                return;
+            }
+
+            $disk = \Illuminate\Support\Facades\Storage::disk('local');
+
+            // PDF acuan halaman.
+            $tujuanPdf = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->path);
+            if ($disk->exists($draft->path)) {
+                $disk->move($draft->path, $tujuanPdf);
+            }
+
+            // File KERJA (DOCX) — inilah yang dikerjakan tim, jadi jadi file utama.
+            $tujuanKerja = null;
+            if ($draft->kerja_path && $disk->exists($draft->kerja_path)) {
+                $tujuanKerja = 'order-uploads/'.$orderId.'/masuk/'.basename($draft->kerja_path);
+                $disk->move($draft->kerja_path, $tujuanKerja);
+            }
+
+            \App\Models\OrderUpload::create([
+                'order_id' => $orderId,
+                // Draft pra-bayar hanya dipakai jasa PER HALAMAN (parafrase),
+                // jadi unggahan hasilnya berjenis 'parafrase' (3 slot di admin).
+                'jenis' => 'parafrase',
+                // Bila ada file kerja (parafrase), itu yang jadi berkas utama;
+                // bila tidak (jasa lain), tetap file yang diunggah customer.
+                'path' => $tujuanKerja ?: $tujuanPdf,
+                'nama_asli' => $tujuanKerja ? $draft->kerja_nama : $draft->nama_asli,
+                'ukuran' => $tujuanKerja ? $draft->kerja_ukuran : $draft->ukuran,
+                'mime' => $tujuanKerja ? $draft->kerja_mime : $draft->mime,
+                // PDF acuan halaman disimpan mendampingi (bila file utama = DOCX).
+                'pdf_path' => $tujuanKerja ? $tujuanPdf : null,
+                'pdf_nama' => $tujuanKerja ? $draft->nama_asli : null,
+                'status' => 'menunggu',
+                // Instruksi PARAFRASE: bagian dokumen & nomor halaman yang dilewati.
+                // Setelan khas pengecekan plagiasi (kutipan/sumber kecil) dimatikan
+                // agar ringkasannya tidak menampilkan hal yang tak relevan.
+                'exclude_cover' => (bool) ($item['exclude_cover'] ?? false),
+                'exclude_daftar_isi' => (bool) ($item['exclude_daftar_isi'] ?? false),
+                'exclude_bibliografi' => (bool) ($item['exclude_daftar_pustaka'] ?? false),
+                'exclude_kutipan' => false,
+                'exclude_sumber_kecil' => false,
+                'halaman_dikecualikan' => $item['halaman_dikecualikan'] ?? null,
+            ]);
+
+            $draft->delete();
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 

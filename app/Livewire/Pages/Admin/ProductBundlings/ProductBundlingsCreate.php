@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class ProductBundlingsCreate extends Component
 {
-    #[Layout('layouts.app')]
     public function render()
     {
-        return view('livewire.pages.admin.ProductBundlings.ProductBundlings-create');
+        return view('livewire.pages.admin.ProductBundlings.ProductBundlings-create')
+            ->layout('livewire.layout.templateindex');
     }
 }

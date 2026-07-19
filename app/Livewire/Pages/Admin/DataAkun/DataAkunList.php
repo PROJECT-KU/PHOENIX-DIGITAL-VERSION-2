@@ -20,25 +20,38 @@ class DataAkunList extends Component
 
     public function deleteDataAkun($id)
     {
-        $DataAkun = DataAkun::find($id);
-
-        if (! $DataAkun) {
-            $this->dispatch('delete-error', ['message' => 'Data Akun tidak ditemukan!'], browserEvent: true);
+        if (! auth()->user()->hasPermission('delete_dataakun')) {
+            $this->dispatch('DataAkunDeleteError', message: 'Anda tidak memiliki izin menghapus data akun.');
 
             return;
         }
 
+        $DataAkun = DataAkun::find($id);
+
+        // Pastikan data ditemukan
+        if (! $DataAkun) {
+            $this->dispatch('DataAkunDeleteError', message: 'Data Akun tidak ditemukan!');
+            return;
+        }
+
+        // Sesuaikan string 'active' dengan nilai yang ada di database Anda (misal: 'Aktif', 'Active', atau 1)
+        if (strtolower($DataAkun->status) === 'active' || strtolower($DataAkun->status) === 'aktif') {
+            $this->dispatch('DataAkunDeleteError', message: 'Data Akun masih aktif dan tidak bisa dihapus!');
+            return;
+        }
+
+        // Hapus record dari DB jika status tidak aktif
         $DataAkun->delete();
 
-        $this->dispatch('DataAkun-deleted', ['id' => $id], browserEvent: true);
+        $this->dispatch('DataAkunDeleted', id: $id);
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         $DataAkuns = DataAkun::latest()
             ->where('nama_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('username_akun', 'like', "%{$this->searchDataAkun}%")
+            ->orWhere('password_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhere('link_login_akun', 'like', "%{$this->searchDataAkun}%")
             ->orWhereHas('pj', function ($query) {
                 $query->where('name', 'like', "%{$this->searchDataAkun}%");
@@ -49,6 +62,7 @@ class DataAkunList extends Component
 
         return view('livewire.pages.admin.data-akun.DataAkun-list', [
             'DataAkun' => $DataAkuns,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }

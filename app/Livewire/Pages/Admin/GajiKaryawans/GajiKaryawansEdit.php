@@ -15,7 +15,7 @@ class GajiKaryawansEdit extends Component
         $this->gajikaryawan = $gajikaryawan;
     }
 
-    #[Layout('layouts.app')]
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.gaji-karyawans.gaji-karyawans-edit', [

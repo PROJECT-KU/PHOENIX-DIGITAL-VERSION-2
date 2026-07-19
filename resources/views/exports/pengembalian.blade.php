@@ -18,7 +18,7 @@
                 <td>{{ $item->tanggal_pengembalian }}</td>
                 <td>{{ $item->nominal_formatted ?? number_format($item->nominal, 0, ',', '.') }}</td>
                 <td>{{ $item->deskripsi }}</td>
-                <td>{{ ucfirst($item->status) }}</td>
+                <td>{{ ucfirst($statusMap[$item->nama_pengembalian] ?? 'pending') }}</td>
                 <td>{{ $item->penginput->name ?? '-' }}</td>
             </tr>
         @endforeach

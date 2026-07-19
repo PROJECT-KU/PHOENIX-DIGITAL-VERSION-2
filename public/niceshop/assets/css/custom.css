@@ -4,7 +4,8 @@
     right: 20px;
     width: 50px;
     height: 50px;
-    background: #25d366; /* warna WhatsApp */
+    background: #25d366;
+    /* warna WhatsApp */
     color: #fff;
     border-radius: 50%;
     font-size: 24px;
@@ -235,4 +236,242 @@ a.cart-btn {
     font-size: 0.9rem;
     color: #6c757d;
     line-height: 1.6;
+}
+
+/* ===============================
+   BUTTON ADD TO CART
+================================= */
+.cart-btn-overlay {
+    width: 100%;
+    display: block;
+    text-align: center;
+
+    background-color: var(--contrast-color);
+    color: var(--heading-color);
+
+    border: 1px solid color-mix(in srgb,
+            var(--default-color),
+            transparent 90%);
+
+    border-radius: 10px;
+    padding: 12px 24px;
+
+    font-weight: 500;
+    font-size: .85rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+
+    text-decoration: none;
+    transition: .3s;
+}
+
+.cart-btn-overlay:hover {
+    background-color: var(--accent-color);
+    color: var(--contrast-color);
+    border-color: var(--accent-color);
+}
+
+
+/* ===============================
+   PACKAGE BUTTON
+================================= */
+.package-btn {
+    width: 100%;
+    border: 1px solid color-mix(in srgb,
+            var(--default-color),
+            transparent 90%);
+
+    background-color: var(--contrast-color);
+    color: var(--heading-color);
+
+    border-radius: 10px;
+    padding: 16px;
+
+    transition: .3s;
+}
+
+.package-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--contrast-color);
+    border-color: var(--accent-color);
+}
+
+.package-btn p,
+.package-btn strong,
+.package-btn small {
+    transition: .3s;
+}
+
+.package-btn:hover p,
+.package-btn:hover strong,
+.package-btn:hover small {
+    color: var(--contrast-color) !important;
+}
+
+
+/* ===============================
+   LOAD MORE BUTTON
+================================= */
+.load-more-btn {
+    background-color: var(--contrast-color);
+    color: var(--heading-color);
+
+    border: 1px solid color-mix(in srgb,
+            var(--default-color),
+            transparent 90%);
+
+    border-radius: 10px;
+    padding: 12px 32px;
+
+    font-size: .85rem;
+    font-weight: 500;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+
+    transition: all .3s ease;
+}
+
+.load-more-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--contrast-color);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+
+/* ===============================
+   TABLET
+================================= */
+@media (max-width: 991.98px) {
+
+    .cart-btn-overlay,
+    .load-more-btn {
+        padding: 11px 20px;
+        font-size: .8rem;
+    }
+
+    .package-btn {
+        padding: 14px;
+    }
+}
+
+
+/* ===============================
+   MOBILE
+================================= */
+@media (max-width: 767.98px) {
+
+    .cart-btn-overlay,
+    .load-more-btn {
+        padding: 10px 16px;
+        font-size: .75rem;
+        letter-spacing: .3px;
+    }
+
+    .package-btn {
+        padding: 12px;
+    }
+
+    .package-btn p {
+        font-size: .85rem;
+    }
+
+    .package-btn strong {
+        font-size: 1rem !important;
+    }
+
+    .package-btn small {
+        font-size: .7rem;
+    }
+}
+
+
+/* ===============================
+   EXTRA SMALL DEVICE
+================================= */
+@media (max-width: 575.98px) {
+
+    .cart-btn-overlay,
+    .load-more-btn {
+        width: 100%;
+        font-size: .72rem;
+        padding: 10px 14px;
+    }
+
+    .package-btn {
+        padding: 10px;
+    }
+
+    .package-btn .d-flex {
+        gap: .5rem;
+    }
+}
+
+/* product all */
+.product-item {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-link {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.product-details {
+    flex: 1;
+    padding: 1rem;
+}
+
+.product-category {
+    min-height: 48px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 10px;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.product-price {
+    margin-top: auto;
+}
+
+.product-image img {
+    width: 100%;
+    aspect-ratio: 16/10;
+    object-fit: cover;
+}
+
+.p-3.pt-0 {
+    margin-top: auto;
+}
+
+@media (max-width: 768px) {
+
+    .product-category {
+        font-size: .9rem;
+        min-height: 40px;
+    }
+
+    .sale-price,
+    .current-price {
+        font-size: .85rem !important;
+    }
+
+    .discount-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+
+    .cart-btn-overlay {
+        padding: 10px 12px;
+        font-size: .72rem;
+    }
 }

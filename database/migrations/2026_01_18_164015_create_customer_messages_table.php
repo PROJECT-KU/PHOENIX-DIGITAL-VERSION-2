@@ -13,8 +13,13 @@ return new class extends Migration
     {
         Schema::create('customer_messages', function (Blueprint $table) {
             $table->id();
+            $table->string('ticket')->unique();
+            $table->enum('status', ['open', 'pending', 'in_progress', 'resolved', 'closed'])->default('open');
+            $table->enum('priority', ['low', 'medium', 'high', 'urgent'])->default('low');
+
             $table->string('name');
             $table->string('email');
+            $table->string('no_telp');
             $table->text('message');
             $table->ipAddress('ip_address')->nullable();
             $table->string('user_agent')->nullable();

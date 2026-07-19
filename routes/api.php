@@ -26,10 +26,26 @@ Route::middleware('auth:sanctum')->get('/online-users', function () {
     return response()->json($users);
 });
 
-// Route::middleware(['verify.origin'])->group(function () {
-Route::middleware([])->group(function () {
+/*
+ * Endpoint publik (form lamaran & pesan di situs).
+ *
+ * 'verify.origin' SENGAJA belum dinyalakan: config('cors.allowed_origins.0')
+ * masih '*', sehingga hash_equals('*', $origin) tak akan pernah cocok dan
+ * SEMUA permintaan akan ditolak 403 — termasuk dari situs sendiri.
+ * Untuk menyalakannya: isi ALLOWED_ORIGIN di .env produksi, ubah
+ * config/cors.php ke baris 'prod', baru tambahkan 'verify.origin' di sini.
+ *
+ * Sementara itu pengamannya rate limit per IP — menutup penyalahgunaan utama
+ * (banjir lamaran berisi berkas yang bisa menghabiskan disk, dan spam pesan).
+ */
+Route::middleware(['throttle:20,1'])->group(function () {
     Route::get('/jobs', [JobController::class, 'index']);
     Route::get('/jobs/{slug}', [JobController::class, 'show']);
-    Route::post('/applications', [JobApplicationController::class, 'store']);
-    Route::post('/message', [MessageController::class, 'store']);
+
+    // Unggah 2 PDF — paling mahal, jadi dibatasi paling ketat.
+    Route::post('/applications', [JobApplicationController::class, 'store'])
+        ->middleware('throttle:5,60');
+
+    Route::post('/message', [MessageController::class, 'store'])
+        ->middleware('throttle:10,60');
 });

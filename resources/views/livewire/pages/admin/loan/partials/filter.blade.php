@@ -1,76 +1,74 @@
-<div x-data="{ showFilter: $persist(false) }">
-    <!-- Search + Filter Toggle -->
-    <div class="d-flex align-items-center justify-content-between mb-3">
-        <div class="d-flex gap-2">
-            <div class="form-group mb-0 position-relative has-icon-left">
-                <input wire:model.live.debounce.300ms="search" type="text"
-                    class="form-control border-secondary"
-                    placeholder="Cari nama peminjam, penginput, atau deskripsi...">
-                <div class="form-control-icon">
-                    <i class="bi bi-search"></i>
-                </div>
+<div class="mb-3">
+    <!--================== ACTION BAR: SEARCH + EXPORT + CREATE ==================-->
+    <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2 mb-3 header-action">
+        <!-- Search -->
+        <div class="form-group position-relative flex-grow-1 mb-0">
+            <div class="form-control-icon">
+                <i class="bi bi-search"></i>
             </div>
-            <button type="button" @click="showFilter = !showFilter"
-                class="btn btn-outline-secondary d-flex gap-1">
-                <i class="bi bi-filter"></i>
-                <span>Filter</span>
-            </button>
+            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
+                placeholder="Cari nama peminjam, penginput, deskripsi, atau tanggal (mis. Juni 2026)...">
+            @if ($search)
+            <span wire:click="$set('search', '')"
+                class="position-absolute end-0 top-50 translate-middle-y pe-3"
+                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
+                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+            </span>
+            @endif
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <button wire:click="exportExcel" class="btn btn-success rounded-pill">
-                <i class="bi bi-file-earmark-excel"></i> 
-                <span class="d-none d-md-inline"> Export Excel
+
+        <!-- Export + Create -->
+        <div class="d-flex gap-2">
+            <button wire:click="downloadPdf" wire:loading.attr="disabled" wire:target="downloadPdf"
+                class="btn btn-danger rounded-pill d-flex align-items-center justify-content-center gap-2 px-3">
+                <span wire:loading.remove wire:target="downloadPdf" class="d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    <span>Export PDF</span>
+                </span>
             </button>
-            <a class="btn btn-primary rounded-pill" href="{{ route('admin.loan.create') }}" wire:navigate>
+            @if (auth()->user()->hasPermission('create_loan'))
+            <a class="btn btn-primary rounded-pill d-flex align-items-center justify-content-center gap-2 px-3"
+                href="{{ route('admin.loan.create') }}" wire:navigate>
                 <i class="bi bi-plus-lg"></i>
-                <span class="d-none d-lg-inline">Tambah Data Peminjaman</span>
+                <span>Tambah Peminjaman</span>
             </a>
+            @endif
         </div>
-        
     </div>
 
-    <!-- Filter Card -->
-    <div class="card border pt-3 pb-0 px-4"
-        x-show="showFilter" x-transition x-cloak>
-        <div class="d-flex align-items-center justify-content-between mb-3">
-            <p class="fw-semibold">Filter Tabel</p>
-            <button wire:click="clearFilters" class="btn btn-sm btn-secondary">
-                <i class="bi bi-x-circle me-1"></i> Reset
-            </button>
-        </div>
-        <div class="row mb-3">
-            <div class="col-lg-2 mb-2">
-                <label class="fw-semibold mb-1">Status</label>
-                <select wire:model.live="statusFilter" class="form-select form-select-sm">
-                    <option value="">Semua</option>
-                    @foreach ($statusOptions as $status)
-                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-lg-3 mb-2">
-                <label class="fw-semibold mb-1">Penginput</label>
-                <select wire:model.live="penginputFilter" class="form-select form-select-sm">
-                    <option value="">Semua</option>
-                    @foreach ($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-lg-4 mb-2">
-                <label class="fw-semibold mb-1">Jarak Tanggal</label>
-                <div class="d-flex gap-1">
-                    <input type="date" wire:model.live="startDate" class="form-control form-control-sm">
-                    <input type="date" wire:model.live="endDate" class="form-control form-control-sm">
+    <!--================== FILTER PERIODE ==================-->
+    <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden">
+        <div class="card-body p-3 px-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
+                    <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
+                        style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
+                        <i class="bi bi-funnel"></i>
+                    </span>
+                    <span>Filter Periode</span>
                 </div>
-            </div>
-            <div class="col-lg-2 mb-2">
-                <label class="fw-semibold mb-1">Per Page</label>
-                <select wire:model.live="perPage" class="form-select form-select-sm">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                </select>
+
+                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                    <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
+                        <option value="">Semua Bulan</option>
+                        @foreach ($daftarBulan as $num => $nama)
+                        <option value="{{ $num }}">{{ $nama }}</option>
+                        @endforeach
+                    </select>
+
+                    <select wire:model.live="tahun" class="form-select rounded-3" style="min-width: 130px;">
+                        <option value="">Semua Tahun</option>
+                        @foreach ($daftarTahun as $th)
+                        <option value="{{ $th }}">{{ $th }}</option>
+                        @endforeach
+                    </select>
+
+                    <button wire:click="resetFilter" type="button"
+                        class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
+                        title="Reset ke bulan &amp; tahun sekarang">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

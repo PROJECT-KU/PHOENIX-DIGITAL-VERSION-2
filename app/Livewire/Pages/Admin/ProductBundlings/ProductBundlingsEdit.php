@@ -15,11 +15,11 @@ class ProductBundlingsEdit extends Component
         $this->ProductBundlings = $ProductBundlings;
     }
 
-    #[Layout('layouts.app')]
     public function render()
     {
         return view('livewire.pages.admin.ProductBundlings.ProductBundlings-edit', [
             'ProductBundlings' => $this->ProductBundlings,
-        ]);
+        ])
+            ->layout('livewire.layout.templateindex');
     }
 }
