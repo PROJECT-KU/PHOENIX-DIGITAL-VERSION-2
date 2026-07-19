@@ -14,7 +14,7 @@ class StoreJobApplicationRequest extends FormRequest
 
     public function rules(): array
     {
-        $max = (int) (env('MAX_UPLOAD_MB', 2));
+        $max = (int) config('app.max_upload_mb', 2);
         $maxKB = $max * 1024;
 
         return [
@@ -33,7 +33,7 @@ class StoreJobApplicationRequest extends FormRequest
 
     public function messages(): array
     {
-        $max = (int) (env('MAX_UPLOAD_MB', 2));
+        $max = (int) config('app.max_upload_mb', 2);
         $maxKB = $max * 1024;
 
         return [
