@@ -600,14 +600,16 @@ Rekap Presensi || lemon
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-semibold">Karyawan</label>
-                            <select wire:model="manualUserId"
-                                class="form-select rounded-3 @error('manualUserId') is-invalid @enderror">
-                                <option value="">— Pilih karyawan —</option>
-                                @foreach ($karyawanList as $k)
-                                <option value="{{ $k->id }}">{{ $k->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('manualUserId') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            @php $prSelKaryawan = $karyawanList->firstWhere('id', $manualUserId); @endphp
+                            <button type="button" onclick="presensiKaryawanPicker(this)"
+                                class="form-select text-start pr-picker-btn @error('manualUserId') is-invalid @enderror">
+                                @if ($prSelKaryawan)
+                                    <span class="text-dark d-inline-flex align-items-center gap-1"><i class="bi bi-person-fill" style="color:#7c3aed; line-height:1;"></i>{{ $prSelKaryawan->name }}</span>
+                                @else
+                                    <span class="text-muted">— Pilih karyawan —</span>
+                                @endif
+                            </button>
+                            @error('manualUserId') <div class="text-danger small mt-1 d-block">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-6">
@@ -896,6 +898,58 @@ Rekap Presensi || lemon
                 });
             });
         })();
+
+        // Pemilih karyawan bergaya SweetAlert (seragam dgn fitur gaji) —
+        // menggantikan <select> agar mudah dicari saat karyawan banyak.
+        window.__presensiKaryawan = @json($karyawanList->map(fn ($u) => ['id' => (string) $u->id, 'name' => $u->name])->values());
+
+        if (!window.__presensiKaryawanPickerBound) {
+            window.__presensiKaryawanPickerBound = true;
+            window.presensiKaryawanPicker = function (btn) {
+                if (typeof Swal === 'undefined') return;
+                const el = btn.closest('[wire\\:id]'); if (!el) return;
+                const cid = el.getAttribute('wire:id');
+                const items = window.__presensiKaryawan || [];
+                const esc = (s) => String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+                const rows = items.length
+                    ? items.map(it => '<button type="button" class="pr-pick-item" data-id="' + esc(it.id) + '" data-search="' + esc((it.name || '').toLowerCase()) + '">' + esc(it.name) + '</button>').join('')
+                    : '<div class="pr-pick-empty">Tidak ada karyawan</div>';
+                Swal.fire({
+                    title: 'Pilih Karyawan',
+                    html: '<input id="prPickSearch" class="form-control mb-2" placeholder="Ketik untuk mencari...">' +
+                          '<div id="prPickList" class="pr-pick-list">' + rows + '</div>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true, width: 480, padding: '1.25rem',
+                    didOpen: () => {
+                        const search = document.getElementById('prPickSearch');
+                        const listEl = document.getElementById('prPickList');
+                        if (search) {
+                            search.addEventListener('input', () => {
+                                const q = search.value.toLowerCase();
+                                listEl.querySelectorAll('.pr-pick-item').forEach(b => { b.style.display = b.dataset.search.includes(q) ? '' : 'none'; });
+                            });
+                            setTimeout(() => search.focus(), 100);
+                        }
+                        listEl.querySelectorAll('.pr-pick-item').forEach(b => {
+                            b.addEventListener('click', () => {
+                                if (window.Livewire) window.Livewire.find(cid).set('manualUserId', b.dataset.id);
+                                Swal.close();
+                            });
+                        });
+                    }
+                });
+            };
+        }
     </script>
+    <style>
+        .pr-picker-btn { cursor:pointer; }
+        .pr-picker-btn::after { content:"\F282"; font-family:"bootstrap-icons"; float:right; color:#94a3b8; font-size:.8rem; }
+        .pr-pick-list { max-height:320px; overflow-y:auto; text-align:left; display:flex; flex-direction:column; gap:.4rem; padding:.2rem; }
+        .pr-pick-item { display:block; width:100%; text-align:left; border:1px solid #e6e8f2; background:#fff; border-radius:12px; padding:.7rem .9rem; font-weight:600; color:#1e293b; font-size:.92rem; transition:all .15s ease; }
+        .pr-pick-item:hover { border-color:#7c3aed; background:linear-gradient(135deg,rgba(124,58,237,.10),rgba(78,70,229,.04)); transform:translateY(-1px); }
+        .pr-pick-empty { text-align:center; color:#94a3b8; padding:1.5rem; font-size:.9rem; }
+    </style>
     @endpush
 </div>
