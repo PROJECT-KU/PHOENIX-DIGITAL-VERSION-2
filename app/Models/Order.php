@@ -163,18 +163,109 @@ class Order extends Model
     }
 
     /**
-     * Kuota pengecekan = jumlah kredit dari item JASA.
-     * Paket "5×" tersimpan sebagai duration_value=5; dikali quantity.
-     * Dibaca dari data checkout yang SUDAH ADA (tanpa ubah logic pemesanan).
+     * Kuota pengecekan PER JENIS ('ai' | 'plagiasi' | 'parafrase' |
+     * 'pengecekan'). Produk menyumbang jenisnya sendiri (paket "5×" = 5),
+     * tiap add-on pemeriksaan menyumbang +1 jenisnya. Add-on non-pemeriksaan
+     * (mis. target parafrase) tidak menambah kuota.
+     *
+     * @return array<string,int>  mis. ['ai' => 1, 'plagiasi' => 1]
+     */
+    public function kuotaPerJenis(): array
+    {
+        $out = [];
+
+        foreach ($this->items as $item) {
+            $product = $item->product;
+            if (! $product || ! $product->butuh_file) {
+                continue;
+            }
+
+            $qty = max(1, (int) $item->quantity);
+
+            $jenisProduk = $product->jenisLayanan();
+            if ($jenisProduk) {
+                $out[$jenisProduk] = ($out[$jenisProduk] ?? 0)
+                    + max(1, (int) $item->duration_value) * $qty;
+            }
+
+            // Add-on pemeriksaan: jenisnya dibaca dari riwayat pesanan (cek_ai /
+            // pakai_exclude yang ikut tersimpan). Pesanan lama belum menyimpan
+            // penanda itu, jadi jatuh ke katalog lewat id lalu NAMA.
+            foreach (($item->addons ?? []) as $addon) {
+                $jenisAddon = $this->jenisAddon($addon);
+
+                if ($jenisAddon) {
+                    $out[$jenisAddon] = ($out[$jenisAddon] ?? 0) + $qty;
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Jenis pemeriksaan sebuah add-on dari data riwayatnya, dengan cadangan
+     * ke katalog (id → nama) untuk pesanan lama yang belum menyimpan penanda.
+     */
+    protected function jenisAddon(array $addon): ?string
+    {
+        if (array_key_exists('cek_ai', $addon) || array_key_exists('pakai_exclude', $addon)) {
+            return match (true) {
+                ! empty($addon['cek_ai']) => 'ai',
+                ! empty($addon['pakai_exclude']) => 'plagiasi',
+                default => null,
+            };
+        }
+
+        $katalog = ! empty($addon['id']) ? ProductAddon::find($addon['id']) : null;
+
+        if (! $katalog && ! empty($addon['nama'])) {
+            $katalog = ProductAddon::whereRaw('LOWER(nama) = ?', [mb_strtolower($addon['nama'])])->first();
+        }
+
+        return $katalog?->jenisLayanan();
+    }
+
+    /**
+     * Kuota pengecekan TOTAL = jumlah semua jenis.
+     * Tetap kompatibel: pesanan satu-jenis menghasilkan angka yang sama
+     * seperti sebelumnya.
      */
     public function kuotaPengecekan(): int
     {
-        return (int) $this->items
-            ->filter(fn ($item) => (bool) optional($item->product)->butuh_file)
-            ->sum(fn ($item) => max(1, (int) $item->duration_value) * max(1, (int) $item->quantity));
+        return (int) array_sum($this->kuotaPerJenis());
     }
 
-    /** Pengecekan yang sudah dipakai = baris upload yang TIDAK dibatalkan. */
+    /** Unggahan aktif (tidak dibatalkan) untuk satu jenis. */
+    protected function uploadAktifJenis(string $jenis)
+    {
+        return $this->uploads
+            ->filter(fn ($u) => $u->status !== 'dibatalkan')
+            ->filter(function ($u) use ($jenis) {
+                // Unggahan lama tanpa jenis dianggap milik jenis TUNGGAL pesanan.
+                if ($u->jenis === null) {
+                    $semua = array_keys($this->kuotaPerJenis());
+
+                    return count($semua) === 1 && $semua[0] === $jenis;
+                }
+
+                return $u->jenis === $jenis;
+            });
+    }
+
+    /** Sudah dipakai untuk satu jenis. */
+    public function terpakaiPerJenis(string $jenis): int
+    {
+        return $this->uploadAktifJenis($jenis)->count();
+    }
+
+    /** Sisa kuota untuk satu jenis (tidak pernah negatif). */
+    public function sisaKuotaJenis(string $jenis): int
+    {
+        return max(0, ($this->kuotaPerJenis()[$jenis] ?? 0) - $this->terpakaiPerJenis($jenis));
+    }
+
+    /** Total pengecekan yang sudah dipakai = baris upload yang TIDAK dibatalkan. */
     public function terpakaiPengecekan(): int
     {
         return (int) $this->uploads
@@ -182,18 +273,39 @@ class Order extends Model
             ->count();
     }
 
-    /** Sisa kuota pengecekan (tidak pernah negatif). */
+    /** Sisa kuota TOTAL (semua jenis, tidak pernah negatif). */
     public function sisaKuota(): int
     {
         return max(0, $this->kuotaPengecekan() - $this->terpakaiPengecekan());
     }
 
-    /** Masih boleh mengunggah pengecekan baru? */
+    /** Jenis pemeriksaan yang MASIH punya sisa kuota (untuk pemilih di /cek). */
+    public function jenisTersisa(): array
+    {
+        $out = [];
+        foreach (array_keys($this->kuotaPerJenis()) as $jenis) {
+            if ($this->sisaKuotaJenis($jenis) > 0) {
+                $out[] = $jenis;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Masih boleh mengunggah pengecekan baru (jenis apa pun)? */
     public function bisaUploadPengecekan(): bool
     {
         return $this->butuhUpload()
             && ! in_array($this->status, ['completed', 'cancelled'])
             && $this->sisaKuota() > 0;
+    }
+
+    /** Masih boleh mengunggah untuk SATU jenis pemeriksaan tertentu? */
+    public function bisaUploadJenis(string $jenis): bool
+    {
+        return $this->butuhUpload()
+            && ! in_array($this->status, ['completed', 'cancelled'])
+            && $this->sisaKuotaJenis($jenis) > 0;
     }
 
     /**

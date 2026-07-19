@@ -184,6 +184,28 @@ class Product extends Model
         return (bool) $this->butuh_file && $this->jasa_mode === 'halaman';
     }
 
+    /**
+     * Jenis PEMERIKSAAN dari produk jasa ini — dipakai untuk kuota per jenis
+     * & label unggahan. Null bila bukan jasa.
+     *   'parafrase' → dikerjakan per halaman (1 dokumen, hasil DOCX + bukti)
+     *   'ai'        → deteksi AI
+     *   'plagiasi'  → pengecekan kemiripan
+     *   'pengecekan'→ jasa tanpa penanda (fallback, jarang)
+     */
+    public function jenisLayanan(): ?string
+    {
+        if (! $this->butuh_file) {
+            return null;
+        }
+
+        return match (true) {
+            $this->jasaPerHalaman() => 'parafrase',
+            (bool) $this->cek_ai => 'ai',
+            (bool) $this->pakai_exclude => 'plagiasi',
+            default => 'pengecekan',
+        };
+    }
+
     /** Add-on hanya boleh pilih salah satu? (mis. tingkat target parafrase) */
     public function addonPilihSatu(): bool
     {

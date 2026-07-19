@@ -503,7 +503,12 @@ Detail Pesanan || lemon
                 <div class="d-flex align-items-start gap-3">
                     <div class="pcek-fileic"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="flex-grow-1" style="min-width:0;">
-                        <div class="fw-semibold text-dark text-truncate">{{ $up->nama_asli }}</div>
+                        <div class="fw-semibold text-dark text-truncate">
+                            {{ $up->nama_asli }}
+                            @if ($up->jenisLabel())
+                            <span class="badge bg-{{ $up->jenisWarna() }}-subtle text-{{ $up->jenisWarna() }} rounded-pill ms-1" style="font-size:.68rem; vertical-align:middle;">{{ $up->jenisLabel() }}</span>
+                            @endif
+                        </div>
                         <div class="text-muted d-inline-flex align-items-center gap-2 flex-wrap" style="font-size:.8rem;">
                             <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $up->created_at->format('d M Y H:i') }}</span>
                             <span class="text-secondary">&middot;</span>

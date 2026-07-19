@@ -106,6 +106,24 @@
         .cek-pulse { width:8px; height:8px; border-radius:50%; background:#0ea5e9; animation:cekPulse 1.1s infinite; }
         @keyframes cekPulse { 0%,100%{opacity:.35; transform:scale(.8);} 50%{opacity:1; transform:scale(1.2);} }
         /* Dropzone unggah */
+        /* Pemilih jenis pemeriksaan (pesanan multi-jenis) */
+        .cek-jenis { margin-bottom:14px; }
+        .cek-jenis-label { display:block; font-size:.82rem; font-weight:700; color:#1e293b; margin-bottom:8px; }
+        .cek-jenis-opts { display:flex; flex-wrap:wrap; gap:9px; }
+        .cek-jenis-opt { position:relative; display:flex; flex-direction:column; gap:2px; flex:1 1 150px;
+            padding:11px 14px; border:1.5px solid #e2e8f0; border-radius:12px; background:#fff; cursor:pointer;
+            transition:border-color .18s, background .18s, box-shadow .18s; }
+        .cek-jenis-opt:hover { border-color:#93c5fd; background:#f8fbff; }
+        .cek-jenis-opt.is-on { border-color:#2563eb; background:#eff6ff; box-shadow:0 2px 8px rgba(37,99,235,.10); }
+        .cek-jenis-opt input { position:absolute; opacity:0; width:0; height:0; }
+        .cek-jenis-name { font-size:.86rem; font-weight:700; color:#1e293b; }
+        .cek-jenis-opt.is-on .cek-jenis-name { color:#1d4ed8; }
+        .cek-jenis-sisa { font-size:.72rem; color:#94a3b8; }
+        .cek-jenis-note { display:flex; align-items:center; gap:6px; margin-top:8px; font-size:.78rem; color:#1d4ed8; }
+        .cek-jenis-note i.bi { display:flex; line-height:1; }
+        .cek-jenis-tag { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:99px;
+            background:#eff6ff; color:#1d4ed8; font-size:.68rem; font-weight:700; vertical-align:middle; }
+
         .cek-drop { position:relative; display:block; border:2px dashed #fcd9a8; border-radius:14px; background:#fffdf8; padding:22px 16px; text-align:center; cursor:pointer; transition:border-color .2s, background .2s; }
         .cek-drop:hover { border-color:#f59e0b; background:#fff7ed; }
         .cek-drop-input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
@@ -153,6 +171,29 @@
                     <div class="pay-card-body">
                         <div wire:key="cek-form-{{ $terpakai }}" x-data="{ fileName: '' }"
                             x-on:cek-file-ditolak.window="fileName = ''; $refs.dokumenInput && ($refs.dokumenInput.value = '')">
+
+                            {{-- Pemilih jenis — hanya bila pesanan punya >1 jenis pemeriksaan.
+                                 Tiap dokumen dipilih untuk pemeriksaan yang mana, dengan
+                                 aturan bahasa & kuota masing-masing. --}}
+                            @if (count($jenisTersisa) > 1)
+                            <div class="cek-jenis">
+                                <span class="cek-jenis-label">Dokumen ini untuk pemeriksaan:</span>
+                                <div class="cek-jenis-opts">
+                                    @foreach ($jenisTersisa as $kode => $info)
+                                    <label class="cek-jenis-opt {{ $jenisPilihan === $kode ? 'is-on' : '' }}">
+                                        <input type="radio" wire:model.live="jenisPilihan" value="{{ $kode }}">
+                                        <span class="cek-jenis-name">{{ $info['label'] }}</span>
+                                        <span class="cek-jenis-sisa">sisa {{ $info['sisa'] }}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                                @error('jenisPilihan') <div style="color:#dc2626; font-size:.8rem; margin-top:6px;">{{ $message }}</div> @enderror
+                                @if ($jenisPilihan === 'ai')
+                                <div class="cek-jenis-note"><i class="bi bi-translate"></i> Dokumen untuk Cek AI wajib berbahasa Inggris.</div>
+                                @endif
+                            </div>
+                            @endif
+
                             <label class="cek-drop">
                                 <input type="file" wire:model="dokumen" accept=".pdf,.docx" class="cek-drop-input"
                                     x-ref="dokumenInput"
@@ -358,7 +399,11 @@
                             <div class="cek-item-top">
                                 <i class="bi bi-file-earmark-text" style="color:var(--ph-orange); font-size:1.2rem;"></i>
                                 <div class="cek-file">
-                                    <b>{{ $up->nama_asli }}</b>
+                                    <b>{{ $up->nama_asli }}
+                                        @if ($up->jenisLabel())
+                                        <span class="cek-jenis-tag">{{ $up->jenisLabel() }}</span>
+                                        @endif
+                                    </b>
                                     <span>{{ $up->ukuranLabel() }} · {{ $up->created_at->format('d M Y H:i') }}</span>
                                 </div>
                                 <span class="cek-chip {{ $up->statusWarna() }}">

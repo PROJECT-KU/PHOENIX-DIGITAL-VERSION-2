@@ -39,6 +39,14 @@ class JasaCekPage extends Component
 
     public string $catatan = '';
 
+    /**
+     * Jenis pemeriksaan untuk dokumen yang sedang diunggah ('ai' | 'plagiasi' |
+     * 'parafrase'). Satu pesanan bisa memuat beberapa jenis (mis. cek AI +
+     * add-on plagiasi), masing-masing dokumen & kuota sendiri. Bila pesanan
+     * hanya punya satu jenis, ini terisi otomatis dan pemilihnya disembunyikan.
+     */
+    public ?string $jenisPilihan = null;
+
     public function mount(string $token)
     {
         $order = Order::where('share_token', $token)
@@ -51,6 +59,22 @@ class JasaCekPage extends Component
         abort_unless(in_array($order->status, ['paid', 'processing', 'completed']), 404);
 
         $this->order = $order;
+        $this->segarkanJenisPilihan();
+    }
+
+    /**
+     * Setel jenis terpilih ke satu-satunya jenis yang tersisa (auto), atau
+     * kosongkan bila masih banyak pilihan / pilihan lama sudah habis kuotanya.
+     */
+    private function segarkanJenisPilihan(): void
+    {
+        $tersisa = $this->order->jenisTersisa();
+
+        if (count($tersisa) === 1) {
+            $this->jenisPilihan = $tersisa[0];
+        } elseif (! in_array($this->jenisPilihan, $tersisa, true)) {
+            $this->jenisPilihan = null;
+        }
     }
 
     /** Muat ulang status (dipanggil polling agar progress "hidup"). */
@@ -112,6 +136,29 @@ class JasaCekPage extends Component
         }
     }
 
+    /**
+     * Saat customer mengganti jenis pemeriksaan sementara file sudah dipilih,
+     * periksa ulang bahasanya — mis. dari 'plagiasi' (bebas) ke 'ai' (wajib
+     * Inggris) harus langsung menolak dokumen non-Inggris.
+     */
+    public function updatedJenisPilihan(): void
+    {
+        $this->resetErrorBag('dokumen');
+
+        if ($this->dokumen && $this->perluInggris()) {
+            $bahasa = LanguageDetector::adalahInggris(
+                $this->dokumen->getRealPath(),
+                $this->dokumen->getClientOriginalExtension()
+            );
+
+            if ($bahasa === false) {
+                $this->reset('dokumen');
+                $this->dispatch('cek-file-ditolak');
+                $this->addError('dokumen', self::PESAN_WAJIB_INGGRIS);
+            }
+        }
+    }
+
     /** Satu sumber kalimat penolakan, dipakai saat pilih file & saat kirim. */
     private const PESAN_WAJIB_INGGRIS = 'Layanan cek AI hanya untuk dokumen berbahasa Inggris. Dokumen ini terbaca bukan bahasa Inggris — mohon unggah versi bahasa Inggrisnya.';
 
@@ -119,9 +166,17 @@ class JasaCekPage extends Component
     {
         // Hitung ulang sisa TEPAT sebelum simpan (cegah dobel-upload lintas tab).
         $this->order->load('uploads');
+        $this->segarkanJenisPilihan();
 
-        if (! $this->order->bisaUploadPengecekan()) {
-            $this->dispatch('cek-error', message: 'Kuota pengecekan sudah habis atau pesanan tidak aktif.');
+        // Pesanan dengan beberapa jenis: customer WAJIB memilih jenis dulu.
+        if (! $this->jenisPilihan) {
+            $this->addError('jenisPilihan', 'Pilih dulu dokumen ini untuk pemeriksaan yang mana.');
+
+            return;
+        }
+
+        if (! $this->order->bisaUploadJenis($this->jenisPilihan)) {
+            $this->dispatch('cek-error', message: 'Kuota untuk jenis pemeriksaan ini sudah habis atau pesanan tidak aktif.');
 
             return;
         }
@@ -183,15 +238,19 @@ class JasaCekPage extends Component
          * Dengan mengunci baris pesanan lalu memeriksa ulang di dalam
          * transaksi, permintaan kedua pasti melihat unggahan yang pertama.
          */
-        $tersimpan = DB::transaction(function () use ($path, $file) {
+        $jenis = $this->jenisPilihan;
+
+        $tersimpan = DB::transaction(function () use ($path, $file, $jenis) {
             Order::whereKey($this->order->id)->lockForUpdate()->first();
 
-            if (! $this->order->fresh()->bisaUploadPengecekan()) {
+            // Periksa ulang kuota JENIS INI di dalam kunci.
+            if (! $this->order->fresh()->bisaUploadJenis($jenis)) {
                 return false;
             }
 
             OrderUpload::create([
                 'order_id' => $this->order->id,
+                'jenis' => $jenis,
                 'path' => $path,
                 'nama_asli' => $file->getClientOriginalName(),
                 'ukuran' => $file->getSize(),
@@ -218,7 +277,7 @@ class JasaCekPage extends Component
         if (! $tersimpan) {
             Storage::disk('local')->delete($path);
             $this->order->load('uploads');
-            $this->dispatch('cek-error', message: 'Kuota pengecekan sudah habis atau pesanan tidak aktif.');
+            $this->dispatch('cek-error', message: 'Kuota untuk jenis pemeriksaan ini sudah habis atau pesanan tidak aktif.');
 
             return;
         }
@@ -231,6 +290,7 @@ class JasaCekPage extends Component
         $this->ambang_satuan = 'persen';
 
         $this->order->load('uploads');
+        $this->segarkanJenisPilihan();
         $this->dispatch('cek-success', message: 'Dokumen berhasil diunggah. Silakan tunggu, hasil akan muncul di halaman ini.');
     }
 
@@ -244,17 +304,19 @@ class JasaCekPage extends Component
      */
     public function perluExclude(): bool
     {
-        return $this->order->punyaLayananJasa('pakai_exclude');
+        // Exclude hanya relevan untuk dokumen pengecekan KEMIRIPAN.
+        return $this->jenisPilihan === 'plagiasi';
     }
 
     /**
-     * Apakah pesanan ini mengandung layanan DETEKSI AI?
-     * Ditandai admin per produk & per add-on (kolom cek_ai) — sama seperti
-     * pakai_exclude, sifatnya juga ikut tersimpan di riwayat pesanan.
+     * Dokumen yang sedang diunggah harus berbahasa Inggris?
+     * Hanya untuk dokumen DETEKSI AI — aturan bahasa kini per dokumen, bukan
+     * per pesanan, sehingga dokumen plagiasi pada pesanan yang sama tetap boleh
+     * bahasa apa pun.
      */
     public function perluInggris(): bool
     {
-        return $this->order->punyaLayananJasa('cek_ai');
+        return $this->jenisPilihan === 'ai';
     }
 
     #[Layout('layouts.guest')]
@@ -269,6 +331,15 @@ class JasaCekPage extends Component
         $adaPerHalaman = $this->order->items
             ->contains(fn ($i) => optional($i->product)->jasaPerHalaman());
 
+        // Jenis yang masih bisa diunggah, beserta sisa kuotanya — untuk pemilih.
+        $jenisTersisa = [];
+        foreach ($this->order->jenisTersisa() as $j) {
+            $jenisTersisa[$j] = [
+                'label' => self::LABEL_JENIS[$j] ?? ucfirst($j),
+                'sisa' => $this->order->sisaKuotaJenis($j),
+            ];
+        }
+
         return view('livewire.pages.public.shop-page.jasa-cek-page', [
             'order' => $this->order,
             'estimasiWaktu' => $adaPerHalaman ? '5–7 hari kerja' : '5–15 menit',
@@ -277,6 +348,15 @@ class JasaCekPage extends Component
             'sisa' => $this->order->sisaKuota(),
             'pengecekan' => $this->order->uploads->sortByDesc('created_at')->values(),
             'perluExclude' => $this->perluExclude(),
+            'jenisTersisa' => $jenisTersisa,
         ]);
     }
+
+    /** Label ramah untuk tiap jenis pemeriksaan. */
+    public const LABEL_JENIS = [
+        'ai' => 'Cek AI',
+        'plagiasi' => 'Cek Plagiasi (kemiripan)',
+        'parafrase' => 'Parafrase',
+        'pengecekan' => 'Pengecekan',
+    ];
 }

@@ -48,4 +48,18 @@ class ProductAddon extends Model
     {
         return $this->nama.' (+Rp '.number_format($this->harga, 0, ',', '.').')';
     }
+
+    /**
+     * Jenis PEMERIKSAAN yang ditambahkan add-on ini, atau null bila add-on
+     * bukan pemeriksaan (mis. "plagiasi di bawah 30%" — itu target parafrase,
+     * bukan kuota pengecekan terpisah).
+     */
+    public function jenisLayanan(): ?string
+    {
+        return match (true) {
+            (bool) $this->cek_ai => 'ai',
+            (bool) $this->pakai_exclude => 'plagiasi',
+            default => null,
+        };
+    }
 }

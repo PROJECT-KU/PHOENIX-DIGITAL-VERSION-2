@@ -700,6 +700,9 @@ class CheckoutPage extends Component
 
             \App\Models\OrderUpload::create([
                 'order_id' => $orderId,
+                // Draft pra-bayar hanya dipakai jasa PER HALAMAN (parafrase),
+                // jadi unggahan hasilnya berjenis 'parafrase' (3 slot di admin).
+                'jenis' => 'parafrase',
                 // Bila ada file kerja (parafrase), itu yang jadi berkas utama;
                 // bila tidak (jasa lain), tetap file yang diunggah customer.
                 'path' => $tujuanKerja ?: $tujuanPdf,

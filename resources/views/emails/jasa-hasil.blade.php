@@ -40,7 +40,7 @@
                                         <div style="font-size:12px;color:#9a8a79;text-transform:uppercase;letter-spacing:.06em;">Nomor Pesanan</div>
                                         <div style="font-size:16px;font-weight:800;color:#f0531e;margin-top:2px;">{{ $order->order_number }}</div>
                                         <hr style="border:none;border-top:1px dashed #e7d8c6;margin:14px 0;">
-                                        <div style="font-size:12px;color:#9a8a79;text-transform:uppercase;letter-spacing:.06em;">Dokumen</div>
+                                        <div style="font-size:12px;color:#9a8a79;text-transform:uppercase;letter-spacing:.06em;">Dokumen{{ $upload->jenisLabel() ? ' — '.$upload->jenisLabel() : '' }}</div>
                                         <div style="font-size:14px;font-weight:700;color:#2a1c10;margin-top:2px;word-break:break-all;">{{ $upload->nama_asli }}</div>
 
                                         @if (! is_null($upload->persentase) || ! is_null($upload->persentase_ai))

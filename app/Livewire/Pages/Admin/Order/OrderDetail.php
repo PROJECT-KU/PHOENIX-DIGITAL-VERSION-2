@@ -280,7 +280,26 @@ class OrderDetail extends Component
             return true;
         }
 
-        // Parafrase butuh ketiganya: dokumen hasil + bukti plagiasi + bukti AI.
+        /*
+         * Slot mengikuti JENIS unggahan ini — bukan seluruh pesanan. Satu
+         * pesanan bisa memuat unggahan AI dan unggahan plagiasi terpisah;
+         * masing-masing hanya perlu slot hasilnya sendiri.
+         *   parafrase → ketiganya (dokumen hasil + bukti plagiasi + bukti AI)
+         *   ai        → slot AI
+         *   plagiasi  → slot plagiasi
+         */
+        $jenisUpload = optional($up)->jenis;
+
+        if ($jenisUpload) {
+            return match ($jenisUpload) {
+                'parafrase' => true,
+                'ai' => $jenis === 'ai',
+                'plagiasi', 'pengecekan' => $jenis === 'plagiasi',
+                default => $jenis === 'plagiasi',
+            };
+        }
+
+        // Unggahan lama tanpa jenis: pertahankan perilaku berbasis pesanan.
         if ($this->order->adaParafrase()) {
             return true;
         }

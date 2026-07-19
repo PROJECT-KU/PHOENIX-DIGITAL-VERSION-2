@@ -11,6 +11,7 @@ class OrderUpload extends Model
 
     protected $fillable = [
         'order_id',
+        'jenis',
         'path',
         'nama_asli',
         'ukuran',
@@ -175,6 +176,29 @@ class OrderUpload extends Model
         }
 
         return $out;
+    }
+
+    /** Label jenis pemeriksaan siap tampil. Null bila jenis lama tak terisi. */
+    public function jenisLabel(): ?string
+    {
+        return match ($this->jenis) {
+            'ai' => 'Cek AI',
+            'plagiasi' => 'Cek Plagiasi',
+            'parafrase' => 'Parafrase',
+            'pengecekan' => 'Pengecekan',
+            default => null,
+        };
+    }
+
+    /** Warna badge jenis (kelas Bootstrap subtle). */
+    public function jenisWarna(): string
+    {
+        return match ($this->jenis) {
+            'ai' => 'primary',
+            'plagiasi' => 'info',
+            'parafrase' => 'warning',
+            default => 'secondary',
+        };
     }
 
     /**
