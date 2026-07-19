@@ -53,6 +53,17 @@ class CartPage extends Component
                 continue;
             }
 
+            // Produk JASA: harga sudah final saat dimasukkan ke keranjang karena
+            // bergantung pada hal yang TIDAK ada di katalog — jumlah halaman
+            // dokumen dan add-on yang dipilih. Menghitung ulang dari katalog
+            // justru menimpanya (mis. 185.000 jadi 15.000). Jadi dipakai apa adanya.
+            // Produk non-jasa tetap memakai alur lama di bawah.
+            if ($product->butuh_file) {
+                $cart[$key]['subtotal'] = (int) ($item['price'] ?? 0);
+
+                continue;
+            }
+
             $type = $item['duration_type'] ?? null;
             $value = (int) ($item['duration_value'] ?? 0);
             if (! $type || $value < 1) {

@@ -163,6 +163,19 @@ Harga Modal Produk || lemon
                             </button>
                             @error('formProductId') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
+                        @if ($this->formIsJasa)
+                        {{-- Produk jasa: modal per satuan kerja (durasi dikunci) --}}
+                        <div class="col-12">
+                            <div class="alert alert-warning border-0 rounded-3 mb-0 d-flex align-items-center gap-2 py-2 px-3" style="background:#fff7ed;color:#b45309;">
+                                <i class="bi bi-info-circle-fill"></i>
+                                @if ($this->formIsPerHalaman)
+                                <span class="small">Jasa <b>per halaman</b>: modal dihitung <b>per 1 halaman</b>. Sistem otomatis mengalikan jumlah halaman yang dikerjakan (setelah dikurangi halaman yang dikecualikan customer).</span>
+                                @else
+                                <span class="small">Produk <b>jasa</b>: modal dihitung <b>per 1× pengecekan</b>. Sistem otomatis mengalikan sesuai paket (5×, 10×, dst).</span>
+                                @endif
+                            </div>
+                        </div>
+                        @else
                         <div class="col-6">
                             <label class="form-label fw-semibold">Durasi</label>
                             <input type="number" min="1" wire:model="formDurasiValue" class="form-control rounded-3 @error('formDurasiValue') is-invalid @enderror">
@@ -175,8 +188,9 @@ Harga Modal Produk || lemon
                                 <option value="tahun">Tahun</option>
                             </select>
                         </div>
+                        @endif
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Harga Modal / Akun</label>
+                            <label class="form-label fw-semibold">{{ $this->formIsJasa ? ($this->formIsPerHalaman ? 'Harga Modal / 1 Halaman' : 'Harga Modal / 1× Pengecekan') : 'Harga Modal / Akun' }}</label>
                             <div class="hm-rp-field">
                                 <span class="hm-rp-prefix">Rp</span>
                                 <input type="text" inputmode="numeric" wire:model="formHarga" class="hm-rp-input rp-money @error('formHarga') is-invalid @enderror" placeholder="0">

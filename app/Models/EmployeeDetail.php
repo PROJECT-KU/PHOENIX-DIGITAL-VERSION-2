@@ -7,7 +7,32 @@ use Illuminate\Support\Carbon;
 
 class EmployeeDetail extends Model
 {
-    protected $guarded = [];
+    /*
+     * Daftar putih, bukan $guarded = [].
+     *
+     * Tabel ini memuat NIK (dipakai login), atasan, dan TARIF gaji/lembur.
+     * Dengan $guarded kosong, satu saja pemanggil yang meneruskan input mentah
+     * ke create()/update() sudah cukup untuk membuat karyawan mengubah tarif
+     * atau atasannya sendiri. 'id' sengaja tidak diikutkan.
+     *
+     * 'user_id' TETAP diikutkan: pembuatan karyawan mengirimnya secara
+     * eksplisit dari data admin (KaryawanForm), bukan dari input mentah.
+     */
+    protected $fillable = [
+        'user_id',
+        'nik',
+        'tanggal_bergabung',
+        'jabatan',
+        'atasan_id',
+        'nama_bank',
+        'nomor_rekening',
+        'tanggal_lahir',
+        'tarif_presensi_offline',
+        'tarif_presensi_online',
+        'tarif_lembur_per_jam',
+        'phone',
+        'alamat',
+    ];
 
     protected $casts = [
         'tanggal_lahir' => 'date',
@@ -26,19 +51,17 @@ class EmployeeDetail extends Model
     }
 
     /**
-     * Buat Nomor Induk Karyawan otomatis: "ACM-XXXXXX" (6 karakter acak,
-     * tanpa O/0/I/1 agar tidak ambigu). Dijamin unik.
+     * Buat Nomor Induk Karyawan otomatis: "ACM-NNNNNN" (6 digit angka ACAK).
+     *
+     * Sengaja ACAK, bukan berurutan: NIK dipakai sebagai identitas login, jadi
+     * nomor berurutan mudah ditebak/dienumerasi orang luar (bahkan bisa dipakai
+     * mengunci banyak akun via 3x gagal login). Acak menutup celah itu.
+     * Dijamin unik.
      */
     public static function generateNik(): string
     {
-        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
         do {
-            $s = '';
-            for ($i = 0; $i < 6; $i++) {
-                $s .= $chars[random_int(0, strlen($chars) - 1)];
-            }
-            $nik = 'ACM-'.$s;
+            $nik = 'ACM-'.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         } while (self::where('nik', $nik)->exists());
 
         return $nik;

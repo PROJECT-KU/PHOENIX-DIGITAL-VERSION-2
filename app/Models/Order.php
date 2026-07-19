@@ -62,6 +62,60 @@ class Order extends Model
         });
     }
 
+    /**
+     * Pesanan ini memuat layanan jasa bertanda $kolom ('pakai_exclude' | 'cek_ai')?
+     *
+     * Diperiksa pada produknya SENDIRI maupun add-on yang dibeli — cukup salah
+     * satu bernilai true. Sifat add-on dibaca dari riwayat pesanan bila ada
+     * (paling andal, tak terpengaruh perubahan katalog), lalu jatuh ke katalog
+     * lewat id, lalu NAMA — id add-on pesanan lama bisa sudah berubah.
+     *
+     * Sumber tunggal untuk: panel exclude & syarat bahasa di halaman /cek,
+     * serta slot unggah hasil di admin.
+     */
+    public function punyaLayananJasa(string $kolom): bool
+    {
+        $this->loadMissing('items.product');
+
+        foreach ($this->items as $item) {
+            if (optional($item->product)->butuh_file && $item->product->{$kolom}) {
+                return true;
+            }
+
+            foreach (($item->addons ?? []) as $addon) {
+                if (array_key_exists($kolom, $addon)) {
+                    if ($addon[$kolom]) {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                $katalog = ! empty($addon['id'])
+                    ? ProductAddon::find($addon['id'])
+                    : null;
+
+                if (! $katalog && ! empty($addon['nama'])) {
+                    $katalog = ProductAddon::whereRaw('LOWER(nama) = ?', [mb_strtolower($addon['nama'])])->first();
+                }
+
+                if ($katalog && $katalog->{$kolom}) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** Pesanan memuat jasa PER HALAMAN (parafrase)? */
+    public function adaParafrase(): bool
+    {
+        $this->loadMissing('items.product');
+
+        return $this->items->contains(fn ($i) => (bool) optional($i->product)->jasaPerHalaman());
+    }
+
     // URL struk publik berbasis token pendek (tanpa expose UUID)
     public function getReceiptUrl(): ?string
     {
@@ -94,6 +148,180 @@ class Order extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /** File yang diunggah customer untuk pesanan jasa (mis. dokumen cek plagiasi). */
+    public function uploads()
+    {
+        return $this->hasMany(OrderUpload::class);
+    }
+
+    /** Pesanan ini mengandung produk jasa yang butuh unggah file? */
+    public function butuhUpload(): bool
+    {
+        return $this->items->contains(fn ($item) => (bool) optional($item->product)->butuh_file);
+    }
+
+    /**
+     * Kuota pengecekan PER JENIS ('ai' | 'plagiasi' | 'parafrase' |
+     * 'pengecekan'). Produk menyumbang jenisnya sendiri (paket "5×" = 5),
+     * tiap add-on pemeriksaan menyumbang +1 jenisnya. Add-on non-pemeriksaan
+     * (mis. target parafrase) tidak menambah kuota.
+     *
+     * @return array<string,int>  mis. ['ai' => 1, 'plagiasi' => 1]
+     */
+    public function kuotaPerJenis(): array
+    {
+        $out = [];
+
+        foreach ($this->items as $item) {
+            $product = $item->product;
+            if (! $product || ! $product->butuh_file) {
+                continue;
+            }
+
+            $qty = max(1, (int) $item->quantity);
+
+            $jenisProduk = $product->jenisLayanan();
+            if ($jenisProduk) {
+                $out[$jenisProduk] = ($out[$jenisProduk] ?? 0)
+                    + max(1, (int) $item->duration_value) * $qty;
+            }
+
+            // Add-on pemeriksaan: jenisnya dibaca dari riwayat pesanan (cek_ai /
+            // pakai_exclude yang ikut tersimpan). Pesanan lama belum menyimpan
+            // penanda itu, jadi jatuh ke katalog lewat id lalu NAMA.
+            foreach (($item->addons ?? []) as $addon) {
+                $jenisAddon = $this->jenisAddon($addon);
+
+                if ($jenisAddon) {
+                    $out[$jenisAddon] = ($out[$jenisAddon] ?? 0) + $qty;
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Jenis pemeriksaan sebuah add-on dari data riwayatnya, dengan cadangan
+     * ke katalog (id → nama) untuk pesanan lama yang belum menyimpan penanda.
+     */
+    protected function jenisAddon(array $addon): ?string
+    {
+        if (array_key_exists('cek_ai', $addon) || array_key_exists('pakai_exclude', $addon)) {
+            return match (true) {
+                ! empty($addon['cek_ai']) => 'ai',
+                ! empty($addon['pakai_exclude']) => 'plagiasi',
+                default => null,
+            };
+        }
+
+        $katalog = ! empty($addon['id']) ? ProductAddon::find($addon['id']) : null;
+
+        if (! $katalog && ! empty($addon['nama'])) {
+            $katalog = ProductAddon::whereRaw('LOWER(nama) = ?', [mb_strtolower($addon['nama'])])->first();
+        }
+
+        return $katalog?->jenisLayanan();
+    }
+
+    /**
+     * Kuota pengecekan TOTAL = jumlah semua jenis.
+     * Tetap kompatibel: pesanan satu-jenis menghasilkan angka yang sama
+     * seperti sebelumnya.
+     */
+    public function kuotaPengecekan(): int
+    {
+        return (int) array_sum($this->kuotaPerJenis());
+    }
+
+    /** Unggahan aktif (tidak dibatalkan) untuk satu jenis. */
+    protected function uploadAktifJenis(string $jenis)
+    {
+        return $this->uploads
+            ->filter(fn ($u) => $u->status !== 'dibatalkan')
+            ->filter(function ($u) use ($jenis) {
+                // Unggahan lama tanpa jenis dianggap milik jenis TUNGGAL pesanan.
+                if ($u->jenis === null) {
+                    $semua = array_keys($this->kuotaPerJenis());
+
+                    return count($semua) === 1 && $semua[0] === $jenis;
+                }
+
+                return $u->jenis === $jenis;
+            });
+    }
+
+    /** Sudah dipakai untuk satu jenis. */
+    public function terpakaiPerJenis(string $jenis): int
+    {
+        return $this->uploadAktifJenis($jenis)->count();
+    }
+
+    /** Sisa kuota untuk satu jenis (tidak pernah negatif). */
+    public function sisaKuotaJenis(string $jenis): int
+    {
+        return max(0, ($this->kuotaPerJenis()[$jenis] ?? 0) - $this->terpakaiPerJenis($jenis));
+    }
+
+    /** Total pengecekan yang sudah dipakai = baris upload yang TIDAK dibatalkan. */
+    public function terpakaiPengecekan(): int
+    {
+        return (int) $this->uploads
+            ->filter(fn ($u) => $u->status !== 'dibatalkan')
+            ->count();
+    }
+
+    /** Sisa kuota TOTAL (semua jenis, tidak pernah negatif). */
+    public function sisaKuota(): int
+    {
+        return max(0, $this->kuotaPengecekan() - $this->terpakaiPengecekan());
+    }
+
+    /** Jenis pemeriksaan yang MASIH punya sisa kuota (untuk pemilih di /cek). */
+    public function jenisTersisa(): array
+    {
+        $out = [];
+        foreach (array_keys($this->kuotaPerJenis()) as $jenis) {
+            if ($this->sisaKuotaJenis($jenis) > 0) {
+                $out[] = $jenis;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Masih boleh mengunggah pengecekan baru (jenis apa pun)? */
+    public function bisaUploadPengecekan(): bool
+    {
+        return $this->butuhUpload()
+            && ! in_array($this->status, ['completed', 'cancelled'])
+            && $this->sisaKuota() > 0;
+    }
+
+    /** Masih boleh mengunggah untuk SATU jenis pemeriksaan tertentu? */
+    public function bisaUploadJenis(string $jenis): bool
+    {
+        return $this->butuhUpload()
+            && ! in_array($this->status, ['completed', 'cancelled'])
+            && $this->sisaKuotaJenis($jenis) > 0;
+    }
+
+    /**
+     * Layanan jasa dianggap tuntas: kuota SUDAH habis DAN semua pengecekan
+     * (yang tidak dibatalkan) berstatus 'selesai'. Dipakai untuk menyelesaikan
+     * pesanan jasa secara otomatis. Tidak berlaku untuk produk non-jasa.
+     */
+    public function jasaTuntas(): bool
+    {
+        if (! $this->butuhUpload() || $this->sisaKuota() > 0) {
+            return false;
+        }
+
+        $aktif = $this->uploads->where('status', '!=', 'dibatalkan');
+
+        return $aktif->isNotEmpty() && $aktif->every(fn ($u) => $u->status === 'selesai');
     }
 
     public function hasPromo(): bool

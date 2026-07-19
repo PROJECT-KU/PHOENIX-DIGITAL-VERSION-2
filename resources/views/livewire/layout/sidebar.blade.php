@@ -3,6 +3,7 @@
 use App\Livewire\Actions\Logout;
 use App\Models\CustomerMessage;
 use App\Models\Order;
+use App\Models\OrderUpload;
 use App\Models\ProductReview;
 use App\Models\Testimoni;
 use Livewire\Attributes\On;
@@ -63,6 +64,13 @@ new class extends Component
             // admin membuka pesan (markAsRead di halaman detail).
             'helpdeskBaru' => $login && auth()->user()->hasPermission('view_customer_message')
                 ? CustomerMessage::unread()->count()
+                : 0,
+
+            // Pengecekan plagiasi yang menunggu diproses. Penting karena paket
+            // 5x diunggah bertahap: file ke-2 dst bisa masuk berhari-hari
+            // kemudian, dan tanpa badge ini admin tidak akan tahu.
+            'pengecekanBaru' => $login && auth()->user()->hasPermission('view_pemesanantoko')
+                ? OrderUpload::where('status', 'menunggu')->count()
                 : 0,
         ];
     }
@@ -345,6 +353,16 @@ new class extends Component
                 @endif
 
                 @if (auth()->user()->hasAnyPermission(['view_pesananrsc', 'view_pemesanantoko', 'view_ebook']))
+                @php
+                    // Badge Pesanan Toko = pesanan baru dibayar + pengecekan jasa
+                    // yang menunggu. Digabung karena keduanya sama-sama pekerjaan
+                    // di menu yang sama; rinciannya dijelaskan lewat title.
+                    $pesananTokoBadge = $pesananTokoPaid + $pengecekanBaru;
+                    $pesananTokoTitle = trim(
+                        ($pesananTokoPaid > 0 ? "{$pesananTokoPaid} pesanan menunggu diproses. " : '').
+                        ($pengecekanBaru > 0 ? "{$pengecekanBaru} pengecekan plagiasi menunggu." : '')
+                    );
+                @endphp
                 <li
                     class="sidebar-item has-sub {{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
@@ -355,10 +373,9 @@ new class extends Component
                             class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}">
                             Pesanan
                         </span>
-                        @if ($pesananTokoPaid > 0)
-                        <span class="sidebar-badge ms-auto"
-                            title="{{ $pesananTokoPaid }} pesanan toko sudah dibayar, menunggu diproses">
-                            {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                        @if ($pesananTokoBadge > 0)
+                        <span class="sidebar-badge ms-auto" title="{{ $pesananTokoTitle }}">
+                            {{ $pesananTokoBadge > 99 ? '99+' : $pesananTokoBadge }}
                         </span>
                         @endif
                     </a>
@@ -372,13 +389,12 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_pemesanantoko'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
-                            <a wire:navigate class="submenu-link @if ($pesananTokoPaid > 0) has-badge @endif"
+                            <a wire:navigate class="submenu-link @if ($pesananTokoBadge > 0) has-badge @endif"
                                 href="{{ route('admin.pesanantoko.index') }}">
                                 <span>Pesanan Toko</span>
-                                @if ($pesananTokoPaid > 0)
-                                <span class="sidebar-badge ms-auto"
-                                    title="{{ $pesananTokoPaid }} pesanan sudah dibayar, menunggu diproses">
-                                    {{ $pesananTokoPaid > 99 ? '99+' : $pesananTokoPaid }}
+                                @if ($pesananTokoBadge > 0)
+                                <span class="sidebar-badge ms-auto" title="{{ $pesananTokoTitle }}">
+                                    {{ $pesananTokoBadge > 99 ? '99+' : $pesananTokoBadge }}
                                 </span>
                                 @endif
                             </a>

@@ -127,6 +127,11 @@ class OrderList extends Component
     {
         return $this->baseOrderQuery()
             ->with('customer', 'items')
+            // Jumlah pengecekan plagiasi yang menunggu → penanda di daftar agar
+            // admin tak perlu membuka tiap pesanan untuk mencarinya.
+            ->withCount(['uploads as pengecekan_menunggu_count' => function ($q) {
+                $q->where('status', 'menunggu');
+            }])
             ->when($this->activeTab === 'processing', function ($q) {
                 $q->where('status', 'processing');
             })

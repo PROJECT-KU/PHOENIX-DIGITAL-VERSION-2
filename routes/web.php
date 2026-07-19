@@ -123,6 +123,12 @@ Route::get('/payment/{order}', PaymentPage::class)->name('payment');
 Route::get('/order/expired/{order}', PaymentExpired::class)->name('order.expired');
 Route::post('/payment/callback/midtrans', [PaymentCallbackController::class, 'midtrans'])->name('payment.callback.midtrans');
 Route::get('/order/{order}/success', OrderSuccessPage::class)->name('order.success');
+
+// JASA cek plagiasi — link permanen ber-token (unggah + progress + unduh hasil)
+Route::get('/cek/{token}', \App\Livewire\Pages\Public\ShopPage\JasaCekPage::class)->name('jasa.cek');
+Route::get('/cek/{token}/hasil/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilPublik'])->name('jasa.cek.hasil');
+Route::get('/cek/{token}/hasil-ai/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAiPublik'])->name('jasa.cek.hasil-ai');
+Route::get('/cek/{token}/hasil-docx/{upload}', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilDocxPublik'])->name('jasa.cek.hasil-docx');
 Route::get('/qris/{token}', \App\Livewire\Pages\Public\ShopPage\QrisShare::class)->name('qris.show');
 Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
@@ -141,7 +147,9 @@ Route::get('/wishlist', \App\Livewire\Pages\Public\ShopPage\WishlistPage::class)
 Route::get('/blog', \App\Livewire\Pages\Public\Blog\BlogIndex::class)->name('blog.index');
 Route::get('/blog/{post}', \App\Livewire\Pages\Public\Blog\BlogShow::class)->name('blog.show');
 Route::get('/sitemap.xml', \App\Http\Controllers\SitemapController::class)->name('sitemap');
-Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
+// Preview invoice DIPINDAH ke grup 'permission:view_pesananrsc' di bawah.
+// Sebelumnya terdaftar di blok publik tanpa auth sama sekali, sehingga siapa
+// pun bisa menarik PDF invoice berisi data camp & peserta tanpa login.
 
 Route::view('profile', 'profile')
     ->middleware(['auth'])
@@ -206,14 +214,24 @@ Route::middleware('permission:view_pesananrsc')->group(function () {
     Route::get('/admin/pesananrsc/{nama_camp}/{batch_camp}/edit', PemesananrscEdit::class)
         ->middleware('permission:edit_pesananrsc')->name('admin.pesananrsc.edit');
     Route::get('/admin/pesananrsc/detail/{nama_camp}/{batch_camp}', PemesananrscDetail::class)->name('admin.pesananrsc.detail');
+    Route::get('/admin/preview-invoice', [PemesananrscController::class, 'previewInvoice'])->name('admin.preview.invoice');
 });
 
 // Pesanan Toko
 Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    // Bukti pembayaran: berkas sensitif, hanya lewat route ber-izin.
+    Route::get('/admin/pesanantoko/{order}/bukti', [\App\Http\Controllers\BerkasPrivatController::class, 'buktiPembayaran'])
+        ->name('admin.pesanantoko.bukti');
     Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
     Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
+    // Unduh berkas pengecekan jasa (file masuk customer & file hasil) — disk privat
+    Route::get('/admin/pesanantoko/upload/{upload}/berkas', [\App\Http\Controllers\JasaCekController::class, 'unduhBerkasAdmin'])->name('admin.jasa.berkas');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil-ai', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAiAdmin'])->name('admin.jasa.hasil-ai');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil-docx', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilDocxAdmin'])->name('admin.jasa.hasil-docx');
+    Route::get('/admin/pesanantoko/upload/{upload}/pdf', [\App\Http\Controllers\JasaCekController::class, 'unduhPdfAdmin'])->name('admin.jasa.pdf');
+    Route::get('/admin/pesanantoko/upload/{upload}/hasil', [\App\Http\Controllers\JasaCekController::class, 'unduhHasilAdmin'])->name('admin.jasa.hasil');
     Route::get('/admin/pesanantoko/{order}', OrderDetail::class)->name('admin.pesanantoko.detail');
 });
 
@@ -336,6 +354,9 @@ Route::middleware('permission:view_cashflow')->group(function () {
 // Data Spending
 Route::middleware('permission:view_spending')->group(function () {
     Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');
+    // Lampiran nota/faktur: berkas sensitif, hanya lewat route ber-izin.
+    Route::get('/admin/spending/{spending}/lampiran/{index?}', [\App\Http\Controllers\BerkasPrivatController::class, 'lampiranSpending'])
+        ->name('admin.spending.lampiran');
     Route::get('/admin/spending/create', SpendingCreate::class)->middleware('permission:create_spending')->name('admin.spending.create');
     Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->middleware('permission:edit_spending')->name('admin.spending.edit');
 });
@@ -394,6 +415,11 @@ Route::middleware('permission:view_lowongan')->group(function () {
 Route::middleware('permission:view_pelamar')->group(function () {
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
+    // CV & surat lamaran memuat data pribadi — wajib lewat route ber-izin.
+    Route::get('/admin/pelamar/{pelamar}/cv', [\App\Http\Controllers\BerkasPrivatController::class, 'cvPelamar'])
+        ->name('admin.pelamar.cv');
+    Route::get('/admin/pelamar/{pelamar}/surat', [\App\Http\Controllers\BerkasPrivatController::class, 'suratPelamar'])
+        ->name('admin.pelamar.surat');
 });
 
 // Promo

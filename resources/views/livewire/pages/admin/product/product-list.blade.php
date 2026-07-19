@@ -3,6 +3,41 @@
 Data Produk || lemon
 @stop
 <div>
+    <style>
+        /* ===== Sel produk JASA di daftar (harga + add-on) ===== */
+        .jsa-box { display: flex; flex-direction: column; gap: 6px; }
+        .jsa-row { display: flex; align-items: flex-start; gap: 9px; }
+        .jsa-key {
+            flex-shrink: 0; width: 52px; padding-top: 3px;
+            font-size: .64rem; font-weight: 700; letter-spacing: .04em;
+            text-transform: uppercase; color: #94a3b8;
+        }
+        .jsa-vals { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; }
+        .jsa-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 8px; font-size: .72rem;
+            border: 1px solid transparent; line-height: 1.3; white-space: nowrap;
+        }
+        .jsa-chip b { font-weight: 700; }
+        .jsa-chip em { font-style: normal; font-weight: 800; opacity: .75; }
+        .jsa-chip small { font-weight: 500; opacity: .75; }
+        .jsa-chip i.bi { display: flex; align-items: center; line-height: 1; font-size: .62rem; flex-shrink: 0; }
+        .jsa-chip i.bi::before { display: block; line-height: 1; }
+        /* Paket pengecekan */
+        .jsa-chip.is-pack { background: #fff7ed; border-color: #fed7aa; color: #b45309; }
+        /* Tarif per halaman */
+        .jsa-chip.is-page { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        /* Add-on */
+        .jsa-chip.is-addon { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; max-width: 240px; }
+        .jsa-chip-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .jsa-empty { font-size: .72rem; color: #cbd5e1; padding-top: 3px; }
+
+        @media (max-width: 991.98px) {
+            .jsa-row { flex-direction: column; gap: 3px; }
+            .jsa-key { width: auto; padding-top: 0; }
+        }
+    </style>
+
     <div class="container-fluid">
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
@@ -70,6 +105,12 @@ Data Produk || lemon
                                 <!-- Nama -->
                                 <td class="fw-semibold text-capitalize">
                                     {{ $item->nama_akun }}
+                                    @if ($item->butuh_file)
+                                    <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill d-inline-flex align-items-center gap-1 mt-1" style="font-size:.62rem;">
+                                        <i class="bi bi-cloud-arrow-up"></i>
+                                        Jasa · {{ $item->jasaPerHalaman() ? 'per halaman' : 'paket' }}
+                                    </span>
+                                    @endif
                                 </td>
 
                                 <!-- Image -->
@@ -87,10 +128,57 @@ Data Produk || lemon
 
                                 <!-- Harga -->
                                 <td>{{ $item->formatted('harga_awal') }}</td>
+                                @if ($item->butuh_file)
+                                {{-- Produk jasa: tampilkan harga sesuai cara dijual (paket / per
+                                     halaman) + add-on, menggantikan 4 kolom durasi yang tak dipakai. --}}
+                                <td colspan="4" class="text-start">
+                                    @php $adOn = $item->addons->where('aktif', true)->sortBy('urutan'); @endphp
+                                    <div class="jsa-box">
+                                        {{-- Baris harga --}}
+                                        <div class="jsa-row">
+                                            <span class="jsa-key">{{ $item->jasaPerHalaman() ? 'Tarif' : 'Paket' }}</span>
+                                            <div class="jsa-vals">
+                                                @if ($item->jasaPerHalaman())
+                                                <span class="jsa-chip is-page">
+                                                    <b>Rp {{ number_format($item->hargaPerHalaman(), 0, ',', '.') }}</b>
+                                                    <small>/ halaman</small>
+                                                </span>
+                                                @else
+                                                @forelse ($item->prices->where('durasi_type', '!=', 'halaman')->sortBy('durasi_value') as $pk)
+                                                <span class="jsa-chip is-pack">
+                                                    <em>{{ (int) $pk->durasi_value }}×</em>
+                                                    <b>Rp {{ number_format((int) $pk->harga, 0, ',', '.') }}</b>
+                                                </span>
+                                                @empty
+                                                <span class="jsa-empty">Belum ada paket</span>
+                                                @endforelse
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        {{-- Baris add-on --}}
+                                        <div class="jsa-row">
+                                            <span class="jsa-key">Add-on</span>
+                                            <div class="jsa-vals">
+                                                @forelse ($adOn as $ad)
+                                                <span class="jsa-chip is-addon" title="{{ $ad->keterangan ?: $ad->nama }}">
+                                                    <i class="bi bi-plus-lg"></i>
+                                                    <span class="jsa-chip-nm">{{ $ad->nama }}</span>
+                                                    <b>Rp {{ number_format((int) $ad->harga, 0, ',', '.') }}</b>
+                                                </span>
+                                                @empty
+                                                <span class="jsa-empty">—</span>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                @else
                                 <td>{{ $item->formatted('harga_perbulan') }}</td>
                                 <td>{{ $item->formatted('harga_5_perbulan') }}</td>
                                 <td>{{ $item->formatted('harga_10_perbulan') }}</td>
                                 <td>{{ $item->formatted('harga_pertahun') }}</td>
+                                @endif
 
                                 <!-- Deskripsi -->
                                 <td class="text-truncate"

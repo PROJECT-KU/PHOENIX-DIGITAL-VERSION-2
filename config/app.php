@@ -69,6 +69,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Batas Ukuran Unggahan (MB)
+    |--------------------------------------------------------------------------
+    |
+    | Dipakai form lamaran kerja (CV & surat lamaran). Ditaruh di config, BUKAN
+    | dibaca env() langsung dari kode: setelah `php artisan config:cache` di
+    | produksi, env() tak lagi membaca .env sehingga nilainya diam-diam kembali
+    | ke bawaan — perubahan di .env produksi tak akan berpengaruh.
+    |
+    */
+
+    'max_upload_mb' => (int) env('MAX_UPLOAD_MB', 2),
+
+    /*
+    |--------------------------------------------------------------------------
     | Pemicu Scheduler Berbasis Trafik
     |--------------------------------------------------------------------------
     | Untuk shared hosting tanpa cron: bila true, scheduler dijalankan otomatis

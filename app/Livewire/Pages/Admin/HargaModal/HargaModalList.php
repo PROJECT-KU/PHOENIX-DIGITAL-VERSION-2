@@ -35,6 +35,40 @@ class HargaModalList extends Component
         $this->resetPage();
     }
 
+    /**
+     * Produk jasa: modal dicatat per SATUAN kerjanya, durasinya dikunci.
+     *  - Parafrase (per halaman) → 1 halaman
+     *  - Cek plagiasi (paket)    → 1 kali (per pengecekan)
+     */
+    public function updatedFormProductId($value): void
+    {
+        $p = $value ? Product::find($value) : null;
+        if ($p && $p->butuh_file) {
+            $this->formDurasiType = $p->jasaPerHalaman() ? 'halaman' : 'kali';
+            $this->formDurasiValue = 1;
+        } elseif (in_array($this->formDurasiType, ['kali', 'halaman'], true)) {
+            // Pindah dari jasa ke non-jasa: kembalikan default.
+            $this->formDurasiType = 'bulan';
+            $this->formDurasiValue = 1;
+        }
+    }
+
+    /** Apakah produk yang dipilih di form adalah produk jasa? */
+    public function getFormIsJasaProperty(): bool
+    {
+        return $this->formProductId
+            ? (bool) optional(Product::find($this->formProductId))->butuh_file
+            : false;
+    }
+
+    /** Jasa per halaman? (label form: "per 1 halaman" vs "per 1× pengecekan") */
+    public function getFormIsPerHalamanProperty(): bool
+    {
+        return $this->formProductId
+            ? (bool) optional(Product::find($this->formProductId))->jasaPerHalaman()
+            : false;
+    }
+
     private function bolehKelola(): bool
     {
         return auth()->user()?->hasPermission('manage_harga_modal') ?? false;
@@ -77,6 +111,12 @@ class HargaModalList extends Component
         $this->formProductId = $p->product_id;
         $this->formDurasiValue = $p->durasi_value;
         $this->formDurasiType = $p->durasi_type;
+        // Baris jasa warisan bisa bersatuan lama ('kali' padahal produknya kini
+        // per halaman) — tampilkan satuan yang benar sejak form dibuka.
+        if ($p->product && $p->product->butuh_file) {
+            $this->formDurasiType = $p->product->jasaPerHalaman() ? 'halaman' : 'kali';
+            $this->formDurasiValue = 1;
+        }
         $this->formHarga = number_format((int) $p->harga, 0, ',', '.');
         $this->formBerlakuMulai = $p->berlaku_mulai->toDateString();
         $this->resetErrorBag();
@@ -99,10 +139,20 @@ class HargaModalList extends Component
 
         $this->formHarga = (string) $this->toNumber($this->formHarga);
 
+        // Produk jasa: paksa satuan kerjanya di sisi server, bukan hanya saat
+        // produk dipilih. Tanpa ini, MENGEDIT baris lama (mis. warisan "1 kali")
+        // pada produk parafrase akan tersimpan sebagai 'kali' dan modal per
+        // halaman jadi tak terbaca (Rp0).
+        $produk = $this->formProductId ? Product::find($this->formProductId) : null;
+        if ($produk && $produk->butuh_file) {
+            $this->formDurasiType = $produk->jasaPerHalaman() ? 'halaman' : 'kali';
+            $this->formDurasiValue = 1;
+        }
+
         $this->validate([
             'formProductId' => ['required', 'exists:products,id'],
             'formDurasiValue' => ['required', 'integer', 'min:1'],
-            'formDurasiType' => ['required', 'in:bulan,tahun'],
+            'formDurasiType' => ['required', 'in:bulan,tahun,kali,halaman'],
             'formHarga' => ['required', 'numeric', 'min:1'],
             'formBerlakuMulai' => ['required', 'date'],
         ], [], [
@@ -206,7 +256,11 @@ class HargaModalList extends Component
             ->select('product_modal_prices.*')
             ->paginate(12);
 
-        $products = Product::where('tipe_akun', 'private')->orderBy('nama_akun')->get(['id', 'nama_akun']);
+        // Produk yang punya modal: private + jasa (butuh_file, modal per pengecekan).
+        $products = Product::where('tipe_akun', 'private')
+            ->orWhere('butuh_file', true)
+            ->orderBy('nama_akun')
+            ->get(['id', 'nama_akun', 'butuh_file']);
 
         return view('livewire.pages.admin.harga-modal.harga-modal-list', [
             'prices' => $prices,

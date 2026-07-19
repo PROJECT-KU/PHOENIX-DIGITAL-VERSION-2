@@ -17,6 +17,27 @@ class ProductForm extends Component
 
     public $tipe_akun = 'sharing';
 
+    // Produk JASA: customer wajib mengunggah dokumen (mis. cek plagiasi).
+    public $butuh_file = false;
+
+    // Mode jual jasa: 'paket' (per jumlah pengecekan) | 'halaman' (per halaman dokumen).
+    public $jasa_mode = 'paket';
+
+    // Mode add-on: 'multi' (boleh pilih beberapa) | 'tunggal' (pilih salah satu).
+    public $addon_mode = 'multi';
+
+    /** Layanan ini memakai pilihan "Kecualikan dari pemeriksaan"? */
+    public bool $pakai_exclude = true;
+
+    /** Layanan ini deteksi AI? (dokumen wajib bahasa Inggris) */
+    public bool $cek_ai = false;
+
+    // Harga per halaman (dipakai bila jasa_mode = 'halaman').
+    public $harga_per_halaman = '';
+
+    // Add-on dinamis: [['nama'=>..,'keterangan'=>..,'harga'=>..], ...]
+    public $addons = [];
+
     public $image;
 
     public $existingImage = null; // nama file lama di DB
@@ -36,6 +57,20 @@ class ProductForm extends Component
             $this->product = $product;
             $this->nama_akun = $product->nama_akun;
             $this->tipe_akun = $product->tipe_akun ?: 'sharing';
+            $this->butuh_file = (bool) $product->butuh_file;
+            $this->jasa_mode = $product->jasa_mode ?: 'paket';
+            $this->addon_mode = $product->addon_mode ?: 'multi';
+            $this->pakai_exclude = (bool) $product->pakai_exclude;
+            $this->cek_ai = (bool) $product->cek_ai;
+            $this->harga_per_halaman = (string) ($product->hargaPerHalaman() ?: '');
+            $this->addons = $product->addons()->orderBy('urutan')->get()
+                ->map(fn ($a) => [
+                    'nama' => $a->nama,
+                    'keterangan' => $a->keterangan,
+                    'harga' => (string) $a->harga,
+                    'pakai_exclude' => (bool) $a->pakai_exclude,
+                    'cek_ai' => (bool) $a->cek_ai,
+                ])->all();
             $this->image = null;
             $this->existingImage = $product->image;
             $this->harga_awal = $product->harga_awal;
@@ -56,7 +91,20 @@ class ProductForm extends Component
 
     public function addPrice()
     {
-        $this->prices[] = ['durasi_value' => 1, 'durasi_type' => 'bulan', 'harga' => ''];
+        // Jasa: paket per jumlah pengecekan (durasi_type 'kali'); akun: durasi 'bulan'.
+        $this->prices[] = ['durasi_value' => 1, 'durasi_type' => $this->butuh_file ? 'kali' : 'bulan', 'harga' => ''];
+    }
+
+    /** Tambah baris add-on kosong. */
+    public function addAddon()
+    {
+        $this->addons[] = ['nama' => '', 'keterangan' => '', 'harga' => '', 'pakai_exclude' => false, 'cek_ai' => false];
+    }
+
+    public function removeAddon($index)
+    {
+        unset($this->addons[$index]);
+        $this->addons = array_values($this->addons);
     }
 
     public function removePrice($index)
@@ -88,6 +136,28 @@ class ProductForm extends Component
 
     public function save()
     {
+        // Buang baris add-on yang benar-benar kosong (tak dianggap diisi).
+        $this->addons = array_values(array_filter(
+            $this->addons,
+            fn ($a) => trim((string) ($a['nama'] ?? '')) !== '' || trim((string) ($a['harga'] ?? '')) !== ''
+        ));
+
+        if ($this->butuh_file) {
+            if ($this->jasa_mode === 'halaman') {
+                // Dijual PER HALAMAN: harga disimpan sebagai satu baris (1 halaman).
+                $this->prices = [[
+                    'durasi_value' => 1,
+                    'durasi_type' => 'halaman',
+                    'harga' => $this->harga_per_halaman,
+                ]];
+            } else {
+                // Paket per JUMLAH PENGECEKAN (1x, 5x, ...): durasi_type 'kali'.
+                foreach ($this->prices as $i => $row) {
+                    $this->prices[$i]['durasi_type'] = 'kali';
+                }
+            }
+        }
+
         $rules = [
             'nama_akun' => 'required|min:3',
             'tipe_akun' => 'required|in:sharing,private',
@@ -95,9 +165,17 @@ class ProductForm extends Component
             'deskripsi' => 'nullable|string',
             'prices' => 'required|array|min:1',
             'prices.*.durasi_value' => 'required|integer|min:1',
-            'prices.*.durasi_type' => 'required|in:bulan,tahun',
+            'prices.*.durasi_type' => 'required|in:bulan,tahun,sekali,kali,halaman',
             'prices.*.harga' => 'required',
+            'addons.*.nama' => 'required|string|max:100',
+            'addons.*.harga' => 'required|numeric|min:0',
+            'addons.*.keterangan' => 'nullable|string|max:150',
         ];
+
+        // Jasa per halaman: harga per halaman wajib.
+        if ($this->butuh_file && $this->jasa_mode === 'halaman') {
+            $rules['harga_per_halaman'] = 'required|numeric|min:1';
+        }
 
         if ($this->mode === 'create') {
             $rules['image'] = 'required|image|mimes:png,jpg,jpeg|max:5120';
@@ -109,6 +187,9 @@ class ProductForm extends Component
             'prices.required' => 'Minimal 1 harga durasi harus diisi.',
             'prices.*.durasi_value.required' => 'Durasi harus diisi.',
             'prices.*.harga.required' => 'Harga harus diisi.',
+            'harga_per_halaman.required' => 'Harga per halaman harus diisi.',
+            'addons.*.nama.required' => 'Nama add-on harus diisi.',
+            'addons.*.harga.required' => 'Harga add-on harus diisi.',
         ]);
 
         // Cegah durasi ganda (kombinasi nilai + satuan)
@@ -138,11 +219,17 @@ class ProductForm extends Component
             $product = Product::create([
                 'nama_akun' => $this->nama_akun,
                 'tipe_akun' => $this->tipe_akun,
+                'butuh_file' => (bool) $this->butuh_file,
+                'jasa_mode' => $this->butuh_file ? $this->jasa_mode : 'paket',
+                'addon_mode' => $this->addon_mode,
+                'pakai_exclude' => $this->butuh_file && $this->pakai_exclude,
+                'cek_ai' => $this->butuh_file && $this->cek_ai,
                 'image' => $filename,
                 'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
             ]);
             $this->syncPrices($product);
+            $this->syncAddons($product);
 
             session()->flash('success', 'Product berhasil ditambahkan!');
             $this->dispatch('product-created');
@@ -161,6 +248,11 @@ class ProductForm extends Component
             $data = [
                 'nama_akun' => $this->nama_akun,
                 'tipe_akun' => $this->tipe_akun,
+                'butuh_file' => (bool) $this->butuh_file,
+                'jasa_mode' => $this->butuh_file ? $this->jasa_mode : 'paket',
+                'addon_mode' => $this->addon_mode,
+                'pakai_exclude' => $this->butuh_file && $this->pakai_exclude,
+                'cek_ai' => $this->butuh_file && $this->cek_ai,
                 'harga_awal' => $this->normalizeHargaAwal(),
                 'deskripsi' => $this->deskripsi,
             ];
@@ -181,6 +273,7 @@ class ProductForm extends Component
 
             $this->product->update($data);
             $this->syncPrices($this->product);
+            $this->syncAddons($this->product);
 
             session()->flash('success', 'Product berhasil diperbarui!');
             $this->dispatch('product-updated');
@@ -235,9 +328,68 @@ class ProductForm extends Component
         $product->update($legacy);
     }
 
+    /**
+     * Simpan ulang daftar add-on produk (hapus lalu buat ulang, seperti syncPrices).
+     * Produk non-jasa tak pernah punya add-on, jadi tabelnya cukup dikosongkan.
+     */
+    private function syncAddons(Product $product): void
+    {
+        if (! $this->butuh_file) {
+            $product->addons()->delete();
+
+            return;
+        }
+
+        /*
+         * PENTING: add-on TIDAK dihapus-lalu-dibuat-ulang. Pesanan menyimpan
+         * id add-on sebagai riwayat (order_items.addons), jadi membuat ulang
+         * akan memberi UUID baru dan memutus kaitan pesanan lama — akibatnya
+         * sifat add-on (mis. pakai_exclude) tak lagi terbaca di halaman /cek.
+         * Baris yang sudah ada diperbarui di tempat; yang hilang saja dihapus.
+         */
+        $lama = $product->addons()->get()->keyBy(fn ($a) => mb_strtolower($a->nama));
+        $terpakai = [];
+
+        foreach (array_values($this->addons) as $i => $row) {
+            $nama = trim((string) ($row['nama'] ?? ''));
+            if ($nama === '') {
+                continue;
+            }
+
+            $data = [
+                'nama' => $nama,
+                'keterangan' => trim((string) ($row['keterangan'] ?? '')) ?: null,
+                'harga' => $this->toNumber($row['harga'] ?? 0),
+                'urutan' => $i,
+                'aktif' => true,
+                'pakai_exclude' => (bool) ($row['pakai_exclude'] ?? false),
+                'cek_ai' => (bool) ($row['cek_ai'] ?? false),
+            ];
+
+            if ($ada = $lama->get(mb_strtolower($nama))) {
+                $ada->update($data);          // id dipertahankan
+                $terpakai[] = $ada->id;
+
+                continue;
+            }
+
+            $terpakai[] = $product->addons()->create($data)->id;
+        }
+
+        // Sisanya benar-benar dihapus admin.
+        $product->addons()->whereNotIn('id', $terpakai ?: ['-'])->delete();
+    }
+
     private function resetForm()
     {
         $this->nama_akun = '';
+        $this->butuh_file = false;
+        $this->jasa_mode = 'paket';
+        $this->addon_mode = 'multi';
+        $this->pakai_exclude = true;
+        $this->cek_ai = false;
+        $this->harga_per_halaman = '';
+        $this->addons = [];
         $this->image = null;
         $this->harga_awal = '';
         $this->prices = [['durasi_value' => 1, 'durasi_type' => 'bulan', 'harga' => '']];
@@ -246,7 +398,14 @@ class ProductForm extends Component
 
     public function render()
     {
+        // Daftar produk untuk picker nama add-on — supaya penamaan seragam
+        // dengan nama produk yang sudah ada (mis. "cek plagiasi turnitin").
+        $daftarProduk = Product::when($this->product, fn ($q) => $q->whereKeyNot($this->product->id))
+            ->orderBy('nama_akun')
+            ->get(['id', 'nama_akun']);
 
-        return view('livewire.pages.admin.product.product-form');
+        return view('livewire.pages.admin.product.product-form', [
+            'daftarProduk' => $daftarProduk,
+        ]);
     }
 }

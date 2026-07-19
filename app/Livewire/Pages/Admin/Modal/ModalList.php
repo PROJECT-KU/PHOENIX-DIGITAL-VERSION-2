@@ -567,13 +567,18 @@ class ModalList extends Component
                         });
                 })
                 ->whereIn('order_items.product_id', $privateIds)
-                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty')
+                ->selectRaw('order_items.product_id, order_items.duration_value, order_items.duration_type, COALESCE(SUM(order_items.quantity), 0) as qty, COALESCE(SUM(COALESCE(order_items.halaman_dihitung, order_items.jumlah_halaman) * order_items.quantity), 0) as halaman')
                 ->groupBy('order_items.product_id', 'order_items.duration_value', 'order_items.duration_type')
                 ->get();
             $orderQty = [];
+            $orderHalaman = [];
             foreach ($privOrders as $o) {
                 $orderQty[$o->product_id.'|'.$o->duration_value.'|'.$o->duration_type] = (int) $o->qty;
+                $orderHalaman[$o->product_id.'|'.$o->duration_value.'|'.$o->duration_type] = (int) $o->halaman;
             }
+
+            $jasaIds = \App\Models\Product::where('butuh_file', true)->pluck('id')->map(fn ($v) => (string) $v)->all();
+            $jasaHalamanIds = \App\Models\Product::where('butuh_file', true)->where('jasa_mode', 'halaman')->pluck('id')->map(fn ($v) => (string) $v)->all();
 
             // Hanya produk yang BENAR-BENAR ada order di periode ini (bukan carry-forward harga saja).
             foreach ($orderQty as $k => $qty) {
@@ -581,14 +586,34 @@ class ModalList extends Component
                     continue;
                 }
                 [$pid, $dv, $dt] = explode('|', $k);
-                $satuan = $unitMap[$k] ?? 0;
+
+                if (in_array((string) $pid, $jasaHalamanIds, true)) {
+                    // JASA PER HALAMAN: satuan = modal 1 halaman; jumlah = total halaman DIKERJAKAN.
+                    $satuan = $unitMap[$pid.'|1|halaman'] ?? 0;
+                    $jumlah = (int) ($orderHalaman[$k] ?? 0);
+                    $durasi = 'per halaman';
+                    $total = (float) $satuan * $jumlah;
+                } elseif (in_array((string) $pid, $jasaIds, true)) {
+                    // JASA PAKET: satuan = modal 1× pengecekan; total = satuan × jml cek × qty.
+                    $satuan = $unitMap[$pid.'|1|kali'] ?? 0;
+                    $jumlah = (int) $qty;
+                    $durasi = $dv.' '.$dt;
+                    $total = (float) $satuan * max(1, (int) $dv) * $qty;
+                } else {
+                    // Non-jasa: satuan tepat pada (durasi_value, durasi_type).
+                    $satuan = $unitMap[$k] ?? 0;
+                    $jumlah = (int) $qty;
+                    $durasi = $dv.' '.$dt;
+                    $total = (float) $satuan * $qty;
+                }
+
                 $akunPerProduk[] = [
                     'nama' => $namaAll[$pid] ?? 'Produk',
                     'tipe' => 'private',
-                    'durasi' => $dv.' '.$dt,
+                    'durasi' => $durasi,
                     'satuan' => (float) $satuan,
-                    'jumlah' => (int) $qty,
-                    'total' => (float) $satuan * $qty,
+                    'jumlah' => $jumlah,
+                    'total' => $total,
                 ];
             }
         }
@@ -610,7 +635,56 @@ class ModalList extends Component
             ];
         }
 
-        usort($akunPerProduk, fn ($a, $b) => $b['total'] <=> $a['total']);
+        // Modal ADD-ON jasa (mis. cek plagiasi turnitin yang dibeli sebagai add-on
+        // pada pesanan cek AI). Wajib ada di rincian karena expense-nya SUDAH
+        // dicatat (SyncOrderPrivateCostAction) sehingga ikut terhitung di total
+        // "terpakai" — tanpa baris ini, rincian tak akan cocok dengan totalnya.
+        $searchingAddon = (bool) $this->search;
+        $addon = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($tahun, $bulan, $searchingAddon) {
+            $q->whereIn('status', ['paid', 'processing', 'completed'])
+                ->when(! $searchingAddon, function ($qq) use ($tahun, $bulan) {
+                    $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
+                        ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                });
+        }, Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString());
+
+        foreach (($addon['modal'] ?? []) as $pid => $nilai) {
+            if ($nilai <= 0) {
+                continue;
+            }
+
+            $nCek = max(1, (int) ($addon['jumlah'][$pid] ?? 1));
+
+            /*
+             * Baris TERSENDIRI supaya jelas asalnya dari add-on (bukan dari
+             * pesanan langsung produk itu). Nama tetap sama dengan produknya
+             * dan barisnya dikelompokkan berdampingan oleh pengurutan di bawah,
+             * sehingga totalnya tetap mudah dijumlahkan.
+             */
+            $akunPerProduk[] = [
+                'nama' => $namaAll[$pid] ?? 'Produk',
+                'tipe' => 'private',
+                'durasi' => 'add-on',
+                'satuan' => (float) $nilai / $nCek,
+                'jumlah' => $nCek,
+                'total' => (float) $nilai,
+            ];
+        }
+
+        /*
+         * Urut: produk dengan modal terbesar dulu, TAPI semua baris produk yang
+         * sama dikelompokkan berdampingan. Sebelumnya murni terbesar-dulu,
+         * sehingga baris kecil satu produk (mis. modal add-on) terlempar jauh
+         * dari baris induknya dan angkanya sulit dicocokkan dengan Omset Bersih.
+         */
+        $totalPerNama = [];
+        foreach ($akunPerProduk as $r) {
+            $totalPerNama[$r['nama']] = ($totalPerNama[$r['nama']] ?? 0) + $r['total'];
+        }
+        usort($akunPerProduk, function ($a, $b) use ($totalPerNama) {
+            return [$totalPerNama[$b['nama']], $a['nama'], $b['total']]
+                <=> [$totalPerNama[$a['nama']], $b['nama'], $a['total']];
+        });
 
         // Ikut pencarian: saring rincian pembelian akun berdasarkan nama produk.
         if ($this->search) {

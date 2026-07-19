@@ -52,9 +52,21 @@ return [
 
     'channels' => [
 
+        /*
+         * Default 'daily', bukan 'single'.
+         *
+         * Dengan 'single' seluruh log menumpuk di SATU berkas yang tak pernah
+         * dipotong — di sini sempat 11 MB berisi 7 bulan catatan. Selain boros
+         * disk, berkas sebesar itu praktis tak bisa dibuka saat menelusuri
+         * masalah. 'daily' memecah per tanggal dan membuang yang lebih tua dari
+         * LOG_DAILY_DAYS secara otomatis.
+         *
+         * Ditaruh sebagai DEFAULT (bukan hanya di .env) supaya server produksi
+         * tetap aman walau variabelnya lupa diisi.
+         */
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', env('LOG_STACK', 'single')),
+            'channels' => explode(',', env('LOG_STACK', 'daily')),
             'ignore_exceptions' => false,
         ],
 

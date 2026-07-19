@@ -136,6 +136,18 @@ Detail Cash Flow || lemon
                                     <td class="text-center">{{ $it['qty'] }}</td>
                                     <td class="text-end fw-semibold">{{ $it['subtotal'] }}</td>
                                 </tr>
+                                {{-- Add-on sebagai BARIS TERSENDIRI: harganya nyata terpisah dari
+                                     produk induk, jadi subtotal induk tak tampak seperti sudah termasuk add-on. --}}
+                                @foreach($it['addons'] ?? [] as $ad)
+                                <tr>
+                                    <td class="ps-4 text-muted" style="font-size: 0.8rem;">
+                                        <i class="bi bi-plus-circle me-1" style="color:#f59e0b;"></i>Add-on: {{ $ad['nama'] }}
+                                    </td>
+                                    <td class="text-muted">—</td>
+                                    <td class="text-center text-muted">1</td>
+                                    <td class="text-end text-muted" style="font-size: 0.85rem;">{{ $ad['harga'] }}</td>
+                                </tr>
+                                @endforeach
                                 @endforeach
                             </tbody>
                         </table>

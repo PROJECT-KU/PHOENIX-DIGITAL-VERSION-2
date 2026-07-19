@@ -84,6 +84,24 @@ Data Pesanan || lemon
         </div>
 
         <style>
+            /* Badge "cek menunggu": ikon sejajar teks (glyph bi dirender via ::before) */
+            .pcek-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: .62rem;
+                line-height: 1;
+            }
+            .pcek-badge i.bi {
+                display: flex;
+                align-items: center;
+                line-height: 1;
+                font-size: .68rem;
+            }
+            .pcek-badge i.bi::before {
+                display: block;
+                line-height: 1;
+            }
             /* Pusatkan ikon Bootstrap (bi) di stat-icon-wrapper */
             .stat-icon-wrapper i.bi {
                 display: flex;
@@ -329,7 +347,16 @@ Data Pesanan || lemon
                         <tbody>
                             @forelse ($orders as $order)
                             <tr style="text-align: center;">
-                                <td class="fw-bold">{{ $order->order_number }}</td>
+                                <td class="fw-bold">
+                                    {{ $order->order_number }}
+                                    @if ($order->pengecekan_menunggu_count > 0)
+                                    <span class="badge bg-warning text-dark mt-1 pcek-badge"
+                                        title="{{ $order->pengecekan_menunggu_count }} pengecekan plagiasi menunggu diproses">
+                                        <i class="bi bi-hourglass-split"></i>
+                                        <span>{{ $order->pengecekan_menunggu_count }} cek menunggu</span>
+                                    </span>
+                                    @endif
+                                </td>
                                 <td>{{ $order->customer->nama }}</td>
                                 <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
                                 <td class="text-center">

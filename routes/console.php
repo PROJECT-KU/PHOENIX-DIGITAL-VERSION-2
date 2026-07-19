@@ -101,3 +101,10 @@ Schedule::command('comments:prune')->dailyAt('00:10');
  * bila scheduler terlewat.
  */
 Schedule::command('points:reset-yearly')->yearlyOn(1, 1, '00:15');
+
+/**
+ * Hapus draft unggahan jasa yang tak pernah jadi pesanan (customer batal
+ * checkout). Isinya dokumen pribadi customer, jadi tak boleh tersimpan
+ * selamanya. Draft yang berhasil jadi pesanan sudah dihapus saat checkout.
+ */
+Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');

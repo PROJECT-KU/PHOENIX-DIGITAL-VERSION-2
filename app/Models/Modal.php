@@ -73,6 +73,9 @@ class Modal extends Model
     public static function totalPembelianAkun(?int $bulan, ?int $tahun): float
     {
         return (float) Spending::where('jenis_pengeluaran', 'pembelian_akun')
+            // Hanya pembelian yang SELESAI = biaya nyata. Sama dengan aturan di
+            // fitur Modal & Omset Bersih, supaya angkanya tak pernah berbeda.
+            ->where('status', 'completed')
             ->when($tahun, fn ($q) => $q->whereYear('tanggal_transaksi', $tahun))
             ->when($bulan, fn ($q) => $q->whereMonth('tanggal_transaksi', $bulan))
             ->sum('nominal');

@@ -138,7 +138,10 @@
                     @endif
 
                     <div class="prose">
-                        {!! $post->body !!}
+                        {{-- Disaring saat tampil: isi blog berupa HTML dari editor,
+                             tanpa ini penulis blog bisa menyisipkan <script> yang
+                             berjalan di browser semua pengunjung. --}}
+                        {!! \App\Support\HtmlSanitizer::bersihkan($post->body) !!}
                     </div>
 
                     @php $url = route('blog.show', $post->slug); @endphp

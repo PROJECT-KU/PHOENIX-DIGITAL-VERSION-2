@@ -200,7 +200,8 @@ class SpendingForm extends Component
         $paths = array_values($this->fotosLama);
         foreach ($this->fotosBaru as $file) {
             if ($file && ! is_string($file)) {
-                $paths[] = $file->store('spending', 'public');
+                // Disk PRIVAT: nota/faktur memuat data keuangan internal.
+                $paths[] = $file->store('spending', 'local');
             }
         }
 

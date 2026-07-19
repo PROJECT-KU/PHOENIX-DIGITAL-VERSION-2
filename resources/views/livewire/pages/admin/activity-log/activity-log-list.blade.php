@@ -464,22 +464,27 @@ Log Aktivitas || lemon
                 if (typeof Swal === 'undefined') return;
 
                 Swal.fire({
-                    title: 'Bersihkan log lama?',
-                    input: 'number',
-                    inputLabel: 'Hapus log yang lebih lama dari (hari):',
-                    inputValue: 30,
-                    inputAttributes: { min: 0 },
+                    title: 'Bersihkan Log Aktivitas',
+                    input: 'select',
+                    inputOptions: {
+                        '0': '🗑️ Hapus SEMUA log',
+                        '1': 'Lebih lama dari 1 hari',
+                        '7': 'Lebih lama dari 7 hari',
+                        '30': 'Lebih lama dari 30 hari',
+                    },
+                    inputValue: '0',
+                    inputLabel: 'Pilih log yang ingin dihapus',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'Ya, bersihkan',
+                    confirmButtonText: 'Ya, hapus',
                     cancelButtonText: 'Batal',
                     ...glossyConfigActivityLog
                 }).then(function (result) {
                     if (result.isConfirmed) {
-                        const hari = parseInt(result.value ?? 30, 10);
+                        const hari = parseInt(result.value ?? '0', 10);
                         const comp = btn.closest('[wire\\:id]');
                         if (comp) {
-                            Livewire.find(comp.getAttribute('wire:id')).call('clearOld', isNaN(hari) ? 30 : hari);
+                            Livewire.find(comp.getAttribute('wire:id')).call('clearOld', isNaN(hari) ? 0 : hari);
                         }
                     }
                 });

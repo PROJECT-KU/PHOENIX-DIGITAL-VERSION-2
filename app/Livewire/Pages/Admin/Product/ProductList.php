@@ -44,7 +44,7 @@ class ProductList extends Component
 
     public function render()
     {
-        $Dataproduct = Product::latest()
+        $Dataproduct = Product::with('prices', 'addons')->latest()
             ->where('nama_akun', 'like', "%{$this->searchDataProduct}%")
             ->orWhere('harga_awal', 'like', "%{$this->searchDataProduct}%")
             ->orWhere('harga_perbulan', 'like', "%{$this->searchDataProduct}%")

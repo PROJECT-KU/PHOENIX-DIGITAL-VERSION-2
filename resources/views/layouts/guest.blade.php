@@ -232,6 +232,7 @@
                             <h4>Bantuan &amp; Legal</h4>
                             <ul class="footer-links">
                                 <li><a href="{{ route('faq') }}">FAQ — Pertanyaan Umum</a></li>
+                                <li><a href="{{ route('member.info') }}">Syarat Jadi Member</a></li>
                                 <li><a href="{{ route('terms') }}">Syarat &amp; Ketentuan</a></li>
                                 <li><a href="{{ route('privacy') }}">Kebijakan Privasi</a></li>
                                 <li><a href="{{ route('terms') }}">Kebijakan Pengembalian</a></li>

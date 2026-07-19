@@ -582,7 +582,8 @@ class OrderForm extends Component
         // Simpan file bukti (untuk transfer / qris_statis).
         $buktiPath = null;
         if ($this->bukti) {
-            $buktiPath = $this->bukti->store('bukti_pembayaran', 'public');
+            // Disk PRIVAT: bukti bayar memuat data rekening customer.
+            $buktiPath = $this->bukti->store('bukti_pembayaran', 'local');
         }
 
         DB::beginTransaction();

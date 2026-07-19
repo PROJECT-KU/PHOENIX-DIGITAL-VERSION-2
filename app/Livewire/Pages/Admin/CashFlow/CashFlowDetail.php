@@ -108,12 +108,30 @@ class CashFlowDetail extends Component
             ];
 
             foreach ($s->items as $it) {
+                // Add-on yang dibeli pada item ini (mis. cek plagiasi pada cek AI,
+                // atau target parafrase) — ditampilkan di bawah nama produk.
+                $addons = collect($it->addons ?? [])->map(fn ($a) => [
+                    'nama' => $a['nama'] ?? '-',
+                    'harga' => $this->rupiah((int) ($a['harga'] ?? 0)),
+                ])->all();
+
+                /*
+                 * order_items.subtotal SUDAH termasuk harga add-on. Kalau baris
+                 * induk ditampilkan apa adanya lalu add-on ditulis lagi di
+                 * bawahnya, admin melihat 13.000 + 500 tapi Subtotal 13.000 —
+                 * seolah ada yang hilang. Jadi baris induk menampilkan porsinya
+                 * SENDIRI (subtotal - add-on), sehingga menjumlah tepat.
+                 */
+                $addonsTotal = (int) ($it->addons_total ?? 0);
+                $subtotalInduk = (int) $it->subtotal - $addonsTotal;
+
                 $items[] = [
                     'nama' => $it->product_name,
                     'durasi' => trim($it->duration_value.' '.$it->duration_type),
                     'qty' => $it->quantity,
                     'harga' => $this->rupiah($it->price),
-                    'subtotal' => $this->rupiah($it->subtotal),
+                    'subtotal' => $this->rupiah($subtotalInduk),
+                    'addons' => $addons,
                 ];
             }
 

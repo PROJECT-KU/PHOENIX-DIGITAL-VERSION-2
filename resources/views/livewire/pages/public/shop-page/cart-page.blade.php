@@ -1,4 +1,19 @@
 <div>
+    <style>
+        /* Rincian item JASA di keranjang (halaman dilewati & add-on) */
+        .cart-jasa { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+        .cart-jasa-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 9px; border-radius: 99px; font-size: .72rem;
+            font-weight: 600; line-height: 1.4; border: 1px solid transparent;
+        }
+        .cart-jasa-chip i.bi { display: flex; align-items: center; line-height: 1; font-size: .62rem; flex-shrink: 0; }
+        .cart-jasa-chip i.bi::before { display: block; line-height: 1; }
+        .cart-jasa-chip b { font-weight: 800; }
+        .cart-jasa-chip.is-addon { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+        .cart-jasa-chip.is-skip { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+    </style>
+
     <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
@@ -96,10 +111,37 @@
                                             <span class="cart-item-dur">
                                                 @if ($isBundle)
                                                     <i class="bi bi-box2-heart-fill"></i> Paket Bundling
+                                                @elseif (($item['duration_type'] ?? '') === 'halaman')
+                                                    {{-- Jasa per halaman: tampilkan halaman yang dikerjakan --}}
+                                                    <i class="bi bi-file-earmark-text"></i>
+                                                    {{ $item['halaman_dihitung'] ?? $item['jumlah_halaman'] ?? 0 }} halaman
+                                                    @if (! empty($item['jumlah_halaman']) && ($item['halaman_dihitung'] ?? null) !== null && $item['halaman_dihitung'] < $item['jumlah_halaman'])
+                                                        <small class="text-muted">dari {{ $item['jumlah_halaman'] }}</small>
+                                                    @endif
+                                                @elseif (($item['duration_type'] ?? '') === 'kali')
+                                                    <i class="bi bi-collection"></i> {{ $item['duration_value'] }}× pengecekan
                                                 @else
                                                     <i class="bi bi-calendar2-week"></i> {{ $item['duration_value'] }} {{ ucfirst($item['duration_type']) }}
                                                 @endif
                                             </span>
+
+                                            {{-- Rincian JASA: halaman dilewati & add-on yang dipilih --}}
+                                            @if (! empty($item['halaman_dikecualikan']) || ! empty($item['addons']))
+                                            <div class="cart-jasa">
+                                                @if (! empty($item['halaman_dikecualikan']))
+                                                <span class="cart-jasa-chip is-skip" title="Halaman ini tidak dikerjakan & tidak ditagih">
+                                                    <i class="bi bi-slash-circle"></i> Lewati hal. {{ $item['halaman_dikecualikan'] }}
+                                                </span>
+                                                @endif
+                                                @foreach (($item['addons'] ?? []) as $ad)
+                                                <span class="cart-jasa-chip is-addon">
+                                                    <i class="bi bi-plus-lg"></i>
+                                                    {{ $ad['nama'] ?? '-' }}
+                                                    <b>+Rp&nbsp;{{ number_format((int) ($ad['harga'] ?? 0), 0, ',', '.') }}</b>
+                                                </span>
+                                                @endforeach
+                                            </div>
+                                            @endif
                                             @php
                                                 $durVal = (int) ($item['duration_value'] ?? 1);
                                                 $perBulan = (!$isBundle && ($item['duration_type'] ?? '') === 'bulan' && $durVal > 1)

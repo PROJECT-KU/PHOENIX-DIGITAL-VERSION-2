@@ -284,7 +284,7 @@
 
                                 @if ($uniqueCode > 0)
                                     <div class="co-sum-row">
-                                        <span>Kode Unik <i class="bi bi-info-circle" title="Untuk verifikasi & biaya admin"></i></span>
+                                        <span>Kode Unik <i class="bi bi-info-circle" title="Untuk verifikasi pembayaran"></i></span>
                                         <strong>+ Rp {{ number_format($uniqueCode, 0, ',', '.') }}</strong>
                                     </div>
                                 @endif

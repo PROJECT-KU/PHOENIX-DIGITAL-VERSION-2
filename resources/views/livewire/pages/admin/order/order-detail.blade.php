@@ -218,8 +218,8 @@ Detail Pesanan || lemon
                     <span class="info-label">Bukti Pembayaran</span>
                     <span class="info-value">
                         <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
-                            data-bukti-url="{{ Storage::url($order->bukti_pembayaran) }}" title="Perbesar bukti pembayaran">
-                            <img src="{{ Storage::url($order->bukti_pembayaran) }}" alt="Bukti pembayaran"
+                            data-bukti-url="{{ route('admin.pesanantoko.bukti', $order) }}" title="Perbesar bukti pembayaran">
+                            <img src="{{ route('admin.pesanantoko.bukti', $order) }}" alt="Bukti pembayaran"
                                 style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
                         </a>
                     </span>
@@ -319,6 +319,489 @@ Detail Pesanan || lemon
         </div>
     </div>
 
+    {{-- ===== Pengecekan plagiasi (pesanan JASA) ===== --}}
+    @if ($order->butuhUpload())
+    @php
+        $jKuota = $order->kuotaPengecekan();
+        $jTerpakai = $order->terpakaiPengecekan();
+        $jSisa = $order->sisaKuota();
+    @endphp
+    <style>
+        /* Ikon sejajar teks di seluruh blok pengecekan */
+        .pcek i.bi { line-height: 1; vertical-align: -.075em; }
+        .pcek .pcek-head-ic { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; background: #fff7ed; color: #ea580c; font-size: 1.3rem; flex-shrink: 0; }
+        .pcek .pcek-fileic { width: 42px; height: 42px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: #fff7ed; color: #ea580c; font-size: 1.2rem; flex-shrink: 0; }
+        /* Ikon di dalam kotak: pusatkan penuh. Glyph bootstrap-icons dirender via
+           ::before, jadi jadikan <i> flex + ::before block agar benar-benar center. */
+        .pcek .pcek-head-ic i.bi, .pcek .pcek-fileic i.bi { display: flex; align-items: center; justify-content: center; width: 1em; height: 1em; line-height: 1; vertical-align: 0; }
+        .pcek .pcek-head-ic i.bi::before, .pcek .pcek-fileic i.bi::before { display: block; line-height: 1; margin: 0; }
+        .pcek .pcek-link-box { display: flex; align-items: stretch; border: 1px solid #e2e8f0; border-radius: 11px; overflow: hidden; background: #fff; }
+        .pcek .pcek-link-box input { border: 0; background: #f8fafc; font-size: .82rem; color: #475569; padding: .55rem .8rem; flex: 1; min-width: 0; outline: none; }
+        .pcek .pcek-link-box button { border: 0; border-left: 1px solid #e2e8f0; background: #fff; color: #ea580c; font-weight: 600; font-size: .82rem; padding: .55rem 1rem; white-space: nowrap; display: inline-flex; align-items: center; gap: .4rem; transition: background .15s; }
+        .pcek .pcek-link-box button:hover { background: #fff7ed; }
+        .pcek .pcek-item { border: 1px solid #eef0f6; border-radius: 15px; padding: 1rem 1.1rem; background: #fff; transition: box-shadow .2s, border-color .2s; }
+        .pcek .pcek-item:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, .06); border-color: #e2e8f0; }
+        .pcek .pcek-tag { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; }
+        /* Panel penyelesaian pesanan jasa */
+        .pcek .pcek-finish { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; padding: 13px 15px; border: 1px solid #ddd6fe; border-radius: 13px; background: linear-gradient(180deg, #f5f3ff, #fff); }
+        .pcek .pcek-finish b { display: block; font-size: .85rem; color: #4338ca; }
+        .pcek .pcek-finish small { display: block; font-size: .76rem; color: #64748b; line-height: 1.45; margin-top: 2px; }
+        .pcek .pcek-finish small b { display: inline; color: #4338ca; }
+        /* Setelan exclude + catatan customer */
+        .pcek .pcek-set { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eef0f6; }
+        .pcek .pcek-set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .pcek .pcek-set-lbl { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #94a3b8; }
+        .pcek .pcek-set-lbl i.bi { display: flex; align-items: center; line-height: 1; font-size: .82rem; }
+        .pcek .pcek-set-lbl i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-set-vals { display: flex; flex-wrap: wrap; gap: 6px; }
+        .pcek .pcek-c { display: inline-flex; align-items: center; padding: 4px 11px; border-radius: 99px; background: #eef2ff; color: #4338ca; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+        .pcek .pcek-c.off { background: #f1f5f9; color: #94a3b8; font-weight: 500; }
+        .pcek .pcek-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 9px 12px; border-left: 3px solid #cbd5e1; border-radius: 0 9px 9px 0; background: #f8fafc; font-size: .8rem; color: #475569; line-height: 1.5; }
+        .pcek .pcek-note i.bi { flex-shrink: 0; margin-top: .15rem; color: #94a3b8; display: flex; line-height: 1; }
+        .pcek .pcek-note i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-note b { color: #334155; font-weight: 700; }
+        /* Baris aksi — satu sistem tombol, tinggi & radius seragam */
+        .pcek .pcek-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #f1f5f9; }
+        .pcek .pcek-push { margin-left: auto; }
+        .pcek .pcek-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: 1px solid transparent; border-radius: 9px; font-size: .82rem; font-weight: 600; line-height: 1; white-space: nowrap; cursor: pointer; text-decoration: none; transition: background .16s, border-color .16s, color .16s; }
+        .pcek .pcek-btn i.bi { font-size: .92rem; display: flex; align-items: center; line-height: 1; }
+        .pcek .pcek-btn i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-btn:disabled { opacity: .6; cursor: not-allowed; }
+        .pcek .pcek-btn.ghost { background: #fff; border-color: #e2e8f0; color: #475569; }
+        .pcek .pcek-btn.ghost:hover { background: #f8fafc; border-color: #cbd5e1; color: #1e293b; }
+        .pcek .pcek-btn.primary { background: #4e46e5; color: #fff; }
+        .pcek .pcek-btn.primary:hover { background: #4338ca; color: #fff; }
+        .pcek .pcek-btn.success { background: #16a34a; color: #fff; }
+        .pcek .pcek-btn.success:hover { background: #15803d; color: #fff; }
+        .pcek .pcek-btn.danger { background: #fff; border-color: #fecaca; color: #dc2626; }
+        .pcek .pcek-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; }
+        /* Form unggah hasil */
+        .pcek .pcek-form { margin-top: 14px; padding: 15px; border: 1px solid #d1fae5; border-radius: 14px; background: linear-gradient(180deg, #f6fefa, #fff); }
+        .pcek .pcek-form-head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }
+        .pcek .pcek-form-ic { width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; }
+        .pcek .pcek-form-ic i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .pcek .pcek-form-ic i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-form-head b { display: block; font-size: .88rem; font-weight: 700; color: #14532d; }
+        .pcek .pcek-form-head small { display: block; font-size: .74rem; color: #64748b; }
+        .pcek .pcek-form-x { flex-shrink: 0; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .16s, color .16s; }
+        .pcek .pcek-form-x:hover { background: #f1f5f9; color: #475569; }
+        .pcek .pcek-form-x i.bi { display: flex; line-height: 1; font-size: .82rem; }
+        /* Dropzone hasil (admin) */
+        .pcek .pcek-drop { position: relative; display: block; padding: 16px 14px; border: 2px dashed #bbf7d0; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; transition: border-color .18s, background .18s; }
+        .pcek .pcek-drop:hover { border-color: #4ade80; background: #f6fefa; }
+        .pcek .pcek-drop-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .pcek .pcek-drop-state { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
+        .pcek .pcek-drop-state i.bi { display: flex; align-items: center; line-height: 1; font-size: 1.15rem; }
+        .pcek .pcek-drop-state i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-drop-state i.bi.up { color: #16a34a; }
+        .pcek .pcek-drop-state i.bi.ok { color: #16a34a; }
+        .pcek .pcek-drop-state .nm { font-size: .84rem; font-weight: 600; color: #334155; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pcek .pcek-drop-state .hint { font-size: .74rem; color: #94a3b8; width: 100%; }
+        .pcek .pcek-drop-state .chg { font-size: .72rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 3px 9px; border-radius: 99px; }
+        .pcek .pcek-spin { animation: pcekSpin 1s linear infinite; color: #16a34a; }
+        @keyframes pcekSpin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .pcek .pcek-spin { animation: none; } }
+        /* Baris bawah form: persen di kiri, tombol rata kanan */
+        .pcek .pcek-form-foot { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 14px; }
+        .pcek .pcek-form-btns { display: flex; gap: 8px; margin-left: auto; }
+        @media (max-width: 479px) {
+            .pcek .pcek-form-foot { align-items: stretch; }
+            .pcek .pcek-persen { width: 100%; }
+            .pcek .pcek-persen-wrap { max-width: none; }
+            .pcek .pcek-form-btns { width: 100%; margin-left: 0; }
+            .pcek .pcek-form-btns .pcek-btn { flex: 1; }
+        }
+        /* Baris aksi form hasil — dua tombol mengisi penuh, tanpa ruang kosong */
+        .pcek .pcek-aksi { display: flex; gap: 8px; margin-top: 14px; }
+        .pcek .pcek-aksi .pcek-btn { flex: 1; }
+        .pcek .pcek-aksi .pcek-btn.success { flex: 2; }
+
+        /* Slot berkas hasil (plagiasi / AI / dokumen) */
+        .pcek .pcek-slot { display: flex; gap: 11px; padding: 13px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+        .pcek .pcek-slot-no { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: .76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .pcek .pcek-slot-body { flex: 1; min-width: 0; }
+        .pcek .pcek-slot-lbl { display: block; font-size: .82rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
+        .pcek .pcek-slot-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
+        .pcek .pcek-slot .pcek-drop { padding: 12px 10px; }
+        .pcek .pcek-slot .pcek-persen-wrap { max-width: 150px; }
+
+        /* Persen kemiripan */
+        .pcek .pcek-lbl { display: block; font-size: .78rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
+        .pcek .pcek-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
+        .pcek .pcek-persen-wrap { position: relative; max-width: 180px; }
+        .pcek .pcek-persen-num { width: 100%; height: 40px; padding: 0 46px 0 13px; font-size: .95rem; font-weight: 700; color: #334155; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; outline: none; transition: border-color .18s, box-shadow .18s; }
+        .pcek .pcek-persen-num:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .13); }
+        .pcek .pcek-persen-suffix { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); min-width: 34px; text-align: center; padding: 6px 8px; border-radius: 8px; background: #dcfce7; color: #15803d; font-size: .82rem; font-weight: 700; pointer-events: none; }
+        .pcek .pcek-auto { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #15803d; line-height: 1.45; }
+        .pcek .pcek-manual { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #b45309; line-height: 1.45; }
+        .pcek .pcek-pilih { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .pcek .pcek-pilih-btn { padding: 3px 12px; border-radius: 99px; border: 1px solid #fbbf24;
+            background: #fffbeb; color: #b45309; font-size: .78rem; font-weight: 700; cursor: pointer; }
+        .pcek .pcek-pilih-btn:hover { background: #fde68a; }
+        .pcek .pcek-auto i.bi { flex-shrink: 0; margin-top: .12rem; display: flex; line-height: 1; }
+        .pcek .pcek-auto i.bi::before { display: block; line-height: 1; }
+    </style>
+    <div class="card border-0 shadow-sm rounded-4 mb-4 pcek">
+        <div class="card-body p-4">
+            {{-- Header --}}
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="pcek-head-ic"><i class="bi bi-shield-check"></i></div>
+                <div class="flex-grow-1" style="min-width:0;">
+                    <h5 class="fw-bold mb-0">Pengecekan Plagiasi</h5>
+                    <small class="text-muted">Kelola dokumen &amp; hasil pengecekan customer</small>
+                </div>
+                <span class="badge rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 flex-shrink-0 {{ $jSisa > 0 ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
+                    <i class="bi bi-collection"></i> {{ $jSisa }} sisa
+                </span>
+            </div>
+
+            {{-- Kuota terpakai (progress) --}}
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="text-muted d-inline-flex align-items-center gap-1"><i class="bi bi-graph-up-arrow"></i> Kuota terpakai</small>
+                    <small class="fw-semibold">{{ $jTerpakai }} / {{ $jKuota }}</small>
+                </div>
+                <div class="progress" style="height:8px; border-radius:99px; background:#f1f5f9;">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $jKuota > 0 ? round($jTerpakai / $jKuota * 100) : 0 }}%;"></div>
+                </div>
+            </div>
+
+            {{-- Penyelesaian manual: dipakai bila customer tak memakai seluruh
+                 kuotanya, supaya omset tetap masuk cash flow & tak menggantung. --}}
+            @if ($order->status !== 'completed' && $order->uploads->where('status', 'selesai')->isNotEmpty())
+            <div class="pcek-finish">
+                <div class="flex-grow-1" style="min-width:0;">
+                    <b>Selesaikan pesanan jasa ini?</b>
+                    <small>
+                        @if ($jSisa > 0)
+                            Masih ada <b>{{ $jSisa }}</b> kuota tersisa. Selesaikan bila customer tak akan memakainya lagi — omset akan tercatat di cash flow.
+                        @else
+                            Semua kuota terpakai. Pesanan akan diselesaikan otomatis setelah hasil terakhir diunggah.
+                        @endif
+                    </small>
+                </div>
+                <button type="button" class="pcek-btn primary flex-shrink-0 pcek-konfirmasi"
+                    data-action="selesaikanJasa"
+                    data-title="Selesaikan pesanan jasa?"
+                    data-text="Item akan ditandai terkirim dan omset dicatat ke cash flow."
+                    data-confirm="Ya, selesaikan"
+                    data-icon="question">
+                    <i class="bi bi-check2-circle"></i> Selesaikan Pesanan
+                </button>
+            </div>
+            @endif
+
+            {{-- Link customer (jaga-jaga bila customer lupa/hilang link) --}}
+            <label class="form-label small text-muted mb-1 d-inline-flex align-items-center gap-1"><i class="bi bi-link-45deg"></i> Link customer (bila lupa / hilang)</label>
+            <div class="pcek-link-box mb-4">
+                <input type="text" id="cust-cek-link" readonly value="{{ url('/cek/'.$order->share_token) }}">
+                <button type="button" onclick="salinLinkCek()"><i class="bi bi-clipboard"></i> Salin</button>
+            </div>
+
+            @forelse ($order->uploads->sortByDesc('created_at') as $up)
+            <div class="pcek-item mb-3" wire:key="adm-up-{{ $up->id }}">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="pcek-fileic"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="flex-grow-1" style="min-width:0;">
+                        <div class="fw-semibold text-dark text-truncate">
+                            {{ $up->nama_asli }}
+                            @if ($up->jenisLabel())
+                            <span class="badge bg-{{ $up->jenisWarna() }}-subtle text-{{ $up->jenisWarna() }} rounded-pill ms-1" style="font-size:.68rem; vertical-align:middle;">{{ $up->jenisLabel() }}</span>
+                            @endif
+                        </div>
+                        <div class="text-muted d-inline-flex align-items-center gap-2 flex-wrap" style="font-size:.8rem;">
+                            <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $up->created_at->format('d M Y H:i') }}</span>
+                            <span class="text-secondary">&middot;</span>
+                            <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-hdd"></i> {{ $up->ukuranLabel() }}</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-{{ $up->statusWarna() }}-subtle text-{{ $up->statusWarna() }} rounded-pill flex-shrink-0 d-inline-flex align-items-center gap-1 px-3 py-2">
+                        <i class="bi {{ $up->statusIcon() }}"></i> {{ $up->statusLabel() }}
+                    </span>
+                </div>
+
+                {{-- Setelan exclude + catatan dari customer --}}
+                <div class="pcek-set">
+                    <div class="pcek-set-row">
+                        <span class="pcek-set-lbl"><i class="bi bi-sliders"></i> Kecualikan</span>
+                        <span class="pcek-set-vals">
+                            @forelse ($up->daftarExclude() as $ex)
+                            <span class="pcek-c">{{ $ex }}</span>
+                            @empty
+                            <span class="pcek-c off">Tidak ada</span>
+                            @endforelse
+                        </span>
+                    </div>
+
+                    @if ($up->catatan)
+                    <div class="pcek-note">
+                        <i class="bi bi-chat-left-quote"></i>
+                        <span><b>Catatan customer:</b> {{ $up->catatan }}</span>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Persen kemiripan bila sudah selesai --}}
+                @if ($up->status === 'selesai' && (! is_null($up->persentase) || ! is_null($up->persentase_ai)))
+                <div class="mt-2 d-flex flex-wrap gap-1">
+                    @if (! is_null($up->persentase))
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%
+                    </span>
+                    @endif
+                    @if (! is_null($up->persentase_ai))
+                    <span class="badge bg-info-subtle text-info rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-robot"></i> AI: {{ $up->persentase_ai }}%
+                    </span>
+                    @endif
+                </div>
+                @endif
+
+                {{-- Aksi — satu aksi utama per status, sisanya netral; destruktif di kanan --}}
+                <div class="pcek-actions">
+                    <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost">
+                        <i class="bi bi-download"></i> File Customer
+                    </a>
+                    @if ($up->pdf_path)
+                    {{-- Parafrase: PDF acuan jumlah halaman (file utama = DOCX kerja) --}}
+                    <a href="{{ route('admin.jasa.pdf', $up) }}" class="pcek-btn ghost" title="PDF acuan jumlah halaman">
+                        <i class="bi bi-filetype-pdf"></i> PDF Acuan
+                    </a>
+                    @endif
+
+                    @if ($up->status === 'menunggu')
+                    <button type="button" wire:click="mulaiProses('{{ $up->id }}')" class="pcek-btn primary">
+                        <i class="bi bi-play-fill"></i> Mulai Proses
+                    </button>
+                    @endif
+
+                    @if (in_array($up->status, ['menunggu', 'diproses']))
+                    <button type="button" wire:click="bukaUploadHasil('{{ $up->id }}')"
+                        class="pcek-btn {{ $up->status === 'diproses' ? 'primary' : 'ghost' }}">
+                        <i class="bi bi-cloud-arrow-up"></i> Unggah Hasil
+                    </button>
+                    @endif
+
+                    @if ($up->status === 'selesai')
+                    @if ($up->hasil_path)
+                    <a href="{{ route('admin.jasa.hasil', $up) }}" class="pcek-btn primary">
+                        <i class="bi bi-file-earmark-check"></i> Hasil Plagiasi
+                    </a>
+                    @endif
+                    @if ($up->hasil_ai_path)
+                    <a href="{{ route('admin.jasa.hasil-ai', $up) }}" class="pcek-btn ghost">
+                        <i class="bi bi-robot"></i> Hasil AI
+                    </a>
+                    @endif
+                    @if ($up->hasil_docx_path)
+                    <a href="{{ route('admin.jasa.hasil-docx', $up) }}" class="pcek-btn ghost">
+                        <i class="bi bi-file-earmark-word"></i> Dokumen Hasil
+                    </a>
+                    @endif
+                    <button type="button" wire:click="bukaUploadHasil('{{ $up->id }}')" class="pcek-btn ghost">
+                        <i class="bi bi-arrow-repeat"></i> Ganti Hasil
+                    </button>
+                    @endif
+
+                    @if (in_array($up->status, ['menunggu', 'diproses']))
+                    <button type="button" class="pcek-btn danger pcek-push pcek-konfirmasi" title="Batalkan pengecekan"
+                        data-action="batalkanPengecekan"
+                        data-arg="{{ $up->id }}"
+                        data-title="Batalkan pengecekan ini?"
+                        data-text="Kuota customer akan dikembalikan."
+                        data-confirm="Ya, batalkan"
+                        data-icon="warning">
+                        <i class="bi bi-x-lg"></i> Batalkan
+                    </button>
+                    @endif
+                </div>
+
+                {{-- Form unggah hasil (inline, saat aktif) --}}
+                @if ($uploadAktifId === $up->id)
+                <div class="pcek-form" wire:key="adm-hasilform-{{ $up->id }}">
+                    <div class="pcek-form-head">
+                        <span class="pcek-form-ic"><i class="bi bi-file-earmark-arrow-up"></i></span>
+                        <div class="flex-grow-1" style="min-width:0;">
+                            <b>Unggah Hasil Pengecekan</b>
+                            <small>File hasil langsung bisa diunduh customer</small>
+                        </div>
+                        <button type="button" wire:click="tutupUploadHasil" class="pcek-form-x" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                    </div>
+
+                    {{-- Hasil cek PLAGIASI — hanya bila layanannya memang dibeli --}}
+                    @if ($this->slotTampil('plagiasi'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('plagiasi') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Hasil Cek Plagiasi <span>PDF / DOCX</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilFile" accept=".pdf,.docx" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah &amp; membaca…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilFile" class="pcek-drop-state">
+                                    @if ($hasilFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
+                            <div class="pcek-persen mt-2">
+                                <label class="pcek-lbl">Persen plagiasi <span>boleh dikosongkan</span></label>
+                                <div class="pcek-persen-wrap">
+                                    <input type="number" min="0" max="100" wire:model="persentaseInput" class="pcek-persen-num" placeholder="23">
+                                    <span class="pcek-persen-suffix">%</span>
+                                </div>
+                                @if ($persenTerbacaOtomatis)
+                                <div class="pcek-auto"><i class="bi bi-magic"></i><span>Terbaca otomatis — mohon dicek.</span></div>
+                                @elseif ($persenGagalBaca)
+                                <div class="pcek-manual"><i class="bi bi-pencil-square"></i><span>Persen tak terbaca dari berkas ini — isi manual dari PDF.</span></div>
+                                @endif
+                                @error('persentaseInput') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    @endif
+
+                    {{-- Hasil cek AI — hanya bila layanannya memang dibeli --}}
+                    @if ($this->slotTampil('ai'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('ai') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Hasil Cek AI <span>PDF</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilAiFile" accept=".pdf" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilAiFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah &amp; membaca…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilAiFile" class="pcek-drop-state">
+                                    @if ($hasilAiFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilAiFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_ai_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_ai_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilAiFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+
+                            <div class="pcek-persen mt-2">
+                                <label class="pcek-lbl">Persen AI <span>boleh dikosongkan</span></label>
+                                <div class="pcek-persen-wrap">
+                                    <input type="number" min="0" max="100" wire:model="persentaseAiInput" class="pcek-persen-num" placeholder="8">
+                                    <span class="pcek-persen-suffix">%</span>
+                                </div>
+                                @if ($persenAiTerbacaOtomatis)
+                                <div class="pcek-auto">
+                                    <i class="bi bi-magic"></i>
+                                    <span>
+                                        Terbaca otomatis dari <b>{{ $sumberAi === 'gptzero' ? 'GPTZero' : 'Turnitin' }}</b>
+                                        ({{ $labelAi ?? 'Persen AI' }}) — mohon dicek.
+                                        @if ($sumberAi === 'gptzero')
+                                        <br><span class="text-muted">Catatan: GPTZero melaporkan <i>probabilitas dokumen dibuat AI</i>, bukan persentase teks AI.</span>
+                                        @endif
+                                    </span>
+                                </div>
+                                @elseif (count($pilihanAi) > 1)
+                                <div class="pcek-manual">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>
+                                        Berkas memuat <b>{{ count($pilihanAi) }} laporan bertumpuk</b>
+                                        ({{ implode('%, ', $pilihanAi) }}%). Diisi <b>{{ end($pilihanAi) }}%</b> —
+                                        nilai lapisan teratas, yang tampak saat PDF dibuka.
+                                        Nilai lain tersembunyi di bawahnya; ganti bila perlu:
+                                        <span class="pcek-pilih">
+                                            @foreach ($pilihanAi as $nilai)
+                                            <button type="button" class="pcek-pilih-btn"
+                                                wire:click="$set('persentaseAiInput', {{ $nilai }})">{{ $nilai }}%</button>
+                                            @endforeach
+                                        </span>
+                                    </span>
+                                </div>
+                                @elseif ($persenAiGagalBaca)
+                                <div class="pcek-manual"><i class="bi bi-pencil-square"></i><span>Format laporan tak dikenali — isi persen manual dari PDF.</span></div>
+                                @endif
+                                @error('persentaseAiInput') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    @endif
+
+                    {{-- Dokumen hasil parafrase — khusus jasa per halaman --}}
+                    @if ($this->slotTampil('docx'))
+                    <div class="pcek-slot">
+                        <span class="pcek-slot-no">{{ $this->nomorSlot('docx') }}</span>
+                        <div class="pcek-slot-body">
+                            <label class="pcek-slot-lbl">Dokumen Hasil (Parafrase) <span>DOCX</span></label>
+                            <label class="pcek-drop">
+                                <input type="file" wire:model="hasilDocxFile" accept=".docx" class="pcek-drop-input">
+                                <span wire:loading wire:target="hasilDocxFile" class="pcek-drop-state">
+                                    <i class="bi bi-arrow-repeat pcek-spin"></i>
+                                    <span class="nm">Mengunggah…</span>
+                                </span>
+                                <span wire:loading.remove wire:target="hasilDocxFile" class="pcek-drop-state">
+                                    @if ($hasilDocxFile)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $hasilDocxFile->getClientOriginalName() }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @elseif ($up->hasil_docx_nama)
+                                    <i class="bi bi-file-earmark-check ok"></i>
+                                    <span class="nm">{{ $up->hasil_docx_nama }}</span>
+                                    <span class="chg">Ganti</span>
+                                    @else
+                                    <i class="bi bi-cloud-arrow-up up"></i>
+                                    <span class="nm">Pilih file atau seret ke sini</span>
+                                    @endif
+                                </span>
+                            </label>
+                            @error('hasilDocxFile') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Aksi — kedua tombol mengisi penuh lebar form --}}
+                    <div class="pcek-aksi">
+                        <button type="button" wire:click="tutupUploadHasil" class="pcek-btn ghost">Batal</button>
+                        <button type="button" wire:click="simpanHasil" wire:loading.attr="disabled"
+                            wire:target="simpanHasil,hasilFile,hasilAiFile,hasilDocxFile" class="pcek-btn success">
+                            <span wire:loading.remove wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-check-lg"></i> Simpan Hasil</span>
+                            <span wire:loading wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-hourglass-split"></i> Menyimpan…</span>
+                        </button>
+                    </div>
+                </div>
+                @endif
+            </div>
+            @empty
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem; opacity:.45;"></i>
+                <div class="fw-semibold text-dark">Belum ada dokumen</div>
+                <small>Customer mengunggah lewat link pengecekan di atas.</small>
+            </div>
+            @endforelse
+        </div>
+    </div>
+    @endif
+
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
             <div class="d-flex align-items-center gap-2 mb-3">
@@ -344,6 +827,30 @@ Detail Pesanan || lemon
                         <tr>
                             <td class="fw-semibold">
                                 {{ $item->product->nama_akun ?? '-' }}
+                                {{-- Add-on & jumlah halaman (khusus produk jasa) --}}
+                                @if (! empty($item->addons) || $item->jumlah_halaman)
+                                {{-- Rata kiri, seragam dengan badge ebook/bonus di kolom yang sama --}}
+                                <div class="mt-1 d-flex flex-wrap gap-1">
+                                    @if ($item->jumlah_halaman)
+                                    <span class="badge bg-info-subtle text-info border border-info rounded-pill" style="font-size:.68rem;">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                        {{ $item->halaman_dihitung ?? $item->jumlah_halaman }} dari {{ $item->jumlah_halaman }} halaman
+                                    </span>
+                                    @endif
+                                    @if ($item->halaman_dikecualikan)
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary rounded-pill" style="font-size:.68rem;"
+                                        title="Halaman ini TIDAK perlu dikerjakan">
+                                        <i class="bi bi-slash-circle"></i> Lewati hal. {{ $item->halaman_dikecualikan }}
+                                    </span>
+                                    @endif
+                                    @foreach (($item->addons ?? []) as $ad)
+                                    <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill" style="font-size:.68rem;"
+                                        title="Tambahan Rp {{ number_format($ad['harga'] ?? 0, 0, ',', '.') }}">
+                                        <i class="bi bi-plus-circle"></i> {{ $ad['nama'] ?? '-' }}
+                                    </span>
+                                    @endforeach
+                                </div>
+                                @endif
                                 @if ($item->ebooks->count() || $item->bonus_description)
                                 <div class="mt-1 d-flex flex-wrap gap-1">
                                     @foreach ($item->ebooks as $eb)
@@ -632,7 +1139,71 @@ Detail Pesanan || lemon
                 ...waGlossyConfig
             });
         });
+
+        Livewire.on('order-updated', (e) => {
+            const msg = (e && (e.message ?? (Array.isArray(e) ? e[0]?.message : null))) || 'Berhasil diperbarui.';
+            Swal.fire({ title: 'Berhasil', text: msg, icon: 'success', timer: 2200, showConfirmButton: false, ...waGlossyConfig });
+        });
     });
+
+    function salinLinkCek() {
+        const el = document.getElementById('cust-cek-link');
+        const txt = el ? (el.value || el.textContent || '').trim() : '';
+        const done = () => {
+            if (window.Swal) Swal.fire({
+                title: 'Link Disalin',
+                text: 'Link pengecekan customer berhasil disalin ke clipboard.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                ...waGlossyConfig
+            });
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(done);
+        else if (el) { el.select(); try { document.execCommand('copy'); } catch (err) {} done(); }
+    }
+
+    // Konfirmasi seragam (SweetAlert glossy) untuk tombol ber-class .pcek-konfirmasi,
+    // menggantikan wire:confirm bawaan browser. Aksi & teks diambil dari data-*.
+    if (!window.__pcekKonfirmasiBound) {
+        window.__pcekKonfirmasiBound = true;
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.pcek-konfirmasi');
+            if (!btn) return;
+            e.preventDefault();
+
+            const method = btn.dataset.action;
+            const arg = btn.dataset.arg || null;
+            const component = btn.closest('[wire\\:id]');
+            if (!method || !component) return;
+
+            const jalankan = () => {
+                const lw = Livewire.find(component.getAttribute('wire:id'));
+                if (lw) arg ? lw.call(method, arg) : lw.call(method);
+            };
+
+            if (typeof Swal === 'undefined') { jalankan(); return; }
+
+            Swal.fire({
+                title: btn.dataset.title || 'Anda yakin?',
+                text: btn.dataset.text || '',
+                icon: btn.dataset.icon || 'question',
+                showCancelButton: true,
+                confirmButtonText: btn.dataset.confirm || 'Ya, lanjutkan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                ...waGlossyConfig,
+                // waGlossyConfig tak mendefinisikan kelas tombol (buttonsStyling:false),
+                // jadi tombol akan polos. Sisipkan kelas glossy standar agar seragam
+                // dengan konfirmasi hapus di seluruh admin.
+                customClass: {
+                    ...waGlossyConfig.customClass,
+                    confirmButton: 'btn-glossy-confirm',
+                    cancelButton: 'btn-glossy-cancel',
+                },
+            }).then((r) => { if (r.isConfirmed) jalankan(); });
+        });
+    }
 
     function escapeHtml(str) {
         return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

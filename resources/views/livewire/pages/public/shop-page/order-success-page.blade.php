@@ -82,7 +82,8 @@
                     </div>
                 </div>
 
-                {{-- Info pengiriman akun --}}
+                {{-- Info pengiriman akun — hanya bila ada item AKUN (produk jasa tak dikirim akun) --}}
+                @if ($order->items->contains(fn ($i) => ! optional($i->product)->butuh_file))
                 <div class="pay-deadline" style="align-items:flex-start;">
                     <i class="bi bi-envelope-check" style="margin-top:2px;"></i>
                     <div>
@@ -91,6 +92,29 @@
                         <div style="font-size:.82rem; color:var(--ph-muted); margin-top:4px;">via Email / WhatsApp, maksimal 1×24 jam pada jam operasional.</div>
                     </div>
                 </div>
+                @endif
+
+                {{-- ===== Pesanan JASA: arahkan ke halaman pengecekan (link permanen) ===== --}}
+                @if ($order->butuhUpload())
+                <div class="pay-card" style="margin-top:14px; border:1px solid #fde68a; background:linear-gradient(180deg,#fffdf5,#fff);">
+                    <div class="pay-card-head" style="color:#b45309;"><i class="bi bi-shield-check"></i> Halaman Cek Plagiasi</div>
+                    <div class="pay-card-body">
+                        <p style="font-size:.88rem; color:var(--ph-muted); margin-bottom:12px;">
+                            Pesanan ini termasuk <b>jasa cek plagiasi</b>. Unggah file &amp; unduh hasil lewat halaman khusus di bawah.
+                            <b>Simpan linknya</b> agar bisa dibuka kapan saja — tanpa perlu login.
+                        </p>
+
+                        <div style="display:flex; gap:8px; align-items:center; background:#f8fafc; border:1px dashed var(--ph-line); border-radius:10px; padding:8px 10px; margin-bottom:10px;">
+                            <code id="su-cek-link" style="flex:1; min-width:0; font-size:.78rem; color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ url('/cek/'.$order->share_token) }}</code>
+                            <button type="button" onclick="suSalinCek()" style="border:0; background:var(--ph-orange); color:#fff; border-radius:8px; padding:6px 12px; font-size:.78rem; font-weight:700; cursor:pointer; white-space:nowrap;"><i class="bi bi-clipboard"></i> Salin</button>
+                        </div>
+
+                        <a href="{{ route('jasa.cek', $order->share_token) }}" class="ph-empty-btn" style="width:100%; justify-content:center;">
+                            <i class="bi bi-box-arrow-up-right"></i> Buka Halaman Pengecekan
+                        </a>
+                    </div>
+                </div>
+                @endif
 
                 <div class="ph-empty-actions" style="margin-top:8px;">
                     <a href="{{ route('order.history') }}" class="ph-empty-btn"><i class="bi bi-clock-history"></i> Lihat Riwayat</a>
@@ -103,4 +127,19 @@
             </div>
         </div>
     </section>
+
+    @if ($order->butuhUpload())
+    <script>
+        function suSalinCek() {
+            var el = document.getElementById('su-cek-link');
+            var txt = el ? el.textContent.trim() : '';
+            var done = function () {
+                if (typeof window.phToast === 'function') window.phToast('Simpan link ini untuk unggah file & unduh hasil.', 'Link disalin', 'bi-clipboard-check');
+                else if (typeof Swal !== 'undefined') Swal.fire({ toast:true, position:'top-end', showConfirmButton:false, timer:2400, title:'Link disalin' });
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(done);
+            else { var r=document.createRange(); r.selectNode(el); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); try{document.execCommand('copy');}catch(e){} done(); }
+        }
+    </script>
+    @endif
 </div>

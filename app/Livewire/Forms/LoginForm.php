@@ -4,6 +4,7 @@ namespace App\Livewire\Forms;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
@@ -12,6 +13,9 @@ class LoginForm extends Form
 {
     /** Jumlah percobaan gagal sebelum akun diblokir. */
     public const MAX_ATTEMPTS = 3;
+
+    /** Satu kalimat blokir, dipakai di semua cabang agar seragam. */
+    private const PESAN_DIBLOKIR = 'Akun Anda diblokir karena '.self::MAX_ATTEMPTS.'x gagal login. Hubungi admin untuk membuka blokir.';
 
     #[Validate('required|string')]
     public string $nik = '';
@@ -35,14 +39,34 @@ class LoginForm extends Form
      */
     public function authenticate(): void
     {
+        /*
+         * Pembatasan per ALAMAT IP, di luar penghitung per akun.
+         *
+         * Tanpa ini penyerang bisa mencoba tanpa henti: menebak NIK yang ada
+         * (pesan galatnya berbeda), lalu mengunci akun siapa pun cukup dengan
+         * 3x salah. Dengan jeda ini, satu IP hanya dapat 10 percobaan/menit
+         * sehingga penguncian massal tak lagi praktis.
+         */
+        $kunciIp = 'login-ip:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($kunciIp, 10)) {
+            $detik = RateLimiter::availableIn($kunciIp);
+
+            throw ValidationException::withMessages([
+                'form.nik' => 'Terlalu banyak percobaan. Coba lagi dalam '.ceil($detik / 60).' menit.',
+            ]);
+        }
+
         $nik = strtoupper(trim($this->nik));
 
         $user = User::whereHas('detail', fn ($q) => $q->where('nik', $nik))->first();
 
         // Akun sudah diblokir -> tolak, apa pun kata sandinya.
         if ($user && $user->isBlocked()) {
+            RateLimiter::hit($kunciIp, 60);
+
             throw ValidationException::withMessages([
-                'form.nik' => 'Akun Anda diblokir karena '.self::MAX_ATTEMPTS.'x gagal login. Hubungi admin untuk membuka blokir.',
+                'form.nik' => self::PESAN_DIBLOKIR,
             ]);
         }
 
@@ -50,6 +74,8 @@ class LoginForm extends Form
             && Auth::attempt(['email' => $user->email, 'password' => $this->password], $this->remember);
 
         if (! $berhasil) {
+            RateLimiter::hit($kunciIp, 60);
+
             // Hitung kegagalan hanya pada NIK yang benar-benar ada.
             if ($user) {
                 $user->increment('failed_login_attempts');
@@ -58,24 +84,29 @@ class LoginForm extends Form
                     $user->update(['status' => 'blokir']);
 
                     throw ValidationException::withMessages([
-                        'form.nik' => 'Akun Anda diblokir karena '.self::MAX_ATTEMPTS.'x gagal login. Hubungi admin untuk membuka blokir.',
+                        'form.nik' => self::PESAN_DIBLOKIR,
                     ]);
                 }
-
-                $sisa = self::MAX_ATTEMPTS - $user->failed_login_attempts;
-
-                throw ValidationException::withMessages([
-                    'form.nik' => "NIK atau kata sandi salah. Sisa {$sisa} percobaan sebelum akun diblokir.",
-                ]);
             }
 
+            /*
+             * Pesan SERAGAM, tak peduli NIK-nya ada atau tidak.
+             *
+             * Dulu pesannya menyebut "sisa N percobaan" hanya bila NIK ada,
+             * sehingga penyerang bisa memetakan NIK karyawan yang valid cukup
+             * dari beda pesannya. Sisa percobaan sengaja tak lagi diberitahukan
+             * — karyawan yang benar-benar lupa sandi tetap terbantu lewat
+             * pesan blokir di atas dan bantuan admin.
+             */
             throw ValidationException::withMessages([
                 'form.nik' => 'NIK atau kata sandi salah.',
             ]);
         }
 
-        // Sukses -> reset penghitung kegagalan.
-        if ($user && $user->failed_login_attempts > 0) {
+        // Sukses -> bersihkan penghitung kegagalan (akun & IP).
+        RateLimiter::clear($kunciIp);
+
+        if ($user->failed_login_attempts > 0) {
             $user->update(['failed_login_attempts' => 0]);
         }
     }

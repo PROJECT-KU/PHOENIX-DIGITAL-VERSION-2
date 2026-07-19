@@ -109,6 +109,13 @@ class Index extends Component
             return;
         }
 
+        // Produk JASA tak bisa dibeli langsung dari daftar: harganya bergantung
+        // pada dokumen yang diunggah (per halaman) dan/atau add-on yang dipilih.
+        // Arahkan ke halaman produk tempat semua itu ditentukan.
+        if ($product->butuh_file) {
+            return $this->redirectRoute('shop.detail-product', ['id' => $product->id], navigate: true);
+        }
+
         $best = $this->promoService->getBestProductDiscount($productId, null);
         $rows = $product->daftarHarga();
 
@@ -266,6 +273,12 @@ class Index extends Component
     {
         $product = Product::findOrFail($productId);
 
+        // Penjaga: produk JASA hanya boleh masuk keranjang lewat halaman produk
+        // (butuh unggah dokumen dan/atau pilihan add-on agar harganya benar).
+        if ($product->butuh_file) {
+            return $this->redirectRoute('shop.detail-product', ['id' => $product->id], navigate: true);
+        }
+
         // Tentukan harga berdasarkan durasi
         $price = $this->getPrice($product, $durationType, $durationValue);
 
@@ -341,7 +354,7 @@ class Index extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
-        $products = Product::when($this->search, function ($query) {
+        $products = Product::with('prices')->when($this->search, function ($query) {
             $query->where(function ($q) {
                 $q->where('nama_akun', 'like', "%{$this->search}%")
                     ->orWhere('deskripsi', 'like', "%{$this->search}%");

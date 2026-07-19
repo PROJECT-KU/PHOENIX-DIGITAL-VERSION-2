@@ -225,8 +225,8 @@ Data Pengeluaran || lemon
                                     @php $fotoBukti = $spending->images; @endphp
                                     @if (count($fotoBukti))
                                     <a href="javascript:void(0)" role="button" class="sp-bukti-trigger d-inline-block ms-1 align-middle position-relative" title="Lihat gambar/bukti"
-                                        data-bukti='@json(collect($fotoBukti)->map(fn ($p) => Storage::url($p))->values())'>
-                                        <img src="{{ Storage::url($fotoBukti[0]) }}" alt="bukti" style="width:26px; height:26px; object-fit:cover; border-radius:6px; border:1px solid #e6e8f2; cursor:zoom-in;">
+                                        data-bukti='@json(collect($fotoBukti)->keys()->map(fn ($i) => route('admin.spending.lampiran', [$spending, $i]))->values())'>
+                                        <img src="{{ route('admin.spending.lampiran', [$spending, 0]) }}" alt="bukti" style="width:26px; height:26px; object-fit:cover; border-radius:6px; border:1px solid #e6e8f2; cursor:zoom-in;">
                                         @if (count($fotoBukti) > 1)
                                         <span class="badge bg-primary position-absolute top-0 start-100 translate-middle" style="font-size:.5rem;">+{{ count($fotoBukti) - 1 }}</span>
                                         @endif
