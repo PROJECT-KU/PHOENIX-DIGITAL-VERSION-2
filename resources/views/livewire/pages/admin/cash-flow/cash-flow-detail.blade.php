@@ -131,29 +131,23 @@ Detail Cash Flow || lemon
                             <tbody>
                                 @foreach($detail['items'] as $it)
                                 <tr>
-                                    <td class="fw-semibold text-dark">
-                                        {{ $it['nama'] }}
-                                        @if(!empty($it['addons']))
-                                        <div class="mt-1 d-flex flex-column gap-1">
-                                            @foreach($it['addons'] as $ad)
-                                            <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
-                                                <i class="bi bi-plus-circle" style="color:#f59e0b;"></i>
-                                                {{ $ad['nama'] }}
-                                                <span class="text-secondary">({{ $ad['harga'] }})</span>
-                                            </span>
-                                            @endforeach
-                                        </div>
-                                        @endif
-                                    </td>
+                                    <td class="fw-semibold text-dark">{{ $it['nama'] }}</td>
                                     <td class="text-muted">{{ $it['durasi'] }}</td>
                                     <td class="text-center">{{ $it['qty'] }}</td>
-                                    <td class="text-end fw-semibold">
-                                        {{ $it['subtotal'] }}
-                                        @if(!empty($it['addons_total']))
-                                        <div class="text-muted fw-normal" style="font-size: 0.72rem;">+ add-on {{ $it['addons_total'] }}</div>
-                                        @endif
-                                    </td>
+                                    <td class="text-end fw-semibold">{{ $it['subtotal'] }}</td>
                                 </tr>
+                                {{-- Add-on sebagai BARIS TERSENDIRI: harganya nyata terpisah dari
+                                     produk induk, jadi subtotal induk tak tampak seperti sudah termasuk add-on. --}}
+                                @foreach($it['addons'] ?? [] as $ad)
+                                <tr>
+                                    <td class="ps-4 text-muted" style="font-size: 0.8rem;">
+                                        <i class="bi bi-plus-circle me-1" style="color:#f59e0b;"></i>Add-on: {{ $ad['nama'] }}
+                                    </td>
+                                    <td class="text-muted">—</td>
+                                    <td class="text-center text-muted">1</td>
+                                    <td class="text-end text-muted" style="font-size: 0.85rem;">{{ $ad['harga'] }}</td>
+                                </tr>
+                                @endforeach
                                 @endforeach
                             </tbody>
                         </table>

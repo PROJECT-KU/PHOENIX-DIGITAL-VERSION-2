@@ -380,22 +380,22 @@ class CashFlowList extends Component
             $modalByProduct[(string) $r->product_id] = (float) $r->modal;
         }
 
+        // Batas tanggal harga modal yang berlaku (akhir periode terpilih).
+        if ($usesSiklus) {
+            // Akhir siklus gaji = tgl gajian (sehari sebelum akhir eksklusif).
+            $hargaCutoff = $siklusAkhir->copy()->subDay()->toDateString();
+        } elseif ($bulan && $tahun) {
+            $hargaCutoff = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
+        } elseif ($tahun) {
+            $hargaCutoff = Carbon::create($tahun, 12, 31)->toDateString();
+        } elseif ($bulan) {
+            $hargaCutoff = Carbon::create(now()->year, $bulan, 1)->endOfMonth()->toDateString();
+        } else {
+            $hargaCutoff = null;
+        }
+
         // Modal produk PRIVATE = katalog modal satuan (harga BERLAKU s/d periode) x jumlah order
         if (! empty($privateIds)) {
-            // Batas tanggal harga yang berlaku (akhir periode terpilih).
-            if ($usesSiklus) {
-                // Akhir siklus gaji = tgl gajian (sehari sebelum akhir eksklusif).
-                $hargaCutoff = $siklusAkhir->copy()->subDay()->toDateString();
-            } elseif ($bulan && $tahun) {
-                $hargaCutoff = Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString();
-            } elseif ($tahun) {
-                $hargaCutoff = Carbon::create($tahun, 12, 31)->toDateString();
-            } elseif ($bulan) {
-                $hargaCutoff = Carbon::create(now()->year, $bulan, 1)->endOfMonth()->toDateString();
-            } else {
-                $hargaCutoff = null;
-            }
-
             $catalog = \App\Models\ProductModalPrice::query()
                 ->whereIn('product_id', $privateIds)
                 ->when($hargaCutoff, fn ($q) => $q->where('berlaku_mulai', '<=', $hargaCutoff))
@@ -468,6 +468,21 @@ class CashFlowList extends Component
         // "Tanpa Produk"), supaya angka per produk tidak tertukar.
         foreach ($this->penjualanRscPerProduk() as $pid => $nilai) {
             $penjualanByProduct[$pid] = ($penjualanByProduct[$pid] ?? 0) + $nilai;
+        }
+
+        // Add-on jasa (mis. cek plagiasi turnitin pada pesanan cek AI): penjualan
+        // & modalnya diakui pada PRODUK ADD-ON SENDIRI, bukan produk induk —
+        // walau dibeli dalam satu order. Add-on opsi non-pemeriksaan diakui di
+        // produk induk (tanpa modal). Lihat AtribusiAddonJasa.
+        $addon = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($paidStatuses, $applyOrderPeriode) {
+            $q->whereIn('status', $paidStatuses);
+            $applyOrderPeriode($q);
+        }, $hargaCutoff);
+        foreach ($addon['penjualan'] as $pid => $nilai) {
+            $penjualanByProduct[(string) $pid] = ($penjualanByProduct[(string) $pid] ?? 0) + $nilai;
+        }
+        foreach ($addon['modal'] as $pid => $nilai) {
+            $modalByProduct[(string) $pid] = ($modalByProduct[(string) $pid] ?? 0) + $nilai;
         }
 
         $penjualan = array_sum($penjualanByProduct);
