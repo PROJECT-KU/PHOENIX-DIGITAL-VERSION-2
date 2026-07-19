@@ -15,11 +15,18 @@ use Closure;
  * add-on (tersimpan di order_items.addons) tak masuk omset mana pun, dan
  * modal pemeriksaan add-on tak terhitung.
  *
+ * PENTING: order_items.subtotal SUDAH termasuk harga add-on
+ * (subtotal = harga produk + addons_total). Karena itu penjualan add-on
+ * DIPINDAHKAN dari produk induk, bukan ditambahkan — kalau ditambahkan,
+ * satu penjualan terhitung dua kali dan omset menggelembung.
+ *
  * Aturan:
- *  - Add-on yang NAMA-nya cocok dengan produk jasa → penjualan + modal masuk
- *    ke produk itu (mis. add-on "cek plagiasi turnitin" → produk turnitin).
- *  - Add-on lain (mis. target parafrase "plagiasi di bawah 30%") → penjualannya
- *    masuk ke produk INDUK item, tanpa modal (bukan pemeriksaan berakun sendiri).
+ *  - Add-on yang NAMA-nya cocok dengan produk jasa → penjualannya PINDAH dari
+ *    produk induk ke produk itu, dan modal pemeriksaannya DITAMBAHKAN di sana
+ *    (modal induk memang belum mencakup pemeriksaan add-on).
+ *  - Add-on lain (mis. target parafrase "plagiasi di bawah 30%") → dibiarkan
+ *    apa adanya di produk induk; ia bagian dari layanan induk, bukan
+ *    pemeriksaan berdiri sendiri.
  */
 class AtribusiAddonJasa
 {
@@ -61,17 +68,23 @@ class AtribusiAddonJasa
 
                         $cocok = $byNama->get(mb_strtolower(trim($ad['nama'] ?? '')));
 
-                        if ($cocok) {
-                            // Add-on = layanan berdiri sendiri → produknya sendiri.
-                            $pid = (string) $cocok->id;
-                            $penjualan[$pid] = ($penjualan[$pid] ?? 0) + $harga * $qty;
-                            $modal[$pid] = ($modal[$pid] ?? 0) + ($modalKali[$pid] ?? 0) * $qty;
-                        } elseif ($it->product_id) {
-                            // Add-on opsi (mis. target parafrase) → tetap diakui di
-                            // produk induk agar pendapatannya tak hilang; tanpa modal.
-                            $pid = (string) $it->product_id;
-                            $penjualan[$pid] = ($penjualan[$pid] ?? 0) + $harga * $qty;
+                        // Add-on opsi (tanpa produk seenama, mis. target parafrase)
+                        // dibiarkan di produk induk — sudah benar di subtotal.
+                        if (! $cocok || ! $it->product_id) {
+                            continue;
                         }
+
+                        $induk = (string) $it->product_id;
+                        $pid = (string) $cocok->id;
+                        $nilai = $harga * $qty;
+
+                        // PINDAHKAN penjualan: keluar dari induk, masuk ke produk add-on.
+                        $penjualan[$induk] = ($penjualan[$induk] ?? 0) - $nilai;
+                        $penjualan[$pid] = ($penjualan[$pid] ?? 0) + $nilai;
+
+                        // Modal pemeriksaan add-on: DITAMBAHKAN (modal induk belum
+                        // menghitung pemeriksaan ini).
+                        $modal[$pid] = ($modal[$pid] ?? 0) + ($modalKali[$pid] ?? 0) * $qty;
                     }
                 }
             });
