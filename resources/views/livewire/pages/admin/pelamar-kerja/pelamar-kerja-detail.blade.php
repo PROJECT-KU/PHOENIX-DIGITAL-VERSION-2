@@ -79,7 +79,7 @@ Detail Pelamar Kerja || lemon
                     <h5 class="fw-bold mb-0 text-dark">Curriculum Vitae (CV)</h5>
                 </div>
                 @if ($pelamar->cv_path)
-                <a href="{{ Storage::url($pelamar->cv_path) }}" download
+                <a href="{{ route('admin.pelamar.cv', $pelamar) }}" download
                     class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center gap-1 px-3">
                     <i class="bi bi-download"></i> <span>Download CV</span>
                 </a>
@@ -87,8 +87,8 @@ Detail Pelamar Kerja || lemon
             </div>
             @if ($pelamar->cv_path)
             <div class="ratio rounded-3 overflow-hidden" style="--bs-aspect-ratio: 141.42%;">
-                <iframe src="{{ Storage::url($pelamar->cv_path) }}" type="application/pdf" class="border-0" style="width: 100%; height: 100%;">
-                    <p>Browser Anda tidak mendukung preview PDF. <a href="{{ Storage::url($pelamar->cv_path) }}" download>Download CV</a></p>
+                <iframe src="{{ route('admin.pelamar.cv', $pelamar) }}" type="application/pdf" class="border-0" style="width: 100%; height: 100%;">
+                    <p>Browser Anda tidak mendukung preview PDF. <a href="{{ route('admin.pelamar.cv', $pelamar) }}" download>Download CV</a></p>
                 </iframe>
             </div>
             @else
@@ -111,7 +111,7 @@ Detail Pelamar Kerja || lemon
                     <h5 class="fw-bold mb-0 text-dark">Cover Letter</h5>
                 </div>
                 @if ($pelamar->cover_letter_path)
-                <a href="{{ Storage::url($pelamar->cover_letter_path) }}" download
+                <a href="{{ route('admin.pelamar.surat', $pelamar) }}" download
                     class="btn btn-primary btn-sm rounded-pill d-inline-flex align-items-center gap-1 px-3">
                     <i class="bi bi-download"></i> <span>Download</span>
                 </a>
@@ -119,8 +119,8 @@ Detail Pelamar Kerja || lemon
             </div>
             @if ($pelamar->cover_letter_path)
             <div class="ratio rounded-3 overflow-hidden" style="--bs-aspect-ratio: 141.42%;">
-                <iframe src="{{ Storage::url($pelamar->cover_letter_path) }}" type="application/pdf" class="border-0" style="width: 100%; height: 100%;">
-                    <p>Browser Anda tidak mendukung preview PDF. <a href="{{ Storage::url($pelamar->cover_letter_path) }}" download>Download Cover Letter</a></p>
+                <iframe src="{{ route('admin.pelamar.surat', $pelamar) }}" type="application/pdf" class="border-0" style="width: 100%; height: 100%;">
+                    <p>Browser Anda tidak mendukung preview PDF. <a href="{{ route('admin.pelamar.surat', $pelamar) }}" download>Download Cover Letter</a></p>
                 </iframe>
             </div>
             @else

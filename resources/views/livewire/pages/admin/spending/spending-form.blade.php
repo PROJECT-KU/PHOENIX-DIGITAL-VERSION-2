@@ -322,7 +322,8 @@
             <div class="d-flex flex-wrap gap-2 mt-2">
                 @foreach($fotosLama as $i => $path)
                 <div class="position-relative" wire:key="foto-lama-{{ $i }}">
-                    <a href="{{ Storage::url($path) }}" target="_blank"><img src="{{ Storage::url($path) }}" style="width:90px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #e6e8f2;"></a>
+                    @php $urlFoto = $spendingId ? route('admin.spending.lampiran', [$spendingId, $i]) : Storage::url($path); @endphp
+                    <a href="{{ $urlFoto }}" target="_blank"><img src="{{ $urlFoto }}" style="width:90px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #e6e8f2;"></a>
                     <button type="button" wire:click="removeFotoLama({{ $i }})" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 py-0 px-1" title="Hapus"><i class="bi bi-x"></i></button>
                 </div>
                 @endforeach

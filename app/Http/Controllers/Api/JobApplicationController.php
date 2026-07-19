@@ -29,8 +29,9 @@ class JobApplicationController extends Controller
                 $cvFileName = Str::slug($cvOriginalName).'_'.Str::random(8).'.pdf';
                 $clFileName = Str::slug($clOriginalName).'_'.Str::random(8).'.pdf';
 
-                $cvPath = $cv->storeAs("applications/{$subdir}", $cvFileName, 'public');
-                $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'public');
+                // Disk PRIVAT: CV & surat lamaran memuat data pribadi pelamar.
+                $cvPath = $cv->storeAs("applications/{$subdir}", $cvFileName, 'local');
+                $clPath = $cl->storeAs("applications/{$subdir}", $clFileName, 'local');
 
                 // Create application record
                 return JobApplication::create([

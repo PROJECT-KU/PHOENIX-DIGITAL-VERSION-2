@@ -220,6 +220,9 @@ Route::middleware('permission:view_pesananrsc')->group(function () {
 // Pesanan Toko
 Route::middleware('permission:view_pemesanantoko')->group(function () {
     Route::get('/admin/pesanantoko', OrderList::class)->name('admin.pesanantoko.index');
+    // Bukti pembayaran: berkas sensitif, hanya lewat route ber-izin.
+    Route::get('/admin/pesanantoko/{order}/bukti', [\App\Http\Controllers\BerkasPrivatController::class, 'buktiPembayaran'])
+        ->name('admin.pesanantoko.bukti');
     Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
     Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
@@ -351,6 +354,9 @@ Route::middleware('permission:view_cashflow')->group(function () {
 // Data Spending
 Route::middleware('permission:view_spending')->group(function () {
     Route::get('/admin/spending', SpendingList::class)->name('admin.spending.index');
+    // Lampiran nota/faktur: berkas sensitif, hanya lewat route ber-izin.
+    Route::get('/admin/spending/{spending}/lampiran/{index?}', [\App\Http\Controllers\BerkasPrivatController::class, 'lampiranSpending'])
+        ->name('admin.spending.lampiran');
     Route::get('/admin/spending/create', SpendingCreate::class)->middleware('permission:create_spending')->name('admin.spending.create');
     Route::get('/admin/spending/{id}/edit', SpendingEdit::class)->middleware('permission:edit_spending')->name('admin.spending.edit');
 });
@@ -409,6 +415,11 @@ Route::middleware('permission:view_lowongan')->group(function () {
 Route::middleware('permission:view_pelamar')->group(function () {
     Route::get('/admin/pelamar', PelamarKerjaList::class)->name('admin.pelamar.index');
     Route::get('/admin/pelamar/{id}', PelamarKerjaDetail::class)->name('admin.pelamar.detail');
+    // CV & surat lamaran memuat data pribadi — wajib lewat route ber-izin.
+    Route::get('/admin/pelamar/{pelamar}/cv', [\App\Http\Controllers\BerkasPrivatController::class, 'cvPelamar'])
+        ->name('admin.pelamar.cv');
+    Route::get('/admin/pelamar/{pelamar}/surat', [\App\Http\Controllers\BerkasPrivatController::class, 'suratPelamar'])
+        ->name('admin.pelamar.surat');
 });
 
 // Promo

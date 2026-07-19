@@ -879,8 +879,8 @@
 @script
     <script>
     {{-- SweetAlert picker untuk produk & paket bundling (data banyak → mudah dicari) --}}
-    window.__ofProducts = {!! json_encode($ofProductsData) !!};
-    window.__ofBundles = {!! json_encode($ofBundlesData) !!};
+    window.__ofProducts = {!! json_encode($ofProductsData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+    window.__ofBundles = {!! json_encode($ofBundlesData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 
     if (!window.__ofPickerBound) {
             window.__ofPickerBound = true;

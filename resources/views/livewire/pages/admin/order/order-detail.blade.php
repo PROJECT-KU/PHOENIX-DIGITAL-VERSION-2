@@ -218,8 +218,8 @@ Detail Pesanan || lemon
                     <span class="info-label">Bukti Pembayaran</span>
                     <span class="info-value">
                         <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
-                            data-bukti-url="{{ Storage::url($order->bukti_pembayaran) }}" title="Perbesar bukti pembayaran">
-                            <img src="{{ Storage::url($order->bukti_pembayaran) }}" alt="Bukti pembayaran"
+                            data-bukti-url="{{ route('admin.pesanantoko.bukti', $order) }}" title="Perbesar bukti pembayaran">
+                            <img src="{{ route('admin.pesanantoko.bukti', $order) }}" alt="Bukti pembayaran"
                                 style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
                         </a>
                     </span>

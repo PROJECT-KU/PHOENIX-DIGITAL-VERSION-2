@@ -7,7 +7,32 @@ use Illuminate\Support\Carbon;
 
 class EmployeeDetail extends Model
 {
-    protected $guarded = [];
+    /*
+     * Daftar putih, bukan $guarded = [].
+     *
+     * Tabel ini memuat NIK (dipakai login), atasan, dan TARIF gaji/lembur.
+     * Dengan $guarded kosong, satu saja pemanggil yang meneruskan input mentah
+     * ke create()/update() sudah cukup untuk membuat karyawan mengubah tarif
+     * atau atasannya sendiri. 'id' sengaja tidak diikutkan.
+     *
+     * 'user_id' TETAP diikutkan: pembuatan karyawan mengirimnya secara
+     * eksplisit dari data admin (KaryawanForm), bukan dari input mentah.
+     */
+    protected $fillable = [
+        'user_id',
+        'nik',
+        'tanggal_bergabung',
+        'jabatan',
+        'atasan_id',
+        'nama_bank',
+        'nomor_rekening',
+        'tanggal_lahir',
+        'tarif_presensi_offline',
+        'tarif_presensi_online',
+        'tarif_lembur_per_jam',
+        'phone',
+        'alamat',
+    ];
 
     protected $casts = [
         'tanggal_lahir' => 'date',

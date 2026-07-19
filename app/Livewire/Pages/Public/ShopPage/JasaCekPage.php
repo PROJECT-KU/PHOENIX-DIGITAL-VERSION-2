@@ -5,6 +5,8 @@ namespace App\Livewire\Pages\Public\ShopPage;
 use App\Models\Order;
 use App\Models\OrderUpload;
 use App\Support\LanguageDetector;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -173,25 +175,53 @@ class JasaCekPage extends Component
         // Disk PRIVAT — file tak boleh diakses lewat URL publik (privasi + audit).
         $path = $file->store('order-uploads/'.$this->order->id.'/masuk', 'local');
 
-        OrderUpload::create([
-            'order_id' => $this->order->id,
-            'path' => $path,
-            'nama_asli' => $file->getClientOriginalName(),
-            'ukuran' => $file->getSize(),
-            'mime' => $file->getMimeType(),
-            'status' => 'menunggu',
-            // Pengecekan yang tak memakai exclude (mis. cek AI tanpa add-on
-            // plagiasi) disimpan tanpa pengecualian apa pun — panelnya memang
-            // tidak ditampilkan, jadi nilainya tidak boleh ikut terbawa.
-            'exclude_bibliografi' => $this->perluExclude() && $this->exclude_bibliografi,
-            'exclude_kutipan' => $this->perluExclude() && $this->exclude_kutipan,
-            'exclude_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil,
-            // Simpan sebagai teks siap tampil, mis. "5%" atau "10 kata".
-            'ambang_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil
-                ? (int) $this->ambang_nilai.($this->ambang_satuan === 'persen' ? '%' : ' kata')
-                : null,
-            'catatan' => $this->catatan ?: null,
-        ]);
+        /*
+         * Kuota dikunci di tingkat BARIS saat menyimpan.
+         *
+         * Pemeriksaan di atas bisa dilewati bila customer menekan kirim dari
+         * dua tab sekaligus: keduanya lolos cek lalu sama-sama menyimpan.
+         * Dengan mengunci baris pesanan lalu memeriksa ulang di dalam
+         * transaksi, permintaan kedua pasti melihat unggahan yang pertama.
+         */
+        $tersimpan = DB::transaction(function () use ($path, $file) {
+            Order::whereKey($this->order->id)->lockForUpdate()->first();
+
+            if (! $this->order->fresh()->bisaUploadPengecekan()) {
+                return false;
+            }
+
+            OrderUpload::create([
+                'order_id' => $this->order->id,
+                'path' => $path,
+                'nama_asli' => $file->getClientOriginalName(),
+                'ukuran' => $file->getSize(),
+                'mime' => $file->getMimeType(),
+                'status' => 'menunggu',
+                // Pengecekan yang tak memakai exclude (mis. cek AI tanpa add-on
+                // plagiasi) disimpan tanpa pengecualian apa pun — panelnya memang
+                // tidak ditampilkan, jadi nilainya tidak boleh ikut terbawa.
+                'exclude_bibliografi' => $this->perluExclude() && $this->exclude_bibliografi,
+                'exclude_kutipan' => $this->perluExclude() && $this->exclude_kutipan,
+                'exclude_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil,
+                // Simpan sebagai teks siap tampil, mis. "5%" atau "10 kata".
+                'ambang_sumber_kecil' => $this->perluExclude() && $this->exclude_sumber_kecil
+                    ? (int) $this->ambang_nilai.($this->ambang_satuan === 'persen' ? '%' : ' kata')
+                    : null,
+                'catatan' => $this->catatan ?: null,
+            ]);
+
+            return true;
+        });
+
+        // Kuota ternyata sudah habis diambil permintaan lain — buang berkasnya
+        // supaya tidak menyisakan sampah di disk.
+        if (! $tersimpan) {
+            Storage::disk('local')->delete($path);
+            $this->order->load('uploads');
+            $this->dispatch('cek-error', message: 'Kuota pengecekan sudah habis atau pesanan tidak aktif.');
+
+            return;
+        }
 
         $this->reset('dokumen', 'catatan');
         $this->exclude_bibliografi = true;
