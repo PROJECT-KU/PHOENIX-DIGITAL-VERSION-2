@@ -652,17 +652,33 @@ class ModalList extends Component
             if ($nilai <= 0) {
                 continue;
             }
+            // Nama SAMA dengan produknya (tanpa embel-embel) supaya barisnya
+            // menjumlah wajar bersama baris lain produk itu; kolom Durasi yang
+            // menandai bahwa ini dari add-on.
             $akunPerProduk[] = [
-                'nama' => ($namaAll[$pid] ?? 'Produk').' (add-on)',
+                'nama' => $namaAll[$pid] ?? 'Produk',
                 'tipe' => 'private',
-                'durasi' => 'add-on',
+                'durasi' => 'dari add-on',
                 'satuan' => (float) $nilai,
                 'jumlah' => 1,
                 'total' => (float) $nilai,
             ];
         }
 
-        usort($akunPerProduk, fn ($a, $b) => $b['total'] <=> $a['total']);
+        /*
+         * Urut: produk dengan modal terbesar dulu, TAPI semua baris produk yang
+         * sama dikelompokkan berdampingan. Sebelumnya murni terbesar-dulu,
+         * sehingga baris kecil satu produk (mis. modal add-on) terlempar jauh
+         * dari baris induknya dan angkanya sulit dicocokkan dengan Omset Bersih.
+         */
+        $totalPerNama = [];
+        foreach ($akunPerProduk as $r) {
+            $totalPerNama[$r['nama']] = ($totalPerNama[$r['nama']] ?? 0) + $r['total'];
+        }
+        usort($akunPerProduk, function ($a, $b) use ($totalPerNama) {
+            return [$totalPerNama[$b['nama']], $a['nama'], $b['total']]
+                <=> [$totalPerNama[$a['nama']], $b['nama'], $a['total']];
+        });
 
         // Ikut pencarian: saring rincian pembelian akun berdasarkan nama produk.
         if ($this->search) {
