@@ -635,6 +635,33 @@ class ModalList extends Component
             ];
         }
 
+        // Modal ADD-ON jasa (mis. cek plagiasi turnitin yang dibeli sebagai add-on
+        // pada pesanan cek AI). Wajib ada di rincian karena expense-nya SUDAH
+        // dicatat (SyncOrderPrivateCostAction) sehingga ikut terhitung di total
+        // "terpakai" — tanpa baris ini, rincian tak akan cocok dengan totalnya.
+        $searchingAddon = (bool) $this->search;
+        $addonModal = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($tahun, $bulan, $searchingAddon) {
+            $q->whereIn('status', ['paid', 'processing', 'completed'])
+                ->when(! $searchingAddon, function ($qq) use ($tahun, $bulan) {
+                    $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
+                        ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                });
+        }, Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString())['modal'];
+
+        foreach ($addonModal as $pid => $nilai) {
+            if ($nilai <= 0) {
+                continue;
+            }
+            $akunPerProduk[] = [
+                'nama' => ($namaAll[$pid] ?? 'Produk').' (add-on)',
+                'tipe' => 'private',
+                'durasi' => 'add-on',
+                'satuan' => (float) $nilai,
+                'jumlah' => 1,
+                'total' => (float) $nilai,
+            ];
+        }
+
         usort($akunPerProduk, fn ($a, $b) => $b['total'] <=> $a['total']);
 
         // Ikut pencarian: saring rincian pembelian akun berdasarkan nama produk.

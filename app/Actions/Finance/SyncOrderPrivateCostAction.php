@@ -26,15 +26,27 @@ class SyncOrderPrivateCostAction
             $adaModal = $product && ($product->tipe_akun === 'private' || $product->butuh_file);
 
             $amount = 0;
+            $modalAddon = 0;
             if ($paid && $adaModal) {
                 // Harga yang BERLAKU pada tanggal order (tidak berubah retroaktif).
                 // modalOrderItem() otomatis: jasa paket = per 1× × jumlah cek;
                 // jasa parafrase = per 1 halaman × jumlah halaman DIKERJAKAN.
                 $unit = $product->modalOrderItem($item, $tanggal);
-                $amount = $unit * (int) $item->quantity;
+
+                // Add-on pemeriksaan (mis. cek plagiasi turnitin pada pesanan cek
+                // AI) adalah pemeriksaan NYATA yang juga bermodal. Tanpa ini biaya
+                // itu tak tercatat di mana pun dan "modal terpakai" kurang.
+                $modalAddon = \App\Support\AtribusiAddonJasa::modalItem($item, $tanggal);
+
+                $amount = $unit * (int) $item->quantity + $modalAddon;
             }
 
             if ($amount > 0) {
+                $keterangan = 'Modal '.$item->product_name.' ('.$this->labelSatuan($item, $product).') x'.$item->quantity;
+                if ($modalAddon > 0) {
+                    $keterangan .= ' + add-on';
+                }
+
                 $item->cashFlow()->updateOrCreate(
                     ['sourceable_id' => $item->id, 'sourceable_type' => OrderItem::class],
                     [
@@ -42,7 +54,7 @@ class SyncOrderPrivateCostAction
                         'type' => 'expense',
                         'transaction_date' => $tanggal,
                         'category' => 'Modal Akun Private',
-                        'description' => 'Modal '.$item->product_name.' ('.$this->labelSatuan($item, $product).') x'.$item->quantity,
+                        'description' => $keterangan,
                     ]
                 );
             } else {

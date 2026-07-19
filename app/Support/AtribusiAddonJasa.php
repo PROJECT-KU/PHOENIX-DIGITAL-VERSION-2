@@ -30,6 +30,39 @@ use Closure;
  */
 class AtribusiAddonJasa
 {
+    /** Cache peta nama produk jasa → model, per request. */
+    private static ?\Illuminate\Support\Collection $petaNama = null;
+
+    /** Peta nama produk jasa (lowercase) → Product. */
+    private static function petaNama(): \Illuminate\Support\Collection
+    {
+        return self::$petaNama ??= Product::where('butuh_file', true)->get()
+            ->keyBy(fn ($p) => mb_strtolower(trim($p->nama_akun)));
+    }
+
+    /**
+     * Total MODAL pemeriksaan add-on pada satu order item.
+     *
+     * Dipakai saat mencatat expense "Modal Akun Private" supaya biaya nyata
+     * pemeriksaan add-on ikut tercatat — modal produk induk hanya mencakup
+     * pemeriksaannya sendiri.
+     */
+    public static function modalItem(OrderItem $item, $asOf = null): int
+    {
+        $qty = max(1, (int) $item->quantity);
+        $total = 0;
+
+        foreach (($item->addons ?? []) as $ad) {
+            $cocok = self::petaNama()->get(mb_strtolower(trim($ad['nama'] ?? '')));
+
+            if ($cocok) {
+                $total += (int) $cocok->modalSatuan(1, 'kali', $asOf) * $qty;
+            }
+        }
+
+        return $total;
+    }
+
     /**
      * @param  Closure  $filterOrder  Menerapkan status paid + periode ke query order.
      * @param  ?string  $hargaCutoff  Batas tanggal harga modal yang berlaku.
