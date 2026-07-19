@@ -7,7 +7,7 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
-        "endroid/qr-code": "^6.1",
+        "endroid/qr-code": "^6.0",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9",
         "livewire/livewire": "^3.6.4",
@@ -72,6 +72,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.2.30"
         }
     },
     "minimum-stability": "stable",
