@@ -131,10 +131,28 @@ Detail Cash Flow || lemon
                             <tbody>
                                 @foreach($detail['items'] as $it)
                                 <tr>
-                                    <td class="fw-semibold text-dark">{{ $it['nama'] }}</td>
+                                    <td class="fw-semibold text-dark">
+                                        {{ $it['nama'] }}
+                                        @if(!empty($it['addons']))
+                                        <div class="mt-1 d-flex flex-column gap-1">
+                                            @foreach($it['addons'] as $ad)
+                                            <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                                <i class="bi bi-plus-circle" style="color:#f59e0b;"></i>
+                                                {{ $ad['nama'] }}
+                                                <span class="text-secondary">({{ $ad['harga'] }})</span>
+                                            </span>
+                                            @endforeach
+                                        </div>
+                                        @endif
+                                    </td>
                                     <td class="text-muted">{{ $it['durasi'] }}</td>
                                     <td class="text-center">{{ $it['qty'] }}</td>
-                                    <td class="text-end fw-semibold">{{ $it['subtotal'] }}</td>
+                                    <td class="text-end fw-semibold">
+                                        {{ $it['subtotal'] }}
+                                        @if(!empty($it['addons_total']))
+                                        <div class="text-muted fw-normal" style="font-size: 0.72rem;">+ add-on {{ $it['addons_total'] }}</div>
+                                        @endif
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>

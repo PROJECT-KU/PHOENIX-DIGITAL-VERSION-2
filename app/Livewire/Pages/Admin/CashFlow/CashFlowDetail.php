@@ -108,12 +108,21 @@ class CashFlowDetail extends Component
             ];
 
             foreach ($s->items as $it) {
+                // Add-on yang dibeli pada item ini (mis. cek plagiasi pada cek AI,
+                // atau target parafrase) — ditampilkan di bawah nama produk.
+                $addons = collect($it->addons ?? [])->map(fn ($a) => [
+                    'nama' => $a['nama'] ?? '-',
+                    'harga' => $this->rupiah((int) ($a['harga'] ?? 0)),
+                ])->all();
+
                 $items[] = [
                     'nama' => $it->product_name,
                     'durasi' => trim($it->duration_value.' '.$it->duration_type),
                     'qty' => $it->quantity,
                     'harga' => $this->rupiah($it->price),
                     'subtotal' => $this->rupiah($it->subtotal),
+                    'addons' => $addons,
+                    'addons_total' => (int) ($it->addons_total ?? 0) > 0 ? $this->rupiah((int) $it->addons_total) : null,
                 ];
             }
 
