@@ -66,8 +66,10 @@ class AtribusiAddonJasa
     /**
      * @param  Closure  $filterOrder  Menerapkan status paid + periode ke query order.
      * @param  ?string  $hargaCutoff  Batas tanggal harga modal yang berlaku.
-     * @return array{penjualan: array<string,float>, modal: array<string,float>}
-     *         Keduanya dikunci product_id.
+     * @return array{penjualan: array<string,float>, modal: array<string,float>, jumlah: array<string,int>}
+     *         Semuanya dikunci product_id. 'jumlah' = banyaknya PEMERIKSAAN
+     *         add-on, dipakai agar rincian modal bisa digabung ke baris
+     *         "1 kali" produk itu (bukan baris terpisah).
      */
     public static function hitung(Closure $filterOrder, ?string $hargaCutoff): array
     {
@@ -84,12 +86,13 @@ class AtribusiAddonJasa
 
         $penjualan = [];
         $modal = [];
+        $jumlah = [];
 
         OrderItem::query()
             ->whereHas('order', $filterOrder)
             ->whereNotNull('addons')
             ->select(['id', 'product_id', 'quantity', 'addons'])
-            ->chunkById(200, function ($items) use (&$penjualan, &$modal, $byNama, $modalKali) {
+            ->chunkById(200, function ($items) use (&$penjualan, &$modal, &$jumlah, $byNama, $modalKali) {
                 foreach ($items as $it) {
                     $qty = max(1, (int) $it->quantity);
 
@@ -116,12 +119,14 @@ class AtribusiAddonJasa
                         $penjualan[$pid] = ($penjualan[$pid] ?? 0) + $nilai;
 
                         // Modal pemeriksaan add-on: DITAMBAHKAN (modal induk belum
-                        // menghitung pemeriksaan ini).
+                        // menghitung pemeriksaan ini). Jumlahnya dicatat agar
+                        // rincian modal bisa menyatu dgn baris "1 kali" produk.
                         $modal[$pid] = ($modal[$pid] ?? 0) + ($modalKali[$pid] ?? 0) * $qty;
+                        $jumlah[$pid] = ($jumlah[$pid] ?? 0) + $qty;
                     }
                 }
             });
 
-        return ['penjualan' => $penjualan, 'modal' => $modal];
+        return ['penjualan' => $penjualan, 'modal' => $modal, 'jumlah' => $jumlah];
     }
 }

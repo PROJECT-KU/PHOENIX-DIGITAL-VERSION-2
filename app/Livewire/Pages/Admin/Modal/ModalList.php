@@ -640,29 +640,49 @@ class ModalList extends Component
         // dicatat (SyncOrderPrivateCostAction) sehingga ikut terhitung di total
         // "terpakai" — tanpa baris ini, rincian tak akan cocok dengan totalnya.
         $searchingAddon = (bool) $this->search;
-        $addonModal = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($tahun, $bulan, $searchingAddon) {
+        $addon = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($tahun, $bulan, $searchingAddon) {
             $q->whereIn('status', ['paid', 'processing', 'completed'])
                 ->when(! $searchingAddon, function ($qq) use ($tahun, $bulan) {
                     $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
                         ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
                 });
-        }, Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString())['modal'];
+        }, Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString());
 
-        foreach ($addonModal as $pid => $nilai) {
+        foreach (($addon['modal'] ?? []) as $pid => $nilai) {
             if ($nilai <= 0) {
                 continue;
             }
-            // Nama SAMA dengan produknya (tanpa embel-embel) supaya barisnya
-            // menjumlah wajar bersama baris lain produk itu; kolom Durasi yang
-            // menandai bahwa ini dari add-on.
-            $akunPerProduk[] = [
-                'nama' => $namaAll[$pid] ?? 'Produk',
-                'tipe' => 'private',
-                'durasi' => 'dari add-on',
-                'satuan' => (float) $nilai,
-                'jumlah' => 1,
-                'total' => (float) $nilai,
-            ];
+
+            $nCek = (int) ($addon['jumlah'][$pid] ?? 0);
+            $nama = $namaAll[$pid] ?? 'Produk';
+
+            /*
+             * Add-on pemeriksaan = pengecekan 1× BIASA untuk produk itu, jadi
+             * digabungkan ke baris "1 kali" miliknya — bukan baris terpisah.
+             * Baris terpisah membuat admin membaca totalnya kurang (mis. 5+2=7)
+             * padahal modal sebenarnya 8.
+             */
+            $ketemu = false;
+            foreach ($akunPerProduk as $i => $r) {
+                if ($r['nama'] === $nama && $r['durasi'] === '1 kali') {
+                    $akunPerProduk[$i]['jumlah'] += $nCek;
+                    $akunPerProduk[$i]['total'] += (float) $nilai;
+                    $ketemu = true;
+                    break;
+                }
+            }
+
+            // Produk itu belum punya baris "1 kali" pada periode ini → buat.
+            if (! $ketemu) {
+                $akunPerProduk[] = [
+                    'nama' => $nama,
+                    'tipe' => 'private',
+                    'durasi' => '1 kali',
+                    'satuan' => $nCek > 0 ? (float) $nilai / $nCek : (float) $nilai,
+                    'jumlah' => max(1, $nCek),
+                    'total' => (float) $nilai,
+                ];
+            }
         }
 
         /*
