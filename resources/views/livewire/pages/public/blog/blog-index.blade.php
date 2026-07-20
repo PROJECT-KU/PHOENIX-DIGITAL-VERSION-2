@@ -92,10 +92,33 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         .ph-blog .bcard:hover .more i { transform: translateX(4px); }
         .ph-blog .bcard .more i { transition: transform .2s ease; }
 
-        .ph-blog .empty { text-align: center; padding: 4.5rem 1rem; }
-        .ph-blog .empty .ic { width: 88px; height: 88px; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; background: var(--soft); color: var(--o); font-size: 2.3rem; margin-bottom: 1.1rem; }
-        .ph-blog .empty h4 { font-family: 'Poppins', sans-serif; font-weight: 800; color: var(--ink); }
-        .ph-blog .empty p { color: var(--muted); margin: 0; }
+        /* Empty state — pola sama dengan halaman Bundling (.bdl-empty / .be-*),
+           prefix ble- dipakai agar tidak bentrok dengan utility .bg-* Bootstrap. */
+        .blg-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
+        .blg-empty-art { margin-bottom: 6px; }
+        .blg-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
+        .blg-empty-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: var(--ink); font-size: 1.35rem; margin: 4px 0 6px; }
+        .blg-empty-sub { color: var(--muted); font-size: .95rem; line-height: 1.6; margin: 0 auto 18px; max-width: 400px; }
+        .blg-empty-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fba919, #f26522); color: #fff; font-weight: 700; padding: .7rem 1.4rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(242, 101, 34, .28); text-decoration: none; border: 0; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+        .blg-empty-btn:hover { color: #fff; transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 10px 24px rgba(242, 101, 34, .36); }
+
+        .ble-book { animation: ble-bob 3.4s ease-in-out infinite; }
+        .ble-pen { animation: ble-penfloat 3.4s ease-in-out infinite; }
+        .ble-glow, .ble-shadow, .ble-spark, .ble-book, .ble-pen { transform-box: fill-box; transform-origin: center; }
+        .ble-glow { animation: ble-glowpulse 3.4s ease-in-out infinite; }
+        .ble-shadow { animation: ble-shadowpulse 3.4s ease-in-out infinite; }
+        .ble-spark { animation: ble-twinkle 2s ease-in-out infinite; }
+        .ble-spark.s2 { animation-delay: .5s; }
+        .ble-spark.s3 { animation-delay: 1s; }
+        .ble-spark.s4 { animation-delay: 1.4s; }
+        @keyframes ble-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes ble-penfloat { 0%, 100% { transform: translateY(-4px) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-8deg); } }
+        @keyframes ble-glowpulse { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: .75; transform: scale(1.08); } }
+        @keyframes ble-shadowpulse { 0%, 100% { opacity: .16; transform: scaleX(1); } 50% { opacity: .09; transform: scaleX(.82); } }
+        @keyframes ble-twinkle { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+        @media (prefers-reduced-motion: reduce) {
+            .ble-book, .ble-pen, .ble-glow, .ble-shadow, .ble-spark { animation: none !important; }
+        }
 
         @media (max-width: 991.98px) { .ph-blog .card-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 767.98px) {
@@ -169,10 +192,73 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
 
             {{-- Grid --}}
             @if ($posts->isEmpty())
-                <div class="empty">
-                    <span class="ic"><i class="bi bi-journal-x"></i></span>
-                    <h4 class="mb-1">Belum ada artikel</h4>
-                    <p>{{ $search || $category ? 'Coba kata kunci atau kategori lain.' : 'Nantikan artikel menarik dari kami segera.' }}</p>
+                {{-- Empty state bervektor & beranimasi, seragam dengan halaman
+                     Bundling — menggantikan kotak ikon datar. --}}
+                <div class="blg-empty">
+                    <div class="blg-empty-art">
+                        <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"
+                            aria-label="Ilustrasi buku dan pena">
+                            <defs>
+                                <radialGradient id="bleGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#fba919" stop-opacity=".55" />
+                                    <stop offset="70%" stop-color="#fba919" stop-opacity="0" />
+                                </radialGradient>
+                                <linearGradient id="bleCover" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#fbc25a" />
+                                    <stop offset="100%" stop-color="#f26522" />
+                                </linearGradient>
+                                <linearGradient id="bleSpine" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#f7a23e" />
+                                    <stop offset="100%" stop-color="#e15a18" />
+                                </linearGradient>
+                            </defs>
+
+                            <ellipse class="ble-glow" cx="120" cy="106" rx="80" ry="80" fill="url(#bleGlow)" />
+                            <ellipse class="ble-shadow" cx="120" cy="180" rx="58" ry="8" fill="#e15a18" />
+
+                            <g transform="translate(48,66)"><path class="ble-spark s1" d="M0,-7 L1.8,-1.8 7,0 1.8,1.8 0,7 -1.8,1.8 -7,0 -1.8,-1.8Z" fill="#fba919" /></g>
+                            <g transform="translate(196,86)"><path class="ble-spark s2" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f26522" /></g>
+                            <g transform="translate(190,144)"><path class="ble-spark s3" d="M0,-5 L1.3,-1.3 5,0 1.3,1.3 0,5 -1.3,1.3 -5,0 -1.3,-1.3Z" fill="#fbaf45" /></g>
+                            <g transform="translate(54,148)"><path class="ble-spark s4" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f4772b" /></g>
+
+                            {{-- Buku terbuka --}}
+                            <g class="ble-book">
+                                <path d="M120,74 C104,64 84,62 66,66 L66,150 C84,146 104,148 120,158 Z" fill="#ffe9d0" />
+                                <path d="M120,74 C136,64 156,62 174,66 L174,150 C156,146 136,148 120,158 Z" fill="#fff5e8" />
+                                <path d="M66,66 C84,62 104,64 120,74 L120,158 C104,148 84,146 66,150 Z" fill="none"
+                                    stroke="url(#bleSpine)" stroke-width="4" stroke-linejoin="round" />
+                                <path d="M174,66 C156,62 136,64 120,74 L120,158 C136,148 156,146 174,150 Z" fill="none"
+                                    stroke="url(#bleCover)" stroke-width="4" stroke-linejoin="round" />
+                                <path d="M120,74 L120,158" stroke="#e15a18" stroke-width="3" stroke-linecap="round" />
+                                <path d="M80,88 H108 M80,102 H104 M80,116 H110" stroke="#f7a23e" stroke-opacity=".55"
+                                    stroke-width="3.5" stroke-linecap="round" />
+                                <path d="M132,88 H160 M136,102 H160 M132,116 H158" stroke="#f4772b" stroke-opacity=".5"
+                                    stroke-width="3.5" stroke-linecap="round" />
+                            </g>
+
+                            {{-- Pena melayang --}}
+                            <g class="ble-pen">
+                                <path d="M176,38 L192,54 L162,70 L156,58 Z" fill="url(#bleCover)" />
+                                <path d="M156,58 L162,70 L150,74 Z" fill="#ffe9d0" />
+                            </g>
+                        </svg>
+                    </div>
+
+                    @if ($search || $category)
+                        <h3 class="blg-empty-title">Artikel tidak ditemukan</h3>
+                        <p class="blg-empty-sub">Tidak ada artikel yang cocok dengan pencarian atau kategori itu.
+                            Coba kata kunci lain, ya.</p>
+                        <button type="button" class="blg-empty-btn" wire:click="resetFilter">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset Pencarian
+                        </button>
+                    @else
+                        <h3 class="blg-empty-title">Belum ada artikel</h3>
+                        <p class="blg-empty-sub">Tulisan menarik dari kami sedang disiapkan. Sementara itu,
+                            lihat-lihat produk kami dulu, yuk!</p>
+                        <a href="{{ url('/shop') }}" class="blg-empty-btn">
+                            <i class="bi bi-bag"></i> Lihat Produk
+                        </a>
+                    @endif
                 </div>
             @else
                 <div class="card-grid">

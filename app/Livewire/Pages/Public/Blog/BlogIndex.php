@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Public\Blog;
 
 use App\Models\BlogPost;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,6 +25,14 @@ class BlogIndex extends Component
     public function filterCategory(string $cat): void
     {
         $this->category = $this->category === $cat ? '' : $cat;
+        $this->resetPage();
+    }
+
+    /** Bersihkan pencarian & kategori sekaligus (tombol pada empty state). */
+    public function resetFilter(): void
+    {
+        $this->search = '';
+        $this->category = '';
         $this->resetPage();
     }
 
