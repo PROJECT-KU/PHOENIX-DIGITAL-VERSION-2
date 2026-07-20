@@ -197,7 +197,9 @@ class BlogForm extends Component
                 'published_at' => $this->resolvePublishedAt(),
                 'meta_title' => $this->meta_title ?: null,
                 'meta_description' => $this->meta_description ?: null,
-                'author' => auth()->user()->name ?? null,
+                // Statis "admin", bukan nama akun yang login: halaman publik
+                // tidak boleh menampilkan nama karyawan.
+                'author' => 'admin',
             ]);
 
             session()->flash('successCreated', 'Artikel blog berhasil ditambahkan!');
