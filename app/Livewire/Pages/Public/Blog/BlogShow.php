@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Public\Blog;
 
 use App\Models\BlogPost;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class BlogShow extends Component
@@ -43,7 +42,10 @@ class BlogShow extends Component
             'image' => $post->cover ? asset('storage/img/blog/'.$post->cover) : asset(config('seo.image')),
             'datePublished' => optional($post->published_at ?? $post->created_at)->toIso8601String(),
             'dateModified' => optional($post->updated_at)->toIso8601String(),
-            'author' => ['@type' => 'Organization', 'name' => $post->author ?: 'Phoenix Digital'],
+            // Tidak lagi memakai $post->author supaya nama karyawan tidak bocor ke
+            // hasil pencarian. Dipakai nama organisasi, bukan "admin", karena
+            // @type-nya Organization dan Google membacanya sebagai nama penerbit.
+            'author' => ['@type' => 'Organization', 'name' => 'Phoenix Digital'],
             'publisher' => [
                 '@type' => 'Organization',
                 'name' => 'Phoenix Digital',
