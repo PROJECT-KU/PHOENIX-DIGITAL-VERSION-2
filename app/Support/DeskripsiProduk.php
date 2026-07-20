@@ -20,45 +20,44 @@ class DeskripsiProduk
     private const PENANDA = ['✅', '✔️', '✔', '☑️', '✓', '•', '●', '▪'];
 
     /**
-     * @return array{intro: string, poin: array<int, string>}
+     * Hanya teks yang DITANDAI admin yang menjadi poin bercentang.
+     *
+     * Baris baru sengaja TIDAK dianggap penanda: admin kerap menulis judul dan
+     * paragraf pembuka di baris terpisah, dan sebelumnya paragraf itu ikut
+     * mendapat centang — padahal ia kalimat biasa, bukan daftar fitur.
+     *
+     * @return array{paragraf: array<int, string>, poin: array<int, string>}
      */
     public static function pisah(?string $teks): array
     {
         $teks = trim((string) $teks);
         if ($teks === '') {
-            return ['intro' => '', 'poin' => []];
+            return ['paragraf' => [], 'poin' => []];
         }
 
         // Samakan semua penanda jadi satu karakter agar mudah dipecah.
         $normal = str_replace(self::PENANDA, "\x00", $teks);
+        $bagian = explode("\x00", $normal);
 
-        // Baris baru juga dianggap pemisah bila barisnya memang berdiri sendiri.
-        $normal = preg_replace('/\R+/u', "\x00", $normal) ?? $normal;
+        // Bagian sebelum penanda pertama = teks biasa. Baris baru di dalamnya
+        // memisahkan paragraf, bukan membuat poin.
+        $awal = trim((string) array_shift($bagian));
+        $paragraf = $awal === ''
+            ? []
+            : array_values(array_filter(
+                array_map('trim', preg_split('/\R+/u', $awal) ?: []),
+                fn ($p) => $p !== ''
+            ));
 
-        $bagian = array_values(array_filter(
-            array_map('trim', explode("\x00", $normal)),
-            fn ($b) => $b !== ''
-        ));
-
-        if ($bagian === []) {
-            return ['intro' => '', 'poin' => []];
+        // Sisanya: masing-masing satu poin bercentang.
+        $poin = [];
+        foreach ($bagian as $b) {
+            $b = trim((string) preg_replace('/\s+/u', ' ', $b));
+            if ($b !== '') {
+                $poin[] = $b;
+            }
         }
 
-        // Bila tidak ada penanda sama sekali, kembalikan sebagai intro utuh —
-        // jangan memaksa teks biasa menjadi daftar.
-        if (count($bagian) === 1) {
-            return ['intro' => $bagian[0], 'poin' => []];
-        }
-
-        // Bila teks langsung dibuka penanda (tanpa kalimat pembuka), seluruhnya
-        // adalah poin — jangan promosikan poin pertama menjadi paragraf intro.
-        if (str_starts_with($normal, "\x00")) {
-            return ['intro' => '', 'poin' => $bagian];
-        }
-
-        return [
-            'intro' => array_shift($bagian),
-            'poin' => $bagian,
-        ];
+        return ['paragraf' => $paragraf, 'poin' => $poin];
     }
 }
