@@ -43,9 +43,12 @@ class BlogImageService
         $mime = $info['mime'] ?? '';
 
         switch ($mime) {
-            case 'image/jpeg': $img = @imagecreatefromjpeg($src); break;
-            case 'image/png': $img = @imagecreatefrompng($src); break;
-            case 'image/webp': $img = @imagecreatefromwebp($src); break;
+            case 'image/jpeg': $img = @imagecreatefromjpeg($src);
+                break;
+            case 'image/png': $img = @imagecreatefrompng($src);
+                break;
+            case 'image/webp': $img = @imagecreatefromwebp($src);
+                break;
             default: return false;
         }
         if (! $img) {
@@ -227,8 +230,12 @@ class BlogImageService
         }
 
         // Path relatif (/storage/...) supaya portabel antar domain.
-        $url = Storage::disk('public')->url('img/blog/content/'.$filename);
-
-        return parse_url($url, PHP_URL_PATH) ?: $url;
+        //
+        // Dibangun langsung, TIDAK lewat Storage::url() lalu parse_url: URL ini
+        // ikut tersimpan permanen di dalam body artikel, jadi tidak boleh
+        // bergantung pada APP_URL. Saat APP_URL berakhiran "/", cara lama
+        // menghasilkan "//storage/..." yang dibaca browser sebagai nama host
+        // dan membuat gambar gagal tampil selamanya.
+        return '/storage/img/blog/content/'.$filename;
     }
 }
