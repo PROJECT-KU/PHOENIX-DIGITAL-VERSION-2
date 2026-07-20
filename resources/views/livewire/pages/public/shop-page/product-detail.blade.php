@@ -1,4 +1,5 @@
 <main class="main">
+    @include('partials.media-produk-style')
     <style>
         /* ===== Daftar fitur produk (pecahan dari deskripsi ber-"✅") =====
            Sengaja inline di blade, bukan di public-custom-styles.css: berkas di

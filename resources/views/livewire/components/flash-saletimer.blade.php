@@ -1,5 +1,6 @@
 <div @if ($flashSale && !$showDurationModal) wire:poll.1s="updateTimer" @endif id="call-to-action"
     class="{{ $flashSale ? 'call-to-action section' : '' }}">
+    @include('partials.media-produk-style')
     @if ($flashSale)
         <div class="container">
             <div class="row">
