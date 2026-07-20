@@ -1,5 +1,17 @@
 <main class="main">
     <style>
+        /* ===== Daftar fitur produk (pecahan dari deskripsi ber-"✅") =====
+           Sengaja inline di blade, bukan di public-custom-styles.css: berkas di
+           public/build/ tidak ikut git pull sehingga gaya bisa tertinggal di
+           server. Lihat catatan aset di README. */
+        .pd-feat { list-style:none; margin:0 0 22px; padding:0;
+            display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:9px 18px; }
+        .pd-feat li { display:flex; align-items:flex-start; gap:9px;
+            font-size:.92rem; line-height:1.55; color:var(--ph-ink); }
+        .pd-feat li i { color:#16a34a; font-size:1rem; line-height:1.45; flex:0 0 auto; }
+        .pd-feat li span { min-width:0; }
+        @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
+
         /* ===== Blok JASA di halaman produk (upload per halaman & add-on) ===== */
         .jd-hint { font-size:.83rem; color:var(--ph-muted); line-height:1.55; margin:0 0 10px; }
 
@@ -214,8 +226,22 @@
                         @endif
                     </div>
 
-                    @if (trim((string) $product->deskripsi) !== '')
-                        <p class="pd-desc">{{ $product->deskripsi }}</p>
+                    @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
+                    @if ($desk['intro'] !== '' || $desk['poin'])
+                        @if ($desk['intro'] !== '')
+                            <p class="pd-desc">{{ $desk['intro'] }}</p>
+                        @endif
+
+                        {{-- Poin bercentang dipecah jadi daftar. Ditulis admin sebagai
+                             satu paragraf panjang berisi "✅", yang kalau ditampilkan
+                             apa adanya jadi sulit dibaca. --}}
+                        @if ($desk['poin'])
+                            <ul class="pd-feat">
+                                @foreach ($desk['poin'] as $poin)
+                                    <li><i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span></li>
+                                @endforeach
+                            </ul>
+                        @endif
                     @endif
 
                     {{-- ===== JASA PER HALAMAN: unggah dokumen dulu (harga = per halaman) ===== --}}
