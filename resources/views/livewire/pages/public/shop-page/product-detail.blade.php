@@ -36,16 +36,27 @@
                 display:grid;
                 grid-template-columns:1fr 1fr;
                 grid-template-areas:"media info" "desc info" "trust info";
-                align-items:start;
+                /* Baris gambar memakai SISA ruang: deskripsi & kartu jaminan
+                   mengambil tinggi sesuai isinya, gambar menyesuaikan sisanya.
+                   Efeknya tinggi kolom kiri mengikuti kolom kanan, sehingga
+                   kartu jaminan sejajar dengan tombol Wishlist. minmax menjaga
+                   gambar tidak menyusut lebih kecil dari 260px. */
+                grid-template-rows:minmax(260px, 1fr) auto auto;
+                align-items:stretch;
                 column-gap:3rem; row-gap:22px;
                 margin-left:0; margin-right:0;
             }
-            .pd-row > .pd-col-media { grid-area:media; }
+            .pd-row > .pd-col-media { grid-area:media; display:flex; min-height:0; }
             .pd-row > .pd-col-desc  { grid-area:desc; }
-            .pd-row > .pd-col-trust { grid-area:trust; }
+            .pd-row > .pd-col-trust { grid-area:trust; align-self:end; }
             .pd-row > .pd-col-info  { grid-area:info; }
             /* Netralkan gutter Bootstrap agar jaraknya tidak dobel */
             .pd-row > [class*="col-"] { padding-left:0; padding-right:0; width:auto; max-width:none; margin-top:0; }
+
+            /* Gambar ikut tinggi kotaknya. object-fit:contain dipakai (bukan
+               cover) supaya logo produk tidak terpotong saat kotaknya memendek. */
+            .pd-col-media .pd-media { flex:1; min-height:0; display:flex; }
+            .pd-col-media .pd-media img { width:100%; height:100%; aspect-ratio:auto; object-fit:contain; }
         }
 
         /* Di bawah 992px kolom menumpuk: gambar, kartu jaminan, info beli, lalu
