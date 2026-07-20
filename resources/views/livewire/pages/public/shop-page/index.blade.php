@@ -175,29 +175,33 @@
                                                     </linearGradient>
                                                 </defs>
 
-                                                <ellipse class="se-glow" cx="120" cy="110" rx="80" ry="80" fill="url(#seGlow)" />
-                                                <ellipse class="se-shadow" cx="120" cy="180" rx="56" ry="8" fill="#e15a18" />
+                                                {{-- Cahaya, bayangan & kilau memakai koordinat yang sama persis
+                                                     dengan halaman Bundling agar skala & iramanya seragam. --}}
+                                                <ellipse class="se-glow" cx="120" cy="112" rx="80" ry="80" fill="url(#seGlow)" />
+                                                <ellipse class="se-shadow" cx="120" cy="182" rx="60" ry="8" fill="#e15a18" />
 
-                                                <g transform="translate(48,70)"><path class="se-spark s1" d="M0,-7 L1.8,-1.8 7,0 1.8,1.8 0,7 -1.8,1.8 -7,0 -1.8,-1.8Z" fill="#fba919" /></g>
-                                                <g transform="translate(196,88)"><path class="se-spark s2" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f26522" /></g>
-                                                <g transform="translate(188,146)"><path class="se-spark s3" d="M0,-5 L1.3,-1.3 5,0 1.3,1.3 0,5 -1.3,1.3 -5,0 -1.3,-1.3Z" fill="#fbaf45" /></g>
-                                                <g transform="translate(54,150)"><path class="se-spark s4" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f4772b" /></g>
+                                                <g transform="translate(46,74)"><path class="se-spark s1" d="M0,-7 L1.8,-1.8 7,0 1.8,1.8 0,7 -1.8,1.8 -7,0 -1.8,-1.8Z" fill="#fba919" /></g>
+                                                <g transform="translate(198,92)"><path class="se-spark s2" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f26522" /></g>
+                                                <g transform="translate(190,142)"><path class="se-spark s3" d="M0,-5 L1.3,-1.3 5,0 1.3,1.3 0,5 -1.3,1.3 -5,0 -1.3,-1.3Z" fill="#fbaf45" /></g>
+                                                <g transform="translate(52,146)"><path class="se-spark s4" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f4772b" /></g>
 
-                                                {{-- Kantong belanja --}}
+                                                {{-- Kantong belanja: dilebarkan & ditinggikan supaya mengisi kanvas
+                                                     setara kotak hadiah di Bundling (x 66–174, y 30–176). --}}
                                                 <g class="se-bag">
-                                                    <path d="M78,86 L162,86 L154,168 Q153,174 147,174 L93,174 Q87,174 86,168 Z" fill="url(#seBag)" />
-                                                    <path d="M78,86 L162,86 L160,104 L80,104 Z" fill="url(#seBagFold)" opacity=".55" />
-                                                    <path d="M100,86 L100,72 Q100,56 120,56 Q140,56 140,72 L140,86" fill="none"
-                                                        stroke="#ffe9d0" stroke-width="7" stroke-linecap="round" />
-                                                    <path d="M78,86 L162,86 L154,168 Q153,174 147,174 L93,174 Q87,174 86,168 Z" fill="none"
+                                                    <path d="M72,78 L168,78 L158,170 Q157,176 151,176 L89,176 Q83,176 82,170 Z" fill="url(#seBag)" />
+                                                    <path d="M72,78 L168,78 L166,98 L74,98 Z" fill="url(#seBagFold)" opacity=".55" />
+                                                    <path d="M97,78 L97,60 Q97,40 120,40 Q143,40 143,60 L143,78" fill="none"
+                                                        stroke="#ffe9d0" stroke-width="8" stroke-linecap="round" />
+                                                    <path d="M72,78 L168,78 L158,170 Q157,176 151,176 L89,176 Q83,176 82,170 Z" fill="none"
                                                         stroke="#ffffff" stroke-opacity=".45" stroke-width="1.5" />
                                                 </g>
 
-                                                {{-- Kaca pembesar --}}
+                                                {{-- Kaca pembesar digeser ke pojok kanan bawah supaya tidak
+                                                     menindih badan kantong (sebelumnya terlihat berdesakan). --}}
                                                 <g class="se-lens">
-                                                    <circle cx="146" cy="126" r="26" fill="#fff8ef" fill-opacity=".92" stroke="#f26522" stroke-width="5" />
-                                                    <path d="M165,145 L182,162" stroke="#e15a18" stroke-width="8" stroke-linecap="round" />
-                                                    <path class="se-shine" d="M136,116 Q142,110 150,112" stroke="#ffffff" stroke-width="4"
+                                                    <circle cx="150" cy="140" r="25" fill="#fff8ef" fill-opacity=".92" stroke="#f26522" stroke-width="5" />
+                                                    <path d="M168,158 L182,172" stroke="#e15a18" stroke-width="8" stroke-linecap="round" />
+                                                    <path class="se-shine" d="M140,130 Q146,124 154,126" stroke="#ffffff" stroke-width="4"
                                                         stroke-linecap="round" fill="none" opacity=".85" />
                                                 </g>
                                             </svg>
