@@ -12,6 +12,34 @@
         .pd-feat li span { min-width:0; }
         @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
 
+        /* ===== Animasi poin bercentang =====
+           Tiap poin masuk berurutan; jedanya dihitung dari --i yang ditulis
+           blade, jadi otomatis mengikuti berapa pun jumlah poinnya.
+           fill-mode both dipakai supaya poin tetap tersembunyi selama menunggu
+           gilirannya, bukan berkedip muncul lalu menghilang. */
+        .pd-feat li {
+            animation: pdFeatIn .5s cubic-bezier(.22, 1, .36, 1) both;
+            animation-delay: calc(var(--i, 0) * 90ms);
+        }
+        .pd-feat li i {
+            animation: pdCheckPop .45s cubic-bezier(.34, 1.56, .64, 1) both;
+            animation-delay: calc(var(--i, 0) * 90ms + 70ms);
+        }
+        @keyframes pdFeatIn {
+            from { opacity:0; transform:translateY(7px); }
+            to   { opacity:1; transform:none; }
+        }
+        @keyframes pdCheckPop {
+            0%   { opacity:0; transform:scale(.3) rotate(-25deg); }
+            60%  { opacity:1; transform:scale(1.18) rotate(0deg); }
+            100% { opacity:1; transform:scale(1); }
+        }
+
+        /* Hormati pengguna yang meminta animasi dikurangi: tampilkan langsung. */
+        @media (prefers-reduced-motion: reduce) {
+            .pd-feat li, .pd-feat li i { animation:none; opacity:1; transform:none; }
+        }
+
         /* ===== Kartu deskripsi ===== */
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
             background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
@@ -288,9 +316,13 @@
 
                             {{-- Hanya bagian yang ditandai admin (✅ dsb) yang bercentang. --}}
                             @if ($desk['poin'])
+                                {{-- --i dipakai CSS untuk menjeda animasi tiap poin
+                                     secara bertingkat, berapa pun jumlah poinnya. --}}
                                 <ul class="pd-feat">
                                     @foreach ($desk['poin'] as $poin)
-                                        <li><i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span></li>
+                                        <li style="--i: {{ $loop->index }}">
+                                            <i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span>
+                                        </li>
                                     @endforeach
                                 </ul>
                             @endif
