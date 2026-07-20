@@ -39,7 +39,10 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            // rtrim wajib: APP_URL yang berakhiran "/" membuat URL jadi
+            // "https://situs.id//storage/..." — garis miring ganda itu terbaca
+            // browser sebagai nama host, sehingga gambar gagal tampil.
+            'url' => rtrim(env('APP_URL', ''), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
         ],
