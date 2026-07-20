@@ -1,9 +1,10 @@
-@php
-// Kumpulkan semua kemungkinan session
-$successFlash = session('successCreated') ?? session('successUpdated') ?? session('success');
-$errorFlash = session('errorCreated') ?? session('errorUpdated') ?? session('error');
-@endphp
+{{-- Partial ini HANYA menyediakan helper glossy + mendengar event
+     swal-success / swal-error dari komponen.
 
+     Penampilan alert dari session sengaja TIDAK di sini, melainkan terpusat di
+     layouts/app.blade.php. Sebelumnya keduanya membaca kunci session yang sama
+     sehingga alert sukses tampil dua kali: glossy dari sini, lalu versi polos
+     dari layout. --}}
 <script data-navigate-once>
     window.fireGlossySwal = (title, text, icon) => {
         if (typeof Swal !== 'undefined') {
@@ -36,18 +37,4 @@ $errorFlash = session('errorCreated') ?? session('errorUpdated') ?? session('err
         const msg = (e.detail.message || (e.detail[0] && e.detail[0].message) || 'Berhasil disimpan!');
         window.fireGlossySwal('Berhasil!', msg, 'success');
     });
-</script>
-
-<script>
-    (function() {
-        // Ambil data session terbaru dari server
-        const successMsg = @json($successFlash);
-        const errorMsg = @json($errorFlash);
-
-        // Langsung tampilkan jika ada pesan, abaikan jika kosong
-        setTimeout(() => {
-            if (successMsg) window.fireGlossySwal('Berhasil!', successMsg, 'success');
-            if (errorMsg) window.fireGlossySwal('Gagal!', errorMsg, 'error');
-        }, 100); // Jeda singkat agar transisi halaman Livewire selesai
-    })();
 </script>

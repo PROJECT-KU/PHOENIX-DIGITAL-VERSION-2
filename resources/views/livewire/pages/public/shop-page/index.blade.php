@@ -1,4 +1,5 @@
 <main class="main">
+    @include('partials.media-produk-style')
     {{-- Gaya empty state sengaja ditaruh di blade, bukan di
          resources/css/public-custom-styles.css, meniru halaman Bundling.
          Alasannya: public/build/ masuk .gitignore, jadi CSS di stylesheet Vite
