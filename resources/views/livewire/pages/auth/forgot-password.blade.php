@@ -3,9 +3,10 @@
 use App\Models\User;
 use Illuminate\Support\Facades\Password;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.authentication')] class extends Component {
+new #[Layout('layouts.authentication')] #[Title('Lupa Kata Sandi · lemon')] class extends Component {
     public string $email = '';
 
     /**
