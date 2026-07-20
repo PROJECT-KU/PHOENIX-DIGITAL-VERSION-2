@@ -1,4 +1,41 @@
 <main class="main">
+    {{-- Gaya empty state sengaja ditaruh di blade, bukan di
+         resources/css/public-custom-styles.css, meniru halaman Bundling.
+         Alasannya: public/build/ masuk .gitignore, jadi CSS di stylesheet Vite
+         hanya sampai ke server lewat rsync terpisah. Ketika markup terkirim
+         (git pull) tapi CSS-nya tidak, SVG kehilangan aturan width dan
+         memenuhi layar. Menaruhnya di sini membuat markup & gaya selalu
+         terkirim bersama. --}}
+    <style>
+        .shp-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
+        .shp-empty-art { margin-bottom: 6px; }
+        .shp-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
+        .shp-empty-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f; font-size: 1.35rem; margin: 4px 0 6px; }
+        .shp-empty-sub { color: #6b7280; font-size: .95rem; line-height: 1.6; margin: 0 auto 18px; max-width: 400px; }
+        .shp-empty-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fba919, #f26522); color: #fff; font-weight: 700; padding: .7rem 1.4rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(242, 101, 34, .28); text-decoration: none; border: 0; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+        .shp-empty-btn:hover { color: #fff; transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 10px 24px rgba(242, 101, 34, .36); }
+
+        .se-bag { animation: se-bob 3.4s ease-in-out infinite; }
+        .se-lens { animation: se-search 4.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+        .se-glow, .se-shadow, .se-spark { transform-box: fill-box; transform-origin: center; }
+        .se-glow { animation: se-glowpulse 3.4s ease-in-out infinite; }
+        .se-shadow { animation: se-shadowpulse 3.4s ease-in-out infinite; }
+        .se-spark { animation: se-twinkle 2s ease-in-out infinite; }
+        .se-spark.s2 { animation-delay: .5s; }
+        .se-spark.s3 { animation-delay: 1s; }
+        .se-spark.s4 { animation-delay: 1.4s; }
+
+        @keyframes se-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+        @keyframes se-search { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 30% { transform: translate(-14px, -8px) rotate(-8deg); } 65% { transform: translate(8px, 4px) rotate(5deg); } }
+        @keyframes se-glowpulse { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: .75; transform: scale(1.08); } }
+        @keyframes se-shadowpulse { 0%, 100% { opacity: .16; transform: scaleX(1); } 50% { opacity: .09; transform: scaleX(.82); } }
+        @keyframes se-twinkle { 0%, 100% { opacity: .25; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .se-bag, .se-lens, .se-glow, .se-shadow, .se-spark { animation: none !important; }
+        }
+    </style>
+
     <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
