@@ -12,6 +12,36 @@
         .pd-feat li span { min-width:0; }
         @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
 
+        /* ===== Tata letak: deskripsi di kolom kiri, DI ATAS gambar =====
+           Tujuannya memendekkan kolom kanan supaya tombol Wishlist sejajar
+           dengan kartu Bergaransi / Dukungan Cepat / Pembayaran Aman.
+
+           Hanya berlaku ≥992px. Bootstrap .row dijadikan grid, jadi gutter
+           bawaannya (margin negatif + padding kolom) harus dinetralkan dan
+           diganti gap milik grid. */
+        @media (min-width: 992px) {
+            .pd-row {
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                grid-template-areas:"desc info" "media info";
+                align-items:start;
+                column-gap:3rem; row-gap:20px;
+                margin-left:0; margin-right:0;
+            }
+            .pd-row > .pd-col-desc  { grid-area:desc; }
+            .pd-row > .pd-col-media { grid-area:media; }
+            .pd-row > .pd-col-info  { grid-area:info; }
+            /* Netralkan gutter Bootstrap agar jaraknya tidak dobel */
+            .pd-row > [class*="col-"] { padding-left:0; padding-right:0; width:auto; max-width:none; margin-top:0; }
+            .pd-col-desc .pd-feat { margin-bottom:0; }
+        }
+
+        /* Di bawah 992px kolom menumpuk. Deskripsi ditaruh paling akhir supaya
+           tidak muncul mendahului nama produk dan harga. */
+        @media (max-width: 991.98px) {
+            .pd-row > .pd-col-desc { order:3; }
+        }
+
         /* ===== Blok JASA di halaman produk (upload per halaman & add-on) ===== */
         .jd-hint { font-size:.83rem; color:var(--ph-muted); line-height:1.55; margin:0 0 10px; }
 
@@ -162,9 +192,9 @@
 
     <section class="pd-section">
         <div class="container">
-            <div class="row g-4 g-lg-5">
+            <div class="row g-4 g-lg-5 pd-row">
                 {{-- Media --}}
-                <div class="col-lg-6">
+                <div class="col-lg-6 pd-col-media">
                     <div class="pd-media">
                         @if ($best)
                             <span class="pd-badge {{ $isFlash ? 'is-flash' : '' }}">
@@ -210,24 +240,13 @@
                     </div>
                 </div>
 
-                {{-- Info --}}
-                <div class="col-lg-6">
-                    <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Akun Premium</span>
-                    <h2 class="pd-title">{{ $product->nama_akun }}</h2>
-
-                    <div class="pd-price">
-                        <span class="pd-price-now">Rp {{ number_format($selDisc, 0, ',', '.') }}</span>
-                        @if ($selDisc < $selOrig)
-                            <span class="pd-price-old">Rp {{ number_format($selOrig, 0, ',', '.') }}</span>
-                        @endif
-                        <span class="pd-price-unit">/ {{ $durationValue }} {{ ucfirst($durationType) }}</span>
-                        @if ($selSave > 0)
-                            <span class="pd-price-save">Hemat Rp {{ number_format($selSave, 0, ',', '.') }}</span>
-                        @endif
-                    </div>
-
-                    @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
-                    @if ($desk['intro'] !== '' || $desk['poin'])
+                {{-- Deskripsi: anak langsung .pd-row supaya bisa ditempatkan di
+                     kolom kiri ATAS gambar pada layar lebar (lihat .pd-row di
+                     <style> atas). Dikeluarkan dari kolom info agar kolom kanan
+                     memendek dan tombol Wishlist sejajar dengan kartu jaminan. --}}
+                @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
+                @if ($desk['intro'] !== '' || $desk['poin'])
+                    <div class="col-lg-6 pd-col-desc">
                         @if ($desk['intro'] !== '')
                             <p class="pd-desc">{{ $desk['intro'] }}</p>
                         @endif
@@ -242,7 +261,24 @@
                                 @endforeach
                             </ul>
                         @endif
-                    @endif
+                    </div>
+                @endif
+
+                {{-- Info --}}
+                <div class="col-lg-6 pd-col-info">
+                    <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Akun Premium</span>
+                    <h2 class="pd-title">{{ $product->nama_akun }}</h2>
+
+                    <div class="pd-price">
+                        <span class="pd-price-now">Rp {{ number_format($selDisc, 0, ',', '.') }}</span>
+                        @if ($selDisc < $selOrig)
+                            <span class="pd-price-old">Rp {{ number_format($selOrig, 0, ',', '.') }}</span>
+                        @endif
+                        <span class="pd-price-unit">/ {{ $durationValue }} {{ ucfirst($durationType) }}</span>
+                        @if ($selSave > 0)
+                            <span class="pd-price-save">Hemat Rp {{ number_format($selSave, 0, ',', '.') }}</span>
+                        @endif
+                    </div>
 
                     {{-- ===== JASA PER HALAMAN: unggah dokumen dulu (harga = per halaman) ===== --}}
                     @if ($product->jasaPerHalaman())
