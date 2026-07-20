@@ -12,32 +12,27 @@
         .pd-feat li span { min-width:0; }
         @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
 
-        /* ===== Animasi poin bercentang =====
-           Tiap poin masuk berurutan; jedanya dihitung dari --i yang ditulis
-           blade, jadi otomatis mengikuti berapa pun jumlah poinnya.
-           fill-mode both dipakai supaya poin tetap tersembunyi selama menunggu
-           gilirannya, bukan berkedip muncul lalu menghilang. */
-        .pd-feat li {
-            animation: pdFeatIn .5s cubic-bezier(.22, 1, .36, 1) both;
-            animation-delay: calc(var(--i, 0) * 90ms);
-        }
+        /* ===== Denyut pada ikon centang =====
+           Berdenyut terus-menerus supaya daftar terasa hidup. Tidak ada animasi
+           masuk: teksnya langsung terbaca begitu halaman tampil.
+
+           Jeda tiap ikon dihitung dari --i yang ditulis blade, jadi denyutnya
+           bergelombang (tidak serempak) dan otomatis menyesuaikan berapa pun
+           jumlah poinnya. */
         .pd-feat li i {
-            animation: pdCheckPop .45s cubic-bezier(.34, 1.56, .64, 1) both;
-            animation-delay: calc(var(--i, 0) * 90ms + 70ms);
+            transform-origin: center;
+            animation: pdCheckPulse 2.4s ease-in-out infinite;
+            animation-delay: calc(var(--i, 0) * 200ms);
+            will-change: transform;
         }
-        @keyframes pdFeatIn {
-            from { opacity:0; transform:translateY(7px); }
-            to   { opacity:1; transform:none; }
-        }
-        @keyframes pdCheckPop {
-            0%   { opacity:0; transform:scale(.3) rotate(-25deg); }
-            60%  { opacity:1; transform:scale(1.18) rotate(0deg); }
-            100% { opacity:1; transform:scale(1); }
+        @keyframes pdCheckPulse {
+            0%, 100% { transform:scale(1);    filter:drop-shadow(0 0 0 rgba(22, 163, 74, 0)); }
+            50%      { transform:scale(1.16); filter:drop-shadow(0 0 5px rgba(22, 163, 74, .45)); }
         }
 
-        /* Hormati pengguna yang meminta animasi dikurangi: tampilkan langsung. */
+        /* Hormati pengguna yang meminta animasi dikurangi: diamkan denyutnya. */
         @media (prefers-reduced-motion: reduce) {
-            .pd-feat li, .pd-feat li i { animation:none; opacity:1; transform:none; }
+            .pd-feat li i { animation:none; transform:none; filter:none; }
         }
 
         /* ===== Kartu deskripsi ===== */
