@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- Di halaman bertoken, batasi referrer ke origin saja. Tanpa ini, saat
+         pelanggan berpindah dari /cek/{token} ke halaman lain, browser
+         mengirim URL bertoken itu sebagai referrer — dan GA/Pixel di halaman
+         berikutnya ikut meneruskannya ke Google/Facebook. --}}
+    @if (\App\Support\JalurAnalitik::peka())
+        <meta name="referrer" content="origin">
+    @endif
+
     @include('partials.seo')
     @include('partials.meta-pixel')
     @include('partials.google-analytics')

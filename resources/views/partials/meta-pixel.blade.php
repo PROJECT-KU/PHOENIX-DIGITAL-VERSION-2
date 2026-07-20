@@ -1,3 +1,8 @@
+{{-- Meta Pixel selalu mengirim document.location apa adanya dan tidak
+     menyediakan cara menimpanya seperti page_location di GA4. Karena itu, di
+     halaman bertoken pixel-nya tidak dimuat sama sekali — satu-satunya cara
+     mencegah token pelanggan sampai ke Facebook. --}}
+@unless (\App\Support\JalurAnalitik::peka())
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -15,3 +20,4 @@ fbq('track', 'PageView');
 src="https://www.facebook.com/tr?id=1364755135528892&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
+@endunless
