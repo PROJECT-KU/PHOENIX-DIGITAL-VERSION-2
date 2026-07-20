@@ -154,9 +154,78 @@
                                 </div>
                             @empty
                                 <div class="col-12">
-                                    <div class="text-center alert alert-warning">
-                                        <i class="bi bi-search"></i>
-                                        <p class="mt-2 mb-0">Tidak ada produk yang ditemukan</p>
+                                    {{-- Empty state beranimasi — seragam dengan halaman Bundling,
+                                         menggantikan kotak peringatan datar yang terasa seperti error. --}}
+                                    <div class="shp-empty">
+                                        <div class="shp-empty-art">
+                                            <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"
+                                                aria-label="Produk tidak ditemukan">
+                                                <defs>
+                                                    <radialGradient id="seGlow" cx="50%" cy="50%" r="50%">
+                                                        <stop offset="0%" stop-color="#fba919" stop-opacity=".55" />
+                                                        <stop offset="70%" stop-color="#fba919" stop-opacity="0" />
+                                                    </radialGradient>
+                                                    <linearGradient id="seBag" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stop-color="#fdc069" />
+                                                        <stop offset="100%" stop-color="#f4772b" />
+                                                    </linearGradient>
+                                                    <linearGradient id="seBagFold" x1="0" y1="0" x2="1" y2="0">
+                                                        <stop offset="0%" stop-color="#f7a23e" />
+                                                        <stop offset="100%" stop-color="#e15a18" />
+                                                    </linearGradient>
+                                                </defs>
+
+                                                <ellipse class="se-glow" cx="120" cy="110" rx="80" ry="80" fill="url(#seGlow)" />
+                                                <ellipse class="se-shadow" cx="120" cy="180" rx="56" ry="8" fill="#e15a18" />
+
+                                                <g transform="translate(48,70)"><path class="se-spark s1" d="M0,-7 L1.8,-1.8 7,0 1.8,1.8 0,7 -1.8,1.8 -7,0 -1.8,-1.8Z" fill="#fba919" /></g>
+                                                <g transform="translate(196,88)"><path class="se-spark s2" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f26522" /></g>
+                                                <g transform="translate(188,146)"><path class="se-spark s3" d="M0,-5 L1.3,-1.3 5,0 1.3,1.3 0,5 -1.3,1.3 -5,0 -1.3,-1.3Z" fill="#fbaf45" /></g>
+                                                <g transform="translate(54,150)"><path class="se-spark s4" d="M0,-6 L1.5,-1.5 6,0 1.5,1.5 0,6 -1.5,1.5 -6,0 -1.5,-1.5Z" fill="#f4772b" /></g>
+
+                                                {{-- Kantong belanja --}}
+                                                <g class="se-bag">
+                                                    <path d="M78,86 L162,86 L154,168 Q153,174 147,174 L93,174 Q87,174 86,168 Z" fill="url(#seBag)" />
+                                                    <path d="M78,86 L162,86 L160,104 L80,104 Z" fill="url(#seBagFold)" opacity=".55" />
+                                                    <path d="M100,86 L100,72 Q100,56 120,56 Q140,56 140,72 L140,86" fill="none"
+                                                        stroke="#ffe9d0" stroke-width="7" stroke-linecap="round" />
+                                                    <path d="M78,86 L162,86 L154,168 Q153,174 147,174 L93,174 Q87,174 86,168 Z" fill="none"
+                                                        stroke="#ffffff" stroke-opacity=".45" stroke-width="1.5" />
+                                                </g>
+
+                                                {{-- Kaca pembesar --}}
+                                                <g class="se-lens">
+                                                    <circle cx="146" cy="126" r="26" fill="#fff8ef" fill-opacity=".92" stroke="#f26522" stroke-width="5" />
+                                                    <path d="M165,145 L182,162" stroke="#e15a18" stroke-width="8" stroke-linecap="round" />
+                                                    <path class="se-shine" d="M136,116 Q142,110 150,112" stroke="#ffffff" stroke-width="4"
+                                                        stroke-linecap="round" fill="none" opacity=".85" />
+                                                </g>
+                                            </svg>
+                                        </div>
+
+                                        @if ($search)
+                                            <h3 class="shp-empty-title">Produk tidak ditemukan</h3>
+                                            <p class="shp-empty-sub">Tidak ada produk yang cocok dengan pencarian
+                                                <b>"{{ $search }}"</b>. Coba kata kunci lain, ya.</p>
+                                            <button type="button" class="shp-empty-btn" wire:click="$set('search', '')">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Reset Pencarian
+                                            </button>
+                                        @elseif ($tipe || $sortBy)
+                                            <h3 class="shp-empty-title">Tidak ada yang cocok</h3>
+                                            <p class="shp-empty-sub">Filter yang dipilih belum menemukan produk apa pun.
+                                                Coba longgarkan filternya, ya.</p>
+                                            <button type="button" class="shp-empty-btn"
+                                                wire:click="$set('tipe', ''); $set('sortBy', '')">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
+                                            </button>
+                                        @else
+                                            <h3 class="shp-empty-title">Belum ada produk</h3>
+                                            <p class="shp-empty-sub">Koleksi produk sedang disiapkan. Sementara itu,
+                                                lihat paket bundling kami, yuk!</p>
+                                            <a href="{{ url('/bundling/product') }}" class="shp-empty-btn">
+                                                <i class="bi bi-box2-heart"></i> Lihat Paket Bundling
+                                            </a>
+                                        @endif
                                     </div>
                                 </div>
                             @endforelse
