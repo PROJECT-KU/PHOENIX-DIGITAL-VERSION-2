@@ -121,7 +121,10 @@
                     <h1 class="art-title">{{ $post->title }}</h1>
 
                     <div class="art-meta">
-                        <span><i class="bi bi-person-circle me-1"></i>{{ $post->author ?: 'Phoenix Digital' }}</span>
+                        {{-- Penulis sengaja statis "admin", tidak diambil dari kolom
+                             author maupun akun yang login, supaya nama karyawan tidak
+                             tampil di halaman publik. --}}
+                        <span><i class="bi bi-person-circle me-1"></i>admin</span>
                         <span><i class="bi bi-calendar3 me-1"></i>{{ optional($post->published_at ?? $post->created_at)->translatedFormat('d F Y') }}</span>
                         <span><i class="bi bi-clock me-1"></i>{{ $post->readingMinutes() }} menit baca</span>
                         <span><i class="bi bi-eye me-1"></i>{{ number_format($post->views) }}x dilihat</span>
