@@ -97,24 +97,51 @@
             });
         });
 
-        function showAlertFromSession() {
-            @if(session('success'))
+        {{-- Satu-satunya penampil alert dari session.
+
+             Sebelumnya alert sukses tampil DUA KALI: versi polos dari sini, lalu
+             versi glossy dari partial livewire.layout.sweetalert yang di-include
+             halaman list. Keduanya membaca kunci session yang sama, sedangkan
+             templateindex meng-extends layout ini — jadi dua-duanya jalan.
+
+             Sekarang partial hanya mendefinisikan helper + mendengar event
+             swal-success/swal-error, dan penampilan dari session hanya di sini.
+             Kunci successCreated/successUpdated ikut dibaca karena beberapa form
+             (mis. Blog) memakai kunci itu, bukan 'success'. --}}
+        @php
+            $flashSukses = session('successCreated') ?? session('successUpdated') ?? session('success');
+            $flashGagal = session('errorCreated') ?? session('errorUpdated') ?? session('error');
+        @endphp
+
+        // Pakai helper glossy dari partial bila sudah ada, agar tampilannya
+        // seragam; kalau halaman tidak meng-include partial, pakai cadangan
+        // dengan gaya yang sama.
+        window.fireGlossySwal = window.fireGlossySwal || function (title, text, icon) {
+            if (typeof Swal === 'undefined') return;
             Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: @js(session('success')),
-                timer: 2000,
+                title: title,
+                text: text,
+                icon: icon,
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdrop: 'rgba(139, 92, 246, 0.15)',
+                customClass: {
+                    popup: 'swal-glossy-popup rounded-4 shadow-lg border-0',
+                    confirmButton: 'btn-glossy-confirm',
+                    cancelButton: 'btn-glossy-cancel',
+                    title: 'fw-bold'
+                },
+                buttonsStyling: false,
+                timer: 2500,
                 showConfirmButton: false
             });
-            @endif
+        };
 
-            @if(session('error'))
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: @js(session('error'))
-            });
-            @endif
+        function showAlertFromSession() {
+            const sukses = @js($flashSukses);
+            const gagal = @js($flashGagal);
+
+            if (sukses) window.fireGlossySwal('Berhasil!', sukses, 'success');
+            if (gagal) window.fireGlossySwal('Gagal!', gagal, 'error');
         }
 
         // 1. Saat pertama kali load page
