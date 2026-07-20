@@ -12,34 +12,50 @@
         .pd-feat li span { min-width:0; }
         @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
 
-        /* ===== Tata letak: deskripsi di kolom kiri, DI ATAS gambar =====
-           Tujuannya memendekkan kolom kanan supaya tombol Wishlist sejajar
-           dengan kartu Bergaransi / Dukungan Cepat / Pembayaran Aman.
+        /* ===== Kartu deskripsi ===== */
+        .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
+            background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
+        .pd-desc-head { display:flex; align-items:center; gap:9px;
+            font-family:'Poppins', sans-serif; font-weight:800; font-size:1rem;
+            color:var(--ph-ink); margin:0 0 12px; }
+        .pd-desc-head i { color:var(--ph-orange); font-size:1.05rem; }
+        .pd-desc-card .pd-desc { margin-bottom:12px; }
+        .pd-desc-card .pd-desc.is-lead { color:var(--ph-ink); font-weight:600; }
+        .pd-desc-card .pd-desc:last-child { margin-bottom:0; }
+        .pd-desc-card .pd-feat { margin-bottom:0; padding-top:4px; }
+        @media (max-width: 575.98px) { .pd-desc-card { padding:16px 16px; border-radius:15px; } }
 
-           Hanya berlaku ≥992px. Bootstrap .row dijadikan grid, jadi gutter
-           bawaannya (margin negatif + padding kolom) harus dinetralkan dan
-           diganti gap milik grid. */
+        /* ===== Tata letak kolom kiri: gambar di ATAS, lalu deskripsi, lalu
+           kartu jaminan. Kolom kanan (harga s.d. Wishlist) mengisi kolom kedua
+           penuh, sehingga tombol Wishlist sejajar dengan bagian bawah kiri.
+
+           Hanya ≥992px. Bootstrap .row dijadikan grid, jadi gutter bawaannya
+           (margin negatif + padding kolom) dinetralkan dan diganti gap grid. */
         @media (min-width: 992px) {
             .pd-row {
                 display:grid;
                 grid-template-columns:1fr 1fr;
-                grid-template-areas:"desc info" "media info";
+                grid-template-areas:"media info" "desc info" "trust info";
                 align-items:start;
-                column-gap:3rem; row-gap:20px;
+                column-gap:3rem; row-gap:22px;
                 margin-left:0; margin-right:0;
             }
-            .pd-row > .pd-col-desc  { grid-area:desc; }
             .pd-row > .pd-col-media { grid-area:media; }
+            .pd-row > .pd-col-desc  { grid-area:desc; }
+            .pd-row > .pd-col-trust { grid-area:trust; }
             .pd-row > .pd-col-info  { grid-area:info; }
             /* Netralkan gutter Bootstrap agar jaraknya tidak dobel */
             .pd-row > [class*="col-"] { padding-left:0; padding-right:0; width:auto; max-width:none; margin-top:0; }
-            .pd-col-desc .pd-feat { margin-bottom:0; }
         }
 
-        /* Di bawah 992px kolom menumpuk. Deskripsi ditaruh paling akhir supaya
-           tidak muncul mendahului nama produk dan harga. */
+        /* Di bawah 992px kolom menumpuk: gambar, kartu jaminan, info beli, lalu
+           deskripsi. Deskripsi sengaja terakhir supaya tidak mendahului nama
+           produk dan harga. */
         @media (max-width: 991.98px) {
-            .pd-row > .pd-col-desc { order:3; }
+            .pd-row > .pd-col-media { order:1; }
+            .pd-row > .pd-col-trust { order:2; }
+            .pd-row > .pd-col-info  { order:3; }
+            .pd-row > .pd-col-desc  { order:4; }
         }
 
         /* ===== Blok JASA di halaman produk (upload per halaman & add-on) ===== */
@@ -214,7 +230,11 @@
                         @endif
                     </div>
 
-                    {{-- Info kepercayaan (di bawah gambar) --}}
+                </div>
+
+                {{-- Kartu jaminan: dikeluarkan dari kolom media agar bisa
+                     ditempatkan SETELAH deskripsi pada layar lebar. --}}
+                <div class="col-lg-6 pd-col-trust">
                     <div class="pd-features">
                         <div class="pd-feature">
                             <span class="pd-feature-ic"><i class="bi bi-shield-check"></i></span>
@@ -245,22 +265,25 @@
                      <style> atas). Dikeluarkan dari kolom info agar kolom kanan
                      memendek dan tombol Wishlist sejajar dengan kartu jaminan. --}}
                 @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
-                @if ($desk['intro'] !== '' || $desk['poin'])
+                @if ($desk['paragraf'] || $desk['poin'])
                     <div class="col-lg-6 pd-col-desc">
-                        @if ($desk['intro'] !== '')
-                            <p class="pd-desc">{{ $desk['intro'] }}</p>
-                        @endif
+                        <div class="pd-desc-card">
+                            <h3 class="pd-desc-head"><i class="bi bi-card-text"></i> Deskripsi Produk</h3>
 
-                        {{-- Poin bercentang dipecah jadi daftar. Ditulis admin sebagai
-                             satu paragraf panjang berisi "✅", yang kalau ditampilkan
-                             apa adanya jadi sulit dibaca. --}}
-                        @if ($desk['poin'])
-                            <ul class="pd-feat">
-                                @foreach ($desk['poin'] as $poin)
-                                    <li><i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span></li>
-                                @endforeach
-                            </ul>
-                        @endif
+                            {{-- Teks biasa: TANPA centang. --}}
+                            @foreach ($desk['paragraf'] as $i => $par)
+                                <p class="pd-desc {{ $i === 0 ? 'is-lead' : '' }}">{{ $par }}</p>
+                            @endforeach
+
+                            {{-- Hanya bagian yang ditandai admin (✅ dsb) yang bercentang. --}}
+                            @if ($desk['poin'])
+                                <ul class="pd-feat">
+                                    @foreach ($desk['poin'] as $poin)
+                                        <li><i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span></li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        </div>
                     </div>
                 @endif
 

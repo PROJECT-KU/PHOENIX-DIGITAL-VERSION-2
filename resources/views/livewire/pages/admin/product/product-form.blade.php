@@ -681,6 +681,18 @@
                 @error('prices') <div class="text-danger small mb-2">{{ $message }}</div> @enderror
 
                 <style>
+                    /* Kotak deskripsi produk: dibuat tinggi supaya teks panjang
+                       (biasanya beberapa poin "✅") enak dibaca & disunting.
+                       resize:vertical agar admin tetap bisa menambah tingginya. */
+                    .deskripsi-area {
+                        min-height: 260px;
+                        line-height: 1.7;
+                        resize: vertical;
+                    }
+                    @media (max-width: 767.98px) {
+                        .deskripsi-area { min-height: 200px; }
+                    }
+
                     /* Mobile: beri jarak & pemisah antar baris katalog harga agar tidak mepet. */
                     @media (max-width: 767.98px) {
                         .price-row-sep {
@@ -785,8 +797,11 @@
 
                     <div class="col-12">
                         <label for="deskripsi" class="form-label fw-semibold text-muted">Deskripsi</label>
-                        <textarea id="deskripsi" wire:model.defer="deskripsi" rows="4"
-                            class="form-control @error('deskripsi') is-invalid @enderror"
+                        {{-- Tinggi dilebihkan: deskripsi produk biasanya panjang dan
+                             memuat beberapa poin "✅", sulit dibaca di kotak pendek.
+                             Tetap bisa ditarik manual (resize:vertical). --}}
+                        <textarea id="deskripsi" wire:model.defer="deskripsi" rows="12"
+                            class="form-control deskripsi-area @error('deskripsi') is-invalid @enderror"
                             placeholder="Masukkan deskripsi produk..."></textarea>
                         @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
