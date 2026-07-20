@@ -4,9 +4,10 @@ use App\Mail\NikReminderMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Volt\Component;
 
-new #[Layout('layouts.authentication')] class extends Component {
+new #[Layout('layouts.authentication')] #[Title('Lupa NIK · lemon')] class extends Component {
     public string $email = '';
 
     /**

@@ -6,7 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title')</title>
+    {{-- Halaman auth dirender Volt lewat #[Layout] (berbasis slot), jadi
+         @yield('title') tidak pernah terisi dan judulnya kosong. Livewire
+         mengoper $title dari atribut #[Title] tiap halaman. --}}
+    <title>{{ $title ?? 'lemon' }}</title>
+
+    <!-- Favicon (logo lemon, seragam dengan layout admin) -->
+    <link rel="icon" href="{{ asset('lemon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
