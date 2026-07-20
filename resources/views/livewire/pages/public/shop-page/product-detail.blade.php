@@ -12,6 +12,29 @@
         .pd-feat li span { min-width:0; }
         @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
 
+        /* ===== Denyut pada ikon centang =====
+           Berdenyut terus-menerus supaya daftar terasa hidup. Tidak ada animasi
+           masuk: teksnya langsung terbaca begitu halaman tampil.
+
+           Jeda tiap ikon dihitung dari --i yang ditulis blade, jadi denyutnya
+           bergelombang (tidak serempak) dan otomatis menyesuaikan berapa pun
+           jumlah poinnya. */
+        .pd-feat li i {
+            transform-origin: center;
+            animation: pdCheckPulse 2.4s ease-in-out infinite;
+            animation-delay: calc(var(--i, 0) * 200ms);
+            will-change: transform;
+        }
+        @keyframes pdCheckPulse {
+            0%, 100% { transform:scale(1);    filter:drop-shadow(0 0 0 rgba(22, 163, 74, 0)); }
+            50%      { transform:scale(1.16); filter:drop-shadow(0 0 5px rgba(22, 163, 74, .45)); }
+        }
+
+        /* Hormati pengguna yang meminta animasi dikurangi: diamkan denyutnya. */
+        @media (prefers-reduced-motion: reduce) {
+            .pd-feat li i { animation:none; transform:none; filter:none; }
+        }
+
         /* ===== Kartu deskripsi ===== */
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
             background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
@@ -288,9 +311,13 @@
 
                             {{-- Hanya bagian yang ditandai admin (✅ dsb) yang bercentang. --}}
                             @if ($desk['poin'])
+                                {{-- --i dipakai CSS untuk menjeda animasi tiap poin
+                                     secara bertingkat, berapa pun jumlah poinnya. --}}
                                 <ul class="pd-feat">
                                     @foreach ($desk['poin'] as $poin)
-                                        <li><i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span></li>
+                                        <li style="--i: {{ $loop->index }}">
+                                            <i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span>
+                                        </li>
                                     @endforeach
                                 </ul>
                             @endif
