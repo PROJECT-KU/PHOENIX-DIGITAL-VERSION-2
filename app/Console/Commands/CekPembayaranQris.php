@@ -40,8 +40,10 @@ class CekPembayaranQris extends Command
         $lunas = 0;
         $dicek = 0;
 
+        // Cek order pending (di daftar) DAN draft (yang di-share admin lalu
+        // disimpan): keduanya bisa saja sudah dibayar customer.
         Order::query()
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'draft'])
             ->where('payment_method', 'qris_dinamis')
             ->whereNotNull('qris_trx_id')
             ->where('created_at', '>=', $batas)
@@ -51,7 +53,7 @@ class CekPembayaranQris extends Command
 
                     // Bisa saja sudah dilunasi lewat channel lain sejak query tadi.
                     $order->refresh();
-                    if ($order->status !== 'pending') {
+                    if (! in_array($order->status, ['pending', 'draft'], true)) {
                         continue;
                     }
 
