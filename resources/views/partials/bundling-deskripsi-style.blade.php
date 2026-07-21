@@ -2,7 +2,7 @@
      Ditaruh inline di blade (bukan public-custom-styles.css) supaya ikut
      git pull tanpa perlu rsync public/build. Include SEKALI per halaman. --}}
 <style>
-    .bdesk { text-align: center; }
+    .bdesk { text-align: center; margin-bottom: 20px; }
     .bdesk-p { color: var(--ph-muted, #6b7280); font-size: .92rem; line-height: 1.65; margin: 0 auto 10px; max-width: 46ch; }
     .bdesk-p:first-child { color: var(--ph-ink, #23272f); font-weight: 600; }
     .bdesk-p:last-of-type { margin-bottom: 14px; }
