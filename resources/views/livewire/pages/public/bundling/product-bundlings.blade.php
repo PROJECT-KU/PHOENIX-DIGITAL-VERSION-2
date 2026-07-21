@@ -284,7 +284,10 @@
 
                                     @include('partials.bundling-deskripsi', ['teks' => $item->deskripsi])
 
-                                    <div class="text-center mb-3">
+                                    {{-- mt-auto: dorong blok beli (promo→harga→termasuk→tombol) ke
+                                         dasar kartu. Ruang sisa jatuh sebagai jarak setelah deskripsi,
+                                         bukan void di bawah — semua kartu jadi tinggi sama & rapi. --}}
+                                    <div class="text-center mb-3 mt-auto">
                                         <span class="bdl-promo">PROMO HARI INI!</span>
                                     </div>
 
@@ -317,7 +320,7 @@
                                         @endforeach
                                     </div>
 
-                                    <button type="button" class="bdl-order-btn mt-auto"
+                                    <button type="button" class="bdl-order-btn"
                                         wire:click="addToCart('{{ $item->id }}')"
                                         wire:loading.attr="disabled" wire:target="addToCart('{{ $item->id }}')">
                                         <span wire:loading.remove wire:target="addToCart('{{ $item->id }}')"><i class="bi bi-cart-plus"></i> Pesan Sekarang!</span>
