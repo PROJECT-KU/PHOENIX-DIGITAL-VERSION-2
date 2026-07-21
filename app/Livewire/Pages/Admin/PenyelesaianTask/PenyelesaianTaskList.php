@@ -95,8 +95,12 @@ class PenyelesaianTaskList extends Component
         // Buka langsung modal komentar jika datang dari klik notifikasi (?open_task=ID)
         $openTask = ($id = request('open_task')) ? Task::find($id) : null;
 
-        $this->bulan = $openTask->periode_bulan ?? now()->month;
-        $this->tahun = $openTask->periode_tahun ?? now()->year;
+        // Default ke PERIODE GAJI berjalan (bukan bulan kalender): pada tgl 21+
+        // keduanya berbeda dan task difiling per periode gaji, jadi task
+        // berdeadline 21 Jul (periode Agustus) tak akan tampil bila default Juli.
+        $periodeKini = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $openTask->periode_bulan ?? $periodeKini['bulan'];
+        $this->tahun = $openTask->periode_tahun ?? $periodeKini['tahun'];
         $this->loadBudget();
 
         if ($openTask) {
