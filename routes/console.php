@@ -30,6 +30,9 @@ Schedule::call(function () {
  * (QRIS/order kedaluwarsa) — supaya tidak terus menggantung "pending"
  * meski tidak ada yang membuka halaman pembayaran.
  */
+// Cek pembayaran QRIS di sisi server DULU (tandai lunas) sebelum cancel-expired
+// membatalkan order — supaya order yang sudah dibayar tidak ikut dibatalkan.
+Schedule::command('qris:cek-pembayaran')->everyMinute()->withoutOverlapping();
 Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping();
 
 /**
