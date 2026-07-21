@@ -279,7 +279,19 @@ class OrderForm extends Component
 
     private function getPrice(Product $product, string $durationType, int $durationValue): int
     {
-        return $product->hargaUntuk($durationValue, $durationType);
+        $harga = $product->hargaUntuk($durationValue, $durationType);
+        if ($harga > 0) {
+            return $harga;
+        }
+
+        // Durasi non-katalog (mis. 2/3/4 bulan) tidak punya harga khusus →
+        // hitung dari harga per bulan × durasi. Sama seperti fallback di sisi
+        // publik (ProductDetail::addToCart). Tanpa ini durasi >1 berharga Rp 0.
+        if ($durationType === 'bulan' && (int) ($product->harga_perbulan ?? 0) > 0 && $durationValue > 0) {
+            return (int) $product->harga_perbulan * $durationValue;
+        }
+
+        return $harga;
     }
 
     // ===================== TOTAL / DISKON =====================
