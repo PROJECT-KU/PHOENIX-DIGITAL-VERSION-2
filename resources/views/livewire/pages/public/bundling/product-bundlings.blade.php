@@ -233,6 +233,8 @@
             .be-lid { transform: translateY(-10px); }
         }
     </style>
+    @include('partials.bundling-deskripsi-style')
+
     <!-- Page Title -->
     <div class="page-title bdl-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
@@ -267,7 +269,7 @@
 
             <section id="best-sellers" class="best-sellers section">
                 <div class="container" wire:ignore.self>
-                    <div class="row g-4">
+                    <div class="row g-4 justify-content-center">
                         @forelse ($bundlings as $item)
                             @php
                                 $durs = $item->durations ?? [];
@@ -279,9 +281,7 @@
                                     <div class="bdl-eyebrow"><i class="bi bi-box2-heart-fill"></i> Paket Bundling</div>
                                     <h2 class="bdl-title">{{ $item->nama_paket }}</h2>
 
-                                    @if (trim((string) $item->deskripsi) !== '')
-                                        <div class="bdl-desc">{{ $item->deskripsi }}</div>
-                                    @endif
+                                    @include('partials.bundling-deskripsi', ['teks' => $item->deskripsi])
 
                                     <div class="text-center mb-3">
                                         <span class="bdl-promo">PROMO HARI INI!</span>

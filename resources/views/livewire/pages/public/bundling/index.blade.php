@@ -1,4 +1,5 @@
 <section id="best-sellers" @class(['bd-section section' => $bundlings->isNotEmpty()]) @if ($bundlings->isEmpty()) style="display:none" @endif>
+    @include('partials.bundling-deskripsi-style')
     @if ($bundlings->isNotEmpty())
     <div class="container">
         <div class="ph-sec-head">
@@ -7,7 +8,7 @@
             <p class="ph-sec-sub">Gabungan beberapa akun premium dalam satu paket — lebih lengkap &amp; lebih hemat.</p>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-4 justify-content-center">
             @forelse ($bundlings as $item)
                 @php
                     $hAwal = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_awal);
@@ -24,8 +25,12 @@
                         <div class="bd-card-body">
                             <div class="bd-head">
                                 <h3 class="bd-name">{{ $item->nama_paket }}</h3>
-                                @if (trim((string) $item->deskripsi) !== '')
-                                    <p class="bd-card-desc">{{ $item->deskripsi }}</p>
+                                {{-- Kartu cukup teaser singkat; rincian lengkap ada di
+                                     daftar "Termasuk dalam paket" & modal detail. --}}
+                                @php $__t = \App\Support\DeskripsiProduk::pisah($item->deskripsi); @endphp
+                                @php $__teaser = $__t['paragraf'][0] ?? ($__t['poin'][0] ?? ''); @endphp
+                                @if ($__teaser !== '')
+                                    <p class="bd-card-desc bdesk-teaser">{{ $__teaser }}</p>
                                 @endif
                             </div>
 
@@ -96,9 +101,7 @@
                     <div class="bd-modal-eyebrow"><i class="bi bi-box2-heart-fill"></i> Paket Bundling</div>
                     <h2 class="bdl-title">{{ $detailBundle['nama'] }}</h2>
 
-                    @if (trim((string) $detailBundle['deskripsi']) !== '')
-                        <div class="bdl-desc">{{ $detailBundle['deskripsi'] }}</div>
-                    @endif
+                    @include('partials.bundling-deskripsi', ['teks' => $detailBundle['deskripsi'] ?? ''])
 
                     <div class="text-center mb-3">
                         <span class="bdl-promo">PROMO HARI INI!</span>
