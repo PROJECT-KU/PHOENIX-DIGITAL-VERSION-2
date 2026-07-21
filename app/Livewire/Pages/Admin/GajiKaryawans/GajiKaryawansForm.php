@@ -673,8 +673,10 @@ class GajiKaryawansForm extends Component
             9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
 
-        $tahunSekarang = (int) now()->year;
-        $daftarTahun = range($tahunSekarang, $tahunSekarang - 5);
+        // Tahun periode gaji berjalan (bukan kalender) supaya opsi dropdown selalu
+        // memuat tahun default — penting di akhir Desember (periode Jan tahun depan).
+        $tahunPeriode = (int) \App\Support\PeriodeGaji::dariTanggal(now())['tahun'];
+        $daftarTahun = range($tahunPeriode, $tahunPeriode - 5);
 
         return view('livewire.pages.admin.gaji-karyawans.gaji-karyawans-form', [
             'users' => $this->users,
