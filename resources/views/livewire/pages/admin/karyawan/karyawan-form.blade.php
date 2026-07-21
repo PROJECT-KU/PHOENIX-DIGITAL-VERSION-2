@@ -557,9 +557,15 @@
                                 <div class="kry-tarif-unit">per hari kehadiran</div>
                             </div>
                         </div>
-                        <div class="kry-rp-field">
+                        {{-- Tampilkan berformat ribuan (10.000), tapi nilai yang
+                             disimpan ke Livewire tetap angka mentah. --}}
+                        <div class="kry-rp-field" x-data="{
+                                raw: @entangle('tarif_presensi_offline'),
+                                get tampil() { return this.raw ? Number(this.raw).toLocaleString('id-ID') : '' },
+                                set tampil(v) { const n = String(v).replace(/\D/g, ''); this.raw = n ? parseInt(n, 10) : 0 }
+                            }">
                             <span class="kry-rp-prefix">Rp</span>
-                            <input type="number" min="0" step="1000" wire:model="tarif_presensi_offline"
+                            <input type="text" inputmode="numeric" x-model="tampil"
                                 class="kry-rp-input @error('tarif_presensi_offline') is-invalid @enderror" placeholder="0">
                         </div>
                         @error('tarif_presensi_offline') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -577,9 +583,13 @@
                                 <div class="kry-tarif-unit">per hari kehadiran</div>
                             </div>
                         </div>
-                        <div class="kry-rp-field">
+                        <div class="kry-rp-field" x-data="{
+                                raw: @entangle('tarif_presensi_online'),
+                                get tampil() { return this.raw ? Number(this.raw).toLocaleString('id-ID') : '' },
+                                set tampil(v) { const n = String(v).replace(/\D/g, ''); this.raw = n ? parseInt(n, 10) : 0 }
+                            }">
                             <span class="kry-rp-prefix">Rp</span>
-                            <input type="number" min="0" step="1000" wire:model="tarif_presensi_online"
+                            <input type="text" inputmode="numeric" x-model="tampil"
                                 class="kry-rp-input @error('tarif_presensi_online') is-invalid @enderror" placeholder="0">
                         </div>
                         @error('tarif_presensi_online') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
@@ -597,9 +607,13 @@
                                 <div class="kry-tarif-unit">per jam lembur</div>
                             </div>
                         </div>
-                        <div class="kry-rp-field">
+                        <div class="kry-rp-field" x-data="{
+                                raw: @entangle('tarif_lembur_per_jam'),
+                                get tampil() { return this.raw ? Number(this.raw).toLocaleString('id-ID') : '' },
+                                set tampil(v) { const n = String(v).replace(/\D/g, ''); this.raw = n ? parseInt(n, 10) : 0 }
+                            }">
                             <span class="kry-rp-prefix">Rp</span>
-                            <input type="number" min="0" step="1000" wire:model="tarif_lembur_per_jam"
+                            <input type="text" inputmode="numeric" x-model="tampil"
                                 class="kry-rp-input @error('tarif_lembur_per_jam') is-invalid @enderror" placeholder="0">
                         </div>
                         @error('tarif_lembur_per_jam') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
