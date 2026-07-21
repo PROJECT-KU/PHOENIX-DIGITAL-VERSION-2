@@ -15,7 +15,8 @@ new class extends Component
     {
         $logout();
 
-        $this->redirect('/');
+        // Setelah logout arahkan ke halaman login, bukan beranda publik.
+        $this->redirect(route('login'));
     }
 
     /**
