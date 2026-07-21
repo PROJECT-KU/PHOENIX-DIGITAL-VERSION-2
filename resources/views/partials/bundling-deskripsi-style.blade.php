@@ -13,8 +13,15 @@
         animation-delay: calc(var(--i, 0) * 200ms); }
     @keyframes bdeskPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.16); } }
 
+    /* Catatan (📌/🎯/⚡): blok terpisah di bawah daftar centang. */
+    .bdesk-notes { margin: 14px auto 0; max-width: 46ch; display: grid; gap: 8px;
+        padding-top: 12px; border-top: 1px dashed var(--ph-line, #ecdcc7); }
+    .bdesk-note { display: flex; gap: 9px; align-items: flex-start; text-align: left;
+        font-size: .88rem; line-height: 1.55; color: var(--ph-muted, #6b7280); margin: 0; }
+    .bdesk-note-ic { flex: 0 0 auto; font-size: 1rem; line-height: 1.4; }
+
     /* Teaser pada kartu homepage: intro singkat, dipotong 2 baris. */
-    .bdesk-teaser { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .bdesk-teaser { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     @media (prefers-reduced-motion: reduce) { .bdesk-list li i { animation: none; } }
 </style>

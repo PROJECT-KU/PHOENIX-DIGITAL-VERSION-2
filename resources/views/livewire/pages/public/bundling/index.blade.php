@@ -28,7 +28,7 @@
                                 {{-- Kartu cukup teaser singkat; rincian lengkap ada di
                                      daftar "Termasuk dalam paket" & modal detail. --}}
                                 @php $__t = \App\Support\DeskripsiProduk::pisah($item->deskripsi); @endphp
-                                @php $__teaser = $__t['paragraf'][0] ?? ($__t['poin'][0] ?? ''); @endphp
+                                @php $__teaser = $__t['paragraf'][0] ?? ($__t['poin'][0] ?? ($__t['ekstra'][0]['teks'] ?? '')); @endphp
                                 @if ($__teaser !== '')
                                     <p class="bd-card-desc bdesk-teaser">{{ $__teaser }}</p>
                                 @endif
