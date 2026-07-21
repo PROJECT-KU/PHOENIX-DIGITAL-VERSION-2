@@ -79,7 +79,7 @@
                         <div class="fs-card">
                             <div class="fs-card-media">
                                 @if ($product->image)
-                                    <img src="{{ asset('storage/img/product/' . $product->image) }}"
+                                    <img src="{{ asset('storage/img/Product/' . $product->image) }}"
                                         alt="{{ $product->nama_akun }}">
                                 @else
                                     <img src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
@@ -130,7 +130,7 @@
                 <div class="fs-modal-head">
                     <div class="fs-modal-thumb">
                         @if ($pickProductImage)
-                            <img src="{{ asset('storage/img/product/' . $pickProductImage) }}" alt="{{ $pickProductName }}">
+                            <img src="{{ asset('storage/img/Product/' . $pickProductImage) }}" alt="{{ $pickProductName }}">
                         @else
                             <i class="bi bi-box-seam"></i>
                         @endif
