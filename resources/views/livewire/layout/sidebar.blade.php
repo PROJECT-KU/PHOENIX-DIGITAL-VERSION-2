@@ -40,44 +40,75 @@ new class extends Component
     public function with(): array
     {
         $login = auth()->check();
+        $u = $login ? auth()->user() : null;
+
+        $pesananTokoPaid = $login && $u->hasPermission('view_pemesanantoko')
+            ? Order::paid()->count() : 0;
+
+        // Testimoni menunggu moderasi (status 'pending'). Otomatis habis saat
+        // admin menyetujui (active) atau menolak (non-active) — seragam
+        // dengan Ulasan Produk.
+        $testimoniBaru = $login && $u->hasPermission('view_testimoni')
+            ? Testimoni::menunggu()->count() : 0;
+
+        // Ulasan produk menunggu moderasi. Status 'pending' sudah jelas artinya
+        // (ditolak jadi 'hidden') — badge otomatis habis saat disetujui/disembunyikan.
+        $ulasanBaru = $login && $u->hasPermission('view_productreview')
+            ? ProductReview::where('status', 'pending')->count() : 0;
+
+        // Pesan helpdesk yang belum dibaca admin. Otomatis berkurang saat admin
+        // membuka pesan (markAsRead di halaman detail).
+        $helpdeskBaru = $login && $u->hasPermission('view_customer_message')
+            ? CustomerMessage::unread()->count() : 0;
+
+        // Pengecekan plagiasi yang menunggu diproses. Penting karena paket 5x
+        // diunggah bertahap: file ke-2 dst bisa masuk berhari-hari kemudian.
+        $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
+            ? OrderUpload::where('status', 'menunggu')->count() : 0;
 
         return [
-            'pesananTokoPaid' => $login && auth()->user()->hasPermission('view_pemesanantoko')
-                ? Order::paid()->count()
-                : 0,
+            'pesananTokoPaid' => $pesananTokoPaid,
+            'testimoniBaru' => $testimoniBaru,
+            'ulasanBaru' => $ulasanBaru,
+            'helpdeskBaru' => $helpdeskBaru,
+            'pengecekanBaru' => $pengecekanBaru,
 
-            // Testimoni menunggu moderasi (status 'pending'). Otomatis habis saat
-            // admin menyetujui (active) atau menolak (non-active) — seragam
-            // dengan Ulasan Produk.
-            'testimoniBaru' => $login && auth()->user()->hasPermission('view_testimoni')
-                ? Testimoni::menunggu()->count()
-                : 0,
-
-            // Ulasan produk menunggu moderasi. Di sini status 'pending' sudah
-            // jelas artinya (ditolak jadi 'hidden'), jadi tak perlu penanda
-            // tambahan seperti pada testimoni — badge otomatis habis saat
-            // admin menyetujui maupun menyembunyikan.
-            'ulasanBaru' => $login && auth()->user()->hasPermission('view_productreview')
-                ? ProductReview::where('status', 'pending')->count()
-                : 0,
-
-            // Pesan helpdesk yang belum dibaca admin. Otomatis berkurang saat
-            // admin membuka pesan (markAsRead di halaman detail).
-            'helpdeskBaru' => $login && auth()->user()->hasPermission('view_customer_message')
-                ? CustomerMessage::unread()->count()
-                : 0,
-
-            // Pengecekan plagiasi yang menunggu diproses. Penting karena paket
-            // 5x diunggah bertahap: file ke-2 dst bisa masuk berhari-hari
-            // kemudian, dan tanpa badge ini admin tidak akan tahu.
-            'pengecekanBaru' => $login && auth()->user()->hasPermission('view_pemesanantoko')
-                ? OrderUpload::where('status', 'menunggu')->count()
-                : 0,
+            // Badge di judul tab (mis. "(3) lemon") = jumlah hal BARU yang perlu
+            // ditindaklanjuti: pesanan toko paid + testimoni + ulasan + helpdesk.
+            // Aturan hitungnya sama dengan badge sidebar; ikut segar saat
+            // sidebar-badge-updated di-dispatch.
+            'titleBadge' => $pesananTokoPaid + $testimoniBaru + $ulasanBaru + $helpdeskBaru,
         ];
     }
 }; ?>
 
 <div id="sidebar">
+    {{-- Badge di judul tab (mis. "(3) lemon"). data-n selalu diperbarui saat
+         sidebar re-render (aturan hitung = badge sidebar). Skrip menaruh prefix
+         "(N)" ke document.title & ikut segar via MutationObserver + navigasi. --}}
+    <span id="ttl-badge" data-n="{{ (int) $titleBadge }}" hidden aria-hidden="true"></span>
+    @script
+    <script>
+        (() => {
+            const apply = () => {
+                const el = document.getElementById('ttl-badge');
+                const n = el ? (parseInt(el.dataset.n) || 0) : 0;
+                const base = document.title.replace(/^\(\d+\)\s*/, '');
+                document.title = n > 0 ? '(' + n + ') ' + base : base;
+            };
+            apply();
+            const el = document.getElementById('ttl-badge');
+            if (el && !el.__ttlObserved) {
+                el.__ttlObserved = true;
+                new MutationObserver(apply).observe(el, { attributes: true, attributeFilter: ['data-n'] });
+            }
+            if (!window.__ttlBadgeNav) {
+                window.__ttlBadgeNav = true;
+                document.addEventListener('livewire:navigated', apply);
+            }
+        })();
+    </script>
+    @endscript
     <style>
         /* ============ Sidebar — tema lemon (seragam dengan halaman login) ============ */
         #sidebar .sidebar-wrapper {
