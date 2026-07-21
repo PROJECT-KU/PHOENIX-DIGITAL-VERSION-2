@@ -47,6 +47,9 @@
         .pd-desc-card .pd-desc.is-lead { color:var(--ph-ink); font-weight:600; }
         .pd-desc-card .pd-desc:last-child { margin-bottom:0; }
         .pd-desc-card .pd-feat { margin-bottom:0; padding-top:4px; }
+        .pd-desc-notes { margin-top:14px; padding-top:12px; border-top:1px dashed var(--ph-line); display:grid; gap:8px; }
+        .pd-desc-note { display:flex; gap:9px; align-items:flex-start; margin:0; font-size:.88rem; line-height:1.55; color:var(--ph-muted); }
+        .pd-desc-note span:first-child { flex:0 0 auto; font-size:1rem; line-height:1.4; }
         @media (max-width: 575.98px) { .pd-desc-card { padding:16px 16px; border-radius:15px; } }
 
         /* ===== Tata letak kolom kiri: gambar di ATAS, lalu deskripsi, lalu
@@ -300,7 +303,7 @@
                      <style> atas). Dikeluarkan dari kolom info agar kolom kanan
                      memendek dan tombol Wishlist sejajar dengan kartu jaminan. --}}
                 @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
-                @if ($desk['paragraf'] || $desk['poin'])
+                @if ($desk['paragraf'] || $desk['poin'] || $desk['ekstra'])
                     <div class="col-lg-6 pd-col-desc">
                         <div class="pd-desc-card">
                             <h3 class="pd-desc-head"><i class="bi bi-card-text"></i> Deskripsi Produk</h3>
@@ -321,6 +324,15 @@
                                         </li>
                                     @endforeach
                                 </ul>
+                            @endif
+
+                            {{-- Catatan (📌/🎯/⚡): baris tersendiri, ikon dipertahankan. --}}
+                            @if ($desk['ekstra'])
+                                <div class="pd-desc-notes">
+                                    @foreach ($desk['ekstra'] as $e)
+                                        <p class="pd-desc-note"><span>{{ $e['ikon'] }}</span><span>{{ $e['teks'] }}</span></p>
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                     </div>

@@ -278,8 +278,9 @@
                             @endphp
                             <div class="col-12 col-md-6 col-xl-4" wire:key="bundling-{{ $item->id }}">
                                 <div class="bdl-card">
-                                    <div class="bdl-eyebrow"><i class="bi bi-box2-heart-fill"></i> Paket Bundling</div>
-                                    <h2 class="bdl-title">{{ $item->nama_paket }}</h2>
+                                    {{-- Header otomatis dari data — nama & pills seragam. --}}
+                                    @php $__prod = collect([1, 2, 3, 4, 5])->map(fn ($i) => $item->{'product'.$i})->filter()->map->nama_akun->all(); @endphp
+                                    @include('partials.bundling-header', ['produk' => $__prod, 'nama' => $item->nama_paket, 'nomor' => $loop->iteration])
 
                                     @include('partials.bundling-deskripsi', ['teks' => $item->deskripsi])
 

@@ -3,44 +3,52 @@
 namespace App\Support;
 
 /**
- * Pecah deskripsi produk menjadi paragraf pembuka + daftar poin.
+ * Pecah deskripsi produk/bundling menjadi paragraf pembuka, poin bercentang,
+ * dan catatan tambahan.
  *
- * Admin menulis deskripsi sebagai satu blok teks dan menandai fiturnya dengan
- * emoji centang, contoh:
+ * Admin menulis deskripsi sebagai satu blok teks dengan beberapa jenis penanda:
  *
- *   "Grammarly Premium ... bebas typo. ✅ Fitur lengkap ✅ Proses cepat"
+ *   "Judul...\nIntro...
+ *    ✅ Fitur A   ✅ Fitur B
+ *    📌 Yang kamu dapat: ...
+ *    🎯 Cocok untuk: ...
+ *    ⚡ Combo lebih hemat!"
  *
- * Ditampilkan apa adanya, semua itu menyatu jadi satu paragraf panjang yang
- * sulit dibaca. Di sini teksnya dipisah supaya bisa dirender sebagai daftar,
- * tanpa mengubah data yang tersimpan.
+ * Ditampilkan mentah, semuanya menyatu jadi teks panjang yang sulit dibaca —
+ * dan bila hanya "✅" yang dipisah, teks setelah ✅ terakhir (📌/🎯/⚡)
+ * "kebablasan" masuk ke poin terakhir. Di sini teks dipecah rapi tanpa
+ * mengubah data yang tersimpan.
  */
 class DeskripsiProduk
 {
-    /** Penanda awal poin yang lazim dipakai admin. */
-    private const PENANDA = ['✅', '✔️', '✔', '☑️', '✓', '•', '●', '▪'];
+    /** Penanda poin FITUR → dirender sebagai centang hijau. */
+    private const PENANDA_POIN = ['✅', '✔️', '✔', '☑️', '✓', '•', '●', '▪'];
+
+    /** Penanda CATATAN → dirender sebagai baris tersendiri, ikonnya dipertahankan. */
+    private const PENANDA_CATATAN = ['📌', '🎯', '⚡', '🎉', '🔥', '💡', '⭐', '👉'];
 
     /**
-     * Hanya teks yang DITANDAI admin yang menjadi poin bercentang.
-     *
-     * Baris baru sengaja TIDAK dianggap penanda: admin kerap menulis judul dan
-     * paragraf pembuka di baris terpisah, dan sebelumnya paragraf itu ikut
-     * mendapat centang — padahal ia kalimat biasa, bukan daftar fitur.
-     *
-     * @return array{paragraf: array<int, string>, poin: array<int, string>}
+     * @return array{
+     *   paragraf: array<int, string>,
+     *   poin: array<int, string>,
+     *   ekstra: array<int, array{ikon: string, teks: string}>
+     * }
      */
     public static function pisah(?string $teks): array
     {
         $teks = trim((string) $teks);
         if ($teks === '') {
-            return ['paragraf' => [], 'poin' => []];
+            return ['paragraf' => [], 'poin' => [], 'ekstra' => []];
         }
 
-        // Samakan semua penanda jadi satu karakter agar mudah dipecah.
-        $normal = str_replace(self::PENANDA, "\x00", $teks);
-        $bagian = explode("\x00", $normal);
+        $semua = array_merge(self::PENANDA_POIN, self::PENANDA_CATATAN);
+        $pola = '/('.implode('|', array_map(fn ($m) => preg_quote($m, '/'), $semua)).')/u';
 
-        // Bagian sebelum penanda pertama = teks biasa. Baris baru di dalamnya
-        // memisahkan paragraf, bukan membuat poin.
+        // Hasil: [teks_awal, penanda1, teks1, penanda2, teks2, ...]
+        $bagian = preg_split($pola, $teks, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$teks];
+
+        // Bagian sebelum penanda pertama = teks biasa (paragraf). Baris baru di
+        // dalamnya memisahkan paragraf, bukan membuat poin.
         $awal = trim((string) array_shift($bagian));
         $paragraf = $awal === ''
             ? []
@@ -49,15 +57,24 @@ class DeskripsiProduk
                 fn ($p) => $p !== ''
             ));
 
-        // Sisanya: masing-masing satu poin bercentang.
         $poin = [];
-        foreach ($bagian as $b) {
-            $b = trim((string) preg_replace('/\s+/u', ' ', $b));
-            if ($b !== '') {
-                $poin[] = $b;
+        $ekstra = [];
+
+        // Sisanya berpasangan: [penanda, teks].
+        for ($i = 0; $i + 1 < count($bagian); $i += 2) {
+            $penanda = $bagian[$i];
+            $isi = trim((string) preg_replace('/\s+/u', ' ', $bagian[$i + 1]));
+            if ($isi === '') {
+                continue;
+            }
+
+            if (in_array($penanda, self::PENANDA_CATATAN, true)) {
+                $ekstra[] = ['ikon' => $penanda, 'teks' => $isi];
+            } else {
+                $poin[] = $isi;
             }
         }
 
-        return ['paragraf' => $paragraf, 'poin' => $poin];
+        return ['paragraf' => $paragraf, 'poin' => $poin, 'ekstra' => $ekstra];
     }
 }
