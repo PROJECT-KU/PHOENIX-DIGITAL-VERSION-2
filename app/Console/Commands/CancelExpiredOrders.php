@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Services\QrisService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 
 class CancelExpiredOrders extends Command
 {
@@ -11,16 +13,17 @@ class CancelExpiredOrders extends Command
 
     protected $description = 'Batalkan order pending yang sudah melewati batas waktu pembayaran (QRIS/order kedaluwarsa).';
 
-    public function handle(): int
+    public function handle(QrisService $qris): int
     {
         $now = now();
         $count = 0;
+        $diselamatkan = 0;
 
         Order::where('status', 'pending')
             // Jangan sentuh order yang sudah punya pembayaran lunas.
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'settlement'))
             ->with(['payments' => fn ($q) => $q->latest()])
-            ->chunkById(200, function ($orders) use (&$count, $now) {
+            ->chunkById(200, function ($orders) use (&$count, &$diselamatkan, $now, $qris) {
                 foreach ($orders as $order) {
                     $latest = $order->payments->first();
                     $expired = false;
@@ -40,6 +43,19 @@ class CancelExpiredOrders extends Command
                         continue;
                     }
 
+                    // PENGAMAN: sebelum membatalkan order QRIS, tanyakan sekali lagi
+                    // ke penyedia. Bila customer ternyata sudah membayar (mis. tepat
+                    // di menit kedaluwarsa), tandai LUNAS — jangan dibatalkan.
+                    if ($order->payment_method === 'qris_dinamis' && $order->qris_trx_id
+                        && $qris->checkStatus($order) === 'paid') {
+                        $order->update(['status' => 'paid', 'paid_at' => now()]);
+                        $order->payments()->where('status', 'pending')->update(['status' => 'settlement']);
+                        $diselamatkan++;
+                        Log::info('QRIS: order '.$order->order_number.' hampir dibatalkan tapi ternyata sudah dibayar → paid.');
+
+                        continue;
+                    }
+
                     // Tandai QRIS yang masih pending sebagai expire, lalu batalkan order.
                     $order->payments()->where('status', 'pending')->update(['status' => 'expire']);
                     $order->update(['status' => 'cancelled']);
@@ -47,7 +63,7 @@ class CancelExpiredOrders extends Command
                 }
             });
 
-        $this->info("Order kedaluwarsa dibatalkan: {$count}.");
+        $this->info("Order kedaluwarsa dibatalkan: {$count}. Diselamatkan (ternyata sudah dibayar): {$diselamatkan}.");
 
         return self::SUCCESS;
     }
