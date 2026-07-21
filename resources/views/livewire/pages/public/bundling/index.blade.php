@@ -16,17 +16,16 @@
                 @endphp
                 <div class="col-lg-4 col-md-6" wire:key="bundling-{{ $item->id }}">
                     <div class="bd-card">
-                        <button type="button" class="bd-card-media" wire:click="openDetail('{{ $item->id }}')">
-                            <img src="{{ asset('storage/img/ProductBundlings/' . $item->gambar) }}"
-                                alt="{{ $item->nama_paket }}" loading="lazy">
-                            <span class="bd-badge"><i class="bi bi-stars"></i> Bundling</span>
+                        {{-- Header otomatis dari data (bukan banner upload) → seragam. --}}
+                        @php $__prod = collect([1, 2, 3, 4, 5])->map(fn ($i) => $item->{'product'.$i})->filter()->map->nama_akun->all(); @endphp
+                        <button type="button" class="bd-card-head-btn" wire:click="openDetail('{{ $item->id }}')"
+                            aria-label="Lihat detail {{ $item->nama_paket }}">
+                            @include('partials.bundling-header', ['produk' => $__prod, 'nama' => $item->nama_paket, 'nomor' => $loop->iteration])
                         </button>
 
                         <div class="bd-card-body">
                             <div class="bd-head">
-                                <h3 class="bd-name">{{ $item->nama_paket }}</h3>
-                                {{-- Kartu cukup teaser singkat; rincian lengkap ada di
-                                     daftar "Termasuk dalam paket" & modal detail. --}}
+                                {{-- Nama ada di header; kartu cukup teaser singkat. --}}
                                 @php $__t = \App\Support\DeskripsiProduk::pisah($item->deskripsi); @endphp
                                 @php $__teaser = $__t['paragraf'][0] ?? ($__t['poin'][0] ?? ($__t['ekstra'][0]['teks'] ?? '')); @endphp
                                 @if ($__teaser !== '')
@@ -98,8 +97,11 @@
                 <button type="button" class="fs-modal-close" wire:click="closeDetail" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
 
                 <div class="bdl-card bdl-card--modal">
-                    <div class="bd-modal-eyebrow"><i class="bi bi-box2-heart-fill"></i> Paket Bundling</div>
-                    <h2 class="bdl-title">{{ $detailBundle['nama'] }}</h2>
+                    {{-- Header otomatis dari data paket. --}}
+                    @include('partials.bundling-header', [
+                        'produk' => collect($detailBundle['produk'] ?? [])->pluck('nama')->all(),
+                        'nama' => $detailBundle['nama'],
+                    ])
 
                     @include('partials.bundling-deskripsi', ['teks' => $detailBundle['deskripsi'] ?? ''])
 

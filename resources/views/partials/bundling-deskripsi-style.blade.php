@@ -24,4 +24,30 @@
     .bdesk-teaser { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
     @media (prefers-reduced-motion: reduce) { .bdesk-list li i { animation: none; } }
+
+    /* ===== Header kartu bundling otomatis (seragam, gantikan banner upload) ===== */
+    .bh { background: linear-gradient(150deg, #fff4e2 0%, #ffe9cf 55%, #ffe0bd 100%);
+        padding: 18px 20px 22px; text-align: center; }
+    .bh-top { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin-bottom: 14px; }
+    .bh-badge { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fba919, #f26522);
+        color: #fff; font-weight: 700; font-size: .72rem; padding: 5px 11px; border-radius: 999px;
+        box-shadow: 0 6px 16px rgba(242, 101, 34, .3); }
+    .bh-num { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #c2410c; }
+    .bh-pills { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; }
+    .bh-plus { color: #c2410c; font-weight: 800; font-size: 1.05rem; }
+    .bh-pill { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #f3ddc0;
+        border-radius: 999px; padding: 5px 14px 5px 5px; font-weight: 700; font-size: .85rem; color: #23272f;
+        box-shadow: 0 3px 10px rgba(180, 90, 30, .08); }
+    .bh-av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff;
+        font-size: .8rem; font-weight: 800; flex: 0 0 auto; }
+    .bh-name { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem; color: #23272f;
+        line-height: 1.15; text-wrap: balance; margin: 0; }
+    @media (max-width: 575.98px) { .bh-name { font-size: 1.25rem; } .bh-pill { font-size: .8rem; } }
+
+    /* Tombol pembungkus header di kartu homepage (klik → detail). */
+    .bd-card-head-btn { display: block; width: 100%; border: 0; padding: 0; background: none; cursor: pointer; text-align: center; }
+    .bd-card-head-btn .bh { transition: filter .2s ease; }
+    .bd-card:hover .bd-card-head-btn .bh { filter: brightness(1.02); }
+    /* Di kartu halaman bundling, header menyatu dgn sudut kartu. */
+    .bdl-card .bh { border-radius: 16px; margin: -.4rem -.2rem 1rem; }
 </style>
