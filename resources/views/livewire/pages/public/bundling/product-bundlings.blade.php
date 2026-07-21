@@ -92,6 +92,17 @@
             padding: 1rem 1.1rem;
         }
 
+        /* Box "Termasuk" mengembang mengisi sisa tinggi kartu, isinya di-tengah
+           secara vertikal — supaya kartu pendek tidak menyisakan void, tapi
+           ruang lebihnya masuk ke dalam box ber-latar yang terlihat rapi. */
+        .bdl-incl-fill {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .bdl-incl-fill .bdl-incl-title { margin-top: 0; }
+
         .bdl-incl-title {
             font-size: .72rem;
             font-weight: 700;
@@ -284,25 +295,12 @@
 
                                     @include('partials.bundling-deskripsi', ['teks' => $item->deskripsi])
 
-                                    {{-- mt-auto: dorong blok beli (promo→harga→termasuk→tombol) ke
-                                         dasar kartu. Ruang sisa jatuh sebagai jarak setelah deskripsi,
-                                         bukan void di bawah — semua kartu jadi tinggi sama & rapi. --}}
-                                    <div class="text-center mb-3 mt-auto">
-                                        <span class="bdl-promo">PROMO HARI INI!</span>
-                                    </div>
-
-                                    <div class="text-center mb-3">
-                                        @if ($old > $now && $old > 0)
-                                            <div class="bdl-price-old">Rp {{ number_format($old, 0, ',', '.') }}</div>
-                                        @endif
-                                        <div>
-                                            <span class="bdl-price-now">Rp {{ number_format($now, 0, ',', '.') }}</span>
-                                            <span class="bdl-price-unit">/ paket</span>
-                                        </div>
-                                    </div>
-
-                                    {{-- Akun yang termasuk paket + durasinya --}}
-                                    <div class="bdl-incl mb-3">
+                                    {{-- Box "Termasuk dalam paket" ditaruh SETELAH deskripsi dan dibuat
+                                         MENGEMBANG (flex-grow) mengisi sisa tinggi kartu, isinya
+                                         di-tengah. Ruang lebih pada kartu pendek jadi masuk ke dalam
+                                         box ber-latar yang rapi — bukan void di tengah kartu. Semua
+                                         kartu tetap tinggi sama, blok beli menempel dasar. --}}
+                                    <div class="bdl-incl bdl-incl-fill mb-3">
                                         <div class="bdl-incl-title"><i class="bi bi-box-seam"></i> Termasuk dalam paket</div>
                                         @foreach ([1, 2, 3, 4, 5] as $i)
                                             @php $product = $item->{'product'.$i}; @endphp
@@ -318,6 +316,20 @@
                                                 </div>
                                             @endif
                                         @endforeach
+                                    </div>
+
+                                    <div class="text-center mb-3">
+                                        <span class="bdl-promo">PROMO HARI INI!</span>
+                                    </div>
+
+                                    <div class="text-center mb-3">
+                                        @if ($old > $now && $old > 0)
+                                            <div class="bdl-price-old">Rp {{ number_format($old, 0, ',', '.') }}</div>
+                                        @endif
+                                        <div>
+                                            <span class="bdl-price-now">Rp {{ number_format($now, 0, ',', '.') }}</span>
+                                            <span class="bdl-price-unit">/ paket</span>
+                                        </div>
                                     </div>
 
                                     <button type="button" class="bdl-order-btn"
