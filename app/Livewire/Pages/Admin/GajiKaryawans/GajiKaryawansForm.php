@@ -166,8 +166,14 @@ class GajiKaryawansForm extends Component
             $this->hitungSisaPinjaman();
         } else {
             $this->mode = 'create';
-            $this->periode_bulan = now()->month;
-            $this->periode_tahun = now()->year;
+            // Default ke PERIODE GAJI berjalan (cutoff tgl 20), bukan bulan
+            // kalender. Pada tgl 21–akhir bulan keduanya berbeda: mis. 21 Jul
+            // sudah masuk periode Agustus (21 Jul–20 Agu). Ini menyamakan default
+            // dengan Task Saya & Penyelesaian Task, supaya bonus task periode itu
+            // teralokasi ke gaji yang benar.
+            $periodeKini = \App\Support\PeriodeGaji::dariTanggal(now());
+            $this->periode_bulan = $periodeKini['bulan'];
+            $this->periode_tahun = $periodeKini['tahun'];
             // Default tanggal bayar = tanggal gajian (cutoff, default tgl 20) periode berjalan.
             $this->tanggal_transaksi = \App\Support\PeriodeGaji::tanggalBayar(
                 (int) $this->periode_bulan,
@@ -344,7 +350,6 @@ class GajiKaryawansForm extends Component
             $this->calculateTotal();
         }
     }
-
 
     /**
      * Uang lembur = jumlah jam lembur x tarif per jam.
