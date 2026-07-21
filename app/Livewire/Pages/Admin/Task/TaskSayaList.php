@@ -591,6 +591,7 @@ class TaskSayaList extends Component
                 'group_id' => $groupId,
                 'user_id' => $uid,
                 'assigned_by' => auth()->id(),
+                'created_by' => auth()->id(),
             ]);
             $this->attachFilesTo($task, $storedFiles);
             $task->karyawan?->notify(new TaskAssigned($task));
@@ -820,7 +821,7 @@ class TaskSayaList extends Component
     public function render()
     {
         $tasks = Task::visibleTo()
-            ->with(['groupComments', 'category', 'label', 'pemberi', 'karyawan'])
+            ->with(['groupComments', 'category', 'label', 'pemberi', 'pembuat', 'karyawan'])
             ->when($this->usesSiklus(), function ($q) {
                 // Siklus gaji 21–20: filter berdasarkan tanggal deadline_selesai.
                 [$mulai, $akhir] = $this->siklusRange();

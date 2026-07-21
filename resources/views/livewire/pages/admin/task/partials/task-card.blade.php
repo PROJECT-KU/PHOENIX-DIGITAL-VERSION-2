@@ -38,7 +38,9 @@
         </div>
 
         <div class="ts-people mb-3">
-            <span class="ts-person" title="Pemberi task"><i class="bi bi-person-badge"></i><span>{{ $task->pemberi?->name ?? 'Admin' }}</span></span>
+            {{-- Task admin ber-assigned_by NULL, jadi pemberi kosong; pakai nama
+                 pembuat (created_by) supaya tampil nama lengkap, bukan "Admin". --}}
+            <span class="ts-person" title="Pemberi task"><i class="bi bi-person-badge"></i><span>{{ $task->pemberi?->name ?? $task->pembuat?->name ?? 'Admin' }}</span></span>
             <i class="bi bi-arrow-right ts-person-arrow"></i>
             <span class="ts-person" title="Ditugaskan ke"><i class="bi bi-person-check"></i><span>{{ $task->user_id === auth()->id() ? 'Anda' : ($task->karyawan?->name ?? '-') }}</span></span>
         </div>

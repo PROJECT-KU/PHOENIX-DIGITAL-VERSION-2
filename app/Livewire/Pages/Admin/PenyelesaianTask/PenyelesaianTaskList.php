@@ -303,6 +303,9 @@ class PenyelesaianTaskList extends Component
             'bobot' => $this->t_bobot,
             'deadline_mulai' => $this->t_deadline_mulai,
             'deadline_selesai' => $this->t_deadline_selesai,
+            // Catat pembuat untuk tampilan nama di Task Saya. assigned_by tetap
+            // NULL (konvensi task admin) agar rantai kelola bawahan tak berubah.
+            'created_by' => auth()->id(),
         ];
 
         $userIds = array_values(array_unique(array_map('intval', $this->t_user_ids)));

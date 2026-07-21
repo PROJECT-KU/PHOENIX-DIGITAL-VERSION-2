@@ -17,6 +17,7 @@ class Task extends Model
         'group_id',
         'user_id',
         'assigned_by',
+        'created_by',
         'periode_bulan',
         'periode_tahun',
         'nama',
@@ -51,6 +52,16 @@ class Task extends Model
     public function pemberi(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    /**
+     * Pembuat task — dipakai HANYA untuk menampilkan nama pemberi ketika task
+     * dibuat admin (assigned_by NULL). Tidak memengaruhi rantai kelola bawahan
+     * yang tetap berpatokan pada assigned_by.
+     */
+    public function pembuat(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function category(): BelongsTo
