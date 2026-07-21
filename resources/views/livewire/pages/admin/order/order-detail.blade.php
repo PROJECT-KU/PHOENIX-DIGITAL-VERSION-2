@@ -1385,7 +1385,7 @@ Anda baru saja order akun *${akun}* pada tanggal *${tglorder}*.
 Untuk akun *${akun}* yang bisa anda gunakan mulai tanggal *${pemesanan}* dengan masa aktif sampai tanggal *${berakhir}*.
 Total pembayaran anda *Rp ${total}*. Untuk Detail akun sebagai berikut:
 
-${EMO.bullet} Username: *${username}*
+${EMO.bullet} Username: ${username}
 ${EMO.bullet} Password: *${password}*
 ${EMO.bullet} Link Login: ${linkakses}${blokCatatan}${blokBonus}${blokStruk}
 
@@ -1403,7 +1403,7 @@ Website: https://phoenixdigital.id/`;
 Halo ${nama},
 Akun *${akun}* yang anda order pada tanggal *${tglorder}* dengan masa aktif sampai tanggal *${berakhir}* terdapat pembaharuan akun *${akun}*. Untuk detail akunya sebagai berikut:
 
-${EMO.bullet} Username: *${username}*
+${EMO.bullet} Username: ${username}
 ${EMO.bullet} Password: *${password}*
 ${EMO.bullet} Link Login: ${linkakses}${blokCatatan}${blokBonus}
 
