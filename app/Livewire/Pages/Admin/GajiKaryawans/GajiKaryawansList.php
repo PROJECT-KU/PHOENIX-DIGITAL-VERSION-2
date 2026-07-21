@@ -32,9 +32,12 @@ class GajiKaryawansList extends Component
 
     public function mount()
     {
-        // Default ke periode bulan & tahun berjalan (seperti spending)
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default ke PERIODE GAJI berjalan (cutoff tgl 20), bukan bulan kalender.
+        // Pada tgl 21+ keduanya beda (mis. 21 Jul sudah masuk Agustus). Konsisten
+        // dengan form gaji, Task Saya & Penyelesaian Task.
+        $periodeKini = \App\Support\PeriodeGaji::dariTanggal(now());
+        $this->bulan = $periodeKini['bulan'];
+        $this->tahun = $periodeKini['tahun'];
     }
 
     public function updatingSearch()
@@ -54,9 +57,10 @@ class GajiKaryawansList extends Component
 
     public function resetFilter()
     {
-        // Kembali ke periode berjalan (bulan & tahun sekarang), bukan dikosongkan.
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Kembali ke PERIODE GAJI berjalan (cutoff tgl 20), bukan dikosongkan.
+        $periodeKini = \App\Support\PeriodeGaji::dariTanggal(now());
+        $this->bulan = $periodeKini['bulan'];
+        $this->tahun = $periodeKini['tahun'];
         $this->resetPage();
     }
 
@@ -92,11 +96,12 @@ class GajiKaryawansList extends Component
             return;
         }
 
-        // Generate SELALU untuk BULAN BERJALAN (waktu nyata sekarang), menyalin dari
-        // bulan SEBELUMNYA — tidak terpengaruh filter yang sedang dipilih.
-        // Contoh: sekarang Juli → buat gaji Juli dari data Juni; sekarang Agustus → dari Juli.
-        $bulan = (int) now()->month;
-        $tahun = (int) now()->year;
+        // Generate SELALU untuk PERIODE GAJI berjalan (cutoff tgl 20), menyalin dari
+        // periode SEBELUMNYA — tidak terpengaruh filter yang sedang dipilih.
+        // Mis. pada 21 Jul periode berjalan = Agustus → buat gaji Agustus dari Juli.
+        $periodeKini = \App\Support\PeriodeGaji::dariTanggal(now());
+        $bulan = (int) $periodeKini['bulan'];
+        $tahun = (int) $periodeKini['tahun'];
 
         // Tanggal pembayaran draft = tanggal gajian (cutoff, default tgl 20) pada periode tsb.
         $tanggal = \App\Support\PeriodeGaji::tanggalBayar($bulan, $tahun)->toDateString();
@@ -422,8 +427,11 @@ class GajiKaryawansList extends Component
 
     protected function daftarTahun(): array
     {
-        $tahunSekarang = (int) now()->year;
+        // Pakai tahun PERIODE GAJI berjalan (bukan tahun kalender) supaya opsi
+        // dropdown selalu memuat tahun default. Penting di akhir Desember: periode
+        // berjalan sudah tahun berikutnya (mis. 21 Des 2026 = periode Jan 2027).
+        $tahun = (int) \App\Support\PeriodeGaji::dariTanggal(now())['tahun'];
 
-        return range($tahunSekarang, $tahunSekarang - 5);
+        return range($tahun, $tahun - 5);
     }
 }
