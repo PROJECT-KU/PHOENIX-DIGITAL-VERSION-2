@@ -95,8 +95,12 @@ class PenyelesaianTaskList extends Component
         // Buka langsung modal komentar jika datang dari klik notifikasi (?open_task=ID)
         $openTask = ($id = request('open_task')) ? Task::find($id) : null;
 
-        $this->bulan = $openTask->periode_bulan ?? now()->month;
-        $this->tahun = $openTask->periode_tahun ?? now()->year;
+        // Default ke PERIODE GAJI berjalan (bukan bulan kalender): pada tgl 21+
+        // keduanya berbeda dan task difiling per periode gaji, jadi task
+        // berdeadline 21 Jul (periode Agustus) tak akan tampil bila default Juli.
+        $periodeKini = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $openTask->periode_bulan ?? $periodeKini['bulan'];
+        $this->tahun = $openTask->periode_tahun ?? $periodeKini['tahun'];
         $this->loadBudget();
 
         if ($openTask) {
@@ -299,6 +303,9 @@ class PenyelesaianTaskList extends Component
             'bobot' => $this->t_bobot,
             'deadline_mulai' => $this->t_deadline_mulai,
             'deadline_selesai' => $this->t_deadline_selesai,
+            // Catat pembuat untuk tampilan nama di Task Saya. assigned_by tetap
+            // NULL (konvensi task admin) agar rantai kelola bawahan tak berubah.
+            'created_by' => auth()->id(),
         ];
 
         $userIds = array_values(array_unique(array_map('intval', $this->t_user_ids)));

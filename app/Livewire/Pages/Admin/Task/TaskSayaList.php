@@ -111,9 +111,15 @@ class TaskSayaList extends Component
     {
         abort_unless(auth()->user()?->hasPermission('view_task'), 403);
 
-        // Default ke periode berjalan (seperti pengeluaran) — tidak diubah oleh open_task.
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default ke PERIODE GAJI berjalan, bukan bulan kalender. Pada tanggal
+        // 21–akhir bulan keduanya berbeda: mis. 21 Jul sudah masuk periode gaji
+        // Agustus (21 Jul–20 Agu). Task difiling per periode gaji (periode_bulan
+        // lewat PeriodeGaji::dariTanggal), jadi filter defaultnya harus sama —
+        // kalau pakai now()->month, task berdeadline 21 Jul "hilang" karena
+        // layar default menampilkan Juli.
+        $periodeKini = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $periodeKini['bulan'];
+        $this->tahun = $periodeKini['tahun'];
 
         // Buka langsung dari klik notifikasi bell (?open_task=ID).
         // Task GRUP -> langsung ke Diskusi Grup (kolom komentar). Task solo -> detail
@@ -585,6 +591,7 @@ class TaskSayaList extends Component
                 'group_id' => $groupId,
                 'user_id' => $uid,
                 'assigned_by' => auth()->id(),
+                'created_by' => auth()->id(),
             ]);
             $this->attachFilesTo($task, $storedFiles);
             $task->karyawan?->notify(new TaskAssigned($task));
@@ -814,7 +821,7 @@ class TaskSayaList extends Component
     public function render()
     {
         $tasks = Task::visibleTo()
-            ->with(['groupComments', 'category', 'label', 'pemberi', 'karyawan'])
+            ->with(['groupComments', 'category', 'label', 'pemberi', 'pembuat', 'karyawan'])
             ->when($this->usesSiklus(), function ($q) {
                 // Siklus gaji 21–20: filter berdasarkan tanggal deadline_selesai.
                 [$mulai, $akhir] = $this->siklusRange();
