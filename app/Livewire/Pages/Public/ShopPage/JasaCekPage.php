@@ -325,6 +325,16 @@ class JasaCekPage extends Component
         // Selalu ambil data terbaru saat render (termasuk saat polling).
         $this->order->load('uploads');
 
+        // Link kedaluwarsa 24 jam setelah kuota pengecekan habis → tampilkan
+        // halaman pesan (bukan UI unggah). Dicek saat render agar ikut berubah
+        // sendiri lewat polling begitu melewati batas waktu.
+        if ($this->order->cekLinkKadaluarsa()) {
+            return view('livewire.pages.public.shop-page.jasa-cek-kadaluarsa', [
+                'order' => $this->order,
+                'kadaluarsaAt' => $this->order->cekLinkKadaluarsaAt(),
+            ]);
+        }
+
         // Estimasi pengerjaan berbeda per jenis jasa: pengecekan plagiasi cepat
         // (otomatis via Turnitin), sedangkan parafrase dikerjakan manual per
         // halaman sehingga butuh hitungan hari.
@@ -349,6 +359,8 @@ class JasaCekPage extends Component
             'pengecekan' => $this->order->uploads->sortByDesc('created_at')->values(),
             'perluExclude' => $this->perluExclude(),
             'jenisTersisa' => $jenisTersisa,
+            // Batas akhir link bisa diakses bila kuota sudah habis (utk peringatan).
+            'kadaluarsaAt' => $this->order->cekLinkKadaluarsaAt(),
         ]);
     }
 

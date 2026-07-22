@@ -164,6 +164,17 @@
                     </div>
                 </div>
 
+                {{-- Kuota habis: link masih bisa dibuka utk mengunduh hasil, TAPI hanya
+                     sampai 24 jam setelah kuota habis. Setelahnya link tak bisa diakses. --}}
+                @if ($sisa === 0 && $kadaluarsaAt)
+                    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:13px 15px;margin-bottom:16px;color:#9a3412;font-size:.85rem;line-height:1.6;">
+                        <b><i class="bi bi-clock-history"></i> Kuota pengecekan sudah habis.</b><br>
+                        Silakan <b>unduh semua hasil Anda sebelum</b>
+                        <b>{{ $kadaluarsaAt->translatedFormat('l, d F Y • H:i') }} WIB</b>.
+                        Setelah waktu itu, link pengecekan ini <b>tidak dapat diakses lagi</b> demi menjaga kerahasiaan dokumen Anda.
+                    </div>
+                @endif
+
                 {{-- ===== Form unggah / kunci kuota ===== --}}
                 @if ($order->bisaUploadPengecekan())
                 <div class="pay-card">
