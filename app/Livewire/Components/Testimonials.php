@@ -90,17 +90,16 @@ class Testimonials extends Component
         $pelanggan = Customer::cariDariNoHp($this->no_hp);
         $berhak = $pelanggan && $pelanggan->jumlahBelanjaSelesai() > 0;
 
-        // Anonim: hanya huruf depan nama yang disimpan (jadi otomatis begitu
-        // pula yang tampil di mana-mana), dan peran dikosongkan agar tidak
-        // membocorkan identitas. Nama asli pembeli terverifikasi tetap bisa
-        // ditelusuri admin lewat relasi customer (customer_id).
+        // Anonim: HANYA nama yang disamarkan jadi huruf depan (jadi otomatis
+        // begitu pula yang tampil di mana-mana). Peran tetap tampil. Nama asli
+        // pembeli terverifikasi tetap bisa ditelusuri admin lewat relasi
+        // customer (customer_id).
         $namaTampil = $this->anonim ? $this->samarkanNama($this->nama) : trim($this->nama);
-        $peranTampil = $this->anonim ? null : ($this->peran ? trim($this->peran) : null);
 
         Testimoni::create([
             'customer_id' => $berhak ? $pelanggan->id : null,
             'nama' => $namaTampil,
-            'peran' => $peranTampil,
+            'peran' => $this->peran ? trim($this->peran) : null,
             'no_hp' => trim($this->no_hp),
             'pesan' => trim($this->pesan),
             'rating' => $this->rating,
