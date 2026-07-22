@@ -69,6 +69,8 @@ self.addEventListener('push', (event) => {
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
     data: { url: data.url || '/' },
+    // Bertahan di layar sampai admin mengklik/menutup — supaya tidak terlewat.
+    requireInteraction: true,
   };
 
   const count = typeof data.unread === 'number' ? data.unread : null;

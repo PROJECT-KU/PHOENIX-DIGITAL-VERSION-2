@@ -46,6 +46,7 @@
                         icon: '/icons/apple-touch-icon.png',
                         tag: 'phoenix-admin',   // popup baru menggantikan yang lama, tidak menumpuk
                         renotify: true,
+                        requireInteraction: true, // bertahan sampai diklik/ditutup — biar admin ngeh
                     });
                     n.onclick = () => { window.focus(); n.close(); };
                 } catch (e) {}

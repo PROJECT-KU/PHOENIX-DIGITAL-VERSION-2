@@ -60,6 +60,18 @@ class Order extends Model
                 $order->share_token = $token;
             }
         });
+
+        // Saat pesanan BARU menjadi 'paid' (dari mana pun deteksinya: poller QRIS,
+        // halaman share customer, admin, atau penyelamatan cancel-expired), kabari
+        // admin. Murni efek samping (kirim notifikasi) — tidak mengubah alur/logic
+        // pesanan. Gagal-aman: PesananBaru::kirim membungkus dengan try/catch.
+        static::updated(function (Order $order) {
+            if ($order->wasChanged('status')
+                && $order->status === 'paid'
+                && $order->getOriginal('status') !== 'paid') {
+                \App\Notifications\PesananBaru::kirim($order);
+            }
+        });
     }
 
     /**
