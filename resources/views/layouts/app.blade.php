@@ -57,6 +57,12 @@
     <div id="app">
         <livewire:layout.sidebar />
 
+        {{-- Poller tak terlihat: badge judul tab + popup notifikasi OS. Terpisah
+             dari sidebar supaya poll-nya tak menutup dropdown menu. --}}
+        @auth
+        <livewire:layout.notif-poller />
+        @endauth
+
         <div id="main">
             <header class="mb-3 d-flex align-items-center justify-content-between">
                 <a href="#" class="burger-btn d-block">
