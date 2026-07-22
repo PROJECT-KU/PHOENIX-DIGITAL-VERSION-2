@@ -26,8 +26,11 @@
     @media (prefers-reduced-motion: reduce) { .bdesk-list li i { animation: none; } }
 
     /* ===== Header kartu bundling otomatis (seragam, gantikan banner upload) ===== */
+    /* display:flex + center → saat tinggi disamakan skrip (min-height), isi header
+       tetap seimbang di tengah. Berlaku di homepage & halaman bundling. */
     .bh { background: linear-gradient(150deg, #fff4e2 0%, #ffe9cf 55%, #ffe0bd 100%);
-        padding: 18px 20px 22px; text-align: center; }
+        padding: 18px 20px 22px; text-align: center;
+        display: flex; flex-direction: column; justify-content: center; }
     .bh-top { display: flex; align-items: center; justify-content: space-between; min-height: 24px; margin-bottom: 14px; }
     .bh-badge { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fba919, #f26522);
         color: #fff; font-weight: 700; font-size: .72rem; padding: 5px 11px; border-radius: 999px;
@@ -51,3 +54,47 @@
     /* Di kartu halaman bundling, header menyatu dgn sudut kartu. */
     .bdl-card .bh { border-radius: 16px; margin: -.4rem -.2rem 1rem; }
 </style>
+
+{{-- Samakan tinggi header kartu (.bh / "card gambar") PER BARIS visual agar
+     sejajar — berlaku di homepage & halaman bundling (keduanya include partial
+     ini & punya section #best-sellers). Adaptif utk 3/2/1 kolom & pencarian. --}}
+@script
+<script>
+    (() => {
+        const samakan = () => {
+            const heads = Array.from(document.querySelectorAll('#best-sellers .bh'))
+                .filter(h => h.offsetParent !== null); // lewati yg tersembunyi (mis. modal detail)
+            heads.forEach(h => { h.style.minHeight = ''; });
+            if (!heads.length) return;
+            const baris = new Map();                    // kelompokkan per baris visual
+            heads.forEach(h => {
+                const top = Math.round(h.getBoundingClientRect().top + window.scrollY);
+                if (!baris.has(top)) baris.set(top, []);
+                baris.get(top).push(h);
+            });
+            baris.forEach(group => {
+                const max = Math.max(...group.map(h => h.offsetHeight));
+                group.forEach(h => { h.style.minHeight = max + 'px'; });
+            });
+        };
+        let t;
+        const jadwalkan = () => { clearTimeout(t); t = setTimeout(samakan, 60); };
+
+        samakan();
+        requestAnimationFrame(samakan);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(samakan);
+
+        if (!window.__bhEqual) {
+            window.__bhEqual = true;
+            window.addEventListener('resize', jadwalkan);
+            document.addEventListener('livewire:navigated', jadwalkan);
+        }
+        const grid = document.querySelector('#best-sellers .row');
+        if (grid && window.MutationObserver) {
+            if (window.__bhObs) window.__bhObs.disconnect();
+            window.__bhObs = new MutationObserver(jadwalkan);
+            window.__bhObs.observe(grid, { childList: true, subtree: true });
+        }
+    })();
+</script>
+@endscript
