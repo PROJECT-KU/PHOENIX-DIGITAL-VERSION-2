@@ -110,22 +110,8 @@
                 </div>
 
                 <form wire:submit.prevent="submit" class="tm-form">
-                    <div class="tm-form-row">
-                        <label>Nama <span class="req">*</span></label>
-                        <input type="text" wire:model.defer="nama" class="form-control" placeholder="Nama Anda">
-                        @if ($nomorDikenali)
-                            <span class="tm-ok"><i class="bi bi-check-circle-fill"></i> Nomor dikenali — nama terisi otomatis.</span>
-                        @endif
-                        @error('nama') <span class="tm-err">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="tm-form-row">
-                        <label>Peran / Jabatan <span class="opt">(opsional)</span></label>
-                        <input type="text" wire:model.defer="peran" class="form-control"
-                            placeholder="Contoh: Mahasiswa / Peneliti">
-                        @error('peran') <span class="tm-err">{{ $message }}</span> @enderror
-                    </div>
-
+                    {{-- Nomor didahulukan: begitu diisi, nama pelanggan terdaftar
+                         terisi otomatis (updatedNoHp). --}}
                     <div class="tm-form-row">
                         <label>No. WhatsApp <span class="req">*</span></label>
                         <input type="tel" inputmode="numeric" wire:model.blur="no_hp" class="form-control"
@@ -140,6 +126,22 @@
                                 siapa pun — hanya untuk mencocokkan pesananmu. Kalau pesananmu sudah selesai,
                                 testimoni ini bikin kamu <b>otomatis jadi Member</b>. 🎁</span>
                         </div>
+                    </div>
+
+                    <div class="tm-form-row">
+                        <label>Nama <span class="req">*</span></label>
+                        <input type="text" wire:model.defer="nama" class="form-control" placeholder="Nama Anda">
+                        @if ($nomorDikenali)
+                            <span class="tm-ok"><i class="bi bi-check-circle-fill"></i> Nomor dikenali — nama terisi otomatis.</span>
+                        @endif
+                        @error('nama') <span class="tm-err">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="tm-form-row">
+                        <label>Peran / Jabatan <span class="opt">(opsional)</span></label>
+                        <input type="text" wire:model.defer="peran" class="form-control"
+                            placeholder="Contoh: Mahasiswa / Peneliti">
+                        @error('peran') <span class="tm-err">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="tm-form-row">
