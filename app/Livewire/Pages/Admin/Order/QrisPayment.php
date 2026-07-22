@@ -28,6 +28,19 @@ class QrisPayment extends Component
 
         // Generate QR jika belum ada atau sudah kedaluwarsa
         if (empty($order->qris_content) || $this->isExpired()) {
+            // PENGAMAN: sebelum meregenerasi QR yang kedaluwarsa, pastikan invoice
+            // lama belum terlanjur dibayar. Membuat QR baru akan MENIMPA qris_trx_id
+            // yang lunas dan menghilangkan jejak pembayaran yang sudah masuk. Jadi
+            // bila invoice lama ternyata sudah paid, tandai lunas lalu ke detail —
+            // jangan buat QR baru.
+            if (! empty($order->qris_trx_id)
+                && app(QrisService::class)->checkStatus($order) === 'paid') {
+                $order->update(['status' => 'paid', 'paid_at' => now()]);
+                $order->payments()->where('status', 'pending')->update(['status' => 'settlement']);
+
+                return redirect()->route('admin.pesanantoko.detail', $order);
+            }
+
             $this->generateQr();
         }
     }
