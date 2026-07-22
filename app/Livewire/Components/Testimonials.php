@@ -21,8 +21,36 @@ class Testimonials extends Component
 
     public string $pesan = '';
 
+    /** Dicentang pelanggan → di testimoni hanya huruf depan nama yang tampil. */
+    public bool $anonim = false;
+
+    /** True saat nomor cocok dgn pelanggan terdaftar (utk feedback + auto-isi nama). */
+    public bool $nomorDikenali = false;
+
     /** Diisi setelah kirim: pembeli terverifikasi & jadi calon member? */
     public bool $terverifikasi = false;
+
+    /**
+     * Saat nomor WhatsApp diisi, cari pelanggan terdaftar. Bila cocok, nama
+     * diisi otomatis — pelanggan cukup ketik nomor. Tidak menimpa nama yang
+     * sudah diketik manual; hanya membersihkan yang tadinya terisi otomatis.
+     */
+    public function updatedNoHp($value): void
+    {
+        $pelanggan = Customer::cariDariNoHp($value);
+
+        if ($pelanggan && filled($pelanggan->nama)) {
+            if (blank($this->nama) || $this->nomorDikenali) {
+                $this->nama = $pelanggan->nama;
+            }
+            $this->nomorDikenali = true;
+        } else {
+            if ($this->nomorDikenali) {
+                $this->nama = '';
+            }
+            $this->nomorDikenali = false;
+        }
+    }
 
     protected function rules(): array
     {
@@ -62,10 +90,17 @@ class Testimonials extends Component
         $pelanggan = Customer::cariDariNoHp($this->no_hp);
         $berhak = $pelanggan && $pelanggan->jumlahBelanjaSelesai() > 0;
 
+        // Anonim: hanya huruf depan nama yang disimpan (jadi otomatis begitu
+        // pula yang tampil di mana-mana), dan peran dikosongkan agar tidak
+        // membocorkan identitas. Nama asli pembeli terverifikasi tetap bisa
+        // ditelusuri admin lewat relasi customer (customer_id).
+        $namaTampil = $this->anonim ? $this->samarkanNama($this->nama) : trim($this->nama);
+        $peranTampil = $this->anonim ? null : ($this->peran ? trim($this->peran) : null);
+
         Testimoni::create([
             'customer_id' => $berhak ? $pelanggan->id : null,
-            'nama' => trim($this->nama),
-            'peran' => $this->peran ? trim($this->peran) : null,
+            'nama' => $namaTampil,
+            'peran' => $peranTampil,
             'no_hp' => trim($this->no_hp),
             'pesan' => trim($this->pesan),
             'rating' => $this->rating,
@@ -74,12 +109,20 @@ class Testimonials extends Component
         ]);
 
         $this->terverifikasi = $berhak;
-        $this->reset(['nama', 'peran', 'no_hp', 'pesan']);
+        $this->reset(['nama', 'peran', 'no_hp', 'pesan', 'anonim', 'nomorDikenali']);
         $this->rating = 5;
         $this->submitted = true;
 
         // Slider tidak berubah (testimoni baru non-active), tapi pastikan Swiper tetap sehat
         $this->dispatch('tm-reinit');
+    }
+
+    /** "Berto" → "B•••" : hanya huruf depan yang tampil untuk testimoni anonim. */
+    private function samarkanNama(string $nama): string
+    {
+        $huruf = mb_substr(trim($nama), 0, 1);
+
+        return $huruf === '' ? 'Anonim' : mb_strtoupper($huruf).'•••';
     }
 
     public function render()

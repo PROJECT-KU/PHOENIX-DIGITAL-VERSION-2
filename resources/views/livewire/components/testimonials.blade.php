@@ -1,4 +1,11 @@
 <div x-data="{ open: false, rating: @js($rating) }">
+    {{-- Style inline: public/build gitignored, jadi CSS di file .css tak ikut ter-deploy. --}}
+    <style>
+        .tm-ok{display:flex;align-items:center;gap:.4rem;margin-top:.4rem;font-size:.82rem;color:#0f7b4a;font-weight:600;line-height:1.35}
+        .tm-ok i{font-size:.95rem;flex:0 0 auto}
+        .tm-anon{display:flex;align-items:flex-start;gap:.55rem;cursor:pointer;font-size:.86rem;color:#4b4640;line-height:1.4;margin:0}
+        .tm-anon input[type=checkbox]{width:1.05rem;height:1.05rem;margin-top:.12rem;flex:0 0 auto;accent-color:#f59e0b;cursor:pointer}
+    </style>
     <section id="testimoni" class="tm-section section">
         <div class="container">
             <div class="ph-sec-head">
@@ -106,6 +113,9 @@
                     <div class="tm-form-row">
                         <label>Nama <span class="req">*</span></label>
                         <input type="text" wire:model.defer="nama" class="form-control" placeholder="Nama Anda">
+                        @if ($nomorDikenali)
+                            <span class="tm-ok"><i class="bi bi-check-circle-fill"></i> Nomor dikenali — nama terisi otomatis.</span>
+                        @endif
                         @error('nama') <span class="tm-err">{{ $message }}</span> @enderror
                     </div>
 
@@ -118,8 +128,9 @@
 
                     <div class="tm-form-row">
                         <label>No. WhatsApp <span class="req">*</span></label>
-                        <input type="tel" inputmode="numeric" wire:model.defer="no_hp" class="form-control"
-                            placeholder="08xxxxxxxxxx" maxlength="20">
+                        <input type="tel" inputmode="numeric" wire:model.blur="no_hp" class="form-control"
+                            placeholder="08xxxxxxxxxx" maxlength="20"
+                            wire:loading.attr="disabled" wire:target="no_hp">
                         @error('no_hp') <span class="tm-err">{{ $message }}</span> @enderror
                         {{-- Jaminan yang SEMUANYA benar. Sengaja TIDAK menulis "terenkripsi":
                              no_hp tersimpan apa adanya di database, jadi klaim itu bohong. --}}
@@ -151,6 +162,17 @@
                         <textarea wire:model.defer="pesan" rows="4" class="form-control" maxlength="500"
                             placeholder="Tuliskan testimoni Anda di sini..."></textarea>
                         @error('pesan') <span class="tm-err">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Opsi anonim: hanya huruf depan nama yang tampil di testimoni. --}}
+                    <div class="tm-form-row">
+                        <label class="tm-anon">
+                            <input type="checkbox" wire:model.live="anonim">
+                            <span>Kirim sebagai <b>anonim</b> — di testimoni hanya <b>huruf depan</b> nama Anda yang tampil (mis. <b>B•••</b>).</span>
+                        </label>
+                        @if ($anonim)
+                            <span class="tm-ok"><i class="bi bi-incognito"></i> Nama &amp; peran Anda disamarkan. Nomor tetap tidak pernah ditampilkan.</span>
+                        @endif
                     </div>
 
                     <button type="submit" class="ph-empty-btn w-100 justify-content-center" wire:loading.attr="disabled" wire:target="submit">
