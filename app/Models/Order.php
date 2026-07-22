@@ -304,6 +304,38 @@ class Order extends Model
         return $out;
     }
 
+    /**
+     * Waktu kuota pengecekan HABIS = unggahan (non-batal) TERAKHIR yang mengisi
+     * slot terakhir. Null bila pesanan tak berkuota atau masih ada sisa. Dipakai
+     * untuk menghitung masa berlaku link /cek — tanpa kolom DB baru.
+     */
+    public function kuotaHabisAt(): ?\Illuminate\Support\Carbon
+    {
+        if ($this->kuotaPengecekan() <= 0 || $this->sisaKuota() > 0) {
+            return null;
+        }
+
+        $terakhir = $this->uploads
+            ->filter(fn ($u) => $u->status !== 'dibatalkan')
+            ->max('created_at');
+
+        return $terakhir ? \Illuminate\Support\Carbon::parse($terakhir) : null;
+    }
+
+    /** Batas akhir link /cek bisa diakses = 24 jam setelah kuota habis (null bila belum habis). */
+    public function cekLinkKadaluarsaAt(): ?\Illuminate\Support\Carbon
+    {
+        return $this->kuotaHabisAt()?->copy()->addHours(24);
+    }
+
+    /** Link /cek sudah tak bisa diakses? (kuota habis DAN sudah lewat 24 jam). */
+    public function cekLinkKadaluarsa(): bool
+    {
+        $batas = $this->cekLinkKadaluarsaAt();
+
+        return $batas !== null && now()->greaterThan($batas);
+    }
+
     /** Masih boleh mengunggah pengecekan baru (jenis apa pun)? */
     public function bisaUploadPengecekan(): bool
     {

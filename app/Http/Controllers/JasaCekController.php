@@ -15,9 +15,11 @@ class JasaCekController extends Controller
     /** Customer unduh HASIL — hanya bila token cocok & status selesai. */
     public function unduhHasilPublik(string $token, OrderUpload $upload)
     {
-        $upload->loadMissing('order');
+        $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
+        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_path), 404);
 
@@ -35,9 +37,11 @@ class JasaCekController extends Controller
     /** Customer unduh hasil cek AI — token cocok & pengecekan selesai. */
     public function unduhHasilAiPublik(string $token, OrderUpload $upload)
     {
-        $upload->loadMissing('order');
+        $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
+        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_ai_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_ai_path), 404);
 
@@ -47,9 +51,11 @@ class JasaCekController extends Controller
     /** Customer unduh dokumen hasil parafrase (DOCX). */
     public function unduhHasilDocxPublik(string $token, OrderUpload $upload)
     {
-        $upload->loadMissing('order');
+        $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
+        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_docx_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_docx_path), 404);
 
