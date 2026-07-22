@@ -171,7 +171,7 @@
                             <span>Kirim sebagai <b>anonim</b> — di testimoni hanya <b>huruf depan</b> nama Anda yang tampil (mis. <b>B•••</b>).</span>
                         </label>
                         @if ($anonim)
-                            <span class="tm-ok"><i class="bi bi-incognito"></i> Nama &amp; peran Anda disamarkan. Nomor tetap tidak pernah ditampilkan.</span>
+                            <span class="tm-ok"><i class="bi bi-incognito"></i> Hanya huruf depan nama Anda yang tampil. Nomor tetap tidak pernah ditampilkan.</span>
                         @endif
                     </div>
 
