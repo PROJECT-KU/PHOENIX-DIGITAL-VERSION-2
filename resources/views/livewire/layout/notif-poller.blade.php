@@ -56,9 +56,13 @@
             const cekNotif = () => {
                 const now = bacaCounts();
                 if (prev === null) { prev = now; return; }
+                let adaBaru = false;
                 for (const k in PESAN) {
-                    if (now[k] > prev[k]) notif(PESAN[k]);
+                    if (now[k] > prev[k]) { notif(PESAN[k]); adaBaru = true; }
                 }
+                // Suara "lemon" saat ada kategori baru (foreground). Debounce di
+                // window.lemonChime mencegah bunyi dobel dgn pengecek unread lonceng.
+                if (adaBaru && window.lemonChime) window.lemonChime();
                 prev = now;
             };
 

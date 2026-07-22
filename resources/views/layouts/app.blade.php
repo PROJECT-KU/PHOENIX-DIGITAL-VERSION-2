@@ -306,6 +306,64 @@
             lemonBadgeCh.onmessage = (e) => lemonApplyBadge(parseInt(e.data || 0, 10));
         }
 
+        // ====== Suara "lemon" (jingle ceria) saat ada notifikasi baru ======
+        // Hanya berbunyi saat website/PWA TERBUKA (foreground). Saat tertutup/
+        // push/banner HP, suara mengikuti bawaan OS — web/PWA tak boleh set suara
+        // kustom untuk notifikasi background (hanya app native seperti BRImo bisa).
+        // Disintesis via Web Audio (tanpa file), di-unlock saat gestur pertama.
+        window.lemonChime = (function () {
+            let ctx = null, last = 0;
+            function ensureCtx() {
+                try {
+                    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                } catch (e) { ctx = null; }
+                return ctx;
+            }
+            // Autoplay policy: AudioContext baru boleh bunyi setelah ada gestur user.
+            document.addEventListener('click', ensureCtx, { once: true });
+            document.addEventListener('keydown', ensureCtx, { once: true });
+
+            function nada(ac, freq, mulai, durasi, puncak) {
+                const osc = ac.createOscillator(), g = ac.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                g.gain.setValueAtTime(0.0001, mulai);
+                g.gain.exponentialRampToValueAtTime(puncak, mulai + 0.02);   // attack lembut
+                g.gain.exponentialRampToValueAtTime(0.0001, mulai + durasi); // decay seperti lonceng
+                osc.connect(g).connect(ac.destination);
+                osc.start(mulai);
+                osc.stop(mulai + durasi + 0.03);
+            }
+            return function () {
+                const now = Date.now();
+                if (now - last < 3000) return;   // debounce: 1 bunyi per ~3 dtk (hindari dobel)
+                last = now;
+                const ac = ensureCtx();
+                if (!ac) return;
+                const t = ac.currentTime;
+                // Arpeggio menaik + kilau = kesan ceria "lemon".
+                nada(ac, 987.77,  t + 0.00, 0.18, 0.20); // B5
+                nada(ac, 1318.51, t + 0.10, 0.20, 0.20); // E6
+                nada(ac, 1760.00, t + 0.20, 0.26, 0.18); // A6
+                nada(ac, 2637.02, t + 0.32, 0.34, 0.10); // E7 (kilau)
+            };
+        })();
+
+        // Bunyikan lemon saat unread lonceng NAIK (task/gaji/pesanan baru). Nilai
+        // saat load jadi baseline (tak berbunyi utk yg sudah ada). Toast kategori
+        // bisnis (pesanan/testimoni/ulasan/helpdesk) memanggil lemonChime sendiri
+        // dari komponen notif-poller; debounce di atas mencegah bunyi dobel.
+        window.__lemonPrevUnread = null;
+        window.lemonBellChimeCheck = function () {
+            const bell = document.getElementById('lemon-bell');
+            const c = bell ? parseInt(bell.dataset.unread || '0', 10) : 0;
+            if (window.__lemonPrevUnread !== null && c > window.__lemonPrevUnread) {
+                window.lemonChime();
+            }
+            window.__lemonPrevUnread = c;
+        };
+
         // Baca jumlah unread dari komponen lonceng lalu set + broadcast.
         window.lemonSyncBadge = function () {
             const bell = document.getElementById('lemon-bell');
@@ -341,8 +399,8 @@
         }
 
         // Jalankan saat load & tiap kali pindah halaman (wire:navigate).
-        window.addEventListener('load', () => { window.lemonSyncBadge(); window.lemonFetchBadge(); });
-        document.addEventListener('livewire:navigated', window.lemonSyncBadge);
+        window.addEventListener('load', () => { window.lemonSyncBadge(); window.lemonFetchBadge(); window.lemonBellChimeCheck(); });
+        document.addEventListener('livewire:navigated', () => { window.lemonSyncBadge(); window.lemonBellChimeCheck(); });
 
         // Saat app/tab kembali terlihat atau di-fokus → ambil count terbaru dari server.
         document.addEventListener('visibilitychange', () => { if (!document.hidden) window.lemonFetchBadge(); });
@@ -376,6 +434,7 @@
                     // sempat berkedip menutup saat badge di-update.
                     window.lemonKeepSidebarOpen();
                     setTimeout(window.lemonSyncBadge, 0);
+                    setTimeout(window.lemonBellChimeCheck, 0); // bunyi lemon bila unread naik
                     lemonFetchBadgeSoon();
                 });
             });
