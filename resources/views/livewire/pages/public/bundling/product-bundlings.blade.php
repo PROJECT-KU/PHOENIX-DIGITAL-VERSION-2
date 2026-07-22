@@ -20,15 +20,6 @@
             border-color: rgba(242, 101, 34, .3);
         }
 
-        /* Header kartu (.bh / "card gambar") disamakan tingginya antar kolom oleh
-           skrip di bawah (min-height diisi JS). Saat melar, isi dipusatkan
-           vertikal agar seimbang — pill sedikit/banyak tetap rapi & sejajar. */
-        .bdl-card .bh {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
         .bdl-eyebrow {
             display: inline-flex;
             align-items: center;
@@ -424,49 +415,4 @@
         </div>
     </section>
     <!-- end list product -->
-
-    {{-- Samakan tinggi header kartu (.bh / "card gambar") PER BARIS agar sejajar,
-         tanpa memaksa tinggi body kartu. Adaptif: dikelompokkan per baris visual
-         (offset atas) supaya benar di layar 3/2/1 kolom. --}}
-    @script
-    <script>
-        (() => {
-            const samakan = () => {
-                const heads = Array.from(document.querySelectorAll('#best-sellers .bdl-card .bh'));
-                if (!heads.length) return;
-                heads.forEach(h => { h.style.minHeight = ''; });   // reset dulu (utk resize)
-                const baris = new Map();                            // kelompokkan per baris visual
-                heads.forEach(h => {
-                    const top = Math.round(h.getBoundingClientRect().top + window.scrollY);
-                    if (!baris.has(top)) baris.set(top, []);
-                    baris.get(top).push(h);
-                });
-                baris.forEach(group => {
-                    const max = Math.max(...group.map(h => h.offsetHeight));
-                    group.forEach(h => { h.style.minHeight = max + 'px'; });
-                });
-            };
-            let t;
-            const jadwalkan = () => { clearTimeout(t); t = setTimeout(samakan, 60); };
-
-            samakan();
-            requestAnimationFrame(samakan);                         // setelah layout pertama
-            if (document.fonts && document.fonts.ready) document.fonts.ready.then(samakan);
-
-            // Pasang listener global sekali saja (aman lintas wire:navigate).
-            if (!window.__bhEqual) {
-                window.__bhEqual = true;
-                window.addEventListener('resize', jadwalkan);
-                document.addEventListener('livewire:navigated', jadwalkan);
-            }
-            // Re-hitung saat daftar berubah (mis. hasil pencarian Livewire).
-            const grid = document.querySelector('#best-sellers .row');
-            if (grid && window.MutationObserver) {
-                if (window.__bhObs) window.__bhObs.disconnect();
-                window.__bhObs = new MutationObserver(jadwalkan);
-                window.__bhObs.observe(grid, { childList: true, subtree: true });
-            }
-        })();
-    </script>
-    @endscript
 </main>
