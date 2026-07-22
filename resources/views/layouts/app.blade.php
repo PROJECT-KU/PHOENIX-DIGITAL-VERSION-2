@@ -345,19 +345,39 @@
                 o3.connect(g3).connect(g);
                 [o1, o2, o3].forEach(o => { o.start(mulai); o.stop(mulai + durasi + 0.03); });
             }
+            // Ucapkan brand "lemon" via Text-to-Speech (biar jelas "ngomong lemon").
+            function ucapLemon() {
+                try {
+                    if (!('speechSynthesis' in window)) return;
+                    window.speechSynthesis.cancel(); // jangan menumpuk
+                    const u = new SpeechSynthesisUtterance('lemon');
+                    u.lang = 'en-US';   // pengucapan "lemon" lebih jelas dgn voice Inggris
+                    u.rate = 0.95;
+                    u.pitch = 1.2;      // sedikit ceria
+                    u.volume = 1;
+                    const vs = window.speechSynthesis.getVoices() || [];
+                    const en = vs.find(v => /^en(-|_)/i.test(v.lang));
+                    if (en) u.voice = en;
+                    window.speechSynthesis.speak(u);
+                } catch (e) {}
+            }
+
             return function () {
                 if (!window.lemonSoundOn()) return;       // dimatikan admin
                 const now = Date.now();
                 if (now - last < 3000) return;            // debounce: 1 bunyi per ~3 dtk
                 last = now;
                 const ac = ensureCtx();
-                if (!ac) return;
-                const t = ac.currentTime;
-                // Motif "sukses" ceria menaik C–E–G–C (C mayor) + resolusi tinggi.
-                nada(ac, 1046.50, t + 0.00, 0.16, 0.22); // C6
-                nada(ac, 1318.51, t + 0.085, 0.16, 0.22); // E6
-                nada(ac, 1567.98, t + 0.17, 0.20, 0.21); // G6
-                nada(ac, 2093.00, t + 0.29, 0.42, 0.20); // C7 (resolusi, panjang)
+                if (ac) {
+                    const t = ac.currentTime;
+                    // Motif "sukses" ceria menaik C–E–G–C (C mayor) + resolusi tinggi.
+                    nada(ac, 1046.50, t + 0.00, 0.16, 0.22); // C6
+                    nada(ac, 1318.51, t + 0.085, 0.16, 0.22); // E6
+                    nada(ac, 1567.98, t + 0.17, 0.20, 0.21); // G6
+                    nada(ac, 2093.00, t + 0.29, 0.42, 0.20); // C7 (resolusi, panjang)
+                }
+                // Setelah jingle naik, ucapkan "lemon".
+                setTimeout(ucapLemon, ac ? 300 : 0);
             };
         })();
 
