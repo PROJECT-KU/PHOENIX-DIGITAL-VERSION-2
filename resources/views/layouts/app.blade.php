@@ -311,6 +311,7 @@
         // push/banner HP, suara mengikuti bawaan OS — web/PWA tak boleh set suara
         // kustom untuk notifikasi background (hanya app native seperti BRImo bisa).
         // Disintesis via Web Audio (tanpa file), di-unlock saat gestur pertama.
+        window.lemonSoundOn = () => localStorage.getItem('lemon-sound') !== 'off';
         window.lemonChime = (function () {
             let ctx = null, last = 0;
             function ensureCtx() {
@@ -324,31 +325,59 @@
             document.addEventListener('click', ensureCtx, { once: true });
             document.addEventListener('keydown', ensureCtx, { once: true });
 
+            // Satu "not" hangat & berkilau (fundamental + overtone oktaf & oktaf-2),
+            // amplop cepat-lalu-meluruh seperti glockenspiel/marimba — nuansa premium
+            // ala jingle m-banking (BRImo).
             function nada(ac, freq, mulai, durasi, puncak) {
-                const osc = ac.createOscillator(), g = ac.createGain();
-                osc.type = 'sine';
-                osc.frequency.value = freq;
+                const g = ac.createGain();
                 g.gain.setValueAtTime(0.0001, mulai);
-                g.gain.exponentialRampToValueAtTime(puncak, mulai + 0.02);   // attack lembut
-                g.gain.exponentialRampToValueAtTime(0.0001, mulai + durasi); // decay seperti lonceng
-                osc.connect(g).connect(ac.destination);
-                osc.start(mulai);
-                osc.stop(mulai + durasi + 0.03);
+                g.gain.exponentialRampToValueAtTime(puncak, mulai + 0.012); // attack renyah
+                g.gain.exponentialRampToValueAtTime(0.0001, mulai + durasi); // decay lonceng
+                g.connect(ac.destination);
+
+                const o1 = ac.createOscillator(); o1.type = 'sine';     o1.frequency.value = freq;
+                const o2 = ac.createOscillator(); o2.type = 'sine';     o2.frequency.value = freq * 2;
+                const o3 = ac.createOscillator(); o3.type = 'triangle'; o3.frequency.value = freq * 4;
+                const g2 = ac.createGain(); g2.gain.value = 0.28;  // overtone oktaf (kilau)
+                const g3 = ac.createGain(); g3.gain.value = 0.06;  // sparkle tinggi (tipis)
+                o1.connect(g);
+                o2.connect(g2).connect(g);
+                o3.connect(g3).connect(g);
+                [o1, o2, o3].forEach(o => { o.start(mulai); o.stop(mulai + durasi + 0.03); });
             }
             return function () {
+                if (!window.lemonSoundOn()) return;       // dimatikan admin
                 const now = Date.now();
-                if (now - last < 3000) return;   // debounce: 1 bunyi per ~3 dtk (hindari dobel)
+                if (now - last < 3000) return;            // debounce: 1 bunyi per ~3 dtk
                 last = now;
                 const ac = ensureCtx();
                 if (!ac) return;
                 const t = ac.currentTime;
-                // Arpeggio menaik + kilau = kesan ceria "lemon".
-                nada(ac, 987.77,  t + 0.00, 0.18, 0.20); // B5
-                nada(ac, 1318.51, t + 0.10, 0.20, 0.20); // E6
-                nada(ac, 1760.00, t + 0.20, 0.26, 0.18); // A6
-                nada(ac, 2637.02, t + 0.32, 0.34, 0.10); // E7 (kilau)
+                // Motif "sukses" ceria menaik C–E–G–C (C mayor) + resolusi tinggi.
+                nada(ac, 1046.50, t + 0.00, 0.16, 0.22); // C6
+                nada(ac, 1318.51, t + 0.085, 0.16, 0.22); // E6
+                nada(ac, 1567.98, t + 0.17, 0.20, 0.21); // G6
+                nada(ac, 2093.00, t + 0.29, 0.42, 0.20); // C7 (resolusi, panjang)
             };
         })();
+
+        // Tombol on/off suara (di panel lonceng). Preferensi disimpan per-perangkat.
+        window.lemonToggleSound = function () {
+            const mati = window.lemonSoundOn();           // sedang ON → akan dimatikan
+            localStorage.setItem('lemon-sound', mati ? 'off' : 'on');
+            window.lemonSoundSync();
+            if (!mati) window.lemonChime();               // baru dinyalakan → putar contoh
+        };
+        // Selaraskan label tombol dgn preferensi (dipanggil ulang tiap render lonceng).
+        window.lemonSoundSync = function () {
+            document.querySelectorAll('.lemon-sound-toggle').forEach(function (btn) {
+                const on = window.lemonSoundOn();
+                btn.innerHTML = on
+                    ? '🔊 Suara notifikasi: Aktif'
+                    : '🔇 Suara notifikasi: Nonaktif';
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+        };
 
         // Bunyikan lemon saat unread lonceng NAIK (task/gaji/pesanan baru). Nilai
         // saat load jadi baseline (tak berbunyi utk yg sudah ada). Toast kategori
@@ -399,8 +428,8 @@
         }
 
         // Jalankan saat load & tiap kali pindah halaman (wire:navigate).
-        window.addEventListener('load', () => { window.lemonSyncBadge(); window.lemonFetchBadge(); window.lemonBellChimeCheck(); });
-        document.addEventListener('livewire:navigated', () => { window.lemonSyncBadge(); window.lemonBellChimeCheck(); });
+        window.addEventListener('load', () => { window.lemonSyncBadge(); window.lemonFetchBadge(); window.lemonBellChimeCheck(); window.lemonSoundSync(); });
+        document.addEventListener('livewire:navigated', () => { window.lemonSyncBadge(); window.lemonBellChimeCheck(); window.lemonSoundSync(); });
 
         // Saat app/tab kembali terlihat atau di-fokus → ambil count terbaru dari server.
         document.addEventListener('visibilitychange', () => { if (!document.hidden) window.lemonFetchBadge(); });
@@ -435,6 +464,7 @@
                     window.lemonKeepSidebarOpen();
                     setTimeout(window.lemonSyncBadge, 0);
                     setTimeout(window.lemonBellChimeCheck, 0); // bunyi lemon bila unread naik
+                    setTimeout(window.lemonSoundSync, 0);      // label tombol suara di lonceng
                     lemonFetchBadgeSoon();
                 });
             });

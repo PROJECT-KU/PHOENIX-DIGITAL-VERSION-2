@@ -58,6 +58,9 @@
         <div class="nb-foot">
             <button type="button" id="lemon-push-toggle" class="nb-push-btn"
                 onclick="window.lemonPush && window.lemonPush.toggle()">🔔 Aktifkan notifikasi perangkat</button>
+            {{-- Label diselaraskan dari localStorage oleh window.lemonSoundSync (tiap render). --}}
+            <button type="button" class="nb-push-btn lemon-sound-toggle"
+                onclick="window.lemonToggleSound()">🔊 Suara notifikasi: Aktif</button>
         </div>
     </div>
 </div>
