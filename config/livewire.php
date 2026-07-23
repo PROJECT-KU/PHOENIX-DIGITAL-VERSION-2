@@ -65,10 +65,12 @@ return [
 
     'temporary_file_upload' => [
         'disk' => null,        // Example: 'local', 's3'              | Default: 'default'
-        // Batas unggah sementara dinaikkan ke 20MB agar SEIRAMA dengan validasi
-        // aplikasi (dokumen jasa & hasil pengecekan: 'max:20480'). Default Livewire
-        // 12MB akan menolak file 12–20MB dengan pesan "failed to upload".
-        'rules' => ['required', 'file', 'max:20480'], // 20MB
+        // Gerbang unggah sementara (global). Dinaikkan ke 100MB agar file HASIL
+        // pengecekan yang besar (laporan Turnitin bisa puluhan MB) bisa diupload
+        // admin. Batas nyata per-field tetap diatur validasi komponen: dokumen
+        // customer tetap 20MB (JasaCekPage), file hasil admin 100MB (OrderDetail).
+        // Server sudah mengizinkan (upload/post/memory = 1536M).
+        'rules' => ['required', 'file', 'max:102400'], // 100MB (gerbang)
         'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
         'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'
         'preview_mimes' => [   // Supported file types for temporary pre-signed file URLs...
