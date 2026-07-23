@@ -94,9 +94,10 @@ Dashboard || lemon
     <!--================== MENAMPILKAN DATA KEUANGAN ==================-->
     <div class="container-fluid">
 
-        {{-- Pendapatan HARI INI — selalu tampil, tidak terpengaruh periode. --}}
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-xl-4">
+        {{-- ===== RINGKASAN: 2 kartu atas + 3 kartu bawah ===== --}}
+        {{-- Atas: Pendapatan Hari Ini + Saldo Bersih --}}
+        <div class="row g-4 mb-4 align-items-stretch">
+            <div class="col-12 col-md-6">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card"
                     style="background:linear-gradient(135deg,#ecfdf5,#ffffff);">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
@@ -110,10 +111,24 @@ Dashboard || lemon
                     </div>
                 </div>
             </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper {{ $saldoIsNegatif ? 'bg-gradient-red' : 'bg-gradient-purple' }} flex-shrink-0"><i class="bi bi-cash-stack"></i></div>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Saldo Bersih</p>
+                            <h4 class="fw-bold mb-0 {{ $saldoIsNegatif ? 'text-danger' : 'text-dark' }}">Rp {{ $saldoBersih }}</h4>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-graph-up-arrow me-1"></i>Pemasukan − Pengeluaran • {{ $periodeLabel }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        {{-- Bawah: Total Pemasukan, Total Pengeluaran, Total Kode Unik --}}
         <div class="row g-4 mb-4 align-items-stretch">
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
                         <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-arrow-down-circle-fill"></i></div>
@@ -126,7 +141,7 @@ Dashboard || lemon
                 </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
                         <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="bi bi-arrow-up-circle-fill"></i></div>
@@ -139,20 +154,7 @@ Dashboard || lemon
                 </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
-                    <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper {{ $saldoIsNegatif ? 'bg-gradient-red' : 'bg-gradient-purple' }} flex-shrink-0"><i class="bi bi-cash-stack"></i></div>
-                        <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Saldo Bersih</p>
-                            <h4 class="fw-bold mb-0 {{ $saldoIsNegatif ? 'text-danger' : 'text-dark' }}">Rp {{ $saldoBersih }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-graph-up-arrow me-1"></i>Pemasukan − Pengeluaran</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
                         <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="bi bi-upc-scan"></i></div>
