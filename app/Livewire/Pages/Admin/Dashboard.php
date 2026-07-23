@@ -186,10 +186,13 @@ class Dashboard extends Component
             ->whereRaw('COALESCE(paid_at, created_at) < ?', [$perAkhirEks->toDateTimeString()])
             ->sum('unique_code');
 
-        // Pendapatan HARI INI (income cash_flows hari ini) — kartu statistik.
-        $pendapatanHariIni = (float) CashFlow::where('type', 'income')
-            ->whereDate('transaction_date', today())
-            ->sum('amount');
+        // Pemasukan HARI INI = pesanan yg UANGNYA sudah masuk hari ini —
+        // status paid/processing/completed, berdasarkan tgl bayar. Sengaja TIDAK
+        // menunggu 'completed': order paid/processing (mis. cek plagiasi 5x yg
+        // masih berjalan) tetap dihitung karena uangnya sudah diterima.
+        $pendapatanHariIni = (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
+            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
+            ->sum('total');
 
         // ==========================================
         // GRAFIK 1 TAHUN — income vs expense per bulan (dari cashflow)

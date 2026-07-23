@@ -177,10 +177,14 @@ class CashFlowList extends Component
         $insight = $this->insight();
         $insightData = $insight->data();
 
-        // Pendapatan HARI INI — kartu statistik tambahan, tak mengubah filter/omset.
-        $pendapatanHariIni = (float) CashFlow::where('type', 'income')
-            ->whereDate('transaction_date', today())
-            ->sum('amount');
+        // Pemasukan HARI INI = pesanan yg UANGNYA sudah masuk hari ini —
+        // status paid/processing/completed, berdasarkan tgl bayar. Sengaja TIDAK
+        // menunggu 'completed': order paid/processing (mis. cek plagiasi 5x yg
+        // masih berjalan) tetap dihitung karena uangnya sudah diterima. Jumlah =
+        // total pesanan (sama dgn nilai yg dicatat cash_flows saat completed).
+        $pendapatanHariIni = (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
+            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
+            ->sum('total');
 
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
             'pendapatanHariIni' => $pendapatanHariIni,
