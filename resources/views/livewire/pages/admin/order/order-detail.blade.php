@@ -541,6 +541,67 @@ Detail Pesanan || lemon
                     @endif
                 </div>
 
+                {{-- ========= PANDUAN CEK DI GROUPY (Discord) — asisten, tambahan =========
+                     Tidak mengubah logic/alur apa pun. Hanya menerjemahkan setelan
+                     exclude customer → filter yg harus dipilih di bot Groupy, plus
+                     email siap-salin & tombol buka Discord. Hanya untuk pengecekan
+                     yang masih perlu diproses. --}}
+                @if (in_array($up->status, ['menunggu', 'diproses']))
+                @php
+                    // Ganti link ini dgn URL channel turnitin-ticket Groupy
+                    // (klik-kanan channel di Discord → Salin Tautan).
+                    $linkGroupy = 'https://discord.com/channels/@me';
+                    $emailGroupy = 'phoenixdigitalwarehouse@gmail.com';
+
+                    $eKutipan = (bool) $up->exclude_kutipan;
+                    $eBib = (bool) $up->exclude_bibliografi;
+                    $eSumber = (bool) $up->exclude_sumber_kecil;
+                    $ambang = $up->ambang_sumber_kecil; // mis. "5%" atau "10 kata"
+
+                    if (! $eKutipan && ! $eBib && ! $eSumber) {
+                        $groupyLabel = 'Tanpa Filter';
+                        $groupyKustom = false;
+                    } elseif ($eKutipan && $eBib && ! $eSumber) {
+                        $groupyLabel = 'Rekomendasi (Excl. Quotes & Bib)';
+                        $groupyKustom = false;
+                    } else {
+                        $groupyLabel = 'Kustom (Atur Manual)';
+                        $groupyKustom = true;
+                    }
+                @endphp
+                <div style="margin-top:12px;padding:13px 15px;border:1px solid #dbeafe;border-radius:12px;background:#f5f9ff;">
+                    <div style="font-weight:800;font-size:.86rem;color:#1e3a8a;margin-bottom:8px;">
+                        <i class="bi bi-stars"></i> Panduan cek di Groupy (Discord)
+                    </div>
+                    <ol style="margin:0 0 10px;padding-left:1.1rem;font-size:.84rem;color:#334155;line-height:1.7;">
+                        <li>Buka <b>Groupy → turnitin-ticket → Buat Tiket Turnitin</b>.</li>
+                        <li>Email: <code style="background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:1px 6px;">{{ $emailGroupy }}</code></li>
+                        <li>Upload <b>File Customer</b> (tombol unduh di bawah).</li>
+                        <li>Pilih filter: <b style="color:#1d4ed8;">{{ $groupyLabel }}</b>
+                            @if ($groupyKustom)
+                            <ul style="margin:4px 0 0;padding-left:1.1rem;">
+                                @if ($eKutipan)<li>Exclude Quotes</li>@endif
+                                @if ($eBib)<li>Exclude Bibliography</li>@endif
+                                @if ($eSumber)<li>Exclude Sources: <b>{{ $ambang ?: '—' }}</b></li>@endif
+                            </ul>
+                            @endif
+                        </li>
+                        <li>Tunggu hasil. Saat PDF hasil datang, <b>unggah lewat tombol "Ganti/Unggah Hasil"</b> — sistem otomatis kirim ke customer.</li>
+                    </ol>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ $linkGroupy }}" target="_blank" rel="noopener"
+                            style="display:inline-flex;align-items:center;gap:6px;background:#5865f2;color:#fff;font-weight:700;font-size:.82rem;padding:7px 14px;border-radius:9px;text-decoration:none;">
+                            <i class="bi bi-discord"></i> Buka Discord Groupy
+                        </a>
+                        <button type="button"
+                            onclick="navigator.clipboard.writeText('{{ $emailGroupy }}');this.textContent='✓ Email tersalin';"
+                            style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:#334155;border:1px solid #cbd5e1;font-weight:700;font-size:.82rem;padding:7px 14px;border-radius:9px;cursor:pointer;">
+                            <i class="bi bi-clipboard"></i> Salin Email
+                        </button>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Persen kemiripan bila sudah selesai --}}
                 @if ($up->status === 'selesai' && (! is_null($up->persentase) || ! is_null($up->persentase_ai)))
                 <div class="mt-2 d-flex flex-wrap gap-1">
