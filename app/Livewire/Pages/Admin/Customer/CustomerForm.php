@@ -75,7 +75,8 @@ class CustomerForm extends Component
                 'status_member' => $this->statusMember,
             ]);
 
-            $this->dispatch('customer-created');
+            // Seragam dgn update: pakai sweet alert (flash 'success'), bukan toast.
+            session()->flash('success', 'Customer berhasil ditambahkan');
             $this->resetForm();
             $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
@@ -122,7 +123,8 @@ class CustomerForm extends Component
             }
 
             $this->resetForm();
-            $this->dispatch('customer-updated');
+            // Notifikasi cukup sweet alert (dari flash 'success'); toast dari
+            // event customer-updated (app.js) dihapus agar tidak dobel & seragam.
             $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
             session()->flash('error', 'Gagal mengupdate customer: ' . $e->getMessage());
