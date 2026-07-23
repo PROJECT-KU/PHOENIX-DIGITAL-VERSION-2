@@ -390,10 +390,17 @@ Data Pelanggan || lemon
             function rp(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
 
             function normPhone(p) {
-                p = String(p || '').replace(/[^0-9]/g, '');
-                if (p.charAt(0) === '0') p = '62' + p.slice(1);
-                else if (p.charAt(0) === '8') p = '62' + p;
-                return p;
+                var raw = String(p || '').trim();
+                // Nomor dgn "+" di depan = SUDAH internasional (ada kode negara,
+                // mis. +8801859231564 Bangladesh). Jangan ditambah 62 — cukup buang
+                // non-angka. Ini yg dulu bikin nomor luar negeri "tidak terdaftar".
+                var intl = raw.charAt(0) === '+';
+                var d = raw.replace(/[^0-9]/g, '');
+                if (intl) return d;                        // +880... → 880...
+                if (d.charAt(0) === '0') return '62' + d.slice(1);  // 0812... → 62812... (ID)
+                if (d.slice(0, 2) === '62') return d;               // sudah 62...
+                if (d.charAt(0) === '8') return '62' + d;           // 812... → 62812... (ID tanpa 0)
+                return d;                                           // lainnya: apa adanya
             }
 
             function openWa(phone, msg) {
