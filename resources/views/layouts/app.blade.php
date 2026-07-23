@@ -345,19 +345,44 @@
                 o3.connect(g3).connect(g);
                 [o1, o2, o3].forEach(o => { o.start(mulai); o.stop(mulai + durasi + 0.03); });
             }
-            // Ucapkan brand "lemon" via Text-to-Speech (biar jelas "ngomong lemon").
+            // Pilih voice PEREMPUAN berbahasa Inggris (Web Speech API tak punya
+            // properti gender, jadi cocokkan nama voice perempuan yang umum di
+            // iOS/macOS/Android/Windows). Fallback: voice en pertama.
+            var lemonVoice = null;
+            function pilihVoicePerempuan() {
+                if (!('speechSynthesis' in window)) return null;
+                var vs = window.speechSynthesis.getVoices() || [];
+                if (!vs.length) return null;
+                var en = vs.filter(function (v) { return /^en(-|_)/i.test(v.lang || ''); });
+                var pool = en.length ? en : vs;
+                var cewe = ['samantha','karen','moira','tessa','victoria','susan','allison',
+                    'ava','serena','fiona','catherine','nicky','aria','jenny','zira','hazel',
+                    'google us english','google uk english female','english female','female'];
+                for (var i = 0; i < cewe.length; i++) {
+                    var f = pool.find(function (v) { return (v.name || '').toLowerCase().indexOf(cewe[i]) !== -1; });
+                    if (f) return f;
+                }
+                return pool[0] || null;
+            }
+            if ('speechSynthesis' in window) {
+                lemonVoice = pilihVoicePerempuan();
+                // Daftar voice kadang termuat asinkron.
+                window.speechSynthesis.addEventListener('voiceschanged', function () {
+                    lemonVoice = pilihVoicePerempuan();
+                });
+            }
+            // Ucapkan brand "lemon" (voice perempuan, intonasi jelas).
             function ucapLemon() {
                 try {
                     if (!('speechSynthesis' in window)) return;
+                    if (!lemonVoice) lemonVoice = pilihVoicePerempuan();
                     window.speechSynthesis.cancel(); // jangan menumpuk
                     const u = new SpeechSynthesisUtterance('lemon');
-                    u.lang = 'en-US';   // pengucapan "lemon" lebih jelas dgn voice Inggris
-                    u.rate = 0.95;
-                    u.pitch = 1.2;      // sedikit ceria
+                    u.lang = (lemonVoice && lemonVoice.lang) || 'en-US';
+                    u.rate = 0.85;      // sedikit pelan → intonasi lebih jelas
+                    u.pitch = 1.15;     // sedikit cerah/feminin
                     u.volume = 1;
-                    const vs = window.speechSynthesis.getVoices() || [];
-                    const en = vs.find(v => /^en(-|_)/i.test(v.lang));
-                    if (en) u.voice = en;
+                    if (lemonVoice) u.voice = lemonVoice;
                     window.speechSynthesis.speak(u);
                 } catch (e) {}
             }
