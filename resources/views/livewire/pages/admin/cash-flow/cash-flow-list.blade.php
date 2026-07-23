@@ -139,6 +139,28 @@ Data Cash Flow || lemon
             </div>
         </div>
 
+        {{-- Pendapatan HARI INI — kartu terpisah, SELALU tampil (tidak terpengaruh
+             filter periode). Sumber sama dgn cashflow: income di cash_flows hari ini. --}}
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden"
+                    style="background:linear-gradient(135deg,#ecfdf5,#ffffff);">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0">
+                            <i class="bi bi-calendar-day"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">
+                                Pendapatan Hari Ini
+                                <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span>
+                            </p>
+                            <h4 class="fw-bold mb-0 text-success">Rp {{ number_format($pendapatanHariIni) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ================== SUMMARY CARDS ================== --}}
         <div class="row g-4 mb-4 align-items-stretch">
             <div class="col-12 col-md-6 col-xl-3">

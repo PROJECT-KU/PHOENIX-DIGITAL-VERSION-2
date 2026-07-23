@@ -9,6 +9,7 @@ use App\Models\GajiKaryawans;
 use App\Models\Loan;
 use App\Models\Pengembalian;
 use App\Models\Customer;
+use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -158,26 +159,37 @@ class Dashboard extends Component
         // Semua angka bersumber dari tabel cash_flows (type income/expense)
         // agar identik dengan halaman Cashflow.
         // ==========================================
-        $bulanIni = now()->month;
         $tahunIni = now()->year;
 
-        // Total bulan ini (mengikuti cashflow: berdasarkan transaction_date)
-        $cfBulan = fn ($type) => (float) CashFlow::where('type', $type)
-            ->whereYear('transaction_date', $tahunIni)
-            ->whereMonth('transaction_date', $bulanIni)
+        // Periode BERJALAN mengikuti siklus gaji 21-20 (seragam dgn Cashflow &
+        // Gaji), bukan bulan kalender. Pada tgl 21+ periode ini beda dari kalender.
+        $per = PeriodeGaji::dariTanggal(now());
+        $perMulai = PeriodeGaji::mulai($per['bulan'], $per['tahun']);
+        $perAkhirEks = PeriodeGaji::akhir($per['bulan'], $per['tahun'])->copy()->addDay()->startOfDay();
+        $periodeLabel = PeriodeGaji::label($per['bulan'], $per['tahun']);
+
+        // Total periode berjalan (mengikuti cashflow: berdasarkan transaction_date)
+        $cfPeriode = fn ($type) => (float) CashFlow::where('type', $type)
+            ->where('transaction_date', '>=', $perMulai)
+            ->where('transaction_date', '<', $perAkhirEks)
             ->sum('amount');
 
-        $totalPemasukanBulanIni = $cfBulan('income');
-        $totalPengeluaranBulanIni = $cfBulan('expense');
+        $totalPemasukanBulanIni = $cfPeriode('income');
+        $totalPengeluaranBulanIni = $cfPeriode('expense');
         $saldoBersihBulanIni = $totalPemasukanBulanIni - $totalPengeluaranBulanIni;
 
-        // Total kode unik (sama seperti cashflow): dari pesanan yang sudah dibayar
-        // pada bulan ini, berdasarkan tanggal bayar (fallback ke tanggal dibuat).
+        // Total kode unik: pesanan dibayar pada PERIODE BERJALAN (tgl bayar,
+        // fallback tgl dibuat).
         $paidStatuses = ['paid', 'processing', 'completed'];
         $totalKodeUnikBulanIni = (float) Order::whereIn('status', $paidStatuses)
-            ->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahunIni])
-            ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulanIni])
+            ->whereRaw('COALESCE(paid_at, created_at) >= ?', [$perMulai->toDateTimeString()])
+            ->whereRaw('COALESCE(paid_at, created_at) < ?', [$perAkhirEks->toDateTimeString()])
             ->sum('unique_code');
+
+        // Pendapatan HARI INI (income cash_flows hari ini) — kartu statistik.
+        $pendapatanHariIni = (float) CashFlow::where('type', 'income')
+            ->whereDate('transaction_date', today())
+            ->sum('amount');
 
         // ==========================================
         // GRAFIK 1 TAHUN — income vs expense per bulan (dari cashflow)
@@ -248,6 +260,8 @@ class Dashboard extends Component
             'totalKodeUnik' => number_format($totalKodeUnikBulanIni ?? 0, 0, ',', '.'),
             'saldoBersih' => number_format($saldoBersihBulanIni ?? 0, 0, ',', '.'),
             'saldoIsNegatif' => $saldoBersihBulanIni < 0,
+            'pendapatanHariIni' => number_format($pendapatanHariIni ?? 0, 0, ',', '.'),
+            'periodeLabel' => $periodeLabel,
 
             'dataGrafikPemasukan' => $grafikPemasukan,
             'dataGrafikPengeluaran' => $grafikPengeluaran,

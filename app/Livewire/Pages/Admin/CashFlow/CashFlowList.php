@@ -39,9 +39,12 @@ class CashFlowList extends Component
 
     public function mount(): void
     {
-        // Default ke periode bulan & tahun berjalan
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default: siklus gaji 21-20 periode BERJALAN (seragam dgn fitur Gaji/Task),
+        // bukan bulan kalender. Pada tgl 21+ periode ini beda dari bulan kalender.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
     }
 
     public function updated($property): void
@@ -133,9 +136,11 @@ class CashFlowList extends Component
 
     public function resetFilter(): void
     {
-        $this->bulan = '';
-        $this->tahun = '';
-        $this->modePeriode = 'kalender';
+        // "Reset" = kembali ke default: siklus 21-20 periode berjalan.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
         $this->produkPage = 1;
         $this->resetPage();
         $this->analisaLengkap = [];
@@ -172,7 +177,13 @@ class CashFlowList extends Component
         $insight = $this->insight();
         $insightData = $insight->data();
 
+        // Pendapatan HARI INI — kartu statistik tambahan, tak mengubah filter/omset.
+        $pendapatanHariIni = (float) CashFlow::where('type', 'income')
+            ->whereDate('transaction_date', today())
+            ->sum('amount');
+
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
+            'pendapatanHariIni' => $pendapatanHariIni,
             'insightData' => $insightData,
             'insightNarasi' => $insight->narasi($insightData),
             'insightSaran' => $insight->saran($insightData),
