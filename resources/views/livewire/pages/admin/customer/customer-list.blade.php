@@ -51,6 +51,7 @@ Data Pelanggan || lemon
                 -webkit-backdrop-filter: blur(12px);
                 border: 1px solid rgba(255, 255, 255, 0.6);
                 box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+                overflow-x: auto;
             }
 
             .customer-glossy-tab {
@@ -122,15 +123,11 @@ Data Pelanggan || lemon
             }
 
             @media (max-width: 575.98px) {
-                .customer-glossy-tabs {
-                    display: flex;
-                    width: 100%;
-                }
-
                 .customer-glossy-tab {
-                    flex: 1;
+                    flex: 0 0 auto;
                     justify-content: center;
-                    padding: .6rem .6rem;
+                    padding: .6rem .9rem;
+                    font-size: .9rem;
                 }
             }
         </style>
