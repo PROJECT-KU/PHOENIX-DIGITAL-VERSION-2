@@ -421,18 +421,19 @@ class OrderDetail extends Component
         }
 
         $this->validate([
-            'hasilFile' => ['nullable', 'file', 'mimes:pdf,docx', 'max:20480'],
-            'hasilAiFile' => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
-            'hasilDocxFile' => ['nullable', 'file', 'mimes:docx', 'max:20480'],
+            // File HASIL bisa besar (laporan Turnitin puluhan MB) → batas 100MB.
+            'hasilFile' => ['nullable', 'file', 'mimes:pdf,docx', 'max:102400'],
+            'hasilAiFile' => ['nullable', 'file', 'mimes:pdf', 'max:102400'],
+            'hasilDocxFile' => ['nullable', 'file', 'mimes:docx', 'max:102400'],
             'persentaseInput' => ['nullable', 'integer', 'min:0', 'max:100'],
             'persentaseAiInput' => ['nullable', 'integer', 'min:0', 'max:100'],
         ], [
             'hasilFile.mimes' => 'Hasil cek plagiasi harus PDF atau DOCX.',
             'hasilAiFile.mimes' => 'Hasil cek AI harus PDF.',
             'hasilDocxFile.mimes' => 'Dokumen hasil harus DOCX.',
-            'hasilFile.max' => 'Ukuran file maksimal 20 MB.',
-            'hasilAiFile.max' => 'Ukuran file maksimal 20 MB.',
-            'hasilDocxFile.max' => 'Ukuran file maksimal 20 MB.',
+            'hasilFile.max' => 'Ukuran file maksimal 100 MB.',
+            'hasilAiFile.max' => 'Ukuran file maksimal 100 MB.',
+            'hasilDocxFile.max' => 'Ukuran file maksimal 100 MB.',
             'persentaseInput.integer' => 'Persen harus angka 0–100.',
             'persentaseAiInput.integer' => 'Persen AI harus angka 0–100.',
         ]);
