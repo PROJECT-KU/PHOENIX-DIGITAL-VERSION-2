@@ -33,6 +33,12 @@
         .cek-set-hint { display:block; font-size:.76rem; color:var(--ph-muted); line-height:1.4; margin-bottom:10px; }
         /* Chip toggle — grid auto-fit: melebar merata, tak menyisakan ruang kosong */
         .cek-chips { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
+        /* Izinkan teks turun baris (class .cek-chip juga dipakai status-chip yg
+           white-space:nowrap — jangan sampai bocor & memotong label panjang). */
+        .cek-chips .cek-chip { white-space:normal; min-width:0; }
+        .cek-chips .cek-chip > span:last-child { min-width:0; overflow-wrap:anywhere; line-height:1.25; }
+        /* Mobile: 1 kolom penuh agar label panjang ("Exclude Daftar Pustaka") muat. */
+        @media (max-width:575.98px) { .cek-chips { grid-template-columns:1fr; } }
         .cek-chip { position:relative; display:flex; align-items:center; gap:8px; padding:11px 14px 11px 12px; border:1.5px solid var(--ph-line); border-radius:12px; background:#fff; font-size:.84rem; font-weight:600; color:#64748b; cursor:pointer; user-select:none; transition:border-color .18s, background .18s, color .18s; }
         .cek-chip:hover { border-color:#fcd9a8; color:#b45309; }
         .cek-chip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
