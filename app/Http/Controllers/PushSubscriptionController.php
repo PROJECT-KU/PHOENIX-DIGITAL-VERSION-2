@@ -58,6 +58,21 @@ class PushSubscriptionController extends Controller
             $sub = PushSubscription::updateOrCreate(['endpoint_hash' => $hash], $attrs);
         }
 
+        // PENGAMAN dobel: satu perangkat FISIK bisa terdaftar >1 kali bila
+        // localStorage (tempat device_id) terhapus/reinstall → device_id baru →
+        // baris baru, yg lama tetap aktif → notif DOBEL di perangkat yg sama.
+        // Karena itu simpan HANYA langganan TERBARU per LAYANAN PUSH (Apple/FCM)
+        // milik user ini. Trade-off: 2 perangkat pada layanan push yang sama
+        // (mis. 2 iPhone / laptop+Android FCM) akan menyisakan yang terbaru saja —
+        // jarang untuk admin, dan jauh lebih baik daripada notif dobel/ganda.
+        $host = parse_url($data['endpoint'], PHP_URL_HOST);
+        if ($host) {
+            PushSubscription::where('user_id', $user->id)
+                ->where('id', '!=', $sub->id)
+                ->where('endpoint', 'like', 'https://'.$host.'%')
+                ->delete();
+        }
+
         // Baru pertama kali aktif di perangkat ini → kirim push konfirmasi
         // sekaligus set badge ke jumlah unread saat ini (bukan tiap reload).
         if ($sub->wasRecentlyCreated) {
