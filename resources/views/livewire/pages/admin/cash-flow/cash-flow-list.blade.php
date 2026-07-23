@@ -139,36 +139,42 @@ Data Cash Flow || lemon
             </div>
         </div>
 
-        {{-- Pendapatan HARI INI — kartu terpisah, SELALU tampil (tidak terpengaruh
-             filter periode). Sumber sama dgn cashflow: income di cash_flows hari ini. --}}
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-xl-4">
+        {{-- ============ RINGKASAN: 2 kartu atas + 3 kartu bawah ============ --}}
+        {{-- Atas: Pendapatan Hari Ini (selalu tampil, tak terpengaruh filter) + Net Cashflow --}}
+        <div class="row g-4 mb-4 align-items-stretch">
+            <div class="col-12 col-md-6">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden"
                     style="background:linear-gradient(135deg,#ecfdf5,#ffffff);">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0">
-                            <i class="bi bi-calendar-day"></i>
-                        </div>
+                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-calendar-day"></i></div>
                         <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">
-                                Pendapatan Hari Ini
-                                <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span>
-                            </p>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Pendapatan Hari Ini
+                                <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span></p>
                             <h4 class="fw-bold mb-0 text-success">Rp {{ number_format($pendapatanHariIni) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper {{ $summary['net'] < 0 ? 'bg-gradient-red' : 'bg-gradient-purple' }} flex-shrink-0"><i class="bi bi-wallet2"></i></div>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Net Cashflow</p>
+                            <h4 class="fw-bold mb-0 {{ $summary['net'] < 0 ? 'text-danger' : 'text-dark' }}">Rp {{ number_format($summary['net']) }}</h4>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- ================== SUMMARY CARDS ================== --}}
+        {{-- Bawah: Pemasukan, Pengeluaran, Total Kode Unik --}}
         <div class="row g-4 mb-4 align-items-stretch">
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0">
-                            <i class="bi bi-arrow-down-circle"></i>
-                        </div>
+                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-arrow-down-circle"></i></div>
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Pemasukan</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ number_format($summary['income']) }}</h4>
@@ -177,12 +183,10 @@ Data Cash Flow || lemon
                 </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0">
-                            <i class="bi bi-arrow-up-circle"></i>
-                        </div>
+                        <div class="stat-icon-wrapper bg-gradient-red flex-shrink-0"><i class="bi bi-arrow-up-circle"></i></div>
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Pengeluaran</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ number_format($summary['expense']) }}</h4>
@@ -191,28 +195,10 @@ Data Cash Flow || lemon
                 </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-md-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden">
                     <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper {{ $summary['net'] < 0 ? 'bg-gradient-red' : 'bg-gradient-purple' }} flex-shrink-0">
-                            <i class="bi bi-wallet2"></i>
-                        </div>
-                        <div>
-                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Net Cashflow</p>
-                            <h4 class="fw-bold mb-0 {{ $summary['net'] < 0 ? 'text-danger' : 'text-dark' }}">
-                                Rp {{ number_format($summary['net']) }}
-                            </h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-3">
-                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card overflow-hidden">
-                    <div class="card-body p-4 d-flex align-items-center gap-3">
-                        <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0">
-                            <i class="bi bi-upc-scan"></i>
-                        </div>
+                        <div class="stat-icon-wrapper bg-gradient-blue flex-shrink-0"><i class="bi bi-upc-scan"></i></div>
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Kode Unik</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ number_format($totalKodeUnik) }}</h4>
