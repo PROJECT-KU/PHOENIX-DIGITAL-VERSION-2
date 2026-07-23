@@ -11,19 +11,35 @@ use Smalot\PdfParser\Parser;
  */
 class PlagiarismReader
 {
+    /** Batas ukuran PDF yang di-parse. Di atas ini → dilewati (admin isi manual). */
+    private const MAKS_BYTE = 40 * 1024 * 1024; // 40 MB
+
+    /**
+     * Longgarkan batas memori & waktu SEBELUM parsing. PDF Turnitin 27MB memakai
+     * ~1GB memori; default 1536M kadang mepet saat digabung memori request lain,
+     * dan kehabisan memori = FATAL (tak tertangkap try/catch) → upload mati.
+     * Server mengizinkan ini_set memori dinaikkan (diuji: 1536M → 3072M).
+     */
+    private static function siapkanParse(): void
+    {
+        @ini_set('memory_limit', '3072M');
+        @set_time_limit(120);
+    }
+
     public static function persenDariPdf(string $absolutePath): ?int
     {
         if (! is_file($absolutePath)) {
             return null;
         }
 
-        // PDF besar berisiko menghabiskan memori saat di-parse — dan kehabisan
-        // memori adalah FATAL error yang tak tertangkap try/catch, sehingga
-        // request unggah ikut mati. Persen hanya fitur bantu (admin tetap bisa
-        // mengisinya manual), jadi lebih aman dilewati untuk file besar.
-        if (filesize($absolutePath) > 8 * 1024 * 1024) {
+        // PDF terlalu besar dilewati (admin isi manual). Batas dinaikkan ke 40MB
+        // karena laporan Turnitin kini sering 20-30MB — dulu 8MB membuat persen
+        // sering "tak terbaca". Parsing dibatasi memori + waktu di siapkanParse().
+        if (filesize($absolutePath) > self::MAKS_BYTE) {
             return null;
         }
+
+        self::siapkanParse();
 
         try {
             $text = (new Parser)->parseFile($absolutePath)->getText();
@@ -190,11 +206,12 @@ class PlagiarismReader
             return null;
         }
 
-        // Lihat catatan di persenDariPdf(): PDF besar dilewati agar tidak
-        // menghabiskan memori (fatal error yang tak tertangkap try/catch).
-        if (filesize($absolutePath) > 8 * 1024 * 1024) {
+        // Lihat catatan di persenDariPdf(): batas 40MB + memori dinaikkan.
+        if (filesize($absolutePath) > self::MAKS_BYTE) {
             return null;
         }
+
+        self::siapkanParse();
 
         try {
             $text = (new Parser)->parseFile($absolutePath)->getText();
