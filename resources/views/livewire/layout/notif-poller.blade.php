@@ -1,4 +1,4 @@
-<div wire:poll.30s.keep-alive>
+<div wire:poll.5s.keep-alive>
     {{-- Pembawa hitungan badge (total + per kategori), tak terlihat. Diperbarui
          tiap poll. Dipakai untuk:
          - badge di judul tab: "(N) lemon"
