@@ -521,6 +521,20 @@
                     body: JSON.stringify(body),
                 });
             }
+            // Daftarkan langganan. Bila endpoint BERGANTI (iOS/FCM kadang merotasi
+            // endpoint tanpa memberi tahu; langganan lama tetap aktif → notif DOBEL
+            // ke perangkat yg sama), hapus dulu langganan LAMA di server pakai
+            // endpoint yang kita ingat di localStorage.
+            async function registerSub(sub) {
+                const j = sub.toJSON();
+                let prev = null;
+                try { prev = localStorage.getItem('lemon-push-endpoint'); } catch (e) {}
+                if (prev && prev !== sub.endpoint) {
+                    try { await post('{{ route('push.unsubscribe') }}', { endpoint: prev }); } catch (e) {}
+                }
+                await post('{{ route('push.subscribe') }}', { endpoint: sub.endpoint, keys: j.keys, contentEncoding: encoding() });
+                try { localStorage.setItem('lemon-push-endpoint', sub.endpoint); } catch (e) {}
+            }
             async function subscribe() {
                 if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
                     alert('Browser/perangkat ini tidak mendukung notifikasi.');
@@ -537,8 +551,7 @@
                         applicationServerKey: urlB64ToUint8(VAPID),
                     });
                 }
-                const j = sub.toJSON();
-                await post('{{ route('push.subscribe') }}', { endpoint: sub.endpoint, keys: j.keys, contentEncoding: encoding() });
+                await registerSub(sub);
                 updateBtn();
             }
             async function unsubscribe() {
@@ -547,6 +560,7 @@
                     await post('{{ route('push.unsubscribe') }}', { endpoint: sub.endpoint });
                     await sub.unsubscribe();
                 }
+                try { localStorage.removeItem('lemon-push-endpoint'); } catch (e) {}
                 updateBtn();
             }
             async function toggle() {
@@ -566,8 +580,7 @@
                 if (('Notification' in window) && Notification.permission === 'granted') {
                     const sub = await currentSub();
                     if (sub) {
-                        const j = sub.toJSON();
-                        post('{{ route('push.subscribe') }}', { endpoint: sub.endpoint, keys: j.keys, contentEncoding: encoding() }).catch(() => {});
+                        registerSub(sub).catch(() => {});
                     }
                 }
                 updateBtn();
