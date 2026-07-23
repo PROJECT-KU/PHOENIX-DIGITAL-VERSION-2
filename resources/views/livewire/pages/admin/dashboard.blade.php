@@ -94,6 +94,24 @@ Dashboard || lemon
     <!--================== MENAMPILKAN DATA KEUANGAN ==================-->
     <div class="container-fluid">
 
+        {{-- Pendapatan HARI INI — selalu tampil, tidak terpengaruh periode. --}}
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 stat-card"
+                    style="background:linear-gradient(135deg,#ecfdf5,#ffffff);">
+                    <div class="card-body p-4 d-flex align-items-center gap-3">
+                        <div class="stat-icon-wrapper bg-gradient-green flex-shrink-0"><i class="bi bi-calendar-day"></i></div>
+                        <div>
+                            <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Pendapatan Hari Ini
+                                <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span></p>
+                            <h4 class="fw-bold mb-0 text-success">Rp {{ $pendapatanHariIni }}</h4>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Pemasukan cashflow hari ini</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mb-4 align-items-stretch">
             <div class="col-12 col-md-6 col-xl-3">
                 <div class="card border-0 shadow-sm rounded-4 h-100 stat-card">
@@ -102,7 +120,7 @@ Dashboard || lemon
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pemasukan</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalPemasukan }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Sinkron Cashflow • {{ now()->translatedFormat('F Y') }}</span>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Cashflow • {{ $periodeLabel }}</span>
                         </div>
                     </div>
                 </div>
@@ -115,7 +133,7 @@ Dashboard || lemon
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Pengeluaran</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalPengeluaran }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Sinkron Cashflow • {{ now()->translatedFormat('F Y') }}</span>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Cashflow • {{ $periodeLabel }}</span>
                         </div>
                     </div>
                 </div>
@@ -141,7 +159,7 @@ Dashboard || lemon
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Kode Unik</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalKodeUnik }}</h4>
-                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode: {{ now()->translatedFormat('F Y') }}</span>
+                            <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode {{ $periodeLabel }}</span>
                         </div>
                     </div>
                 </div>
