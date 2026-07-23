@@ -20,6 +20,7 @@ class PushSubscriptionController extends Controller
             'keys.p256dh' => ['required', 'string'],
             'keys.auth' => ['required', 'string'],
             'contentEncoding' => ['nullable', 'string'],
+            'deviceId' => ['nullable', 'string', 'max:64'],
         ]);
 
         $user = $request->user();
@@ -27,16 +28,35 @@ class PushSubscriptionController extends Controller
             return response()->json(['message' => 'unauthenticated'], 401);
         }
 
-        $sub = PushSubscription::updateOrCreate(
-            ['endpoint_hash' => hash('sha256', $data['endpoint'])],
-            [
-                'user_id' => $user->id,
-                'endpoint' => $data['endpoint'],
-                'public_key' => $data['keys']['p256dh'],
-                'auth_token' => $data['keys']['auth'],
-                'content_encoding' => $data['contentEncoding'] ?? null,
-            ]
-        );
+        $hash = hash('sha256', $data['endpoint']);
+        $did = $data['deviceId'] ?? null;
+        $attrs = [
+            'user_id' => $user->id,
+            'device_id' => $did,
+            'endpoint' => $data['endpoint'],
+            'endpoint_hash' => $hash,
+            'public_key' => $data['keys']['p256dh'],
+            'auth_token' => $data['keys']['auth'],
+            'content_encoding' => $data['contentEncoding'] ?? null,
+        ];
+
+        if ($did) {
+            // Buang baris lain dgn endpoint yg sama persis (hindari bentrok
+            // unique endpoint_hash saat baris device ini di-update).
+            PushSubscription::where('endpoint_hash', $hash)
+                ->where(fn ($q) => $q->where('user_id', '!=', $user->id)->orWhere('device_id', '!=', $did))
+                ->delete();
+
+            // Satu PERANGKAT (device_id) = SATU langganan. Endpoint yg ter-rotasi
+            // di perangkat yg sama menimpa baris ini → tidak menumpuk duplikat.
+            $sub = PushSubscription::updateOrCreate(
+                ['user_id' => $user->id, 'device_id' => $did],
+                $attrs
+            );
+        } else {
+            // Klien lama tanpa deviceId → jatuh ke pencocokan endpoint.
+            $sub = PushSubscription::updateOrCreate(['endpoint_hash' => $hash], $attrs);
+        }
 
         // Baru pertama kali aktif di perangkat ini → kirim push konfirmasi
         // sekaligus set badge ke jumlah unread saat ini (bukan tiap reload).

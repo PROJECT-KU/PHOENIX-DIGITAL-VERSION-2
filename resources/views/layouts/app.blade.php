@@ -507,6 +507,19 @@
             function encoding() {
                 return (window.PushManager && PushManager.supportedContentEncodings || ['aesgcm'])[0];
             }
+            // ID perangkat stabil (per install, disimpan di localStorage). Server
+            // memakainya agar 1 PERANGKAT = 1 langganan: endpoint push yg ter-rotasi
+            // menimpa baris yg sama, jadi tidak menumpuk & notif tak dobel.
+            function deviceId() {
+                var k = 'lemon-device-id', v = null;
+                try { v = localStorage.getItem(k); } catch (e) {}
+                if (!v) {
+                    v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+                        : ('d-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+                    try { localStorage.setItem(k, v); } catch (e) {}
+                }
+                return v;
+            }
             async function ready() {
                 return ('serviceWorker' in navigator) ? navigator.serviceWorker.ready : null;
             }
@@ -532,7 +545,7 @@
                 if (prev && prev !== sub.endpoint) {
                     try { await post('{{ route('push.unsubscribe') }}', { endpoint: prev }); } catch (e) {}
                 }
-                await post('{{ route('push.subscribe') }}', { endpoint: sub.endpoint, keys: j.keys, contentEncoding: encoding() });
+                await post('{{ route('push.subscribe') }}', { endpoint: sub.endpoint, keys: j.keys, contentEncoding: encoding(), deviceId: deviceId() });
                 try { localStorage.setItem('lemon-push-endpoint', sub.endpoint); } catch (e) {}
             }
             async function subscribe() {
