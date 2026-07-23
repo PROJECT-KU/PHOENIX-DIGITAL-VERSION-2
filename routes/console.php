@@ -32,8 +32,12 @@ Schedule::call(function () {
  */
 // Cek pembayaran QRIS di sisi server DULU (tandai lunas) sebelum cancel-expired
 // membatalkan order — supaya order yang sudah dibayar tidak ikut dibatalkan.
-Schedule::command('qris:cek-pembayaran')->everyMinute()->withoutOverlapping();
-Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping();
+// withoutOverlapping(10): kunci auto-lepas dalam 10 menit. Bila suatu run
+// terputus/ke-kill di tengah, kunci default bertahan 24 JAM dan memblokir
+// deteksi QRIS + auto-cancel selama itu (kejadian 23 Jul 2026). 10 menit >
+// durasi wajar command, jadi tak ada false-skip, tapi sembuh cepat bila macet.
+Schedule::command('qris:cek-pembayaran')->everyMinute()->withoutOverlapping(10);
+Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping(10);
 
 /**
  * Kirim email pengingat ~10 menit sebelum batas waktu pembayaran habis.
