@@ -548,9 +548,10 @@ Detail Pesanan || lemon
                      yang masih perlu diproses. --}}
                 @if (in_array($up->status, ['menunggu', 'diproses']))
                 @php
-                    // Ganti link ini dgn URL channel turnitin-ticket Groupy
-                    // (klik-kanan channel di Discord → Salin Tautan).
-                    $linkGroupy = 'https://discord.com/channels/@me';
+                    // Link undangan server Groupy (membuka server; admin lalu klik
+                    // channel turnitin-ticket). Untuk loncat langsung ke channel,
+                    // ganti dgn URL channel (klik-kanan channel → Salin Tautan).
+                    $linkGroupy = 'https://discord.gg/groupy';
                     $emailGroupy = 'phoenixdigitalwarehouse@gmail.com';
 
                     $eKutipan = (bool) $up->exclude_kutipan;
