@@ -622,6 +622,16 @@ Proses Pesanan || lemon
             </div>
         </div>
 
+        @if ($this->belumLunas)
+        <div class="alert alert-warning rounded-4 border-0 shadow-sm mt-3 mb-0 d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div>
+                <strong>Pembayaran QRIS belum masuk (masih pending).</strong><br>
+                <span class="small">Pastikan pembayaran benar-benar sudah diterima sebelum mengirim akun. Kamu akan diminta konfirmasi saat menekan "Proses".</span>
+            </div>
+        </div>
+        @endif
+
         <!-- Action Buttons -->
         <div class="mt-4 pt-3 border-top d-flex gap-2">
             <button type="button" wire:click="cancelProcessing"
@@ -741,6 +751,34 @@ Proses Pesanan || lemon
             }
             document.addEventListener('livewire:navigated', paInitLabel);
         })();
+
+        // Peringatan bila memproses order QRIS yang pembayarannya belum masuk.
+        // processOrder() akan menahan diri & memancarkan event ini; setelah admin
+        // menyetujui, set flag lalu panggil ulang processOrder.
+        document.addEventListener('livewire:init', function () {
+            Livewire.on('konfirmasi-belum-lunas', function () {
+                if (typeof Swal === 'undefined') { return; }
+                Swal.fire({
+                    title: 'Pembayaran belum masuk',
+                    html: 'Pembayaran QRIS pesanan ini <b>belum terkonfirmasi (masih pending)</b>.<br>Yakin tetap kirim akun ke customer?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, tetap proses',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    buttonsStyling: false,
+                    customClass: { confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel' },
+                }).then(function (r) {
+                    if (!r.isConfirmed) { return; }
+                    var el = document.querySelector('[wire\\:id]');
+                    var lw = (el && window.Livewire) ? window.Livewire.find(el.getAttribute('wire:id')) : null;
+                    if (!lw) { return; }
+                    Promise.resolve(lw.set('lunasDikonfirmasi', true)).then(function () {
+                        lw.call('processOrder');
+                    });
+                });
+            });
+        });
     </script>
     @endpush
 </div>

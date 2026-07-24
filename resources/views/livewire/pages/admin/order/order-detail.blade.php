@@ -237,6 +237,18 @@ Detail Pesanan || lemon
                         if ($order->status == 'completed') $color = 'primary';
                         @endphp
                         <span class="badge bg-{{ $color }}">{{ strtoupper($order->status) }}</span>
+                        @if ($order->status !== 'cancelled')
+                        <button type="button"
+                            class="btn btn-sm btn-outline-danger pcek-konfirmasi ms-2 py-0 px-2"
+                            style="font-size:.72rem;"
+                            data-action="batalkanPesanan"
+                            data-title="Batalkan pesanan ini?"
+                            data-text="Status menjadi CANCELLED, pembayaran ditandai kedaluwarsa, dan income/modal otomatis dilepas. Akun yang sudah terlanjur dikirim TIDAK ikut tertarik."
+                            data-confirm="Ya, batalkan pesanan"
+                            data-icon="warning">
+                            <i class="bi bi-x-circle"></i> Batalkan Pesanan
+                        </button>
+                        @endif
                     </span>
                 </div>
                 @php

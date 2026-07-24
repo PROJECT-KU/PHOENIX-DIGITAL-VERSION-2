@@ -56,6 +56,24 @@ class ProcessOrder extends Component
 
     public $isLoadingAccounts = false;
 
+    /** Admin sudah mengonfirmasi "tetap proses walau belum lunas" (peringatan). */
+    public bool $lunasDikonfirmasi = false;
+
+    /**
+     * Order QRIS yang belum punya pembayaran 'settlement' → berisiko akun
+     * dikirim sebelum uang benar-benar masuk. Hanya untuk qris_dinamis; jalur
+     * pembayaran lain (mis. transfer manual) tidak diganggu.
+     */
+    public function getBelumLunasProperty(): bool
+    {
+        $o = $this->order;
+        if (! $o || $o->payment_method !== 'qris_dinamis') {
+            return false;
+        }
+
+        return ! $o->payments()->where('status', 'settlement')->exists();
+    }
+
     public function mount($id)
     {
         $this->orderItem = OrderItem::FindOrFail($id);
@@ -197,6 +215,15 @@ class ProcessOrder extends Component
             'selectedEbooks' => 'nullable|array',
             'selectedEbooks.*' => 'exists:ebooks,id',
         ]);
+
+        // Pengaman: bila QRIS belum masuk (belum settlement), minta konfirmasi
+        // sekali dulu sebelum akun benar-benar dikirim. Tidak memblokir — admin
+        // bisa lanjut (mis. sudah dibayar via jalur lain) setelah menyetujui.
+        if ($this->belumLunas && ! $this->lunasDikonfirmasi) {
+            $this->dispatch('konfirmasi-belum-lunas');
+
+            return;
+        }
 
         try {
             DB::beginTransaction();

@@ -551,6 +551,33 @@ class OrderDetail extends Component
         $this->dispatch('order-updated', message: 'Pengecekan dibatalkan. Kuota customer dikembalikan.');
     }
 
+    /**
+     * Batalkan SELURUH pesanan. Dipakai untuk kasus akun/produk terlanjur
+     * dikirim padahal pembayaran (QRIS) tak pernah masuk.
+     *
+     * Efeknya konsisten dgn alur cancel-expired: pembayaran pending → 'expire',
+     * status → 'cancelled', paid_at dikosongkan (faktanya tak pernah dibayar).
+     * Karena update lewat Eloquent, OrderObserver ikut jalan → biaya modal
+     * (SyncOrderPrivateCostAction) otomatis dihapus & income lepas (dihitung
+     * dari status). Akun yang sudah terkirim TIDAK ikut tertarik — itu di luar
+     * kendali sistem, cukup catatan bagi admin.
+     */
+    public function batalkanPesanan(): void
+    {
+        if (! $this->order || $this->order->status === 'cancelled') {
+            return;
+        }
+
+        DB::transaction(function () {
+            $this->order->payments()->where('status', 'pending')->update(['status' => 'expire']);
+            $this->order->update(['status' => 'cancelled', 'paid_at' => null]);
+        });
+
+        $this->reloadOrder();
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('order-updated', message: 'Pesanan dibatalkan. Income & modal otomatis dilepas.');
+    }
+
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
