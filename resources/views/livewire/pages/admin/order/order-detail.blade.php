@@ -228,15 +228,8 @@ Detail Pesanan || lemon
                 <div class="info-row">
                     <span class="info-label">Status</span>
                     <span class="info-value">
-                        @php
-                        $color = 'secondary';
-                        if ($order->status == 'pending') $color = 'warning';
-                        if ($order->status == 'processing') $color = 'info';
-                        if ($order->status == 'paid') $color = 'success';
-                        if ($order->status == 'cancelled') $color = 'danger';
-                        if ($order->status == 'completed') $color = 'primary';
-                        @endphp
-                        <span class="badge bg-{{ $color }}">{{ strtoupper($order->status) }}</span>
+                        @php [$stTeks, $stWarna] = $order->labelStatus(); @endphp
+                        <span class="badge bg-{{ $stWarna }}">{{ $stTeks }}</span>
                         @if ($order->status !== 'cancelled')
                         <button type="button"
                             class="btn btn-sm btn-outline-danger pcek-konfirmasi ms-2"

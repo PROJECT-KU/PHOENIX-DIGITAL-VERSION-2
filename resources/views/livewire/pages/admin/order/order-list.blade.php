@@ -360,29 +360,9 @@ Data Pesanan || lemon
                                 <td>{{ $order->customer->nama }}</td>
                                 <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
                                 <td class="text-center">
-                                    @php
-                                    $color = '';
-                                    if ($order->status == 'draft') {
-                                    $color = 'secondary';
-                                    }
-                                    if ($order->status == 'pending') {
-                                    $color = 'warning';
-                                    }
-                                    if ($order->status == 'processing') {
-                                    $color = 'info';
-                                    }
-                                    if ($order->status == 'paid') {
-                                    $color = 'success';
-                                    }
-                                    if ($order->status == 'cancelled') {
-                                    $color = 'danger';
-                                    }
-                                    if ($order->status == 'completed') {
-                                    $color = 'primary';
-                                    }
-                                    @endphp
-                                    <span class="badge bg-{{ $color }}">
-                                        {{ strtoupper($order->status) }}
+                                    @php [$stTeks, $stWarna] = $order->labelStatus(); @endphp
+                                    <span class="badge bg-{{ $stWarna }}">
+                                        {{ $stTeks }}
                                     </span>
                                 </td>
                                 <td>{{ $order->created_at->translatedFormat('d F Y, H:i') }}</td>

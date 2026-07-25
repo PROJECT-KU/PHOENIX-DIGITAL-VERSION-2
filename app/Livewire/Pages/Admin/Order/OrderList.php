@@ -126,7 +126,9 @@ class OrderList extends Component
     public function getOrdersProperty()
     {
         return $this->baseOrderQuery()
-            ->with('customer', 'items')
+            // items.product & uploads dimuat utk Order::labelStatus() (label kerja
+            // jasa) tanpa N+1 per baris.
+            ->with('customer', 'items.product', 'uploads')
             // Jumlah pengecekan plagiasi yang menunggu → penanda di daftar agar
             // admin tak perlu membuka tiap pesanan untuk mencarinya.
             ->withCount(['uploads as pengecekan_menunggu_count' => function ($q) {

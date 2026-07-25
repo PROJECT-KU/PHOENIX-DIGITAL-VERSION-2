@@ -420,4 +420,43 @@ class Order extends Model
             default => '<span class="badge bg-secondary">Unknown</span>',
         };
     }
+
+    /**
+     * Label status untuk DITAMPILKAN di badge (daftar & detail). TIDAK mengubah
+     * kolom `status` di DB — hanya menerjemahkannya agar tidak menyesatkan.
+     *
+     * Untuk order JASA pengecekan yang sudah dibayar tapi BELUM tuntas, "PAID"
+     * membingungkan admin awam (dikira selesai). Diganti label kerja yang jelas:
+     * - masih ada pengecekan menunggu/diproses → "PERLU DIPROSES" (giliran admin)
+     * - belum ada, tapi kuota masih tersisa     → "MENUNGGU CUSTOMER" (giliran customer)
+     * Order non-jasa & status lain tetap seperti semula.
+     *
+     * @return array{0:string,1:string} [teks, warna bootstrap]
+     */
+    public function labelStatus(): array
+    {
+        $map = [
+            'draft' => ['DRAFT', 'secondary'],
+            'pending' => ['PENDING', 'warning'],
+            'paid' => ['PAID', 'success'],
+            'processing' => ['PROCESSING', 'info'],
+            'completed' => ['COMPLETED', 'primary'],
+            'cancelled' => ['CANCELLED', 'danger'],
+        ];
+        $default = $map[$this->status] ?? [strtoupper((string) $this->status), 'secondary'];
+
+        if ($this->butuhUpload()
+            && in_array($this->status, ['paid', 'processing'], true)
+            && ! $this->jasaTuntas()) {
+            $adaPerluDiproses = $this->uploads->contains(
+                fn ($u) => in_array($u->status, ['menunggu', 'diproses'], true)
+            );
+
+            return $adaPerluDiproses
+                ? ['PERLU DIPROSES', 'warning']
+                : ['MENUNGGU CUSTOMER', 'info'];
+        }
+
+        return $default;
+    }
 }
