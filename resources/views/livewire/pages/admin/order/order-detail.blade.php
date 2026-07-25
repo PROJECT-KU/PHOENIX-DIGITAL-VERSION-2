@@ -207,6 +207,24 @@ Detail Pesanan || lemon
 
             /* Tombol "Selesaikan Pesanan" jangan menggantung sempit → full-width. */
             .pcek .pcek-finish .pcek-btn { width: 100%; }
+
+            /* Semua kartu bagian lebih rapat & tidak makan tempat. */
+            .card > .card-body { padding: 1.15rem !important; }
+
+            /* Tabel Item Pesanan: kompak + kontainer geser berbingkai rapi
+               (8 kolom memang perlu digeser di HP, tapi dibuat serapi mungkin). */
+            .items-table { font-size: .8rem; }
+            .items-table thead th,
+            .items-table tbody td { padding: .45rem .55rem !important; }
+            .table-responsive {
+                border: 1px solid #eef0f6;
+                border-radius: 12px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .table-responsive > .table { margin-bottom: 0; }
+
+            /* Ringkasan biaya: angka tak terlalu besar. */
+            .summary-card .summary-row { font-size: .88rem; }
         }
     </style>
 
