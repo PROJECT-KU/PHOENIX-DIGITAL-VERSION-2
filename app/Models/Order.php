@@ -445,18 +445,29 @@ class Order extends Model
         ];
         $default = $map[$this->status] ?? [strtoupper((string) $this->status), 'secondary'];
 
+        // Order jasa yang admin SUDAH mengunggah minimal 1 hasil (upload
+        // 'selesai') tapi belum tuntas → "SEDANG DIPROSES". Sebelum hasil
+        // pertama diunggah, biarkan tetap "PAID" agar admin tahu ini pesanan
+        // BARU. Konsisten dengan tab "Pengecekan Berjalan".
         if ($this->butuhUpload()
             && in_array($this->status, ['paid', 'processing'], true)
-            && ! $this->jasaTuntas()) {
-            $adaPerluDiproses = $this->uploads->contains(
-                fn ($u) => in_array($u->status, ['menunggu', 'diproses'], true)
-            );
-
-            return $adaPerluDiproses
-                ? ['PERLU DIPROSES', 'warning']
-                : ['MENUNGGU CUSTOMER', 'info'];
+            && $this->uploads->contains(fn ($u) => $u->status === 'selesai')) {
+            return ['SEDANG DIPROSES', 'info'];
         }
 
         return $default;
+    }
+
+    /**
+     * Order JASA pengecekan yang SEDANG dikerjakan: sudah dibayar & admin telah
+     * mengunggah ≥1 hasil (upload 'selesai'), tapi belum tuntas. Dipakai tab
+     * "Pengecekan Berjalan" & labelStatus(). Sebelum hasil pertama diunggah,
+     * order tetap berada di "Pesanan Baru" (PAID) agar dikenali sbg pesanan baru.
+     */
+    public function scopePengecekanBerjalan($query)
+    {
+        return $query->whereIn('status', ['paid', 'processing'])
+            ->whereHas('items.product', fn ($p) => $p->where('butuh_file', 1))
+            ->whereHas('uploads', fn ($u) => $u->where('status', 'selesai'));
     }
 }

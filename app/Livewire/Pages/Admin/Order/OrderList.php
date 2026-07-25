@@ -141,8 +141,14 @@ class OrderList extends Component
                 $q->where('status', 'completed');
             })
             ->when($this->activeTab === 'neworder', function ($q) {
-                // Pesanan baru = belum diproses (menunggu bayar ATAU sudah dibayar)
-                $q->whereIn('status', ['pending', 'paid']);
+                // Pesanan baru = belum diproses (menunggu bayar ATAU sudah dibayar).
+                // Order jasa yang admin SUDAH unggah ≥1 hasil pindah ke tab
+                // "Pengecekan Berjalan", jadi dikeluarkan dari sini.
+                $q->whereIn('status', ['pending', 'paid'])
+                    ->whereDoesntHave('uploads', fn ($u) => $u->where('status', 'selesai'));
+            })
+            ->when($this->activeTab === 'berjalan', function ($q) {
+                $q->pengecekanBerjalan();
             })
             ->when($this->activeTab === 'cancelled', function ($q) {
                 $q->where('status', 'cancelled');
@@ -235,7 +241,9 @@ class OrderList extends Component
             // berubah sesuai data yang ditampilkan saat difilter/dicari.
             'tabCounts' => [
                 'all' => $this->baseOrderQuery()->where('status', '!=', 'draft')->count(),
-                'neworder' => $this->baseOrderQuery()->whereIn('status', ['pending', 'paid'])->count(),
+                'neworder' => $this->baseOrderQuery()->whereIn('status', ['pending', 'paid'])
+                    ->whereDoesntHave('uploads', fn ($u) => $u->where('status', 'selesai'))->count(),
+                'berjalan' => $this->baseOrderQuery()->pengecekanBerjalan()->count(),
                 'processing' => $this->baseOrderQuery()->where('status', 'processing')->count(),
                 'completed' => $this->baseOrderQuery()->where('status', 'completed')->count(),
                 'cancelled' => $this->baseOrderQuery()->where('status', 'cancelled')->count(),

@@ -221,6 +221,12 @@ Data Pesanan || lemon
                     <span>Pesanan Baru</span>
                     <span class="tab-count">{{ $tabCounts['neworder'] }}</span>
                 </button>
+                <button type="button" class="customer-glossy-tab @if ($activeTab === 'berjalan') active @endif"
+                    wire:click="setTab('berjalan')">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span>Pengecekan Berjalan</span>
+                    <span class="tab-count">{{ $tabCounts['berjalan'] }}</span>
+                </button>
                 <button type="button" class="customer-glossy-tab @if ($activeTab === 'processing') active @endif"
                     wire:click="setTab('processing')">
                     <i class="bi bi-hourglass"></i>
