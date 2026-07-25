@@ -176,6 +176,38 @@ Detail Pesanan || lemon
             margin-top: .35rem;
             padding-top: .85rem;
         }
+
+        /* ===== Mobile (HP) — rapikan info-card agar tak sempit ===== */
+        @media (max-width: 575.98px) {
+            .detail-info-card { padding: 1.15rem !important; }
+
+            /* Label di atas, nilai di bawah (rata kiri) — tidak lagi berdesakan
+               di satu baris pada layar sempit. */
+            .detail-info-card .info-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: .15rem;
+                padding: .5rem 0;
+            }
+            .detail-info-card .info-label { font-size: .78rem; }
+            .detail-info-card .info-value {
+                text-align: left;
+                width: 100%;
+                font-size: .9rem;
+                min-width: 0;
+            }
+            /* Nilai berupa flex (status + tombol batal, chip diskon) → rata kiri
+               & boleh membungkus rapi. */
+            .detail-info-card .info-value.d-flex {
+                justify-content: flex-start !important;
+            }
+            /* Header lebih ringkas di HP. */
+            .fixed-header-card .card-body { padding: 1.15rem !important; }
+            .header-action .btn { width: 100%; }
+
+            /* Tombol "Selesaikan Pesanan" jangan menggantung sempit → full-width. */
+            .pcek .pcek-finish .pcek-btn { width: 100%; }
+        }
     </style>
 
     <div class="row g-4 mb-4">
