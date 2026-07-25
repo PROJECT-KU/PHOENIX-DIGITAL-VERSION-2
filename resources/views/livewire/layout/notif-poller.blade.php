@@ -40,14 +40,25 @@
             });
             const notif = (teks) => {
                 if (!('Notification' in window) || Notification.permission !== 'granted') return;
+                const opts = {
+                    body: teks,
+                    icon: '/icons/apple-touch-icon.png',
+                    badge: '/icons/apple-touch-icon.png',
+                    tag: 'phoenix-admin',   // popup baru menggantikan yang lama, tidak menumpuk
+                    renotify: true,
+                    requireInteraction: true, // bertahan sampai diklik/ditutup — biar admin ngeh
+                };
+                // PWA terpasang (khususnya Android) MELARANG `new Notification()` —
+                // wajib lewat service worker. Pakai SW bila ada (berfungsi di PWA &
+                // desktop), fallback ke konstruktor biasa bila SW belum siap.
+                if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+                    navigator.serviceWorker.ready
+                        .then((reg) => reg.showNotification('Phoenix Digital', opts))
+                        .catch(() => { try { new Notification('Phoenix Digital', opts); } catch (e) {} });
+                    return;
+                }
                 try {
-                    const n = new Notification('Phoenix Digital', {
-                        body: teks,
-                        icon: '/icons/apple-touch-icon.png',
-                        tag: 'phoenix-admin',   // popup baru menggantikan yang lama, tidak menumpuk
-                        renotify: true,
-                        requireInteraction: true, // bertahan sampai diklik/ditutup — biar admin ngeh
-                    });
+                    const n = new Notification('Phoenix Digital', opts);
                     n.onclick = () => { window.focus(); n.close(); };
                 } catch (e) {}
             };
