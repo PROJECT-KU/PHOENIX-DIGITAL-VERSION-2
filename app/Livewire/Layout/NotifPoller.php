@@ -4,6 +4,7 @@ namespace App\Livewire\Layout;
 
 use App\Models\CustomerMessage;
 use App\Models\Order;
+use App\Models\OrderUpload;
 use App\Models\ProductReview;
 use App\Models\Testimoni;
 use Livewire\Component;
@@ -39,11 +40,18 @@ class NotifPoller extends Component
         $helpdeskBaru = $login && $u->hasPermission('view_customer_message')
             ? CustomerMessage::unread()->count() : 0;
 
+        // Pengecekan plagiasi/AI yang menunggu diproses (mis. customer paket 5x
+        // mengunggah file ke-2). Naiknya angka ini memicu popup + suara "lemon"
+        // di JS notif-poller, jadi admin tahu ada pengecekan baru real-time.
+        $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
+            ? OrderUpload::where('status', 'menunggu')->count() : 0;
+
         return view('livewire.layout.notif-poller', [
             'pesananTokoPaid' => $pesananTokoPaid,
             'testimoniBaru' => $testimoniBaru,
             'ulasanBaru' => $ulasanBaru,
             'helpdeskBaru' => $helpdeskBaru,
+            'pengecekanBaru' => $pengecekanBaru,
             // Badge judul tab "(N) lemon" = jumlah hal baru yg perlu ditindaklanjuti.
             'titleBadge' => $pesananTokoPaid + $testimoniBaru + $ulasanBaru + $helpdeskBaru,
         ]);

@@ -291,6 +291,12 @@ class JasaCekPage extends Component
 
         $this->order->load('uploads');
         $this->segarkanJenisPilihan();
+
+        // Kabari admin ada pengecekan baru (lonceng + Web Push background). Notif
+        // foreground + suara "lemon" saat tab admin terbuka ditangani NotifPoller
+        // yang memantau jumlah pengecekan 'menunggu'. kirim() gagal-aman.
+        \App\Notifications\PengecekanBaru::kirim($this->order);
+
         $this->dispatch('cek-success', message: 'Dokumen berhasil diunggah. Silakan tunggu, hasil akan muncul di halaman ini.');
     }
 

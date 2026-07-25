@@ -12,7 +12,8 @@
         data-orders="{{ (int) $pesananTokoPaid }}"
         data-testimoni="{{ (int) $testimoniBaru }}"
         data-ulasan="{{ (int) $ulasanBaru }}"
-        data-helpdesk="{{ (int) $helpdeskBaru }}"></span>
+        data-helpdesk="{{ (int) $helpdeskBaru }}"
+        data-pengecekan="{{ (int) $pengecekanBaru }}"></span>
     @script
     <script>
         (() => {
@@ -31,12 +32,14 @@
                 testimoni: 'Testimoni baru menunggu moderasi.',
                 ulasan: 'Ulasan produk baru menunggu moderasi.',
                 helpdesk: 'Pesan helpdesk baru masuk.',
+                pengecekan: 'Pengecekan plagiasi baru dari customer — perlu diproses.',
             };
             const bacaCounts = () => ({
                 orders: parseInt(el?.dataset.orders) || 0,
                 testimoni: parseInt(el?.dataset.testimoni) || 0,
                 ulasan: parseInt(el?.dataset.ulasan) || 0,
                 helpdesk: parseInt(el?.dataset.helpdesk) || 0,
+                pengecekan: parseInt(el?.dataset.pengecekan) || 0,
             });
             const notif = (teks) => {
                 if (!('Notification' in window) || Notification.permission !== 'granted') return;
