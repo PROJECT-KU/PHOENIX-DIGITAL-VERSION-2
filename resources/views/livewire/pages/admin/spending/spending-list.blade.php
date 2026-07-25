@@ -214,24 +214,32 @@ Data Pengeluaran || lemon
                                 <td class="fw-bold">{{ $spending->id_transaksi }}</td>
                                 <td>{{ $spending->tanggal_transaksi_formatted }}</td>
                                 <td>{{ $spending->nominal_formatted }}</td>
-                                <td class="text-truncate" style="max-width: 200px;">
-                                    @if ($spending->jenis_pengeluaran === 'pembelian_akun')
-                                    <span class="badge bg-primary-subtle text-primary border border-primary">
-                                        <i class="bi bi-box-seam me-1"></i>{{ $spending->product->nama_akun ?? '—' }}
-                                    </span>
-                                    @else
-                                    {{ Str::limit($spending->deskripsi, 50) }}
-                                    @endif
+                                <td style="max-width: 240px;">
                                     @php $fotoBukti = $spending->images; @endphp
-                                    @if (count($fotoBukti))
-                                    <a href="javascript:void(0)" role="button" class="sp-bukti-trigger d-inline-block ms-1 align-middle position-relative" title="Lihat gambar/bukti"
-                                        data-bukti='@json(collect($fotoBukti)->keys()->map(fn ($i) => route('admin.spending.lampiran', [$spending, $i]))->values())'>
-                                        <img src="{{ route('admin.spending.lampiran', [$spending, 0]) }}" alt="bukti" style="width:26px; height:26px; object-fit:cover; border-radius:6px; border:1px solid #e6e8f2; cursor:zoom-in;">
-                                        @if (count($fotoBukti) > 1)
-                                        <span class="badge bg-primary position-absolute top-0 start-100 translate-middle" style="font-size:.5rem;">+{{ count($fotoBukti) - 1 }}</span>
+                                    {{-- Teks dipotong di span sendiri; thumbnail di luar area
+                                         potong (flex-shrink-0) agar SELALU tampak walau deskripsi
+                                         panjang. Dulu img ikut di dalam td.text-truncate → terpangkas
+                                         overflow:hidden saat deskripsi panjang. --}}
+                                    <div class="d-flex align-items-center gap-1">
+                                        <span class="text-truncate" style="min-width:0;">
+                                            @if ($spending->jenis_pengeluaran === 'pembelian_akun')
+                                            <span class="badge bg-primary-subtle text-primary border border-primary">
+                                                <i class="bi bi-box-seam me-1"></i>{{ $spending->product->nama_akun ?? '—' }}
+                                            </span>
+                                            @else
+                                            {{ Str::limit($spending->deskripsi, 50) }}
+                                            @endif
+                                        </span>
+                                        @if (count($fotoBukti))
+                                        <a href="javascript:void(0)" role="button" class="sp-bukti-trigger flex-shrink-0 d-inline-block align-middle position-relative" title="Lihat gambar/bukti"
+                                            data-bukti='@json(collect($fotoBukti)->keys()->map(fn ($i) => route('admin.spending.lampiran', [$spending, $i]))->values())'>
+                                            <img src="{{ route('admin.spending.lampiran', [$spending, 0]) }}" alt="bukti" style="width:26px; height:26px; object-fit:cover; border-radius:6px; border:1px solid #e6e8f2; cursor:zoom-in;">
+                                            @if (count($fotoBukti) > 1)
+                                            <span class="badge bg-primary position-absolute top-0 start-100 translate-middle" style="font-size:.5rem;">+{{ count($fotoBukti) - 1 }}</span>
+                                            @endif
+                                        </a>
                                         @endif
-                                    </a>
-                                    @endif
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     <span
