@@ -108,6 +108,10 @@ Route::get('/sw.js', \App\Http\Controllers\ServiceWorkerController::class)->name
 
 Route::get('/', Index::class)->name('homepage');
 
+// Cron CADANGAN via HTTP (dipicu layanan eksternal tiap menit) — jaga-jaga bila
+// cron hPanel mati. Token dari config/cron.php; kosong => 404.
+Route::get('/cron/run/{token}', \App\Http\Controllers\CronController::class)->name('cron.run');
+
 // Struk pakai token pendek (tanpa expose UUID)
 Route::get('/s/{token}', [\App\Http\Controllers\OrderReceiptController::class, 'show'])->name('order.receipt');
 
