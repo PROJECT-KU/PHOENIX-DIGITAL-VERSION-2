@@ -157,9 +157,33 @@ class SpendingForm extends Component
      */
     public function updatedTempUpload()
     {
-        $this->validate(['tempUpload.*' => 'nullable|image|max:4096']);
+        $this->resetErrorBag('tempUpload');
 
         foreach ($this->tempUpload as $file) {
+            if (! $file) {
+                continue;
+            }
+
+            $nama = $file->getClientOriginalName();
+
+            // Maks 10 MB/foto (foto HP sering >4 MB). Ditolak dengan PESAN JELAS,
+            // bukan dibuang diam-diam — dulu file besar/format lain hilang tanpa
+            // admin sadar sehingga pengeluaran tersimpan tanpa bukti gambar.
+            if ($file->getSize() > 10 * 1024 * 1024) {
+                $this->addError('tempUpload', "Gambar \"{$nama}\" lebih dari 10 MB — perkecil dulu lalu unggah lagi.");
+
+                continue;
+            }
+
+            // Hanya format yang bisa ditampilkan browser. HEIC/HEIF (foto iPhone)
+            // TIDAK didukung — minta admin ubah ke JPG.
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (! in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'], true)) {
+                $this->addError('tempUpload', "Format \"{$ext}\" tidak didukung. Pakai JPG/PNG (foto iPhone HEIC harap diubah ke JPG dulu).");
+
+                continue;
+            }
+
             $this->fotosBaru[] = $file;
         }
 

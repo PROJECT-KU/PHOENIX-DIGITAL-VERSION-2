@@ -276,7 +276,7 @@
                         style="position:absolute; inset:0; opacity:0; cursor:pointer;">
                     <i class="bi bi-image" style="font-size:1.6rem; color:#7c3aed;"></i>
                     <div class="fw-semibold text-dark" style="font-size:.9rem;">Pilih gambar</div>
-                    <div class="text-muted" style="font-size:.76rem;">Bisa banyak · JPG/PNG · maks 4 MB/foto</div>
+                    <div class="text-muted" style="font-size:.76rem;">Bisa banyak · JPG/PNG · maks 10 MB/foto</div>
                 </div>
                 <!-- Opsi 2: ambil foto langsung dari kamera (HP & laptop via webcam) -->
                 <div class="flex-fill" x-data="spendingCamera()" wire:ignore>
@@ -315,6 +315,7 @@
                 </div>
             </div>
             <div wire:loading wire:target="tempUpload" class="text-primary small mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Mengunggah...</div>
+            @error('tempUpload')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
             @error('tempUpload.*')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
 
             <!-- Galeri semua foto (tersimpan + baru); tiap foto bisa dihapus sendiri -->
