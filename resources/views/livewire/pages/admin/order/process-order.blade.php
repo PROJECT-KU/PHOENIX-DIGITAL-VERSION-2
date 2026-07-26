@@ -336,6 +336,45 @@ Proses Pesanan || lemon
             font-size: 1.6rem;
             color: #f59e0b;
         }
+
+        /* ============ Penyesuaian MOBILE (≤576px) ============ */
+        @media (max-width: 575.98px) {
+            /* Judul & breadcrumb ringkas — breadcrumb PAKSA 1 baris (geser). */
+            h3.gradient-text { font-size: 1.2rem !important; line-height: 1.25 !important; }
+            .breadcrumb-custom { overflow: hidden; max-width: 100%; }
+            .breadcrumb-custom .breadcrumb {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                white-space: nowrap;
+                font-size: .72rem;
+                margin-bottom: 0;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+            .breadcrumb-custom .breadcrumb::-webkit-scrollbar { display: none; }
+            .breadcrumb-custom .breadcrumb-item { white-space: nowrap; }
+
+            /* Card INV & header section: ikon SEJAJAR teks; nomor INV/judul muat. */
+            .order-summary-card > .d-flex.align-items-center,
+            .proc-section > .d-flex.align-items-center { align-items: center; }
+            .proc-section-icon { align-self: center; }
+            .order-summary-card > .d-flex.align-items-center h4 { font-size: 1.05rem; min-width: 0; word-break: break-word; line-height: 1.2; }
+            .proc-section > .d-flex.align-items-center h5 { font-size: 1rem; min-width: 0; }
+
+            /* Kartu section lebih ringkas di HP. */
+            .order-summary-card, .proc-section { padding: 1.15rem !important; }
+
+            /* Selector akun terpilih: teks 1 baris + ellipsis — cegah nama akun
+               tumpang tindih dengan username saat sudah dipilih. */
+            .pa-picker-btn { display: flex; align-items: center; height: auto; min-height: 46px; }
+            #paAccountLabel {
+                flex: 1;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
     </style>
 
     @if (session()->has('error'))

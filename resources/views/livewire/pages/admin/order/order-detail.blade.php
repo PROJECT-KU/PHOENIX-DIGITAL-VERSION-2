@@ -238,6 +238,15 @@ Detail Pesanan || lemon
 
             /* Item Pesanan: dibiarkan seperti semula (tabel biasa, bisa digeser
                horizontal via .table-responsive) sesuai permintaan. */
+            /* Ikon header "Item Pesanan" sejajar vertikal dengan teksnya. */
+            .card > .card-body > .d-flex.align-items-center > i.bi {
+                line-height: 1;
+                display: inline-flex;
+                align-items: center;
+                align-self: center;
+            }
+            /* Harga & Subtotal: "Rp" + angka satu baris (sejajar), tidak wrap. */
+            .items-table .text-end { white-space: nowrap; }
 
             /* Ringkasan biaya: TOTAL jadi KOTAK hijau menonjol — label kecil di
                atas, angka besar di bawah. Rapi & estetik, tak menempel. */
