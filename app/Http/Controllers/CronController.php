@@ -21,23 +21,29 @@ class CronController extends Controller
 
         $log = [];
 
+        // Tugas KRITIS (deteksi bayar QRIS & cancel order kedaluwarsa) dijalankan
+        // LANGSUNG in-process, BUKAN lewat schedule:run. Sebab lewat scheduler,
+        // mutex withoutOverlapping yang NYANGKUT membuat command di-skip DIAM-DIAM
+        // (schedule:run tak melempar error, jadi fallback lama tak terpicu) →
+        // pembayaran QRIS tak terdeteksi walau URL cron dipicu. In-process =
+        // tanpa mutex, DIJAMIN jalan. Idempoten, jadi aman meski juga jalan lewat
+        // cron hPanel.
+        foreach (['qris:cek-pembayaran', 'orders:cancel-expired'] as $cmd) {
+            try {
+                Artisan::call($cmd);
+                $log[] = $cmd.' OK';
+            } catch (\Throwable $e) {
+                $log[] = $cmd.' ERROR: '.$e->getMessage();
+            }
+        }
+
+        // Sisanya (aktivasi promo, pengingat bayar, prune harian, notif task, dsb)
+        // lewat scheduler penuh yang menghormati jadwal masing-masing.
         try {
-            // Jalur normal: scheduler penuh (menghormati jadwal & withoutOverlapping).
             Artisan::call('schedule:run');
             $log[] = 'schedule:run OK';
         } catch (\Throwable $e) {
-            // Sebagian shared host memblokir proc_open di SAPI web — schedule:run
-            // butuh itu untuk men-spawn command. Fallback: jalankan tugas KRITIS
-            // per-menit langsung in-process (tak butuh proc_open).
-            $log[] = 'schedule:run gagal: '.$e->getMessage().' → fallback in-process';
-            foreach (['qris:cek-pembayaran', 'orders:cancel-expired', 'payment:remind'] as $cmd) {
-                try {
-                    Artisan::call($cmd);
-                    $log[] = $cmd.' OK';
-                } catch (\Throwable $e2) {
-                    $log[] = $cmd.' ERROR: '.$e2->getMessage();
-                }
-            }
+            $log[] = 'schedule:run gagal: '.$e->getMessage();
         }
 
         return response(implode("\n", $log)."\n", 200)
