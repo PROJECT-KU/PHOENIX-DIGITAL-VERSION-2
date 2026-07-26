@@ -770,7 +770,11 @@ Proses Pesanan || lemon
                     customClass: { confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel' },
                 }).then(function (r) {
                     if (!r.isConfirmed) { return; }
-                    var el = document.querySelector('[wire\\:id]');
+                    // Ambil komponen yang MEMILIKI form processOrder — BUKAN
+                    // komponen pertama di halaman (dulu keliru mengambil NotifPoller
+                    // di layout, sehingga "Ya, tetap proses" tak berfungsi).
+                    var form = document.querySelector('form[wire\\:submit="processOrder"]');
+                    var el = form ? form.closest('[wire\\:id]') : document.querySelector('[wire\\:id]');
                     var lw = (el && window.Livewire) ? window.Livewire.find(el.getAttribute('wire:id')) : null;
                     if (!lw) { return; }
                     Promise.resolve(lw.set('lunasDikonfirmasi', true)).then(function () {
