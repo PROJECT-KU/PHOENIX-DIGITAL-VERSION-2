@@ -284,6 +284,57 @@ Detail Pesanan || lemon
             .pcek-file-row { flex-wrap: wrap; }
             .pcek-file-row > .badge { margin-top: .45rem; margin-left: 58px; }
             .pcek-file-row .text-muted.d-inline-flex { font-size: .74rem !important; }
+
+            /* ============ POLES DESAIN MOBILE (bersih, modern, ala iOS) ============ */
+            /* Semua kartu: sudut lebih membulat + bayangan lembut seragam. */
+            .card.rounded-4 {
+                border-radius: 20px !important;
+                box-shadow: 0 6px 20px rgba(15, 23, 42, .06) !important;
+            }
+
+            /* Kartu info: latar PUTIH bersih (bukan gradient ungu), border halus,
+               tak lagi terlihat "template". */
+            .detail-info-card {
+                background: #fff !important;
+                border: 1px solid #eef0f6 !important;
+                border-radius: 20px !important;
+                box-shadow: 0 6px 20px rgba(15, 23, 42, .06) !important;
+            }
+            .detail-info-card .info-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 11px;
+                font-size: 1.02rem;
+            }
+
+            /* Baris info gaya iOS-settings: garis TIPIS SOLID (bukan dashed),
+               label KECIL-KAPITAL-muted, nilai tegas & jelas. */
+            .detail-info-card .info-row {
+                border-bottom: 1px solid #f1f5f9;
+                padding: .72rem 0;
+            }
+            .detail-info-card .info-label {
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                font-size: .67rem !important;
+                font-weight: 700;
+                color: #94a3b8;
+                margin-bottom: .1rem;
+            }
+            .detail-info-card .info-value {
+                font-size: .95rem !important;
+                font-weight: 600;
+                color: #1e293b;
+            }
+
+            /* Judul section (h5) seragam & proporsional di HP. */
+            .card-body h5.fw-bold { font-size: 1.02rem; }
+
+            /* Ikon kotak header section (Pengecekan/Item) tak terlalu besar. */
+            .pcek .pcek-head-ic { width: 40px; height: 40px; border-radius: 12px; font-size: 1.15rem; }
+
+            /* Kartu item (hasil konversi tabel) selaras dgn kartu lain. */
+            .items-table tbody tr { border-radius: 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, .05); }
         }
     </style>
 
