@@ -244,13 +244,14 @@ Detail Pesanan || lemon
             .summary-card .summary-row { font-size: .9rem; gap: 10px; }
             .summary-card .summary-total {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: center;
+                text-align: center;
                 gap: 3px;
                 background: #ecfdf5;
                 border: 1px solid #d1fae5;
                 border-radius: 14px;
                 border-top: none !important;
-                padding: 13px 16px !important;
+                padding: 14px 16px !important;
                 margin-top: 12px;
             }
             .summary-card .summary-total > span:first-child {
@@ -278,11 +279,18 @@ Detail Pesanan || lemon
                 align-self: flex-start;
             }
 
-            /* Header file pengecekan: nama & meta (tanggal · ukuran) dapat lebar
-               penuh (tak pecah vertikal), badge status turun rapi di bawahnya. */
-            .pcek-file-row { flex-wrap: wrap; }
-            .pcek-file-row > .badge { margin-top: .45rem; margin-left: 58px; }
+            /* Header file pengecekan: badge status ("Selesai") di ATAS, SEJAJAR
+               ikon (baris 1: ikon kiri, badge kanan); nama file + meta full-width
+               di baris 2. */
+            .pcek-file-row { flex-wrap: wrap; align-items: center; }
+            .pcek-file-row > .pcek-fileic { order: 1; }
+            .pcek-file-row > .badge { order: 2; margin: 0 0 0 auto !important; }
+            .pcek-file-row > .flex-grow-1 { order: 3; width: 100%; margin-top: .55rem; }
             .pcek-file-row .text-muted.d-inline-flex { font-size: .74rem !important; }
+
+            /* Tombol aksi pengecekan (File Customer / Hasil / Ganti) → full-width. */
+            .pcek .pcek-actions { flex-direction: column; align-items: stretch; }
+            .pcek .pcek-actions .pcek-btn { width: 100%; }
 
             /* ============ POLES DESAIN MOBILE (bersih, modern, ala iOS) ============ */
             /* Semua kartu: sudut lebih membulat + bayangan lembut seragam. */
