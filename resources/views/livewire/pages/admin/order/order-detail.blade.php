@@ -211,55 +211,8 @@ Detail Pesanan || lemon
             /* Semua kartu bagian lebih rapat & tidak makan tempat. */
             .card > .card-body { padding: 1.15rem !important; }
 
-            /* Tabel Item Pesanan → KARTU bertumpuk di HP (tak perlu geser
-               horizontal, jauh lebih rapi). Label kolom disuntik via ::before
-               (nth-of-type) — tanpa mengubah markup/tombol aksi. */
-            .items-table { font-size: .84rem; }
-            .table-responsive { overflow-x: visible; border: none; }
-            .items-table thead { display: none; }
-            .items-table tbody tr {
-                display: block;
-                border: 1px solid #eef0f6;
-                border-radius: 14px;
-                padding: 11px 15px;
-                margin-bottom: 12px;
-                background: #fff;
-                box-shadow: 0 2px 10px rgba(15, 23, 42, .04);
-            }
-            .items-table tbody td {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 12px;
-                padding: 7px 0 !important;
-                border: none !important;
-                text-align: right;
-            }
-            .items-table tbody td::before {
-                font-weight: 600;
-                color: #64748b;
-                font-size: .78rem;
-                text-align: left;
-                flex-shrink: 0;
-            }
-            /* Kolom 1 = Produk: nama tampil penuh (blok), tanpa label. */
-            .items-table tbody td:nth-of-type(1) {
-                display: block;
-                text-align: left;
-                border-bottom: 1px dashed #eef0f6 !important;
-                padding-bottom: 9px !important;
-                margin-bottom: 4px;
-                font-size: .95rem;
-            }
-            .items-table tbody td:nth-of-type(2)::before { content: "Jumlah"; }
-            .items-table tbody td:nth-of-type(3)::before { content: "Durasi"; }
-            .items-table tbody td:nth-of-type(4)::before { content: "Harga"; }
-            .items-table tbody td:nth-of-type(5)::before { content: "Subtotal"; }
-            .items-table tbody td:nth-of-type(6)::before { content: "Status"; }
-            .items-table tbody td:nth-of-type(7)::before { content: "Masa Aktif"; }
-            /* Kolom 8 = Aksi: label di baris sendiri, tombol wrap rata kanan. */
-            .items-table tbody td:nth-of-type(8) { flex-wrap: wrap; justify-content: flex-end; }
-            .items-table tbody td:nth-of-type(8)::before { content: "Aksi"; width: 100%; }
+            /* Item Pesanan: dibiarkan seperti semula (tabel biasa, bisa digeser
+               horizontal via .table-responsive) sesuai permintaan. */
 
             /* Ringkasan biaya: TOTAL di-stack (label atas, angka bawah) supaya
                "TOTAL PEMBAYARAN" tak menempel angkanya. */
@@ -332,9 +285,6 @@ Detail Pesanan || lemon
 
             /* Ikon kotak header section (Pengecekan/Item) tak terlalu besar. */
             .pcek .pcek-head-ic { width: 40px; height: 40px; border-radius: 12px; font-size: 1.15rem; }
-
-            /* Kartu item (hasil konversi tabel) selaras dgn kartu lain. */
-            .items-table tbody tr { border-radius: 16px; box-shadow: 0 4px 14px rgba(15, 23, 42, .05); }
         }
     </style>
 
