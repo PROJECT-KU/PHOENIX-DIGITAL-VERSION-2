@@ -211,26 +211,68 @@ Detail Pesanan || lemon
             /* Semua kartu bagian lebih rapat & tidak makan tempat. */
             .card > .card-body { padding: 1.15rem !important; }
 
-            /* Tabel Item Pesanan: kompak + kontainer geser berbingkai rapi
-               (8 kolom memang perlu digeser di HP, tapi dibuat serapi mungkin). */
-            .items-table { font-size: .8rem; }
-            .items-table thead th,
-            .items-table tbody td { padding: .45rem .55rem !important; }
-            .table-responsive {
+            /* Tabel Item Pesanan → KARTU bertumpuk di HP (tak perlu geser
+               horizontal, jauh lebih rapi). Label kolom disuntik via ::before
+               (nth-of-type) — tanpa mengubah markup/tombol aksi. */
+            .items-table { font-size: .84rem; }
+            .table-responsive { overflow-x: visible; border: none; }
+            .items-table thead { display: none; }
+            .items-table tbody tr {
+                display: block;
                 border: 1px solid #eef0f6;
-                border-radius: 12px;
-                -webkit-overflow-scrolling: touch;
+                border-radius: 14px;
+                padding: 11px 15px;
+                margin-bottom: 12px;
+                background: #fff;
+                box-shadow: 0 2px 10px rgba(15, 23, 42, .04);
             }
-            .table-responsive > .table { margin-bottom: 0; }
+            .items-table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 7px 0 !important;
+                border: none !important;
+                text-align: right;
+            }
+            .items-table tbody td::before {
+                font-weight: 600;
+                color: #64748b;
+                font-size: .78rem;
+                text-align: left;
+                flex-shrink: 0;
+            }
+            /* Kolom 1 = Produk: nama tampil penuh (blok), tanpa label. */
+            .items-table tbody td:nth-of-type(1) {
+                display: block;
+                text-align: left;
+                border-bottom: 1px dashed #eef0f6 !important;
+                padding-bottom: 9px !important;
+                margin-bottom: 4px;
+                font-size: .95rem;
+            }
+            .items-table tbody td:nth-of-type(2)::before { content: "Jumlah"; }
+            .items-table tbody td:nth-of-type(3)::before { content: "Durasi"; }
+            .items-table tbody td:nth-of-type(4)::before { content: "Harga"; }
+            .items-table tbody td:nth-of-type(5)::before { content: "Subtotal"; }
+            .items-table tbody td:nth-of-type(6)::before { content: "Status"; }
+            .items-table tbody td:nth-of-type(7)::before { content: "Masa Aktif"; }
+            /* Kolom 8 = Aksi: label di baris sendiri, tombol wrap rata kanan. */
+            .items-table tbody td:nth-of-type(8) { flex-wrap: wrap; justify-content: flex-end; }
+            .items-table tbody td:nth-of-type(8)::before { content: "Aksi"; width: 100%; }
 
-            /* Ringkasan biaya: angka tak terlalu besar. */
-            .summary-card .summary-row { font-size: .88rem; }
-            .summary-card .summary-total { font-size: .95rem; }
-            .summary-card .summary-total span,
-            .summary-card .summary-row span { white-space: nowrap; }
+            /* Ringkasan biaya: TOTAL di-stack (label atas, angka bawah) supaya
+               "TOTAL PEMBAYARAN" tak menempel angkanya. */
+            .summary-card .summary-row { font-size: .9rem; gap: 10px; }
+            .summary-card .summary-total {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            .summary-card .summary-total .fs-5 { font-size: 1.35rem !important; }
 
             /* Judul "Detail Pesanan …" jangan raksasa memenuhi 2 baris. */
-            .title-wrapper .gradient-text { font-size: 1.35rem !important; line-height: 1.25 !important; word-break: break-word; }
+            .title-wrapper .gradient-text { font-size: 1.2rem !important; line-height: 1.25 !important; word-break: break-word; }
 
             /* Header kartu "Pengecekan Plagiasi": badge "N sisa" turun ke bawah
                bila sempit, jadi judul/teks tak terdesak. */
