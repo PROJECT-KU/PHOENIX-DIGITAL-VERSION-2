@@ -537,9 +537,25 @@ class OrderForm extends Component
     // ===================== SAVE =====================
     private function generateOrderNumber(): string
     {
-        $count = Order::count() + 1;
+        // Urutan PER-HARI, konsisten dengan checkout customer (CheckoutPage).
+        // Dulu memakai Order::count()+1 (hitungan GLOBAL sepanjang masa) → nomor
+        // melompat (mis. customer 0001 tapi admin 0037 di hari sama) DAN tanpa
+        // penjaga keunikan sehingga berisiko tabrakan nomor.
+        $date = now()->format('Ymd');
+        $prefix = 'INV-'.$date.'-';
 
-        return 'INV-'.now()->format('Ymd').'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
+        $last = Order::where('order_number', 'like', $prefix.'%')
+            ->orderByDesc('order_number')
+            ->value('order_number');
+
+        $next = $last ? ((int) substr($last, -4)) + 1 : 1;
+
+        do {
+            $number = $prefix.str_pad($next, 4, '0', STR_PAD_LEFT);
+            $next++;
+        } while (Order::where('order_number', $number)->exists());
+
+        return $number;
     }
 
     public function save()
