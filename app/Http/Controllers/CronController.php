@@ -31,7 +31,8 @@ class CronController extends Controller
         foreach (['qris:cek-pembayaran', 'orders:cancel-expired'] as $cmd) {
             try {
                 Artisan::call($cmd);
-                $log[] = $cmd.' OK';
+                $out = trim(Artisan::output());
+                $log[] = $cmd.' OK'.($out !== '' ? ' — '.str_replace("\n", ' | ', $out) : '');
             } catch (\Throwable $e) {
                 $log[] = $cmd.' ERROR: '.$e->getMessage();
             }
