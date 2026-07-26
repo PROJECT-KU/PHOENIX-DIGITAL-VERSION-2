@@ -225,6 +225,23 @@ Detail Pesanan || lemon
 
             /* Ringkasan biaya: angka tak terlalu besar. */
             .summary-card .summary-row { font-size: .88rem; }
+            .summary-card .summary-total { font-size: .95rem; }
+            .summary-card .summary-total span,
+            .summary-card .summary-row span { white-space: nowrap; }
+
+            /* Judul "Detail Pesanan …" jangan raksasa memenuhi 2 baris. */
+            .title-wrapper .gradient-text { font-size: 1.35rem !important; line-height: 1.25 !important; word-break: break-word; }
+
+            /* Header kartu "Pengecekan Plagiasi": badge "N sisa" turun ke bawah
+               bila sempit, jadi judul/teks tak terdesak. */
+            .pcek-head-row { flex-wrap: wrap; }
+            .pcek-head-row > .badge { margin-top: .4rem; margin-left: 60px; }
+
+            /* Header file pengecekan: nama & meta (tanggal · ukuran) dapat lebar
+               penuh (tak pecah vertikal), badge status turun rapi di bawahnya. */
+            .pcek-file-row { flex-wrap: wrap; }
+            .pcek-file-row > .badge { margin-top: .45rem; margin-left: 58px; }
+            .pcek-file-row .text-muted.d-inline-flex { font-size: .74rem !important; }
         }
     </style>
 
@@ -499,7 +516,7 @@ Detail Pesanan || lemon
     <div class="card border-0 shadow-sm rounded-4 mb-4 pcek">
         <div class="card-body p-4">
             {{-- Header --}}
-            <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3 mb-4 pcek-head-row">
                 <div class="pcek-head-ic"><i class="bi bi-shield-check"></i></div>
                 <div class="flex-grow-1" style="min-width:0;">
                     <h5 class="fw-bold mb-0">Pengecekan Plagiasi</h5>
@@ -555,7 +572,7 @@ Detail Pesanan || lemon
 
             @forelse ($order->uploads->sortByDesc('created_at') as $up)
             <div class="pcek-item mb-3" wire:key="adm-up-{{ $up->id }}">
-                <div class="d-flex align-items-start gap-3">
+                <div class="d-flex align-items-start gap-3 pcek-file-row">
                     <div class="pcek-fileic"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="flex-grow-1" style="min-width:0;">
                         <div class="fw-semibold text-dark text-truncate">
