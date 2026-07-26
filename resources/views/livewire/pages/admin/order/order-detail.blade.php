@@ -205,6 +205,31 @@ Detail Pesanan || lemon
             .fixed-header-card .card-body { padding: 1.15rem !important; }
             .header-action .btn { width: 100%; }
 
+            /* Breadcrumb: PAKSA 1 baris (geser horizontal bila perlu), tak turun. */
+            .breadcrumb-custom { overflow: hidden; max-width: 100%; }
+            .breadcrumb-custom .breadcrumb {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                white-space: nowrap;
+                font-size: .72rem;
+                margin-bottom: 0;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+            .breadcrumb-custom .breadcrumb::-webkit-scrollbar { display: none; }
+            .breadcrumb-custom .breadcrumb-item { white-space: nowrap; }
+
+            /* Tombol "Batalkan Pesanan": kotak ringkas sendiri di bawah badge status. */
+            .detail-info-card .info-value .pcek-konfirmasi {
+                display: flex;
+                width: fit-content;
+                margin: .55rem 0 0 0 !important;
+                padding: 7px 14px !important;
+                font-size: .76rem !important;
+                border-radius: 10px;
+                gap: 6px;
+            }
+
             /* Tombol "Selesaikan Pesanan" jangan menggantung sempit → full-width. */
             .pcek .pcek-finish .pcek-btn { width: 100%; }
 
@@ -214,23 +239,44 @@ Detail Pesanan || lemon
             /* Item Pesanan: dibiarkan seperti semula (tabel biasa, bisa digeser
                horizontal via .table-responsive) sesuai permintaan. */
 
-            /* Ringkasan biaya: TOTAL di-stack (label atas, angka bawah) supaya
-               "TOTAL PEMBAYARAN" tak menempel angkanya. */
+            /* Ringkasan biaya: TOTAL jadi KOTAK hijau menonjol — label kecil di
+               atas, angka besar di bawah. Rapi & estetik, tak menempel. */
             .summary-card .summary-row { font-size: .9rem; gap: 10px; }
             .summary-card .summary-total {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 2px;
+                gap: 3px;
+                background: #ecfdf5;
+                border: 1px solid #d1fae5;
+                border-radius: 14px;
+                border-top: none !important;
+                padding: 13px 16px !important;
+                margin-top: 12px;
             }
-            .summary-card .summary-total .fs-5 { font-size: 1.35rem !important; }
+            .summary-card .summary-total > span:first-child {
+                font-size: .72rem !important;
+                text-transform: uppercase;
+                letter-spacing: .04em;
+                font-weight: 700;
+                color: #059669 !important;
+            }
+            .summary-card .summary-total .fs-5 { font-size: 1.55rem !important; }
 
             /* Judul "Detail Pesanan …" jangan raksasa memenuhi 2 baris. */
             .title-wrapper .gradient-text { font-size: 1.2rem !important; line-height: 1.25 !important; word-break: break-word; }
 
-            /* Header kartu "Pengecekan Plagiasi": badge "N sisa" turun ke bawah
-               bila sempit, jadi judul/teks tak terdesak. */
-            .pcek-head-row { flex-wrap: wrap; }
-            .pcek-head-row > .badge { margin-top: .4rem; margin-left: 60px; }
+            /* Header kartu "Pengecekan Plagiasi": rapi — ikon & judul kiri, badge
+               "N sisa" di kanan-ATAS sejajar; deskripsi lebih kecil. */
+            .pcek-head-row { flex-wrap: nowrap; align-items: flex-start; gap: 12px !important; }
+            .pcek .pcek-head-ic { align-self: flex-start; }
+            .pcek-head-row .flex-grow-1 { min-width: 0; }
+            .pcek-head-row .flex-grow-1 h5 { font-size: 1rem; }
+            .pcek-head-row .flex-grow-1 small { font-size: .72rem; line-height: 1.35; }
+            .pcek-head-row > .badge {
+                margin: 2px 0 0 auto;
+                flex-shrink: 0;
+                align-self: flex-start;
+            }
 
             /* Header file pengecekan: nama & meta (tanggal · ukuran) dapat lebar
                penuh (tak pecah vertikal), badge status turun rapi di bawahnya. */
@@ -285,6 +331,9 @@ Detail Pesanan || lemon
 
             /* Ikon kotak header section (Pengecekan/Item) tak terlalu besar. */
             .pcek .pcek-head-ic { width: 40px; height: 40px; border-radius: 12px; font-size: 1.15rem; }
+
+            /* Kartu file pengecekan: sudut & bayangan lembut, seragam iOS. */
+            .pcek .pcek-item { border-radius: 16px; box-shadow: 0 2px 12px rgba(15, 23, 42, .05); }
         }
     </style>
 
