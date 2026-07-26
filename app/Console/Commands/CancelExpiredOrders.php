@@ -58,20 +58,34 @@ class CancelExpiredOrders extends Command
                         continue;
                     }
 
-                    // PENGAMAN: sebelum membatalkan order QRIS, tanyakan sekali lagi
-                    // ke penyedia. Bila customer ternyata sudah membayar (mis. tepat
-                    // di menit kedaluwarsa), tandai LUNAS — jangan dibatalkan.
-                    if ($order->payment_method === 'qris_dinamis' && $order->qris_trx_id
-                        && $qris->checkStatus($order) === 'paid') {
-                        $order->update(['status' => 'paid', 'paid_at' => now()]);
-                        $order->payments()->where('status', 'pending')->update(['status' => 'settlement']);
-                        $diselamatkan++;
-                        Log::info('QRIS: order '.$order->order_number.' hampir dibatalkan tapi ternyata sudah dibayar → paid.');
+                    // Order QRIS yang QR-nya PERNAH dibuat (punya qris_trx_id) =
+                    // mungkin sudah dibayar. Tanyakan penyedia:
+                    if ($order->payment_method === 'qris_dinamis' && $order->qris_trx_id) {
+                        if ($qris->checkStatus($order) === 'paid') {
+                            // Sudah dibayar → tandai LUNAS, jangan dibatalkan.
+                            $order->update(['status' => 'paid', 'paid_at' => now()]);
+                            $order->payments()->where('status', 'pending')->update(['status' => 'settlement']);
+                            $diselamatkan++;
+                            Log::info('QRIS: order '.$order->order_number.' hampir dibatalkan tapi ternyata sudah dibayar → paid.');
+
+                            continue;
+                        }
+
+                        // KRITIS: checkStatus BUKAN 'paid' bisa FALSE-NEGATIVE —
+                        // qris_trx_id kadang menunjuk invoice yang SALAH bila QR
+                        // di-generate ulang, sehingga penyedia menjawab "belum bayar"
+                        // padahal uang SUDAH masuk. Karena QR sudah pernah dibuat,
+                        // JANGAN batalkan otomatis (dulu ini membatalkan order yang
+                        // sudah terbayar). Biarkan pending; admin batalkan manual bila
+                        // yakin abandoned. Lebih baik pending daripada cancel salah.
+                        Log::warning('QRIS: order '.$order->order_number.' kedaluwarsa & checkStatus≠paid tetapi punya qris_trx_id → TIDAK dibatalkan otomatis (cegah cancel order terbayar).');
 
                         continue;
                     }
 
-                    // Tandai QRIS yang masih pending sebagai expire, lalu batalkan order.
+                    // Sampai sini hanya: order tanpa qris_trx_id (QR tak pernah dibuat /
+                    // checkout ditinggalkan = pasti belum bayar) atau metode non-QRIS →
+                    // aman dibatalkan.
                     $order->payments()->where('status', 'pending')->update(['status' => 'expire']);
                     $order->update(['status' => 'cancelled']);
                     $count++;
