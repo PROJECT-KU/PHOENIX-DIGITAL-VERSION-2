@@ -3,8 +3,11 @@
     <style>
         /* Gambar produk terkait ("Mungkin Anda juga suka"): tampilkan UTUH,
            jangan ke-crop. Override object-fit:cover dari public-custom-styles.css
-           (berkas build tak ikut deploy). Konsisten dgn gambar utama (contain). */
-        .rel-thumb img { object-fit: contain !important; padding: 12px; }
+           (berkas build tak ikut deploy). mix-blend-mode:multiply membuat latar
+           PUTIH bawaan gambar (mis. Gemini Advance, Office 365) menyatu ke bg
+           kartu — seragam dengan gambar utama & kartu shop. */
+        .rel-thumb { background: var(--ph-grad-soft); }
+        .rel-thumb img { object-fit: contain !important; padding: 12px; mix-blend-mode: multiply; }
 
         /* ===== Daftar fitur produk (pecahan dari deskripsi ber-"✅") =====
            Sengaja inline di blade, bukan di public-custom-styles.css: berkas di
