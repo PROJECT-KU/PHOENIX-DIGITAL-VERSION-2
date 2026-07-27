@@ -135,7 +135,13 @@ Moderasi Ulasan Produk || lemon
                                         <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </td>
-                                <td class="text-start text-truncate" style="max-width: 260px;">{{ $item->ulasan }}</td>
+                                <td class="text-start text-truncate review-read-trigger" style="max-width: 260px; cursor: pointer;"
+                                    title="Klik untuk baca ulasan lengkap"
+                                    data-ulasan="{{ $item->ulasan }}"
+                                    data-nama="{{ $item->nama }}"
+                                    data-produk="{{ $item->product->nama_akun ?? '—' }}"
+                                    data-rating="{{ (int) $item->rating }}"
+                                    data-tanggal="{{ $item->created_at->translatedFormat('d M Y, H:i') }}">{{ $item->ulasan }}</td>
                                 <td class="text-nowrap">{{ $item->created_at->translatedFormat('d M Y, H:i') }}</td>
                                 <td>
                                     @if ($item->status === 'pending')
@@ -203,6 +209,33 @@ Moderasi Ulasan Produk || lemon
         },
         buttonsStyling: false
     };
+
+    // Popup baca ulasan LENGKAP (sel isi ulasan di tabel dipotong). Di-bind
+    // sekali via guard agar tak dobel saat Livewire re-render.
+    if (!window.__reviewReadBound) {
+        window.__reviewReadBound = true;
+        const escReview = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        document.body.addEventListener('click', function (event) {
+            const trg = event.target.closest('.review-read-trigger');
+            if (!trg) return;
+
+            let stars = '';
+            const rating = parseInt(trg.getAttribute('data-rating') || '0', 10);
+            for (let i = 1; i <= 5; i++) stars += (i <= rating ? '★' : '☆');
+
+            Swal.fire({
+                title: escReview(trg.getAttribute('data-produk')),
+                html: '<div style="text-align:left;">'
+                    + '<div style="color:#f59e0b;font-size:1.15rem;letter-spacing:2px;margin-bottom:.35rem;">' + stars + '</div>'
+                    + '<div style="font-weight:700;color:#1e293b;">' + escReview(trg.getAttribute('data-nama')) + '</div>'
+                    + '<div style="font-size:.78rem;color:#94a3b8;margin-bottom:.7rem;">' + escReview(trg.getAttribute('data-tanggal')) + '</div>'
+                    + '<div style="color:#334155;line-height:1.65;white-space:pre-wrap;word-break:break-word;">' + escReview(trg.getAttribute('data-ulasan')) + '</div>'
+                    + '</div>',
+                confirmButtonText: 'Tutup',
+                ...glossyConfigReview
+            });
+        });
+    }
 
     document.addEventListener('livewire:navigated', function() {
         document.body.addEventListener('click', function(event) {
