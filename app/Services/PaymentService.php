@@ -224,9 +224,20 @@ class PaymentService
                 'expired_at' => now()->addMinutes(30),
             ]);
 
+            // Simpan JUGA qris_trx_id & qris_request_date pada ORDER. Sebelumnya
+            // alur customer TIDAK menyetnya → order.qris_trx_id NULL → poller
+            // server (whereNotNull qris_trx_id) & pengaman cancel-expired tak bisa
+            // mengenali pembayaran → order terbayar TAK TERDETEKSI / malah
+            // dibatalkan. Kini konsisten dgn alur admin (QrisService::createInvoice).
+            $requestDate = ! empty($result['data']['qris_request_date'])
+                ? \Illuminate\Support\Carbon::parse($result['data']['qris_request_date'])->toDateString()
+                : now()->toDateString();
+
             $order->update([
                 'payment_gateway' => 'interactive',
                 'payment_reference' => $result['data']['qris_invoiceid'],
+                'qris_trx_id' => $result['data']['qris_invoiceid'],
+                'qris_request_date' => $requestDate,
             ]);
 
             return [
