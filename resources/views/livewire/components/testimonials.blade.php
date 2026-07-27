@@ -5,6 +5,10 @@
         .tm-ok i{font-size:.95rem;flex:0 0 auto}
         .tm-anon{display:flex;align-items:flex-start;gap:.55rem;cursor:pointer;font-size:.86rem;color:#4b4640;line-height:1.4;margin:0}
         .tm-anon input[type=checkbox]{width:1.05rem;height:1.05rem;margin-top:.12rem;flex:0 0 auto;accent-color:#f59e0b;cursor:pointer}
+        /* Popup "Tulis Testimoni" bisa di-scroll bila kontennya lebih tinggi dari
+           layar (mis. di HP). Scoped ke modal testimoni saja; tutup tetap bisa
+           via tombol X, klik area luar (backdrop), atau tombol Escape. */
+        .fs-modal.tm-form-modal{max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
     </style>
     <section id="testimoni" class="tm-section section">
         <div class="container">
