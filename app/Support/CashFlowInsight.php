@@ -310,11 +310,13 @@ class CashFlowInsight
             ->where('o.status', 'completed')
             ->whereRaw('YEAR(COALESCE(o.paid_at, o.created_at)) = ?', [$tahun])
             ->whereNotNull('oi.product_id')
+            // omzet = penjualan SETELAH promo (alokasi diskon order proporsional),
+            // bukan harga asli. Diskon promo tersimpan di orders.total_discount.
             ->selectRaw('oi.product_id,
                 MAX(oi.product_name) as nama,
                 COUNT(DISTINCT oi.order_id) as freq,
                 COALESCE(SUM(oi.quantity), 0) as qty,
-                COALESCE(SUM(oi.subtotal), 0) as omzet')
+                COALESCE(ROUND(SUM(oi.subtotal * (o.subtotal - o.total_discount) / NULLIF(o.subtotal, 0))), 0) as omzet')
             ->groupBy('oi.product_id')
             ->orderByDesc('freq')
             ->orderByDesc('omzet')

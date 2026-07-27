@@ -353,13 +353,35 @@ class CashFlowList extends Component
             }
         };
 
-        // Penjualan per produk (pesanan yang sudah dibayar, pada periode terpilih)
-        $penjualanRows = OrderItem::query()
-            ->whereHas('order', function ($q) use ($paidStatuses, $applyOrderPeriode) {
-                $q->whereIn('status', $paidStatuses);
-                $applyOrderPeriode($q);
-            })
-            ->selectRaw('order_items.product_id, COALESCE(SUM(order_items.subtotal), 0) as penjualan')
+        // Penjualan per produk (pesanan yang sudah dibayar, pada periode terpilih).
+        //
+        // PENTING: order_items.subtotal = harga NORMAL (harga asli × durasi),
+        // BELUM dipotong promo. Diskon (flash sale / kode promo / poin / referral)
+        // disimpan di level ORDER pada orders.total_discount — bukan di item. Maka
+        // diskon HARUS dialokasikan proporsional ke tiap item, supaya omset =
+        // yang BENAR-BENAR dibayar customer (setelah promo), bukan harga asli.
+        //   net item = item.subtotal × (order.subtotal − total_discount) / order.subtotal
+        // Karena tiap order menyimpan diskonnya sendiri saat checkout, promo yang
+        // berbeda-beda tiap periode otomatis tepat.
+        $penjualanQuery = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->whereNull('orders.deleted_at')
+            ->whereIn('orders.status', $paidStatuses);
+
+        if ($usesSiklus) {
+            $penjualanQuery->whereRaw('COALESCE(orders.paid_at, orders.created_at) >= ?', [$siklusMulai])
+                ->whereRaw('COALESCE(orders.paid_at, orders.created_at) < ?', [$siklusAkhir]);
+        } else {
+            if ($tahun) {
+                $penjualanQuery->whereRaw('YEAR(COALESCE(orders.paid_at, orders.created_at)) = ?', [$tahun]);
+            }
+            if ($bulan) {
+                $penjualanQuery->whereRaw('MONTH(COALESCE(orders.paid_at, orders.created_at)) = ?', [$bulan]);
+            }
+        }
+
+        $penjualanRows = $penjualanQuery
+            ->selectRaw('order_items.product_id, COALESCE(ROUND(SUM(order_items.subtotal * (orders.subtotal - orders.total_discount) / NULLIF(orders.subtotal, 0))), 0) as penjualan')
             ->groupBy('order_items.product_id')
             ->get();
 
