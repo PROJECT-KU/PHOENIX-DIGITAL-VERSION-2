@@ -1,6 +1,11 @@
 <main class="main">
     @include('partials.media-produk-style')
     <style>
+        /* Gambar produk terkait ("Mungkin Anda juga suka"): tampilkan UTUH,
+           jangan ke-crop. Override object-fit:cover dari public-custom-styles.css
+           (berkas build tak ikut deploy). Konsisten dgn gambar utama (contain). */
+        .rel-thumb img { object-fit: contain !important; padding: 12px; }
+
         /* ===== Daftar fitur produk (pecahan dari deskripsi ber-"✅") =====
            Sengaja inline di blade, bukan di public-custom-styles.css: berkas di
            public/build/ tidak ikut git pull sehingga gaya bisa tertinggal di
