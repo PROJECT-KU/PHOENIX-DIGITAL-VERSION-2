@@ -60,14 +60,22 @@ class ProcessOrder extends Component
     public bool $lunasDikonfirmasi = false;
 
     /**
-     * Order QRIS yang belum punya pembayaran 'settlement' → berisiko akun
-     * dikirim sebelum uang benar-benar masuk. Hanya untuk qris_dinamis; jalur
-     * pembayaran lain (mis. transfer manual) tidak diganggu.
+     * Order QRIS yang belum lunas → berisiko akun dikirim sebelum uang masuk.
+     * Hanya untuk qris_dinamis; jalur pembayaran lain tidak diganggu.
+     *
+     * Order yang statusnya SUDAH paid/processing/completed dianggap lunas —
+     * apa pun sumber penandaannya (poller, SQL manual, dsb) — jadi TIDAK
+     * diperingatkan lagi (dulu keliru: hanya cek payment 'settlement' sehingga
+     * order paid yang payment-nya belum settlement tetap kena peringatan).
      */
     public function getBelumLunasProperty(): bool
     {
         $o = $this->order;
         if (! $o || $o->payment_method !== 'qris_dinamis') {
+            return false;
+        }
+
+        if (in_array($o->status, ['paid', 'processing', 'completed'], true)) {
             return false;
         }
 
