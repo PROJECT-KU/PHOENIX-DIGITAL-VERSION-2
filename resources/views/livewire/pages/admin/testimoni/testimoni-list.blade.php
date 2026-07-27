@@ -216,12 +216,20 @@ Data Testimoni || lemon
                                         <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </td>
-                                <td class="text-truncate testimoni-read-trigger" style="max-width: 200px; cursor: pointer;"
-                                    title="Klik untuk baca pesan lengkap"
-                                    data-pesan="{{ $item->pesan }}"
-                                    data-nama="{{ $item->nama }}"
-                                    data-peran="{{ $item->peran ?: '-' }}"
-                                    data-rating="{{ (int) $item->rating }}">{{ $item->pesan }}</td>
+                                <td style="max-width: 200px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-truncate" style="min-width:0;">{{ $item->pesan }}</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-primary p-1 flex-shrink-0 testimoni-read-trigger"
+                                            title="Baca pesan lengkap"
+                                            data-pesan="{{ $item->pesan }}"
+                                            data-nama="{{ $item->nama }}"
+                                            data-peran="{{ $item->peran ?: '-' }}"
+                                            data-rating="{{ (int) $item->rating }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
                                 <td class="text-center">
                                     @php
                                         $stMap = [

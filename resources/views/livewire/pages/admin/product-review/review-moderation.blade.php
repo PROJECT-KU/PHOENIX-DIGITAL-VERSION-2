@@ -135,13 +135,21 @@ Moderasi Ulasan Produk || lemon
                                         <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </td>
-                                <td class="text-start text-truncate review-read-trigger" style="max-width: 260px; cursor: pointer;"
-                                    title="Klik untuk baca ulasan lengkap"
-                                    data-ulasan="{{ $item->ulasan }}"
-                                    data-nama="{{ $item->nama }}"
-                                    data-produk="{{ $item->product->nama_akun ?? '—' }}"
-                                    data-rating="{{ (int) $item->rating }}"
-                                    data-tanggal="{{ $item->created_at->translatedFormat('d M Y, H:i') }}">{{ $item->ulasan }}</td>
+                                <td class="text-start" style="max-width: 260px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="text-truncate" style="min-width:0;">{{ $item->ulasan }}</span>
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-primary p-1 flex-shrink-0 review-read-trigger"
+                                            title="Baca ulasan lengkap"
+                                            data-ulasan="{{ $item->ulasan }}"
+                                            data-nama="{{ $item->nama }}"
+                                            data-produk="{{ $item->product->nama_akun ?? '—' }}"
+                                            data-rating="{{ (int) $item->rating }}"
+                                            data-tanggal="{{ $item->created_at->translatedFormat('d M Y, H:i') }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
                                 <td class="text-nowrap">{{ $item->created_at->translatedFormat('d M Y, H:i') }}</td>
                                 <td>
                                     @if ($item->status === 'pending')
