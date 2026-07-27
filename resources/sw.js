@@ -34,6 +34,16 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // biarkan lintas-origin apa adanya
 
+  // Endpoint UNDUHAN berkas (file customer, hasil pengecekan, lampiran) — JANGAN
+  // dicegat SW. Bila navigasi unduhan lewat SW, respons attachment sering GAGAL
+  // ter-download di HP/iOS (di desktop kebetulan jalan). Dibiarkan ke jaringan
+  // langsung supaya browser menangani unduhan secara native.
+  if (/^\/admin\/pesanantoko\/upload\//.test(url.pathname)
+    || /^\/admin\/spending\/[^/]+\/lampiran/.test(url.pathname)
+    || /^\/cek\/[^/]+\/hasil/.test(url.pathname)) {
+    return;
+  }
+
   // Navigasi halaman: network-first, fallback ke halaman offline.
   if (req.mode === 'navigate') {
     event.respondWith(
