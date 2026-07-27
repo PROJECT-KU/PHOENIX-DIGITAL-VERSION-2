@@ -216,7 +216,12 @@ Data Testimoni || lemon
                                         <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </td>
-                                <td class="text-truncate" style="max-width: 200px;">{{ $item->pesan }}</td>
+                                <td class="text-truncate testimoni-read-trigger" style="max-width: 200px; cursor: pointer;"
+                                    title="Klik untuk baca pesan lengkap"
+                                    data-pesan="{{ $item->pesan }}"
+                                    data-nama="{{ $item->nama }}"
+                                    data-peran="{{ $item->peran ?: '-' }}"
+                                    data-rating="{{ (int) $item->rating }}">{{ $item->pesan }}</td>
                                 <td class="text-center">
                                     @php
                                         $stMap = [
@@ -308,6 +313,32 @@ Data Testimoni || lemon
         },
         buttonsStyling: false
     };
+
+    // Popup baca pesan testimoni LENGKAP (sel pesan dipotong). Di-bind sekali
+    // via guard agar tak dobel saat Livewire re-render. Tombol Edit tetap ada.
+    if (!window.__testimoniReadBound) {
+        window.__testimoniReadBound = true;
+        const escTesti = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        document.body.addEventListener('click', function (event) {
+            const trg = event.target.closest('.testimoni-read-trigger');
+            if (!trg) return;
+
+            let stars = '';
+            const rating = parseInt(trg.getAttribute('data-rating') || '0', 10);
+            for (let i = 1; i <= 5; i++) stars += (i <= rating ? '★' : '☆');
+
+            Swal.fire({
+                title: escTesti(trg.getAttribute('data-nama')),
+                html: '<div style="text-align:left;">'
+                    + (rating > 0 ? '<div style="color:#f59e0b;font-size:1.15rem;letter-spacing:2px;margin-bottom:.35rem;">' + stars + '</div>' : '')
+                    + '<div style="font-size:.8rem;color:#94a3b8;margin-bottom:.7rem;">' + escTesti(trg.getAttribute('data-peran')) + '</div>'
+                    + '<div style="color:#334155;line-height:1.65;white-space:pre-wrap;word-break:break-word;">' + escTesti(trg.getAttribute('data-pesan')) + '</div>'
+                    + '</div>',
+                confirmButtonText: 'Tutup',
+                ...glossyConfigTestimoni
+            });
+        });
+    }
 
     document.addEventListener('livewire:navigated', function() {
         document.body.addEventListener('click', function(event) {
