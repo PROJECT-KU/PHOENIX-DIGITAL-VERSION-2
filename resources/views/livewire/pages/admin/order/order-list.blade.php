@@ -362,6 +362,13 @@ Data Pesanan || lemon
                                         <span>{{ $order->pengecekan_menunggu_count }} cek menunggu</span>
                                     </span>
                                     @endif
+                                    @if ($order->pengecekan_diproses_count > 0)
+                                    <span class="badge bg-info text-white mt-1 pcek-badge"
+                                        title="{{ $order->pengecekan_diproses_count }} pengecekan sedang dikerjakan admin (belum diunggah hasilnya)">
+                                        <i class="bi bi-gear-wide-connected"></i>
+                                        <span>{{ $order->pengecekan_diproses_count }} sedang dicek</span>
+                                    </span>
+                                    @endif
                                 </td>
                                 <td>{{ $order->customer->nama }}</td>
                                 <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>

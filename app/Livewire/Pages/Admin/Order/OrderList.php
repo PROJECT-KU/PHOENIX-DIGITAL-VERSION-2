@@ -129,11 +129,17 @@ class OrderList extends Component
             // items.product & uploads dimuat utk Order::labelStatus() (label kerja
             // jasa) tanpa N+1 per baris.
             ->with('customer', 'items.product', 'uploads')
-            // Jumlah pengecekan plagiasi yang menunggu → penanda di daftar agar
-            // admin tak perlu membuka tiap pesanan untuk mencarinya.
-            ->withCount(['uploads as pengecekan_menunggu_count' => function ($q) {
-                $q->where('status', 'menunggu');
-            }])
+            // Penanda pengecekan di daftar agar admin tak perlu membuka tiap
+            // pesanan: yang MENUNGGU (belum disentuh) & yang SEDANG DIPROSES
+            // (admin sudah klik "Mulai Proses", belum diunggah hasilnya).
+            ->withCount([
+                'uploads as pengecekan_menunggu_count' => function ($q) {
+                    $q->where('status', 'menunggu');
+                },
+                'uploads as pengecekan_diproses_count' => function ($q) {
+                    $q->where('status', 'diproses');
+                },
+            ])
             ->when($this->activeTab === 'processing', function ($q) {
                 $q->where('status', 'processing');
             })
