@@ -143,19 +143,20 @@ class ModalList extends Component
             ->where('tanggal', '<', $start)->sum('nominal');
         $terpakaiSebelum = (float) $this->terpakaiOperasionalQuery()
             ->where('tanggal_transaksi', '>=', $mulaiBulan)
-            ->where('tanggal_transaksi', '<', $start)->sum('nominal');
+            ->where('tanggal_transaksi', '<', $start)->sum('nominal')
+            + $this->terpakaiPrivateRange($mulaiBulan, $start);
 
         return $setoranSebelum - $terpakaiSebelum;
     }
 
     /**
-     * KAS NYATA yang keluar dari modal operasional = semua Spending "lainnya" +
+     * Pengeluaran KAS (Spending) yang mengurangi modal = semua "lainnya" +
      * "pembelian_akun" berstatus "completed" — TERMASUK produk private.
      *
      * Beli/restock akun private itu uang sungguhan keluar dari rekening, jadi
-     * WAJIB ikut mengurangi Sisa (agar Sisa = saldo rekening). Modal private
-     * "untuk omset" tetap terpisah: dihitung teoritis per-order di Rincian dan
-     * TIDAK menyentuh Sisa — sesuai keterangan pada halaman.
+     * WAJIB ikut. (Dulu private dikecualikan di sini — itulah asal selisih.)
+     * Modal private per-order teoritis dijumlahkan TERPISAH via
+     * terpakaiPrivateRange(); keduanya adalah biaya nyata yang berbeda.
      *
      * Khusus "pembelian_akun": hanya yang berstatus "completed" yang mengurangi
      * modal. Yang masih "pending" belum dianggap uang keluar, jadi tidak ikut.
@@ -169,6 +170,20 @@ class ModalList extends Component
                         ->where('status', 'completed');
                 });
         });
+    }
+
+    /**
+     * Total modal akun PRIVATE (kategori "Modal Akun Private" di cash flow,
+     * per order = satuan x qty) pada rentang tanggal. Ikut mengurangi modal
+     * karena ini biaya nyata penyediaan akun private/jasa per pesanan.
+     */
+    private function terpakaiPrivateRange($start, $endExclusive): float
+    {
+        return (float) \App\Models\CashFlow::where('category', 'Modal Akun Private')
+            ->where('type', 'expense')
+            ->where('transaction_date', '>=', $start)
+            ->where('transaction_date', '<', $endExclusive)
+            ->sum('amount');
     }
 
     /**
@@ -487,9 +502,11 @@ class ModalList extends Component
 
         $saldoAwal = $this->hitungSaldoAwal($bulan, $tahun);
         $setoranBulan = (float) Modal::totalOperasional($bulan, $tahun);
+        $mulaiPeriode = Carbon::create($tahun, $bulan, 1)->startOfMonth()->toDateString();
         $akhirPeriode = Carbon::create($tahun, $bulan, 1)->addMonthNoOverflow()->startOfMonth()->toDateString();
         $terpakai = (float) $this->terpakaiOperasionalQuery()
-            ->whereYear('tanggal_transaksi', $tahun)->whereMonth('tanggal_transaksi', $bulan)->sum('nominal');
+            ->whereYear('tanggal_transaksi', $tahun)->whereMonth('tanggal_transaksi', $bulan)->sum('nominal')
+            + $this->terpakaiPrivateRange($mulaiPeriode, $akhirPeriode);
         $danaTersedia = $saldoAwal + $setoranBulan;
         $sisa = $danaTersedia - $terpakai;
 
