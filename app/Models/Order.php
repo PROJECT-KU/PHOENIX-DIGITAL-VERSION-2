@@ -336,6 +336,25 @@ class Order extends Model
         return $batas !== null && now()->greaterThan($batas);
     }
 
+    /**
+     * Waktu berkas (unggahan customer + hasil admin) dihapus otomatis = 7 hari
+     * SETELAH link /cek kedaluwarsa (yakni kuota habis + 24 jam + 7 hari).
+     * Null bila kuota belum habis. Menghemat storage — dokumen pribadi tak
+     * disimpan lebih lama dari yang perlu.
+     */
+    public function berkasHapusAt(): ?\Illuminate\Support\Carbon
+    {
+        return $this->cekLinkKadaluarsaAt()?->copy()->addDays(7);
+    }
+
+    /** Berkas jasa sudah waktunya dihapus? (link kedaluwarsa DAN sudah lewat 7 hari). */
+    public function berkasHarusDihapus(): bool
+    {
+        $batas = $this->berkasHapusAt();
+
+        return $batas !== null && now()->greaterThan($batas);
+    }
+
     /** Masih boleh mengunggah pengecekan baru (jenis apa pun)? */
     public function bisaUploadPengecekan(): bool
     {

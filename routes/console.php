@@ -115,3 +115,11 @@ Schedule::command('points:reset-yearly')->yearlyOn(1, 1, '00:15');
  * selamanya. Draft yang berhasil jadi pesanan sudah dihapus saat checkout.
  */
 Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
+
+/**
+ * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
+ * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).
+ * Hemat storage; baris pengecekan (persentase) tetap disimpan. Per-jam agar
+ * penghapusan dekat dengan waktu tepatnya per pesanan (bukan sekali sehari).
+ */
+Schedule::command('jasa:hapus-berkas-kadaluarsa')->hourly()->withoutOverlapping();
