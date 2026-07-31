@@ -506,6 +506,16 @@ Detail Pesanan || lemon
         $jKuota = $order->kuotaPengecekan();
         $jTerpakai = $order->terpakaiPengecekan();
         $jSisa = $order->sisaKuota();
+        // Bonus kuota dari admin (kompensasi bila customer terkendala).
+        $jBonus = $order->bonusKuotaPerJenis();
+        $jBonusTotal = $order->bonusKuota();
+        $jJenisBonus = $this->jenisBonusTersedia();
+        $jLabelJenis = [
+            'ai' => 'Cek AI',
+            'plagiasi' => 'Cek Plagiasi',
+            'parafrase' => 'Parafrase',
+            'pengecekan' => 'Pengecekan',
+        ];
     @endphp
     <style>
         /* Ikon sejajar teks di seluruh blok pengecekan */
@@ -528,6 +538,39 @@ Detail Pesanan || lemon
         .pcek .pcek-finish b { display: block; font-size: .85rem; color: #4338ca; }
         .pcek .pcek-finish small { display: block; font-size: .76rem; color: #64748b; line-height: 1.45; margin-top: 2px; }
         .pcek .pcek-finish small b { display: inline; color: #4338ca; }
+        /* Panel bonus kuota (kompensasi admin) */
+        .pcek .pcek-bonus { padding: 13px 15px; margin-bottom: 16px; border: 1px solid #fde68a; border-radius: 13px; background: linear-gradient(180deg, #fffbeb, #fff); }
+        .pcek .pcek-bonus-head { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; }
+        .pcek .pcek-bonus-ic { width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.02rem; }
+        .pcek .pcek-bonus-ic i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .pcek .pcek-bonus-ic i.bi::before { display: block; line-height: 1; }
+        .pcek .pcek-bonus-head b { display: block; font-size: .85rem; color: #92400e; }
+        .pcek .pcek-bonus-head small { display: block; font-size: .76rem; color: #64748b; line-height: 1.45; margin-top: 2px; }
+        .pcek .pcek-bonus-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+        .pcek .pcek-bonus-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 99px; background: #fef3c7; color: #92400e; font-size: .78rem; font-weight: 700; }
+        .pcek .pcek-bonus-x { width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(180, 83, 9, .12); color: #b45309; display: flex; align-items: center; justify-content: center; font-size: .62rem; cursor: pointer; }
+        .pcek .pcek-bonus-x:hover { background: rgba(180, 83, 9, .25); }
+        .pcek .pcek-bonus-x i.bi { display: flex; line-height: 1; }
+        .pcek .pcek-bonus-form { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #fde68a; }
+        .pcek .pcek-bonus-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .pcek .pcek-bonus-f { flex: 1 1 180px; min-width: 0; }
+        .pcek .pcek-bonus-f.narrow { flex: 0 0 110px; }
+        .pcek .pcek-bonus-f label { display: block; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #94a3b8; margin-bottom: 5px; }
+        .pcek .pcek-bonus-f select, .pcek .pcek-bonus-f input { width: 100%; height: 38px; padding: 0 11px; font-size: .84rem; color: #334155; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; outline: none; transition: border-color .18s, box-shadow .18s; }
+        .pcek .pcek-bonus-f select:focus, .pcek .pcek-bonus-f input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .15); }
+        .pcek .pcek-bonus-err { display: block; margin-top: 5px; font-size: .74rem; color: #dc2626; }
+        .pcek .pcek-bonus-note { display: flex; align-items: flex-start; gap: 7px; margin-top: 10px; font-size: .76rem; color: #b45309; line-height: 1.5; }
+        .pcek .pcek-bonus-note i.bi { flex-shrink: 0; margin-top: .12rem; display: flex; line-height: 1; }
+        .pcek .pcek-bonus-btns { display: flex; gap: 8px; margin-top: 12px; }
+        .pcek .pcek-btn.warn { background: #f59e0b; color: #fff; }
+        .pcek .pcek-btn.warn:hover { background: #d97706; color: #fff; }
+        .pcek .pcek-bonus-log { margin-top: 11px; padding-top: 10px; border-top: 1px dashed #fde68a; font-size: .75rem; color: #64748b; line-height: 1.6; }
+        .pcek .pcek-bonus-log div { display: flex; gap: 6px; }
+        .pcek .pcek-bonus-log i.bi { flex-shrink: 0; margin-top: .22rem; display: flex; line-height: 1; color: #cbd5e1; }
+        @media (max-width: 479px) {
+            .pcek .pcek-bonus-f.narrow { flex: 1 1 100%; }
+            .pcek .pcek-bonus-btns .pcek-btn { flex: 1; }
+        }
         /* Setelan exclude + catatan customer */
         .pcek .pcek-set { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eef0f6; }
         .pcek .pcek-set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -645,6 +688,122 @@ Detail Pesanan || lemon
                 <div class="progress" style="height:8px; border-radius:99px; background:#f1f5f9;">
                     <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $jKuota > 0 ? round($jTerpakai / $jKuota * 100) : 0 }}%;"></div>
                 </div>
+                @if ($jBonusTotal > 0)
+                <small class="text-muted d-inline-flex align-items-center gap-1 mt-2" style="font-size:.76rem;">
+                    <i class="bi bi-gift"></i> Termasuk <b class="text-warning-emphasis">{{ $jBonusTotal }} bonus</b> dari admin.
+                </small>
+                @endif
+            </div>
+
+            {{-- ===== Bonus kuota (kompensasi bila customer terkendala) =====
+                 Aditif: hanya menambah kuota pengecekan, tidak mengubah total
+                 harga, status pembayaran, maupun cash flow pesanan. --}}
+            <div class="pcek-bonus">
+                <div class="pcek-bonus-head">
+                    <span class="pcek-bonus-ic"><i class="bi bi-gift"></i></span>
+                    <div class="flex-grow-1" style="min-width:0;">
+                        <b>Bonus Kuota Pengecekan</b>
+                        <small>Beri kuota tambahan gratis bila pengecekan bermasalah. Sisa kuota di link customer langsung bertambah.</small>
+                    </div>
+                    @if (! $bonusBuka)
+                    <button type="button" wire:click="bukaBonusKuota" class="pcek-btn warn flex-shrink-0">
+                        <i class="bi bi-plus-lg"></i> Tambah Bonus
+                    </button>
+                    @endif
+                </div>
+
+                {{-- Bonus yang sedang berlaku --}}
+                @if ($jBonusTotal > 0)
+                <div class="pcek-bonus-chips">
+                    @foreach ($jBonus as $bJenis => $bJumlah)
+                    <span class="pcek-bonus-chip" wire:key="bonus-chip-{{ $bJenis }}">
+                        +{{ $bJumlah }} {{ $jLabelJenis[$bJenis] ?? ucfirst($bJenis) }}
+                        <button type="button" class="pcek-bonus-x pcek-konfirmasi" title="Batalkan bonus ini"
+                            data-action="hapusBonusKuota"
+                            data-arg="{{ $bJenis }}"
+                            data-title="Batalkan bonus {{ $jLabelJenis[$bJenis] ?? $bJenis }}?"
+                            data-text="Kuota bonus yang sudah terlanjur dipakai customer tidak bisa ditarik kembali."
+                            data-confirm="Ya, batalkan"
+                            data-icon="warning">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </span>
+                    @endforeach
+                </div>
+                @endif
+
+                {{-- Form pemberian bonus --}}
+                @if ($bonusBuka)
+                <div class="pcek-bonus-form">
+                    <div class="pcek-bonus-grid">
+                        @if (count($jJenisBonus) > 1)
+                        <div class="pcek-bonus-f">
+                            <label for="bonus-jenis">Jenis pemeriksaan</label>
+                            <select id="bonus-jenis" wire:model="bonusJenis">
+                                <option value="">— pilih jenis —</option>
+                                @foreach ($jJenisBonus as $bj)
+                                <option value="{{ $bj }}">{{ $jLabelJenis[$bj] ?? ucfirst($bj) }}</option>
+                                @endforeach
+                            </select>
+                            @error('bonusJenis') <span class="pcek-bonus-err">{{ $message }}</span> @enderror
+                        </div>
+                        @endif
+
+                        <div class="pcek-bonus-f narrow">
+                            <label for="bonus-jumlah">Jumlah</label>
+                            <input type="number" id="bonus-jumlah" min="1" max="20" wire:model="bonusJumlah">
+                            @error('bonusJumlah') <span class="pcek-bonus-err">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="pcek-bonus-f">
+                            <label for="bonus-alasan">Alasan <span style="text-transform:none; font-weight:500;">(opsional)</span></label>
+                            <input type="text" id="bonus-alasan" maxlength="200" placeholder="mis. hasil Turnitin gagal terbaca" wire:model="bonusAlasan">
+                            @error('bonusAlasan') <span class="pcek-bonus-err">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    @if (count($jJenisBonus) === 1)
+                    <div class="pcek-bonus-note">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Bonus diberikan untuk <b>{{ $jLabelJenis[$jJenisBonus[0]] ?? ucfirst($jJenisBonus[0]) }}</b> — satu-satunya jenis pemeriksaan pada pesanan ini.</span>
+                    </div>
+                    @endif
+
+                    @if ($order->status === 'completed')
+                    <div class="pcek-bonus-note">
+                        <i class="bi bi-unlock"></i>
+                        <span>Pesanan ini sudah <b>selesai</b>. Dengan bonus, link customer terbuka kembali agar kuotanya bisa dipakai — status pesanan &amp; omset tidak berubah.</span>
+                    </div>
+                    @endif
+
+                    <div class="pcek-bonus-btns">
+                        <button type="button" wire:click="simpanBonusKuota" wire:loading.attr="disabled" class="pcek-btn warn">
+                            <i class="bi bi-check2"></i> Simpan Bonus
+                        </button>
+                        <button type="button" wire:click="tutupBonusKuota" class="pcek-btn ghost">
+                            <i class="bi bi-x-lg"></i> Batal
+                        </button>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Jejak pemberian bonus --}}
+                @if (! empty($order->riwayatBonusKuota()))
+                <div class="pcek-bonus-log">
+                    @foreach (array_reverse($order->riwayatBonusKuota()) as $log)
+                    <div>
+                        <i class="bi bi-dot"></i>
+                        <span>
+                            <b>{{ ($log['jumlah'] ?? 0) > 0 ? '+' : '' }}{{ $log['jumlah'] ?? 0 }}</b>
+                            {{ $jLabelJenis[$log['jenis'] ?? ''] ?? ($log['jenis'] ?? '-') }}
+                            @if (! empty($log['oleh'])) &middot; oleh {{ $log['oleh'] }} @endif
+                            @if (! empty($log['at'])) &middot; {{ \Illuminate\Support\Carbon::parse($log['at'])->translatedFormat('d M Y H:i') }} @endif
+                            @if (! empty($log['alasan'])) <br><span style="color:#94a3b8;">"{{ $log['alasan'] }}"</span> @endif
+                        </span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
 
             {{-- Penyelesaian manual: dipakai bila customer tak memakai seluruh

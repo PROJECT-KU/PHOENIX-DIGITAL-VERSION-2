@@ -168,6 +168,12 @@
                     <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
                         <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
                     </div>
+                    {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
+                    @if ($order->bonusKuota() > 0)
+                    <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
+                        <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
+                    </div>
+                    @endif
                 </div>
 
                 {{-- Kuota habis: link masih bisa dibuka utk mengunduh hasil, TAPI hanya

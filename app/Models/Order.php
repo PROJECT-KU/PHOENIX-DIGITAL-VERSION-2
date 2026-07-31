@@ -180,9 +180,38 @@ class Order extends Model
      * tiap add-on pemeriksaan menyumbang +1 jenisnya. Add-on non-pemeriksaan
      * (mis. target parafrase) tidak menambah kuota.
      *
-     * @return array<string,int>  mis. ['ai' => 1, 'plagiasi' => 1]
+     * Bonus kuota dari admin (bila ada) ikut ditambahkan di sini — lihat
+     * bonusKuotaPerJenis().
+     *
+     * @return array<string,int> mis. ['ai' => 1, 'plagiasi' => 1]
      */
     public function kuotaPerJenis(): array
+    {
+        $out = $this->kuotaDasarPerJenis();
+
+        /*
+         * Bonus admin hanya MENAMBAH jenis yang memang dibeli — tidak pernah
+         * memunculkan jenis pemeriksaan baru. Dengan begitu jumlah jenis pada
+         * pesanan tetap, sehingga penentuan pemilik unggahan lama (yang kolom
+         * `jenis`-nya null, lihat uploadAktifJenis()) tidak ikut berubah.
+         */
+        foreach ($this->bonusKuotaPerJenis() as $jenis => $jumlah) {
+            if ($jumlah > 0 && isset($out[$jenis])) {
+                $out[$jenis] += $jumlah;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Kuota yang benar-benar DIBELI customer (tanpa bonus admin) — dasar
+     * perhitungan kuotaPerJenis() sekaligus daftar jenis yang boleh diberi
+     * bonus.
+     *
+     * @return array<string,int>
+     */
+    public function kuotaDasarPerJenis(): array
     {
         $out = [];
 
@@ -304,6 +333,143 @@ class Order extends Model
         return $out;
     }
 
+    /*
+     |--------------------------------------------------------------------------
+     | Bonus kuota pengecekan (kompensasi admin)
+     |--------------------------------------------------------------------------
+     | Bila pengecekan bermasalah (hasil keliru, file gagal, dsb), admin bisa
+     | memberi kuota tambahan gratis dari halaman detail pesanan. Nilainya
+     | disimpan sebagai SATU baris JSON di tabel `settings` (satu key per
+     | pesanan) — bukan kolom baru, jadi skema database sama sekali tidak
+     | berubah. Bentuk nilainya:
+     |
+     |   {"kuota":{"ai":2},"riwayat":[{"jenis":"ai","jumlah":2,"alasan":"...",
+     |    "oleh":"Budi","at":"2026-07-31T10:00:00+07:00"}]}
+     |
+     | Pesanan tanpa bonus (yakni semua pesanan lama) tidak punya baris ini dan
+     | berperilaku persis seperti sebelumnya.
+     */
+
+    /** Cache per-instance — kuotaPerJenis() dipanggil berkali-kali per request. */
+    protected ?array $bonusKuotaCache = null;
+
+    /** Key penyimpanan bonus pesanan ini di tabel `settings`. */
+    public function bonusKuotaKey(): string
+    {
+        return 'bonus_kuota_order:'.$this->getKey();
+    }
+
+    /** Isi lengkap bonus: ['kuota' => [...], 'riwayat' => [...]]. */
+    private function bonusKuotaData(): array
+    {
+        if ($this->bonusKuotaCache !== null) {
+            return $this->bonusKuotaCache;
+        }
+
+        $data = json_decode((string) Setting::get($this->bonusKuotaKey(), ''), true);
+        $data = is_array($data) ? $data : [];
+
+        $kuota = [];
+        foreach (is_array($data['kuota'] ?? null) ? $data['kuota'] : [] as $jenis => $jumlah) {
+            if (is_string($jenis) && (int) $jumlah > 0) {
+                $kuota[$jenis] = (int) $jumlah;
+            }
+        }
+
+        return $this->bonusKuotaCache = [
+            'kuota' => $kuota,
+            'riwayat' => is_array($data['riwayat'] ?? null) ? $data['riwayat'] : [],
+        ];
+    }
+
+    /**
+     * Bonus kuota per jenis pemeriksaan. Array kosong = tak pernah diberi bonus.
+     *
+     * @return array<string,int>
+     */
+    public function bonusKuotaPerJenis(): array
+    {
+        return $this->bonusKuotaData()['kuota'];
+    }
+
+    /** Total bonus kuota yang berlaku pada pesanan ini. */
+    public function bonusKuota(): int
+    {
+        return (int) array_sum($this->bonusKuotaPerJenis());
+    }
+
+    /** Jejak pemberian bonus (untuk ditampilkan di halaman admin). */
+    public function riwayatBonusKuota(): array
+    {
+        return $this->bonusKuotaData()['riwayat'];
+    }
+
+    /**
+     * Tambah bonus kuota untuk satu jenis. Mengembalikan total bonus jenis itu
+     * setelah penambahan.
+     */
+    public function tambahBonusKuota(string $jenis, int $jumlah, ?string $alasan = null, ?string $oleh = null): int
+    {
+        $jumlah = max(1, $jumlah);
+        $data = $this->bonusKuotaData();
+
+        $data['kuota'][$jenis] = ($data['kuota'][$jenis] ?? 0) + $jumlah;
+        $data['riwayat'][] = [
+            'jenis' => $jenis,
+            'jumlah' => $jumlah,
+            'alasan' => $alasan,
+            'oleh' => $oleh,
+            'at' => now()->toIso8601String(),
+        ];
+
+        $total = $data['kuota'][$jenis];
+        $this->simpanBonusKuotaData($data);
+
+        return $total;
+    }
+
+    /**
+     * Hapus SELURUH bonus satu jenis (mis. admin salah ketik jumlah). Kuota yang
+     * terlanjur dipakai customer tidak bisa ditarik kembali — sisa kuota memang
+     * dijaga tidak pernah negatif oleh sisaKuotaJenis().
+     */
+    public function hapusBonusKuota(string $jenis, ?string $oleh = null): void
+    {
+        $data = $this->bonusKuotaData();
+
+        if (! isset($data['kuota'][$jenis])) {
+            return;
+        }
+
+        $dihapus = $data['kuota'][$jenis];
+        unset($data['kuota'][$jenis]);
+
+        $data['riwayat'][] = [
+            'jenis' => $jenis,
+            'jumlah' => -$dihapus,
+            'alasan' => 'Bonus dibatalkan admin',
+            'oleh' => $oleh,
+            'at' => now()->toIso8601String(),
+        ];
+
+        $this->simpanBonusKuotaData($data);
+    }
+
+    private function simpanBonusKuotaData(array $data): void
+    {
+        $data['kuota'] = array_filter($data['kuota'], fn ($v) => (int) $v > 0);
+        // Riwayat dibatasi agar muat di kolom `settings.value` (TEXT).
+        $data['riwayat'] = array_slice($data['riwayat'], -30);
+
+        if (empty($data['kuota']) && empty($data['riwayat'])) {
+            Setting::where('key', $this->bonusKuotaKey())->delete();
+        } else {
+            Setting::set($this->bonusKuotaKey(), json_encode($data, JSON_UNESCAPED_UNICODE));
+        }
+
+        $this->bonusKuotaCache = null;
+    }
+
     /**
      * Waktu kuota pengecekan HABIS = unggahan (non-batal) TERAKHIR yang mengisi
      * slot terakhir. Null bila pesanan tak berkuota atau masih ada sisa. Dipakai
@@ -359,7 +525,7 @@ class Order extends Model
     public function bisaUploadPengecekan(): bool
     {
         return $this->butuhUpload()
-            && ! in_array($this->status, ['completed', 'cancelled'])
+            && $this->statusBolehUpload()
             && $this->sisaKuota() > 0;
     }
 
@@ -367,8 +533,27 @@ class Order extends Model
     public function bisaUploadJenis(string $jenis): bool
     {
         return $this->butuhUpload()
-            && ! in_array($this->status, ['completed', 'cancelled'])
+            && $this->statusBolehUpload()
             && $this->sisaKuotaJenis($jenis) > 0;
+    }
+
+    /**
+     * Status pesanan mengizinkan unggahan baru?
+     *
+     * Sama dengan aturan lama (selain 'completed'/'cancelled' boleh) dengan
+     * SATU pengecualian: pesanan 'completed' yang diberi BONUS kuota oleh admin.
+     * Pesanan jasa otomatis jadi 'completed' begitu kuota habis & semua hasil
+     * terunggah — padahal justru di titik itulah kendala biasanya ketahuan.
+     * Tanpa pengecualian ini, bonusnya tak akan pernah bisa dipakai customer.
+     * Pesanan 'cancelled' tetap terkunci mutlak.
+     */
+    protected function statusBolehUpload(): bool
+    {
+        return match ($this->status) {
+            'cancelled' => false,
+            'completed' => $this->bonusKuota() > 0,
+            default => true,
+        };
     }
 
     /**

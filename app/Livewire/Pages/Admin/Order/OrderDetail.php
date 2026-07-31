@@ -61,6 +61,17 @@ class OrderDetail extends Component
     /** Dokumen DOCX hasil parafrase yang dikerjakan tim. */
     public $hasilDocxFile;
 
+    // ==== Bonus kuota pengecekan (kompensasi bila customer terkendala) ====
+    /** Form pemberian bonus sedang dibuka? */
+    public bool $bonusBuka = false;
+
+    /** Jenis pemeriksaan yang diberi bonus ('ai' | 'plagiasi' | ...). */
+    public string $bonusJenis = '';
+
+    public $bonusJumlah = 1;
+
+    public string $bonusAlasan = '';
+
     public function mount(Order $order)
     {
         // Auto-update: tandai item yang end_date-nya sudah lewat menjadi 'habis'
@@ -203,6 +214,102 @@ class OrderDetail extends Component
         $this->dispatch('order-updated', message: $this->order->status === 'completed'
             ? 'Pesanan jasa selesai. Omset tercatat di cash flow.'
             : 'Bagian jasa selesai. Item akun masih menunggu pengiriman.');
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Bonus kuota pengecekan
+     |--------------------------------------------------------------------------
+     | Murni tambahan: hanya menyentuh pesanan JASA dan tidak mengubah status,
+     | total, maupun cash flow pesanan. Nilainya disimpan lewat Order::
+     | tambahBonusKuota() (baris JSON di tabel `settings`, tanpa kolom baru),
+     | dan sisi customer di /cek otomatis ikut bertambah karena halaman itu
+     | membaca kuota dari Order::kuotaPengecekan()/sisaKuotaJenis().
+     */
+
+    /** Jenis pemeriksaan yang boleh diberi bonus = yang memang dibeli customer. */
+    public function jenisBonusTersedia(): array
+    {
+        return array_keys($this->order?->kuotaDasarPerJenis() ?? []);
+    }
+
+    public function bukaBonusKuota(): void
+    {
+        $this->pastikanBolehBonus();
+
+        $tersedia = $this->jenisBonusTersedia();
+
+        $this->bonusBuka = true;
+        // Pesanan satu jenis: langsung terpilih, pemilihnya tak perlu tampil.
+        $this->bonusJenis = count($tersedia) === 1 ? $tersedia[0] : '';
+        $this->bonusJumlah = 1;
+        $this->bonusAlasan = '';
+        $this->resetErrorBag(['bonusJenis', 'bonusJumlah', 'bonusAlasan']);
+    }
+
+    public function tutupBonusKuota(): void
+    {
+        $this->bonusBuka = false;
+        $this->bonusJenis = '';
+        $this->bonusJumlah = 1;
+        $this->bonusAlasan = '';
+        $this->resetErrorBag(['bonusJenis', 'bonusJumlah', 'bonusAlasan']);
+    }
+
+    public function simpanBonusKuota(): void
+    {
+        $this->pastikanBolehBonus();
+
+        $tersedia = $this->jenisBonusTersedia();
+
+        $this->validate([
+            'bonusJenis' => ['required', 'in:'.implode(',', $tersedia)],
+            'bonusJumlah' => ['required', 'integer', 'min:1', 'max:20'],
+            'bonusAlasan' => ['nullable', 'string', 'max:200'],
+        ], [
+            'bonusJenis.required' => 'Pilih dulu jenis pemeriksaan yang diberi bonus.',
+            'bonusJenis.in' => 'Jenis pemeriksaan itu tidak ada pada pesanan ini.',
+            'bonusJumlah.required' => 'Isi jumlah bonus kuotanya.',
+            'bonusJumlah.integer' => 'Jumlah bonus harus berupa angka.',
+            'bonusJumlah.min' => 'Jumlah bonus minimal 1.',
+            'bonusJumlah.max' => 'Jumlah bonus maksimal 20 sekali beri.',
+            'bonusAlasan.max' => 'Alasan maksimal 200 karakter.',
+        ]);
+
+        $jumlah = (int) $this->bonusJumlah;
+
+        $this->order->tambahBonusKuota(
+            $this->bonusJenis,
+            $jumlah,
+            $this->bonusAlasan !== '' ? $this->bonusAlasan : null,
+            auth()->user()?->name,
+        );
+
+        $this->tutupBonusKuota();
+        $this->reloadOrder();
+        $this->dispatch('order-updated', message: 'Bonus '.$jumlah.' kuota ditambahkan. Kuota di link customer langsung bertambah.');
+    }
+
+    /** Batalkan seluruh bonus satu jenis (mis. salah ketik jumlah). */
+    public function hapusBonusKuota(string $jenis): void
+    {
+        $this->pastikanBolehBonus();
+
+        $this->order->hapusBonusKuota($jenis, auth()->user()?->name);
+
+        $this->reloadOrder();
+        $this->dispatch('order-updated', message: 'Bonus kuota dibatalkan.');
+    }
+
+    /** Hanya untuk pesanan jasa & pengguna ber-izin ubah pesanan toko. */
+    private function pastikanBolehBonus(): void
+    {
+        abort_unless(
+            $this->order
+                && $this->order->butuhUpload()
+                && auth()->user()?->hasPermission('edit_pemesanantoko'),
+            403
+        );
     }
 
     /** Muat ulang order beserta relasi (dipakai aksi pengecekan). */
