@@ -10,13 +10,22 @@ class PromoService
 {
     /**
      * Calculate total discount dari semua promo yang berlaku
+     *
+     * @param  float|null  $kodePromoSubtotal  Basis nilai untuk KODE PROMO manual bila
+     *                                         berbeda dari subtotal $cart. Dipakai form
+     *                                         pesanan admin: item paket bundling tidak
+     *                                         masuk $cart (dikecualikan dari flash sale /
+     *                                         auto promo) tapi tetap dihitung oleh kode
+     *                                         promo yang diketik admin. Null = pakai
+     *                                         subtotal $cart seperti semula (checkout publik).
      */
     public function calculateDiscount(
         array $cart,
         ?Customer $customer = null,
         ?string $kodePromo = null,
         bool $useReferral = false,
-        bool $usePoints = false
+        bool $usePoints = false,
+        ?float $kodePromoSubtotal = null
     ): array {
         $subtotal = array_sum(array_column($cart, 'subtotal'));
         $isMember = $customer && $customer->status_member === 'active';
@@ -37,7 +46,7 @@ class PromoService
         if ($kodePromo) {
             $kodePromoDiscount = $this->applyKodePromo(
                 $kodePromo,
-                $subtotal,
+                $kodePromoSubtotal ?? $subtotal,
                 $cart,
                 $customer,
                 $isMember,

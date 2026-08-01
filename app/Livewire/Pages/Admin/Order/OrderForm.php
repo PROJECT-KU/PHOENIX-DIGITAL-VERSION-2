@@ -375,16 +375,21 @@ class OrderForm extends Component
             return;
         }
 
-        // Promo (flash sale/auto/kode) hanya untuk produk satuan
+        // Flash sale / auto promo: HANYA produk satuan (harga paket sudah diskon).
+        // Kode promo manual yang diketik admin: berlaku atas subtotal PENUH,
+        // termasuk item paket — kalau tidak, kode tervalidasi "valid" tapi tidak
+        // memotong apa pun saat pesanan isinya cuma paket.
         $this->promoDiscount = 0;
         $this->appliedPromos = [];
-        if (! empty($promoCart)) {
+        $kodePromoDipakai = $this->promoValid ? $this->kodePromo : null;
+        if (! empty($promoCart) || $kodePromoDipakai) {
             $result = $this->promoService->calculateDiscount(
                 $promoCart,
                 $this->foundCustomer,
-                $this->promoValid ? $this->kodePromo : null,
+                $kodePromoDipakai,
                 false, // referral dihitung terpisah di bawah (atas subtotal penuh)
-                false
+                false,
+                $fullSubtotal // basis kode promo manual = subtotal penuh (incl. paket)
             );
             $this->promoDiscount = $result['promo_discount'];
             $this->appliedPromos = $result['applied_promos'];

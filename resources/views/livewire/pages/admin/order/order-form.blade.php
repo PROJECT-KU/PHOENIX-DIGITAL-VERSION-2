@@ -608,8 +608,9 @@
                                 <span class="st-val" style="color:#059669;">Rp {{ number_format($item['subtotal'] ?? 0, 0, ',', '.') }}</span>
                             </div>
                             <div class="bundle-note mt-2">
-                                <i class="bi bi-shield-check"></i> Harga paket sudah termasuk diskon — <b>flash sale & promo
-                                    tidak berlaku</b> untuk produk di dalam paket. Bonus/ebook diisi saat proses.
+                                <i class="bi bi-shield-check"></i> Harga paket sudah termasuk diskon — <b>flash sale &
+                                    promo otomatis tidak berlaku</b> untuk produk di dalam paket. <b>Kode promo</b> yang
+                                diisi admin tetap memotong total termasuk paket. Bonus/ebook diisi saat proses.
                             </div>
                             @else
                             {{-- ===== PRODUK SATUAN ===== --}}
