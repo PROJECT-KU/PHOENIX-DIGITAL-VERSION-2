@@ -4,6 +4,7 @@ use App\Models\Promo;
 use App\Models\Task;
 use App\Notifications\TaskDeadlineSoon;
 use App\Notifications\TaskOverdue;
+use App\Support\CronHeartbeat;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -123,3 +124,27 @@ Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
  * penghapusan dekat dengan waktu tepatnya per pesanan (bukan sekali sehari).
  */
 Schedule::command('jasa:hapus-berkas-kadaluarsa')->hourly()->withoutOverlapping();
+
+/**
+ * Denyut nadi scheduler — supaya "cron mati" bisa dibuktikan, bukan ditebak.
+ * Dipakai bot Telegram (/cron) & App\Support\CronHeartbeat.
+ *
+ * Sumber dibedakan dari konteks proses: 'cli' = cron asli server (yang harus
+ * menyala tiap menit), 'web' = jaring pengaman lewat trafik pengunjung
+ * (KickScheduler) atau route /cron/run/{token}.
+ *
+ * Aditif & tanpa efek samping: hanya menulis dua kunci cache.
+ */
+Schedule::call(function () {
+    CronHeartbeat::catat(app()->runningInConsole() ? 'cli' : 'web');
+})->everyMinute();
+
+/**
+ * Pastikan webhook bot Telegram terdaftar — supaya setelah deploy bot langsung
+ * hidup begitu .env diisi, tanpa perlu SSH (crontab CLI diblokir di hosting ini),
+ * dan sembuh sendiri bila webhook lepas.
+ *
+ * Idempoten: hanya memanggil Telegram bila URL belum cocok. Bila
+ * TELEGRAM_* belum diisi, langsung berhenti tanpa panggilan keluar apa pun.
+ */
+Schedule::command('telegram:webhook pastikan')->hourly()->withoutOverlapping();

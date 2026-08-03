@@ -12,6 +12,9 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // Webhook Telegram: dipanggil server Telegram, tidak punya sesi/token
+        // CSRF. Keasliannya diverifikasi lewat header secret + daftar chat ID
+        // di TelegramWebhookController.
+        'telegram/webhook',
     ];
 }

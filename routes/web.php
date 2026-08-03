@@ -112,6 +112,12 @@ Route::get('/', Index::class)->name('homepage');
 // cron hPanel mati. Token dari config/cron.php; kosong => 404.
 Route::get('/cron/run/{token}', \App\Http\Controllers\CronController::class)->name('cron.run');
 
+// Webhook bot Telegram (agen operasional admin). Dijaga secret di header +
+// daftar chat ID; token/secret kosong => 404. Dikecualikan dari CSRF di
+// App\Http\Middleware\VerifyCsrfToken, sama pola dengan callback Midtrans.
+Route::post('/telegram/webhook', \App\Http\Controllers\TelegramWebhookController::class)
+    ->name('telegram.webhook');
+
 // Struk pakai token pendek (tanpa expose UUID)
 Route::get('/s/{token}', [\App\Http\Controllers\OrderReceiptController::class, 'show'])->name('order.receipt');
 
