@@ -37,6 +37,12 @@ pesan, atau kredensial akun. Ini mengikuti aturan wajib proyek (lihat `CLAUDE.md
 | `/cache_bersih` | `optimize:clear` | **ya** |
 | `/bantuan` | Daftar perintah | tidak |
 
+Daftar ini juga terdaftar sebagai **menu Telegram** — ketik `/` di chat dan
+semuanya muncul lengkap dengan keterangan. Menu disinkronkan otomatis oleh
+`telegram:webhook pastikan` (tiap jam) dan hanya ditulis ulang bila isinya
+berubah. Menambah aksi baru di `AksiAgen::daftar()` otomatis ikut ke menu —
+tidak perlu mengatur apa pun di @BotFather.
+
 ---
 
 ## Pemasangan

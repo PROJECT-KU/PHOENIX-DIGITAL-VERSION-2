@@ -98,6 +98,32 @@ class AksiAgen
     }
 
     /**
+     * Menu perintah untuk Telegram (setMyCommands) — yang muncul saat pengguna
+     * mengetik "/".
+     *
+     * Memakai `judul` (pendek) sebagai keterangan, bukan `jelas`, supaya
+     * menunya enak dibaca di layar HP. Aksi yang mengubah keadaan ditandai ✏️.
+     *
+     * Batas Telegram: perintah 1–32 karakter (huruf kecil, angka, garis bawah)
+     * dan keterangan 1–256 karakter — seluruh kunci di daftar() sudah memenuhi.
+     *
+     * @return array<int,array{command:string,description:string}>
+     */
+    public static function menuTelegram(): array
+    {
+        $menu = [];
+
+        foreach (self::daftar() as $kunci => $info) {
+            $menu[] = [
+                'command' => $kunci,
+                'description' => $info['judul'].($info['ubah'] ? ' ✏️' : ''),
+            ];
+        }
+
+        return $menu;
+    }
+
+    /**
      * Jalankan satu aksi dari daftar putih.
      *
      * Aksi tak dikenal TIDAK dieksekusi — dikembalikan sebagai pesan bantuan.

@@ -80,6 +80,36 @@ class TelegramClient
         return $this->panggil('getMe');
     }
 
+    /**
+     * Daftarkan menu perintah — yang muncul saat pengguna mengetik "/".
+     *
+     * @param  array<int,array{command:string,description:string}>  $perintah
+     */
+    public function pasangMenu(array $perintah): ?array
+    {
+        return $this->panggil('setMyCommands', ['commands' => $perintah]);
+    }
+
+    /**
+     * Menu perintah yang sedang terpasang.
+     *
+     * Telegram mengembalikan array (bisa kosong), sedangkan panggil()
+     * membungkus non-array jadi ['ok' => true]; karena itu hasilnya
+     * dinormalkan di sini supaya pemanggil cukup membandingkan isi.
+     *
+     * @return array<int,array{command:string,description:string}>
+     */
+    public function menuSekarang(): array
+    {
+        $hasil = $this->panggil('getMyCommands');
+
+        if (! is_array($hasil)) {
+            return [];
+        }
+
+        return array_values(array_filter($hasil, 'is_array'));
+    }
+
     /** Ambil update tertunda (dipakai `telegram:webhook id` untuk mencari chat ID). */
     public function ambilUpdate(int $timeout = 25): ?array
     {

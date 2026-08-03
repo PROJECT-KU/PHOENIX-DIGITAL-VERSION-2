@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Telegram\AgenAi;
+use App\Services\Telegram\AksiAgen;
 use App\Services\Telegram\TelegramClient;
 use Illuminate\Console\Command;
 
@@ -151,6 +152,8 @@ class TelegramWebhook extends Command
 
         $this->info('Webhook terpasang: '.$url);
 
+        $this->pasangMenu($telegram, paksa: true);
+
         if (empty(config('telegram.chat_ids'))) {
             $this->warn('TELEGRAM_ALLOWED_CHAT_IDS masih kosong — bot dalam MODE PENDAFTARAN.');
             $this->line('Kirim pesan ke bot; ia akan membalas chat ID Anda. Isikan ke .env,');
@@ -172,6 +175,12 @@ class TelegramWebhook extends Command
      */
     private function pastikan(TelegramClient $telegram): int
     {
+        // Menu perintah SENGAJA disinkronkan lebih dulu dan terpisah dari
+        // webhook: ia hanya butuh token, tidak butuh HTTPS maupun secret.
+        // Menaruhnya di belakang penjaga HTTPS membuat menu tak pernah
+        // terdaftar di lingkungan non-HTTPS (lokal/staging).
+        $this->pasangMenu($telegram);
+
         $secret = (string) config('telegram.secret');
         $url = (string) ($this->option('url') ?: rtrim((string) config('app.url'), '/').'/telegram/webhook');
 
@@ -198,6 +207,27 @@ class TelegramWebhook extends Command
         $this->info('Webhook dipasang otomatis: '.$url);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Sinkronkan menu perintah Telegram ("/" → daftar perintah).
+     *
+     * Hanya menulis bila isinya berbeda, supaya panggilan per jam dari
+     * scheduler tidak membebani API Telegram tanpa guna.
+     */
+    private function pasangMenu(TelegramClient $telegram, bool $paksa = false): void
+    {
+        $diinginkan = AksiAgen::menuTelegram();
+
+        if (! $paksa && $telegram->menuSekarang() == $diinginkan) {
+            return;
+        }
+
+        if ($telegram->pasangMenu($diinginkan)) {
+            $this->info('Menu perintah disinkronkan ('.count($diinginkan).' perintah).');
+        } else {
+            $this->warn('Gagal menyinkronkan menu perintah.');
+        }
     }
 
     private function tes(TelegramClient $telegram): int
