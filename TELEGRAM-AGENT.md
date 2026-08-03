@@ -32,6 +32,7 @@ pesan, atau kredensial akun. Ini mengikuti aturan wajib proyek (lihat `CLAUDE.md
 | `/qris` | Tanya penyedia QRIS, tandai order yang sudah dibayar | **ya** |
 | `/order_nyangkut` | Daftar order pending lewat batas bayar | tidak |
 | `/order_batalkan` | Batalkan order kedaluwarsa | **ya** |
+| `/trafik` | Kunjungan & pengunjung unik, banding kemarin, halaman terpopuler | tidak |
 | `/antrian` | Jumlah job menunggu & gagal | tidak |
 | `/log` | Error terbanyak 24 jam terakhir | tidak |
 | `/cache_bersih` | `optimize:clear` | **ya** |
@@ -130,6 +131,23 @@ Jadi `/cron` bisa membedakan dua keadaan yang selama ini tampak sama:
   pertolongan pertama, lalu perbaiki cron di hPanel.
 
 Ambang basi 5 menit (`CronHeartbeat::AMBANG_DETIK`).
+
+### Peringatan otomatis
+
+`cron:pantau` berjalan tiap 5 menit dan mengirim pesan Telegram **hanya saat
+keadaan berubah** — mis. cron hPanel mati, atau pulih lagi. Tidak membanjiri chat.
+
+**Bot tidak bisa menyalakan kembali cron yang mati.** Cron hPanel diatur di
+panel Hostinger dan `crontab` CLI diblokir di hosting ini; cron-job.org adalah
+layanan luar dengan akun sendiri. Yang tersedia adalah `/cron_jalankan` —
+menjalankan tugasnya sekarang juga sebagai pertolongan pertama — plus peringatan
+di atas supaya Anda tahu segera, bukan setelah order menumpuk.
+
+**Batas yang perlu disadari:** pemantau ini sendiri berjalan lewat scheduler.
+Kalau SEMUA pemicu mati berbarengan, tidak ada yang menjalankannya, jadi tidak
+ada peringatan yang terkirim. Ia menutup kasus yang paling sering terjadi —
+satu pemicu mati sementara yang lain hidup. Untuk mati total, nyalakan
+notifikasi kegagalan bawaan cron-job.org sebagai lapis terakhir.
 
 ---
 

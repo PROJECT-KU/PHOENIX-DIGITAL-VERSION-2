@@ -63,6 +63,11 @@ class AksiAgen
                 'jelas' => 'Jalankan pembatalan otomatis order yang sudah lewat batas waktu pembayaran.',
                 'ubah' => true,
             ],
+            'trafik' => [
+                'judul' => 'Trafik pengunjung',
+                'jelas' => 'Jumlah kunjungan & pengunjung unik hari ini, perbandingan dengan kemarin, dan halaman terpopuler.',
+                'ubah' => false,
+            ],
             'antrian' => [
                 'judul' => 'Antrian & job gagal',
                 'jelas' => 'Jumlah job menunggu dan job gagal di antrian.',
@@ -142,6 +147,7 @@ class AksiAgen
                 'qris' => self::qris(),
                 'order_nyangkut' => self::orderNyangkut(),
                 'order_batalkan' => self::orderBatalkan(),
+                'trafik' => self::trafik(),
                 'antrian' => self::antrian(),
                 'log' => self::log(),
                 'cache_bersih' => self::cacheBersih(),
@@ -266,6 +272,107 @@ class AksiAgen
     private static function antrian(): string
     {
         return "📦 ANTRIAN\n".str_repeat('─', 24)."\n\n".self::barisAntrian();
+    }
+
+    /**
+     * Trafik pengunjung dari Log Aktivitas.
+     *
+     * Sumbernya TrackRequestPerformance, yang hanya mencatat page view asli
+     * (GET + HTML + sukses) — aset, Livewire, dan endpoint internal dilewati,
+     * jadi angkanya bukan hitungan request mentah.
+     *
+     * Privasi: yang keluar hanya ANGKA agregat + URL halaman sendiri. Alamat IP
+     * dipakai untuk menghitung pengunjung unik tapi TIDAK PERNAH ditampilkan.
+     */
+    private static function trafik(): string
+    {
+        if (! Schema::hasTable('activity_logs')) {
+            return 'Tabel activity_logs belum ada.';
+        }
+
+        $kunjungan = fn ($dari, $sampai) => ActivityLog::where('type', 'visit')
+            ->whereBetween('created_at', [$dari, $sampai]);
+
+        $awalHariIni = today();
+        $sekarang = now();
+        $awalKemarin = today()->subDay();
+
+        $hariIni = (clone $kunjungan($awalHariIni, $sekarang))->count();
+        $unikHariIni = (clone $kunjungan($awalHariIni, $sekarang))->distinct('ip')->count('ip');
+
+        // Dibandingkan pada JAM YANG SAMA, bukan sehari penuh — kalau tidak,
+        // pagi hari akan selalu terlihat "turun drastis" dari kemarin.
+        $kemarinSejam = (clone $kunjungan($awalKemarin, $awalKemarin->copy()->addSeconds($awalHariIni->diffInSeconds($sekarang))))->count();
+
+        $baris = ['📈 TRAFIK PENGUNJUNG', str_repeat('─', 24), ''];
+
+        $baris[] = 'HARI INI (s/d '.$sekarang->format('H:i').')';
+        $baris[] = '• Kunjungan halaman : '.number_format($hariIni, 0, ',', '.');
+        $baris[] = '• Pengunjung unik   : '.number_format($unikHariIni, 0, ',', '.');
+        $baris[] = '• Sedang aktif (5 mnt): '
+            .(clone $kunjungan($sekarang->copy()->subMinutes(5), $sekarang))->distinct('ip')->count('ip');
+
+        $baris[] = '';
+        $baris[] = 'vs KEMARIN (jam yang sama): '.self::selisih($hariIni, $kemarinSejam);
+
+        // 6 jam terakhir — 6 query murah, sengaja tidak memakai fungsi tanggal
+        // khusus MySQL supaya tetap jalan di SQLite (dipakai phpunit).
+        $baris[] = '';
+        $baris[] = '6 JAM TERAKHIR';
+
+        $perJam = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $mulai = $sekarang->copy()->subHours($i)->startOfHour();
+            $perJam[$mulai->format('H')] = (clone $kunjungan($mulai, $mulai->copy()->endOfHour()))->count();
+        }
+
+        $puncak = max(1, max($perJam));
+        foreach ($perJam as $jam => $jml) {
+            $bar = str_repeat('█', (int) round($jml / $puncak * 12));
+            $baris[] = sprintf('%s:00 %-12s %d', $jam, $bar, $jml);
+        }
+
+        $populer = (clone $kunjungan($awalHariIni, $sekarang))
+            ->select('url', DB::raw('COUNT(*) as jumlah'))
+            ->groupBy('url')
+            ->orderByDesc('jumlah')
+            ->limit(5)
+            ->get();
+
+        if ($populer->isNotEmpty()) {
+            $baris[] = '';
+            $baris[] = 'HALAMAN TERPOPULER HARI INI';
+
+            foreach ($populer as $p) {
+                $jalur = parse_url((string) $p->url, PHP_URL_PATH) ?: '/';
+                $jalur = mb_strlen($jalur) > 40 ? mb_substr($jalur, 0, 40).'…' : $jalur;
+                $baris[] = '• '.$p->jumlah.'×  '.$jalur;
+            }
+        }
+
+        $baris[] = '';
+        $baris[] = 'ℹ️ Riwayat kunjungan disimpan 7 hari (activity-logs:prune).';
+
+        return implode("\n", $baris);
+    }
+
+    /** "+12% (naik 34)" / "-8% (turun 12)" / "sama". */
+    private static function selisih(int $sekarang, int $sebelum): string
+    {
+        if ($sebelum === 0) {
+            return $sekarang === 0 ? 'sama (0)' : "+{$sekarang} (kemarin belum ada data)";
+        }
+
+        $delta = $sekarang - $sebelum;
+
+        if ($delta === 0) {
+            return 'sama ('.$sebelum.')';
+        }
+
+        $persen = (int) round($delta / $sebelum * 100);
+
+        return ($delta > 0 ? '📈 +' : '📉 ').$persen.'% ('
+            .($delta > 0 ? 'naik ' : 'turun ').abs($delta).', kemarin '.$sebelum.')';
     }
 
     /**

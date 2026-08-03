@@ -151,3 +151,11 @@ Schedule::call(function () {
  * TELEGRAM_* belum diisi, langsung berhenti tanpa panggilan keluar apa pun.
  */
 Schedule::command('telegram:webhook pastikan')->hourly()->withoutOverlapping();
+
+/**
+ * Peringatkan lewat Telegram saat keandalan pemicu terjadwal BERUBAH
+ * (mis. cron hPanel mati, atau pulih lagi). Hanya mengirim saat berubah.
+ *
+ * Diam total bila bot belum dikonfigurasi.
+ */
+Schedule::command('cron:pantau')->everyFiveMinutes()->withoutOverlapping();

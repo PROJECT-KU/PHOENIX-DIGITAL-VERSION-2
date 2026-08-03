@@ -83,6 +83,31 @@ class CronHeartbeat
     }
 
     /**
+     * Keadaan ringkas, dipakai pemantau untuk mendeteksi PERUBAHAN keadaan.
+     *
+     * 'baru'   = belum ada denyut sama sekali (baru ter-deploy) — jangan
+     *            dijadikan alasan mengirim peringatan.
+     *
+     * @return 'normal'|'http'|'trafik'|'mati'|'baru'
+     */
+    public static function keadaan(): string
+    {
+        if (self::sehat('cli')) {
+            return 'normal';
+        }
+        if (self::sehat('http')) {
+            return 'http';
+        }
+        if (self::sehat('trafik')) {
+            return 'trafik';
+        }
+
+        $pernah = self::terakhir('cli') ?? self::terakhir('http') ?? self::terakhir('trafik');
+
+        return $pernah === null ? 'baru' : 'mati';
+    }
+
+    /**
      * Ringkasan siap-kirim untuk bot Telegram.
      *
      * Kesimpulan di baris pertama sengaja menjawab pertanyaan yang sebenarnya:
