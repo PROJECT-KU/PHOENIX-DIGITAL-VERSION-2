@@ -19,6 +19,11 @@ class CronController extends Controller
         abort_if(empty($expected), 404);
         abort_unless(hash_equals($expected, (string) $token), 404);
 
+        // Tandai bahwa pemicu HTTP (cron-job.org) menembak. Dicatat terpisah
+        // dari pemicu trafik supaya /cron di bot Telegram bisa membedakan
+        // "cadangan andal masih jalan" dari "cuma kebetulan ada pengunjung".
+        \App\Support\CronHeartbeat::catat('http');
+
         $log = [];
 
         // Tugas KRITIS (deteksi bayar QRIS & cancel order kedaluwarsa) dijalankan

@@ -8,14 +8,19 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Denyut nadi scheduler — supaya "cron mati" bisa DIBUKTIKAN, bukan ditebak.
  *
- * Dicatat dari satu Schedule::call di routes/console.php, jadi ikut jalan pada
- * SETIAP pemicu schedule:run, apa pun sumbernya. Sumbernya dibedakan dari
- * konteks proses:
+ * Proyek ini punya TIGA pemicu schedule:run, dan masing-masing mencatat
+ * denyutnya sendiri supaya bisa dibedakan:
  *
- *   - 'cli' => proses konsol = cron asli hPanel/server. INI yang diharapkan
- *              menyala tiap menit. Kalau basi (> 5 menit), cron hPanel mati.
- *   - 'web' => dipicu request HTTP: KickScheduler (trafik pengunjung) atau
- *              route /cron/run/{token}. Ini jaring pengaman, bukan pengganti.
+ *   - 'cli'    => cron asli hPanel (`php artisan schedule:run` dari konsol).
+ *                 Pemicu UTAMA, diharapkan menyala tiap menit.
+ *   - 'http'   => cron-job.org memanggil /cron/run/{token} (CronController).
+ *                 Jaring pengaman ANDAL: jalan tiap menit tanpa peduli trafik.
+ *   - 'trafik' => KickScheduler, menumpang request pengunjung.
+ *                 Jaring pengaman RAPUH: berhenti kalau situs sepi.
+ *
+ * Membedakan 'http' dari 'trafik' itu penting: kalau keduanya dilebur, matinya
+ * cron-job.org akan tertutupi oleh trafik dan tidak pernah terlihat — padahal
+ * situs sepi di malam hari, justru saat order QRIS perlu dicek.
  *
  * Sengaja pakai Cache (driver database) supaya tidak menambah tabel/migrasi.
  * TTL 7 hari: cukup lama untuk mendeteksi mati berhari-hari.
@@ -63,40 +68,65 @@ class CronHeartbeat
         }
     }
 
-    /** True bila cron server (CLI) menyala dalam ambang waktu. */
-    public static function cronServerSehat(): bool
+    /** True bila satu sumber menyala dalam ambang waktu. */
+    public static function sehat(string $sumber): bool
     {
-        $cli = self::terakhir('cli');
+        $waktu = self::terakhir($sumber);
 
-        return $cli !== null && $cli->diffInSeconds(now()) <= self::AMBANG_DETIK;
+        return $waktu !== null && $waktu->diffInSeconds(now()) <= self::AMBANG_DETIK;
     }
 
-    /** Ringkasan siap-kirim untuk bot Telegram. */
+    /** True bila cron server (hPanel) menyala. Pemicu utama. */
+    public static function cronServerSehat(): bool
+    {
+        return self::sehat('cli');
+    }
+
+    /**
+     * Ringkasan siap-kirim untuk bot Telegram.
+     *
+     * Kesimpulan di baris pertama sengaja menjawab pertanyaan yang sebenarnya:
+     * "apakah tugas terjadwal masih dieksekusi, dan seberapa bisa diandalkan?"
+     * — bukan sekadar "cron hPanel hidup/mati".
+     */
     public static function ringkasan(): string
     {
-        $baris = [];
+        $cli = self::sehat('cli');
+        $http = self::sehat('http');
+        $trafik = self::sehat('trafik');
 
-        $cli = self::terakhir('cli');
-        $web = self::terakhir('web');
+        $baris = [match (true) {
+            $cli => '✅ Terjadwal NORMAL — cron hPanel menyala',
+            $http => '⚠️ Cron hPanel MATI — ditopang cron-job.org',
+            $trafik => '🟠 Cron hPanel & cron-job.org MATI — hanya ditopang trafik pengunjung',
+            default => '🔴 TIDAK ADA pemicu yang jalan',
+        }];
 
-        $baris[] = self::cronServerSehat()
-            ? '✅ Cron server (CLI) NORMAL'
-            : '🔴 Cron server (CLI) TIDAK MENYALA';
+        $baris[] = '';
+        $baris[] = ($cli ? '✅' : '🔴').' Cron hPanel: '.self::jarak(self::terakhir('cli'));
+        $baris[] = ($http ? '✅' : '🔴').' cron-job.org: '.self::jarak(self::terakhir('http'));
+        $baris[] = ($trafik ? '✅' : '⚪').' Trafik pengunjung: '.self::jarak(self::terakhir('trafik'));
 
-        $baris[] = '• Cron server terakhir: '.self::jarak($cli);
-        $baris[] = '• Pemicu web terakhir: '.self::jarak($web);
+        $baris[] = '';
+        $baris[] = match (true) {
+            $cli && $http => 'Keduanya sehat. Aman — keduanya boleh jalan bersamaan, '
+                .'tugasnya idempoten dan dikunci withoutOverlapping.',
+            $cli => 'Pemicu utama sehat. cron-job.org sedang tidak menembak — '
+                .'periksa kalau memang sengaja dipasang sebagai cadangan.',
+            $http => 'Tugas terjadwal TETAP jalan tiap menit lewat cron-job.org, jadi order '
+                .'QRIS tetap terdeteksi. Tapi perbaiki cron hPanel — jangan bergantung '
+                .'pada satu jaring pengaman saja.',
+            $trafik => 'RAWAN: hanya jalan saat ada pengunjung. Saat situs sepi (malam hari) '
+                .'pembayaran QRIS tidak akan terdeteksi dan order kedaluwarsa tidak '
+                .'dibatalkan. Perbaiki cron hPanel atau cron-job.org sekarang.',
+            default => 'Tugas terjadwal TIDAK berjalan sama sekali. Pakai /cron_jalankan '
+                .'sebagai pertolongan pertama, lalu perbaiki cron hPanel.',
+        };
 
-        if (! self::cronServerSehat() && $web !== null && $web->diffInSeconds(now()) <= self::AMBANG_DETIK) {
+        if (self::terakhir('cli') === null && self::terakhir('http') === null && self::terakhir('trafik') === null) {
             $baris[] = '';
-            $baris[] = 'ℹ️ Jaring pengaman (trafik/URL cron) masih jalan, jadi tugas terjadwal '
-                .'tetap dieksekusi. Tapi cron hPanel perlu diperbaiki — jaring pengaman '
-                .'berhenti bila situs sepi pengunjung.';
-        }
-
-        if ($cli === null && $web === null) {
-            $baris[] = '';
-            $baris[] = 'ℹ️ Belum ada denyut sama sekali. Wajar bila fitur ini baru dipasang — '
-                .'tunggu sampai scheduler jalan sekali.';
+            $baris[] = 'ℹ️ Belum ada denyut sama sekali — wajar bila fitur ini baru ter-deploy. '
+                .'Tunggu sampai scheduler jalan sekali.';
         }
 
         return implode("\n", $baris);

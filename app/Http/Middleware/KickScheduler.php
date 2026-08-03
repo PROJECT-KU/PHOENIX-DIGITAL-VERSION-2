@@ -42,6 +42,12 @@ class KickScheduler
             $lock = Cache::lock('kick-scheduler', 58);
 
             if ($lock->get()) {
+                // Dicatat terpisah dari cron hPanel & cron-job.org: pemicu ini
+                // RAPUH (berhenti bila situs sepi), jadi /cron di bot Telegram
+                // harus bisa menunjukkannya sebagai penopang darurat, bukan
+                // sebagai tanda "semua aman".
+                \App\Support\CronHeartbeat::catat('trafik');
+
                 Artisan::call('schedule:run');
             }
         } catch (\Throwable $e) {

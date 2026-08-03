@@ -126,17 +126,20 @@ Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
 Schedule::command('jasa:hapus-berkas-kadaluarsa')->hourly()->withoutOverlapping();
 
 /**
- * Denyut nadi scheduler — supaya "cron mati" bisa dibuktikan, bukan ditebak.
+ * Denyut nadi cron hPanel — supaya "cron mati" bisa dibuktikan, bukan ditebak.
  * Dipakai bot Telegram (/cron) & App\Support\CronHeartbeat.
  *
- * Sumber dibedakan dari konteks proses: 'cli' = cron asli server (yang harus
- * menyala tiap menit), 'web' = jaring pengaman lewat trafik pengunjung
- * (KickScheduler) atau route /cron/run/{token}.
+ * HANYA mencatat saat dijalankan dari konsol, yaitu cron asli server. Dua
+ * pemicu lain menandai dirinya sendiri di tempat masing-masing:
+ *   - CronController  -> 'http'   (cron-job.org)
+ *   - KickScheduler   -> 'trafik' (menumpang request pengunjung)
  *
- * Aditif & tanpa efek samping: hanya menulis dua kunci cache.
+ * Aditif & tanpa efek samping: hanya menulis kunci cache.
  */
 Schedule::call(function () {
-    CronHeartbeat::catat(app()->runningInConsole() ? 'cli' : 'web');
+    if (app()->runningInConsole()) {
+        CronHeartbeat::catat('cli');
+    }
 })->everyMinute();
 
 /**
