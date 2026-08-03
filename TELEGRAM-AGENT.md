@@ -30,7 +30,7 @@ pesan, atau kredensial akun. Ini mengikuti aturan wajib proyek (lihat `CLAUDE.md
 | `/cron` | Cron server masih menyala? Kapan terakhir jalan? | tidak |
 | `/cron_jalankan` | Paksa jalankan tugas terjadwal sekarang | **ya** |
 | `/qris` | Tanya penyedia QRIS, tandai order yang sudah dibayar | **ya** |
-| `/order_nyangkut` | Daftar order pending lewat batas bayar | tidak |
+| `/order_nyangkut` | Order menggantung, dipisah: yang akan dibatalkan otomatis vs yang menunggu konfirmasi manual | tidak |
 | `/order_batalkan` | Batalkan order kedaluwarsa | **ya** |
 | `/trafik` | Kunjungan & pengunjung unik, banding kemarin, halaman terpopuler | tidak |
 | `/antrian` | Jumlah job menunggu & gagal | tidak |
@@ -131,6 +131,11 @@ Jadi `/cron` bisa membedakan dua keadaan yang selama ini tampak sama:
   pertolongan pertama, lalu perbaiki cron di hPanel.
 
 Ambang basi 5 menit (`CronHeartbeat::AMBANG_DETIK`).
+
+Denyutnya disimpan di `storage/app/cron-heartbeat.json`, **bukan** di cache —
+sebab `CACHE_STORE=database` dan `optimize:clear` (dipicu `/cache_bersih`) akan
+menghapusnya, membuat `/cron` melapor "tidak ada pemicu yang jalan" secara
+palsu tepat saat Anda sedang menelusuri masalah.
 
 ### Peringatan otomatis
 

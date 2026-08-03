@@ -171,10 +171,10 @@ class AksiAgen
         $baris[] = CronHeartbeat::ringkasan();
         $baris[] = '';
 
-        $nyangkut = self::hitungOrderNyangkut();
-        $baris[] = $nyangkut === 0
-            ? '✅ Tidak ada order nyangkut'
-            : "⚠️ {$nyangkut} order pending lewat batas waktu";
+        [$otomatis, $manual] = self::hitungOrderMenggantung();
+        $baris[] = ($otomatis + $manual) === 0
+            ? '✅ Tidak ada order menggantung'
+            : "⚠️ Order menggantung: {$otomatis} perlu dibatalkan, {$manual} menunggu konfirmasi (/order_nyangkut)";
 
         $baris[] = self::barisAntrian();
         $baris[] = self::barisDatabase();
@@ -230,43 +230,101 @@ class AksiAgen
     }
 
     /**
-     * Order pending yang sudah lewat batas bayar.
+     * Order pending/draft, DIPISAH menurut apakah pembatal otomatis akan
+     * menyentuhnya.
+     *
+     * Pemisahan ini penting: order `transfer`/`qris_statis` tanpa catatan
+     * pembayaran dan tanpa expired_at TIDAK PERNAH dibatalkan otomatis — ia
+     * menunggu konfirmasi admin. Versi pertama menyamaratakan semuanya sebagai
+     * "nyangkut" lalu menyarankan /order_batalkan, yang tidak berbuat apa pun
+     * untuk order jenis itu.
      *
      * Hanya nomor order + metode + umur. TIDAK ada nama/kontak customer.
      */
     private static function orderNyangkut(): string
     {
-        $order = Order::where('status', 'pending')
-            ->where('created_at', '<', now()->subMinutes(30))
+        $orders = Order::whereIn('status', ['pending', 'draft'])
+            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'settlement'))
+            ->with(['payments' => fn ($q) => $q->latest()])
             ->orderByDesc('created_at')
-            ->limit(15)
-            ->get(['order_number', 'payment_method', 'created_at', 'expired_at']);
+            ->limit(60)
+            ->get();
 
-        if ($order->isEmpty()) {
-            return '✅ Tidak ada order pending yang lewat batas waktu.';
+        if ($orders->isEmpty()) {
+            return '✅ Tidak ada order pending/draft yang menggantung.';
         }
 
-        $total = self::hitungOrderNyangkut();
+        [$otomatis, $manual] = $orders->partition(fn ($o) => self::akanDibatalkanOtomatis($o));
 
-        $baris = ["⚠️ ORDER NYANGKUT ({$total})", str_repeat('─', 24), ''];
+        $baris = ['📋 ORDER MENGGANTUNG', str_repeat('─', 24)];
 
-        foreach ($order as $o) {
-            $baris[] = '• '.$o->order_number
-                .' — '.($o->payment_method ?: 'tanpa metode')
-                // locale('id') dipaksa: APP_LOCALE=en (lihat CLAUDE.md).
-                .' — '.$o->created_at->locale('id')->diffForHumans();
-        }
+        $baris[] = '';
+        $baris[] = 'AKAN DIBATALKAN OTOMATIS ('.$otomatis->count().')';
 
-        if ($total > $order->count()) {
+        if ($otomatis->isEmpty()) {
+            $baris[] = '• tidak ada';
+        } else {
+            foreach ($otomatis->take(10) as $o) {
+                $baris[] = '• '.self::barisOrder($o);
+            }
+            if ($otomatis->count() > 10) {
+                $baris[] = '… dan '.($otomatis->count() - 10).' lainnya.';
+            }
             $baris[] = '';
-            $baris[] = '… dan '.($total - $order->count()).' lainnya.';
+            $baris[] = '→ /qris dulu (siapa tahu sudah dibayar), lalu /order_batalkan.';
         }
 
         $baris[] = '';
-        $baris[] = 'Langkah: /qris untuk cek yang sudah dibayar, '
-            .'lalu /order_batalkan untuk membatalkan sisanya.';
+        $baris[] = 'MENUNGGU KONFIRMASI ANDA ('.$manual->count().')';
+
+        if ($manual->isEmpty()) {
+            $baris[] = '• tidak ada';
+        } else {
+            foreach ($manual->take(10) as $o) {
+                $baris[] = '• '.self::barisOrder($o);
+            }
+            if ($manual->count() > 10) {
+                $baris[] = '… dan '.($manual->count() - 10).' lainnya.';
+            }
+            $baris[] = '';
+            $baris[] = '→ Pembayaran manual (transfer/QRIS statis) tanpa batas waktu. '
+                .'/order_batalkan TIDAK menyentuhnya — perlu dicek di admin.';
+        }
 
         return implode("\n", $baris);
+    }
+
+    private static function barisOrder(Order $o): string
+    {
+        return $o->order_number
+            .' — '.($o->payment_method ?: 'tanpa metode')
+            .' ['.$o->status.']'
+            // locale('id') dipaksa: APP_LOCALE=en (lihat CLAUDE.md).
+            .' — '.$o->created_at?->locale('id')->diffForHumans();
+    }
+
+    /**
+     * CERMINAN App\Console\Commands\CancelExpiredOrders.
+     *
+     * Sengaja meniru logikanya, BUKAN menebak, supaya laporan bot tidak
+     * menjanjikan pembatalan yang tak akan terjadi. Kalau kriteria di command
+     * itu berubah, ubah juga di sini.
+     */
+    private static function akanDibatalkanOtomatis(Order $o): bool
+    {
+        if ($o->status === 'draft') {
+            return $o->created_at !== null
+                && $o->created_at->lessThanOrEqualTo(now()->subHours(24));
+        }
+
+        $terakhir = $o->payments->first();
+
+        if ($terakhir && ($terakhir->status === 'expire'
+            || ($terakhir->expired_at && $terakhir->expired_at->lessThanOrEqualTo(now())))) {
+            return true;
+        }
+
+        return $o->expired_at !== null && $o->expired_at->lessThanOrEqualTo(now());
     }
 
     private static function antrian(): string
@@ -465,11 +523,19 @@ class AksiAgen
         }
     }
 
-    private static function hitungOrderNyangkut(): int
+    /**
+     * @return array{0:int,1:int} [akan dibatalkan otomatis, menunggu konfirmasi]
+     */
+    private static function hitungOrderMenggantung(): array
     {
-        return Order::where('status', 'pending')
-            ->where('created_at', '<', now()->subMinutes(30))
-            ->count();
+        $orders = Order::whereIn('status', ['pending', 'draft'])
+            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'settlement'))
+            ->with(['payments' => fn ($q) => $q->latest()])
+            ->get();
+
+        $otomatis = $orders->filter(fn ($o) => self::akanDibatalkanOtomatis($o))->count();
+
+        return [$otomatis, $orders->count() - $otomatis];
     }
 
     private static function hitungError24Jam(): int

@@ -3,7 +3,6 @@
 namespace App\Support;
 
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Denyut nadi scheduler — supaya "cron mati" bisa DIBUKTIKAN, bukan ditebak.
@@ -22,49 +21,72 @@ use Illuminate\Support\Facades\Cache;
  * cron-job.org akan tertutupi oleh trafik dan tidak pernah terlihat — padahal
  * situs sepi di malam hari, justru saat order QRIS perlu dicek.
  *
- * Sengaja pakai Cache (driver database) supaya tidak menambah tabel/migrasi.
- * TTL 7 hari: cukup lama untuk mendeteksi mati berhari-hari.
+ * PENYIMPANAN: berkas JSON di storage/app, BUKAN Cache.
+ *
+ * Versi pertama memakai Cache, dan itu keliru: CACHE_STORE=database, sehingga
+ * `optimize:clear` (dipicu /cache_bersih dari bot) MENGHAPUS denyutnya. Efeknya
+ * /cron langsung melaporkan "TIDAK ADA pemicu yang jalan" — berbohong tepat
+ * saat admin sedang menelusuri masalah. Berkas tidak ikut terhapus
+ * cache:clear, dan tetap tanpa migrasi/tabel baru.
  */
 class CronHeartbeat
 {
     /** Ambang basi: di atas ini cron dianggap tidak menyala. */
     public const AMBANG_DETIK = 300;
 
-    private const TTL_HARI = 7;
-
-    /** Catat satu denyut. Dipanggil dari scheduler; menelan error sendiri. */
+    /** Catat satu denyut. Dipanggil dari pemicu; menelan error sendiri. */
     public static function catat(string $sumber): void
     {
         try {
-            $waktu = now()->toDateTimeString();
+            $data = self::baca();
+            $data[$sumber] = now()->toDateTimeString();
 
-            Cache::put('cron:heartbeat', $waktu, now()->addDays(self::TTL_HARI));
-            Cache::put('cron:heartbeat:'.$sumber, $waktu, now()->addDays(self::TTL_HARI));
+            // LOCK_EX supaya dua pemicu yang menembak bersamaan tidak saling
+            // memotong isi berkas. Kalaupun satu denyut kalah balapan,
+            // dampaknya cuma satu timestamp tertinggal semenit.
+            @file_put_contents(self::berkas(), json_encode($data), LOCK_EX);
         } catch (\Throwable $e) {
-            // Denyut nadi tidak boleh menjatuhkan scheduler.
+            // Denyut nadi tidak boleh menjatuhkan scheduler atau request.
             report($e);
         }
     }
 
-    /** Waktu denyut terakhir untuk satu sumber ('cli'|'web'), null bila belum pernah. */
-    public static function terakhir(?string $sumber = null): ?Carbon
+    /** Waktu denyut terakhir satu sumber ('cli'|'http'|'trafik'), null bila belum pernah. */
+    public static function terakhir(string $sumber): ?Carbon
     {
-        $kunci = $sumber ? 'cron:heartbeat:'.$sumber : 'cron:heartbeat';
+        $nilai = self::baca()[$sumber] ?? null;
 
-        try {
-            $nilai = Cache::get($kunci);
-        } catch (\Throwable $e) {
-            return null;
-        }
-
-        if (! $nilai) {
+        if (! is_string($nilai) || $nilai === '') {
             return null;
         }
 
         try {
             return Carbon::parse($nilai);
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             return null;
+        }
+    }
+
+    private static function berkas(): string
+    {
+        return storage_path('app/cron-heartbeat.json');
+    }
+
+    /** @return array<string,string> */
+    private static function baca(): array
+    {
+        try {
+            $isi = @file_get_contents(self::berkas());
+
+            if ($isi === false || $isi === '') {
+                return [];
+            }
+
+            $data = json_decode($isi, true);
+
+            return is_array($data) ? $data : [];
+        } catch (\Throwable) {
+            return [];
         }
     }
 
