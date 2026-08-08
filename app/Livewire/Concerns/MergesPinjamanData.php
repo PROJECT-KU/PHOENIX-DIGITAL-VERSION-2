@@ -4,6 +4,7 @@ namespace App\Livewire\Concerns;
 
 use App\Models\Loan;
 use App\Models\Pengembalian;
+use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -16,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  * (Peminjaman + Pengembalian) lengkap dengan kolom "Jenis", tidak peduli
  * tab mana yang sedang aktif. Status mengikuti perhitungan otomatis.
  *
- * Komponen pemakai wajib punya properti publik: $search, $bulan, $tahun.
+ * Komponen pemakai wajib punya properti publik: $search, $bulan, $tahun,
+ * $modePeriode ('siklus20' | 'kalender').
  */
 trait MergesPinjamanData
 {
@@ -195,6 +197,15 @@ trait MergesPinjamanData
     {
         $namaBulan = $this->bulan ? ($this->daftarBulan()[(int) $this->bulan] ?? '') : '';
 
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+
+            // locale('id') dipaksa karena APP_LOCALE=en — tanpa itu nama bulan
+            // di judul PDF jadi bahasa Inggris.
+            return $mulai->locale('id')->translatedFormat('d M Y')
+                .' – '.$akhir->copy()->subDay()->locale('id')->translatedFormat('d M Y');
+        }
+
         if ($this->bulan && $this->tahun) {
             return $namaBulan.' '.$this->tahun;
         }
@@ -217,12 +228,9 @@ trait MergesPinjamanData
         $totalQuery = Loan::visibleTo()
             ->select('nama_peminjam', DB::raw('SUM(nominal) as total_pinjaman'));
 
-        if ($this->tahun) {
-            $totalQuery->whereYear('tanggal_peminjam', $this->tahun);
-        }
-        if ($this->bulan) {
-            $totalQuery->whereMonth('tanggal_peminjam', $this->bulan);
-        }
+        // Lewat applyPeriode() supaya kartu total tidak mungkin memakai periode
+        // yang berbeda dari tabelnya — sebelumnya rumusnya disalin di sini.
+        $this->applyPeriode($totalQuery, 'tanggal_peminjam');
 
         return $totalQuery->groupBy('nama_peminjam')
             ->orderByDesc('total_pinjaman')
@@ -273,8 +281,62 @@ trait MergesPinjamanData
         });
     }
 
+    /**
+     * Apakah filter memakai siklus gaji 21-20 (butuh bulan terpilih).
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20' && ! empty($this->bulan);
+    }
+
+    /**
+     * Rentang siklus gaji untuk bulan/tahun terpilih — SATU sumber dengan Cash
+     * Flow, Pengeluaran, Modal, Pemasukan, & Gaji, yaitu setelan
+     * `payroll_cutoff_day` (default tgl 20). Mis. Juli = 21 Jun s/d 20 Jul.
+     *
+     * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon} [mulai, akhirEksklusif]
+     */
+    protected function siklusRange(): array
+    {
+        $tahun = (int) ($this->tahun ?: now()->year);
+        $bulan = (int) $this->bulan;
+
+        return [
+            PeriodeGaji::mulai($bulan, $tahun),
+            PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+        ];
+    }
+
+    /**
+     * Rentang untuk DITAMPILKAN di chip (akhir sudah inklusif), atau [null, null]
+     * bila bukan mode siklus / bulan belum dipilih.
+     *
+     * @return array{0: ?\Illuminate\Support\Carbon, 1: ?\Illuminate\Support\Carbon}
+     */
+    protected function siklusTampil(): array
+    {
+        if (! $this->usesSiklus()) {
+            return [null, null];
+        }
+
+        [$mulai, $akhirEks] = $this->siklusRange();
+
+        return [$mulai, $akhirEks->copy()->subDay()];
+    }
+
     protected function applyPeriode($query, string $kolomTanggal): void
     {
+        // Kolom tanggal di kedua tabel bertipe DATE, jadi dibandingkan sebagai
+        // string tanggal — sama dengan cara Cash Flow memfilter.
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+
+            $query->where($kolomTanggal, '>=', $mulai->toDateString())
+                ->where($kolomTanggal, '<', $akhir->toDateString());
+
+            return;
+        }
+
         if ($this->tahun) {
             $query->whereYear($kolomTanggal, $this->tahun);
         }
