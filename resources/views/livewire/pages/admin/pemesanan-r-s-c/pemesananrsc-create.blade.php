@@ -11,7 +11,7 @@ Tambah Pesanan RSC || lemon
                         @php
                         $breadcrumbs = [
                         ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                        ['name' => 'Data Pemesanan RSC', 'url' => route('admin.pesananrsc.index')],
+                        ['name' => 'Data Pemesanan', 'url' => route('admin.pesananrsc.index')],
                         ['name' => 'Tambah Data'],
                         ];
                         @endphp
