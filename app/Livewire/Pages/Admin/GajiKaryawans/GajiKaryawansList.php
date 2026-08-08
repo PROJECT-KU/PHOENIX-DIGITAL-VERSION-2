@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\GajiKaryawans;
 use App\Models\EmployeeDetail;
 use App\Models\GajiKaryawans;
 use App\Models\Presensi;
+use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -236,9 +237,15 @@ class GajiKaryawansList extends Component
         }
         $totalGaji = $totalQuery->groupBy('status')->get();
 
+        // Rentang dihitung di komponen, bukan di view — supaya tanggal yang tampil
+        // mustahil beda dengan periode yang benar-benar dipilih.
+        [$siklusMulai, $siklusAkhir] = $this->siklusTampil();
+
         return view('livewire.pages.admin.gaji-karyawans.gaji-karyawans-list', [
             'gajikaryawan' => $gajikaryawan,
             'totalGaji' => $totalGaji,
+            'siklusMulai' => $siklusMulai,
+            'siklusAkhir' => $siklusAkhir,
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ])->layout('livewire.layout.templateindex');
@@ -333,6 +340,32 @@ class GajiKaryawansList extends Component
     }
 
     /**
+     * Rentang tanggal nyata dari periode gaji terpilih, untuk DITAMPILKAN di chip
+     * (akhir sudah inklusif). Mis. periode "Agustus 2026" = 21 Jul s/d 20 Agt 2026.
+     *
+     * Beda dengan layar keuangan lain, di sini rentang ini TIDAK dipakai memfilter
+     * — baris gaji sudah menyimpan periodenya sendiri di kolom periode_bulan /
+     * periode_tahun. Rentangnya murni penjelasan: supaya admin tahu tanggal berapa
+     * saja yang tercakup, dengan tampilan yang seragam dengan Cash Flow dkk.
+     *
+     * Butuh bulan DAN tahun terpilih; kalau salah satu "Semua", rentangnya tidak
+     * tunggal sehingga sengaja dikosongkan daripada menampilkan angka menyesatkan.
+     *
+     * @return array{0: ?\Illuminate\Support\Carbon, 1: ?\Illuminate\Support\Carbon}
+     */
+    protected function siklusTampil(): array
+    {
+        if (empty($this->bulan) || empty($this->tahun)) {
+            return [null, null];
+        }
+
+        return [
+            PeriodeGaji::mulai((int) $this->bulan, (int) $this->tahun),
+            PeriodeGaji::akhir((int) $this->bulan, (int) $this->tahun),
+        ];
+    }
+
+    /**
      * Unduh laporan PDF mengikuti data yang sedang tampil:
      * - sedang search -> data hasil pencarian
      * - filter periode -> data periode tersebut
@@ -404,7 +437,19 @@ class GajiKaryawansList extends Component
         $namaBulan = $this->bulan ? ($this->daftarBulan()[(int) $this->bulan] ?? '') : '';
 
         if ($this->bulan && $this->tahun) {
-            return $namaBulan.' '.$this->tahun;
+            // Nama bulan tetap dipertahankan karena ITULAH identitas periodenya
+            // ("gaji Agustus"); rentang tanggalnya ditambahkan sebagai penjelas.
+            // locale('id') dipaksa karena APP_LOCALE=en.
+            [$mulai, $akhir] = $this->siklusTampil();
+
+            // Tahun pada tanggal AWAL hanya ditulis bila berbeda dari tahun akhir.
+            // Periode Januari menyeberang tahun (21 Des 2025 – 20 Jan 2026); tanpa
+            // ini tertulis "21 Des" saja dan pembaca laporan mengira Des 2026.
+            $formatMulai = $mulai->year === $akhir->year ? 'd M' : 'd M Y';
+
+            return $namaBulan.' '.$this->tahun
+                .' ('.$mulai->locale('id')->translatedFormat($formatMulai)
+                .' – '.$akhir->locale('id')->translatedFormat('d M Y').')';
         }
         if ($this->tahun) {
             return 'Tahun '.$this->tahun;
