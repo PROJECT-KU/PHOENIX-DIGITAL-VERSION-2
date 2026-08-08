@@ -143,14 +143,52 @@ Data Testimoni || lemon
                 background: rgba(124, 58, 237, .04);
             }
 
-            /* Lencana di kolom Nama diberi napas & tidak lagi berdempetan. */
-            .tabel-testimoni .lencana-nama {
-                gap: .35rem !important;
-                margin-top: .45rem !important;
+            /* Lencana ringkas satu bentuk. Sebelumnya tiap lencana memakai
+               kombinasi kelas Bootstrap yang berbeda-beda dgn ukuran berbeda,
+               sehingga barisnya terlihat ramai & tingginya tidak rata. */
+            .chip-testi {
+                display: inline-flex;
+                align-items: center;
+                gap: .25rem;
+                padding: .2rem .5rem;
+                border-radius: 999px;
+                font-size: .68rem;
+                font-weight: 600;
+                line-height: 1.35;
+                white-space: nowrap;
+                border: 1px solid transparent;
             }
 
-            .tabel-testimoni .lencana-nama .badge {
-                padding: .32rem .55rem;
+            .chip-testi i.bi {
+                font-size: .72rem;
+                line-height: 1;
+            }
+
+            .chip-biru   { background: rgba(14,165,233,.12);  color: #0369a1; border-color: rgba(14,165,233,.30); }
+            .chip-hijau  { background: rgba(16,185,129,.12);  color: #047857; border-color: rgba(16,185,129,.30); }
+            .chip-ungu   { background: rgba(124,58,237,.12);  color: #6d28d9; border-color: rgba(124,58,237,.30); }
+            .chip-kuning { background: rgba(245,158,11,.14);  color: #b45309; border-color: rgba(245,158,11,.32); }
+            .chip-merah  { background: rgba(239,68,68,.12);   color: #b91c1c; border-color: rgba(239,68,68,.30); }
+            .chip-abu    { background: rgba(100,116,139,.12); color: #475569; border-color: rgba(100,116,139,.28); }
+
+            /* Kolom pengirim: biarkan nama panjang membungkus, jangan memaksa
+               tabel melebar sampai perlu digeser ke samping. */
+            .tabel-testimoni .sel-testi {
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            /* Ringkasan pesan: 2 baris lalu dipotong dgn elipsis. Tombol mata
+               tetap tersedia untuk membaca utuh. */
+            .tabel-testimoni .pesan-ringkas {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                font-size: .86rem;
+                line-height: 1.5;
+                color: #475569;
             }
 
             /* Tombol aksi: jarak antar tombol supaya tidak mudah salah tekan. */
@@ -168,15 +206,13 @@ Data Testimoni || lemon
                     <table class="table align-middle tabel-testimoni">
                         <thead>
                             <tr style="text-align: center;">
-                                <th style="width: 50px;">No</th>
-                                <th style="min-width: 210px;">Nama</th>
-                                <th>Peran</th>
-                                <th>Foto</th>
-                                <th class="text-center">Rating</th>
-                                <th style="min-width: 220px;">Pesan</th>
-                                <th class="text-center">Status</th>
+                                <th style="width: 46px;">No</th>
+                                <th class="text-start" style="min-width: 300px;">Pengirim</th>
+                                <th class="text-center" style="width: 110px;">Rating</th>
+                                <th class="text-start" style="min-width: 240px;">Pesan</th>
+                                <th class="text-center" style="width: 110px;">Status</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
-                                <th class="text-center">Action</th>
+                                <th class="text-center">Aksi</th>
                                 @endif
                             </tr>
                         </thead>
@@ -188,98 +224,108 @@ Data Testimoni || lemon
                                  yang tampak milik baris A bisa membawa id baris B. --}}
                             <tr wire:key="testi-{{ $item->id }}" style="text-align: center;">
                                 <td>{{ $loop->iteration }}</td>
-                                <td class="fw-bold text-start">
-                                    {{-- Admin melihat nama ASLI, termasuk untuk kiriman anonim —
-                                         penyamaran hanya berlaku di halaman publik. --}}
-                                    {{ $item->nama }}
-                                    @if ($item->anonim)
-                                        <span class="badge bg-dark-subtle text-dark border rounded-pill d-inline-flex align-items-center gap-1 align-middle ms-1"
-                                            style="font-size:.62rem; line-height:1;"
-                                            title="Pengirim memilih anonim — di publik tampil sebagai {{ $item->nama_publik }}">
-                                            <i class="bi bi-incognito"></i>Anonim
-                                        </span>
-                                    @endif
-                                    @if ($item->source === 'customer')
-                                        <br>
-                                        <span class="badge bg-info text-white mt-1" title="Dikirim langsung oleh pelanggan">
-                                            <i class="bi bi-person-heart"></i> Dari Pelanggan
-                                        </span>
-                                    @endif
 
-                                    {{-- Bekal admin menilai keaslian: sudah belanja berapa kali & sudah
-                                         member atau belum, supaya penulis yang belum pernah belanja
-                                         langsung ketahuan.
-                                         Syaratnya ADA TAUTAN PELANGGAN atau kiriman pelanggan — bukan
-                                         source-nya. Testimoni yang diinput admin dari WhatsApp tetap
-                                         punya tautan pelanggan (source='admin'), dan dulu lencananya
-                                         tidak muncul sama sekali. --}}
-                                    @if ($item->customer_id || $item->source === 'customer')
-                                        <div class="d-flex flex-wrap gap-1 mt-1 lencana-nama">
-                                            @if ($item->customer)
-                                                <span class="badge bg-success-subtle text-success border border-success rounded-pill d-inline-flex align-items-center gap-1"
-                                                    style="font-size:.66rem; line-height:1;" title="Nomor WhatsApp cocok dgn pelanggan terdaftar">
-                                                    <i class="bi bi-bag-check-fill"></i>Sudah belanja {{ $item->customer->belanja_selesai_count ?? 0 }}&times;
-                                                </span>
-                                                @if ($item->customer->status_member === 'active')
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill d-inline-flex align-items-center gap-1"
-                                                        style="font-size:.66rem; line-height:1;">
-                                                        <i class="bi bi-star-fill"></i>Sudah member
-                                                    </span>
-                                                @else
-                                                    <span class="badge bg-warning-subtle text-warning border border-warning rounded-pill d-inline-flex align-items-center gap-1"
-                                                        style="font-size:.66rem; line-height:1;" title="Akan otomatis jadi member begitu testimoni ini diaktifkan">
-                                                        <i class="bi bi-hourglass-split"></i>Belum member
-                                                    </span>
-                                                @endif
-                                            @elseif ($item->no_hp)
-                                                <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill d-inline-flex align-items-center gap-1"
-                                                    style="font-size:.66rem; line-height:1;" title="Nomor tidak cocok dgn pelanggan mana pun, atau pesanannya belum ada yang Selesai">
-                                                    <i class="bi bi-x-circle-fill"></i>Belum pernah belanja
-                                                </span>
+                                {{-- Foto + Nama + Peran DIGABUNG jadi satu kolom.
+                                     Dulu tiga kolom terpisah: kolom Foto & Peran masing-masing hanya
+                                     berisi satu hal, sementara kolom Nama harus menampung nama + 4
+                                     lencana + baris "Pemilik nomor" di ruang sempit sehingga semuanya
+                                     menumpuk ke bawah (satu baris bisa 5 tingkat). Digabung, avatar
+                                     mengisi ruang vertikal yang tadinya kosong dan lencana punya
+                                     lebar untuk mengalir menyamping. --}}
+                                <td class="text-start sel-testi">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="flex-shrink-0">
+                                            @if ($item->foto && \Storage::disk('public')->exists('img/testimoni/' . $item->foto))
+                                            <img src="{{ asset('storage/img/testimoni/' . $item->foto) }}"
+                                                class="rounded-circle shadow-sm"
+                                                style="width: 44px; height: 44px; object-fit: cover; cursor: pointer;"
+                                                onclick="showGlossyPreview('{{ asset('storage/img/testimoni/' . $item->foto) }}')">
                                             @else
-                                                <span class="badge bg-secondary-subtle text-secondary border rounded-pill d-inline-flex align-items-center gap-1"
-                                                    style="font-size:.66rem; line-height:1;" title="Testimoni lama — dikirim sebelum nomor WhatsApp diwajibkan">
-                                                    <i class="bi bi-question-circle"></i>Tanpa nomor (data lama)
-                                                </span>
+                                            <span class="rounded-circle bg-light text-primary d-inline-block text-center shadow-sm"
+                                                style="width: 44px; height: 44px;"><i class="bi bi-person-fill" style="font-size: 1.3rem; line-height: 44px;"></i></span>
                                             @endif
                                         </div>
 
-                                        @if ($item->customer)
-                                            {{-- Info netral, BUKAN peringatan: orang lazim mengetik nama
-                                                 panggilan ("Pak Berto" vs "berto"), jadi ketidaksamaan
-                                                 nama itu wajar & bukan tanda kecurangan. Admin cukup
-                                                 diberi tahu pemilik nomornya, biar dia menilai sendiri. --}}
-                                            <div class="text-muted fw-normal mt-1" style="font-size:.68rem; line-height:1.35;">
-                                                <i class="bi bi-person-vcard me-1" style="vertical-align:-0.125em;"></i>Pemilik nomor: <b>{{ $item->customer->nama }}</b>
-                                                @if (mb_strtolower(trim($item->nama)) !== mb_strtolower(trim($item->customer->nama)))
-                                                    <div class="mt-1" style="opacity:.85;">
-                                                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>nama ketikan berbeda
-                                                    </div>
+                                        <div style="min-width: 0;">
+                                            <div class="d-flex align-items-center flex-wrap gap-1">
+                                                {{-- Admin melihat nama ASLI, termasuk untuk kiriman anonim —
+                                                     penyamaran hanya berlaku di halaman publik. --}}
+                                                <span class="fw-bold">{{ $item->nama }}</span>
+                                                @if ($item->anonim)
+                                                    <span class="chip-testi chip-abu"
+                                                        title="Pengirim memilih anonim — di publik tampil sebagai {{ $item->nama_publik }}">
+                                                        <i class="bi bi-incognito"></i>Anonim
+                                                    </span>
                                                 @endif
                                             </div>
-                                        @endif
-                                    @endif
-                                </td>
-                                <td>{{ $item->peran ?: '-' }}</td>
-                                <td>
-                                    @if ($item->foto && \Storage::disk('public')->exists('img/testimoni/' . $item->foto))
-                                    <img src="{{ asset('storage/img/testimoni/' . $item->foto) }}"
-                                        class="rounded-circle shadow-sm"
-                                        style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
-                                        onclick="showGlossyPreview('{{ asset('storage/img/testimoni/' . $item->foto) }}')">
-                                    @else
-                                    <span class="rounded-circle bg-light text-primary d-inline-block text-center align-middle shadow-sm"
-                                        style="width: 50px; height: 50px;"><i class="bi bi-person-fill" style="font-size: 1.5rem; line-height: 50px;"></i></span>
-                                    @endif
+
+                                            @if ($item->peran)
+                                                <div class="text-muted" style="font-size:.76rem; line-height:1.3;">{{ $item->peran }}</div>
+                                            @endif
+
+                                            {{-- Bekal admin menilai keaslian: sudah belanja berapa kali & sudah
+                                                 member atau belum, supaya penulis yang belum pernah belanja
+                                                 langsung ketahuan.
+                                                 Syaratnya ADA TAUTAN PELANGGAN atau kiriman pelanggan — bukan
+                                                 source-nya. Testimoni yang diinput admin dari WhatsApp tetap
+                                                 punya tautan pelanggan (source='admin'). --}}
+                                            @if ($item->customer_id || $item->source === 'customer')
+                                                <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                                    @if ($item->source === 'customer')
+                                                        <span class="chip-testi chip-biru" title="Dikirim langsung oleh pelanggan lewat form testimoni">
+                                                            <i class="bi bi-person-heart"></i>Dari Pelanggan
+                                                        </span>
+                                                    @endif
+
+                                                    @if ($item->customer)
+                                                        <span class="chip-testi chip-hijau" title="Nomor WhatsApp cocok dgn pelanggan terdaftar">
+                                                            <i class="bi bi-bag-check-fill"></i>Belanja {{ $item->customer->belanja_selesai_count ?? 0 }}&times;
+                                                        </span>
+                                                        @if ($item->customer->status_member === 'active')
+                                                            <span class="chip-testi chip-ungu" title="Sudah menjadi Member">
+                                                                <i class="bi bi-star-fill"></i>Member
+                                                            </span>
+                                                        @else
+                                                            <span class="chip-testi chip-kuning" title="Akan otomatis jadi member begitu testimoni ini disetujui">
+                                                                <i class="bi bi-hourglass-split"></i>Belum member
+                                                            </span>
+                                                        @endif
+                                                    @elseif ($item->no_hp)
+                                                        <span class="chip-testi chip-merah" title="Nomor tidak cocok dgn pelanggan mana pun, atau pesanannya belum ada yang Selesai">
+                                                            <i class="bi bi-x-circle-fill"></i>Belum pernah belanja
+                                                        </span>
+                                                    @else
+                                                        <span class="chip-testi chip-abu" title="Testimoni lama — dikirim sebelum nomor WhatsApp diwajibkan">
+                                                            <i class="bi bi-question-circle"></i>Tanpa nomor
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                {{-- "Pemilik nomor" HANYA ditampilkan bila namanya BERBEDA dari
+                                                     yang diketik. Kalau sama, barisnya cuma mengulang nama di
+                                                     atasnya — itu yang membuat tiap baris bertambah tinggi
+                                                     tanpa memberi informasi baru. --}}
+                                                @if ($item->customer && mb_strtolower(trim($item->nama)) !== mb_strtolower(trim($item->customer->nama)))
+                                                    <div class="text-muted fw-normal mt-1" style="font-size:.7rem; line-height:1.35;"
+                                                        title="Orang lazim mengetik nama panggilan — ini info, bukan tanda kecurangan">
+                                                        <i class="bi bi-person-vcard me-1" style="vertical-align:-0.125em;"></i>Pemilik nomor: <b>{{ $item->customer->nama }}</b>
+                                                    </div>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="text-center text-warning text-nowrap">
                                     @for ($i = 1; $i <= 5; $i++)
                                         <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </td>
-                                <td style="max-width: 200px;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-truncate" style="min-width:0;">{{ $item->pesan }}</span>
+                                {{-- Pesan kini boleh 2 baris (dulu dipotong 1 baris pada lebar 200px,
+                                     jadi hampir selalu terpotong di kata pertama). Ruang untuk ini
+                                     didapat dari penggabungan kolom Foto & Peran. --}}
+                                <td class="text-start" style="max-width: 320px;">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <span class="pesan-ringkas" style="min-width:0;">{{ $item->pesan }}</span>
                                         <button type="button"
                                             class="btn btn-sm btn-outline-primary p-1 flex-shrink-0 testimoni-read-trigger"
                                             title="Baca pesan lengkap"
@@ -367,7 +413,7 @@ Data Testimoni || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-chat-quote"></i>
