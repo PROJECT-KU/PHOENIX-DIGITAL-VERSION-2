@@ -176,6 +176,54 @@ Pemasukan Lainnya || lemon
         .pm-rp-input[type=number] {
             -moz-appearance: textfield;
         }
+
+        /* Chip rentang periode pada Filter Periode.
+           Disalin dari Cash Flow supaya tampilannya persis sama. Ditulis inline
+           di blade karena aset Vite tidak ikut ter-deploy. */
+        .siklus-chip {
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(37, 99, 235, .08));
+            border: 1px solid rgba(124, 58, 237, .2);
+        }
+
+        .siklus-chip-ico {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #4e46e5);
+            color: #fff;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+
+        .siklus-chip-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .siklus-chip-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #7c3aed;
+        }
+
+        .siklus-chip-date {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .siklus-chip-arrow {
+            color: #94a3b8;
+            font-size: .8rem;
+        }
     </style>
 
     <div class="container-fluid">
@@ -242,6 +290,11 @@ Pemasukan Lainnya || lemon
                         <span>Periode</span>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold"
+                            style="min-width: 175px;" title="Cara menghitung periode">
+                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
+                            <option value="siklus20">🔄 Siklus Gaji ({{ \App\Support\PeriodeGaji::cutoffDay() + 1 }}–{{ \App\Support\PeriodeGaji::cutoffDay() }})</option>
+                        </select>
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
                             @foreach ($daftarBulan as $num => $nama)
                             <option value="{{ $num }}">{{ $nama }}</option>
@@ -259,6 +312,28 @@ Pemasukan Lainnya || lemon
                         </button>
                     </div>
                 </div>
+
+                {{-- Rentang yang BENAR-BENAR dipakai memfilter. Selalu ditampilkan
+                     (bukan hanya saat siklus) karena di layar ini periodenya selalu
+                     jatuh ke satu rentang konkret. --}}
+                <div class="mt-3 pt-3 border-top">
+                    <div class="siklus-chip d-inline-flex align-items-center gap-2">
+                        <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
+                            <i class="bi bi-calendar-range"></i>
+                        </span>
+                        <span class="siklus-chip-label">Periode</span>
+                        {{-- locale('id') dipaksa karena APP_LOCALE=en (lihat CLAUDE.md) --}}
+                        <span class="siklus-chip-date">{{ $siklusMulai->locale('id')->translatedFormat('d M Y') }}</span>
+                        <i class="bi bi-arrow-right siklus-chip-arrow"></i>
+                        <span class="siklus-chip-date">{{ $siklusAkhir->locale('id')->translatedFormat('d M Y') }}</span>
+                    </div>
+                    @if ($modePeriode === 'siklus20')
+                    <div class="text-muted mt-2" style="font-size:.78rem;">
+                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Sama dengan periode di fitur <b>Cash Flow</b>, <b>Pengeluaran</b>, <b>Modal</b>, & <b>Gaji</b> — gajian tanggal {{ \App\Support\PeriodeGaji::cutoffDay() }}.
+                    </div>
+                    @endif
+                </div>
+
                 <div class="pm-hint mt-3">
                     <i class="bi bi-info-circle-fill"></i>
                     <span>Pemasukan di luar pemesanan toko (mis. jasa web, pariwisata). Setiap entri otomatis dicatat

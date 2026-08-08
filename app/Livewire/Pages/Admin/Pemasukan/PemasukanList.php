@@ -4,6 +4,8 @@ namespace App\Livewire\Pages\Admin\Pemasukan;
 
 use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Pemasukan;
+use App\Support\PeriodeGaji;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -23,6 +25,11 @@ class PemasukanList extends Component
     public $bulan = '';
 
     public $tahun = '';
+
+    // Mode periode: 'siklus20' = siklus gaji (21 s/d 20, mengikuti setelan
+    // payroll_cutoff_day) atau 'kalender' (1 s/d akhir bulan). Nama nilainya
+    // sengaja SAMA PERSIS dengan Cash Flow, Pengeluaran, & Modal.
+    public $modePeriode = 'siklus20';
 
     /* ===== Form (CRUD via modal) ===== */
     public bool $showForm = false;
@@ -48,13 +55,18 @@ class PemasukanList extends Component
         'search' => ['except' => ''],
         'bulan' => ['except' => ''],
         'tahun' => ['except' => ''],
+        'modePeriode' => ['except' => 'siklus20'],
         'page' => ['except' => 1],
     ];
 
     public function mount(): void
     {
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default: siklus gaji 21-20 periode BERJALAN — sama dengan Cash Flow,
+        // Pengeluaran, Modal, & Gaji. Pada tanggal 21+ beda dari bulan kalender.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
     }
 
     public function updatingSearch(): void
@@ -72,12 +84,58 @@ class PemasukanList extends Component
         $this->resetPage();
     }
 
+    public function updatedModePeriode(): void
+    {
+        $this->resetPage();
+    }
+
     public function resetFilter(): void
     {
+        // "Reset" = kembali ke default (siklus 21-20 periode berjalan), seragam
+        // dengan tombol reset di Cash Flow, Pengeluaran, & Modal.
         $this->reset(['search']);
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
         $this->resetPage();
+    }
+
+    /**
+     * Apakah filter memakai siklus gaji 21-20.
+     *
+     * Seperti layar Modal, bulan tidak disyaratkan terisi: periode di sini
+     * SELALU jatuh ke bulan berjalan bila kosong (lihat periodeRange()).
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20';
+    }
+
+    /**
+     * Rentang periode terpilih sebagai [mulai, akhirEksklusif].
+     *
+     * Mode 'kalender' menghasilkan rentang yang PERSIS sama dengan
+     * whereYear+whereMonth lama: [1 bln ini, 1 bln depan).
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function periodeRange(): array
+    {
+        $bulan = (int) ($this->bulan ?: now()->month);
+        $tahun = (int) ($this->tahun ?: now()->year);
+
+        if ($this->usesSiklus()) {
+            return [
+                PeriodeGaji::mulai($bulan, $tahun),
+                PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+            ];
+        }
+
+        return [
+            Carbon::create($tahun, $bulan, 1)->startOfMonth(),
+            Carbon::create($tahun, $bulan, 1)->addMonthNoOverflow()->startOfMonth(),
+        ];
     }
 
     private function bolehKelola(): bool
@@ -289,8 +347,7 @@ class PemasukanList extends Component
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
-        $bulan = (int) ($this->bulan ?: now()->month);
-        $tahun = (int) ($this->tahun ?: now()->year);
+        [$rangeMulai, $rangeAkhir] = $this->periodeRange();
 
         $query = Pemasukan::query()
             ->with('penginput')
@@ -301,7 +358,9 @@ class PemasukanList extends Component
                     ->orWhere('nominal', 'like', $term)
                     ->orWhere('id_transaksi', 'like', $term));
             })
-            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal', $tahun)->whereMonth('tanggal', $bulan));
+            ->when(! $this->search, fn ($q) => $q
+                ->where('tanggal', '>=', $rangeMulai->toDateString())
+                ->where('tanggal', '<', $rangeAkhir->toDateString()));
 
         $pemasukans = (clone $query)->orderBy('tanggal', 'desc')->paginate(10);
         $totalPemasukan = (float) (clone $query)->sum('nominal');
@@ -309,6 +368,10 @@ class PemasukanList extends Component
         return view('livewire.pages.admin.pemasukan.pemasukan-list', [
             'pemasukans' => $pemasukans,
             'totalPemasukan' => $totalPemasukan,
+            // Rentang dihitung DI SINI, bukan di view — supaya tanggal yang tampil
+            // di chip mustahil beda dengan rentang yang benar-benar difilter.
+            'siklusMulai' => $rangeMulai,
+            'siklusAkhir' => $rangeAkhir->copy()->subDay(),
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ]);
