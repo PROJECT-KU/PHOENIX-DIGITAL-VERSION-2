@@ -137,7 +137,16 @@ Data Testimoni || lemon
                             <tr style="text-align: center;">
                                 <td>{{ $loop->iteration }}</td>
                                 <td class="fw-bold text-start">
+                                    {{-- Admin melihat nama ASLI, termasuk untuk kiriman anonim —
+                                         penyamaran hanya berlaku di halaman publik. --}}
                                     {{ $item->nama }}
+                                    @if ($item->anonim)
+                                        <span class="badge bg-dark-subtle text-dark border rounded-pill d-inline-flex align-items-center gap-1 align-middle ms-1"
+                                            style="font-size:.62rem; line-height:1;"
+                                            title="Pengirim memilih anonim — di publik tampil sebagai {{ $item->nama_publik }}">
+                                            <i class="bi bi-incognito"></i>Anonim
+                                        </span>
+                                    @endif
                                     @if ($item->source === 'customer')
                                         <br>
                                         <span class="badge bg-info text-white mt-1" title="Dikirim langsung oleh pelanggan">
@@ -265,6 +274,18 @@ Data Testimoni || lemon
                                     <a wire:navigate href="{{ route('admin.testimoni.edit', $item) }}"
                                         class="btn btn-sm btn-warning text-white p-2" title="Edit">
                                         <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    @endif
+                                    {{-- Lompat ke Data Pelanggan yang sudah tersaring nomor pengirim,
+                                         supaya admin cepat menemukan pelanggannya (status member,
+                                         poin, kode referral) lalu mengabari bahwa dia sudah jadi
+                                         member. Hanya tampil bila nomornya ada & admin berizin. --}}
+                                    @if ($item->no_hp && auth()->user()->hasPermission('view_customer'))
+                                    <a wire:navigate
+                                        href="{{ route('admin.customer.index', ['searchCustomer' => $item->no_hp_cari]) }}"
+                                        class="btn btn-sm btn-info text-white p-2"
+                                        title="Buka Data Pelanggan untuk nomor {{ $item->no_hp }}">
+                                        <i class="bi bi-person-lines-fill"></i>
                                     </a>
                                     @endif
                                     @if (auth()->user()->hasPermission('delete_testimoni'))

@@ -16,7 +16,20 @@ class CustomerList extends Component
 
     public string $activeTab = 'all';
 
-    protected $queryString = ['activeTab'];
+    // searchCustomer ikut query string supaya halaman ini bisa dituju langsung
+    // dalam keadaan tersaring — dipakai tombol "Data Pelanggan" di Testimoni
+    // (?searchCustomer=<no_hp>).
+    protected $queryString = [
+        'activeTab',
+        'searchCustomer' => ['except' => ''],
+    ];
+
+    public function updatedSearchCustomer(): void
+    {
+        // Tanpa ini, mengetik pencarian saat berada di halaman 2+ bisa
+        // menampilkan hasil kosong padahal datanya ada di halaman 1.
+        $this->resetPage();
+    }
 
     #[On('delete-customer')]
     public function deleteCustomer($id)

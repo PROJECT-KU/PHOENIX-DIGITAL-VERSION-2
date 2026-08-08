@@ -36,15 +36,18 @@
                                     </div>
                                     <p class="tm-text">{{ $t->pesan }}</p>
                                     <div class="tm-person">
+                                        {{-- WAJIB nama_publik, JANGAN $t->nama: kolom nama kini berisi
+                                             nama ASLI, dan pengirim anonim hanya boleh tampil sebagai
+                                             huruf depan (mis. "B•••") di halaman publik. --}}
                                         <span class="tm-avatar">
                                             @if ($t->foto && \Storage::disk('public')->exists('img/testimoni/' . $t->foto))
-                                                <img src="{{ asset('storage/img/testimoni/' . $t->foto) }}" alt="{{ $t->nama }}">
+                                                <img src="{{ asset('storage/img/testimoni/' . $t->foto) }}" alt="{{ $t->nama_publik }}">
                                             @else
-                                                {{ strtoupper(mb_substr($t->nama, 0, 1)) }}
+                                                {{ strtoupper(mb_substr($t->nama_publik, 0, 1)) }}
                                             @endif
                                         </span>
                                         <span class="tm-meta">
-                                            <span class="tm-name">{{ $t->nama }}</span>
+                                            <span class="tm-name">{{ $t->nama_publik }}</span>
                                             @if ($t->peran)
                                                 <span class="tm-role">{{ $t->peran }}</span>
                                             @endif

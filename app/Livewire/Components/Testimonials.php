@@ -90,15 +90,16 @@ class Testimonials extends Component
         $pelanggan = Customer::cariDariNoHp($this->no_hp);
         $berhak = $pelanggan && $pelanggan->jumlahBelanjaSelesai() > 0;
 
-        // Anonim: HANYA nama yang disamarkan jadi huruf depan (jadi otomatis
-        // begitu pula yang tampil di mana-mana). Peran tetap tampil. Nama asli
-        // pembeli terverifikasi tetap bisa ditelusuri admin lewat relasi
-        // customer (customer_id).
-        $namaTampil = $this->anonim ? $this->samarkanNama($this->nama) : trim($this->nama);
-
+        // Anonim: nama ASLI tetap disimpan utuh, penyamaran dilakukan saat
+        // DITAMPILKAN (Testimoni::getNamaPublikAttribute). Peran tetap tampil.
+        //
+        // Dulu yang disimpan sudah tersamar ("B•••") sehingga nama asli hilang
+        // permanen — admin pun ikut melihat "B•••" saat memoderasi, dan untuk
+        // kiriman tamu tidak ada cara memulihkannya.
         Testimoni::create([
             'customer_id' => $berhak ? $pelanggan->id : null,
-            'nama' => $namaTampil,
+            'nama' => trim($this->nama),
+            'anonim' => $this->anonim,
             'peran' => $this->peran ? trim($this->peran) : null,
             'no_hp' => trim($this->no_hp),
             'pesan' => trim($this->pesan),
@@ -114,14 +115,6 @@ class Testimonials extends Component
 
         // Slider tidak berubah (testimoni baru non-active), tapi pastikan Swiper tetap sehat
         $this->dispatch('tm-reinit');
-    }
-
-    /** "Berto" → "B•••" : hanya huruf depan yang tampil untuk testimoni anonim. */
-    private function samarkanNama(string $nama): string
-    {
-        $huruf = mb_substr(trim($nama), 0, 1);
-
-        return $huruf === '' ? 'Anonim' : mb_strtoupper($huruf).'•••';
     }
 
     public function render()
