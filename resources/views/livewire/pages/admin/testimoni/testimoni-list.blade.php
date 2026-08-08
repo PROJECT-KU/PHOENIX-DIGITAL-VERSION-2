@@ -114,18 +114,66 @@ Data Testimoni || lemon
             </div>
         </div>
 
+        {{-- Kelegaan tabel: sebelumnya tiap sel hanya memakai padding bawaan
+             sementara kolom Nama menumpuk nama + 4 lencana + baris "Pemilik
+             nomor", sehingga barisnya terasa sesak & sulit dipindai. --}}
+        <style>
+            .tabel-testimoni>thead>tr>th {
+                padding: .85rem .9rem;
+                font-size: .78rem;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+                color: #64748b;
+                white-space: nowrap;
+            }
+
+            .tabel-testimoni>tbody>tr>td {
+                padding: 1.1rem .9rem;
+                line-height: 1.55;
+                vertical-align: middle;
+            }
+
+            /* Garis pemisah antar baris yang lembut + sorotan saat disapu tikus,
+               supaya mata tidak kehilangan jejak baris pada tabel selebar ini. */
+            .tabel-testimoni>tbody>tr {
+                border-bottom: 1px solid rgba(148, 163, 184, .18);
+            }
+
+            .tabel-testimoni>tbody>tr:hover {
+                background: rgba(124, 58, 237, .04);
+            }
+
+            /* Lencana di kolom Nama diberi napas & tidak lagi berdempetan. */
+            .tabel-testimoni .lencana-nama {
+                gap: .35rem !important;
+                margin-top: .45rem !important;
+            }
+
+            .tabel-testimoni .lencana-nama .badge {
+                padding: .32rem .55rem;
+            }
+
+            /* Tombol aksi: jarak antar tombol supaya tidak mudah salah tekan. */
+            .tabel-testimoni .aksi-testimoni {
+                display: inline-flex;
+                align-items: center;
+                gap: .4rem;
+                white-space: nowrap;
+            }
+        </style>
+
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <div class="table-responsive">
-                    <table class="table align-middle">
+                    <table class="table align-middle tabel-testimoni">
                         <thead>
                             <tr style="text-align: center;">
                                 <th style="width: 50px;">No</th>
-                                <th>Nama</th>
+                                <th style="min-width: 210px;">Nama</th>
                                 <th>Peran</th>
                                 <th>Foto</th>
                                 <th class="text-center">Rating</th>
-                                <th>Pesan</th>
+                                <th style="min-width: 220px;">Pesan</th>
                                 <th class="text-center">Status</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
                                 <th class="text-center">Action</th>
@@ -134,7 +182,11 @@ Data Testimoni || lemon
                         </thead>
                         <tbody>
                             @forelse ($Testimoni as $item)
-                            <tr style="text-align: center;">
+                            {{-- wire:key WAJIB: tanpa ini Livewire mencocokkan baris berdasarkan
+                                 POSISI saat morph. Begitu satu baris berubah status, jumlah tombol
+                                 per baris ikut berubah dan DOM antar-baris bisa tertukar — tombol
+                                 yang tampak milik baris A bisa membawa id baris B. --}}
+                            <tr wire:key="testi-{{ $item->id }}" style="text-align: center;">
                                 <td>{{ $loop->iteration }}</td>
                                 <td class="fw-bold text-start">
                                     {{-- Admin melihat nama ASLI, termasuk untuk kiriman anonim —
@@ -162,7 +214,7 @@ Data Testimoni || lemon
                                          punya tautan pelanggan (source='admin'), dan dulu lencananya
                                          tidak muncul sama sekali. --}}
                                     @if ($item->customer_id || $item->source === 'customer')
-                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                        <div class="d-flex flex-wrap gap-1 mt-1 lencana-nama">
                                             @if ($item->customer)
                                                 <span class="badge bg-success-subtle text-success border border-success rounded-pill d-inline-flex align-items-center gap-1"
                                                     style="font-size:.66rem; line-height:1;" title="Nomor WhatsApp cocok dgn pelanggan terdaftar">
@@ -253,21 +305,36 @@ Data Testimoni || lemon
                                     </span>
                                 </td>
                                 @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
-                                <td class="text-center text-nowrap">
+                                <td class="text-center">
+                                    <div class="aksi-testimoni">
                                     @if (auth()->user()->hasPermission('edit_testimoni'))
-                                    {{-- Setujui: tampil kecuali sudah disetujui --}}
+                                    {{-- Setujui & Tolak WAJIB lewat konfirmasi.
+                                         Dulu wire:click langsung: satu sentuhan tak sengaja pada
+                                         tabel yang padat langsung menerbitkan testimoni ke publik
+                                         DAN menjadikan pengirimnya member — tanpa peringatan &
+                                         tanpa cara membatalkan. --}}
                                     @if ($item->status !== 'active')
-                                    <button type="button" class="btn btn-sm btn-success p-2"
+                                    <button type="button" class="btn btn-sm btn-success p-2 testimoni-konfirmasi"
                                         title="Setujui (tampilkan di publik)"
-                                        wire:click="approve('{{ $item->id }}')">
+                                        data-action="approve"
+                                        data-arg="{{ $item->id }}"
+                                        data-icon="question"
+                                        data-title="Setujui testimoni ini?"
+                                        data-text="Testimoni {{ $item->nama }} akan TAMPIL DI PUBLIK{{ $item->customer && $item->customer->status_member !== 'active' ? ', dan pengirimnya otomatis menjadi Member' : '' }}."
+                                        data-confirm="Ya, setujui">
                                         <i class="bi bi-check-circle"></i>
                                     </button>
                                     @endif
                                     {{-- Tolak: tampil kecuali sudah ditolak --}}
                                     @if ($item->status !== 'non-active')
-                                    <button type="button" class="btn btn-sm btn-secondary p-2"
+                                    <button type="button" class="btn btn-sm btn-secondary p-2 testimoni-konfirmasi"
                                         title="Tolak (sembunyikan dari publik)"
-                                        wire:click="reject('{{ $item->id }}')">
+                                        data-action="reject"
+                                        data-arg="{{ $item->id }}"
+                                        data-icon="warning"
+                                        data-title="Tolak testimoni ini?"
+                                        data-text="Testimoni {{ $item->nama }} akan disembunyikan dari publik."
+                                        data-confirm="Ya, tolak">
                                         <i class="bi bi-eye-slash"></i>
                                     </button>
                                     @endif
@@ -294,6 +361,7 @@ Data Testimoni || lemon
                                         <i class="bi bi-trash"></i>
                                     </button>
                                     @endif
+                                    </div>
                                 </td>
                                 @endif
                             </tr>
@@ -343,12 +411,19 @@ Data Testimoni || lemon
         buttonsStyling: false
     };
 
-    // Popup baca pesan testimoni LENGKAP (sel pesan dipotong). Di-bind sekali
-    // via guard agar tak dobel saat Livewire re-render. Tombol Edit tetap ada.
+    const escTesti = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Popup baca pesan testimoni LENGKAP (sel pesan dipotong).
+    //
+    // PENTING — dipasang pada `document`, BUKAN `document.body`.
+    // wire:navigate MENGGANTI seluruh <body> saat pindah halaman, sehingga
+    // listener yang menempel di body ikut hilang. Karena guard di bawah sudah
+    // terlanjur true, listener tak pernah dipasang ulang -> tombol mata mati
+    // dan baru hidup lagi setelah refresh penuh (yang me-reset window).
+    // `document` tidak pernah diganti, jadi sekali pasang cukup selamanya.
     if (!window.__testimoniReadBound) {
         window.__testimoniReadBound = true;
-        const escTesti = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        document.body.addEventListener('click', function (event) {
+        document.addEventListener('click', function (event) {
             const trg = event.target.closest('.testimoni-read-trigger');
             if (!trg) return;
 
@@ -369,34 +444,69 @@ Data Testimoni || lemon
         });
     }
 
-    document.addEventListener('livewire:navigated', function() {
-        document.body.addEventListener('click', function(event) {
-            const button = event.target.closest('.delete-testimoni-btn');
+    // Panggil metode Livewire dari elemen mana pun di dalam komponen ini.
+    const panggilTestimoni = (el, metode, arg) => {
+        const komponen = el.closest('[wire\\:id]');
+        if (!komponen) return;
+        Livewire.find(komponen.getAttribute('wire:id')).call(metode, arg);
+    };
 
-            if (button) {
-                event.preventDefault();
-                const id = button.getAttribute('data-id');
+    // Konfirmasi Setujui / Tolak. Sengaja SATU handler untuk keduanya, dengan
+    // teks dibaca dari data-* di tombolnya — supaya menambah aksi lain nanti
+    // tidak perlu menambah listener baru (dan tidak berisiko dobel-bind).
+    //
+    // Dipasang ke `document` + guard: lihat catatan tombol mata di atas.
+    if (!window.__testimoniKonfirmasiBound) {
+        window.__testimoniKonfirmasiBound = true;
+        document.addEventListener('click', function (event) {
+            const tombol = event.target.closest('.testimoni-konfirmasi');
+            if (!tombol) return;
 
-                Swal.fire({
-                    title: 'Yakin hapus data?',
-                    text: "Data testimoni ini tidak bisa dikembalikan!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal',
-                    ...glossyConfigTestimoni
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const component = button.closest('[wire\\:id]');
-                        if (component) {
-                            const livewireComponentId = component.getAttribute('wire:id');
-                            Livewire.find(livewireComponentId).call('deleteTestimoni', id);
-                        }
-                    }
-                });
-            }
+            event.preventDefault();
+
+            Swal.fire({
+                title: tombol.getAttribute('data-title') || 'Lanjutkan?',
+                text: tombol.getAttribute('data-text') || '',
+                icon: tombol.getAttribute('data-icon') || 'question',
+                showCancelButton: true,
+                confirmButtonText: tombol.getAttribute('data-confirm') || 'Ya',
+                cancelButtonText: 'Batal',
+                ...glossyConfigTestimoni
+            }).then((hasil) => {
+                if (hasil.isConfirmed) {
+                    panggilTestimoni(tombol, tombol.getAttribute('data-action'), tombol.getAttribute('data-arg'));
+                }
+            });
         });
-    });
+    }
+
+    // Hapus. Dulu di-bind ulang pada SETIAP 'livewire:navigated' ke document.body;
+    // begitu body tidak ikut diganti, listener-nya menumpuk dan satu klik bisa
+    // memunculkan beberapa dialog sekaligus. Kini sekali pasang ke `document`.
+    if (!window.__testimoniHapusBound) {
+        window.__testimoniHapusBound = true;
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest('.delete-testimoni-btn');
+            if (!button) return;
+
+            event.preventDefault();
+            const id = button.getAttribute('data-id');
+
+            Swal.fire({
+                title: 'Yakin hapus data?',
+                text: "Data testimoni ini tidak bisa dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal',
+                ...glossyConfigTestimoni
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    panggilTestimoni(button, 'deleteTestimoni', id);
+                }
+            });
+        });
+    }
 
     window.addEventListener('testimoni-deleted', () => {
         Swal.fire({
