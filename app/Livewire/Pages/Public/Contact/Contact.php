@@ -64,7 +64,7 @@ class Contact extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
-        $banners = Banners::where('status', 'active')->get();
+        $banners = Banners::tayang()->get();
         return view('livewire.pages.public.contact.contact', [
             'banners' => $banners,
         ]);

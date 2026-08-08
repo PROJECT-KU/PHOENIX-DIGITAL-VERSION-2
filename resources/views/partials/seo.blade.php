@@ -15,7 +15,7 @@
     if (! empty($seoImage)) {
         $seoImg = asset($seoImage);
     } else {
-        $banner = \App\Models\Banners::where('status', 'active')->latest()->first();
+        $banner = \App\Models\Banners::tayang()->latest()->first();
         $seoImg = $banner && $banner->gambar
             ? asset('storage/img/banners/' . $banner->gambar)
             : asset(config('seo.image'));

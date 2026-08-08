@@ -15,7 +15,7 @@ class Index extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
-        $banners = Banners::where('status', 'active')->get();
+        $banners = Banners::tayang()->get();
         $products = Product::when($this->search, function ($query) {
             $query->where(function ($q) {
                 $q->where('nama_akun', 'like', "%{$this->search}%")

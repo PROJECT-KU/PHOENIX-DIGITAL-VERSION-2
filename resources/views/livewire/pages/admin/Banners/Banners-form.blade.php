@@ -16,6 +16,48 @@
             @error('status') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
         </div>
 
+        {{-- Jadwal tayang (opsional), seperti Promo. Dikosongkan = tanpa batas
+             waktu, jadi banner lama & banner biasa tetap berperilaku seperti
+             sebelumnya tanpa admin perlu mengisi apa pun. --}}
+        <div class="col-12">
+            <div class="p-3 rounded-4" style="background: rgba(124,58,237,.05); border: 1px solid rgba(124,58,237,.18);">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
+                        style="width: 36px; height: 36px; font-size: 1rem; border-radius: 10px;">
+                        <i class="bi bi-calendar-range"></i>
+                    </span>
+                    <div>
+                        <div class="fw-bold text-dark">Jadwal Tayang <span class="text-muted fw-normal">(opsional)</span></div>
+                        <div class="text-muted" style="font-size:.78rem;">
+                            Banner otomatis muncul & hilang sendiri sesuai jadwal. Kosongkan bila ingin tayang terus tanpa batas waktu.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-secondary">Mulai Tayang</label>
+                        <input type="datetime-local" wire:model.defer="mulai_tayang"
+                            class="form-control @error('mulai_tayang') is-invalid @enderror">
+                        <div class="form-text" style="font-size:.75rem;">Kosong = langsung tayang begitu status Active.</div>
+                        @error('mulai_tayang') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-secondary">Selesai Tayang</label>
+                        <input type="datetime-local" wire:model.defer="selesai_tayang"
+                            class="form-control @error('selesai_tayang') is-invalid @enderror">
+                        <div class="form-text" style="font-size:.75rem;">Kosong = tayang seterusnya.</div>
+                        @error('selesai_tayang') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="text-muted mt-2" style="font-size:.75rem;">
+                    <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Jadwal hanya berlaku bila status <b>Active</b>. Status <b>Non-Active</b> tetap menyembunyikan banner, apa pun jadwalnya.
+                </div>
+            </div>
+        </div>
+
         <div class="col-12">
             <label class="form-label fw-bold text-secondary">
                 Gambar Banner

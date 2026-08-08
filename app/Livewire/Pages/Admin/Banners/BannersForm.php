@@ -23,6 +23,14 @@ class BannersForm extends Component
 
     public $status = '';
 
+    /**
+     * Jadwal tayang (opsional). Kosong = tanpa batas waktu, sehingga banner
+     * tanpa jadwal berperilaku persis seperti sebelum fitur ini ada.
+     */
+    public $mulai_tayang = '';
+
+    public $selesai_tayang = '';
+
     public $mode = 'create';
 
     public function mount()
@@ -32,6 +40,9 @@ class BannersForm extends Component
             $this->existingImage = $this->banners->gambar;
             $this->deskripsi = $this->banners->deskripsi;
             $this->status = $this->banners->status;
+            // format datetime-local: Y-m-d\TH:i
+            $this->mulai_tayang = $this->banners->mulai_tayang?->format('Y-m-d\TH:i') ?? '';
+            $this->selesai_tayang = $this->banners->selesai_tayang?->format('Y-m-d\TH:i') ?? '';
             $this->mode = 'edit';
         }
     }
@@ -42,6 +53,10 @@ class BannersForm extends Component
             'judul' => 'required|min:3',
             'deskripsi' => 'nullable|string',
             'status' => 'required|in:active,non-active',
+            'mulai_tayang' => 'nullable|date',
+            // after_or_equal hanya diperiksa bila mulai_tayang diisi; kalau
+            // kosong, selesai_tayang berdiri sendiri sbg "tayang sampai".
+            'selesai_tayang' => 'nullable|date' . ($this->mulai_tayang ? '|after_or_equal:mulai_tayang' : ''),
         ];
 
         if ($this->mode === 'create') {
@@ -75,6 +90,8 @@ class BannersForm extends Component
                 'gambar' => $filename, // cuma nama file
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'mulai_tayang' => $this->mulai_tayang ?: null,
+                'selesai_tayang' => $this->selesai_tayang ?: null,
             ]);
 
             session()->flash('successCreated', 'Data Banner berhasil ditambahkan!');
@@ -94,6 +111,8 @@ class BannersForm extends Component
                 'judul' => $this->judul,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'mulai_tayang' => $this->mulai_tayang ?: null,
+                'selesai_tayang' => $this->selesai_tayang ?: null,
             ];
 
             if ($this->gambar && is_object($this->gambar)) {
@@ -129,6 +148,8 @@ class BannersForm extends Component
         $this->gambar = '';
         $this->deskripsi = '';
         $this->status = '';
+        $this->mulai_tayang = '';
+        $this->selesai_tayang = '';
     }
 
     public function render()

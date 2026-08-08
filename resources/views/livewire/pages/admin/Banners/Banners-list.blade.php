@@ -54,6 +54,7 @@ Data Banner || lemon
                                 <th>Judul Banner</th>
                                 <th>Gambar</th>
                                 <th>Deskripsi</th>
+                                <th class="text-center" style="min-width: 200px;">Jadwal Tayang</th>
                                 <th class="text-center">Status</th>
                                 @if (auth()->user()->hasAnyPermission(['edit_banners', 'delete_banners']))
                                 <th class="text-center">Action</th>
@@ -77,11 +78,25 @@ Data Banner || lemon
                                     @endif
                                 </td>
                                 <td class="text-truncate" style="max-width: 150px;">{{ $item->deskripsi }}</td>
+                                <td class="text-center" style="font-size:.78rem; line-height:1.4;">
+                                    @if (! $item->mulai_tayang && ! $item->selesai_tayang)
+                                        <span class="text-muted">Tanpa batas waktu</span>
+                                    @else
+                                        <i class="bi bi-calendar-range me-1 text-primary" style="vertical-align:-0.125em;"></i>{{ $item->jadwalLabel() }}
+                                    @endif
+                                </td>
                                 <td class="text-center">
-                                    <span
-                                        class="badge {{ $item->status === 'active' ? 'bg-success' : 'bg-danger' }}">
-                                        {{ ucfirst($item->status) }}
-                                    </span>
+                                    {{-- Status yang ditampilkan = keadaan NYATA di publik, bukan sekadar
+                                         isi kolom status. Banner ber-status Active tapi jadwalnya belum
+                                         mulai / sudah lewat memang TIDAK tampil, dan admin harus bisa
+                                         melihat itu tanpa membandingkan tanggal sendiri. --}}
+                                    @php [$labelTayang, $warnaTayang] = $item->keadaanTayang(); @endphp
+                                    <span class="badge bg-{{ $warnaTayang }}">{{ $labelTayang }}</span>
+                                    @if ($item->status === 'active' && ! $item->sedangTayang())
+                                        <div class="text-muted mt-1" style="font-size:.68rem;">
+                                            status: Active
+                                        </div>
+                                    @endif
                                 </td>
                                 @if (auth()->user()->hasAnyPermission(['edit_banners', 'delete_banners']))
                                 <td class="text-center text-nowrap">
@@ -102,7 +117,7 @@ Data Banner || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-images"></i>

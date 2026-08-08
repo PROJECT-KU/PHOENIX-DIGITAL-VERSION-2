@@ -18,8 +18,8 @@ class HomepageController extends Controller
 
         $search = $request->input('search');
 
-        // Banner aktif
-        $banners = Banners::where('status', 'active')->get();
+        // Banner aktif & sedang dalam jadwal tayang
+        $banners = Banners::tayang()->get();
 
         // Produk terbaru (limit 4) + support search
         $product = Product::when($search, function ($query) use ($search) {
