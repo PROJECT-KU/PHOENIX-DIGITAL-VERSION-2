@@ -144,6 +144,54 @@ Data Pengeluaran || lemon
                 width: 100%;
             }
         }
+
+        /* Chip rentang siklus gaji (21–20) pada Filter Periode.
+           Disalin dari Cash Flow supaya tampilannya persis sama. Ditulis inline
+           di blade karena aset Vite tidak ikut ter-deploy. */
+        .siklus-chip {
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(37, 99, 235, .08));
+            border: 1px solid rgba(124, 58, 237, .2);
+        }
+
+        .siklus-chip-ico {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #4e46e5);
+            color: #fff;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+
+        .siklus-chip-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .siklus-chip-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #7c3aed;
+        }
+
+        .siklus-chip-date {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .siklus-chip-arrow {
+            color: #94a3b8;
+            font-size: .8rem;
+        }
     </style>
 
     <div class="container-fluid">

@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Spending;
 
 use App\Models\Spending;
+use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
@@ -23,19 +24,30 @@ class SpendingList extends Component
 
     public $jenisPengeluaran = '';
 
+    // Mode periode: 'siklus20' = siklus gaji (21 s/d 20, mengikuti setelan
+    // payroll_cutoff_day) atau 'kalender' (1 s/d akhir bulan). Nama nilainya
+    // sengaja SAMA PERSIS dengan Cash Flow supaya satu istilah dipakai di
+    // seluruh layar keuangan.
+    public $modePeriode = 'siklus20';
+
     protected $queryString = [
         'search' => ['except' => ''],
         'bulan' => ['except' => ''],
         'tahun' => ['except' => ''],
+        'modePeriode' => ['except' => 'siklus20'],
         'jenisPengeluaran' => ['except' => ''],
         'page' => ['except' => 1],
     ];
 
     public function mount()
     {
-        // Default ke periode bulan & tahun berjalan (seperti cashflow)
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default: siklus gaji 21-20 periode BERJALAN — sama dengan Cash Flow &
+        // fitur Gaji, supaya "pengeluaran periode ini" berarti hal yang sama di
+        // semua layar keuangan. Pada tanggal 21+ periode ini beda dari bulan kalender.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
     }
 
     public function updatingSearch()
@@ -58,10 +70,19 @@ class SpendingList extends Component
         $this->resetPage();
     }
 
+    public function updatingModePeriode()
+    {
+        $this->resetPage();
+    }
+
     public function resetFilter()
     {
-        $this->bulan = '';
-        $this->tahun = '';
+        // "Reset" = kembali ke default (siklus 21-20 periode berjalan), seragam
+        // dengan tombol reset di Cash Flow.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
         $this->resetPage();
     }
 
@@ -111,9 +132,21 @@ class SpendingList extends Component
         }
         $totalSpendings = $totalQuery->groupBy('jenis_pengeluaran')->get();
 
+        // Rentang siklus dihitung DI SINI, bukan di view — supaya tanggal yang
+        // tampil di chip mustahil beda dengan rentang yang benar-benar difilter.
+        // 'siklusAkhir' sudah inklusif (siap tampil), beda dgn akhir eksklusif utk query.
+        $siklusMulai = $siklusAkhir = null;
+        if ($this->usesSiklus()) {
+            [$mulai, $akhirEks] = $this->siklusRange();
+            $siklusMulai = $mulai;
+            $siklusAkhir = $akhirEks->copy()->subDay();
+        }
+
         return view('livewire.pages.admin.spending.spending-list', [
             'spendings' => $spendings,
             'totalSpendings' => $totalSpendings,
+            'siklusMulai' => $siklusMulai,
+            'siklusAkhir' => $siklusAkhir,
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ])->layout('livewire.layout.templateindex');
@@ -198,8 +231,48 @@ class SpendingList extends Component
         return preg_replace('/\s+/', ' ', $hasil);
     }
 
+    /**
+     * Apakah filter memakai siklus gaji 21-20 (butuh bulan terpilih).
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20' && ! empty($this->bulan);
+    }
+
+    /**
+     * Rentang siklus gaji untuk bulan/tahun terpilih — SATU sumber dengan fitur
+     * Gaji & Cash Flow, yaitu setelan `payroll_cutoff_day` (default tgl 20).
+     * Mis. Juli = 21 Jun s/d 20 Jul.
+     *
+     * Dikembalikan sebagai [mulai, akhirEksklusif] agar kontrak query
+     * (>= mulai, < akhirEksklusif) sama persis dengan CashFlowList.
+     *
+     * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}
+     */
+    protected function siklusRange(): array
+    {
+        $tahun = (int) ($this->tahun ?: now()->year);
+        $bulan = (int) $this->bulan;
+
+        return [
+            PeriodeGaji::mulai($bulan, $tahun),
+            PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+        ];
+    }
+
     protected function applyPeriode($query): void
     {
+        // `tanggal_transaksi` bertipe DATE, jadi dibandingkan sebagai string
+        // tanggal — sama dengan cara CashFlowList memfilter pengeluaran.
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+
+            $query->where('tanggal_transaksi', '>=', $mulai->toDateString())
+                ->where('tanggal_transaksi', '<', $akhir->toDateString());
+
+            return;
+        }
+
         if ($this->tahun) {
             $query->whereYear('tanggal_transaksi', $this->tahun);
         }
@@ -270,6 +343,15 @@ class SpendingList extends Component
     protected function periodeLabel(): string
     {
         $namaBulan = $this->bulan ? ($this->daftarBulan()[(int) $this->bulan] ?? '') : '';
+
+        if ($this->usesSiklus()) {
+            [$mulai, $akhir] = $this->siklusRange();
+
+            // locale('id') dipaksa karena APP_LOCALE=en — tanpa itu nama bulan
+            // di judul PDF jadi bahasa Inggris.
+            return $mulai->locale('id')->translatedFormat('d M Y')
+                . ' – ' . $akhir->copy()->subDay()->locale('id')->translatedFormat('d M Y');
+        }
 
         if ($this->bulan && $this->tahun) {
             return $namaBulan . ' ' . $this->tahun;
