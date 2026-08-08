@@ -186,6 +186,54 @@ Modal || lemon
                 padding-bottom: .5rem;
             }
         }
+
+        /* Chip rentang periode pada Filter Periode.
+           Disalin dari Cash Flow supaya tampilannya persis sama. Ditulis inline
+           di blade karena aset Vite tidak ikut ter-deploy. */
+        .siklus-chip {
+            padding: 6px 14px 6px 6px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(37, 99, 235, .08));
+            border: 1px solid rgba(124, 58, 237, .2);
+        }
+
+        .siklus-chip-ico {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed, #4e46e5);
+            color: #fff;
+            font-size: .9rem;
+            flex-shrink: 0;
+        }
+
+        .siklus-chip-ico i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            line-height: 1;
+        }
+
+        .siklus-chip-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #7c3aed;
+        }
+
+        .siklus-chip-date {
+            font-size: .88rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .siklus-chip-arrow {
+            color: #94a3b8;
+            font-size: .8rem;
+        }
     </style>
 
     <div class="container-fluid">
@@ -237,6 +285,11 @@ Modal || lemon
                         <span>Periode</span>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold"
+                            style="min-width: 175px;" title="Cara menghitung periode">
+                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
+                            <option value="siklus20">🔄 Siklus Gaji ({{ \App\Support\PeriodeGaji::cutoffDay() + 1 }}–{{ \App\Support\PeriodeGaji::cutoffDay() }})</option>
+                        </select>
                         <select wire:model.live="bulan" class="form-select rounded-3" style="min-width: 160px;">
                             <option value="">Semua Bulan</option>
                             @foreach ($daftarBulan as $num => $nama)
@@ -249,7 +302,7 @@ Modal || lemon
                             <option value="{{ $th }}">{{ $th }}</option>
                             @endforeach
                         </select>
-                        @if ($search || $bulan !== '' || $tahun !== '')
+                        @if ($search || $bulan !== '' || $tahun !== '' || $modePeriode !== 'kalender')
                         <button type="button" wire:click="resetFilter"
                             class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
                             title="Reset filter">
@@ -258,9 +311,32 @@ Modal || lemon
                         @endif
                     </div>
                 </div>
+
+                {{-- Rentang periode yang BENAR-BENAR dipakai menghitung seluruh angka
+                     di layar ini. Selalu ditampilkan (bukan hanya saat siklus) karena
+                     di layar Modal "Semua Bulan" pun tetap jatuh ke satu periode konkret. --}}
+                <div class="mt-3 pt-3 border-top">
+                    <div class="siklus-chip d-inline-flex align-items-center gap-2">
+                        <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
+                            <i class="bi bi-calendar-range"></i>
+                        </span>
+                        <span class="siklus-chip-label">Periode</span>
+                        {{-- locale('id') dipaksa karena APP_LOCALE=en (lihat CLAUDE.md) --}}
+                        <span class="siklus-chip-date">{{ $siklusMulai->locale('id')->translatedFormat('d M Y') }}</span>
+                        <i class="bi bi-arrow-right siklus-chip-arrow"></i>
+                        <span class="siklus-chip-date">{{ $siklusAkhir->locale('id')->translatedFormat('d M Y') }}</span>
+                    </div>
+                    @if ($modePeriode === 'siklus20')
+                    <div class="text-muted mt-2" style="font-size:.78rem;">
+                        <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Sama dengan periode di fitur <b>Cash Flow</b>, <b>Pengeluaran</b>, & <b>Gaji</b> — gajian tanggal {{ \App\Support\PeriodeGaji::cutoffDay() }}.
+                    </div>
+                    @endif
+                </div>
+
+                @php $satuanPeriode = $modePeriode === 'siklus20' ? 'periode' : 'bulan'; @endphp
                 <div class="md-hint mt-3">
                     <i class="bi bi-info-circle-fill"></i>
-                    <span><b>Sisa</b> modal operasional otomatis bergulir jadi <b>Saldo Awal</b> bulan berikutnya, sehingga
+                    <span><b>Sisa</b> modal operasional otomatis bergulir jadi <b>Saldo Awal</b> {{ $satuanPeriode }} berikutnya, sehingga
                         finance cukup <b>top-up kekurangannya</b> menuju target. <b>Terpakai</b> = pengeluaran
                         "Lainnya" <b>+ Pembelian Akun</b> (kas nyata). <b>Modal Pembelian Akun</b> (untuk omset) tidak terpengaruh.</span>
                 </div>
@@ -297,11 +373,15 @@ Modal || lemon
 
                 <div class="row g-3">
                     @php
+                    // Kata "bulan"/"periode" mengikuti mode filter — di mode siklus
+                    // angkanya memang periode 21-20, bukan bulan kalender.
+                    $sp = $modePeriode === 'siklus20' ? 'Periode' : 'Bulan';
+                    $spKecil = mb_strtolower($sp);
                     $miniCards = [
-                    ['Saldo Awal', $saldoAwal, 'bi-piggy-bank-fill', 'linear-gradient(135deg,#6c63ff,#4e46e5)', 'dari sisa bulan lalu'],
-                    ['Top-up Bulan Ini', $setoranBulan, 'bi-plus-circle-fill', 'linear-gradient(135deg,#10b981,#059669)', 'setoran finance'],
+                    ['Saldo Awal', $saldoAwal, 'bi-piggy-bank-fill', 'linear-gradient(135deg,#6c63ff,#4e46e5)', 'dari sisa ' . $spKecil . ' lalu'],
+                    ['Top-up ' . $sp . ' Ini', $setoranBulan, 'bi-plus-circle-fill', 'linear-gradient(135deg,#10b981,#059669)', 'setoran finance'],
                     ['Terpakai', $terpakai, 'bi-dash-circle-fill', 'linear-gradient(135deg,#ef4444,#dc2626)', 'pengeluaran Lainnya + Pembelian Akun'],
-                    ['Sisa', $sisa, 'bi-arrow-right-circle-fill', 'linear-gradient(135deg,#0ea5e9,#2563eb)', '→ ke bulan depan'],
+                    ['Sisa', $sisa, 'bi-arrow-right-circle-fill', 'linear-gradient(135deg,#0ea5e9,#2563eb)', '→ ke ' . $spKecil . ' depan'],
                     ];
                     @endphp
                     @foreach ($miniCards as [$label, $val, $icon, $grad, $note])

@@ -6,6 +6,7 @@ use App\Actions\Finance\SyncCashFlowAction;
 use App\Models\Modal;
 use App\Models\Setting;
 use App\Models\Spending;
+use App\Support\PeriodeGaji;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -26,6 +27,11 @@ class ModalList extends Component
     public $tahun = '';
 
     public $targetInput = '';
+
+    // Mode periode: 'siklus20' = siklus gaji (21 s/d 20, mengikuti setelan
+    // payroll_cutoff_day) atau 'kalender' (1 s/d akhir bulan). Nama nilainya
+    // sengaja SAMA PERSIS dengan Cash Flow & Pengeluaran.
+    public $modePeriode = 'siklus20';
 
     /* ===== Form top-up modal operasional (CRUD via modal) ===== */
     public bool $showForm = false;
@@ -57,13 +63,18 @@ class ModalList extends Component
         'search' => ['except' => ''],
         'bulan' => ['except' => ''],
         'tahun' => ['except' => ''],
+        'modePeriode' => ['except' => 'siklus20'],
         'page' => ['except' => 1],
     ];
 
     public function mount(): void
     {
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        // Default: siklus gaji 21-20 periode BERJALAN — sama dengan Cash Flow,
+        // Pengeluaran, & Gaji. Pada tanggal 21+ periode ini beda dari bulan kalender.
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
         $this->targetInput = (string) (int) Setting::get('modal_operasional_target', 0);
     }
 
@@ -79,6 +90,12 @@ class ModalList extends Component
     }
 
     public function updatedTahun(): void
+    {
+        $this->resetPage();
+        $this->akunPage = 1;
+    }
+
+    public function updatedModePeriode(): void
     {
         $this->resetPage();
         $this->akunPage = 1;
@@ -103,10 +120,100 @@ class ModalList extends Component
 
     public function resetFilter(): void
     {
+        // "Reset" = kembali ke default (siklus 21-20 periode berjalan), seragam
+        // dengan tombol reset di Cash Flow & Pengeluaran.
         $this->reset(['search']);
-        $this->bulan = now()->month;
-        $this->tahun = now()->year;
+        $p = PeriodeGaji::dariTanggal(now());
+        $this->bulan = $p['bulan'];
+        $this->tahun = $p['tahun'];
+        $this->modePeriode = 'siklus20';
+        $this->akunPage = 1;
         $this->resetPage();
+    }
+
+    /**
+     * Apakah filter memakai siklus gaji 21-20.
+     *
+     * Beda dgn Cash Flow/Pengeluaran, di sini tidak disyaratkan bulan terisi:
+     * layar Modal SELALU jatuh ke bulan berjalan bila "Semua Bulan" dipilih
+     * (lihat periodeRange()), jadi periodenya selalu konkret.
+     */
+    protected function usesSiklus(): bool
+    {
+        return $this->modePeriode === 'siklus20';
+    }
+
+    /**
+     * Rentang periode terpilih sebagai [mulai, akhirEksklusif].
+     *
+     * SATU sumber untuk seluruh angka di layar ini: saldo awal, top-up, terpakai,
+     * rincian per produk, RSC, dan add-on. Sebelumnya tiap bagian memanggil
+     * whereYear+whereMonth sendiri-sendiri; disatukan supaya mode siklus tidak
+     * mungkin diterapkan setengah-setengah (mis. "terpakai" ikut siklus tapi
+     * "top-up" masih ikut bulan kalender).
+     *
+     * Mode 'kalender' menghasilkan rentang yang PERSIS sama dengan
+     * whereYear+whereMonth lama: [1 bln ini, 1 bln depan).
+     *
+     * @return array{0: Carbon, 1: Carbon}
+     */
+    protected function periodeRange(): array
+    {
+        $bulan = (int) ($this->bulan ?: now()->month);
+        $tahun = (int) ($this->tahun ?: now()->year);
+
+        if ($this->usesSiklus()) {
+            return [
+                PeriodeGaji::mulai($bulan, $tahun),
+                PeriodeGaji::akhir($bulan, $tahun)->addDay()->startOfDay(),
+            ];
+        }
+
+        return [
+            Carbon::create($tahun, $bulan, 1)->startOfMonth(),
+            Carbon::create($tahun, $bulan, 1)->addMonthNoOverflow()->startOfMonth(),
+        ];
+    }
+
+    /**
+     * Awal periode PERTAMA yang pernah punya top-up modal, dihitung memakai mode
+     * periode yang sedang aktif.
+     *
+     * Dipakai sebagai titik nol saldo awal: pengeluaran sebelum modal pertama
+     * kali disetor tidak boleh ikut mengurangi saldo.
+     */
+    private function anchorPeriode(): ?string
+    {
+        $pertama = Modal::operasional()->min('tanggal');
+
+        if (! $pertama) {
+            return null;
+        }
+
+        $t = Carbon::parse($pertama);
+
+        if ($this->usesSiklus()) {
+            $p = PeriodeGaji::dariTanggal($t);
+
+            return PeriodeGaji::mulai($p['bulan'], $p['tahun'])->toDateString();
+        }
+
+        return $t->startOfMonth()->toDateString();
+    }
+
+    /**
+     * Total setoran (top-up) modal operasional pada periode terpilih.
+     *
+     * Menggantikan Modal::totalOperasional($bulan, $tahun) yang hanya mengenal
+     * bulan kalender. Model-nya sengaja tidak diubah karena dipakai sebagai
+     * helper umum di luar layar ini.
+     */
+    private function setoranPeriode(Carbon $mulai, Carbon $akhirEks): float
+    {
+        return (float) Modal::operasional()
+            ->where('tanggal', '>=', $mulai->toDateString())
+            ->where('tanggal', '<', $akhirEks->toDateString())
+            ->sum('nominal');
     }
 
     private function bolehKelola(): bool
@@ -120,31 +227,31 @@ class ModalList extends Component
     }
 
     /**
-     * Saldo awal periode = akumulasi (setoran - terpakai operasional) sebelum bulan ini,
-     * dihitung MULAI dari bulan top-up modal pertama (agar pengeluaran lama sebelum
-     * modal dipakai tidak ikut mengurangi saldo).
+     * Saldo awal periode = akumulasi (setoran - terpakai operasional) sebelum
+     * periode ini, dihitung MULAI dari periode top-up modal pertama (agar
+     * pengeluaran lama sebelum modal dipakai tidak ikut mengurangi saldo).
+     *
+     * @param  string  $start  awal periode terpilih (Y-m-d)
      */
-    private function hitungSaldoAwal(int $bulan, int $tahun): float
+    private function hitungSaldoAwal(string $start): float
     {
-        $start = Carbon::create($tahun, $bulan, 1)->startOfMonth()->toDateString();
+        $anchor = $this->anchorPeriode();
 
-        $mulai = Modal::operasional()->min('tanggal');
-        if (! $mulai) {
+        if (! $anchor) {
             return 0.0;
         }
-        $mulaiBulan = Carbon::parse($mulai)->startOfMonth()->toDateString();
 
-        // Jika bulan ini adalah bulan mulai (atau sebelumnya) -> belum ada saldo awal.
-        if ($start <= $mulaiBulan) {
+        // Jika periode ini adalah periode mulai (atau sebelumnya) -> belum ada saldo awal.
+        if ($start <= $anchor) {
             return 0.0;
         }
 
         $setoranSebelum = (float) Modal::operasional()
             ->where('tanggal', '<', $start)->sum('nominal');
         $terpakaiSebelum = (float) $this->terpakaiOperasionalQuery()
-            ->where('tanggal_transaksi', '>=', $mulaiBulan)
+            ->where('tanggal_transaksi', '>=', $anchor)
             ->where('tanggal_transaksi', '<', $start)->sum('nominal')
-            + $this->terpakaiPrivateRange($mulaiBulan, $start);
+            + $this->terpakaiPrivateRange($anchor, $start);
 
         return $setoranSebelum - $terpakaiSebelum;
     }
@@ -199,10 +306,12 @@ class ModalList extends Component
      *
      * @return array<int, array{product_id:string,durasi_value:int,durasi_type:string,satuan:float,jumlah:int,total:float}>
      */
-    private function modalRscRincianRange(int $bulan, int $tahun): array
+    private function modalRscRincianRange(Carbon $mulai, Carbon $akhirEks): array
     {
         $reps = \App\Models\PemesananRsc::where('status', 'baru')
-            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal_pemesanan', $tahun)->whereMonth('tanggal_pemesanan', $bulan))
+            ->when(! $this->search, fn ($q) => $q
+                ->where('tanggal_pemesanan', '>=', $mulai->toDateString())
+                ->where('tanggal_pemesanan', '<', $akhirEks->toDateString()))
             ->orderBy('created_at')->orderBy('id')
             ->get()
             ->groupBy(fn ($r) => $r->nama_camp.'|'.$r->batch_camp)
@@ -277,14 +386,13 @@ class ModalList extends Component
             return;
         }
 
-        $bulan = (int) ($this->bulan ?: now()->month);
-        $tahun = (int) ($this->tahun ?: now()->year);
+        [$mulai, $akhirEks] = $this->periodeRange();
 
-        $saldoAwal = $this->hitungSaldoAwal($bulan, $tahun);
-        $setoranBulan = (float) Modal::totalOperasional($bulan, $tahun);
+        $saldoAwal = $this->hitungSaldoAwal($mulai->toDateString());
+        $setoranBulan = $this->setoranPeriode($mulai, $akhirEks);
         $target = (float) Setting::get('modal_operasional_target', 0);
 
-        // Kekurangan menuju target, memperhitungkan top-up yang sudah diisi bulan ini.
+        // Kekurangan menuju target, memperhitungkan top-up yang sudah diisi periode ini.
         $saran = $target - $saldoAwal - $setoranBulan;
 
         if ($saran <= 0) {
@@ -293,9 +401,12 @@ class ModalList extends Component
             return;
         }
 
-        $tanggal = ($bulan === (int) now()->month && $tahun === (int) now()->year)
+        // Tanggal top-up: hari ini bila hari ini memang jatuh di dalam periode
+        // terpilih, selain itu awal periode. Berbasis rentang supaya tetap benar
+        // di mode siklus (mis. periode 21 Jul-20 Agu saat hari ini 5 Agu).
+        $tanggal = now()->betweenIncluded($mulai, $akhirEks->copy()->subDay()->endOfDay())
             ? now()->toDateString()
-            : Carbon::create($tahun, $bulan, 1)->toDateString();
+            : $mulai->toDateString();
 
         // Buka form top-up TERISI (nominal kekurangan) agar bisa melampirkan bukti
         // gambar sebelum disimpan — konsisten dengan top-up manual.
@@ -487,8 +598,10 @@ class ModalList extends Component
     #[Layout('livewire.layout.templateindex')]
     public function render()
     {
-        $bulan = (int) ($this->bulan ?: now()->month);
-        $tahun = (int) ($this->tahun ?: now()->year);
+        [$rangeMulai, $rangeAkhir] = $this->periodeRange();
+        $mulaiPeriode = $rangeMulai->toDateString();
+        $akhirPeriode = $rangeAkhir->toDateString();          // eksklusif
+        $hargaCutoff = $rangeAkhir->copy()->subDay()->toDateString(); // hari terakhir periode
 
         $modals = Modal::operasional()
             ->with('penginput')
@@ -496,16 +609,17 @@ class ModalList extends Component
                 $term = '%'.$this->search.'%';
                 $q->where(fn ($x) => $x->where('deskripsi', 'like', $term)->orWhere('nominal', 'like', $term));
             })
-            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal', $tahun)->whereMonth('tanggal', $bulan))
+            ->when(! $this->search, fn ($q) => $q
+                ->where('tanggal', '>=', $mulaiPeriode)
+                ->where('tanggal', '<', $akhirPeriode))
             ->orderBy('tanggal', 'desc')
             ->paginate(10);
 
-        $saldoAwal = $this->hitungSaldoAwal($bulan, $tahun);
-        $setoranBulan = (float) Modal::totalOperasional($bulan, $tahun);
-        $mulaiPeriode = Carbon::create($tahun, $bulan, 1)->startOfMonth()->toDateString();
-        $akhirPeriode = Carbon::create($tahun, $bulan, 1)->addMonthNoOverflow()->startOfMonth()->toDateString();
+        $saldoAwal = $this->hitungSaldoAwal($mulaiPeriode);
+        $setoranBulan = $this->setoranPeriode($rangeMulai, $rangeAkhir);
         $terpakai = (float) $this->terpakaiOperasionalQuery()
-            ->whereYear('tanggal_transaksi', $tahun)->whereMonth('tanggal_transaksi', $bulan)->sum('nominal')
+            ->where('tanggal_transaksi', '>=', $mulaiPeriode)
+            ->where('tanggal_transaksi', '<', $akhirPeriode)->sum('nominal')
             + $this->terpakaiPrivateRange($mulaiPeriode, $akhirPeriode);
         $danaTersedia = $saldoAwal + $setoranBulan;
         $sisa = $danaTersedia - $terpakai;
@@ -522,7 +636,9 @@ class ModalList extends Component
         // Saat mencari, abaikan periode agar pencarian mencakup semua waktu (seragam dgn daftar setoran).
         $sharingRows = Spending::where('jenis_pengeluaran', 'pembelian_akun')
             ->where('status', 'completed')
-            ->when(! $this->search, fn ($q) => $q->whereYear('tanggal_transaksi', $tahun)->whereMonth('tanggal_transaksi', $bulan))
+            ->when(! $this->search, fn ($q) => $q
+                ->where('tanggal_transaksi', '>=', $mulaiPeriode)
+                ->where('tanggal_transaksi', '<', $akhirPeriode))
             ->when(! empty($privateIds), fn ($q) => $q->where(fn ($x) => $x->whereNull('product_id')->orWhereNotIn('product_id', $privateIds)))
             ->selectRaw('product_id, COALESCE(SUM(nominal), 0) as total')
             ->groupBy('product_id')
@@ -557,11 +673,11 @@ class ModalList extends Component
 
             $searching = (bool) $this->search;
             $privOrders = \App\Models\OrderItem::query()
-                ->whereHas('order', function ($q) use ($tahun, $bulan, $searching) {
+                ->whereHas('order', function ($q) use ($rangeMulai, $rangeAkhir, $searching) {
                     $q->whereIn('status', ['paid', 'processing', 'completed'])
-                        ->when(! $searching, function ($qq) use ($tahun, $bulan) {
-                            $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
-                                ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                        ->when(! $searching, function ($qq) use ($rangeMulai, $rangeAkhir) {
+                            $qq->whereRaw('COALESCE(paid_at, created_at) >= ?', [$rangeMulai])
+                                ->whereRaw('COALESCE(paid_at, created_at) < ?', [$rangeAkhir]);
                         });
                 })
                 ->whereIn('order_items.product_id', $privateIds)
@@ -619,7 +735,7 @@ class ModalList extends Component
         // Modal private dari Rumah Scopus (RSC) — baris tersendiri, supaya Rincian
         // cocok dengan total "terpakai" yg sudah memasukkan RSC. Kolom Durasi /
         // Modal Satuan / Order ikut terisi seperti baris private dari Order.
-        foreach ($this->modalRscRincianRange($bulan, $tahun) as $r) {
+        foreach ($this->modalRscRincianRange($rangeMulai, $rangeAkhir) as $r) {
             if ($r['total'] <= 0) {
                 continue;
             }
@@ -638,13 +754,13 @@ class ModalList extends Component
         // dicatat (SyncOrderPrivateCostAction) sehingga ikut terhitung di total
         // "terpakai" — tanpa baris ini, rincian tak akan cocok dengan totalnya.
         $searchingAddon = (bool) $this->search;
-        $addon = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($tahun, $bulan, $searchingAddon) {
+        $addon = \App\Support\AtribusiAddonJasa::hitung(function ($q) use ($rangeMulai, $rangeAkhir, $searchingAddon) {
             $q->whereIn('status', ['paid', 'processing', 'completed'])
-                ->when(! $searchingAddon, function ($qq) use ($tahun, $bulan) {
-                    $qq->whereRaw('YEAR(COALESCE(paid_at, created_at)) = ?', [$tahun])
-                        ->whereRaw('MONTH(COALESCE(paid_at, created_at)) = ?', [$bulan]);
+                ->when(! $searchingAddon, function ($qq) use ($rangeMulai, $rangeAkhir) {
+                    $qq->whereRaw('COALESCE(paid_at, created_at) >= ?', [$rangeMulai])
+                        ->whereRaw('COALESCE(paid_at, created_at) < ?', [$rangeAkhir]);
                 });
-        }, Carbon::create($tahun, $bulan, 1)->endOfMonth()->toDateString());
+        }, $hargaCutoff);
 
         foreach (($addon['modal'] ?? []) as $pid => $nilai) {
             if ($nilai <= 0) {
@@ -715,6 +831,11 @@ class ModalList extends Component
             'target' => $target,
             'saranTopUp' => $saranTopUp,
             'pembelianAkun' => $pembelianAkun,
+            // Rentang dihitung DI SINI, bukan di view — supaya tanggal yang tampil
+            // di chip mustahil beda dengan rentang yang benar-benar dipakai menghitung.
+            // 'siklusAkhir' sudah inklusif (siap tampil), beda dgn akhir eksklusif utk query.
+            'siklusMulai' => $rangeMulai,
+            'siklusAkhir' => $rangeAkhir->copy()->subDay(),
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ]);
