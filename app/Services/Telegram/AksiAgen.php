@@ -63,6 +63,11 @@ class AksiAgen
                 'jelas' => 'Jalankan pembatalan otomatis order yang sudah lewat batas waktu pembayaran.',
                 'ubah' => true,
             ],
+            'order_batalkan_tua' => [
+                'judul' => 'Batalkan order nyangkut >24 jam',
+                'jelas' => 'Batalkan order yang menggantung lebih dari 24 jam. Hanya dibatalkan bila penyedia QRIS memastikan belum dibayar — yang tak bisa diperiksa tetap dibiarkan.',
+                'ubah' => true,
+            ],
             'trafik' => [
                 'judul' => 'Trafik pengunjung',
                 'jelas' => 'Jumlah kunjungan & pengunjung unik hari ini, perbandingan dengan kemarin, dan halaman terpopuler.',
@@ -147,6 +152,7 @@ class AksiAgen
                 'qris' => self::qris(),
                 'order_nyangkut' => self::orderNyangkut(),
                 'order_batalkan' => self::orderBatalkan(),
+                'order_batalkan_tua' => self::orderBatalkanTua(),
                 'trafik' => self::trafik(),
                 'antrian' => self::antrian(),
                 'log' => self::log(),
@@ -230,6 +236,27 @@ class AksiAgen
     }
 
     /**
+     * Sapuan order yang menggantung LEBIH DARI 24 JAM.
+     *
+     * Kenapa perlu perintah tersendiri: /order_batalkan sengaja konservatif —
+     * order QRIS yang QR-nya pernah dibuat TIDAK pernah dibatalkannya, karena
+     * pernah terjadi order yang uangnya sudah masuk ikut terbatalkan. Akibatnya
+     * order QRIS yang benar-benar ditinggalkan customer menggantung selamanya
+     * dan /order_batalkan seolah "tidak bisa apa-apa".
+     *
+     * Perintah ini menembus pengaman itu, tapi HANYA setelah bertanya ke
+     * penyedia QRIS dan mendapat jawaban TEGAS "belum dibayar". Kalau
+     * pemeriksaan gagal (jaringan/konfigurasi), order tetap dibiarkan — lebih
+     * baik menggantung daripada membatalkan pesanan yang sudah dibayar.
+     */
+    private static function orderBatalkanTua(): string
+    {
+        return "🧹 BATALKAN ORDER NYANGKUT >24 JAM\n".str_repeat('─', 24)."\n\n"
+            ."Hanya dibatalkan bila penyedia QRIS memastikan BELUM dibayar.\n\n"
+            .self::artisan('orders:cancel-expired --tua=24');
+    }
+
+    /**
      * Order pending/draft, DIPISAH menurut apakah pembatal otomatis akan
      * menyentuhnya.
      *
@@ -287,8 +314,22 @@ class AksiAgen
                 $baris[] = '… dan '.($manual->count() - 10).' lainnya.';
             }
             $baris[] = '';
-            $baris[] = '→ Pembayaran manual (transfer/QRIS statis) tanpa batas waktu. '
-                .'/order_batalkan TIDAK menyentuhnya — perlu dicek di admin.';
+
+            // Pisahkan lagi: yang sudah >24 jam PUNYA jalan keluar lewat
+            // /order_batalkan_tua. Tanpa ini admin cuma diberi tahu "perlu dicek
+            // di admin" padahal ada perintah yang bisa menyelesaikannya.
+            $tua = $manual->filter(fn ($o) => self::sudahLewat24Jam($o));
+
+            $baris[] = '→ /order_batalkan TIDAK menyentuh kelompok ini: pembayaran manual '
+                .'(transfer/QRIS statis) tanpa batas waktu, atau QRIS yang QR-nya sudah '
+                .'pernah dibuat (ditahan supaya order terbayar tak ikut dibatalkan).';
+
+            if ($tua->isNotEmpty()) {
+                $baris[] = '';
+                $baris[] = '⏳ '.$tua->count().' di antaranya sudah lewat 24 jam.';
+                $baris[] = '→ /order_batalkan_tua untuk menyapunya (hanya yang dipastikan '
+                    .'BELUM dibayar oleh penyedia QRIS yang akan dibatalkan).';
+            }
         }
 
         return implode("\n", $baris);
@@ -319,12 +360,30 @@ class AksiAgen
 
         $terakhir = $o->payments->first();
 
-        if ($terakhir && ($terakhir->status === 'expire'
-            || ($terakhir->expired_at && $terakhir->expired_at->lessThanOrEqualTo(now())))) {
-            return true;
+        $kedaluwarsa = ($terakhir && ($terakhir->status === 'expire'
+                || ($terakhir->expired_at && $terakhir->expired_at->lessThanOrEqualTo(now()))))
+            || ($o->expired_at !== null && $o->expired_at->lessThanOrEqualTo(now()));
+
+        if (! $kedaluwarsa) {
+            return false;
         }
 
-        return $o->expired_at !== null && $o->expired_at->lessThanOrEqualTo(now());
+        // PENGAMAN QRIS — bagian ini dulu TIDAK ditiru di sini, sehingga order
+        // QRIS yang QR-nya pernah dibuat masuk daftar "AKAN DIBATALKAN OTOMATIS"
+        // padahal orders:cancel-expired justru melewatinya. Admin lalu menjalankan
+        // /order_batalkan, tidak terjadi apa-apa, dan bot terlihat rusak.
+        if ($o->payment_method === 'qris_dinamis' && ($o->qris_trx_id || $o->payments->isNotEmpty())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** Sudah menggantung lebih dari 24 jam → sasaran /order_batalkan_tua. */
+    private static function sudahLewat24Jam(Order $o): bool
+    {
+        return $o->created_at !== null
+            && $o->created_at->lessThanOrEqualTo(now()->subHours(24));
     }
 
     private static function antrian(): string
