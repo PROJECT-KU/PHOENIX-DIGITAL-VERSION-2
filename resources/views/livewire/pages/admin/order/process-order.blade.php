@@ -274,8 +274,25 @@ Proses Pesanan || lemon
             transition: all .2s ease;
         }
 
+        /* Ikon buku terlihat turun & agak ke kiri di dalam kotaknya.
+           Penyebabnya bukan .ep-icon (itu sudah flex + center), melainkan
+           Bootstrap Icons sendiri: .bi::before memakai `vertical-align: -.125em`
+           yang menggeser glif ke bawah.
+           Perbaikannya MENYALIN pola yang sudah dipakai .proc-section-icon di
+           berkas ini juga (ikon kepala seksi) — kotak ebook cuma terlewat. */
         .ebook-pick .ep-icon i.bi {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
             line-height: 1;
+        }
+
+        .ebook-pick .ep-icon i.bi::before {
+            display: block;
+            line-height: 1;
+            vertical-align: 0;
         }
 
         .ebook-pick:has(input:checked) .ep-icon {
