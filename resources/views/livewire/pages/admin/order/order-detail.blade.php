@@ -1288,7 +1288,16 @@ Detail Pesanan || lemon
                                     data-idTransaksi="{{ $order->order_number }}"
                                     data-nama="{{ $order->customer->nama }}"
                                     data-wa="{{ $order->customer->no_hp }}"
-                                    data-akun="{{ $item->dataakun?->nama_akun ?? '-' }}"
+                                    {{-- Nama PRODUK yang dibeli, bukan nama slot akun.
+                                         Sebelumnya memakai dataakun->nama_akun, yaitu nama baris
+                                         stok akun yang lazim bernomor ("DeepL Premium 1",
+                                         "DeepL Premium 2") — nomor itu penanda stok internal dan
+                                         ikut terkirim ke customer lewat WhatsApp.
+                                         product_name adalah salinan nama produk saat dipesan, jadi
+                                         tetap benar walau produknya kelak diganti nama atau dihapus;
+                                         product->nama_akun hanya cadangan untuk baris lama.
+                                         Sama dengan yang dipakai email pesanan. --}}
+                                    data-akun="{{ trim($item->product_name ?: ($item->product->nama_akun ?? '-')) }}"
                                     data-tglorder="{{ $order->created_at->translatedFormat('d F Y') }}"
                                     data-total="{{ number_format($order->total, 0, ',', '.') }}"
                                     data-pemesanan="{{ \Carbon\Carbon::parse($item->start_date)->format('d F Y') }}"
