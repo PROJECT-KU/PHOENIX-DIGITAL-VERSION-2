@@ -194,6 +194,14 @@ class Dashboard extends Component
             ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
             ->sum('total');
 
+        // Kode unik HARI INI. Syaratnya sengaja SAMA PERSIS dgn $pendapatanHariIni
+        // di atas (status & patokan tanggal), supaya angka ini selalu merupakan
+        // bagian dari Pendapatan Hari Ini — bukan dua hitungan yang bisa
+        // bergerak sendiri-sendiri dan membingungkan saat dicocokkan.
+        $kodeUnikHariIni = (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
+            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
+            ->sum('unique_code');
+
         // ==========================================
         // GRAFIK 1 TAHUN — income vs expense per bulan (dari cashflow)
         // ==========================================
@@ -261,6 +269,7 @@ class Dashboard extends Component
             'totalPemasukan' => number_format($totalPemasukanBulanIni ?? 0, 0, ',', '.'),
             'totalPengeluaran' => number_format($totalPengeluaranBulanIni ?? 0, 0, ',', '.'),
             'totalKodeUnik' => number_format($totalKodeUnikBulanIni ?? 0, 0, ',', '.'),
+            'kodeUnikHariIni' => number_format($kodeUnikHariIni ?? 0, 0, ',', '.'),
             'saldoBersih' => number_format($saldoBersihBulanIni ?? 0, 0, ',', '.'),
             'saldoIsNegatif' => $saldoBersihBulanIni < 0,
             'pendapatanHariIni' => number_format($pendapatanHariIni ?? 0, 0, ',', '.'),

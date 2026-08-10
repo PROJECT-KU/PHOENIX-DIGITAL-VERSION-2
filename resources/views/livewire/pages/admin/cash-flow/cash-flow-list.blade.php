@@ -202,6 +202,13 @@ Data Cash Flow || lemon
                         <div>
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Kode Unik</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ number_format($totalKodeUnik) }}</h4>
+                            {{-- Angka HARI INI tidak mengikuti filter periode, sama seperti
+                                 kartu "Pendapatan Hari Ini" di layar ini. Ditaruh di dalam
+                                 kartu agar susunan 2 atas + 3 bawah tetap utuh. --}}
+                            <span class="d-inline-flex align-items-center gap-1 mt-2 px-2 py-1 rounded-pill"
+                                style="font-size: 0.72rem; background: rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.28);">
+                                <i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ number_format($kodeUnikHariIni) }}</b>
+                            </span>
                         </div>
                     </div>
                 </div>

@@ -162,6 +162,12 @@ Dashboard || lemon
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Total Kode Unik</p>
                             <h4 class="fw-bold mb-0 text-dark">Rp {{ $totalKodeUnik }}</h4>
                             <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-calendar-check me-1"></i>Periode {{ $periodeLabel }}</span>
+                            {{-- Kode unik HARI INI ditaruh di dalam kartu ini, bukan sebagai kartu
+                                 ke-4, supaya susunan 2 kartu atas + 3 bawah tetap utuh. --}}
+                            <span class="d-inline-flex align-items-center gap-1 mt-2 px-2 py-1 rounded-pill"
+                                style="font-size: 0.72rem; background: rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.28);">
+                                <i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ $kodeUnikHariIni }}</b>
+                            </span>
                         </div>
                     </div>
                 </div>

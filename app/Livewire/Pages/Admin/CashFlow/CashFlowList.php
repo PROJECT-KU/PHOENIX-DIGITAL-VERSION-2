@@ -204,6 +204,10 @@ class CashFlowList extends Component
             'produkTotal' => $produkTotal,
             'produkTotalPages' => $produkTotalPages,
             'totalKodeUnik' => $this->hitungTotalKodeUnik(),
+            // Hanya untuk layar. Laporan PDF sengaja TIDAK memuat angka "hari ini"
+            // karena isinya laporan satu periode — angka hari berjalan di dalamnya
+            // justru menyesatkan saat dibaca ulang bulan depan.
+            'kodeUnikHariIni' => $this->hitungKodeUnikHariIni(),
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ])->layout('livewire.layout.templateindex');
@@ -700,6 +704,22 @@ class CashFlowList extends Component
         }
 
         return (float) $query->sum('unique_code');
+    }
+
+    /**
+     * Total kode unik dari pesanan yang UANGNYA masuk HARI INI.
+     *
+     * Sengaja TIDAK mengikuti filter periode — sama seperti "Pendapatan Hari
+     * Ini" di layar ini, angkanya selalu hari berjalan berapa pun periode yang
+     * sedang dipilih. Syarat status & patokan tanggalnya dibuat SAMA PERSIS
+     * dengan Pendapatan Hari Ini, supaya kode unik hari ini selalu merupakan
+     * bagian dari angka itu, bukan hitungan yang berdiri sendiri.
+     */
+    protected function hitungKodeUnikHariIni(): float
+    {
+        return (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
+            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
+            ->sum('unique_code');
     }
 
     protected function daftarBulan(): array
