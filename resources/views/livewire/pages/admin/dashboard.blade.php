@@ -107,6 +107,7 @@ Dashboard || lemon
                                 <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span></p>
                             <h4 class="fw-bold mb-0 text-success">Rp {{ $pendapatanHariIni }}</h4>
                             <span class="d-block mt-1 text-muted" style="font-size: 0.75rem;"><i class="bi bi-wallet2 me-1"></i>Pesanan dibayar hari ini (paid/proses/selesai)</span>
+                            <x-banding-harian :data="$bandingPendapatan" />
                         </div>
                     </div>
                 </div>
@@ -168,6 +169,7 @@ Dashboard || lemon
                                 style="font-size: 0.72rem; background: rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.28);">
                                 <i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ $kodeUnikHariIni }}</b>
                             </span>
+                            <x-banding-harian :data="$bandingKodeUnik" />
                         </div>
                     </div>
                 </div>

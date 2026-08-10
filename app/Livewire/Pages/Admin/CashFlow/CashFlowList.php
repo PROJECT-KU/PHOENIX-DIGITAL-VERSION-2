@@ -37,6 +37,14 @@ class CashFlowList extends Component
     /** Analisa menyeluruh (PHP, instan). Kosong = tombol belum ditekan. */
     public array $analisaLengkap = [];
 
+    /**
+     * Simpanan hasil perbandingan hari ini vs kemarin selama satu render.
+     * PROTECTED disengaja: Livewire hanya menserialisasi properti publik, dan
+     * angka ini harus selalu dihitung ulang tiap render (bukan dibawa-bawa
+     * dari permintaan sebelumnya, yang bisa basi saat lewat tengah malam).
+     */
+    protected ?array $simpananBanding = null;
+
     public function mount(): void
     {
         // Default: siklus gaji 21-20 periode BERJALAN (seragam dgn fitur Gaji/Task),
@@ -182,9 +190,12 @@ class CashFlowList extends Component
         // menunggu 'completed': order paid/processing (mis. cek plagiasi 5x yg
         // masih berjalan) tetap dihitung karena uangnya sudah diterima. Jumlah =
         // total pesanan (sama dgn nilai yg dicatat cash_flows saat completed).
-        $pendapatanHariIni = (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
-            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
-            ->sum('total');
+        //
+        // Rumusnya dipindah ke App\Support\PerbandinganHarian — sebelumnya query
+        // ini ditulis terpisah di sini DAN di Dashboard. Dua salinan rumus yang
+        // sama adalah cara termudah membuat dua layar diam-diam tidak sepakat.
+        $banding = $this->bandingHarian();
+        $pendapatanHariIni = $banding['pendapatan']['hari_ini'];
 
         return view('livewire.pages.admin.cash-flow.cash-flow-list', [
             'pendapatanHariIni' => $pendapatanHariIni,
@@ -208,6 +219,8 @@ class CashFlowList extends Component
             // karena isinya laporan satu periode — angka hari berjalan di dalamnya
             // justru menyesatkan saat dibaca ulang bulan depan.
             'kodeUnikHariIni' => $this->hitungKodeUnikHariIni(),
+            'bandingPendapatan' => $banding['pendapatan'],
+            'bandingKodeUnik' => $banding['kode_unik'],
             'daftarBulan' => $this->daftarBulan(),
             'daftarTahun' => $this->daftarTahun(),
         ])->layout('livewire.layout.templateindex');
@@ -717,9 +730,19 @@ class CashFlowList extends Component
      */
     protected function hitungKodeUnikHariIni(): float
     {
-        return (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
-            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
-            ->sum('unique_code');
+        return $this->bandingHarian()['kode_unik']['hari_ini'];
+    }
+
+    /**
+     * Hari ini vs kemarin (pemasukan & kode unik).
+     *
+     * Dihitung sekali per render lalu dipakai ulang — render() memerlukannya di
+     * beberapa tempat, dan tanpa penyimpanan ini query yang sama berulang.
+     * Isinya dari App\Support\PerbandinganHarian, SATU sumber bersama Dashboard.
+     */
+    protected function bandingHarian(): array
+    {
+        return $this->simpananBanding ??= \App\Support\PerbandinganHarian::ringkas();
     }
 
     protected function daftarBulan(): array

@@ -151,6 +151,7 @@ Data Cash Flow || lemon
                             <p class="text-muted fw-semibold mb-1" style="font-size: 0.85rem;">Pendapatan Hari Ini
                                 <span class="text-secondary">({{ now()->translatedFormat('d M Y') }})</span></p>
                             <h4 class="fw-bold mb-0 text-success">Rp {{ number_format($pendapatanHariIni) }}</h4>
+                            <x-banding-harian :data="$bandingPendapatan" />
                         </div>
                     </div>
                 </div>
@@ -209,6 +210,7 @@ Data Cash Flow || lemon
                                 style="font-size: 0.72rem; background: rgba(14,165,233,.12); color:#0369a1; border:1px solid rgba(14,165,233,.28);">
                                 <i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ number_format($kodeUnikHariIni) }}</b>
                             </span>
+                            <x-banding-harian :data="$bandingKodeUnik" />
                         </div>
                     </div>
                 </div>

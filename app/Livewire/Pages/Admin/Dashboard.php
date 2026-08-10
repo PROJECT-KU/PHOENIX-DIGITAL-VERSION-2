@@ -194,13 +194,12 @@ class Dashboard extends Component
             ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
             ->sum('total');
 
-        // Kode unik HARI INI. Syaratnya sengaja SAMA PERSIS dgn $pendapatanHariIni
-        // di atas (status & patokan tanggal), supaya angka ini selalu merupakan
-        // bagian dari Pendapatan Hari Ini — bukan dua hitungan yang bisa
-        // bergerak sendiri-sendiri dan membingungkan saat dicocokkan.
-        $kodeUnikHariIni = (float) Order::whereIn('status', ['paid', 'processing', 'completed'])
-            ->whereRaw('DATE(COALESCE(paid_at, created_at)) = ?', [today()->toDateString()])
-            ->sum('unique_code');
+        // Kode unik HARI INI + perbandingan dgn KEMARIN untuk keduanya.
+        // Dihitung di App\Support\PerbandinganHarian — SATU sumber bersama
+        // dengan Cash Flow, supaya dua layar itu mustahil menampilkan angka
+        // berbeda untuk hal yang sama.
+        $banding = \App\Support\PerbandinganHarian::ringkas();
+        $kodeUnikHariIni = $banding['kode_unik']['hari_ini'];
 
         // ==========================================
         // GRAFIK 1 TAHUN — income vs expense per bulan (dari cashflow)
@@ -270,6 +269,10 @@ class Dashboard extends Component
             'totalPengeluaran' => number_format($totalPengeluaranBulanIni ?? 0, 0, ',', '.'),
             'totalKodeUnik' => number_format($totalKodeUnikBulanIni ?? 0, 0, ',', '.'),
             'kodeUnikHariIni' => number_format($kodeUnikHariIni ?? 0, 0, ',', '.'),
+            // Angka mentah (bukan string terformat) — komponen <x-banding-harian>
+            // yang mengurus format & kalimat naik/turunnya.
+            'bandingPendapatan' => $banding['pendapatan'],
+            'bandingKodeUnik' => $banding['kode_unik'],
             'saldoBersih' => number_format($saldoBersihBulanIni ?? 0, 0, ',', '.'),
             'saldoIsNegatif' => $saldoBersihBulanIni < 0,
             'pendapatanHariIni' => number_format($pendapatanHariIni ?? 0, 0, ',', '.'),
