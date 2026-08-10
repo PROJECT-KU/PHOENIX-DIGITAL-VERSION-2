@@ -116,11 +116,27 @@ class PromoService
             });
 
             foreach ($productPromos as $promo) {
-                // Dua arah: promo ini mengizinkan gabung, DAN promo yg sudah
-                // terpasang juga mengizinkan. Dulu hanya arah pertama yg dicek.
-                if (! $this->bolehGabungPromo($promo, $promos)) {
+                // Sudah dipasang pada item SEBELUMNYA di keranjang ini?
+                $sudahIndex = null;
+                foreach ($promos as $i => $terpasang) {
+                    if (($terpasang['promo_id'] ?? null) === $promo->id) {
+                        $sudahIndex = $i;
+                        break;
+                    }
+                }
+
+                // Larangan "tidak bisa digabung" berlaku terhadap promo LAIN.
+                //
+                // Dulu pemeriksaan ini juga dijalankan untuk promo yang SAMA, jadi
+                // promo non-gabung memblokir DIRINYA SENDIRI: item pertama dapat
+                // diskon, item kedua & seterusnya tidak. Flash sale "17% all item"
+                // pada keranjang 3 produk cuma memotong produk pertama.
+                // Satu promo yang menutup beberapa item bukan penggabungan promo.
+                if ($sudahIndex === null && ! $this->bolehGabungPromo($promo, $promos)) {
                     continue;
                 }
+
+                $sudahDipakai = $sudahIndex !== null ? (float) $promos[$sudahIndex]['jumlah_diskon'] : 0.0;
 
                 $discount = $this->calculatePromoDiscount(
                     $item['subtotal'],
@@ -128,18 +144,34 @@ class PromoService
                     $isMember
                 );
 
+                // Diskon NOMINAL ("potong Rp 50.000") adalah jatah untuk SATU
+                // keranjang, bukan per item — tanpa batas ini, memperbaiki bug di
+                // atas justru membuat potongan nominal berlipat sebanyak itemnya.
+                // Diskon PERSEN memang wajar dihitung per item.
+                if ($promo->tipe_diskon !== 'persen') {
+                    $kuota = (float) $promo->getDiskonValue($isMember, 'nominal');
+                    $discount = max(0.0, min($discount, $kuota - $sudahDipakai));
+                }
+
                 if ($discount > 0) {
                     $totalDiscount += $discount;
-                    $promos[] = [
-                        'promo_id' => $promo->id,
-                        'kode_promo' => $promo->kode_promo,
-                        'nama_promo' => $promo->nama_promo,
-                        'tipe_promo' => $promo->tipe_promo,
-                        'tipe_diskon' => $promo->tipe_diskon,
-                        'nilai_diskon' => $promo->getDiskonValue($isMember),
-                        'jumlah_diskon' => $discount,
-                        'is_automatic' => true,
-                    ];
+
+                    if ($sudahIndex !== null) {
+                        // Satu promo tetap SATU baris di rincian, nilainya bertambah —
+                        // supaya pembeli tidak melihat promo yang sama terdaftar 3x.
+                        $promos[$sudahIndex]['jumlah_diskon'] += $discount;
+                    } else {
+                        $promos[] = [
+                            'promo_id' => $promo->id,
+                            'kode_promo' => $promo->kode_promo,
+                            'nama_promo' => $promo->nama_promo,
+                            'tipe_promo' => $promo->tipe_promo,
+                            'tipe_diskon' => $promo->tipe_diskon,
+                            'nilai_diskon' => $promo->getDiskonValue($isMember),
+                            'jumlah_diskon' => $discount,
+                            'is_automatic' => true,
+                        ];
+                    }
 
                     // If not stackable, stop after first promo
                     if (! $promo->can_stack_with_other) {
