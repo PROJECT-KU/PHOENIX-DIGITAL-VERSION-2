@@ -372,14 +372,9 @@ Detail Pesanan || lemon
                 <div class="info-row">
                     <span class="info-label">Metode Pembayaran</span>
                     <span class="info-value">
-                        @php
-                        $payMap = [
-                        'transfer' => ['Transfer Bank', 'bi-bank', 'primary'],
-                        'qris_statis' => ['QRIS Statis', 'bi-qr-code', 'info'],
-                        'qris_dinamis' => ['QRIS Dinamis', 'bi-qr-code-scan', 'success'],
-                        ];
-                        $pay = $payMap[$order->payment_method] ?? null;
-                        @endphp
+                        {{-- Peta metodenya kini di Order::labelPembayaran() supaya daftar
+                             pesanan memakai nama & warna yang sama persis. --}}
+                        @php $pay = $order->labelPembayaran(); @endphp
                         @if ($pay)
                         <span class="badge bg-{{ $pay[2] }}-subtle text-{{ $pay[2] }} border border-{{ $pay[2] }}">
                             <i class="bi {{ $pay[1] }}"></i> {{ $pay[0] }}

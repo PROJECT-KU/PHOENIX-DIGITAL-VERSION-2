@@ -637,6 +637,28 @@ class Order extends Model
      *
      * @return array{0:string,1:string} [teks, warna bootstrap]
      */
+    /**
+     * Label metode pembayaran untuk ditampilkan.
+     *
+     * SATU sumber untuk detail pesanan maupun daftar pesanan. Petanya dulu
+     * ditulis langsung di dalam blade detail; begitu daftar pesanan ikut
+     * menampilkannya, peta itu akan tersalin dua kali dan cukup satu kali
+     * lupa disunting untuk membuat dua layar menyebut nama berbeda.
+     *
+     * Mengembalikan null bila metodenya kosong / tak dikenal, supaya tampilan
+     * bisa memutuskan sendiri (mis. menulis "-") alih-alih menebak nama.
+     *
+     * @return array{0:string,1:string,2:string}|null [teks, ikon, warna bootstrap]
+     */
+    public function labelPembayaran(): ?array
+    {
+        return [
+            'transfer' => ['Transfer Bank', 'bi-bank', 'primary'],
+            'qris_statis' => ['QRIS Statis', 'bi-qr-code', 'info'],
+            'qris_dinamis' => ['QRIS Dinamis', 'bi-qr-code-scan', 'success'],
+        ][$this->payment_method] ?? null;
+    }
+
     public function labelStatus(): array
     {
         $map = [

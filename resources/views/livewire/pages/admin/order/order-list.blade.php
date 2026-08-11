@@ -345,6 +345,7 @@ Data Pesanan || lemon
                                 <th>Kode Pesanan</th>
                                 <th>Customer</th>
                                 <th>Total</th>
+                                <th class="text-center">Metode Bayar</th>
                                 <th class="text-center">Status</th>
                                 <th>Tanggal Pemesanan</th>
                                 <th class="text-center">Aksi</th>
@@ -373,6 +374,19 @@ Data Pesanan || lemon
                                 <td>{{ $order->customer->nama }}</td>
                                 <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
                                 <td class="text-center">
+                                    {{-- Nama & warna dari Order::labelPembayaran(), sumber yang sama
+                                         dgn halaman detail pesanan. --}}
+                                    @php $pay = $order->labelPembayaran(); @endphp
+                                    @if ($pay)
+                                    <span class="badge bg-{{ $pay[2] }}-subtle text-{{ $pay[2] }} border border-{{ $pay[2] }} text-nowrap"
+                                        style="font-size:.7rem;">
+                                        <i class="bi {{ $pay[1] }}"></i> {{ $pay[0] }}
+                                    </span>
+                                    @else
+                                    <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
                                     @php [$stTeks, $stWarna] = $order->labelStatus(); @endphp
                                     <span class="badge bg-{{ $stWarna }}">
                                         {{ $stTeks }}
@@ -398,7 +412,7 @@ Data Pesanan || lemon
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
                                         <div class="empty-state-icon-wrapper mb-3">
                                             <i class="bi bi-inbox"></i>
