@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\Order;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Support\CariNoHp;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -96,15 +97,21 @@ class OrderList extends Component
         return Order::query()
             ->when($this->search, function ($q) {
                 $term = $this->search;
-                $q->where(function ($sub) use ($term) {
+                // Nomor HP dicocokkan lewat bentuk INTI supaya "+62 813-3913-9595"
+                // (disalin dari WhatsApp) tetap menemukan "081339139595" di DB.
+                $intiHp = CariNoHp::inti($term);
+                $q->where(function ($sub) use ($term, $intiHp) {
                     $sub->where('order_number', 'like', "%{$term}%")
                         ->orWhere('status', 'like', "%{$term}%")
                         ->orWhere('payment_method', 'like', "%{$term}%")
                         ->orWhere('customer_notes', 'like', "%{$term}%")
-                        ->orWhereHas('customer', function ($c) use ($term) {
+                        ->orWhereHas('customer', function ($c) use ($term, $intiHp) {
                             $c->where('nama', 'like', "%{$term}%")
                                 ->orWhere('email', 'like', "%{$term}%")
-                                ->orWhere('no_hp', 'like', "%{$term}%");
+                                ->orWhere('no_hp', 'like', "%{$term}%")
+                                ->when($intiHp, fn ($x) => $x->orWhereRaw(
+                                    CariNoHp::kolomBersih('no_hp').' LIKE ?', ["%{$intiHp}%"]
+                                ));
                         })
                         ->orWhereHas('items', function ($it) use ($term) {
                             $it->where('product_name', 'like', "%{$term}%")
@@ -188,17 +195,21 @@ class OrderList extends Component
             })
             ->when($this->search, function ($q) {
                 $term = $this->search;
-                $q->where(function ($sub) use ($term) {
+                $intiHp = CariNoHp::inti($term);
+                $q->where(function ($sub) use ($term, $intiHp) {
                     $sub->where('product_name', 'like', "%{$term}%")
                         ->orWhere('account_username', 'like', "%{$term}%")
                         ->orWhere('account_link', 'like', "%{$term}%")
                         ->orWhere('subscription_status', 'like', "%{$term}%")
-                        ->orWhereHas('order', function ($o) use ($term) {
+                        ->orWhereHas('order', function ($o) use ($term, $intiHp) {
                             $o->where('order_number', 'like', "%{$term}%")
-                                ->orWhereHas('customer', function ($c) use ($term) {
+                                ->orWhereHas('customer', function ($c) use ($term, $intiHp) {
                                     $c->where('nama', 'like', "%{$term}%")
                                         ->orWhere('email', 'like', "%{$term}%")
-                                        ->orWhere('no_hp', 'like', "%{$term}%");
+                                        ->orWhere('no_hp', 'like', "%{$term}%")
+                                        ->when($intiHp, fn ($x) => $x->orWhereRaw(
+                                            CariNoHp::kolomBersih('no_hp').' LIKE ?', ["%{$intiHp}%"]
+                                        ));
                                 });
                         });
                 });
