@@ -12,9 +12,17 @@
 return [
     'site_name' => 'Phoenix Digital',
 
-    // Kode verifikasi Google Search Console (untuk properti "Awalan URL" via meta tag).
-    // Catatan: verifikasi properti "Domain" TETAP butuh TXT record di DNS, bukan ini.
-    'google_verification' => 'JM7dDU4JCagjM8LcAFJH8fdB3RwdWA_92UAUXLIt-iM',
+    // Kode verifikasi Google Search Console untuk properti "Awalan URL" (meta tag).
+    //
+    // Sengaja KOSONG. Properti yang aktif sekarang adalah properti "Domain"
+    // phoenixdigitalwarehouse.com, dan itu diverifikasi lewat catatan TXT di DNS
+    // — bukan lewat meta tag ini. Nilai yang dulu ada di sini milik properti
+    // domain LAMA (phoenixdigital.id) dan sudah tidak mengikat apa pun, jadi
+    // menyimpannya hanya menyesatkan orang berikutnya yang membaca berkas ini.
+    //
+    // Isi lagi HANYA bila suatu saat menambah properti "Awalan URL" baru yang
+    // memang diverifikasi dengan metode meta tag.
+    'google_verification' => env('GOOGLE_SITE_VERIFICATION', ''),
 
     // Path relatif (bukan URL) — URL dibangun dengan asset() di partial.
     'image' => 'storage/img/phoenix-mark.png',
