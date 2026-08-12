@@ -41,13 +41,17 @@ return [
     /*
      * Google Analytics 4.
      *
-     * Nilai bawaannya properti yang sudah berjalan sejak sebelum pindah domain.
-     * Dibuat lewat env supaya bisa dipindahkan ke properti Phoenix Digital
-     * sendiri tanpa menyunting blade, atau dikosongkan untuk mematikan
-     * pelacakan sepenuhnya.
+     * Sengaja TANPA nilai bawaan. Sebelumnya kode ini jatuh ke G-YTEV4R4VHX,
+     * properti peninggalan yang tidak bisa dibuka pemilik situs — jadi bila
+     * kunci env hilang, data pengunjung mengalir diam-diam ke tempat yang tak
+     * seorang pun bisa membacanya. Kosong jauh lebih baik: pelacakan mati, dan
+     * matinya terlihat.
+     *
+     * Kosongkan juga di mesin lokal agar lalu lintas pengembangan tidak
+     * mencemari laporan properti sungguhan.
      */
     'google_analytics' => [
-        'id' => env('GA_MEASUREMENT_ID', 'G-YTEV4R4VHX'),
+        'id' => env('GA_MEASUREMENT_ID', ''),
     ],
 
     /*
