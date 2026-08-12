@@ -39,6 +39,18 @@ return [
     ],
 
     /*
+     * Google Analytics 4.
+     *
+     * Nilai bawaannya properti yang sudah berjalan sejak sebelum pindah domain.
+     * Dibuat lewat env supaya bisa dipindahkan ke properti Phoenix Digital
+     * sendiri tanpa menyunting blade, atau dikosongkan untuk mematikan
+     * pelacakan sepenuhnya.
+     */
+    'google_analytics' => [
+        'id' => env('GA_MEASUREMENT_ID', 'G-YTEV4R4VHX'),
+    ],
+
+    /*
      * Meta Pixel + Conversions API.
      *
      * Pixel di browser mengirim ViewContent/AddToCart/InitiateCheckout; PEMBELIAN
