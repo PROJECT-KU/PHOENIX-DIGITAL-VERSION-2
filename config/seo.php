@@ -86,7 +86,7 @@ return [
     // Data bisnis untuk structured data (JSON-LD LocalBusiness).
     'business' => [
         'telephone' => '+6289505967995',
-        'email' => 'halo@phoenixdigital.id',
+        'email' => 'halo@phoenixdigitalwarehouse.com',
         'address' => 'Jl. Durmo, Ngemplak, Mlati, Sleman, Yogyakarta',
         'region' => 'Yogyakarta',
         'locality' => 'Sleman',

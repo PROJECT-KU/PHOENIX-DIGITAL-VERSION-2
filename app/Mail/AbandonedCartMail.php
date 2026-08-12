@@ -17,7 +17,7 @@ class AbandonedCartMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigital.id');
+        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigitalwarehouse.com');
 
         return new Envelope(
             from: new Address($from, 'Phoenix Digital'),

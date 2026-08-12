@@ -77,14 +77,14 @@ php artisan queue:work     # queue, cache, dan session semuanya memakai driver d
 
 ### Kunci `.env` yang belum ada di `.env.example`
 
-`config/mail.php` mendefinisikan mailer kedua bernama `phoenix` untuk email ke pelanggan (`halo@phoenixdigital.id`); dashboard tetap memakai mailer `smtp` bawaan. Mailer itu membaca lima kunci:
+`config/mail.php` mendefinisikan mailer kedua bernama `phoenix` untuk email ke pelanggan (`halo@phoenixdigitalwarehouse.com`); dashboard tetap memakai mailer `smtp` bawaan. Mailer itu membaca lima kunci:
 
 | Kunci | Nilai bawaan | Wajib diisi? |
 |---|---|---|
 | `PHOENIX_MAIL_HOST` | `smtp.hostinger.com` | tidak |
 | `PHOENIX_MAIL_PORT` | `465` | tidak |
 | `PHOENIX_MAIL_ENCRYPTION` | `ssl` | tidak |
-| `PHOENIX_MAIL_USERNAME` | `halo@phoenixdigital.id` | tidak |
+| `PHOENIX_MAIL_USERNAME` | `halo@phoenixdigitalwarehouse.com` | tidak |
 | `PHOENIX_MAIL_PASSWORD` | — | **ya** |
 
 Jadi yang benar-benar wajib ada di `.env` produksi hanya `PHOENIX_MAIL_PASSWORD`; sisanya sudah punya nilai bawaan yang tepat.

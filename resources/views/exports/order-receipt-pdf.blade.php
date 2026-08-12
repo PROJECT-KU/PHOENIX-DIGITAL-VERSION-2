@@ -354,7 +354,7 @@
             <tr>
                 <td style="vertical-align:top;">
                     <div class="brand-name">PHOENIX DIGITAL WAREHOUSE</div>
-                    <div class="brand-sub">phoenixdigital.id &bull; IG: phoenixdigital_warehouse</div>
+                    <div class="brand-sub">phoenixdigitalwarehouse.com &bull; IG: phoenixdigital_warehouse</div>
                 </td>
                 <td style="vertical-align:top;">
                     <div class="doc-type">BUKTI PEMESANAN</div>
@@ -517,7 +517,7 @@
     <div class="footer">
         <div class="thanks">Terima kasih telah berbelanja di Phoenix Digital Warehouse!</div>
         Dokumen dibuat &amp; disahkan otomatis oleh sistem &bull; {{ now()->translatedFormat('d F Y, H:i') }} WIB
-        &bull; phoenixdigital.id
+        &bull; phoenixdigitalwarehouse.com
     </div>
 </body>
 

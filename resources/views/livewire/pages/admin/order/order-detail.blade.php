@@ -1739,7 +1739,7 @@ Terima kasih telah menggunakan layanan kami.
 Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigital.id/`;
+Website: https://phoenixdigitalwarehouse.com/`;
         } else if (type === 'pembaharuan') {
             pesan =
                 `ID Transaksi: ${idtransaksi}
@@ -1757,7 +1757,7 @@ Terima kasih telah menggunakan layanan kami.
 Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigital.id/`;
+Website: https://phoenixdigitalwarehouse.com/`;
         } else if (type === 'habis') {
             pesan =
                 `ID Transaksi: ${idtransaksi}
@@ -1770,7 +1770,7 @@ Terima kasih telah menggunakan layanan kami.
 Salam hangat,
 Phoenix Digital Warehouse
 Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigital.id/`;
+Website: https://phoenixdigitalwarehouse.com/`;
         }
 
         // Bersihkan nomor (hanya digit) & pakai endpoint api.whatsapp.com

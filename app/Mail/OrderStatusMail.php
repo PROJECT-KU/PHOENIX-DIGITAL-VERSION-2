@@ -14,7 +14,7 @@ class OrderStatusMail extends Mailable
         public Order $order,
         public string $type // paid | cancelled | reminder
     ) {
-        // Email PUBLIC dikirim via akun halo@phoenixdigital.id (mailer 'phoenix').
+        // Email PUBLIC dikirim via akun halo@phoenixdigitalwarehouse.com (mailer 'phoenix').
         $this->mailer = 'phoenix';
     }
 
@@ -26,7 +26,7 @@ class OrderStatusMail extends Mailable
             'reminder' => 'Segera Selesaikan Pembayaran — '.$this->order->order_number,
         ];
 
-        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigital.id');
+        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigitalwarehouse.com');
 
         return new Envelope(
             from: new Address($from, 'Phoenix Digital'),

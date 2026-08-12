@@ -20,7 +20,7 @@ E-commerce Phoenix Digital: menjual akun premium, lisensi, tools AI, dan **JASA 
 
 - **Branch flow: `need → dev → main`** (`git merge --no-edit`, umumnya fast-forward). Commit di `need`, lalu merge maju.
 - Branch lokal `need` **sering tertinggal** dari `origin/main`. Sebelum commit: `git stash` → `git merge --ff-only origin/main` → `git stash pop` → baru commit. Selalu cek `git diff --stat` bersih (hanya file yang dimaksud).
-- **Deploy server** (Hostinger shared, SSH port 65002): path Laravel = `~/domains/phoenixdigital.id/public_html/phoenixdigital`. Deploy = `git checkout main && git pull origin main && php artisan optimize:clear`. Migrasi: `php artisan migrate --force`.
+- **Deploy server** (Hostinger shared, SSH port 65002): path Laravel = `~/domains/phoenixdigitalwarehouse.com/public_html/phoenixdigital`. Deploy = `git checkout main && git pull origin main && php artisan optimize:clear`. Migrasi: `php artisan migrate --force`.
 - **Kredensial (SSH password, CRON_TOKEN) dibagikan terpisah — JANGAN commit ke repo.** Rotasi password SSH setelah tiap deploy.
 - **crontab CLI diblokir**; tinker REPL butuh proc_open. Untuk skrip kompleks di server pakai `php artisan tinker --execute="eval(base64_decode('<b64>'))"`. SSH otomatis via `expect` (hapus helper berisi password setelah dipakai).
 - **Env server:** `proc_open` AKTIF di CLI **dan** SAPI web (schedule:run via HTTP berhasil). `ini_set('memory_limit')` bisa dinaikkan (dipakai 3072M utk parse PDF). Upload limit dinaikkan ke 100MB.

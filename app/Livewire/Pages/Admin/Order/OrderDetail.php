@@ -630,9 +630,9 @@ class OrderDetail extends Component
                 return;
             }
 
-            // Pakai mailer 'phoenix' secara eksplisit (halo@phoenixdigital.id).
+            // Pakai mailer 'phoenix' secara eksplisit (halo@phoenixdigitalwarehouse.com).
             // Tanpa ini, email keluar lewat mailer default (akun ACM) sehingga
-            // alamat pengirim halo@phoenixdigital.id ditolak server ("553 Sender
+            // alamat pengirim halo@phoenixdigitalwarehouse.com ditolak server ("553 Sender
             // address rejected: not owned by user").
             Mail::mailer('phoenix')->to($email)->send(new JasaHasilMail($this->order, $up));
         } catch (\Throwable $e) {

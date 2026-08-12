@@ -261,9 +261,9 @@
                                     <i class="bi bi-whatsapp"></i>
                                     <span>0895-0596-7995</span>
                                 </a>
-                                <a class="contact-item" href="mailto:halo@phoenixdigital.id" style="text-decoration:none">
+                                <a class="contact-item" href="mailto:halo@phoenixdigitalwarehouse.com" style="text-decoration:none">
                                     <i class="bi bi-envelope"></i>
-                                    <span>halo@phoenixdigital.id</span>
+                                    <span>halo@phoenixdigitalwarehouse.com</span>
                                 </a>
                             </div>
                         </div>

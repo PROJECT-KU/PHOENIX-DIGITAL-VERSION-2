@@ -13,7 +13,7 @@
 
                 <div class="bf-url mt-2">
                     <i class="bi bi-link-45deg"></i>
-                    <span class="bf-url-base">phoenixdigital.id/blog/</span>
+                    <span class="bf-url-base">phoenixdigitalwarehouse.com/blog/</span>
                     <span class="bf-url-slug">{{ $slug ?: 'otomatis-dari-judul' }}</span>
                     <span class="bf-url-auto"><i class="bi bi-magic"></i> otomatis</span>
                 </div>

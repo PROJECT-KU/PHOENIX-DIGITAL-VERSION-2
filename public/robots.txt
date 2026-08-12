@@ -8,4 +8,4 @@ Disallow: /admin
 Disallow: /s/
 Disallow: /e/
 
-Sitemap: https://phoenixdigital.id/sitemap.xml
+Sitemap: https://phoenixdigitalwarehouse.com/sitemap.xml

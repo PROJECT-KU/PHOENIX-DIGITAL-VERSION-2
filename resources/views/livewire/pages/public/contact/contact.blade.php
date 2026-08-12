@@ -68,11 +68,11 @@
                                 <b>0895-0596-7995</b>
                             </span>
                         </a>
-                        <a class="ct-info-item" href="mailto:halo@phoenixdigital.id">
+                        <a class="ct-info-item" href="mailto:halo@phoenixdigitalwarehouse.com">
                             <span class="ct-info-ic"><i class="bi bi-envelope-fill"></i></span>
                             <span class="ct-info-txt">
                                 <small>Email</small>
-                                <b>halo@phoenixdigital.id</b>
+                                <b>halo@phoenixdigitalwarehouse.com</b>
                             </span>
                         </a>
                         <div class="ct-info-item">

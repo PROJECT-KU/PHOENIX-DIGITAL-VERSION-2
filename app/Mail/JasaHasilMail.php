@@ -12,7 +12,7 @@ use Illuminate\Mail\Mailables\Envelope;
 /**
  * Beri tahu customer bahwa HASIL pengecekan plagiasi sudah siap, beserta
  * link untuk membukanya & mengunduh. Dikirim saat admin menyimpan hasil.
- * Branding Phoenix (mailer 'phoenix' = halo@phoenixdigital.id), seragam
+ * Branding Phoenix (mailer 'phoenix' = halo@phoenixdigitalwarehouse.com), seragam
  * dengan email pesanan customer lain.
  */
 class JasaHasilMail extends Mailable
@@ -26,7 +26,7 @@ class JasaHasilMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigital.id');
+        $from = config('mail.mailers.phoenix.username', 'halo@phoenixdigitalwarehouse.com');
 
         // Parafrase menghasilkan dokumen kerja (DOCX), bukan sekadar laporan
         // pengecekan — subjeknya menyesuaikan agar tidak membingungkan customer.
