@@ -43,3 +43,41 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Dibungkus IfModule supaya situs tetap hidup bila mod_headers tidak aktif —
+# tanpa pembungkus ini, modul yang hilang membuat Apache membalas 500 untuk
+# SELURUH halaman, bukan sekadar melewati barisnya.
+<IfModule mod_headers.c>
+    # Paksa browser selalu memakai HTTPS untuk kunjungan berikutnya.
+    #
+    # env=HTTPS: hanya dikirim pada respons HTTPS. Header ini memang diabaikan
+    # browser bila datang lewat HTTP, tapi mengirimnya di sana tetap sia-sia.
+    #
+    # max-age SENGAJA 1 hari, bukan 1 tahun. Selama masa itu browser MENOLAK
+    # membuka situs lewat HTTP, jadi bila sertifikat SSL bermasalah, situs tidak
+    # bisa diakses sampai masanya habis. Satu hari cukup memberi manfaat sambil
+    # tetap pulih sendiri dalam sehari. Naikkan setelah terbukti tenang.
+    #
+    # TANPA includeSubDomains dan TANPA preload — keduanya sulit dibatalkan;
+    # preload bahkan tersimpan di dalam browser dan perlu berbulan-bulan untuk
+    # dicabut.
+    Header always set Strict-Transport-Security "max-age=86400" env=HTTPS
+
+    # Jangan menebak jenis berkas dari isinya. Tanpa ini, berkas unggahan
+    # pelanggan yang isinya HTML bisa diperlakukan sebagai halaman dan
+    # dijalankan di dalam domain ini.
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Cegah token pelanggan bocor lewat kolom perujuk (referrer).
+    #
+    # Halaman seperti /cek/{token} dan /s/{token} memuat kunci akses pada
+    # ALAMATNYA. Bila pengunjung mengklik tautan ke situs lain dari sana,
+    # browser mengirimkan alamat lengkap itu ke situs tujuan. Dengan aturan ini
+    # yang terkirim lintas-situs hanya nama domain, tanpa jalur dan tanpa token.
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Halaman hanya boleh dibingkai oleh domain sendiri, supaya tidak bisa
+    # ditumpangi situs lain untuk menjebak klik. SAMEORIGIN, bukan DENY:
+    # halaman detail pelamar di admin menyematkan berkas dari domain ini.
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
