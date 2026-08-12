@@ -9,6 +9,30 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+    # Jalur internal tidak boleh dibuka langsung sebagai alamat publik.
+    #
+    # Di hosting ini Laravel tinggal di public_html/phoenixdigital/public, dan
+    # .htaccess di public_html meneruskan semua permintaan ke sana. Efek
+    # sampingnya: /phoenixdigital/public/shop juga menyajikan situs yang sama
+    # secara utuh — salinan ketiga, lengkap dengan canonical yang menunjuk
+    # dirinya sendiri, sehingga Google bisa mengindeksnya sebagai situs terpisah
+    # dan memecah nilai peringkat.
+    #
+    # Aturannya HARUS di berkas ini, bukan di public_html/.htaccess: begitu
+    # permintaan masuk ke direktori yang punya .htaccess sendiri, Apache
+    # MENIMPA seluruh aturan rewrite induknya, jadi aturan di luar tidak pernah
+    # dijalankan untuk alamat tersebut.
+    #
+    # Memakai THE_REQUEST, BUKAN REQUEST_URI. THE_REQUEST berisi baris
+    # permintaan ASLI dari browser dan tidak ikut berubah oleh penerusan
+    # internal. Itulah yang membuat aturan ini aman: kunjungan wajar ke /shop
+    # diteruskan diam-diam menjadi /phoenixdigital/public/shop, tetapi
+    # THE_REQUEST-nya tetap "GET /shop" sehingga tidak ikut tercocok. Dengan
+    # REQUEST_URI, aturan ini akan mencocoki hasil penerusannya sendiri lalu
+    # berputar tanpa henti dan menjatuhkan seluruh situs.
+    RewriteCond %{THE_REQUEST} \s/+phoenixdigital/public/([^\s?]*) [NC]
+    RewriteRule ^ /%1 [L,R=301]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
