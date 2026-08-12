@@ -544,6 +544,12 @@ class CheckoutPage extends Component
                 'customer_id' => $customer->id,
                 'subtotal' => $this->subtotal,
                 'guest_token' => Cookie::get('guest_token'),
+                // Direkam SEKARANG karena pembelian dilaporkan ke Meta dari
+                // server saat pembayaran dikonfirmasi — dan konfirmasi itu
+                // datang dari Midtrans/cron QRIS, yang tidak membawa cookie
+                // pengunjung. Checkout adalah kesempatan terakhir mengambilnya.
+                'fbp' => \App\Support\CookieMeta::fbp(),
+                'fbc' => \App\Support\CookieMeta::fbc(),
                 'total' => $this->finalTotal,
                 'unique_code' => $this->uniqueCode,
                 'status' => 'pending',

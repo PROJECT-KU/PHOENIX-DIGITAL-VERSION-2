@@ -39,11 +39,15 @@ class Order extends Model
         'total_discount',
         'guest_token',
         'unique_code',
+        'fbp',
+        'fbc',
+        'meta_purchase_sent_at',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'expired_at' => 'datetime',
+        'meta_purchase_sent_at' => 'datetime',
         'applied_promos' => 'array',
         'promo_discount' => 'decimal:0',
         'referral_discount' => 'decimal:0',
@@ -70,6 +74,21 @@ class Order extends Model
                 && $order->status === 'paid'
                 && $order->getOriginal('status') !== 'paid') {
                 \App\Notifications\PesananBaru::kirim($order);
+            }
+
+            // Laporkan pembelian ke Meta begitu uangnya nyata. Sengaja mencakup
+            // processing/completed juga, bukan 'paid' saja: admin kadang
+            // menandai pesanan langsung selesai tanpa melewati 'paid', dan
+            // pembelian itu tetap harus terhitung.
+            if ($order->wasChanged('status')
+                && in_array($order->status, ['paid', 'processing', 'completed'], true)
+                && $order->meta_purchase_sent_at === null) {
+                // afterResponse: pengiriman ke Facebook menunggu jawaban
+                // Midtrans terkirim lebih dulu. Callback gateway yang lambat
+                // akan diulang, dan pengulangan itu menyentuh sisi keuangan.
+                dispatch(function () use ($order) {
+                    app(\App\Services\MetaConversionsApi::class)->kirimPembelian($order->fresh());
+                })->afterResponse();
             }
         });
     }

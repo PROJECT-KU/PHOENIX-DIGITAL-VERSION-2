@@ -3,6 +3,7 @@
      halaman bertoken pixel-nya tidak dimuat sama sekali — satu-satunya cara
      mencegah token pelanggan sampai ke Facebook. --}}
 @unless (\App\Support\JalurAnalitik::peka())
+@php($pixelId = config('services.meta.pixel_id'))
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -13,11 +14,11 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
-fbq('init', '1364755135528892');
+fbq('init', @json($pixelId));
 fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none"
-src="https://www.facebook.com/tr?id=1364755135528892&ev=PageView&noscript=1"
+src="https://www.facebook.com/tr?id={{ urlencode($pixelId) }}&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
 

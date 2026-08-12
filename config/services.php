@@ -38,6 +38,27 @@ return [
         'subject' => env('VAPID_SUBJECT', 'mailto:admin@lemon.app'),
     ],
 
+    /*
+     * Meta Pixel + Conversions API.
+     *
+     * Pixel di browser mengirim ViewContent/AddToCart/InitiateCheckout; PEMBELIAN
+     * dikirim dari server lewat Conversions API. Pembagian itu disengaja: pesanan
+     * baru lunas setelah pembayaran dikonfirmasi Midtrans/QRIS — sering saat
+     * browser pembeli sudah ditutup, jadi pixel tidak akan pernah sempat memicunya.
+     *
+     * capi_token kosong = pengiriman dimatikan diam-diam. Ini yang membuat mesin
+     * lokal & CI tidak menembak API Facebook saat menguji checkout.
+     */
+    'meta' => [
+        'pixel_id' => env('META_PIXEL_ID', '1364755135528892'),
+        'capi_token' => env('META_CAPI_TOKEN'),
+        // Diisi HANYA saat menguji di layar "Peristiwa Pengujian" Meta. Selama
+        // terisi, event tidak masuk laporan iklan — jadi jangan tinggalkan
+        // nilainya di server produksi.
+        'test_event_code' => env('META_TEST_EVENT_CODE'),
+        'api_version' => env('META_API_VERSION', 'v21.0'),
+    ],
+
     // QRIS Dinamis (qris.online / OkeConnect)
     'qris' => [
         'base_url' => env('QRIS_BASE_URL', 'https://qris.interactive.co.id/restapi/qris'),
