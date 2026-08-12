@@ -30,13 +30,38 @@ class KatalogMetaController extends Controller
     /** Meta menolak seluruh item bila deskripsinya melebihi batas ini. */
     private const MAKS_DESKRIPSI = 5000;
 
+    /** Kunci catatan kunjungan terakhir. Lihat catatKunjungan(). */
+    public const KUNCI_KUNJUNGAN = 'katalog-meta-kunjungan-terakhir';
+
     public function __invoke(): Response
     {
+        $this->catatKunjungan();
+
         $xml = Cache::remember('katalog-meta-xml', now()->addMinutes(self::SIMPAN_MENIT), fn () => $this->bangun());
 
         return response($xml, 200, [
             'Content-Type' => 'application/xml; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Catat siapa dan kapan terakhir mengambil umpan ini.
+     *
+     * Hosting ini tidak menyimpan log akses, sehingga tanpa catatan ini tidak
+     * ada cara memastikan Meta benar-benar datang menarik secara terjadwal —
+     * dan "katalog tidak diperbarui" jadi mustahil dibedakan dari "Meta tidak
+     * pernah menjemputnya".
+     *
+     * Disimpan di cache, bukan tabel: isinya sekadar alat pemeriksaan, tidak
+     * perlu bertahan selamanya dan tidak layak menambah migrasi.
+     */
+    private function catatKunjungan(): void
+    {
+        Cache::put(self::KUNCI_KUNJUNGAN, [
+            'waktu' => now()->toDateTimeString(),
+            'agen' => mb_substr((string) request()->userAgent(), 0, 200),
+            'ip' => request()->ip(),
+        ], now()->addDays(30));
     }
 
     private function bangun(): string
