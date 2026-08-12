@@ -9,11 +9,14 @@ use App\Support\PdfPageCounter;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 class ProductDetail extends Component
 {
+    use MengirimPixel;
+
     use WithFileUploads;
 
     public $product;
@@ -565,6 +568,7 @@ class ProductDetail extends Component
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
+        $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
     }
 
@@ -646,6 +650,7 @@ class ProductDetail extends Component
         unset($this->halamanExclude, $this->halamanDihitung, $this->hargaPerHalamanTotal);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
+        $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Dokumen ditambahkan ke keranjang!');
     }
 

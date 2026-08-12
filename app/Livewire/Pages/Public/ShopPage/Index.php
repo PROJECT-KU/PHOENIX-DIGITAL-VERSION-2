@@ -6,11 +6,14 @@ use App\Models\Product;
 use App\Services\PromoService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use MengirimPixel;
+
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
@@ -323,6 +326,7 @@ class Index extends Component
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
         // $this->dispatch('success-add-to-cart');
+        $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
     }
 

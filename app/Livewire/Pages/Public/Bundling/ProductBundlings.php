@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Public\Bundling;
 
 use App\Models\ProductBundlings as ModelsProductBundlings;
+use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\WithPagination;
@@ -10,6 +11,8 @@ use Livewire\Attributes\On;
 
 class ProductBundlings extends Component
 {
+    use MengirimPixel;
+
     use WithPagination;
     public $perPage = 4;
     protected $paginationTheme = 'bootstrap';
@@ -74,6 +77,7 @@ class ProductBundlings extends Component
         session()->put('cart', $cart);
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
+        $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
     }
 

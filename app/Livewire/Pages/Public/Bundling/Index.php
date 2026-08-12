@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Public\Bundling;
 
+use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use App\Models\ProductBundlings;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,8 @@ use Livewire\Attributes\On;
 
 class Index extends Component
 {
+    use MengirimPixel;
+
     public $perPage = 8;
 
     // Modal detail bundling
@@ -62,6 +65,7 @@ class Index extends Component
         $this->showBundleDetail = false;
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
+        $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
     }
 

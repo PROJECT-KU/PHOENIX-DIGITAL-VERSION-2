@@ -705,4 +705,24 @@
             </div>
         </section>
     @endif
+    {{-- Meta Pixel: ViewContent.
+         Dipasang sebagai skrip halaman (bukan lewat dispatch Livewire) karena ini
+         peristiwa saat halaman DIMUAT. Saat pengunjung berpindah produk lewat
+         wire:navigate, skrip ini jalan lagi — dan memang itu yang benar: produk
+         berbeda = ViewContent baru.
+
+         Nilai (value) sengaja tidak dikirim: harga di halaman ini berubah mengikuti
+         paket durasi yang dipilih pengunjung, jadi angka saat halaman dimuat belum
+         tentu yang dimaksud. Untuk retargeting, id & nama produk sudah cukup. --}}
+    <script>
+        (function () {
+            if (typeof fbq !== 'function') return;
+            fbq('track', 'ViewContent', {
+                content_ids: [@json((string) $product->id)],
+                content_name: @json((string) $product->nama_akun),
+                content_type: 'product',
+                currency: 'IDR'
+            });
+        })();
+    </script>
 </main>

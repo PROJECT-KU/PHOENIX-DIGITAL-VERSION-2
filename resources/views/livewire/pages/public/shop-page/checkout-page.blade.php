@@ -422,4 +422,21 @@
             })();
         </script>
     @endpush
+    {{-- Meta Pixel: InitiateCheckout.
+         Nilainya memakai subtotal DIKURANGI diskon — angka yang benar-benar akan
+         dibayar pembeli, bukan harga sebelum promo. Kalau memakai subtotal mentah,
+         nilai konversi di laporan iklan akan selalu lebih besar dari uang yang
+         sungguh masuk. --}}
+    <script>
+        (function () {
+            if (typeof fbq !== 'function') return;
+            fbq('track', 'InitiateCheckout', {
+                content_ids: @json(collect($cart)->pluck('product_id')->map(fn ($v) => (string) $v)->values()),
+                content_type: 'product',
+                num_items: @json(count($cart)),
+                value: @json(max(0, (float) $subtotal - (float) $totalDiscount)),
+                currency: 'IDR'
+            });
+        })();
+    </script>
 </div>
