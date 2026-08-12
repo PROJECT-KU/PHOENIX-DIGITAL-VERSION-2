@@ -4,100 +4,100 @@ use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
 use App\Http\Controllers\PushSubscriptionController;
 // Data Banners
+use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
 use App\Livewire\Pages\Admin\Banners\BannersList;
-use App\Livewire\Pages\Admin\Testimoni\TestimoniCreate;
-use App\Livewire\Pages\Admin\Testimoni\TestimoniEdit;
-use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
-// Data Customer
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
 use App\Livewire\Pages\Admin\Customer\CustomerList;
+// Data Customer
 use App\Livewire\Pages\Admin\Dashboard;
-// Data Data Akun
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
+// Data Data Akun
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
-// Data Gajikaryawan
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
+// Data Gajikaryawan
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
-// Data Loan
 use App\Livewire\Pages\Admin\Karyawan\KaryawanCreate;
 use App\Livewire\Pages\Admin\Karyawan\KaryawanEdit;
+// Data Loan
 use App\Livewire\Pages\Admin\Karyawan\KaryawanList;
-// Data Gaji Karyawan
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
 use App\Livewire\Pages\Admin\Loan\LoanEdit;
+// Data Gaji Karyawan
 use App\Livewire\Pages\Admin\Loan\LoanList;
-// Data Lowongan Pekerjaan
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
+// Data Lowongan Pekerjaan
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
 use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
-// Data Order
-use App\Livewire\Pages\Admin\Order\OrderDetail;
-use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\OrderCreate;
+use App\Livewire\Pages\Admin\Order\OrderDetail;
+// Data Order
+use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
-// Data Paket Bundling
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaList;
-// Data Promo
+// Data Paket Bundling
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscCreate;
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail;
+// Data Promo
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscEdit;
-// Data Spending
 use App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianCreate;
+// Data Spending
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianEdit;
 use App\Livewire\Pages\Admin\Pengembalian\PengembalianList;
-// Data Spending
 use App\Livewire\Pages\Admin\Permission\PermissionCreate;
 use App\Livewire\Pages\Admin\Permission\PermissionEdit;
-use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
+// Data Spending
 use App\Livewire\Pages\Admin\Permission\PermissionList;
-// Data Product Admin
 use App\Livewire\Pages\Admin\Product\ProductCreate;
 use App\Livewire\Pages\Admin\Product\ProductEdit;
 use App\Livewire\Pages\Admin\Product\ProductList;
-// Data Loan
+// Data Product Admin
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsCreate;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsEdit;
 use App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsList;
-// Data Product Bundling
+// Data Loan
 use App\Livewire\Pages\Admin\Profile\ProfileSetting;
 use App\Livewire\Pages\Admin\Promo\PromoCreate;
 use App\Livewire\Pages\Admin\Promo\PromoEdit;
+// Data Product Bundling
 use App\Livewire\Pages\Admin\Promo\PromoList;
-// Data Pengembalian
 use App\Livewire\Pages\Admin\RoleUser\RoleList;
 use App\Livewire\Pages\Admin\RoleUser\RolePermissionEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingCreate;
-// Data Spending
+// Data Pengembalian
 use App\Livewire\Pages\Admin\Spending\SpendingEdit;
 use App\Livewire\Pages\Admin\Spending\SpendingList;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniCreate;
+// Data Spending
+use App\Livewire\Pages\Admin\Testimoni\TestimoniEdit;
+use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Public\About\AboutPage;
 use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
+use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\Legal\PrivacyPage;
 use App\Livewire\Pages\Public\Legal\TermsPage;
-use App\Livewire\Pages\Public\Homepage\Index;
 use App\Livewire\Pages\Public\ShopPage\CartPage;
 use App\Livewire\Pages\Public\ShopPage\CheckoutPage;
 use App\Livewire\Pages\Public\ShopPage\Index as ShopPageIndex;
 use App\Livewire\Pages\Public\ShopPage\OrderHistory;
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
-use App\Livewire\Pages\Public\ShopPage\PaymentPage;
 use App\Livewire\Pages\Public\ShopPage\PaymentExpired;
+use App\Livewire\Pages\Public\ShopPage\PaymentPage;
 use App\Livewire\Pages\Public\ShopPage\ProductDetail;
 use Illuminate\Support\Facades\Route;
 
@@ -124,6 +124,11 @@ Route::get('/s/{token}', [\App\Http\Controllers\OrderReceiptController::class, '
 // Ebook viewer view-only (link pendek) + streaming terproteksi
 Route::get('/e/{token}', [\App\Http\Controllers\EbookViewerController::class, 'show'])->name('ebook.view');
 Route::get('/e/{token}/raw', [\App\Http\Controllers\EbookViewerController::class, 'raw'])->name('ebook.raw');
+
+// Umpan produk yang DITARIK Meta secara terjadwal untuk Katalog (WhatsApp,
+// Instagram, iklan dinamis). Sengaja tanpa autentikasi: perayap Meta tidak
+// membawa sesi, dan isinya memang sama dengan yang sudah tampil di /shop.
+Route::get('/katalog/meta.xml', \App\Http\Controllers\KatalogMetaController::class)->name('katalog.meta');
 
 Route::get('/shop', ShopPageIndex::class)->name('shop.index');
 Route::get('/shop/product/{id}', ProductDetail::class)->name('shop.detail-product');
@@ -445,4 +450,4 @@ Route::middleware('permission:view_message')->group(function () {
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
