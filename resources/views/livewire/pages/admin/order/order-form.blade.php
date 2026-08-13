@@ -854,14 +854,30 @@
                 </div>
                 @endif
             </div>
-            <div class="px-4 pb-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-danger rounded-pill px-4 d-inline-flex align-items-center justify-content-center" wire:click="$set('showBuktiModal', false)">Batal</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-1"
-                    wire:click="konfirmasiBukti" wire:loading.attr="disabled" wire:target="konfirmasiBukti,bukti">
-                    <i class="bi bi-check2-circle"></i>
-                    <span wire:loading.remove wire:target="konfirmasiBukti">Konfirmasi &amp; Buat Pesanan</span>
-                    <span wire:loading wire:target="konfirmasiBukti">Memproses...</span>
+            {{-- "Simpan ke Draft" untuk kondisi yang sering terjadi: pesanan sudah
+                 selesai disusun dan totalnya sudah tampil, tapi pelanggan belum
+                 mentransfer. Tanpa tombol ini admin terpaksa menunggu di layar ini
+                 atau membatalkan lalu mengetik ulang semuanya nanti. --}}
+            <div class="px-4 pb-4">
+                <button type="button" wire:click="simpanDraft" wire:loading.attr="disabled"
+                    wire:target="simpanDraft,bukti"
+                    class="btn btn-outline-primary rounded-pill w-100 d-inline-flex align-items-center justify-content-center gap-1 mb-2">
+                    <i class="bi bi-inbox"></i>
+                    <span wire:loading.remove wire:target="simpanDraft">Simpan ke Draft — bukti menyusul</span>
+                    <span wire:loading wire:target="simpanDraft">Menyimpan...</span>
                 </button>
+                <p class="text-muted text-center mb-3" style="font-size:.78rem;">
+                    Pesanan diparkir di tab <b>Draft</b>. Buka lagi untuk mengunggah bukti setelah pelanggan membayar.
+                </p>
+                <div class="d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-danger rounded-pill px-4 d-inline-flex align-items-center justify-content-center" wire:click="$set('showBuktiModal', false)">Batal</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-1"
+                        wire:click="konfirmasiBukti" wire:loading.attr="disabled" wire:target="konfirmasiBukti,bukti">
+                        <i class="bi bi-check2-circle"></i>
+                        <span wire:loading.remove wire:target="konfirmasiBukti">Konfirmasi &amp; Buat Pesanan</span>
+                        <span wire:loading wire:target="konfirmasiBukti">Memproses...</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

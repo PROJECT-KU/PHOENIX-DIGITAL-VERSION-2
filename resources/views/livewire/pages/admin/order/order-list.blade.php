@@ -401,6 +401,15 @@ Data Pesanan || lemon
                                                 class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 px-2">
                                                 <i class="bi bi-play-fill"></i> <span>Lanjutkan</span>
                                             </a>
+                                        @elseif ($order->status === 'draft' && in_array($order->payment_method, ['transfer', 'qris_statis'], true))
+                                            {{-- Draft pembayaran manual: lanjutannya bukan layar QR,
+                                                 melainkan unggah bukti. Setelah bukti masuk, pesanan
+                                                 berubah jadi pending dan baru boleh diproses. --}}
+                                            <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}"
+                                                title="unggah bukti pembayaran"
+                                                class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 px-2">
+                                                <i class="bi bi-upload"></i> <span>Unggah Bukti</span>
+                                            </a>
                                         @endif
                                         <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
                                             title="detail pesanan"

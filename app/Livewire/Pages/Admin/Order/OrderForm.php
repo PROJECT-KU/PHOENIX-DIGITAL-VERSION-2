@@ -610,7 +610,29 @@ class OrderForm extends Component
         return $this->persistAndRedirect();
     }
 
-    protected function persistAndRedirect()
+    /**
+     * Simpan pesanan transfer / QRIS statis sebagai DRAFT, tanpa bukti bayar.
+     *
+     * Alasannya dari kerja sehari-hari admin: pesanan sudah selesai disusun dan
+     * totalnya sudah dihitung, tapi pelanggan belum mentransfer. Sebelum ini
+     * admin terpaksa menunggu di layar itu — karena bukti WAJIB diunggah sebelum
+     * pesanan boleh dibuat — atau membatalkan lalu mengetik ulang semuanya nanti.
+     *
+     * Sekarang pesanannya diparkir di tab Draft, admin bebas mengerjakan hal
+     * lain, dan begitu pelanggan membayar tinggal dibuka lagi untuk mengunggah
+     * bukti. Alur QRIS dinamis sudah lama punya "Simpan ke Draft"; ini
+     * menyamakan perlakuan untuk dua metode manual.
+     */
+    public function simpanDraft()
+    {
+        return $this->persistAndRedirect(draft: true);
+    }
+
+    /**
+     * @param  bool  $draft  true = parkir sebagai draft (tanpa bukti, belum masuk
+     *                       daftar pesanan aktif); false = alur lama apa adanya.
+     */
+    protected function persistAndRedirect(bool $draft = false)
     {
         // Simpan file bukti (untuk transfer / qris_statis).
         $buktiPath = null;
@@ -639,7 +661,7 @@ class OrderForm extends Component
                 'subtotal' => $this->subtotal,
                 'total' => $this->finalTotal,
                 'unique_code' => $this->uniqueCode,
-                'status' => 'pending',
+                'status' => $draft ? 'draft' : 'pending',
                 'payment_method' => $this->payment_method,
                 'bukti_pembayaran' => $buktiPath,
                 'customer_notes' => $this->customer_notes,
@@ -726,6 +748,18 @@ class OrderForm extends Component
             }
 
             DB::commit();
+
+            // Draft transfer/QRIS statis: belum ada bukti, jadi JANGAN dibawa ke
+            // detail pesanan — di sana admin akan mengira pesanan ini sudah siap
+            // diproses. Kembalikan ke daftar, langsung pada tab Draft.
+            if ($draft) {
+                session()->flash('successCreated', 'Pesanan disimpan sebagai draft. Buka lagi dari tab Draft untuk mengunggah bukti setelah pelanggan membayar.');
+
+                // Nama parameternya HARUS 'activeTab' — itu yang didaftarkan
+                // OrderList di $queryString. 'tab' akan diabaikan diam-diam dan
+                // admin mendarat di tab "Semua", bukan di draft yang baru dibuat.
+                return redirect()->route('admin.pesanantoko.index', ['activeTab' => 'draft']);
+            }
 
             // QRIS Dinamis → layar QR (generate, countdown, share WA, draft)
             if ($this->payment_method === 'qris_dinamis') {
