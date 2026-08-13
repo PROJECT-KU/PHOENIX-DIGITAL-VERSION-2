@@ -557,7 +557,21 @@ class CheckoutPage extends Component
                 // Bila akhirnya lunas penuh dengan poin, ditimpa jadi 'points' di bawah.
                 'payment_method' => 'qris_dinamis',
                 'customer_notes' => $this->customer_notes,
-                'expired_at' => now()->addHours(24),
+                // 30 menit, mengikuti masa berlaku QR dari penyedia — BUKAN 24 jam.
+                //
+                // Sebelumnya di sini 24 jam, dan itu membuat pesanan menggantung
+                // `pending` seharian padahal QR-nya sudah mati sejak setengah jam
+                // pertama: pelanggan memegang QR yang tak bisa dipakai sementara
+                // pesanannya tampak masih menunggu pembayaran (kejadian
+                // INV-20260812-0013). Angka 24 jam hanya berlaku untuk pesanan
+                // yang admin SIMPAN KE DRAFT — di sana admin memang bisa membuka
+                // ulang layar QR dan menerbitkan QR baru, jadi masuk akal diberi
+                // waktu panjang. Aturan draft itu diurus terpisah oleh
+                // CancelExpiredOrders (DRAFT_JAM), dihitung dari created_at.
+                //
+                // Dibaca dari config yang SAMA dengan QrisService supaya tidak
+                // ada dua sumber kebenaran yang bisa berbeda diam-diam.
+                'expired_at' => now()->addMinutes((int) config('services.qris.expiry_minutes', 30)),
                 'used_points' => $this->usePoints,
                 'points_discount' => $this->pointsDiscount,
                 'points_calculated' => false,
