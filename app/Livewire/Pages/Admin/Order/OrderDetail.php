@@ -227,6 +227,67 @@ class OrderDetail extends Component
      | membaca kuota dari Order::kuotaPengecekan()/sisaKuotaJenis().
      */
 
+    /**
+     * Tautan WhatsApp untuk mengingatkan customer bahwa kuota pengecekannya
+     * masih tersisa.
+     *
+     * Kebutuhannya nyata: banyak customer membeli paket beberapa kali
+     * pengecekan, memakai sekali, lalu lupa bahwa sisanya masih ada. Link
+     * /cek pun mati 24 jam setelah kuota HABIS, jadi sisa yang tak pernah
+     * dipakai berujung jadi keluhan — padahal admin sudah bisa melihatnya di
+     * layar ini sejak awal.
+     *
+     * Pesannya merinci sisa PER JENIS, bukan hanya totalnya, karena "sisa 2"
+     * tidak memberi tahu customer 2 itu untuk Cek AI atau Cek Plagiasi.
+     *
+     * Kosong (string kosong) bila tidak relevan — bukan jasa, kuota habis,
+     * atau nomor HP customer tidak ada. Blade memakai itu untuk memutuskan
+     * menampilkan tombol atau tidak.
+     */
+    public function getWaKuotaLinkProperty(): string
+    {
+        $order = $this->order;
+
+        if (! $order->butuhUpload() || $order->sisaKuota() < 1) {
+            return '';
+        }
+
+        // Nomor tujuan wajib ada — tanpa itu tautannya hanya membuka WhatsApp
+        // kosong dan admin mengira pesan sudah terkirim.
+        $telepon = preg_replace('/\D/', '', (string) ($order->customer->no_hp ?? ''));
+        if ($telepon === '') {
+            return '';
+        }
+        if (str_starts_with($telepon, '0')) {
+            $telepon = '62'.substr($telepon, 1);
+        }
+
+        $label = [
+            'ai' => 'Cek AI',
+            'plagiasi' => 'Cek Plagiasi',
+            'parafrase' => 'Parafrase',
+            'pengecekan' => 'Pengecekan',
+        ];
+
+        $rincian = [];
+        foreach (array_keys($order->kuotaPerJenis()) as $jenis) {
+            $sisa = $order->sisaKuotaJenis($jenis);
+            if ($sisa > 0) {
+                $satuan = $jenis === 'parafrase' ? 'halaman' : 'kali';
+                $rincian[] = '• '.($label[$jenis] ?? ucfirst($jenis)).': *'.$sisa.' '.$satuan.'*';
+            }
+        }
+
+        $nama = $order->customer->nama ?? 'Kak';
+
+        $teks = "Halo {$nama}, pesanan *{$order->order_number}* masih punya sisa kuota pengecekan:\n\n"
+            .implode("\n", $rincian)."\n\n"
+            ."Silakan unggah berkasnya di sini:\n".url('/cek/'.$order->share_token)."\n\n"
+            .'Terima kasih 🙏';
+
+        return 'https://wa.me/'.$telepon.'?text='.rawurlencode($teks);
+    }
+
     /** Jenis pemeriksaan yang boleh diberi bonus = yang memang dibeli customer. */
     public function jenisBonusTersedia(): array
     {

@@ -828,10 +828,28 @@ Detail Pesanan || lemon
 
             {{-- Link customer (jaga-jaga bila customer lupa/hilang link) --}}
             <label class="form-label small text-muted mb-1 d-inline-flex align-items-center gap-1"><i class="bi bi-link-45deg"></i> Link customer (bila lupa / hilang)</label>
-            <div class="pcek-link-box mb-4">
+            <div class="pcek-link-box mb-3">
                 <input type="text" id="cust-cek-link" readonly value="{{ url('/cek/'.$order->share_token) }}">
                 <button type="button" onclick="salinLinkCek()"><i class="bi bi-clipboard"></i> Salin</button>
             </div>
+
+            {{-- Ingatkan customer selagi kuotanya MASIH ada.
+
+                 Banyak customer membeli paket beberapa kali pengecekan, memakai
+                 sekali, lalu lupa sisanya. Link /cek sendiri mati 24 jam setelah
+                 kuota HABIS, jadi sisa yang tak pernah dipakai berujung jadi
+                 keluhan — padahal sisanya sudah terlihat di layar ini sejak awal.
+
+                 Tautannya kosong bila kuota habis atau nomor HP customer tidak
+                 ada, dan tombolnya ikut disembunyikan. --}}
+            @if ($this->waKuotaLink)
+            <a href="{{ $this->waKuotaLink }}" target="_blank" rel="noopener"
+                class="btn btn-success w-100 rounded-pill mb-4 d-inline-flex align-items-center justify-content-center gap-2"
+                style="white-space:nowrap;">
+                <i class="bi bi-whatsapp"></i>
+                <span>Ingatkan via WhatsApp — sisa {{ $jSisa }} pengecekan</span>
+            </a>
+            @endif
 
             @forelse ($order->uploads->sortByDesc('created_at') as $up)
             <div class="pcek-item mb-3" wire:key="adm-up-{{ $up->id }}">
