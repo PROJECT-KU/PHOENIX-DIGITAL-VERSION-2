@@ -9,9 +9,55 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
+// Perintah contoh bawaan Laravel. Jadwal ->hourly() SENGAJA dilepas: ia
+// dijalankan lewat proses terpisah (butuh proc_open, yang dimatikan hosting ini)
+// dan keluarannya toh dibuang ke /dev/null, jadi satu-satunya hasilnya adalah 24
+// baris galat per hari di Log Aktivitas. Perintahnya sendiri tetap ada dan bisa
+// dipanggil manual.
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
+})->purpose('Display an inspiring quote');
+
+/**
+ * Jadwalkan perintah artisan TANPA membuka proses baru.
+ *
+ * Kenapa ada: `Schedule::command()` menjalankan tiap perintah lewat proses
+ * terpisah, dan itu membutuhkan `proc_open`. Hosting ini mematikannya —
+ *
+ *   disable_functions: system, exec, shell_exec, ..., proc_open
+ *
+ * sehingga SETIAP perintah terjadwal gagal tiap menit tanpa pernah berjalan
+ * sekali pun. Kerusakannya senyap: tak ada halaman error, tak ada keluhan
+ * pelanggan, hanya galat menumpuk di Log Aktivitas — 198 ribu baris (2,1 GB)
+ * selama 23 hari sebelum ketahuan pada 12 Agustus 2026. Selama itu deteksi
+ * pembayaran QRIS, pembatalan order kedaluwarsa, dan pengingat bayar semuanya
+ * mati.
+ *
+ * `Artisan::call()` menjalankan perintah di dalam proses yang SEDANG berjalan,
+ * jadi `proc_open` tidak pernah disentuh. Ini juga membuat penjadwal KEBAL bila
+ * hosting mengubah pengaturannya lagi — sengaja tidak memilih jalan "minta
+ * hosting menyalakan proc_open", karena itu menaruh seluruh operasi terjadwal
+ * pada saklar milik pihak lain. Pola yang sama sudah terbukti bekerja di
+ * App\Http\Controllers\CronController.
+ *
+ * `->name()` WAJIB dipanggil di sini: `withoutOverlapping()` pada event closure
+ * melempar LogicException bila event-nya belum bernama.
+ *
+ * Konsekuensi yang disadari: semua perintah kini berbagi satu proses PHP dan
+ * satu batas waktu, sehingga tidak lagi saling terisolasi. Ditukar dengan
+ * perintah yang benar-benar BERJALAN — perdagangan yang jelas menguntungkan.
+ *
+ * Karena berbagi proses itu pula, SETIAP withoutOverlapping() di berkas ini
+ * diberi batas menit yang eksplisit. Satu run yang mati di tengah (mis. kena
+ * max_execution_time saat dipicu KickScheduler dari request pengunjung)
+ * meninggalkan kuncinya tetap terpegang; dengan default Laravel, kunci itu
+ * bertahan 24 JAM dan tugasnya di-skip DIAM-DIAM selama itu — tanpa error,
+ * tanpa gejala. Persis yang terjadi pada 23 Juli 2026. Batasnya disamakan
+ * dengan irama tugas masing-masing supaya cepat sembuh sendiri.
+ */
+$jadwalkan = fn (string $perintah) => Schedule::call(function () use ($perintah) {
+    Artisan::call($perintah);
+})->name($perintah);
 
 Schedule::call(function () {
     $now = now();
@@ -37,18 +83,18 @@ Schedule::call(function () {
 // terputus/ke-kill di tengah, kunci default bertahan 24 JAM dan memblokir
 // deteksi QRIS + auto-cancel selama itu (kejadian 23 Jul 2026). 10 menit >
 // durasi wajar command, jadi tak ada false-skip, tapi sembuh cepat bila macet.
-Schedule::command('qris:cek-pembayaran')->everyMinute()->withoutOverlapping(10);
-Schedule::command('orders:cancel-expired')->everyMinute()->withoutOverlapping(10);
+$jadwalkan('qris:cek-pembayaran')->everyMinute()->withoutOverlapping(10);
+$jadwalkan('orders:cancel-expired')->everyMinute()->withoutOverlapping(10);
 
 /**
  * Kirim email pengingat ~10 menit sebelum batas waktu pembayaran habis.
  */
-Schedule::command('payment:remind')->everyMinute()->withoutOverlapping();
+$jadwalkan('payment:remind')->everyMinute()->withoutOverlapping(10);
 
 /**
  * Ingatkan keranjang yang ditinggalkan (belum checkout) ~1 jam kemudian.
  */
-Schedule::command('cart:remind-abandoned')->everyThirtyMinutes()->withoutOverlapping();
+$jadwalkan('cart:remind-abandoned')->everyThirtyMinutes()->withoutOverlapping(30);
 
 /**
  * Notifikasi task: deadline mendekat (besok) & terlambat (lewat, belum selesai).
@@ -82,40 +128,40 @@ Artisan::command('tasks:notify-deadlines', function () {
     $this->info('Notifikasi task selesai diproses.');
 })->purpose('Kirim notifikasi deadline & keterlambatan task');
 
-Schedule::command('tasks:notify-deadlines')->dailyAt('07:00');
+$jadwalkan('tasks:notify-deadlines')->dailyAt('07:00');
 
 /**
  * Hapus notifikasi bulan-bulan lama (sebelum awal bulan berjalan) agar DB tak menumpuk.
  * Bell hanya menampilkan bulan berjalan, jadi yang lebih lama aman dihapus permanen.
  */
-Schedule::command('notifications:prune')->dailyAt('00:05');
+$jadwalkan('notifications:prune')->dailyAt('00:05');
 
 /**
  * Bersihkan Log Aktivitas agar tabel tidak membengkak: kunjungan biasa
  * (type 'visit', tidak lambat) dibuang setelah 7 hari; error/auth/kunjungan
  * lambat disimpan 30 hari.
  */
-Schedule::command('activity-logs:prune')->dailyAt('00:15');
+$jadwalkan('activity-logs:prune')->dailyAt('00:15');
 
 /**
  * Hapus komentar task (chat + file/gambar) dari tahun-tahun sebelumnya agar DB & storage
  * tidak menumpuk. Idempoten: hanya menghapus yang dibuat sebelum awal tahun berjalan.
  */
-Schedule::command('comments:prune')->dailyAt('00:10');
+$jadwalkan('comments:prune')->dailyAt('00:10');
 
 /**
  * Reset poin member setiap awal tahun (poin kadaluarsa akhir tahun kalender).
  * Berjalan tiap 1 Januari 00:15. Model juga punya pengaman lazy (applyYearlyExpiry)
  * bila scheduler terlewat.
  */
-Schedule::command('points:reset-yearly')->yearlyOn(1, 1, '00:15');
+$jadwalkan('points:reset-yearly')->yearlyOn(1, 1, '00:15');
 
 /**
  * Hapus draft unggahan jasa yang tak pernah jadi pesanan (customer batal
  * checkout). Isinya dokumen pribadi customer, jadi tak boleh tersimpan
  * selamanya. Draft yang berhasil jadi pesanan sudah dihapus saat checkout.
  */
-Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
+$jadwalkan('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
 
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
@@ -123,7 +169,7 @@ Schedule::command('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
  * Hemat storage; baris pengecekan (persentase) tetap disimpan. Per-jam agar
  * penghapusan dekat dengan waktu tepatnya per pesanan (bukan sekali sehari).
  */
-Schedule::command('jasa:hapus-berkas-kadaluarsa')->hourly()->withoutOverlapping();
+$jadwalkan('jasa:hapus-berkas-kadaluarsa')->hourly()->withoutOverlapping(60);
 
 /**
  * Denyut nadi cron hPanel — supaya "cron mati" bisa dibuktikan, bukan ditebak.
@@ -150,7 +196,7 @@ Schedule::call(function () {
  * Idempoten: hanya memanggil Telegram bila URL belum cocok. Bila
  * TELEGRAM_* belum diisi, langsung berhenti tanpa panggilan keluar apa pun.
  */
-Schedule::command('telegram:webhook pastikan')->hourly()->withoutOverlapping();
+$jadwalkan('telegram:webhook pastikan')->hourly()->withoutOverlapping(60);
 
 /**
  * Peringatkan lewat Telegram saat keandalan pemicu terjadwal BERUBAH
@@ -158,4 +204,4 @@ Schedule::command('telegram:webhook pastikan')->hourly()->withoutOverlapping();
  *
  * Diam total bila bot belum dikonfigurasi.
  */
-Schedule::command('cron:pantau')->everyFiveMinutes()->withoutOverlapping();
+$jadwalkan('cron:pantau')->everyFiveMinutes()->withoutOverlapping(10);
