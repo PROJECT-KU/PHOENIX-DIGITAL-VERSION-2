@@ -115,12 +115,11 @@ class QrisPayment extends Component
             ."Scan / buka QR di sini (berlaku 30 menit):\n{$payUrl}\n\n"
             .'Terima kasih 🙏';
 
-        $phone = preg_replace('/[^0-9]/', '', (string) ($this->order->customer->no_hp ?? ''));
-        if (str_starts_with($phone, '0')) {
-            $phone = '62'.substr($phone, 1);
-        }
-
-        return 'https://wa.me/'.$phone.'?text='.rawurlencode($text);
+        // Lewat TautanWa (api.whatsapp.com), bukan wa.me: pesan ini berakhir
+        // dengan emoji 🙏, dan lewat wa.me emoji kerap tidak terbaca di
+        // WhatsApp Web/Desktop — pesan sampai dalam keadaan rusak tanpa admin
+        // pernah menyadarinya.
+        return \App\Support\TautanWa::kirim($this->order->customer->no_hp ?? null, $text);
     }
 
     #[Layout('layouts.app')]

@@ -252,16 +252,6 @@ class OrderDetail extends Component
             return '';
         }
 
-        // Nomor tujuan wajib ada — tanpa itu tautannya hanya membuka WhatsApp
-        // kosong dan admin mengira pesan sudah terkirim.
-        $telepon = preg_replace('/\D/', '', (string) ($order->customer->no_hp ?? ''));
-        if ($telepon === '') {
-            return '';
-        }
-        if (str_starts_with($telepon, '0')) {
-            $telepon = '62'.substr($telepon, 1);
-        }
-
         /*
          * Nama jenis + penjelasan singkatnya.
          *
@@ -302,7 +292,11 @@ class OrderDetail extends Component
             ."Silakan unggah berkasnya di sini:\n".url('/cek/'.$order->share_token)."\n\n"
             .'Terima kasih 🙏';
 
-        return 'https://wa.me/'.$telepon.'?text='.rawurlencode($teks);
+        // Lewat TautanWa, bukan wa.me: pesan ini memuat emoji dan huruf miring,
+        // dan wa.me kerap merusak keduanya di WhatsApp Web/Desktop. Kembalian
+        // kosong bila nomor pelanggan tidak ada — dipakai blade untuk
+        // menyembunyikan tombolnya.
+        return \App\Support\TautanWa::kirim($order->customer->no_hp ?? null, $teks);
     }
 
     /** Jenis pemeriksaan yang boleh diberi bonus = yang memang dibeli customer. */
