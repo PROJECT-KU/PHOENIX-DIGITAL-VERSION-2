@@ -262,20 +262,37 @@ class OrderDetail extends Component
             $telepon = '62'.substr($telepon, 1);
         }
 
+        /*
+         * Nama jenis + penjelasan singkatnya.
+         *
+         * Penjelasannya ikut dikirim karena "Cek AI" dan "Cek Plagiasi"
+         * terdengar mirip bagi orang awam, padahal hasilnya berbeda jauh.
+         * Tanpa keterangan ini customer kerap menanyakan ulang bedanya, atau
+         * lebih buruk: mengira kuota yang tersisa adalah jenis yang lain.
+         */
         $label = [
-            'ai' => 'Cek AI',
-            'plagiasi' => 'Cek Plagiasi',
-            'parafrase' => 'Parafrase',
-            'pengecekan' => 'Pengecekan',
+            'ai' => ['Cek AI', 'mendeteksi bagian tulisan yang terbaca seperti dibuat AI'],
+            'plagiasi' => ['Cek Plagiasi', 'memeriksa kemiripan tulisan dengan sumber lain (Turnitin)'],
+            'parafrase' => ['Parafrase', 'menulis ulang kalimat agar tingkat kemiripannya turun'],
+            'pengecekan' => ['Pengecekan', 'pemeriksaan dokumen'],
         ];
 
         $rincian = [];
         foreach (array_keys($order->kuotaPerJenis()) as $jenis) {
             $sisa = $order->sisaKuotaJenis($jenis);
-            if ($sisa > 0) {
-                $satuan = $jenis === 'parafrase' ? 'halaman' : 'kali';
-                $rincian[] = '• '.($label[$jenis] ?? ucfirst($jenis)).': *'.$sisa.' '.$satuan.'*';
+            if ($sisa < 1) {
+                continue;
             }
+
+            [$nama, $arti] = $label[$jenis] ?? [ucfirst($jenis), null];
+            $satuan = $jenis === 'parafrase' ? 'halaman' : 'kali';
+
+            $baris = '• '.$nama.': *'.$sisa.' '.$satuan.'*';
+            if ($arti !== null) {
+                $baris .= "\n   _".$arti.'_';
+            }
+
+            $rincian[] = $baris;
         }
 
         $nama = $order->customer->nama ?? 'Kak';
