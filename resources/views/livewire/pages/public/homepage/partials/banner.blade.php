@@ -35,8 +35,20 @@
                             </div>
                         </div>
                         <div class="ph-hero-media">
+                            {{-- Slide PERTAMA sengaja TIDAK lazy.
+
+                                 Ia adalah gambar terbesar yang langsung terlihat
+                                 saat halaman dibuka, jadi menundanya justru
+                                 memperlambat kesan halaman terbuka — kebalikan
+                                 dari tujuan lazy loading. fetchpriority="high"
+                                 menyuruh browser mengambilnya lebih dulu di
+                                 antara semua unduhan.
+
+                                 Slide kedua dan seterusnya belum terlihat sampai
+                                 pengunjung menggeser, jadi itu yang di-lazy. --}}
                             <img src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
-                                alt="{{ $banner->judul ?? 'Banner' }}" loading="lazy">
+                                alt="{{ $banner->judul ?? 'Banner' }}"
+                                @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
                         </div>
                     </article>
                 </div>

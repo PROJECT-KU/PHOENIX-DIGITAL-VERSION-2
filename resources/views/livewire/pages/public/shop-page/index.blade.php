@@ -120,10 +120,10 @@
                                     <div class="fs-card">
                                         <div class="fs-card-media">
                                             @if ($item->image)
-                                                <img src="{{ asset('storage/img/Product/' . $item->image) }}"
+                                                <img loading="lazy" src="{{ asset('storage/img/Product/' . $item->image) }}"
                                                     alt="{{ $item->nama_akun }}">
                                             @else
-                                                <img src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
+                                                <img loading="lazy" src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
                                                     alt="{{ $item->nama_akun }}">
                                             @endif
 

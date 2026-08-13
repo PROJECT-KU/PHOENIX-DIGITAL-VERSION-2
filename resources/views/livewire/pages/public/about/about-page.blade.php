@@ -53,7 +53,7 @@
                              Jika belum ada, otomatis pakai ilustrasi vektor di bawah sebagai fallback. --}}
                         @php $aboutImg = public_path('storage/img/about-research.png'); @endphp
                         @if (file_exists($aboutImg))
-                            <img src="{{ asset('storage/img/about-research.png') }}?v={{ filemtime($aboutImg) }}"
+                            <img loading="lazy" src="{{ asset('storage/img/about-research.png') }}?v={{ filemtime($aboutImg) }}"
                                 alt="Ilustrasi riset Phoenix Digital" class="abt-illus abt-illus-img">
                         @else
                         <svg class="abt-illus" viewBox="0 0 460 400" fill="none"

@@ -132,7 +132,7 @@
 
                     @if ($post->cover && \Storage::disk('public')->exists('img/blog/' . $post->cover))
                     <div class="art-cover">
-                        <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" decoding="async">
+                        <img loading="lazy" src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" decoding="async">
                     </div>
                     @endif
 

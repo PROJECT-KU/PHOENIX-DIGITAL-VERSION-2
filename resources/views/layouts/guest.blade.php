@@ -17,9 +17,22 @@
     @include('partials.seo')
     @include('partials.meta-pixel')
     @include('partials.google-analytics')
-    <!-- Favicons -->
-    <link href="{{ asset('niceshop/assets/img/faviconphoenix.png') }}" rel="icon">
-    <link href="{{ asset('niceshop/assets/img/faviconphoenix.png') }}" rel="apple-touch-icon">
+    {{-- Favicon.
+
+         Google MENOLAK ikon yang tidak persegi, dan sebelumnya di sini
+         dideklarasikan faviconphoenix.png yang berukuran 187x159 — itulah
+         sebabnya hasil pencarian Phoenix tampil tanpa ikon. Berkas
+         public/favicon.ico juga sempat berukuran 0 byte, padahal alamat itu
+         yang dijemput Google lebih dulu sebagai cadangan; ia menemukan
+         balasan 200 tanpa gambar apa pun lalu berhenti mencari.
+
+         Sekarang keduanya persegi (192x192 dan 48x48), dibuat dengan MENAMBAH
+         ruang kosong di sisi pendek, bukan meregangkan logo supaya tidak
+         penyok. 192 dipilih karena kelipatan 48, ukuran yang disarankan
+         Google. --}}
+    <link href="{{ asset('favicon.ico') }}" rel="icon" sizes="48x48">
+    <link href="{{ asset('icons/phoenix-192.png') }}" rel="icon" type="image/png" sizes="192x192">
+    <link href="{{ asset('icons/phoenix-192.png') }}" rel="apple-touch-icon">
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com" rel="preconnect">

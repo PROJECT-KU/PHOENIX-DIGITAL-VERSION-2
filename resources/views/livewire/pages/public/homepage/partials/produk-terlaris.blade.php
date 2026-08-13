@@ -56,7 +56,7 @@
                     <div class="category-image image-scopcus">
                         <div class="d-flex justify-content-center align-items-center" style="min-height: 500px;">
                             <div class="border-0 card card-scopus" style="border-radius: 20px; overflow: hidden; margin: 30px; box-shadow: -8px 8px 20px rgba(255, 165, 0, 0.5);">
-                                <img src="{{ 'niceshop/assets/img/product/scopus.png' }}"
+                                <img loading="lazy" src="{{ 'niceshop/assets/img/product/scopus.png' }}"
                                     alt="Scopus Lisensi & AI"
                                     class="img-fluid">
                             </div>
@@ -79,7 +79,7 @@
                     <div class="col-xl-6">
                         <div class="category-card cat-men" data-aos="fade-up" data-aos-delay="300">
                             <div class="category-image">
-                                <img src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Men's Fashion" class="img-fluid">
+                                <img loading="lazy" src="{{ 'niceshop/assets/img/product/grammarly.png' }}" alt="Men's Fashion" class="img-fluid">
                             </div>
                             <div class="category-content">
                                 <h4>Grammarly Premium</h4>
@@ -91,7 +91,7 @@
                     <div class="col-xl-6">
                         <div class="category-card cat-kids" data-aos="fade-up" data-aos-delay="400">
                             <div class="category-image">
-                                <img src="{{ 'niceshop/assets/img/product/quillbot.png' }}" alt="Kid's Fashion" class="img-fluid">
+                                <img loading="lazy" src="{{ 'niceshop/assets/img/product/quillbot.png' }}" alt="Kid's Fashion" class="img-fluid">
                             </div>
                             <div class="category-content">
                                 <h4>Quillbot Premium</h4>
@@ -103,7 +103,7 @@
                     <div class="col-xl-6">
                         <div class="category-card cat-cosmetics" data-aos="fade-up" data-aos-delay="500">
                             <div class="category-image">
-                                <img src="{{ 'niceshop/assets/img/product/consensus.png' }}" alt="Cosmetics" class="img-fluid">
+                                <img loading="lazy" src="{{ 'niceshop/assets/img/product/consensus.png' }}" alt="Cosmetics" class="img-fluid">
                             </div>
                             <div class="category-content">
                                 <h4>Consensus Premium</h4>
@@ -115,7 +115,7 @@
                     <div class="col-xl-6">
                         <div class="category-card cat-accessories" data-aos="fade-up" data-aos-delay="600">
                             <div class="category-image">
-                                <img src="{{ 'niceshop/assets/img/product/gamma.png' }}" alt="Accessories" class="img-fluid">
+                                <img loading="lazy" src="{{ 'niceshop/assets/img/product/gamma.png' }}" alt="Accessories" class="img-fluid">
                             </div>
                             <div class="category-content">
                                 <h4>Gamma AI Premium</h4>
