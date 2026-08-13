@@ -56,7 +56,7 @@ class BannersForm extends Component
             'mulai_tayang' => 'nullable|date',
             // after_or_equal hanya diperiksa bila mulai_tayang diisi; kalau
             // kosong, selesai_tayang berdiri sendiri sbg "tayang sampai".
-            'selesai_tayang' => 'nullable|date' . ($this->mulai_tayang ? '|after_or_equal:mulai_tayang' : ''),
+            'selesai_tayang' => 'nullable|date'.($this->mulai_tayang ? '|after_or_equal:mulai_tayang' : ''),
         ];
 
         if ($this->mode === 'create') {
@@ -79,10 +79,10 @@ class BannersForm extends Component
         try {
             // generate nama unik dengan angka random
             $random = rand(10000, 99999);
-            $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
-
-            // simpan file fisik ke folder storage/app/public/img/banners
-            $this->gambar->storeAs('img/banners', $filename, 'public');
+            // Disimpan sebagai WebP (lihat App\Support\GambarWebp). Banner adalah
+            // gambar TERBERAT di situs — tiga berkas PNG sempat memakan 5,7 MB
+            // atau 78% bobot beranda.
+            $filename = \App\Support\GambarWebp::simpan($this->gambar, 'img/banners', 'Banners_'.$random);
 
             // simpan hanya nama file ke DB
             Banners::create([
@@ -100,7 +100,7 @@ class BannersForm extends Component
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('errorCreated', 'Gagal menambahkan Data Banners: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Banners: '.$e->getMessage());
         }
     }
 
@@ -117,14 +117,13 @@ class BannersForm extends Component
 
             if ($this->gambar && is_object($this->gambar)) {
                 // hapus file lama kalau ada
-                if ($this->existingImage && Storage::disk('public')->exists('img/banners/' . $this->existingImage)) {
-                    Storage::disk('public')->delete('img/banners/' . $this->existingImage);
+                if ($this->existingImage && Storage::disk('public')->exists('img/banners/'.$this->existingImage)) {
+                    Storage::disk('public')->delete('img/banners/'.$this->existingImage);
                 }
 
                 // upload baru → replace
                 $random = rand(10000, 99999);
-                $filename = 'Banners_' . $random . '.' . $this->gambar->getClientOriginalExtension();
-                $this->gambar->storeAs('img/banners', $filename, 'public');
+                $filename = \App\Support\GambarWebp::simpan($this->gambar, 'img/banners', 'Banners_'.$random);
                 $data['gambar'] = $filename;
             } else {
                 $data['gambar'] = $this->existingImage; // pakai gambar lama
@@ -138,7 +137,7 @@ class BannersForm extends Component
 
             return redirect()->route('admin.Banners.index');
         } catch (\Exception $e) {
-            session()->flash('errorUpdated', 'Gagal mengupdate Data Banners: ' . $e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Banners: '.$e->getMessage());
         }
     }
 

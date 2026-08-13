@@ -211,10 +211,11 @@ class ProductForm extends Component
     {
         try {
             $random = rand(10000, 99999);
-            $filename = 'Product_'.$random.'.'.$this->image->getClientOriginalExtension();
-
-            // simpan file fisik ke folder storage/app/public/img/banners
-            $this->image->storeAs('img/Product', $filename, 'public');
+            // Disimpan sebagai WebP (lihat App\Support\GambarWebp). Nama yang
+            // DIKEMBALIKAN wajib dipakai: ekstensinya .webp bila konversi
+            // berhasil, atau ekstensi asli bila gagal — dan kolom di DB harus
+            // mengikuti berkas yang benar-benar ada.
+            $filename = \App\Support\GambarWebp::simpan($this->image, 'img/Product', 'Product_'.$random);
 
             $product = Product::create([
                 'nama_akun' => $this->nama_akun,
@@ -263,8 +264,7 @@ class ProductForm extends Component
                 }
 
                 $random = rand(10000, 99999);
-                $filename = 'Product_'.$random.'.'.$this->image->getClientOriginalExtension();
-                $this->image->storeAs('img/Product', $filename, 'public');
+                $filename = \App\Support\GambarWebp::simpan($this->image, 'img/Product', 'Product_'.$random);
 
                 $data['image'] = $filename;
             } else {

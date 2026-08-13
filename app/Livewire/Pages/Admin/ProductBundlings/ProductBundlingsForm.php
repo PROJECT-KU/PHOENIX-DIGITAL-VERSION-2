@@ -139,9 +139,8 @@ class ProductBundlingsForm extends Component
     {
         try {
             $random = rand(10000, 99999);
-            $filename = 'ProductBundlings_'.$random.'.'.$this->gambar->getClientOriginalExtension();
-
-            $this->gambar->storeAs('img/ProductBundlings', $filename, 'public');
+            // Disimpan sebagai WebP (lihat App\Support\GambarWebp).
+            $filename = \App\Support\GambarWebp::simpan($this->gambar, 'img/ProductBundlings', 'ProductBundlings_'.$random);
 
             ProductBundlings::create([
                 'nama_paket' => $this->nama_paket,
@@ -191,8 +190,7 @@ class ProductBundlingsForm extends Component
                 }
 
                 $random = rand(10000, 99999);
-                $filename = 'ProductBundlings_'.$random.'.'.$this->gambar->getClientOriginalExtension();
-                $this->gambar->storeAs('img/ProductBundlings', $filename, 'public');
+                $filename = \App\Support\GambarWebp::simpan($this->gambar, 'img/ProductBundlings', 'ProductBundlings_'.$random);
                 $data['gambar'] = $filename;
             } else {
                 $data['gambar'] = $this->existingImage;

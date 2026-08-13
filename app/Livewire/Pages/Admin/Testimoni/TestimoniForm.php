@@ -140,8 +140,9 @@ class TestimoniForm extends Component
             $filename = null;
             if ($this->foto && is_object($this->foto)) {
                 $random = rand(10000, 99999);
-                $filename = 'Testimoni_' . $random . '.' . $this->foto->getClientOriginalExtension();
-                $this->foto->storeAs('img/testimoni', $filename, 'public');
+                // Disimpan sebagai WebP (lihat App\Support\GambarWebp). Foto
+                // testimoni tampil kecil, jadi 800 px sudah lebih dari cukup.
+                $filename = \App\Support\GambarWebp::simpan($this->foto, 'img/testimoni', 'Testimoni_'.$random, 800);
             }
 
             Testimoni::create([
@@ -163,7 +164,7 @@ class TestimoniForm extends Component
 
             return redirect()->route('admin.testimoni.index');
         } catch (\Exception $e) {
-            session()->flash('errorCreated', 'Gagal menambahkan Data Testimoni: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Testimoni: '.$e->getMessage());
         }
     }
 
@@ -181,13 +182,14 @@ class TestimoniForm extends Component
             ];
 
             if ($this->foto && is_object($this->foto)) {
-                if ($this->existingImage && Storage::disk('public')->exists('img/testimoni/' . $this->existingImage)) {
-                    Storage::disk('public')->delete('img/testimoni/' . $this->existingImage);
+                if ($this->existingImage && Storage::disk('public')->exists('img/testimoni/'.$this->existingImage)) {
+                    Storage::disk('public')->delete('img/testimoni/'.$this->existingImage);
                 }
 
                 $random = rand(10000, 99999);
-                $filename = 'Testimoni_' . $random . '.' . $this->foto->getClientOriginalExtension();
-                $this->foto->storeAs('img/testimoni', $filename, 'public');
+                // Disimpan sebagai WebP (lihat App\Support\GambarWebp). Foto
+                // testimoni tampil kecil, jadi 800 px sudah lebih dari cukup.
+                $filename = \App\Support\GambarWebp::simpan($this->foto, 'img/testimoni', 'Testimoni_'.$random, 800);
                 $data['foto'] = $filename;
             } else {
                 $data['foto'] = $this->existingImage;
@@ -203,7 +205,7 @@ class TestimoniForm extends Component
 
             return redirect()->route('admin.testimoni.index');
         } catch (\Exception $e) {
-            session()->flash('errorUpdated', 'Gagal mengupdate Data Testimoni: ' . $e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Testimoni: '.$e->getMessage());
         }
     }
 
