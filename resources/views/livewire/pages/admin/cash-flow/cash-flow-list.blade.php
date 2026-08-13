@@ -512,7 +512,17 @@ Data Cash Flow || lemon
                 {{ $reports->links('vendor.pagination') }}
             </div>
 
-            <livewire:pages.admin.cashflow.cashflow-detail />
+            {{-- Nama komponen HARUS pakai tanda hubung: cash-flow.cash-flow-detail.
+                 Livewire mengubah nama ini menjadi nama kelas, sehingga
+                 "cashflow.cashflow-detail" dicari sebagai
+                 App\Livewire\Pages\Admin\Cashflow\CashflowDetail — folder yang
+                 tidak ada.
+
+                 Di macOS kesalahan ini TIDAK terlihat karena nama berkas tidak
+                 peka huruf besar-kecil, jadi Cashflow tetap menemukan CashFlow.
+                 Di server Linux yang peka huruf, kelasnya tidak ketemu dan
+                 SELURUH halaman cash flow membalas 500. --}}
+            <livewire:pages.admin.cash-flow.cash-flow-detail />
         </div>
 
         {{-- ================== INSIGHT CASH FLOW (paling bawah) ================== --}}
