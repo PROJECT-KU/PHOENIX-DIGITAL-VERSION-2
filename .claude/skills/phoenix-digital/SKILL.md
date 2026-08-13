@@ -23,7 +23,7 @@ E-commerce Phoenix Digital: menjual akun premium, lisensi, tools AI, dan **JASA 
 - **Deploy server** (Hostinger shared, SSH port 65002): path Laravel = `~/domains/phoenixdigitalwarehouse.com/public_html/phoenixdigital`. Deploy = `git checkout main && git pull origin main && php artisan optimize:clear`. Migrasi: `php artisan migrate --force`.
 - **Kredensial (SSH password, CRON_TOKEN) dibagikan terpisah — JANGAN commit ke repo.** Rotasi password SSH setelah tiap deploy.
 - **crontab CLI diblokir**; tinker REPL butuh proc_open. Untuk skrip kompleks di server pakai `php artisan tinker --execute="eval(base64_decode('<b64>'))"`. SSH otomatis via `expect` (hapus helper berisi password setelah dipakai).
-- **Env server:** `proc_open` AKTIF di CLI **dan** SAPI web (schedule:run via HTTP berhasil). `ini_set('memory_limit')` bisa dinaikkan (dipakai 3072M utk parse PDF). Upload limit dinaikkan ke 100MB.
+- **Env server:** `proc_open` **DIMATIKAN** (CLI maupun web) — terbukti 12-13 Agu 2026. Karena itu **JANGAN pakai `Schedule::command()`**; pakai pembungkus `$jadwalkan()` di `routes/console.php` yang lewat `Artisan::call()` (in-process). `ini_set('memory_limit')` bisa dinaikkan (dipakai 3072M utk parse PDF). Upload limit dinaikkan ke 100MB.
 
 ## Cron / Scheduler
 
