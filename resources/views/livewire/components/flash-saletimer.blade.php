@@ -118,6 +118,46 @@
                     </div>
                 @endforeach
             </div>
+
+            {{-- Paket bundling yang menumpang etalase promo ini.
+
+                 Barisnya SENGAJA terpisah dari kartu produk di atas: kartu produk
+                 membaca kolom khas Product dan menghitung diskon, sedangkan paket
+                 punya kolomnya sendiri dan harganya sudah harga promo — tidak
+                 didiskon lagi supaya tidak terpotong dua kali. --}}
+            @if (count($featuredBundlings))
+                <div class="row featured-products-row g-3 g-lg-4 mt-1">
+                    @foreach ($featuredBundlings as $paket)
+                        @php
+                            $hargaPaket = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
+                            $hargaAwal = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_awal);
+                        @endphp
+                        <div class="col-lg-3 col-md-6" wire:key="fs-bundling-{{ $paket->id }}">
+                            <div class="fs-card">
+                                <div class="fs-card-media">
+                                    @if ($paket->gambar)
+                                        <img src="{{ asset('storage/img/ProductBundlings/' . $paket->gambar) }}"
+                                            alt="{{ $paket->nama_paket }}" loading="lazy">
+                                    @endif
+                                    <span class="fs-badge">Paket Spesial</span>
+                                </div>
+                                <div class="fs-card-body">
+                                    <a href="{{ route('bundling.index') }}" class="fs-name">{{ $paket->nama_paket }}</a>
+                                    <div class="fs-price">
+                                        <span class="fs-price-sale">Rp{{ number_format($hargaPaket, 0, ',', '.') }}</span>
+                                        @if ($hargaAwal > $hargaPaket)
+                                            <span class="fs-price-orig">Rp{{ number_format($hargaAwal, 0, ',', '.') }}</span>
+                                        @endif
+                                    </div>
+                                    <div class="fs-actions">
+                                        <a href="{{ route('bundling.index') }}" class="fs-btn-view w-100">Lihat Paket</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     @endif
 

@@ -65,6 +65,20 @@ class Promo extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Paket bundling yang ikut DITAMPILKAN di etalase promo ini.
+     *
+     * Hanya soal tampilan, BUKAN diskon. Harga paket sudah harga promo lewat
+     * kolom `harga_bundling`, jadi PromoService sengaja tidak pernah membaca
+     * relasi ini saat menghitung potongan — kalau dibaca, paket akan didiskon
+     * dua kali.
+     */
+    public function bundlings(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductBundlings::class, 'promo_product_bundling', 'promo_id', 'product_bundling_id')
+            ->withTimestamps();
+    }
+
     public function orders(): BelongsToMany
     {
         return $this->belongsToMany(Order::class, 'order_promo')

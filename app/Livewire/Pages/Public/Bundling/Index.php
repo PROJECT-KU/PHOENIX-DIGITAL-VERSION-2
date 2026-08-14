@@ -3,11 +3,10 @@
 namespace App\Livewire\Pages\Public\Bundling;
 
 use App\Livewire\Concerns\MengirimPixel;
-use Livewire\Component;
 use App\Models\ProductBundlings;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\On;
 
 class Index extends Component
 {
@@ -26,8 +25,9 @@ class Index extends Component
     {
         $bundling = ProductBundlings::findOrFail($bundlingId);
 
-        if (!$bundling) {
+        if (! $bundling) {
             $this->dispatch('cart-error', message: 'Bundling tidak ditemukan');
+
             return;
         }
 
@@ -50,7 +50,7 @@ class Index extends Component
                 'type' => 'bundling',
                 'price' => $price,
                 'quantity' => 1,
-                'subtotal' => $price
+                'subtotal' => $price,
             ];
         }
         // session()->put('cart', $cart);
@@ -113,6 +113,7 @@ class Index extends Component
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
+
         return count($cart);
     }
 
@@ -124,10 +125,12 @@ class Index extends Component
     #[Layout('layouts.guest')]
     public function render()
     {
-        $bundlings = ProductBundlings::where('status', 'active')->latest()->paginate($this->perPage);
+        // Tayang(): status aktif DAN berada di dalam rentang tanggalnya. Paket
+        // musiman jadi hilang sendiri saat lewat, tanpa admin perlu mematikannya.
+        $bundlings = ProductBundlings::tayang()->latest()->paginate($this->perPage);
 
         return view('livewire.pages.public.bundling.index', [
-            'bundlings' => $bundlings
+            'bundlings' => $bundlings,
         ]);
     }
 }

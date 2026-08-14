@@ -523,6 +523,58 @@
         </div>
         <!--================== END TAMPILAN PRODUK ==================-->
 
+        <!--================== PAKET BUNDLING DI ETALASE ==================-->
+        <div class="card border-0 shadow-sm rounded-4 mt-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="bi bi-box-seam text-primary"></i>
+                    <h6 class="fw-bold mb-0">Paket Bundling di Etalase Promo</h6>
+                    <span class="badge bg-primary rounded-pill" style="font-size:.7rem;">
+                        {{ count($selectedBundlings) }}/{{ count($allBundlings) }}
+                    </span>
+                </div>
+
+                {{-- Peringatan ini penting supaya admin tidak salah paham dan
+                     mengira paket akan ikut terpotong seperti produk. --}}
+                <div class="alert alert-warning d-flex align-items-start gap-2 mt-3 mb-3" role="alert">
+                    <i class="bi bi-info-circle mt-1"></i>
+                    <div style="font-size:.86rem;">
+                        Paket di sini hanya <b>ditampilkan</b> di etalase promo — harganya
+                        <b>tidak dipotong</b> oleh promo ini. Harga paket sudah harga promo
+                        lewat kolom <i>Harga Bundling</i>, jadi memotongnya lagi berarti diskon dua kali.
+                        Paket yang jadwal tayangnya sudah lewat otomatis tidak ikut tampil.
+                    </div>
+                </div>
+
+                @if (count($allBundlings) === 0)
+                    <p class="text-muted mb-0" style="font-size:.9rem;">Belum ada paket bundling.</p>
+                @else
+                    <div class="row g-2">
+                        @foreach ($allBundlings as $paket)
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-2 border rounded-3 p-2 h-100">
+                                    <input class="form-check-input m-0 flex-shrink-0" type="checkbox"
+                                        wire:model="selectedBundlings" value="{{ $paket->id }}"
+                                        id="paket-{{ $paket->id }}">
+                                    <label class="form-check-label mb-0 flex-grow-1" for="paket-{{ $paket->id }}"
+                                        style="font-size:.9rem; cursor:pointer;">
+                                        {{ $paket->nama_paket }}
+                                        @if (! $paket->sedangTayang())
+                                            <span class="badge bg-secondary ms-1" style="font-size:.65rem;">tidak tayang</span>
+                                        @endif
+                                        @if ($paket->jadwalLabel())
+                                            <div class="text-muted" style="font-size:.72rem;">{{ $paket->jadwalLabel() }}</div>
+                                        @endif
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+        <!--================== END PAKET BUNDLING ==================-->
+
         <div class="mt-4 pt-3 border-top d-flex gap-2">
             <button type="submit"
                 class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"

@@ -4,7 +4,6 @@ namespace App\Livewire\Pages\Admin\Promo;
 
 use App\Models\Product;
 use App\Models\Promo;
-use Exception;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -24,13 +23,13 @@ class PromoForm extends Component
 
     public $tipe_diskon = 'persen';
 
-    public $diskon_member_persen = "";
+    public $diskon_member_persen = '';
 
-    public $diskon_member_nominal = "";
+    public $diskon_member_nominal = '';
 
-    public $diskon_non_member_persen = "";
+    public $diskon_non_member_persen = '';
 
-    public $diskon_non_member_nominal = "";
+    public $diskon_non_member_nominal = '';
 
     public $untuk_member = 'semua';
 
@@ -39,7 +38,7 @@ class PromoForm extends Component
     /** Kosong = tanpa batas kuota. */
     public $kuota = '';
 
-    public $min_pembelian = "";
+    public $min_pembelian = '';
 
     public $mulai_promo = '';
 
@@ -62,6 +61,17 @@ class PromoForm extends Component
     public $selectedProducts = [];
 
     public $allProducts = [];
+
+    /**
+     * Paket bundling yang ikut DITAMPILKAN di etalase promo ini.
+     *
+     * Hanya penempatan tampilan, BUKAN diskon: harga paket sudah harga promo
+     * lewat kolom harga_bundling, dan PromoService sengaja melewati item
+     * bundling saat menghitung potongan supaya tidak terdiskon dua kali.
+     */
+    public $selectedBundlings = [];
+
+    public $allBundlings = [];
 
     public function mount($promo = null)
     {
@@ -91,12 +101,17 @@ class PromoForm extends Component
             $this->badge_text = $promo->badge_text ?? '';
             $this->mode = 'edit';
             $this->selectedProducts = $promo->products->pluck('id')->toArray();
+            $this->selectedBundlings = $promo->bundlings->pluck('id')->toArray();
         } else {
             $this->mulai_promo = '';
             $this->selesai_promo = '';
         }
 
         $this->allProducts = Product::orderBy('nama_akun')->get();
+        // Semua paket ditampilkan di sini, termasuk yang jadwalnya sudah lewat —
+        // admin perlu melihatnya untuk melepas lampiran. Penyaringan tayang()
+        // dilakukan saat MENAMPILKAN etalase, bukan saat memilih.
+        $this->allBundlings = \App\Models\ProductBundlings::orderBy('nama_paket')->get();
     }
 
     public function updatedTipePromo()
@@ -210,12 +225,13 @@ class PromoForm extends Component
 
             // Sync products
             $promo->products()->sync($this->selectedProducts);
+            $promo->bundlings()->sync($this->selectedBundlings);
 
             session()->flash('successCreated', 'Promo berhasil dibuat');
 
             return redirect()->route('admin.promo.index');
         } catch (\Exception $e) {
-            session()->flash('errorCreated', 'Gagal menambahkan Data Promo: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Promo: '.$e->getMessage());
         }
     }
 
@@ -251,12 +267,13 @@ class PromoForm extends Component
 
             // Sync products
             $this->promo->products()->sync($this->selectedProducts);
+            $this->promo->bundlings()->sync($this->selectedBundlings);
 
             session()->flash('successUpdated', 'Promo berhasil diupdate');
 
             return redirect()->route('admin.promo.index');
         } catch (\Exception $e) {
-            session()->flash('errorUpdated', 'Gagal mengupdate Data Promo: ' . $e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Promo: '.$e->getMessage());
         }
     }
 

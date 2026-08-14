@@ -41,6 +41,18 @@ class ProductBundlingsForm extends Component
 
     public $status = '';
 
+    /**
+     * Jadwal tayang paket. Kosong = tanpa batas, jadi paket lama yang tidak
+     * pernah dijadwalkan tetap tampil seperti sebelumnya.
+     *
+     * Gunanya untuk paket musiman seperti "Bundling Maulid Nabi": ia muncul
+     * sendiri saat tanggalnya tiba dan hilang sendiri saat lewat, tanpa admin
+     * perlu ingat mematikannya.
+     */
+    public $mulai_tayang = '';
+
+    public $selesai_tayang = '';
+
     public $mode = 'create';
 
     public $showProductsContainer = true;
@@ -69,6 +81,10 @@ class ProductBundlingsForm extends Component
             $this->existingImage = $this->product_bundlings->gambar;
             $this->deskripsi = $this->product_bundlings->deskripsi;
             $this->status = $this->product_bundlings->status;
+            // Format datetime-local (Y-m-d\TH:i); null tetap string kosong supaya
+            // input HTML-nya tampil kosong, bukan berisi tanggal palsu.
+            $this->mulai_tayang = optional($this->product_bundlings->mulai_tayang)->format('Y-m-d\TH:i') ?? '';
+            $this->selesai_tayang = optional($this->product_bundlings->selesai_tayang)->format('Y-m-d\TH:i') ?? '';
             $this->mode = 'edit';
 
             foreach (($this->product_bundlings->durations ?? []) as $f => $d) {
@@ -88,6 +104,10 @@ class ProductBundlingsForm extends Component
             'harga_bundling' => 'required',
             'deskripsi' => 'nullable|string',
             'status' => 'required|in:active,non-active',
+            // Kosong = tanpa batas. after_or_equal mencegah jadwal terbalik yang
+            // membuat paket tidak pernah muncul sama sekali.
+            'mulai_tayang' => 'nullable|date',
+            'selesai_tayang' => 'nullable|date|after_or_equal:mulai_tayang',
         ];
 
         if ($this->mode === 'create') {
@@ -155,6 +175,8 @@ class ProductBundlingsForm extends Component
                 'gambar' => $filename,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'mulai_tayang' => $this->mulai_tayang ?: null,
+                'selesai_tayang' => $this->selesai_tayang ?: null,
             ]);
 
             session()->flash('success', 'Data Bundling berhasil ditambahkan!');
@@ -182,6 +204,8 @@ class ProductBundlingsForm extends Component
                 'harga_bundling' => $this->formatRupiah($this->harga_bundling),
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'mulai_tayang' => $this->mulai_tayang ?: null,
+                'selesai_tayang' => $this->selesai_tayang ?: null,
             ];
 
             if ($this->gambar && is_object($this->gambar)) {

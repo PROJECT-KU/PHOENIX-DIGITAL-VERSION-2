@@ -781,7 +781,9 @@ class OrderForm extends Component
     {
         return view('livewire.pages.admin.order.order-form', [
             'products' => Product::orderBy('nama_akun')->get(),
-            'bundlings' => ProductBundlings::where('status', 'active')->orderBy('nama_paket')->get(),
+            // Ikut jadwal juga: paket yang sudah lewat tanggalnya tidak lagi muncul di
+            // pilihan admin, supaya tidak ada pesanan baru memakai paket kedaluwarsa.
+            'bundlings' => ProductBundlings::tayang()->orderBy('nama_paket')->get(),
         ]);
     }
 }

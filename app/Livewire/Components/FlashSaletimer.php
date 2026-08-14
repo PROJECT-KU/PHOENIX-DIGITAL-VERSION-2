@@ -14,6 +14,16 @@ class FlashSaletimer extends Component
 
     public $featuredProducts = [];
 
+    /**
+     * Paket bundling yang menumpang etalase promo ini.
+     *
+     * Dipisah dari $featuredProducts, bukan digabung: kartu produk membaca
+     * kolom khas Product (nama_akun, harga_perbulan, folder gambar Product) dan
+     * menghitung diskon, sedangkan paket punya kolom sendiri dan TIDAK didiskon.
+     * Menggabungkannya akan menabrak semua itu.
+     */
+    public $featuredBundlings = [];
+
     public $customer = null;
 
     // ---- Modal pilih durasi (sebelum masuk keranjang) ----
@@ -64,6 +74,22 @@ class FlashSaletimer extends Component
             // Pertahankan urutan yang diatur admin di flash sale (stabil, tidak berubah-ubah)
             $this->featuredProducts = $products->take(4)->values();
         }
+
+        /*
+         * Paket bundling yang dilampirkan admin ke promo ini — hanya untuk
+         * DITAMPILKAN, bukan didiskon. Harga paket sudah harga promo lewat
+         * `harga_bundling`, dan PromoService sengaja melewati item bundling saat
+         * menghitung potongan supaya tidak terjadi diskon dua kali.
+         *
+         * Disaring tayang(): paket yang jadwalnya sudah lewat tidak ikut muncul
+         * walaupun masih terlampir pada promo, sehingga admin tidak perlu
+         * melepasnya satu per satu setelah musimnya berakhir.
+         */
+        $this->featuredBundlings = $this->flashSale
+            ->bundlings()
+            ->tayang()
+            ->take(4)
+            ->get();
     }
 
     public function loadFlashSale()

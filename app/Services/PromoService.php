@@ -98,6 +98,23 @@ class PromoService
             ->get();
 
         foreach ($cart as $item) {
+            // Paket bundling TIDAK ikut promo otomatis.
+            //
+            // Harganya sudah harga promo (kolom `harga_bundling` yang ditentukan
+            // admin), jadi memotongnya lagi dengan flash sale berarti diskon dua
+            // kali di atas harga yang memang sudah dimurahkan.
+            //
+            // Form pesanan admin sudah lama mengecualikan bundling dari flash
+            // sale/auto promo, tetapi checkout PUBLIK belum — di sana flash sale
+            // "berlaku untuk semua produk" tetap memotong harga paket. Baris ini
+            // menyamakan keduanya.
+            //
+            // Paket tetap boleh TAMPIL di etalase flash sale lewat relasi
+            // Promo::bundlings(); yang ditolak di sini hanya potongan harganya.
+            if (($item['type'] ?? null) === 'bundling') {
+                continue;
+            }
+
             // Find applicable promos for this product
             $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer, $subtotal) {
                 // Minimum pembelian: sebelumnya TIDAK pernah dicek untuk flash sale /

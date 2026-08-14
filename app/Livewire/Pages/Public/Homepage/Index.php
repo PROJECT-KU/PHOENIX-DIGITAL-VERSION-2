@@ -26,7 +26,7 @@ class Index extends Component
             ->take(4)
             ->get();
 
-        $bundlings = ProductBundlings::when($this->search, function ($query) {
+        $bundlings = ProductBundlings::tayang()->when($this->search, function ($query) {
             $query->where('nama_paket', 'like', '%'.$this->search.'%');
         })->get();
 

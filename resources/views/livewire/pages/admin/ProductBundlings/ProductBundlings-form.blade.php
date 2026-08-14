@@ -136,6 +136,30 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
+
+                    {{-- Jadwal tayang. Dikosongkan = paket tampil terus seperti
+                         biasa, jadi paket lama tidak terpengaruh sama sekali.
+                         Diisi = paket muncul dan hilang sendiri sesuai tanggal,
+                         untuk paket musiman seperti "Bundling Maulid Nabi". --}}
+                    <div class="col-md-6">
+                        <label for="mulai_tayang" class="form-label fw-semibold text-muted">Mulai Tayang</label>
+                        <input type="datetime-local" id="mulai_tayang" wire:model.defer="mulai_tayang"
+                            class="form-control @error('mulai_tayang') is-invalid @enderror">
+                        <small class="text-muted">Kosongkan bila ingin langsung tayang.</small>
+                        @error('mulai_tayang')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="selesai_tayang" class="form-label fw-semibold text-muted">Selesai Tayang</label>
+                        <input type="datetime-local" id="selesai_tayang" wire:model.defer="selesai_tayang"
+                            class="form-control @error('selesai_tayang') is-invalid @enderror">
+                        <small class="text-muted">Lewat tanggal ini paket hilang sendiri dari toko.</small>
+                        @error('selesai_tayang')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
             </div>
         </div>
