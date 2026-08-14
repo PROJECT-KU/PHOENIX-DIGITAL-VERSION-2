@@ -17,6 +17,16 @@ class IdleTimeout
                 Auth::logout();
                 session()->flush();
 
+                // Permintaan LATAR Livewire (wire:poll tiap 5 detik di halaman
+                // admin) tidak boleh dijawab dengan pengalihan — Livewire
+                // menanggapinya dengan `window.location.href = response.url`,
+                // sehingga admin tiba-tiba terlempar tanpa menyentuh apa pun.
+                // 419 membuat Livewire memuat ulang halaman yang sedang dibuka,
+                // lalu pengalihan ke login terjadi pada permintaan halaman biasa.
+                if (\App\Support\PermintaanLivewire::ya($request)) {
+                    return \App\Support\PermintaanLivewire::kedaluwarsa();
+                }
+
                 return redirect('/login')
                     ->with('idle_timeout', 'Sesi Anda berakhir karena tidak ada aktivitas.');
             }

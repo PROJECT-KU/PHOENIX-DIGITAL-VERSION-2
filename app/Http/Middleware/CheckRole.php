@@ -16,6 +16,15 @@ class CheckRole
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         // Check if user is authenticated
+        // Permintaan LATAR Livewire (mis. wire:poll tiap 5 detik di halaman admin)
+        // tidak boleh dijawab dengan pengalihan: Livewire menanggapinya dengan
+        // `window.location.href = response.url`, sehingga admin tiba-tiba
+        // terlempar tanpa menyentuh apa pun. 419 membuat Livewire memuat ulang
+        // halaman yang sedang dibuka secara wajar.
+        if (\App\Support\PermintaanLivewire::ya($request)) {
+            return \App\Support\PermintaanLivewire::kedaluwarsa();
+        }
+
         if (! auth()->check()) {
             return redirect()->route('login');
         }

@@ -22,6 +22,13 @@ class EnsureProfileComplete
             && ! $request->routeIs('admin.account.profile')
             && ! $user->profileComplete()
         ) {
+            // Permintaan LATAR Livewire tidak boleh dijawab pengalihan — lihat
+            // App\Support\PermintaanLivewire. Tanpa ini, wire:poll di halaman
+            // admin bisa melempar admin ke halaman profil di tengah pekerjaan.
+            if (\App\Support\PermintaanLivewire::ya($request)) {
+                return \App\Support\PermintaanLivewire::kedaluwarsa();
+            }
+
             return redirect()->route('admin.account.profile')
                 ->with('profile_incomplete', 'Lengkapi profil Anda (No. Rekening, Tanggal Lahir, No. HP, dan Alamat) untuk dapat mengakses fitur.');
         }
