@@ -316,21 +316,21 @@
         border-bottom-left-radius: .7rem;
     }
 
-    /* Pratinjau hero: perbandingan 8:3, sama seperti pita hero di website. */
-    .orcha-pratinjau-hero {
+    /* Pratinjau kartu: perbandingan 16:10, sama seperti kartu paket di website. */
+    .orcha-pratinjau-kartu {
         position: relative;
-        aspect-ratio: 8 / 3;
+        aspect-ratio: 16 / 10;
         border-radius: .8rem;
         overflow: hidden;
         background: #0f2d4a;
     }
 
-    .orcha-pratinjau-hero img {
+    .orcha-pratinjau-kartu img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         object-position: center;
-        opacity: .72;
+        opacity: .92;
     }
 
     .orcha-pratinjau-label {

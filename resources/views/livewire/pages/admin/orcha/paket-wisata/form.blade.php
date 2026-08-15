@@ -346,12 +346,8 @@
                                 @endif
                             </div>
                             <p class="orcha-petunjuk">
-                                Foto ini jadi latar hero di halaman paket. Pita hero itu lebar dan
-                                pendek, jadi bagian atas &amp; bawah foto <strong>pasti terpotong</strong> —
-                                taruh yang penting di tengah.
-                            </p>
-                            <p class="orcha-petunjuk">
-                                Ukuran yang pas: <strong>1600 × 600</strong> (paling kecil 1200 × 450).
+                                Foto ini tampil di kartu paket pada daftar di website.
+                                Ukuran yang pas <strong>1200 × 750</strong> (paling kecil 800 × 500).
                             </p>
 
                             @php
@@ -366,9 +362,9 @@
                             @if ($pratinjau)
                                 {{-- Perbandingannya disamakan dengan pita hero di website,
                                      jadi potongannya kelihatan sebelum disimpan. --}}
-                                <div class="orcha-pratinjau-hero mb-2">
-                                    <img src="{{ $pratinjau }}" alt="Pratinjau hero">
-                                    <span class="orcha-pratinjau-label">Kira-kira begini di website</span>
+                                <div class="orcha-pratinjau-kartu mb-2">
+                                    <img src="{{ $pratinjau }}" alt="Pratinjau kartu">
+                                    <span class="orcha-pratinjau-label">Kira-kira begini di kartu</span>
                                 </div>
                             @endif
 
@@ -376,8 +372,9 @@
                                 wire:model="gambar" accept="image/*">
                             @error('gambar') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">
-                                Maksimal 4 MB. Dibiarkan kosong berarti foto lama tetap dipakai.
-                                Tanpa foto, website memakai ilustrasi buatan sendiri.
+                                Maksimal 4 MB, otomatis disimpan sebagai WebP. Dibiarkan kosong
+                                berarti foto lama tetap dipakai; tanpa foto sama sekali, kartunya
+                                memakai ilustrasi buatan sendiri.
                             </div>
 
                             <div wire:loading wire:target="gambar" class="text-muted small mt-2">
