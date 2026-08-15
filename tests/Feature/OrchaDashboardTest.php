@@ -257,10 +257,10 @@ test('paket baru dikirim ke orcha, bukan disimpan di lemon', function () {
         ->set('kategori', 'open_trip')
         ->set('minimalPeserta', 6)
         ->set('harga', 1250000)
-        ->call('jungkitDestinasi', 'Pantai Ujung Gelam')
+        ->call('jungkit', 'destinasi', 'Pantai Ujung Gelam')
         ->set('destinasiBaru', 'Snorkeling Menjangan')
-        ->call('tambahDestinasi')
-        ->call('jungkitFasilitas', 'Homestay / penginapan')
+        ->call('tambah', 'destinasi')
+        ->call('jungkit', 'fasilitas', 'Homestay / penginapan')
         ->set('hari', [[
             'nama' => 'Day 1',
             'agenda' => [
@@ -285,13 +285,55 @@ test('destinasi yang sama tidak bisa masuk dua kali', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
-        ->call('jungkitDestinasi', 'Kawah Ijen')
+        ->call('jungkit', 'destinasi', 'Kawah Ijen')
         ->set('destinasiBaru', 'Kawah Ijen')
-        ->call('tambahDestinasi')
+        ->call('tambah', 'destinasi')
         ->assertSet('destinasi', ['Kawah Ijen'])
         // Klik kedua pada saran yang sama justru mengeluarkannya
-        ->call('jungkitDestinasi', 'Kawah Ijen')
+        ->call('jungkit', 'destinasi', 'Kawah Ijen')
         ->assertSet('destinasi', []);
+});
+
+test('isian baru ikut tersimpan ke daftar pilihan bersama', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('fasilitasBaru', 'Kaos peserta')
+        ->call('tambah', 'fasilitas')
+        ->assertSet('fasilitas', ['Kaos peserta'])
+        ->assertSet('fasilitasBaru', '');
+
+    Http::assertSent(fn ($request) => $request->method() === 'POST'
+        && str_ends_with($request->url(), '/saran')
+        && $request['jenis'] === 'fasilitas'
+        && $request['nama'] === 'Kaos peserta');
+});
+
+test('menghapus saran tidak mengubah isi paket yang sedang disusun', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->call('jungkit', 'destinasi', 'Kawah Ijen')
+        ->call('hapusSaran', 12)
+        ->assertSet('destinasi', ['Kawah Ijen'])
+        ->assertDispatched('order-updated');
+
+    Http::assertSent(fn ($request) => $request->method() === 'DELETE'
+        && str_ends_with($request->url(), '/saran/12'));
+});
+
+test('isian kosong tidak dikirim ke daftar pilihan', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('destinasiBaru', '   ')
+        ->call('tambah', 'destinasi')
+        ->assertSet('destinasi', []);
+
+    Http::assertNotSent(fn ($request) => $request->method() === 'POST');
 });
 
 test('baris itinerary bisa ditambah dan dibuang', function () {

@@ -143,52 +143,64 @@ class OrchaPaketForm extends Component
     /* ------------------------- DESTINASI & FASILITAS ------------------------- */
 
     /** Klik pada saran: masuk kalau belum ada, keluar kalau sudah. */
-    public function jungkitDestinasi(string $nama): void
+    public function jungkit(string $jenis, string $nama): void
     {
-        $this->destinasi = in_array($nama, $this->destinasi, true)
-            ? array_values(array_diff($this->destinasi, [$nama]))
-            : [...$this->destinasi, $nama];
+        $terpilih = $jenis === 'destinasi' ? $this->destinasi : $this->fasilitas;
+
+        $terpilih = in_array($nama, $terpilih, true)
+            ? array_values(array_diff($terpilih, [$nama]))
+            : [...$terpilih, $nama];
+
+        $jenis === 'destinasi' ? $this->destinasi = $terpilih : $this->fasilitas = $terpilih;
     }
 
-    public function jungkitFasilitas(string $nama): void
+    /**
+     * Isian baru langsung ikut masuk daftar pilihan di Orcha, jadi paket
+     * berikutnya dengan isi yang sama tinggal diklik.
+     */
+    public function tambah(string $jenis): void
     {
-        $this->fasilitas = in_array($nama, $this->fasilitas, true)
-            ? array_values(array_diff($this->fasilitas, [$nama]))
-            : [...$this->fasilitas, $nama];
-    }
+        $nama = trim($jenis === 'destinasi' ? $this->destinasiBaru : $this->fasilitasBaru);
 
-    public function tambahDestinasi(): void
-    {
-        $nama = trim($this->destinasiBaru);
-
-        if ($nama !== '' && ! in_array($nama, $this->destinasi, true)) {
-            $this->destinasi[] = $nama;
+        if ($nama === '') {
+            return;
         }
 
-        $this->destinasiBaru = '';
-    }
+        $terpilih = $jenis === 'destinasi' ? $this->destinasi : $this->fasilitas;
 
-    public function tambahFasilitas(): void
-    {
-        $nama = trim($this->fasilitasBaru);
-
-        if ($nama !== '' && ! in_array($nama, $this->fasilitas, true)) {
-            $this->fasilitas[] = $nama;
+        if (! in_array($nama, $terpilih, true)) {
+            $terpilih[] = $nama;
+            $jenis === 'destinasi' ? $this->destinasi = $terpilih : $this->fasilitas = $terpilih;
         }
 
-        $this->fasilitasBaru = '';
+        $this->kirimData('/saran', ['jenis' => $jenis, 'nama' => $nama], 'Masuk daftar pilihan.');
+
+        $jenis === 'destinasi' ? $this->destinasiBaru = '' : $this->fasilitasBaru = '';
     }
 
-    public function buangDestinasi(int $urutan): void
+    /** Keluarkan dari paket ini — daftar pilihannya tidak tersentuh. */
+    public function buang(string $jenis, int $urutan): void
     {
-        unset($this->destinasi[$urutan]);
-        $this->destinasi = array_values($this->destinasi);
-    }
+        if ($jenis === 'destinasi') {
+            unset($this->destinasi[$urutan]);
+            $this->destinasi = array_values($this->destinasi);
 
-    public function buangFasilitas(int $urutan): void
-    {
+            return;
+        }
+
         unset($this->fasilitas[$urutan]);
         $this->fasilitas = array_values($this->fasilitas);
+    }
+
+    /**
+     * Hapus dari daftar pilihan di Orcha.
+     *
+     * Paket yang sudah tersimpan tidak ikut berubah — yang hilang cuma
+     * pilihan cepatnya.
+     */
+    public function hapusSaran(int $id): void
+    {
+        $this->hapusData("/saran/{$id}", 'Dihapus dari daftar pilihan.');
     }
 
     /* ------------------------------ ITINERARY ------------------------------ */
@@ -312,18 +324,14 @@ class OrchaPaketForm extends Component
 
     public function render()
     {
-        // Saran destinasi diambil dari daftar destinasi populer yang sudah ada
-        // di Orcha — jadi penamaannya seragam antar paket.
-        $saranDestinasi = collect($this->muat('/destinasi')['data'] ?? [])
-            ->pluck('nama')
-            ->filter()
-            ->values()
-            ->all();
+        // Daftar pilihan hidup di Orcha dan tumbuh sendiri setiap ada isian
+        // baru, jadi diambil segar tiap render — bukan dari cache rujukan.
+        $saran = $this->muat('/saran')['data'] ?? [];
 
         return view('livewire.pages.admin.orcha.orcha-paket-form', [
             'pilihanKategori' => $this->rujukan('kategori_paket'),
-            'saranDestinasi' => $saranDestinasi,
-            'saranFasilitas' => $this->rujukan('fasilitas_umum'),
+            'saranDestinasi' => $saran['destinasi'] ?? [],
+            'saranFasilitas' => $saran['fasilitas'] ?? [],
         ])->layout('livewire.layout.templateindex');
     }
 }

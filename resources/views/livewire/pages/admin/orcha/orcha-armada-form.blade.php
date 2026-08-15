@@ -22,14 +22,14 @@
                                 <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Nama unit <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model="nama" placeholder="All New Avanza">
+                                        wire:model="nama" value="{{ $nama }}" placeholder="All New Avanza">
                                     @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Merek <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('merek') is-invalid @enderror"
-                                        wire:model="merek" placeholder="Toyota">
+                                        wire:model="merek" value="{{ $merek }}" placeholder="Toyota">
                                     @error('merek') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
@@ -44,13 +44,13 @@
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Nomor polisi</label>
-                                    <input type="text" class="form-control" wire:model="nopol" placeholder="AB 1234 CD">
+                                    <input type="text" class="form-control" wire:model="nopol" value="{{ $nopol }}" placeholder="AB 1234 CD">
                                 </div>
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Kapasitas (kursi) <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control @error('kapasitas') is-invalid @enderror"
-                                        wire:model="kapasitas" min="1">
+                                        wire:model="kapasitas" value="{{ $kapasitas }}" min="1">
                                     @error('kapasitas') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
@@ -99,20 +99,20 @@
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per hari <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control @error('tarifHari') is-invalid @enderror"
-                                        wire:model="tarifHari" min="0">
+                                        wire:model="tarifHari" value="{{ $tarifHari }}" min="0">
                                     @error('tarifHari') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per jam</label>
-                                    <input type="number" class="form-control" wire:model="tarifJam" min="0">
+                                    <input type="number" class="form-control" wire:model="tarifJam" value="{{ $tarifJam }}" min="0">
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Paket 12 jam</label>
-                                    <input type="number" class="form-control" wire:model="tarif12Jam" min="0">
+                                    <input type="number" class="form-control" wire:model="tarif12Jam" value="{{ $tarif12Jam }}" min="0">
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Sopir / hari</label>
-                                    <input type="number" class="form-control" wire:model="tarifSopir" min="0">
+                                    <input type="number" class="form-control" wire:model="tarifSopir" value="{{ $tarifSopir }}" min="0">
                                 </div>
                             </div>
                         </div>

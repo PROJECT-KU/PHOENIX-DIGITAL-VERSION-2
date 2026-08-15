@@ -22,7 +22,7 @@
                                 <div class="col-12 col-md-8">
                                     <label class="form-label small fw-semibold">Nama paket <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model="nama" placeholder="Open Trip Banyuwangi">
+                                        wire:model="nama" value="{{ $nama }}" placeholder="Open Trip Banyuwangi">
                                     @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
@@ -37,153 +37,141 @@
 
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Durasi</label>
-                                    <input type="text" class="form-control" wire:model="durasi"
+                                    <input type="text" class="form-control" wire:model="durasi" value="{{ $durasi }}"
                                         placeholder="3 Hari 2 Malam">
                                 </div>
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Tanggal berangkat</label>
                                     <input type="date" class="form-control @error('tanggalBerangkat') is-invalid @enderror"
-                                        wire:model="tanggalBerangkat">
+                                        wire:model="tanggalBerangkat" value="{{ $tanggalBerangkat }}">
                                     @error('tanggalBerangkat') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Tanggal pulang</label>
                                     <input type="date" class="form-control @error('tanggalPulang') is-invalid @enderror"
-                                        wire:model="tanggalPulang">
+                                        wire:model="tanggalPulang" value="{{ $tanggalPulang }}">
                                     @error('tanggalPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-md-8">
                                     <label class="form-label small fw-semibold">Titik jemput</label>
-                                    <input type="text" class="form-control" wire:model="titikJemput"
+                                    <input type="text" class="form-control" wire:model="titikJemput" value="{{ $titikJemput }}"
                                         placeholder="Jogja, Klaten, Surakarta">
                                 </div>
 
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Minimal peserta <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control @error('minimalPeserta') is-invalid @enderror"
-                                        wire:model="minimalPeserta" min="1">
+                                        wire:model="minimalPeserta" value="{{ $minimalPeserta }}" min="1">
                                     @error('minimalPeserta') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12">
                                     <label class="form-label small fw-semibold">Catatan promo</label>
-                                    <input type="text" class="form-control" wire:model="catatanPromo"
+                                    <input type="text" class="form-control" wire:model="catatanPromo" value="{{ $catatanPromo }}"
                                         placeholder="Harga khusus sampai akhir bulan">
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Destinasi: pilih dari yang sudah ada, ketik hanya bila belum terdaftar --}}
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <h6 class="fw-bold mb-0">Destinasi yang Dikunjungi</h6>
-                                <span class="badge orcha-hitung">{{ count($destinasi) }} dipilih</span>
-                            </div>
-                            <p class="text-muted small mb-3">
-                                Klik destinasi yang masuk paket ini. Yang belum terdaftar bisa ditambah sendiri.
-                            </p>
+                    {{-- Destinasi & fasilitas: dipilih dari daftar bersama yang
+                         tumbuh sendiri. Dua kartu ini bentuknya sama persis, jadi
+                         ditulis sekali lewat perulangan. --}}
+                    @foreach ([['destinasi', 'Destinasi yang Dikunjungi', $saranDestinasi, $destinasi, 'destinasiBaru', 'Destinasi lain, mis. Pantai Pulau Merah'], ['fasilitas', 'Fasilitas', $saranFasilitas, $fasilitas, 'fasilitasBaru', 'Fasilitas lain, mis. Tiket kapal']] as [$jenis, $judulKartu, $saran, $terpilih, $medanBaru, $contoh])
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <div class="orcha-kepala-kartu">
+                                    <h6 class="fw-bold mb-0">{{ $judulKartu }}</h6>
+                                    <span class="badge orcha-hitung">{{ count($terpilih) }} dipilih</span>
+                                </div>
+                                <p class="orcha-petunjuk">
+                                    Klik untuk memasukkan ke paket ini. Tanda
+                                    <i class="bi bi-x-lg"></i> pada daftar bawah menghapusnya dari
+                                    pilihan untuk semua paket.
+                                </p>
 
-                            @if ($destinasi)
-                                <div class="orcha-terpilih mb-3">
-                                    @foreach ($destinasi as $urutan => $item)
-                                        <span class="orcha-cip orcha-cip-aktif">
-                                            {{ $item }}
-                                            <button type="button" wire:click="buangDestinasi({{ $urutan }})"
-                                                aria-label="Hapus {{ $item }}">&times;</button>
+                                @if ($terpilih)
+                                    <div class="orcha-terpilih">
+                                        @foreach ($terpilih as $urutan => $item)
+                                            <span class="orcha-cip orcha-cip-aktif" wire:key="pilih-{{ $jenis }}-{{ $urutan }}">
+                                                <span>{{ $item }}</span>
+                                                <button type="button" class="orcha-cip-buang"
+                                                    wire:click="buang('{{ $jenis }}', {{ $urutan }})"
+                                                    title="Keluarkan dari paket ini">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <p class="orcha-kosong">Belum ada yang dipilih.</p>
+                                @endif
+
+                                <div class="orcha-saran">
+                                    @forelse ($saran as $item)
+                                        @php $sudah = in_array($item['nama'], $terpilih, true); @endphp
+                                        <span class="orcha-cip {{ $sudah ? 'orcha-cip-sudah' : '' }}"
+                                            wire:key="saran-{{ $jenis }}-{{ $item['id'] }}">
+                                            <button type="button" class="orcha-cip-pilih"
+                                                wire:click="jungkit('{{ $jenis }}', @js($item['nama']))"
+                                                title="{{ $sudah ? 'Keluarkan dari paket ini' : 'Masukkan ke paket ini' }}">
+                                                <i class="bi {{ $sudah ? 'bi-check2' : 'bi-plus' }}"></i>
+                                                {{ $item['nama'] }}
+                                            </button>
+                                            <button type="button" class="orcha-cip-hapus pcek-konfirmasi"
+                                                data-action="hapusSaran" data-arg="{{ $item['id'] }}"
+                                                data-title="Hapus dari daftar pilihan?"
+                                                data-text="{{ addslashes($item['nama']) }} tidak lagi muncul sebagai pilihan cepat. Paket yang sudah tersimpan tidak berubah."
+                                                data-confirm="Ya, hapus" data-icon="warning"
+                                                title="Hapus dari daftar pilihan">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
                                         </span>
-                                    @endforeach
-                                </div>
-                            @endif
-
-                            @if ($saranDestinasi)
-                                <div class="orcha-saran mb-3">
-                                    @foreach ($saranDestinasi as $saran)
-                                        @continue(in_array($saran, $destinasi, true))
-                                        <button type="button" class="orcha-cip"
-                                            wire:click="jungkitDestinasi(@js($saran))">
-                                            <i class="bi bi-plus"></i> {{ $saran }}
-                                        </button>
-                                    @endforeach
-                                </div>
-                            @endif
-
-                            <div class="input-group input-group-lg">
-                                <input type="text" class="form-control" wire:model="destinasiBaru"
-                                    wire:keydown.enter.prevent="tambahDestinasi"
-                                    placeholder="Destinasi lain yang belum ada di daftar...">
-                                <button type="button" class="btn btn-outline-primary" wire:click="tambahDestinasi">
-                                    Tambah
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Fasilitas: daftar yang sering dipakai, tinggal klik --}}
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <h6 class="fw-bold mb-0">Fasilitas</h6>
-                                <span class="badge orcha-hitung">{{ count($fasilitas) }} dipilih</span>
-                            </div>
-                            <p class="text-muted small mb-3">
-                                Klik untuk memasukkan atau mengeluarkan dari paket.
-                            </p>
-
-                            @if ($fasilitas)
-                                <div class="orcha-terpilih mb-3">
-                                    @foreach ($fasilitas as $urutan => $item)
-                                        <span class="orcha-cip orcha-cip-aktif">
-                                            {{ $item }}
-                                            <button type="button" wire:click="buangFasilitas({{ $urutan }})"
-                                                aria-label="Hapus {{ $item }}">&times;</button>
+                                    @empty
+                                        <span class="orcha-kosong mb-0">
+                                            Daftar masih kosong — tambahkan di bawah.
                                         </span>
-                                    @endforeach
+                                    @endforelse
                                 </div>
-                            @endif
 
-                            <div class="orcha-saran mb-3">
-                                @foreach ($saranFasilitas as $saran)
-                                    @continue(in_array($saran, $fasilitas, true))
-                                    <button type="button" class="orcha-cip"
-                                        wire:click="jungkitFasilitas(@js($saran))">
-                                        <i class="bi bi-plus"></i> {{ $saran }}
+                                <div class="input-group orcha-tambah">
+                                    <input type="text" class="form-control" wire:model="{{ $medanBaru }}"
+                                        wire:keydown.enter.prevent="tambah('{{ $jenis }}')"
+                                        placeholder="{{ $contoh }}">
+                                    <button type="button" class="btn btn-primary"
+                                        wire:click="tambah('{{ $jenis }}')" wire:loading.attr="disabled">
+                                        <i class="bi bi-plus-lg"></i> Tambah
                                     </button>
-                                @endforeach
-                            </div>
-
-                            <div class="input-group input-group-lg">
-                                <input type="text" class="form-control" wire:model="fasilitasBaru"
-                                    wire:keydown.enter.prevent="tambahFasilitas"
-                                    placeholder="Fasilitas lain...">
-                                <button type="button" class="btn btn-outline-primary" wire:click="tambahFasilitas">
-                                    Tambah
-                                </button>
+                                </div>
+                                <div class="form-text">
+                                    Yang ditambahkan di sini langsung masuk daftar pilihan, jadi paket
+                                    berikutnya tinggal mengklik.
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endforeach
 
                     {{-- Itinerary: baris per agenda, bukan mengetik format sendiri --}}
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="orcha-kepala-kartu">
                                 <h6 class="fw-bold mb-0">Itinerary</h6>
                                 <span class="badge orcha-hitung">{{ count($hari) }} hari</span>
                             </div>
-                            <p class="text-muted small mb-3">
-                                Isi jam dan kegiatannya. Baris kosong tidak ikut tersimpan.
+                            <p class="orcha-petunjuk">
+                                Isi jam dan kegiatannya. Baris tanpa kegiatan tidak ikut tersimpan.
                             </p>
 
                             @foreach ($hari as $urutanHari => $satuHari)
-                                <div class="orcha-hari mb-3" wire:key="hari-{{ $urutanHari }}">
+                                <div class="orcha-hari" wire:key="hari-{{ $urutanHari }}">
                                     <div class="d-flex align-items-center gap-2 mb-3">
                                         <span class="orcha-nomor-hari">{{ $urutanHari + 1 }}</span>
                                         <input type="text" class="form-control form-control-lg fw-semibold"
-                                            wire:model="hari.{{ $urutanHari }}.nama" placeholder="Day 1">
+                                            wire:model="hari.{{ $urutanHari }}.nama" value="{{ $satuHari['nama'] }}"
+                                            placeholder="Day 1">
 
                                         @if (count($hari) > 1)
                                             <button type="button" class="btn btn-outline-danger rounded-3"
@@ -194,12 +182,13 @@
                                     </div>
 
                                     @foreach ($satuHari['agenda'] as $urutanAgenda => $agenda)
-                                        <div class="d-flex gap-2 mb-2" wire:key="agenda-{{ $urutanHari }}-{{ $urutanAgenda }}">
+                                        <div class="orcha-baris-agenda" wire:key="agenda-{{ $urutanHari }}-{{ $urutanAgenda }}">
                                             <input type="text" class="form-control form-control-lg orcha-jam"
                                                 wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.jam"
-                                                placeholder="07.00">
+                                                value="{{ $agenda['jam'] }}" placeholder="07.00">
                                             <input type="text" class="form-control form-control-lg"
                                                 wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.kegiatan"
+                                                value="{{ $agenda['kegiatan'] }}"
                                                 placeholder="Penjemputan di meeting point">
                                             <button type="button" class="btn btn-light border rounded-3"
                                                 wire:click="buangAgenda({{ $urutanHari }}, {{ $urutanAgenda }})"
@@ -233,15 +222,15 @@
 
                             <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>
                             <input type="number" class="form-control mb-3 @error('harga') is-invalid @enderror"
-                                wire:model="harga" min="0">
+                                wire:model="harga" value="{{ $harga }}" min="0">
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
 
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
-                            <input type="number" class="form-control mb-1" wire:model="hargaAsli" min="0">
+                            <input type="number" class="form-control mb-1" wire:model="hargaAsli" value="{{ $hargaAsli }}" min="0">
                             <div class="form-text mb-3">Kosongkan bila tidak ada coretan harga.</div>
 
                             <label class="form-label small fw-semibold">Diskon (%)</label>
-                            <input type="number" class="form-control mb-3" wire:model="diskonPersen" min="0" max="100">
+                            <input type="number" class="form-control mb-3" wire:model="diskonPersen" value="{{ $diskonPersen }}" min="0" max="100">
 
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="paket-terbaik"
