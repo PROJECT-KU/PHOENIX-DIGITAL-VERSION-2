@@ -118,11 +118,13 @@ trait MemanggilOrcha
         try {
             $this->orcha()->kirim($jalur, $data, $gambar);
 
-            // Setelah menyimpan, halaman formulir berpindah ke daftar. Peristiwa
-            // Livewire ikut hilang saat berpindah, jadi pesannya dititipkan ke
-            // sesi dan ditampilkan di halaman tujuan.
+            // Setelah menyimpan, halaman formulir berpindah ke daftar — peristiwa
+            // Livewire ikut hilang saat berpindah. Pesannya dititipkan lewat
+            // kunci sesi 'success', yang memang SUDAH dibaca dan ditampilkan
+            // layouts/app.blade.php untuk seluruh halaman lemon. Memakai kunci
+            // sendiri berarti membangun penampil kedua yang mudah luput.
             $lintasHalaman
-                ? session()->flash('orcha_sukses', $pesanSukses)
+                ? session()->flash('success', $pesanSukses)
                 : $this->dispatch('order-updated', message: $pesanSukses);
 
             return true;

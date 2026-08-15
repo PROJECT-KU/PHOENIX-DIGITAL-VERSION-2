@@ -587,7 +587,7 @@ test('diskon yang ditulis sendiri tidak ditimpa hitungan', function () {
 
 /* --------------------------- PESAN SUKSES --------------------------- */
 
-test('pesan sukses dititipkan ke sesi supaya tetap tampil setelah berpindah', function () {
+test('pesan sukses dititipkan lewat kunci sesi yang dibaca layout lemon', function () {
     Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
 
     Livewire::actingAs(adminOrcha())
@@ -598,17 +598,41 @@ test('pesan sukses dititipkan ke sesi supaya tetap tampil setelah berpindah', fu
         ->assertHasNoErrors()
         ->assertRedirect(route('admin.orcha.paket'));
 
-    expect(session('orcha_sukses'))->toBe('Paket wisata ditambahkan.');
+    // 'success' memang kunci yang sudah dibaca layouts/app.blade.php —
+    // memakai kunci sendiri berarti pesannya tidak akan pernah tampil.
+    expect(session('success'))->toBe('Paket wisata ditambahkan.');
+});
+
+test('kunci sesi itu benar-benar dipasang penampil di layout', function () {
+    $layout = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+
+    expect($layout)->toContain("session('success')")
+        ->and($layout)->toContain('fireGlossySwal');
 });
 
 test('halaman daftar menampilkan pesan titipan itu', function () {
     Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
 
     $this->actingAs(adminOrcha())
-        ->withSession(['orcha_sukses' => 'Paket wisata ditambahkan.'])
+        ->withSession(['success' => 'Paket wisata ditambahkan.'])
         ->get('/admin/orcha/paket-wisata')
         ->assertOk()
         ->assertSee('Paket wisata ditambahkan.');
+});
+
+test('kendaraan baru juga menitipkan pesannya', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaArmadaForm::class)
+        ->set('nama', 'All New Avanza')
+        ->set('merek', 'Toyota')
+        ->set('tarifHariTeks', '350000')
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.orcha.armada'));
+
+    expect(session('success'))->toBe('Kendaraan ditambahkan.');
 });
 
 /* --------------------------- FORMAT RUPIAH --------------------------- */

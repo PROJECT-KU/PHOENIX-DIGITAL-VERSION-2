@@ -488,7 +488,10 @@ class OrchaPaketForm extends Component
             : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, true);
 
         if ($berhasil) {
-            $this->redirectRoute('admin.orcha.paket', navigate: true);
+            // Sengaja memuat ulang halaman sepenuhnya, bukan wire:navigate:
+            // pemberitahuan sukses dititipkan lewat sesi, dan muat ulang biasa
+            // menjamin skrip penampilnya benar-benar dijalankan peramban.
+            $this->redirectRoute('admin.orcha.paket');
         }
     }
 

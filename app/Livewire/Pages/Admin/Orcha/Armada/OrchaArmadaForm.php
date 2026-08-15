@@ -165,7 +165,10 @@ class OrchaArmadaForm extends Component
             : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, true);
 
         if ($berhasil) {
-            $this->redirectRoute('admin.orcha.armada', navigate: true);
+            // Sengaja memuat ulang halaman sepenuhnya, bukan wire:navigate:
+            // pemberitahuan sukses dititipkan lewat sesi, dan muat ulang biasa
+            // menjamin skrip penampilnya benar-benar dijalankan peramban.
+            $this->redirectRoute('admin.orcha.armada');
         }
     }
 
