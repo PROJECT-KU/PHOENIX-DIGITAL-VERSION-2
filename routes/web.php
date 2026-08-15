@@ -39,17 +39,18 @@ use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
-use App\Livewire\Pages\Admin\Orcha\OrchaArmadaForm;
-use App\Livewire\Pages\Admin\Orcha\OrchaDashboard;
-use App\Livewire\Pages\Admin\Orcha\OrchaEtalaseList;
-use App\Livewire\Pages\Admin\Orcha\OrchaKatalogList;
+use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
+use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList;
+use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
+use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
+use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 // Data Order
-use App\Livewire\Pages\Admin\Orcha\OrchaPaketForm;
-use App\Livewire\Pages\Admin\Orcha\OrchaPembatalanList;
-use App\Livewire\Pages\Admin\Orcha\OrchaPendaftaranList;
+use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
+use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanList;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 // Orcha Journey — data dari aplikasi tetangga lewat API
-use App\Livewire\Pages\Admin\Orcha\OrchaPenyewaanList;
-use App\Livewire\Pages\Admin\Orcha\OrchaPesanList;
+use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
+use App\Livewire\Pages\Admin\Orcha\Pesan\OrchaPesanList;
 use App\Livewire\Pages\Admin\Order\OrderCreate;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
 use App\Livewire\Pages\Admin\Order\OrderList;
@@ -485,11 +486,11 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/penyewaan', OrchaPenyewaanList::class)->name('admin.orcha.penyewaan');
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
-    Route::get('/admin/orcha/paket-wisata', OrchaKatalogList::class)->name('admin.orcha.paket');
+    Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
     Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');
 
-    Route::get('/admin/orcha/armada', OrchaKatalogList::class)->defaults('jenis', 'armada')->name('admin.orcha.armada');
+    Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');
     Route::get('/admin/orcha/armada/{kendaraan}/ubah', OrchaArmadaForm::class)->name('admin.orcha.armada.ubah');
 

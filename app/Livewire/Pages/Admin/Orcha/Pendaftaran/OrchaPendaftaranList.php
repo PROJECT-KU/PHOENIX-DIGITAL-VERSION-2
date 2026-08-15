@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Pendaftaran;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
@@ -54,7 +54,7 @@ class OrchaPendaftaranList extends Component
     {
         $hasil = $this->muat('/pendaftaran', $this->parameterDaftar());
 
-        return view('livewire.pages.admin.orcha.orcha-pendaftaran-list', [
+        return view('livewire.pages.admin.orcha.pendaftaran.index', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
             'pilihanStatus' => $this->rujukan('status_pendaftaran'),

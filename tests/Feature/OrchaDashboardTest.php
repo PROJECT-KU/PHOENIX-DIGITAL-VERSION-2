@@ -1,10 +1,10 @@
 <?php
 
-use App\Livewire\Pages\Admin\Orcha\OrchaArmadaForm;
-use App\Livewire\Pages\Admin\Orcha\OrchaEtalaseList;
-use App\Livewire\Pages\Admin\Orcha\OrchaKatalogList;
-use App\Livewire\Pages\Admin\Orcha\OrchaPaketForm;
-use App\Livewire\Pages\Admin\Orcha\OrchaPendaftaranList;
+use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
+use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
+use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
+use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Models\EmployeeDetail;
 use App\Models\Permission;
 use App\Models\Role;
@@ -390,7 +390,7 @@ test('penolakan dari orcha saat menghapus ditampilkan apa adanya', function () {
     ]);
 
     Livewire::actingAs(adminOrcha())
-        ->test(OrchaKatalogList::class)
+        ->test(OrchaPaketList::class)
         ->call('hapus', 9)
         ->assertDispatched('toast-error')
         ->assertNotDispatched('order-updated');

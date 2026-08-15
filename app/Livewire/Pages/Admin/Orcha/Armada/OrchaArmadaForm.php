@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Armada;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -133,7 +133,7 @@ class OrchaArmadaForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.orcha.orcha-armada-form', [
+        return view('livewire.pages.admin.orcha.armada.form', [
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
         ])->layout('livewire.layout.templateindex');
     }

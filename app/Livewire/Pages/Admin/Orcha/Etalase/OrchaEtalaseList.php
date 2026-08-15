@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Etalase;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -155,7 +155,7 @@ class OrchaEtalaseList extends Component
             ), $kata))->values();
         }
 
-        return view('livewire.pages.admin.orcha.orcha-etalase-list', [
+        return view('livewire.pages.admin.orcha.etalase.index', [
             'daftar' => $daftar->all(),
             'pilihanWilayah' => $this->rujukan('wilayah'),
         ])->layout('livewire.layout.templateindex');

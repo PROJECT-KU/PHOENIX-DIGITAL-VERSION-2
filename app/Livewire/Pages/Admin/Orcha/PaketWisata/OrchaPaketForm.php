@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\PaketWisata;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -512,7 +512,7 @@ class OrchaPaketForm extends Component
         // baru, jadi diambil segar tiap render — bukan dari cache rujukan.
         $saran = $this->muat('/saran')['data'] ?? [];
 
-        return view('livewire.pages.admin.orcha.orcha-paket-form', [
+        return view('livewire.pages.admin.orcha.paket-wisata.form', [
             'pilihanKategori' => $this->rujukan('kategori_paket'),
             'pilihanStatusPaket' => $this->rujukan('status_paket'),
             'statusTayang' => $statusTayang = $this->statusTayang(),

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Dashboard;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -19,7 +19,7 @@ class OrchaDashboard extends Component
     {
         $isi = $this->muat('/dashboard')['data'] ?? [];
 
-        return view('livewire.pages.admin.orcha.orcha-dashboard', [
+        return view('livewire.pages.admin.orcha.dashboard.index', [
             'kartu' => $isi['kartu'] ?? [],
             'paketPerKategori' => $isi['paket_per_kategori'] ?? [],
             'kendaraanPerJenis' => $isi['kendaraan_per_jenis'] ?? [],

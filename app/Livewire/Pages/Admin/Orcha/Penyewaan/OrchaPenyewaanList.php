@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Penyewaan;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -18,7 +18,7 @@ class OrchaPenyewaanList extends Component
     {
         $hasil = $this->muat('/penyewaan', $this->parameterDaftar());
 
-        return view('livewire.pages.admin.orcha.orcha-penyewaan-list', [
+        return view('livewire.pages.admin.orcha.penyewaan.index', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
             'pilihanStatus' => $this->rujukan('status_penyewaan'),

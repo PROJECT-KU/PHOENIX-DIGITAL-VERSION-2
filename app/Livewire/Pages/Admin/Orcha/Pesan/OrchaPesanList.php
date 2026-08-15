@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Pages\Admin\Orcha;
+namespace App\Livewire\Pages\Admin\Orcha\Pesan;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -33,7 +33,7 @@ class OrchaPesanList extends Component
 
         $hasil = $this->muat('/pesan', $parameter);
 
-        return view('livewire.pages.admin.orcha.orcha-pesan-list', [
+        return view('livewire.pages.admin.orcha.pesan.index', [
             'daftar' => $hasil['data'] ?? [],
             'meta' => $hasil['meta'] ?? [],
             'pilihanKeperluan' => $this->rujukan('keperluan_kontak'),
