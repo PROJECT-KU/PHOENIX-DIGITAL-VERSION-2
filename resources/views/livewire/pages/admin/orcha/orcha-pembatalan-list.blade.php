@@ -1,0 +1,149 @@
+@section('title')
+Pembatalan Orcha || lemon
+@stop
+
+<div>
+    @include('livewire.pages.admin.orcha.partials.gaya')
+
+    <div class="container-fluid">
+        @include('livewire.pages.admin.orcha.partials.kepala', [
+            'judul' => 'Pengajuan Pembatalan',
+            'keterangan' => 'Permintaan pembatalan beserta rekening pengembalian dananya.',
+        ])
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-3 p-lg-4">
+                <div class="row g-2">
+                    <div class="col-12 col-lg-8">
+                        <div class="form-group position-relative mb-0">
+                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
+                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
+                                placeholder="Cari kode pendaftaran, nama, atau WhatsApp...">
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <select wire:model.live="filterStatus" class="form-select">
+                            <option value="">Semua status</option>
+                            @foreach ($pilihanStatus as $kunci => $label)
+                                <option value="{{ $kunci }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-3 p-lg-4">
+                <div class="orcha-gulung">
+                    <table class="table table-hover align-middle orcha-tabel mb-0">
+                        <thead>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Pemohon</th>
+                                <th>Alasan</th>
+                                <th>Rekening</th>
+                                <th>Status</th>
+                                <th class="text-end">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($daftar as $baris)
+                                <tr wire:key="pembatalan-{{ $baris['id'] }}">
+                                    <td>
+                                        <span class="orcha-kode">{{ $baris['kode_pendaftaran'] }}</span>
+                                        <div class="text-muted" style="font-size:.75rem">
+                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y') }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ $baris['nama_pemohon'] }}</div>
+                                        <div class="text-muted" style="font-size:.78rem">
+                                            {{ $baris['whatsapp'] }} · {{ $baris['jumlah_dibatalkan'] }} peserta
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small">{{ $baris['alasan_label'] }}</div>
+                                        @if ($baris['penjelasan'])
+                                            <div class="text-muted" style="font-size:.78rem">
+                                                {{ \Illuminate\Support\Str::limit($baris['penjelasan'], 60) }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="small">
+                                        <div class="fw-semibold">{{ $baris['rekening']['bank'] }}</div>
+                                        <div class="text-muted" style="font-size:.78rem">
+                                            {{ $baris['rekening']['nomor'] }}<br>
+                                            a.n. {{ $baris['rekening']['atas_nama'] }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ $baris['status_label'] }}</span>
+                                        @if ($baris['catatan_admin'])
+                                            <div class="text-muted" style="font-size:.75rem">
+                                                {{ \Illuminate\Support\Str::limit($baris['catatan_admin'], 40) }}
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                            wire:click="buka({{ $baris['id'] }}, '{{ $baris['status'] }}', '{{ addslashes((string) $baris['catatan_admin']) }}')">
+                                            <i class="bi bi-pencil-square"></i>
+                                            <span>Tindak lanjuti</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="empty-state-icon-wrapper mx-auto mb-2">
+                                            <i class="bi bi-x-circle"></i>
+                                        </div>
+                                        <p class="text-muted mb-0">Belum ada pengajuan pembatalan yang cocok.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @include('livewire.pages.admin.orcha.partials.paginasi')
+            </div>
+        </div>
+    </div>
+
+    @if ($sedangDiubah)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(15,45,74,.35)">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold mb-0">Tindak Lanjut Pembatalan</h5>
+                        <button type="button" class="btn-close" wire:click="tutup"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label small fw-semibold">Status</label>
+                        <select wire:model="statusBaru" class="form-select mb-3">
+                            @foreach ($pilihanStatus as $kunci => $label)
+                                <option value="{{ $kunci }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+
+                        <label class="form-label small fw-semibold">Catatan admin</label>
+                        <textarea wire:model="catatanAdmin" class="form-control" rows="3"
+                            placeholder="Mis. potongan 50%, dana dikirim 12 Agustus."></textarea>
+                        <div class="form-text">Catatan ini tersimpan di Orcha dan terlihat di admin Orcha.</div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light border rounded-3" wire:click="tutup">Batal</button>
+                        <button type="button" class="btn btn-primary rounded-3" wire:click="simpan"
+                            wire:loading.attr="disabled">
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @include('livewire.pages.admin.orcha.partials.skrip')
+</div>

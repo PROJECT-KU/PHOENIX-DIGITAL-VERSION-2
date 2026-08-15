@@ -39,9 +39,16 @@ use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
+use App\Livewire\Pages\Admin\Orcha\OrchaDashboard;
+use App\Livewire\Pages\Admin\Orcha\OrchaKatalogList;
+// Data Order
+use App\Livewire\Pages\Admin\Orcha\OrchaPembatalanList;
+use App\Livewire\Pages\Admin\Orcha\OrchaPendaftaranList;
+// Orcha Journey — data dari aplikasi tetangga lewat API
+use App\Livewire\Pages\Admin\Orcha\OrchaPenyewaanList;
+use App\Livewire\Pages\Admin\Orcha\OrchaPesanList;
 use App\Livewire\Pages\Admin\Order\OrderCreate;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
-// Data Order
 use App\Livewire\Pages\Admin\Order\OrderList;
 use App\Livewire\Pages\Admin\Order\ProcessOrder;
 use App\Livewire\Pages\Admin\PelamarKerja\PelamarKerjaDetail;
@@ -454,6 +461,29 @@ Route::middleware('permission:view_promo')->group(function () {
 Route::middleware('permission:view_message')->group(function () {
     Route::get('/admin/message', MessageList::class)->name('admin.message.index');
     Route::get('/admin/message/{message}', MessageDetail::class)->name('admin.message.detail');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Orcha Journey
+|--------------------------------------------------------------------------
+|
+| Halaman ini menggambar data milik aplikasi Orcha Journey — basis datanya
+| tetap di sana, lemon hanya memanggil API-nya. Tujuannya supaya admin cukup
+| satu akun dan tidak berpindah aplikasi.
+|
+| Penjaganya permission 'akses_orcha'. Tombol yang disembunyikan di sidebar
+| bukan pengaman; penjagaan sebenarnya ada di sini.
+|
+*/
+Route::middleware('permission:akses_orcha')->group(function () {
+    Route::get('/admin/orcha/dashboard', OrchaDashboard::class)->name('admin.orcha.dashboard');
+    Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
+    Route::get('/admin/orcha/penyewaan', OrchaPenyewaanList::class)->name('admin.orcha.penyewaan');
+    Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
+    Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
+    Route::get('/admin/orcha/paket-wisata', OrchaKatalogList::class)->name('admin.orcha.paket');
+    Route::get('/admin/orcha/armada', OrchaKatalogList::class)->defaults('jenis', 'armada')->name('admin.orcha.armada');
 });
 
 require __DIR__.'/auth.php';

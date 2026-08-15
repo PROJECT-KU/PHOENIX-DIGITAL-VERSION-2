@@ -66,12 +66,21 @@ new class extends Component
         $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
             ? OrderUpload::where('status', 'menunggu')->count() : 0;
 
+        // Orcha Journey: pekerjaan yang menunggu di aplikasi tetangga. Angkanya
+        // diambil lewat API, disimpan sebentar, dan dibungkus rescue di dalam
+        // OrchaClient — Orcha yang sedang mati tidak boleh ikut mematikan
+        // sidebar lemon yang tampil di setiap halaman.
+        $orchaPerlu = $login && $u->hasPermission('akses_orcha')
+            ? app(\App\Services\OrchaClient::class)->perluDitindak() : 0;
+
         return [
             'pesananTokoPaid' => $pesananTokoPaid,
             'testimoniBaru' => $testimoniBaru,
             'ulasanBaru' => $ulasanBaru,
             'helpdeskBaru' => $helpdeskBaru,
             'pengecekanBaru' => $pengecekanBaru,
+            'orchaPerlu' => $orchaPerlu,
+            'modeOrcha' => request()->routeIs('admin.orcha.*'),
 
             // Badge di judul tab (mis. "(3) lemon") = jumlah hal BARU yang perlu
             // ditindaklanjuti: pesanan toko paid + testimoni + ulasan + helpdesk.
@@ -321,6 +330,37 @@ new class extends Component
         #sidebar .sidebar-toggler .sidebar-hide {
             color: #9aa0ae;
         }
+
+        /* ----- Orcha Journey: tombol pindah aplikasi -----
+           Warnanya sengaja beda dari lemon (biru laut) supaya admin langsung
+           sadar sedang berpindah ke data aplikasi lain. */
+        #sidebar .orcha-ganti>.sidebar-link {
+            background: linear-gradient(135deg, #0f2d4a, #1d6fa5);
+            color: #fff !important;
+            border-radius: .7rem;
+            margin: 0 .35rem;
+        }
+
+        #sidebar .orcha-ganti>.sidebar-link i {
+            color: #ffd772 !important;
+        }
+
+        #sidebar .orcha-ganti>.sidebar-link:hover {
+            filter: brightness(1.08);
+        }
+
+        #sidebar .orcha-lencana-menu {
+            display: block;
+            margin: .25rem .35rem .5rem;
+            padding: .55rem .75rem;
+            border-radius: .7rem;
+            background: linear-gradient(135deg, #0f2d4a, #1d6fa5);
+            color: #ffd772;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
     </style>
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
@@ -341,6 +381,43 @@ new class extends Component
         </div>
         <div class="sidebar-menu">
             <ul class="menu">
+                {{-- Saat admin berada di halaman Orcha, seluruh menu berganti jadi
+                     milik Orcha. Penandanya alamat rute (bukan sesi) supaya admin
+                     bisa membuka dua tab — lemon dan Orcha — tanpa saling ganggu. --}}
+                @if ($modeOrcha)
+                    <li class="orcha-lencana-menu">
+                        <i class="bi bi-water"></i> Orcha Journey
+                    </li>
+
+                    @php
+                        $menuOrcha = [
+                            ['admin.orcha.dashboard', 'bi-grid-fill', 'Dashboard'],
+                            ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Open Trip'],
+                            ['admin.orcha.penyewaan', 'bi-truck', 'Sewa Kendaraan'],
+                            ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
+                            ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
+                            ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
+                            ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
+                        ];
+                    @endphp
+
+                    @foreach ($menuOrcha as [$rute, $ikon, $label])
+                        <li class="sidebar-item {{ request()->routeIs($rute) ? 'active' : '' }}">
+                            <a href="{{ route($rute) }}" class="sidebar-link" wire:navigate>
+                                <i class="bi {{ $ikon }}"></i>
+                                <span>{{ $label }}</span>
+                            </a>
+                        </li>
+                    @endforeach
+
+                    <li class="mt-4 sidebar-title">Aplikasi</li>
+                    <li class="sidebar-item">
+                        <a href="{{ route('admin.dashboard') }}" class="sidebar-link" wire:navigate>
+                            <i class="bi bi-arrow-left-circle"></i>
+                            <span>Kembali ke lemon</span>
+                        </a>
+                    </li>
+                @else
                 <li class="sidebar-title">Menu</li>
 
                 @if (auth()->user()->hasPermission('view_dashboard'))
@@ -769,6 +846,26 @@ new class extends Component
                         @endif
                     </ul>
                 </li>
+                @endif
+
+                {{-- Pindah ke Orcha Journey. Hanya tampil bagi yang punya
+                     permission — tapi penjaga sebenarnya ada di middleware
+                     'permission:akses_orcha' pada rutenya. --}}
+                @if (auth()->user()->hasPermission('akses_orcha'))
+                <li class="mt-4 sidebar-title">Aplikasi Lain</li>
+                <li class="sidebar-item orcha-ganti">
+                    <a href="{{ route('admin.orcha.dashboard') }}" class="sidebar-link" wire:navigate>
+                        <i class="bi bi-water"></i>
+                        <span>Ganti ke Orcha</span>
+                        @if ($orchaPerlu > 0)
+                            <span class="sidebar-badge" title="{{ $orchaPerlu }} hal menunggu ditindak di Orcha">
+                                {{ $orchaPerlu }}
+                            </span>
+                        @endif
+                    </a>
+                </li>
+                @endif
+
                 @endif
 
                 <li class="sidebar-item">

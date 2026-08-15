@@ -21,7 +21,11 @@ return new class extends Migration
         });
 
         // Isi group_id dari group_id task terkait.
-        DB::statement('UPDATE task_comments tc JOIN tasks t ON t.id = tc.task_id SET tc.group_id = t.group_id WHERE tc.group_id IS NULL');
+        // UPDATE ... JOIN hanya sintaks MySQL. Ini pengisian data lama;
+        // pada basis uji SQLite tabelnya masih kosong, jadi memang tak perlu.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('UPDATE task_comments tc JOIN tasks t ON t.id = tc.task_id SET tc.group_id = t.group_id WHERE tc.group_id IS NULL');
+        }
 
         // Ganti perilaku FK task_id: cascade -> nullOnDelete (komentar grup bertahan).
         Schema::table('task_comments', function (Blueprint $table) {

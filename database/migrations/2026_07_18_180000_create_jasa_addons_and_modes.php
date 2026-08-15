@@ -46,9 +46,24 @@ return new class extends Migration
         });
 
         // 4) Harga per halaman disimpan di katalog harga: durasi_type 'halaman'.
-        DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL");
-        DB::statement("ALTER TABLE order_items MODIFY duration_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL DEFAULT 'bulan'");
-        DB::statement("ALTER TABLE product_modal_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL");
+        }
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE order_items MODIFY duration_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL DEFAULT 'bulan'");
+        }
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_modal_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali','halaman') NOT NULL");
+        }
 
         // 5) File yang diunggah customer SEBELUM bayar (parafrase) — dipakai untuk
         //    menghitung halaman & harga, lalu dipindahkan ke pesanan saat checkout.
@@ -80,8 +95,23 @@ return new class extends Migration
             $table->dropColumn(['jasa_mode', 'addon_mode']);
         });
 
-        DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali') NOT NULL");
-        DB::statement("ALTER TABLE order_items MODIFY duration_type ENUM('bulan','tahun','sekali','kali') NOT NULL DEFAULT 'bulan'");
-        DB::statement("ALTER TABLE product_modal_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali') NOT NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali') NOT NULL");
+        }
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE order_items MODIFY duration_type ENUM('bulan','tahun','sekali','kali') NOT NULL DEFAULT 'bulan'");
+        }
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_modal_prices MODIFY durasi_type ENUM('bulan','tahun','sekali','kali') NOT NULL");
+        }
     }
 };

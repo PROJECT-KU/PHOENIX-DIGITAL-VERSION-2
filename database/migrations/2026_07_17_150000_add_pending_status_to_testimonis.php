@@ -12,7 +12,12 @@ return new class extends Migration
         // Kolom status semula enum('active','non-active'). Diubah ke VARCHAR agar
         // bisa menampung status 'pending' (antrian moderasi) — seragam dengan
         // Ulasan Produk yang statusnya pending/approved/hidden.
-        DB::statement("ALTER TABLE testimonis MODIFY status VARCHAR(20) NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE testimonis MODIFY status VARCHAR(20) NULL");
+        }
 
         // Semua non-active dijadikan 'pending' untuk ditinjau ulang admin
         // (pilihan pemilik). Setelah ini: pending=menunggu, active=disetujui,
@@ -32,7 +37,12 @@ return new class extends Migration
     {
         // Kembalikan pending -> non-active, lalu enum semula.
         DB::table('testimonis')->where('status', 'pending')->update(['status' => 'non-active']);
-        DB::statement("ALTER TABLE testimonis MODIFY status ENUM('active','non-active') NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE testimonis MODIFY status ENUM('active','non-active') NULL");
+        }
 
         if (! Schema::hasColumn('testimonis', 'ditinjau_at')) {
             Schema::table('testimonis', function (Blueprint $table) {

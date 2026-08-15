@@ -10,7 +10,12 @@ return new class extends Migration
     public function up(): void
     {
         // Tambah status 'draft' ke enum status order
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled','draft') NOT NULL DEFAULT 'pending'");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled','draft') NOT NULL DEFAULT 'pending'");
+        }
 
         Schema::table('orders', function (Blueprint $table) {
             // Payload QRIS dinamis (EMV string) untuk dirender jadi QR
@@ -26,6 +31,11 @@ return new class extends Migration
             $table->dropColumn(['qris_content', 'qris_trx_id']);
         });
 
-        DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled') NOT NULL DEFAULT 'pending'");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled') NOT NULL DEFAULT 'pending'");
+        }
     }
 };

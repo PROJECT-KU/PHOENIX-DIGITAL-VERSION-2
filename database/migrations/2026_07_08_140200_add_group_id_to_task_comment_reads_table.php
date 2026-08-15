@@ -19,7 +19,11 @@ return new class extends Migration
             });
         }
 
-        DB::statement('UPDATE task_comment_reads tcr JOIN tasks t ON t.id = tcr.task_id SET tcr.group_id = t.group_id WHERE tcr.group_id IS NULL');
+        // UPDATE ... JOIN hanya sintaks MySQL. Ini pengisian data lama;
+        // pada basis uji SQLite tabelnya masih kosong, jadi memang tak perlu.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('UPDATE task_comment_reads tcr JOIN tasks t ON t.id = tcr.task_id SET tcr.group_id = t.group_id WHERE tcr.group_id IS NULL');
+        }
 
         // FK task_id memakai index unik komposit; lepas dulu agar unik bisa diganti.
         // Reads kini di-key oleh group_id; task_id cukup jadi referensi tanpa FK.
@@ -42,6 +46,13 @@ return new class extends Migration
 
     private function foreignKeyExists(string $table, string $constraint): bool
     {
+        // information_schema hanya ada di MySQL. Uji otomatis memakai SQLite,
+        // yang tabelnya baru dibuat dari nol — jadi tidak ada FK lama yang
+        // perlu dilepas di sana.
+        if (DB::getDriverName() !== 'mysql') {
+            return false;
+        }
+
         return count(DB::select(
             'SELECT 1 FROM information_schema.table_constraints WHERE table_schema = DATABASE() AND table_name = ? AND constraint_name = ? AND constraint_type = "FOREIGN KEY" LIMIT 1',
             [$table, $constraint]
@@ -60,6 +71,14 @@ return new class extends Migration
 
     private function indexExists(string $table, string $index): bool
     {
+        // Di luar MySQL, tanyakan lewat lapisan skema Laravel — information_schema
+        // tidak ada di SQLite yang dipakai uji otomatis.
+        if (DB::getDriverName() !== 'mysql') {
+            return in_array($index, array_column(
+                Schema::getIndexes($table), 'name'
+            ), true);
+        }
+
         return count(DB::select(
             'SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ? LIMIT 1',
             [$table, $index]

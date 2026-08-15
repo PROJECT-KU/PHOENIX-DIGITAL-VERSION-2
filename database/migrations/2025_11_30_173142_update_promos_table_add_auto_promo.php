@@ -13,7 +13,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('promos', function (Blueprint $table) {
-            DB::statement("ALTER TABLE promos MODIFY COLUMN tipe_promo ENUM('flash_sale', 'kode_promo', 'referral_bonus', 'auto_promo') DEFAULT 'flash_sale'");
+            // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+            // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+            // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement("ALTER TABLE promos MODIFY COLUMN tipe_promo ENUM('flash_sale', 'kode_promo', 'referral_bonus', 'auto_promo') DEFAULT 'flash_sale'");
+            }
         });
     }
 
@@ -23,7 +28,12 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('promos', function (Blueprint $table) {
-            DB::statement("ALTER TABLE promos MODIFY COLUMN tipe_promo ENUM('flash_sale', 'kode_promo', 'referral_bonus') DEFAULT 'flash_sale'");
+            // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+            // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+            // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+            if (DB::getDriverName() === 'mysql') {
+                DB::statement("ALTER TABLE promos MODIFY COLUMN tipe_promo ENUM('flash_sale', 'kode_promo', 'referral_bonus') DEFAULT 'flash_sale'");
+            }
         });
     }
 };

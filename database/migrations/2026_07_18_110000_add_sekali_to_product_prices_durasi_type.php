@@ -9,7 +9,12 @@ return new class extends Migration
     {
         // Tambah 'sekali' ke enum durasi_type untuk produk JASA (sekali bayar,
         // tanpa durasi). Nilai lama 'bulan'/'tahun' tidak terpengaruh.
-        DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali') NOT NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun','sekali') NOT NULL");
+        }
     }
 
     public function down(): void
@@ -17,6 +22,11 @@ return new class extends Migration
         // Kembalikan ke enum semula; baris 'sekali' (jika ada) dijadikan 'bulan'
         // agar tak melanggar enum.
         DB::table('product_prices')->where('durasi_type', 'sekali')->update(['durasi_type' => 'bulan']);
-        DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun') NOT NULL");
+        // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
+        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
+        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE product_prices MODIFY durasi_type ENUM('bulan','tahun') NOT NULL");
+        }
     }
 };
