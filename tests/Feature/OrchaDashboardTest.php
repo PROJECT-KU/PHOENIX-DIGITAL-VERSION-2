@@ -668,3 +668,25 @@ test('tarif armada juga bertitik', function () {
         && $request['tarif_hari'] == 350000
         && $request['tarif_jam'] == 55000);
 });
+
+test('setiap isian uang ditandai supaya bisa diformat sambil diketik', function () {
+    $berkas = [
+        'resources/views/livewire/pages/admin/orcha/paket-wisata/form.blade.php',
+        'resources/views/livewire/pages/admin/orcha/armada/form.blade.php',
+    ];
+
+    foreach ($berkas as $satu) {
+        $isi = file_get_contents(base_path($satu));
+
+        preg_match_all('/<input\b[^>]*wire:model\.blur="\w+Teks"[^>]*>/s', $isi, $isian);
+
+        expect($isian[0])->not->toBeEmpty();
+
+        foreach ($isian[0] as $satuIsian) {
+            // Tanpa kelas ini, angkanya baru bertitik setelah pindah kolom.
+            expect(str_contains($satuIsian, 'orcha-uang'))->toBeTrue(
+                "isian uang tanpa kelas orcha-uang di {$satu}: ".trim(substr($satuIsian, 0, 90))
+            );
+        }
+    }
+});

@@ -534,6 +534,51 @@
         padding: .75rem;
     }
 
+    /* Tombol aksi di tabel: tiap tindakan punya warnanya sendiri supaya
+       terbedakan sekilas — bukan tiga tombol abu-abu yang sama rupa. */
+    .orcha-aksi {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: .6rem;
+        border: 1px solid transparent;
+        padding: .35rem .6rem;
+        transition: all .15s ease;
+    }
+
+    .orcha-aksi i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        font-size: .82rem;
+    }
+
+    /* Lihat di website — biru laut, sama dengan warna merek Orcha */
+    .orcha-aksi-lihat {
+        background: #eef6fb;
+        border-color: #c7e2f2;
+        color: #14618f;
+    }
+
+    .orcha-aksi-lihat:hover {
+        background: #d8ecf8;
+        border-color: #1d6fa5;
+        color: #0f2d4a;
+    }
+
+    /* Ubah — emas merek, tindakan yang paling sering dipakai */
+    .orcha-aksi-ubah {
+        background: #fff6e3;
+        border-color: #f3ddb0;
+        color: #8a5a09;
+    }
+
+    .orcha-aksi-ubah:hover {
+        background: #ffedcb;
+        border-color: #d9a441;
+        color: #6b4406;
+    }
+
     /* Tombol bahaya: merahnya terlihat tanpa perlu disorot. */
     .orcha-bahaya {
         display: inline-flex;

@@ -99,12 +99,11 @@ Paket Wisata Orcha || lemon
                                         <td class="text-center fw-semibold">{{ $baris['jumlah_pendaftar'] ?? 0 }}</td>
                                         <td class="text-end text-nowrap">
                                             <a href="{{ $baris['tautan_publik'] }}" target="_blank" rel="noopener"
-                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol"
-                                                title="Lihat di website">
+                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat" title="Lihat di website">
                                                 <i class="bi bi-box-arrow-up-right"></i>
                                             </a>
                                             <a href="{{ route('admin.orcha.paket.ubah', $baris['id']) }}" wire:navigate
-                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol" title="Ubah">
+                                                class="btn btn-sm orcha-aksi orcha-aksi-ubah" title="Ubah">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <button type="button"

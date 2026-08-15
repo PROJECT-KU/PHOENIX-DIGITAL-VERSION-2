@@ -86,7 +86,7 @@ Armada Orcha || lemon
                                         </td>
                                         <td class="text-end text-nowrap">
                                             <a href="{{ route('admin.orcha.armada.ubah', $baris['id']) }}" wire:navigate
-                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol" title="Ubah">
+                                                class="btn btn-sm orcha-aksi orcha-aksi-ubah" title="Ubah">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <button type="button"

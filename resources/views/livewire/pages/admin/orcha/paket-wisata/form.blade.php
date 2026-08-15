@@ -271,15 +271,13 @@
                                     Tutup pendaftaran saat hari keberangkatan
                                 </label>
                                 <div class="form-text">
-                                    Paket berhenti tampil di website pada tanggal berangkat
                                     @if ($tanggalBerangkat)
-                                        (<strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->translatedFormat('j F Y') }}</strong>),
+                                        Berhenti tampil
+                                        <strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->translatedFormat('j M Y') }}</strong>.
                                     @else
-                                        ,
+                                        Berhenti tampil pada tanggal berangkat.
                                     @endif
-                                    bukan setelah rombongan pulang — percuma menerima pendaftar
-                                    untuk trip yang berangkat hari itu juga.
-                                    Matikan bila tanggalnya cuma contoh dan paketnya harus terus tampil.
+                                    Matikan bila tanggalnya cuma contoh.
                                 </div>
                             </div>
                         </div>
@@ -293,7 +291,7 @@
                             <div class="input-group mb-3">
                                 <span class="input-group-text orcha-rp">Rp</span>
                                 <input type="text" inputmode="numeric"
-                                    class="form-control @error('harga') is-invalid @enderror"
+                                    class="orcha-uang form-control @error('harga') is-invalid @enderror"
                                     wire:model.blur="hargaTeks" value="{{ $hargaTeks }}" placeholder="1.430.000">
                             </div>
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
