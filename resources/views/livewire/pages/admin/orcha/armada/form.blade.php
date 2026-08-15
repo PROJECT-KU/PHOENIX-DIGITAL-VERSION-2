@@ -98,21 +98,40 @@
                             <div class="row g-3">
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per hari <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('tarifHari') is-invalid @enderror"
-                                        wire:model="tarifHari" value="{{ $tarifHari }}" min="0">
+                                    <div class="input-group">
+                                        <span class="input-group-text orcha-rp">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control @error('tarifHari') is-invalid @enderror"
+                                            wire:model.blur="tarifHariTeks" value="{{ $tarifHariTeks }}"
+                                            placeholder="350.000">
+                                    </div>
                                     @error('tarifHari') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per jam</label>
-                                    <input type="number" class="form-control" wire:model="tarifJam" value="{{ $tarifJam }}" min="0">
+                                    <div class="input-group">
+                                        <span class="input-group-text orcha-rp">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control"
+                                            wire:model.blur="tarifJamTeks" value="{{ $tarifJamTeks }}"
+                                            placeholder="55.000">
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Paket 12 jam</label>
-                                    <input type="number" class="form-control" wire:model="tarif12Jam" value="{{ $tarif12Jam }}" min="0">
+                                    <div class="input-group">
+                                        <span class="input-group-text orcha-rp">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control"
+                                            wire:model.blur="tarif12JamTeks" value="{{ $tarif12JamTeks }}"
+                                            placeholder="280.000">
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Sopir / hari</label>
-                                    <input type="number" class="form-control" wire:model="tarifSopir" value="{{ $tarifSopir }}" min="0">
+                                    <div class="input-group">
+                                        <span class="input-group-text orcha-rp">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control"
+                                            wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
+                                            placeholder="150.000">
+                                    </div>
                                 </div>
                             </div>
                         </div>

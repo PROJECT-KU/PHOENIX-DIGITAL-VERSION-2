@@ -256,7 +256,7 @@ test('paket baru dikirim ke orcha, bukan disimpan di lemon', function () {
         ->set('nama', 'Open Trip Karimunjawa')
         ->set('kategori', 'open_trip')
         ->set('minimalPeserta', 6)
-        ->set('harga', 1250000)
+        ->set('hargaTeks', '1250000')
         ->call('jungkit', 'destinasi', 'Pantai Ujung Gelam')
         ->set('destinasiBaru', 'Snorkeling Menjangan')
         ->call('tambah', 'destinasi')
@@ -376,7 +376,7 @@ test('kendaraan wajib punya minimal satu transmisi', function () {
         ->set('nama', 'Innova Zenix')
         ->set('merek', 'Toyota')
         ->set('transmisi', [])
-        ->set('tarifHari', 700000)
+        ->set('tarifHariTeks', '700000')
         ->call('simpan')
         ->assertHasErrors(['transmisi']);
 
@@ -515,7 +515,7 @@ test('status dan jadwal ikut terkirim saat menyimpan paket', function () {
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
         ->set('nama', 'Open Trip Terjadwal')
-        ->set('harga', 1000000)
+        ->set('hargaTeks', '1000000')
         ->set('status', 'draf')
         ->set('tayangMulai', '2026-11-01T08:00')
         ->call('simpan')
@@ -533,7 +533,7 @@ test('berhenti tayang sebelum mulai tayang ditolak sebelum dikirim', function ()
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
         ->set('nama', 'Open Trip Ngawur')
-        ->set('harga', 1000000)
+        ->set('hargaTeks', '1000000')
         ->set('tayangMulai', '2026-11-10T08:00')
         ->set('tayangSampai', '2026-11-01T08:00')
         ->call('simpan')
@@ -549,8 +549,8 @@ test('diskon terhitung dari selisih harga', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
-        ->set('hargaAsli', 1700000)
-        ->set('harga', 1430000)
+        ->set('hargaAsliTeks', '1700000')
+        ->set('hargaTeks', '1430000')
         // 15,88% dibulatkan ke bawah supaya potongan tidak dilebih-lebihkan
         ->assertSet('diskonPersen', 15);
 });
@@ -560,10 +560,10 @@ test('harga jual sama atau lebih mahal berarti tanpa diskon', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
-        ->set('hargaAsli', 1000000)
-        ->set('harga', 1000000)
+        ->set('hargaAsliTeks', '1000000')
+        ->set('hargaTeks', '1000000')
         ->assertSet('diskonPersen', 0)
-        ->set('harga', 1200000)
+        ->set('hargaTeks', '1200000')
         ->assertSet('diskonPersen', 0);
 });
 
@@ -572,13 +572,13 @@ test('diskon yang ditulis sendiri tidak ditimpa hitungan', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
-        ->set('hargaAsli', 1700000)
-        ->set('harga', 1430000)
+        ->set('hargaAsliTeks', '1700000')
+        ->set('hargaTeks', '1430000')
         ->assertSet('diskonPersen', 15)
         // Promo memakai angka bulat
         ->set('diskonPersen', 20)
         ->assertSet('diskonOtomatis', false)
-        ->set('harga', 1400000)
+        ->set('hargaTeks', '1400000')
         ->assertSet('diskonPersen', 20)
         ->call('hitungDiskon')
         ->assertSet('diskonPersen', 17)
@@ -593,7 +593,7 @@ test('pesan sukses dititipkan ke sesi supaya tetap tampil setelah berpindah', fu
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPaketForm::class)
         ->set('nama', 'Open Trip Baru')
-        ->set('harga', 1000000)
+        ->set('hargaTeks', '1000000')
         ->call('simpan')
         ->assertHasNoErrors()
         ->assertRedirect(route('admin.orcha.paket'));
@@ -609,4 +609,62 @@ test('halaman daftar menampilkan pesan titipan itu', function () {
         ->get('/admin/orcha/paket-wisata')
         ->assertOk()
         ->assertSee('Paket wisata ditambahkan.');
+});
+
+/* --------------------------- FORMAT RUPIAH --------------------------- */
+
+test('isian harga tampil bertitik dan tetap terkirim sebagai angka', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', 'Open Trip Banyuwangi')
+        ->set('hargaTeks', '1430000')
+        ->assertSet('hargaTeks', '1.430.000')
+        ->assertSet('harga', 1430000)
+        ->set('hargaAsliTeks', 'Rp 1.700.000')
+        ->assertSet('hargaAsliTeks', '1.700.000')
+        ->assertSet('hargaAsli', 1700000)
+        // Diskon tetap ikut terhitung dari angkanya
+        ->assertSet('diskonPersen', 15)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($request) => $request->method() === 'POST'
+        && $request['harga'] == 1430000
+        && $request['harga_asli'] == 1700000);
+});
+
+test('ketikan berantakan tetap terbaca sebagai angka', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('hargaTeks', 'Rp1,430,000.-')
+        ->assertSet('harga', 1430000)
+        ->assertSet('hargaTeks', '1.430.000')
+        // Kosong berarti nol, dan tampil kosong — bukan "0"
+        ->set('hargaTeks', '')
+        ->assertSet('harga', 0)
+        ->assertSet('hargaTeks', '');
+});
+
+test('tarif armada juga bertitik', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaArmadaForm::class)
+        ->set('nama', 'All New Avanza')
+        ->set('merek', 'Toyota')
+        ->set('tarifHariTeks', '350000')
+        ->set('tarifJamTeks', '55000')
+        ->assertSet('tarifHariTeks', '350.000')
+        ->assertSet('tarifHari', 350000)
+        ->assertSet('tarifJam', 55000)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($request) => $request->method() === 'POST'
+        && $request['tarif_hari'] == 350000
+        && $request['tarif_jam'] == 55000);
 });

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\Armada;
 
+use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -14,7 +15,7 @@ use Livewire\WithFileUploads;
  */
 class OrchaArmadaForm extends Component
 {
-    use MemanggilOrcha, WithFileUploads;
+    use IsianRupiah, MemanggilOrcha, WithFileUploads;
 
     public ?int $kendaraanId = null;
 
@@ -39,6 +40,15 @@ class OrchaArmadaForm extends Component
     public $tarif12Jam = '';
 
     public $tarifSopir = '';
+
+    /** Bentuk bertitik yang tampil di layar. */
+    public string $tarifHariTeks = '';
+
+    public string $tarifJamTeks = '';
+
+    public string $tarif12JamTeks = '';
+
+    public string $tarifSopirTeks = '';
 
     public bool $tersedia = true;
 
@@ -75,6 +85,30 @@ class OrchaArmadaForm extends Component
         ];
     }
 
+    public function updatedTarifHariTeks(): void
+    {
+        $this->tarifHari = $this->angkaDari($this->tarifHariTeks);
+        $this->tarifHariTeks = $this->keRupiah($this->tarifHari);
+    }
+
+    public function updatedTarifJamTeks(): void
+    {
+        $this->tarifJam = $this->angkaDari($this->tarifJamTeks) ?: '';
+        $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
+    }
+
+    public function updatedTarif12JamTeks(): void
+    {
+        $this->tarif12Jam = $this->angkaDari($this->tarif12JamTeks) ?: '';
+        $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
+    }
+
+    public function updatedTarifSopirTeks(): void
+    {
+        $this->tarifSopir = $this->angkaDari($this->tarifSopirTeks) ?: '';
+        $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
+    }
+
     public function mount(?int $kendaraan = null): void
     {
         if (! $kendaraan) {
@@ -101,6 +135,10 @@ class OrchaArmadaForm extends Component
         $this->tarif12Jam = $isi['tarif']['12jam'] ?? '';
         $this->tarifSopir = $isi['tarif']['sopir_per_hari'] ?? '';
         $this->tersedia = (bool) ($isi['tersedia'] ?? true);
+        $this->tarifHariTeks = $this->keRupiah($this->tarifHari);
+        $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
+        $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
+        $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
         $this->gambarLama = $isi['gambar'] ?? null;
     }
 

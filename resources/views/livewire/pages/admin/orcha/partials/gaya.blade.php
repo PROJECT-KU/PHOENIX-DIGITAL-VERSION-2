@@ -297,6 +297,25 @@
         font-size: .9rem;
     }
 
+    /* Awalan "Rp" pada isian uang. */
+    .orcha-rp {
+        background: #f4f8fb;
+        border-color: #e3e8ef;
+        color: #0f2d4a;
+        font-weight: 700;
+        font-size: .9rem;
+    }
+
+    .orcha-form .input-group .form-control {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+
+    .orcha-form .input-group .orcha-rp {
+        border-top-left-radius: .7rem;
+        border-bottom-left-radius: .7rem;
+    }
+
     /* Pratinjau hero: perbandingan 8:3, sama seperti pita hero di website. */
     .orcha-pratinjau-hero {
         position: relative;

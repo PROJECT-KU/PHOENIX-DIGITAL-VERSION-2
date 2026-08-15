@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\PaketWisata;
 
+use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -19,7 +20,7 @@ use Livewire\WithFileUploads;
  */
 class OrchaPaketForm extends Component
 {
-    use MemanggilOrcha, WithFileUploads;
+    use IsianRupiah, MemanggilOrcha, WithFileUploads;
 
     public ?int $paketId = null;
 
@@ -59,6 +60,11 @@ class OrchaPaketForm extends Component
     public $harga = 0;
 
     public $hargaAsli = 0;
+
+    /** Bentuk bertitik yang tampil di layar; angkanya di $harga/$hargaAsli. */
+    public string $hargaTeks = '';
+
+    public string $hargaAsliTeks = '';
 
     public $diskonPersen = 0;
 
@@ -165,6 +171,8 @@ class OrchaPaketForm extends Component
         $this->catatanPromo = (string) ($isi['catatan_promo'] ?? '');
         $this->harga = $isi['harga'] ?? 0;
         $this->hargaAsli = $isi['harga_asli'] ?? 0;
+        $this->hargaTeks = $this->keRupiah($this->harga);
+        $this->hargaAsliTeks = $this->keRupiah($this->hargaAsli);
         $this->diskonPersen = $isi['diskon_persen'] ?? 0;
         $this->diskonOtomatis = (int) $this->diskonPersen === $this->diskonTerhitung();
         $this->pilihanTerbaik = (bool) ($isi['pilihan_terbaik'] ?? false);
@@ -250,13 +258,17 @@ class OrchaPaketForm extends Component
 
     /* -------------------------------- DISKON -------------------------------- */
 
-    public function updatedHarga(): void
+    public function updatedHargaTeks(): void
     {
+        $this->harga = $this->angkaDari($this->hargaTeks);
+        $this->hargaTeks = $this->keRupiah($this->harga);
         $this->hitungDiskonBila();
     }
 
-    public function updatedHargaAsli(): void
+    public function updatedHargaAsliTeks(): void
     {
+        $this->hargaAsli = $this->angkaDari($this->hargaAsliTeks);
+        $this->hargaAsliTeks = $this->keRupiah($this->hargaAsli);
         $this->hitungDiskonBila();
     }
 

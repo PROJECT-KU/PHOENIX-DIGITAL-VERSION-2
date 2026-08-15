@@ -282,13 +282,21 @@
                             <h6 class="fw-bold mb-3">Harga</h6>
 
                             <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control mb-3 @error('harga') is-invalid @enderror"
-                                wire:model.live.debounce.500ms="harga" value="{{ $harga }}" min="0">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text orcha-rp">Rp</span>
+                                <input type="text" inputmode="numeric"
+                                    class="form-control @error('harga') is-invalid @enderror"
+                                    wire:model.blur="hargaTeks" value="{{ $hargaTeks }}" placeholder="1.430.000">
+                            </div>
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
 
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
-                            <input type="number" class="form-control mb-1" wire:model.live.debounce.500ms="hargaAsli"
-                                value="{{ $hargaAsli }}" min="0">
+                            <div class="input-group mb-1">
+                                <span class="input-group-text orcha-rp">Rp</span>
+                                <input type="text" inputmode="numeric" class="form-control"
+                                    wire:model.blur="hargaAsliTeks" value="{{ $hargaAsliTeks }}"
+                                    placeholder="1.700.000">
+                            </div>
                             <div class="form-text mb-3">Kosongkan bila tidak ada coretan harga.</div>
 
                             <label class="form-label small fw-semibold d-flex align-items-center gap-2">
