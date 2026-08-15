@@ -5,6 +5,30 @@
     SweetAlert glossy yang sudah dipakai halaman lemon lain supaya admin tidak
     melihat dua gaya pemberitahuan yang berbeda.
 --}}
+@if (session('orcha_sukses'))
+    {{-- Pesan dari halaman sebelumnya (mis. setelah menyimpan lalu berpindah
+         ke daftar). Ditampilkan sekali, lalu hilang bersama sesinya. --}}
+    <script>
+        // livewire:navigated menyala baik saat halaman dimuat biasa maupun saat
+        // berpindah lewat wire:navigate — DOMContentLoaded tidak menyala pada
+        // yang kedua, dan itulah cara formulir ini berpindah.
+        document.addEventListener('livewire:navigated', () => {
+            const tampilkan = () => Swal.fire({
+                title: 'Berhasil',
+                text: @js(session('orcha_sukses')),
+                icon: 'success',
+                timer: 2600,
+                showConfirmButton: false,
+                background: 'rgba(255,255,255,.96)',
+                backdrop: 'rgba(15,45,74,.25)',
+                customClass: { popup: 'shadow rounded-4' },
+            });
+
+            typeof Swal === 'undefined' ? setTimeout(tampilkan, 300) : tampilkan();
+        }, { once: true });
+    </script>
+@endif
+
 <script>
     document.addEventListener('livewire:initialized', () => {
         if (window.__orchaNotifBound) return;

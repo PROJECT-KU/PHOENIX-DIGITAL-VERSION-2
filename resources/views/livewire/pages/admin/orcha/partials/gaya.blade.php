@@ -297,6 +297,37 @@
         font-size: .9rem;
     }
 
+    /* Pratinjau hero: perbandingan 8:3, sama seperti pita hero di website. */
+    .orcha-pratinjau-hero {
+        position: relative;
+        aspect-ratio: 8 / 3;
+        border-radius: .8rem;
+        overflow: hidden;
+        background: #0f2d4a;
+    }
+
+    .orcha-pratinjau-hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        opacity: .72;
+    }
+
+    .orcha-pratinjau-label {
+        position: absolute;
+        left: .55rem;
+        bottom: .5rem;
+        padding: .2rem .55rem;
+        border-radius: 999px;
+        background: rgba(15, 45, 74, .78);
+        color: #ffd772;
+        font-size: .64rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
     /* Lencana penayangan — warnanya menerangkan keadaan, bukan hiasan. */
     .orcha-lencana-tayang,
     .orcha-lencana-terjadwal,

@@ -283,15 +283,34 @@
 
                             <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>
                             <input type="number" class="form-control mb-3 @error('harga') is-invalid @enderror"
-                                wire:model="harga" value="{{ $harga }}" min="0">
+                                wire:model.live.debounce.500ms="harga" value="{{ $harga }}" min="0">
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
 
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
-                            <input type="number" class="form-control mb-1" wire:model="hargaAsli" value="{{ $hargaAsli }}" min="0">
+                            <input type="number" class="form-control mb-1" wire:model.live.debounce.500ms="hargaAsli"
+                                value="{{ $hargaAsli }}" min="0">
                             <div class="form-text mb-3">Kosongkan bila tidak ada coretan harga.</div>
 
-                            <label class="form-label small fw-semibold">Diskon (%)</label>
-                            <input type="number" class="form-control mb-3" wire:model="diskonPersen" value="{{ $diskonPersen }}" min="0" max="100">
+                            <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                <span>Diskon (%)</span>
+                                @if ($diskonOtomatis)
+                                    <span class="badge orcha-otomatis">otomatis</span>
+                                @else
+                                    <button type="button" class="orcha-hitung-ulang" wire:click="hitungDiskon"
+                                        title="Kembalikan ke hasil hitungan">
+                                        <i class="bi bi-arrow-repeat"></i> hitung ulang
+                                    </button>
+                                @endif
+                            </label>
+                            <input type="number" class="form-control mb-1" wire:model.blur="diskonPersen"
+                                value="{{ $diskonPersen }}" min="0" max="100">
+                            <div class="form-text mb-3">
+                                @if ($diskonOtomatis)
+                                    Terhitung dari selisih kedua harga di atas, dibulatkan ke bawah.
+                                @else
+                                    Ditulis sendiri, tidak ikut selisih harga.
+                                @endif
+                            </div>
 
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="paket-terbaik"
@@ -313,16 +332,30 @@
                                 @endif
                             </div>
                             <p class="orcha-petunjuk">
-                                Foto ini yang jadi latar hero di halaman paket pada website.
-                                Bentuk mendatar paling pas, mis. 1600 × 900.
+                                Foto ini jadi latar hero di halaman paket. Pita hero itu lebar dan
+                                pendek, jadi bagian atas &amp; bawah foto <strong>pasti terpotong</strong> —
+                                taruh yang penting di tengah.
+                            </p>
+                            <p class="orcha-petunjuk">
+                                Ukuran yang pas: <strong>1600 × 600</strong> (paling kecil 1200 × 450).
                             </p>
 
-                            @if ($gambar)
-                                <img src="{{ $gambar->temporaryUrl() }}" alt=""
-                                    class="img-fluid rounded-3 mb-3" style="max-height: 180px">
-                            @elseif ($gambarLama)
-                                <img src="{{ str_starts_with($gambarLama, 'http') ? $gambarLama : rtrim(str_replace('/api/v1', '', config('orcha.url')), '/') . $gambarLama }}"
-                                    alt="" class="img-fluid rounded-3 mb-3" style="max-height: 180px">
+                            @php
+                                $asalOrcha = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
+                                $pratinjau = $gambar
+                                    ? $gambar->temporaryUrl()
+                                    : ($gambarLama
+                                        ? (str_starts_with($gambarLama, 'http') ? $gambarLama : $asalOrcha . $gambarLama)
+                                        : null);
+                            @endphp
+
+                            @if ($pratinjau)
+                                {{-- Perbandingannya disamakan dengan pita hero di website,
+                                     jadi potongannya kelihatan sebelum disimpan. --}}
+                                <div class="orcha-pratinjau-hero mb-2">
+                                    <img src="{{ $pratinjau }}" alt="Pratinjau hero">
+                                    <span class="orcha-pratinjau-label">Kira-kira begini di website</span>
+                                </div>
                             @endif
 
                             <input type="file" class="form-control @error('gambar') is-invalid @enderror"

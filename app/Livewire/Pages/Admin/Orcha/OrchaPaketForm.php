@@ -62,6 +62,13 @@ class OrchaPaketForm extends Component
 
     public $diskonPersen = 0;
 
+    /**
+     * Selama benar, diskon ikut selisih harga. Berhenti begitu admin
+     * mengisinya sendiri — sebagian promo memakai angka bulat yang tidak
+     * persis sama dengan hitungan.
+     */
+    public bool $diskonOtomatis = true;
+
     public bool $pilihanTerbaik = false;
 
     /** @var array<int, string> */
@@ -159,6 +166,7 @@ class OrchaPaketForm extends Component
         $this->harga = $isi['harga'] ?? 0;
         $this->hargaAsli = $isi['harga_asli'] ?? 0;
         $this->diskonPersen = $isi['diskon_persen'] ?? 0;
+        $this->diskonOtomatis = (int) $this->diskonPersen === $this->diskonTerhitung();
         $this->pilihanTerbaik = (bool) ($isi['pilihan_terbaik'] ?? false);
         $this->destinasi = array_values($isi['destinasi'] ?? []);
         $this->fasilitas = array_values($isi['fasilitas'] ?? []);
@@ -238,6 +246,52 @@ class OrchaPaketForm extends Component
             ->filter(fn ($satuHari) => collect($satuHari['agenda'] ?? [])
                 ->contains(fn ($item) => trim($item['kegiatan'] ?? '') !== ''))
             ->count();
+    }
+
+    /* -------------------------------- DISKON -------------------------------- */
+
+    public function updatedHarga(): void
+    {
+        $this->hitungDiskonBila();
+    }
+
+    public function updatedHargaAsli(): void
+    {
+        $this->hitungDiskonBila();
+    }
+
+    public function updatedDiskonPersen(): void
+    {
+        $this->diskonOtomatis = (int) $this->diskonPersen === $this->diskonTerhitung();
+    }
+
+    public function hitungDiskon(): void
+    {
+        $this->diskonOtomatis = true;
+        $this->diskonPersen = $this->diskonTerhitung();
+    }
+
+    private function hitungDiskonBila(): void
+    {
+        if ($this->diskonOtomatis) {
+            $this->diskonPersen = $this->diskonTerhitung();
+        }
+    }
+
+    /**
+     * Berapa persen harga turun dari harga sebelum diskon. Dibulatkan ke
+     * bawah supaya angka yang dipajang tidak pernah melebih-lebihkan potongan.
+     */
+    public function diskonTerhitung(): int
+    {
+        $asli = (float) $this->hargaAsli;
+        $jual = (float) $this->harga;
+
+        if ($asli <= 0 || $jual <= 0 || $jual >= $asli) {
+            return 0;
+        }
+
+        return (int) floor((($asli - $jual) / $asli) * 100);
     }
 
     /* ------------------------- DESTINASI & FASILITAS ------------------------- */
@@ -419,7 +473,7 @@ class OrchaPaketForm extends Component
 
         $berhasil = $this->ubah
             ? $this->kirimData("/paket-wisata/{$this->paketId}", $data, 'Paket wisata diperbarui.', $this->gambar)
-            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar);
+            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, true);
 
         if ($berhasil) {
             $this->redirectRoute('admin.orcha.paket', navigate: true);

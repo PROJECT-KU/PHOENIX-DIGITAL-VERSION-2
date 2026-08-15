@@ -124,7 +124,7 @@ class OrchaArmadaForm extends Component
 
         $berhasil = $this->ubah
             ? $this->kirimData("/kendaraan/{$this->kendaraanId}", $data, 'Kendaraan diperbarui.', $this->gambar)
-            : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar);
+            : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, true);
 
         if ($berhasil) {
             $this->redirectRoute('admin.orcha.armada', navigate: true);

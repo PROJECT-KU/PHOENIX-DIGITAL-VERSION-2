@@ -541,3 +541,72 @@ test('berhenti tayang sebelum mulai tayang ditolak sebelum dikirim', function ()
 
     Http::assertNotSent(fn ($request) => $request->method() === 'POST');
 });
+
+/* ------------------------------- DISKON ------------------------------- */
+
+test('diskon terhitung dari selisih harga', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('hargaAsli', 1700000)
+        ->set('harga', 1430000)
+        // 15,88% dibulatkan ke bawah supaya potongan tidak dilebih-lebihkan
+        ->assertSet('diskonPersen', 15);
+});
+
+test('harga jual sama atau lebih mahal berarti tanpa diskon', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('hargaAsli', 1000000)
+        ->set('harga', 1000000)
+        ->assertSet('diskonPersen', 0)
+        ->set('harga', 1200000)
+        ->assertSet('diskonPersen', 0);
+});
+
+test('diskon yang ditulis sendiri tidak ditimpa hitungan', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('hargaAsli', 1700000)
+        ->set('harga', 1430000)
+        ->assertSet('diskonPersen', 15)
+        // Promo memakai angka bulat
+        ->set('diskonPersen', 20)
+        ->assertSet('diskonOtomatis', false)
+        ->set('harga', 1400000)
+        ->assertSet('diskonPersen', 20)
+        ->call('hitungDiskon')
+        ->assertSet('diskonPersen', 17)
+        ->assertSet('diskonOtomatis', true);
+});
+
+/* --------------------------- PESAN SUKSES --------------------------- */
+
+test('pesan sukses dititipkan ke sesi supaya tetap tampil setelah berpindah', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', 'Open Trip Baru')
+        ->set('harga', 1000000)
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.orcha.paket'));
+
+    expect(session('orcha_sukses'))->toBe('Paket wisata ditambahkan.');
+});
+
+test('halaman daftar menampilkan pesan titipan itu', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    $this->actingAs(adminOrcha())
+        ->withSession(['orcha_sukses' => 'Paket wisata ditambahkan.'])
+        ->get('/admin/orcha/paket-wisata')
+        ->assertOk()
+        ->assertSee('Paket wisata ditambahkan.');
+});

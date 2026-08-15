@@ -113,11 +113,17 @@ trait MemanggilOrcha
      *
      * @param  \Illuminate\Http\UploadedFile|null  $gambar
      */
-    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null): bool
+    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null, bool $lintasHalaman = false): bool
     {
         try {
             $this->orcha()->kirim($jalur, $data, $gambar);
-            $this->dispatch('order-updated', message: $pesanSukses);
+
+            // Setelah menyimpan, halaman formulir berpindah ke daftar. Peristiwa
+            // Livewire ikut hilang saat berpindah, jadi pesannya dititipkan ke
+            // sesi dan ditampilkan di halaman tujuan.
+            $lintasHalaman
+                ? session()->flash('orcha_sukses', $pesanSukses)
+                : $this->dispatch('order-updated', message: $pesanSukses);
 
             return true;
         } catch (OrchaTidakTerjangkau $e) {
