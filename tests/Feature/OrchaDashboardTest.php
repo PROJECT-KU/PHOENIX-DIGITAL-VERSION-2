@@ -598,23 +598,35 @@ test('pesan sukses dititipkan lewat kunci sesi yang dibaca layout lemon', functi
         ->assertHasNoErrors()
         ->assertRedirect(route('admin.orcha.paket'));
 
-    // 'success' memang kunci yang sudah dibaca layouts/app.blade.php —
-    // memakai kunci sendiri berarti pesannya tidak akan pernah tampil.
-    expect(session('success'))->toBe('Paket wisata ditambahkan.');
+    // Kuncinya sengaja bukan 'success': penampil bawaan layout memanggil
+    // dirinya dua kali, sehingga popupnya tertutup lalu terbuka lagi.
+    expect(session('orcha_sukses'))->toBe('Paket wisata ditambahkan.');
 });
 
-test('kunci sesi itu benar-benar dipasang penampil di layout', function () {
-    $layout = file_get_contents(base_path('resources/views/layouts/app.blade.php'));
+test('pemberitahuan sukses dari sesi dan dari peristiwa memakai satu kode yang sama', function () {
+    $skrip = file_get_contents(base_path(
+        'resources/views/livewire/pages/admin/orcha/partials/skrip.blade.php'
+    ));
 
-    expect($layout)->toContain("session('success')")
-        ->and($layout)->toContain('fireGlossySwal');
+    // Satu fungsi dipakai keduanya, jadi lamanya tampil tidak bisa berbeda
+    expect($skrip)->toContain('window.orchaSukses')
+        ->and(substr_count($skrip, 'timer: 2600'))->toBe(1)
+        ->and($skrip)->toContain("session('orcha_sukses')");
+
+    // Kunci 'success' tidak dipakai supaya penampil bawaan layout — yang
+    // memanggil dirinya dua kali — tidak ikut menyalakannya.
+    $trait = file_get_contents(base_path(
+        'app/Livewire/Pages/Admin/Orcha/Concerns/MemanggilOrcha.php'
+    ));
+    expect($trait)->toContain("flash('orcha_sukses'")
+        ->and($trait)->not->toContain("flash('success'");
 });
 
 test('halaman daftar menampilkan pesan titipan itu', function () {
     Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
 
     $this->actingAs(adminOrcha())
-        ->withSession(['success' => 'Paket wisata ditambahkan.'])
+        ->withSession(['orcha_sukses' => 'Paket wisata ditambahkan.'])
         ->get('/admin/orcha/paket-wisata')
         ->assertOk()
         ->assertSee('Paket wisata ditambahkan.');
@@ -632,7 +644,7 @@ test('kendaraan baru juga menitipkan pesannya', function () {
         ->assertHasNoErrors()
         ->assertRedirect(route('admin.orcha.armada'));
 
-    expect(session('success'))->toBe('Kendaraan ditambahkan.');
+    expect(session('orcha_sukses'))->toBe('Kendaraan ditambahkan.');
 });
 
 /* --------------------------- FORMAT RUPIAH --------------------------- */

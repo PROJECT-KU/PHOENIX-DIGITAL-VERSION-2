@@ -1,3 +1,22 @@
+@if (session('orcha_sukses'))
+    {{-- Pesan titipan dari halaman sebelumnya. Dijalankan langsung, sekali,
+         dan hanya menunggu SweetAlert siap — bukan menunggu peristiwa yang
+         bisa saja sudah lewat sebelum skrip ini sempat mendaftar. --}}
+    <script>
+        (function () {
+            var pesan = @js(session('orcha_sukses'));
+            var sisaCoba = 40;
+
+            function coba() {
+                if (window.orchaSukses && window.orchaSukses(pesan)) return;
+                if (sisaCoba-- > 0) setTimeout(coba, 100);
+            }
+
+            coba();
+        })();
+    </script>
+@endif
+
 {{--
     Pemberitahuan untuk halaman Orcha.
 
@@ -6,6 +25,28 @@
     melihat dua gaya pemberitahuan yang berbeda.
 --}}
 <script>
+    /* Satu pintu untuk semua pemberitahuan sukses di halaman Orcha — dari
+       peristiwa Livewire (hapus, ubah status) maupun dari sesi (setelah
+       menyimpan lalu berpindah halaman). Karena kodenya satu, tampilan dan
+       lamanya pasti sama. */
+    window.orchaSukses = window.orchaSukses || function (pesan) {
+        if (typeof Swal === 'undefined') return false;
+
+        Swal.fire({
+            title: 'Berhasil',
+            text: pesan || 'Berhasil diperbarui.',
+            icon: 'success',
+            timer: 2600,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            background: 'rgba(255,255,255,.96)',
+            backdrop: 'rgba(15,45,74,.25)',
+            customClass: { popup: 'shadow rounded-4' },
+        });
+
+        return true;
+    };
+
     document.addEventListener('livewire:initialized', () => {
         if (window.__orchaNotifBound) return;
         window.__orchaNotifBound = true;
@@ -20,14 +61,7 @@
             (e && (e.message ?? (Array.isArray(e) ? e[0]?.message : null))) || bawaan;
 
         Livewire.on('order-updated', (e) => {
-            Swal.fire({
-                title: 'Berhasil',
-                text: ambilPesan(e, 'Berhasil diperbarui.'),
-                icon: 'success',
-                timer: 2200,
-                showConfirmButton: false,
-                ...glossy,
-            });
+            window.orchaSukses(ambilPesan(e, 'Berhasil diperbarui.'));
         });
 
         Livewire.on('toast-error', (e) => {

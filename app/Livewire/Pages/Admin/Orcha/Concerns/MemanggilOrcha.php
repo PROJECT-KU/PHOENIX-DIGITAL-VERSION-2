@@ -119,12 +119,17 @@ trait MemanggilOrcha
             $this->orcha()->kirim($jalur, $data, $gambar);
 
             // Setelah menyimpan, halaman formulir berpindah ke daftar — peristiwa
-            // Livewire ikut hilang saat berpindah. Pesannya dititipkan lewat
-            // kunci sesi 'success', yang memang SUDAH dibaca dan ditampilkan
-            // layouts/app.blade.php untuk seluruh halaman lemon. Memakai kunci
-            // sendiri berarti membangun penampil kedua yang mudah luput.
+            // Livewire ikut hilang saat berpindah, jadi pesannya dititipkan ke
+            // sesi.
+            //
+            // Kuncinya sengaja BUKAN 'success': penampil bawaan di
+            // layouts/app.blade.php memanggil dirinya dua kali (saat window
+            // load dan saat livewire:navigated), sehingga popupnya tertutup
+            // lalu terbuka lagi dan terlihat cuma sekejap. Dengan kunci
+            // sendiri, yang menampilkan hanya skrip halaman Orcha — sekali,
+            // dengan tampilan yang sama persis dengan pemberitahuan hapus.
             $lintasHalaman
-                ? session()->flash('success', $pesanSukses)
+                ? session()->flash('orcha_sukses', $pesanSukses)
                 : $this->dispatch('order-updated', message: $pesanSukses);
 
             return true;
