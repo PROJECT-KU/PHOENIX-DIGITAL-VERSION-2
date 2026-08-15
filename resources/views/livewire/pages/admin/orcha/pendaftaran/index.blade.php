@@ -82,9 +82,20 @@ Pendaftaran Open Trip || lemon
                                         <div class="text-muted" style="font-size:.78rem">
                                             Jemput: {{ $baris['titik_jemput'] ?: '—' }}
                                         </div>
-                                        @if (! empty($baris['daftar_peserta']))
+                                        {{-- Rombongan sering berangkat dari kota berbeda; yang
+                                             dibaca sopir adalah pengelompokan ini. --}}
+                                        @if (! empty($baris['jemput_per_titik']))
+                                            <div class="mt-1">
+                                                @foreach ($baris['jemput_per_titik'] as $titik => $orang)
+                                                    <div style="font-size:.74rem">
+                                                        <span class="fw-semibold text-dark">{{ $titik }}:</span>
+                                                        <span class="text-muted">{{ implode(', ', $orang) }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @elseif (! empty($baris['peserta']))
                                             <div class="text-muted" style="font-size:.74rem">
-                                                {{ implode(', ', $baris['daftar_peserta']) }}
+                                                {{ collect($baris['peserta'])->pluck('nama')->implode(', ') }}
                                             </div>
                                         @endif
                                     </td>

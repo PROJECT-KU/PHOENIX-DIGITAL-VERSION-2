@@ -796,3 +796,35 @@ test('status pembayaran diteruskan ke orcha', function () {
         && str_ends_with($request->url(), '/pembayaran/3/status')
         && $request['status'] === 'diterima');
 });
+
+test('daftar pendaftaran mengelompokkan peserta per titik jemput', function () {
+    Http::fake(['*' => Http::response(['data' => [[
+        'id' => 9, 'kode' => 'OT-1508-A7K3', 'nama' => 'Siti Aminah', 'whatsapp' => '0812',
+        'email' => null, 'jumlah_peserta' => 3,
+        'peserta' => [
+            ['nama' => 'Siti Aminah', 'titik_jemput' => 'Surakarta'],
+            ['nama' => 'Budi Santoso', 'titik_jemput' => 'Jogja'],
+            ['nama' => 'Rina Wijaya', 'titik_jemput' => 'Surakarta'],
+        ],
+        'jemput_per_titik' => [
+            'Surakarta' => ['Siti Aminah', 'Rina Wijaya'],
+            'Jogja' => ['Budi Santoso'],
+        ],
+        'kesehatan_terisi' => 1, 'kesehatan_lengkap' => false,
+        'peserta_belum_isi' => ['Budi Santoso', 'Rina Wijaya'],
+        'paket' => ['id' => 1, 'nama' => 'Open Trip Banyuwangi'],
+        'tanggal_berangkat' => '2026-10-19', 'titik_jemput' => 'Surakarta, Jogja',
+        'catatan' => null, 'status' => 'baru', 'status_label' => 'Baru',
+        'jumlah_riwayat_kesehatan' => 1, 'dibuat_pada' => now()->toIso8601String(),
+    ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran')
+        ->assertOk()
+        ->assertSee('Surakarta:')
+        ->assertSee('Siti Aminah, Rina Wijaya')
+        ->assertSee('Jogja:')
+        // Kelengkapan kesehatan ikut terlihat tanpa membuka apa pun
+        ->assertSee('1/3 riwayat kesehatan');
+});
