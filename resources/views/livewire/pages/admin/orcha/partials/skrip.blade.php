@@ -65,6 +65,38 @@
         });
     });
 
+    /* Isian uang bertitik SAMBIL diketik.
+       Server tetap yang memegang angkanya (wire:model.blur memformat ulang
+       dengan aturan yang sama), ini hanya supaya admin tidak menunggu pindah
+       kolom dulu untuk melihat "1.430.000". Ditulis inline karena berkas Vite
+       tidak ikut ter-deploy. */
+    if (!window.__orchaUangBound) {
+        window.__orchaUangBound = true;
+
+        const bertitik = (angka) => angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        document.addEventListener('input', (e) => {
+            const el = e.target;
+            if (!el.classList || !el.classList.contains('orcha-uang')) return;
+
+            const angka = el.value.replace(/\D/g, '');
+            const baru = angka === '' ? '' : bertitik(angka);
+            if (baru === el.value) return;
+
+            // Jaga posisi kursor: hitung berapa digit sebelum kursor, lalu
+            // taruh kursor setelah digit ke-sekian pada teks yang baru.
+            const digitSebelumKursor = el.value.slice(0, el.selectionStart).replace(/\D/g, '').length;
+            el.value = baru;
+
+            let posisi = 0, terhitung = 0;
+            while (posisi < baru.length && terhitung < digitSebelumKursor) {
+                if (/\d/.test(baru[posisi])) terhitung++;
+                posisi++;
+            }
+            el.setSelectionRange(posisi, posisi);
+        });
+    }
+
     /* Konfirmasi seragam untuk tombol .pcek-konfirmasi — pola yang sama dengan
        halaman lemon lain. Penanda global dipakai bersama supaya tidak terpasang
        dua kali kalau halaman lain sudah memasangnya. */

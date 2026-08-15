@@ -100,7 +100,7 @@
                                     <label class="form-label small fw-semibold">Per hari <span class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text orcha-rp">Rp</span>
-                                        <input type="text" inputmode="numeric" class="form-control @error('tarifHari') is-invalid @enderror"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control @error('tarifHari') is-invalid @enderror"
                                             wire:model.blur="tarifHariTeks" value="{{ $tarifHariTeks }}"
                                             placeholder="350.000">
                                     </div>
@@ -110,7 +110,7 @@
                                     <label class="form-label small fw-semibold">Per jam</label>
                                     <div class="input-group">
                                         <span class="input-group-text orcha-rp">Rp</span>
-                                        <input type="text" inputmode="numeric" class="form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarifJamTeks" value="{{ $tarifJamTeks }}"
                                             placeholder="55.000">
                                     </div>
@@ -119,7 +119,7 @@
                                     <label class="form-label small fw-semibold">Paket 12 jam</label>
                                     <div class="input-group">
                                         <span class="input-group-text orcha-rp">Rp</span>
-                                        <input type="text" inputmode="numeric" class="form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarif12JamTeks" value="{{ $tarif12JamTeks }}"
                                             placeholder="280.000">
                                     </div>
@@ -128,7 +128,7 @@
                                     <label class="form-label small fw-semibold">Sopir / hari</label>
                                     <div class="input-group">
                                         <span class="input-group-text orcha-rp">Rp</span>
-                                        <input type="text" inputmode="numeric" class="form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
                                             placeholder="150.000">
                                     </div>

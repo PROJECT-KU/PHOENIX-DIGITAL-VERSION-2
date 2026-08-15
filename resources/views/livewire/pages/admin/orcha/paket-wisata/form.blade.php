@@ -268,10 +268,18 @@
                                 <input class="form-check-input" type="checkbox" id="berakhir-otomatis"
                                     wire:model.live="berakhirOtomatis">
                                 <label class="form-check-label small" for="berakhir-otomatis">
-                                    Berhenti tayang sendiri setelah rombongan pulang
+                                    Tutup pendaftaran saat hari keberangkatan
                                 </label>
                                 <div class="form-text">
-                                    Untuk trip bertanggal. Matikan bila tanggalnya cuma contoh.
+                                    Paket berhenti tampil di website pada tanggal berangkat
+                                    @if ($tanggalBerangkat)
+                                        (<strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->translatedFormat('j F Y') }}</strong>),
+                                    @else
+                                        ,
+                                    @endif
+                                    bukan setelah rombongan pulang — percuma menerima pendaftar
+                                    untuk trip yang berangkat hari itu juga.
+                                    Matikan bila tanggalnya cuma contoh dan paketnya harus terus tampil.
                                 </div>
                             </div>
                         </div>
@@ -293,7 +301,7 @@
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
                             <div class="input-group mb-1">
                                 <span class="input-group-text orcha-rp">Rp</span>
-                                <input type="text" inputmode="numeric" class="form-control"
+                                <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                     wire:model.blur="hargaAsliTeks" value="{{ $hargaAsliTeks }}"
                                     placeholder="1.700.000">
                             </div>
