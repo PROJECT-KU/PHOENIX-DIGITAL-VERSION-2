@@ -17,6 +17,7 @@ Dashboard Orcha Journey || lemon
             $perlu = [
                 ['pendaftaran_baru', 'Pendaftaran baru', 'bi-clipboard-check', 'admin.orcha.pendaftaran'],
                 ['penyewaan_baru', 'Sewa kendaraan baru', 'bi-truck', 'admin.orcha.penyewaan'],
+                ['pembayaran_menunggu', 'Bukti bayar menunggu', 'bi-cash-coin', 'admin.orcha.pembayaran'],
                 ['pembatalan_diajukan', 'Pembatalan diajukan', 'bi-x-circle', 'admin.orcha.pembatalan'],
                 ['pesan_belum_dibaca', 'Pesan belum dibaca', 'bi-inbox', 'admin.orcha.pesan'],
             ];
@@ -26,7 +27,7 @@ Dashboard Orcha Journey || lemon
         <div class="row g-3 mb-4">
             @foreach ($perlu as [$kunci, $label, $ikon, $rute])
                 @php $nilai = (int) ($perluDitindak[$kunci] ?? 0); @endphp
-                <div class="col-6 col-lg-3">
+                <div class="col-6 col-lg-3 col-xl">
                     <a href="{{ route($rute) }}" wire:navigate class="text-decoration-none">
                         <div class="card orcha-kartu h-100">
                             <div class="card-body d-flex align-items-center gap-3 p-3">

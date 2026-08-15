@@ -4,6 +4,7 @@ use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
+use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Models\EmployeeDetail;
 use App\Models\Permission;
@@ -729,4 +730,69 @@ test('setiap isian uang ditandai supaya bisa diformat sambil diketik', function 
             );
         }
     }
+});
+
+/* ------------------------ BUKTI PEMBAYARAN ------------------------ */
+
+test('halaman bukti pembayaran menampilkan kiriman pelanggan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembayaran' => [
+            'menunggu' => 'Menunggu Dicek', 'diterima' => 'Diterima', 'ditolak' => 'Ditolak',
+        ]]]),
+        '*' => Http::response(['data' => [[
+            'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+            'nominal' => 500000, 'nominal_formatted' => 'Rp 500.000',
+            'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+            'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => '/storage/bukti-bayar/a.webp',
+            'catatan' => null, 'status' => 'menunggu', 'status_label' => 'Menunggu Dicek',
+            'catatan_admin' => null,
+            'pesanan' => ['nama' => 'Budi Santoso', 'whatsapp' => '0812', 'keterangan' => 'Open Trip Banyuwangi'],
+            'dibuat_pada' => now()->toIso8601String(),
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembayaran')
+        ->assertOk()
+        ->assertSee('OT-1508-A7K3')
+        ->assertSee('Rp 500.000')
+        ->assertSee('Budi Santoso')
+        ->assertSee('Menunggu Dicek');
+});
+
+test('bukti dengan kode tak dikenal ditandai supaya dicocokkan manual', function () {
+    Http::fake(['*' => Http::response(['data' => [[
+        'id' => 4, 'kode' => 'OT-SALAH', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+        'nominal' => 500000, 'nominal_formatted' => 'Rp 500.000',
+        'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+        'atas_nama_pengirim' => 'Budi', 'bukti' => null, 'catatan' => null,
+        'status' => 'menunggu', 'status_label' => 'Menunggu Dicek', 'catatan_admin' => null,
+        'pesanan' => null, 'dibuat_pada' => now()->toIso8601String(),
+    ]], 'meta' => []]),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembayaran')
+        ->assertOk()
+        ->assertSee('kode tak dikenal');
+});
+
+test('status pembayaran diteruskan ke orcha', function () {
+    Http::fake([
+        '*/status' => Http::response(['data' => [], 'pesan' => 'ok']),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPembayaranList::class)
+        ->call('buka', ['id' => 3, 'status' => 'menunggu', 'catatan_admin' => null])
+        ->set('statusBaru', 'diterima')
+        ->set('catatanAdmin', 'Cocok dengan mutasi.')
+        ->call('simpan')
+        ->assertDispatched('order-updated')
+        ->assertSet('sedangDicek', null);
+
+    Http::assertSent(fn ($request) => $request->method() === 'PATCH'
+        && str_ends_with($request->url(), '/pembayaran/3/status')
+        && $request['status'] === 'diterima');
 });

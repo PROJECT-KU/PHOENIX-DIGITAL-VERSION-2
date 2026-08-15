@@ -62,12 +62,31 @@ Pendaftaran Open Trip || lemon
                                         <div class="text-muted" style="font-size:.78rem">
                                             {{ $baris['whatsapp'] }} · {{ $baris['jumlah_peserta'] }} peserta
                                         </div>
+
+                                        {{-- Kelengkapan riwayat kesehatan harus terlihat jauh sebelum
+                                             hari berangkat, bukan saat rombongan sudah berkumpul. --}}
+                                        @php
+                                            $terisi = $baris['kesehatan_terisi'] ?? 0;
+                                            $lengkap = $baris['kesehatan_lengkap'] ?? false;
+                                        @endphp
+                                        <span class="badge mt-1 {{ $lengkap ? 'orcha-lencana-bayar-diterima' : 'orcha-lencana-bayar-menunggu' }}"
+                                            @if (! empty($baris['peserta_belum_isi']))
+                                                title="Belum mengisi: {{ implode(', ', $baris['peserta_belum_isi']) }}"
+                                            @endif>
+                                            <i class="bi {{ $lengkap ? 'bi-heart-pulse-fill' : 'bi-heart-pulse' }}"></i>
+                                            {{ $terisi }}/{{ $baris['jumlah_peserta'] }} riwayat kesehatan
+                                        </span>
                                     </td>
                                     <td>
                                         <div class="small">{{ $baris['paket']['nama'] }}</div>
                                         <div class="text-muted" style="font-size:.78rem">
                                             Jemput: {{ $baris['titik_jemput'] ?: '—' }}
                                         </div>
+                                        @if (! empty($baris['daftar_peserta']))
+                                            <div class="text-muted" style="font-size:.74rem">
+                                                {{ implode(', ', $baris['daftar_peserta']) }}
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="small text-nowrap">
                                         {{ $baris['tanggal_berangkat'] ? \Carbon\Carbon::parse($baris['tanggal_berangkat'])->translatedFormat('d M Y') : '—' }}

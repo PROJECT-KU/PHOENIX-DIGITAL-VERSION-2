@@ -394,6 +394,7 @@ new class extends Component
                             ['admin.orcha.dashboard', 'bi-grid-fill', 'Dashboard'],
                             ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Open Trip'],
                             ['admin.orcha.penyewaan', 'bi-truck', 'Sewa Kendaraan'],
+                            ['admin.orcha.pembayaran', 'bi-cash-coin', 'Bukti Pembayaran'],
                             ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
                             ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
                             ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],

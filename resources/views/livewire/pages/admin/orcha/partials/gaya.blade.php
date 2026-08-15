@@ -385,6 +385,31 @@
         color: #a33a51;
     }
 
+    /* Lencana status bukti pembayaran */
+    .orcha-lencana-bayar-menunggu,
+    .orcha-lencana-bayar-diterima,
+    .orcha-lencana-bayar-ditolak {
+        font-weight: 700;
+        font-size: .68rem;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+    .orcha-lencana-bayar-menunggu {
+        background: #fff4e0;
+        color: #96590d;
+    }
+
+    .orcha-lencana-bayar-diterima {
+        background: #eafaf1;
+        color: #14683f;
+    }
+
+    .orcha-lencana-bayar-ditolak {
+        background: #fef6f7;
+        color: #a33a51;
+    }
+
     /* Ikon di tombol tambah baris ikut sejajar tengah dengan tulisannya. */
     .orcha-tambah-baris i,
     .orcha-bahaya i,
