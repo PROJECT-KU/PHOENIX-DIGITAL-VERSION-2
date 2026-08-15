@@ -29,6 +29,14 @@ class OrchaPaketForm extends Component
 
     public string $kategori = 'open_trip';
 
+    public string $status = 'terbit';
+
+    public string $tayangMulai = '';
+
+    public string $tayangSampai = '';
+
+    public bool $berakhirOtomatis = true;
+
     public string $durasi = '';
 
     /**
@@ -87,6 +95,9 @@ class OrchaPaketForm extends Component
         return [
             'nama' => 'required|string|max:255',
             'kategori' => 'required|string',
+            'status' => 'required|string',
+            'tayangMulai' => 'nullable|date',
+            'tayangSampai' => 'nullable|date|after_or_equal:tayangMulai',
             'durasi' => 'nullable|string|max:60',
             'tanggalBerangkat' => 'nullable|date',
             'tanggalPulang' => 'nullable|date|after_or_equal:tanggalBerangkat',
@@ -109,6 +120,8 @@ class OrchaPaketForm extends Component
             'tanggalPulang' => 'tanggal pulang',
             'hargaAsli' => 'harga asli',
             'diskonPersen' => 'diskon',
+            'tayangMulai' => 'mulai tayang',
+            'tayangSampai' => 'berhenti tayang',
         ];
     }
 
@@ -133,6 +146,10 @@ class OrchaPaketForm extends Component
 
         $this->nama = $isi['nama'] ?? '';
         $this->kategori = $isi['kategori'] ?? 'open_trip';
+        $this->status = $isi['status'] ?? 'terbit';
+        $this->tayangMulai = (string) ($isi['tayang_mulai'] ?? '');
+        $this->tayangSampai = (string) ($isi['tayang_sampai'] ?? '');
+        $this->berakhirOtomatis = (bool) ($isi['berakhir_otomatis'] ?? true);
         $this->durasi = (string) ($isi['durasi'] ?? '');
         $this->tanggalBerangkat = (string) ($isi['tanggal_berangkat'] ?? '');
         $this->tanggalPulang = (string) ($isi['tanggal_pulang'] ?? '');
@@ -381,6 +398,10 @@ class OrchaPaketForm extends Component
         $data = [
             'nama' => $this->nama,
             'kategori' => $this->kategori,
+            'status' => $this->status,
+            'tayang_mulai' => $this->tayangMulai,
+            'tayang_sampai' => $this->tayangSampai,
+            'berakhir_otomatis' => $this->berakhirOtomatis,
             'durasi' => $this->durasi,
             'tanggal_berangkat' => $this->tanggalBerangkat,
             'tanggal_pulang' => $this->tanggalPulang,
@@ -405,6 +426,32 @@ class OrchaPaketForm extends Component
         }
     }
 
+    /** Cerminan aturan tayang di Orcha, supaya akibat pilihan langsung terlihat. */
+    public function statusTayang(): string
+    {
+        if (in_array($this->status, ['draf', 'arsip'], true)) {
+            return $this->status;
+        }
+
+        $waktu = fn (string $nilai) => $nilai !== '' ? \Carbon\Carbon::parse($nilai) : null;
+
+        if (($mulai = $waktu($this->tayangMulai)) && $mulai->isFuture()) {
+            return 'terjadwal';
+        }
+
+        if (($sampai = $waktu($this->tayangSampai)) && $sampai->isPast()) {
+            return 'berakhir';
+        }
+
+        $akhirTrip = $waktu($this->tanggalPulang) ?? $waktu($this->tanggalBerangkat);
+
+        if ($this->berakhirOtomatis && $akhirTrip && $akhirTrip->endOfDay()->isPast()) {
+            return 'berakhir';
+        }
+
+        return 'tayang';
+    }
+
     public function render()
     {
         // Daftar pilihan hidup di Orcha dan tumbuh sendiri setiap ada isian
@@ -413,6 +460,9 @@ class OrchaPaketForm extends Component
 
         return view('livewire.pages.admin.orcha.orcha-paket-form', [
             'pilihanKategori' => $this->rujukan('kategori_paket'),
+            'pilihanStatusPaket' => $this->rujukan('status_paket'),
+            'statusTayang' => $statusTayang = $this->statusTayang(),
+            'statusTayangLabel' => $this->rujukan('status_tayang')[$statusTayang] ?? 'Tayang',
             'saranDestinasi' => $saran['destinasi'] ?? [],
             'saranFasilitas' => $saran['fasilitas'] ?? [],
         ])->layout('livewire.layout.templateindex');

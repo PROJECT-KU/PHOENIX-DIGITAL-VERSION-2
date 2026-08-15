@@ -485,3 +485,59 @@ test('durasi yang ditulis sendiri tidak ditimpa hitungan', function () {
         ->assertSet('durasi', '4 Hari 3 Malam')
         ->assertSet('durasiOtomatis', true);
 });
+
+/* ---------------------------- PENAYANGAN ---------------------------- */
+
+test('lencana penayangan mengikuti pilihan sebelum disimpan', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    $halaman = Livewire::actingAs(adminOrcha())->test(OrchaPaketForm::class);
+
+    expect($halaman->instance()->statusTayang())->toBe('tayang');
+
+    $halaman->set('status', 'draf');
+    expect($halaman->instance()->statusTayang())->toBe('draf');
+
+    $halaman->set('status', 'terbit')->set('tayangMulai', now()->addWeek()->format('Y-m-d\TH:i'));
+    expect($halaman->instance()->statusTayang())->toBe('terjadwal');
+
+    $halaman->set('tayangMulai', '')->set('tanggalBerangkat', now()->subWeek()->toDateString());
+    expect($halaman->instance()->statusTayang())->toBe('berakhir');
+
+    // Dibebaskan dari berakhir otomatis, tayang lagi
+    $halaman->set('berakhirOtomatis', false);
+    expect($halaman->instance()->statusTayang())->toBe('tayang');
+});
+
+test('status dan jadwal ikut terkirim saat menyimpan paket', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', 'Open Trip Terjadwal')
+        ->set('harga', 1000000)
+        ->set('status', 'draf')
+        ->set('tayangMulai', '2026-11-01T08:00')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($request) => $request->method() === 'POST'
+        && str_ends_with($request->url(), '/paket-wisata')
+        && $request['status'] === 'draf'
+        && $request['tayang_mulai'] === '2026-11-01T08:00');
+});
+
+test('berhenti tayang sebelum mulai tayang ditolak sebelum dikirim', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', 'Open Trip Ngawur')
+        ->set('harga', 1000000)
+        ->set('tayangMulai', '2026-11-10T08:00')
+        ->set('tayangSampai', '2026-11-01T08:00')
+        ->call('simpan')
+        ->assertHasErrors(['tayangSampai']);
+
+    Http::assertNotSent(fn ($request) => $request->method() === 'POST');
+});

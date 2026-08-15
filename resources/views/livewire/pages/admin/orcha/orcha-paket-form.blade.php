@@ -236,6 +236,49 @@
                     <div class="orcha-lengket">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
+                            <div class="orcha-kepala-kartu">
+                                <h6 class="fw-bold mb-0">Penayangan</h6>
+                                <span class="badge orcha-lencana-{{ $statusTayang }}">{{ $statusTayangLabel }}</span>
+                            </div>
+                            <p class="orcha-petunjuk">
+                                Ditentukan tanggal, bukan tombol — paket muncul dan berhenti tayang
+                                sendiri tanpa perlu ada yang mengingat.
+                            </p>
+
+                            <label class="form-label small fw-semibold">Status <span class="text-danger">*</span></label>
+                            <select class="form-select mb-3" wire:model.live="status">
+                                @foreach ($pilihanStatusPaket as $kunci => $label)
+                                    <option value="{{ $kunci }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+
+                            <label class="form-label small fw-semibold">Mulai tayang</label>
+                            <input type="datetime-local" class="form-control mb-1 @error('tayangMulai') is-invalid @enderror"
+                                wire:model.live="tayangMulai" value="{{ $tayangMulai }}">
+                            @error('tayangMulai') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text mb-3">Kosong berarti langsung tayang begitu berstatus Terbit.</div>
+
+                            <label class="form-label small fw-semibold">Berhenti tayang</label>
+                            <input type="datetime-local" class="form-control mb-1 @error('tayangSampai') is-invalid @enderror"
+                                wire:model.live="tayangSampai" value="{{ $tayangSampai }}">
+                            @error('tayangSampai') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text mb-3">Kosong berarti tidak dibatasi waktu.</div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="berakhir-otomatis"
+                                    wire:model.live="berakhirOtomatis">
+                                <label class="form-check-label small" for="berakhir-otomatis">
+                                    Berhenti tayang sendiri setelah rombongan pulang
+                                </label>
+                                <div class="form-text">
+                                    Untuk trip bertanggal. Matikan bila tanggalnya cuma contoh.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Harga</h6>
 
                             <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>

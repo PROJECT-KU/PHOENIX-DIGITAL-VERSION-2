@@ -297,6 +297,54 @@
         font-size: .9rem;
     }
 
+    /* Lencana penayangan — warnanya menerangkan keadaan, bukan hiasan. */
+    .orcha-lencana-tayang,
+    .orcha-lencana-terjadwal,
+    .orcha-lencana-berakhir,
+    .orcha-lencana-draf,
+    .orcha-lencana-arsip {
+        font-weight: 700;
+        font-size: .68rem;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        flex: 0 0 auto;
+    }
+
+    .orcha-lencana-tayang {
+        background: #eafaf1;
+        color: #14683f;
+    }
+
+    .orcha-lencana-terjadwal {
+        background: #fff4e0;
+        color: #96590d;
+    }
+
+    .orcha-lencana-berakhir {
+        background: #eef0f4;
+        color: #5b6472;
+    }
+
+    .orcha-lencana-draf {
+        background: #eef6fb;
+        color: #14618f;
+    }
+
+    .orcha-lencana-arsip {
+        background: #fef6f7;
+        color: #a33a51;
+    }
+
+    /* Ikon di tombol tambah baris ikut sejajar tengah dengan tulisannya. */
+    .orcha-tambah-baris i,
+    .orcha-bahaya i,
+    .orcha-otomatis i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        font-size: .85em;
+    }
+
     .orcha-otomatis {
         background: #eafaf1;
         color: #14683f;

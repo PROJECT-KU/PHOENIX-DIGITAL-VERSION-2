@@ -51,6 +51,7 @@
                             <thead>
                                 <tr>
                                     <th>Paket</th>
+                                    <th>Penayangan</th>
                                     <th>Jadwal</th>
                                     <th class="text-end">Harga</th>
                                     <th class="text-center">Min. peserta</th>
@@ -66,6 +67,17 @@
                                             <div class="text-muted" style="font-size:.78rem">
                                                 {{ $baris['kategori_label'] }} · {{ $baris['durasi'] }}
                                             </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge orcha-lencana-{{ $baris['status_tayang'] ?? 'tayang' }}">
+                                                {{ $baris['status_tayang_label'] ?? '—' }}
+                                            </span>
+                                            @if (($baris['status_tayang'] ?? '') === 'terjadwal' && $baris['tayang_mulai'])
+                                                <div class="text-muted" style="font-size:.74rem">
+                                                    mulai
+                                                    {{ \Carbon\Carbon::parse($baris['tayang_mulai'])->translatedFormat('d M Y, H:i') }}
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="small">
                                             {{ $baris['jadwal_label'] ?: '—' }}
@@ -109,7 +121,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-5">
+                                        <td colspan="7" class="text-center py-5">
                                             <div class="empty-state-icon-wrapper mx-auto mb-2">
                                                 <i class="bi bi-map"></i>
                                             </div>
