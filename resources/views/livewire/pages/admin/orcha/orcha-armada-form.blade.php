@@ -120,6 +120,7 @@
                 </div>
 
                 <div class="col-12 col-xl-4">
+                    <div class="orcha-lengket">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Foto Unit</h6>
@@ -151,8 +152,10 @@
                             </span>
                             <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
                         </button>
-                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate
-                            class="btn btn-light border rounded-3">Batal</a>
+                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="btn orcha-bahaya">
+                            <i class="bi bi-x-lg"></i> Batal
+                        </a>
+                    </div>
                     </div>
                 </div>
             </div>

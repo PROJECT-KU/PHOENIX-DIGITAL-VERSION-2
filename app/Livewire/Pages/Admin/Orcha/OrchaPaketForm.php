@@ -72,6 +72,9 @@ class OrchaPaketForm extends Component
 
     public ?string $gambarLama = null;
 
+    /** Tautan halaman paket di website, untuk memeriksa hasil hero-nya. */
+    public ?string $tautanPublik = null;
+
     protected function rules(): array
     {
         return [
@@ -136,6 +139,7 @@ class OrchaPaketForm extends Component
         $this->destinasi = array_values($isi['destinasi'] ?? []);
         $this->fasilitas = array_values($isi['fasilitas'] ?? []);
         $this->gambarLama = $isi['sampul'] ?? null;
+        $this->tautanPublik = $isi['tautan_publik'] ?? null;
 
         $this->hari = $this->dariItinerary($isi['itinerary'] ?? []);
     }

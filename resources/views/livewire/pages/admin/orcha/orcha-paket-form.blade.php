@@ -137,11 +137,11 @@
                                     @endforelse
                                 </div>
 
-                                <div class="input-group orcha-tambah">
+                                <div class="orcha-tambah">
                                     <input type="text" class="form-control" wire:model="{{ $medanBaru }}"
                                         wire:keydown.enter.prevent="tambah('{{ $jenis }}')"
                                         placeholder="{{ $contoh }}">
-                                    <button type="button" class="btn btn-primary"
+                                    <button type="button" class="btn btn-primary rounded-3"
                                         wire:click="tambah('{{ $jenis }}')" wire:loading.attr="disabled">
                                         <i class="bi bi-plus-lg"></i> Tambah
                                     </button>
@@ -174,7 +174,7 @@
                                             placeholder="Day 1">
 
                                         @if (count($hari) > 1)
-                                            <button type="button" class="btn btn-outline-danger rounded-3"
+                                            <button type="button" class="btn orcha-bahaya"
                                                 wire:click="buangHari({{ $urutanHari }})" title="Hapus hari ini">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -190,7 +190,7 @@
                                                 wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.kegiatan"
                                                 value="{{ $agenda['kegiatan'] }}"
                                                 placeholder="Penjemputan di meeting point">
-                                            <button type="button" class="btn btn-light border rounded-3"
+                                            <button type="button" class="btn orcha-bahaya"
                                                 wire:click="buangAgenda({{ $urutanHari }}, {{ $urutanAgenda }})"
                                                 title="Hapus baris">
                                                 <i class="bi bi-x-lg"></i>
@@ -198,7 +198,7 @@
                                         </div>
                                     @endforeach
 
-                                    <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol mt-1"
+                                    <button type="button" class="orcha-tambah-baris mt-1"
                                         wire:click="tambahAgenda({{ $urutanHari }})">
                                         <i class="bi bi-plus-lg"></i>
                                         <span>Tambah kegiatan</span>
@@ -206,7 +206,7 @@
                                 </div>
                             @endforeach
 
-                            <button type="button" class="btn btn-outline-primary rounded-3 orcha-tombol w-100"
+                            <button type="button" class="orcha-tambah-baris orcha-tambah-hari"
                                 wire:click="tambahHari">
                                 <i class="bi bi-calendar-plus"></i>
                                 <span>Tambah Hari</span>
@@ -216,6 +216,7 @@
                 </div>
 
                 <div class="col-12 col-xl-4">
+                    <div class="orcha-lengket">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Harga</h6>
@@ -244,7 +245,17 @@
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">Foto Sampul</h6>
+                            <div class="orcha-kepala-kartu">
+                                <h6 class="fw-bold mb-0">Foto Sampul</h6>
+                                @if ($ubah && $tautanPublik)
+                                    <a href="{{ $tautanPublik }}" target="_blank" rel="noopener"
+                                        class="small text-decoration-none">Lihat halaman</a>
+                                @endif
+                            </div>
+                            <p class="orcha-petunjuk">
+                                Foto ini yang jadi latar hero di halaman paket pada website.
+                                Bentuk mendatar paling pas, mis. 1600 × 900.
+                            </p>
 
                             @if ($gambar)
                                 <img src="{{ $gambar->temporaryUrl() }}" alt=""
@@ -259,6 +270,7 @@
                             @error('gambar') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             <div class="form-text">
                                 Maksimal 4 MB. Dibiarkan kosong berarti foto lama tetap dipakai.
+                                Tanpa foto, website memakai ilustrasi buatan sendiri.
                             </div>
 
                             <div wire:loading wire:target="gambar" class="text-muted small mt-2">
@@ -275,8 +287,10 @@
                             </span>
                             <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
                         </button>
-                        <a href="{{ route('admin.orcha.paket') }}" wire:navigate
-                            class="btn btn-light border rounded-3">Batal</a>
+                        <a href="{{ route('admin.orcha.paket') }}" wire:navigate class="btn orcha-bahaya">
+                            <i class="bi bi-x-lg"></i> Batal
+                        </a>
+                    </div>
                     </div>
                 </div>
             </div>

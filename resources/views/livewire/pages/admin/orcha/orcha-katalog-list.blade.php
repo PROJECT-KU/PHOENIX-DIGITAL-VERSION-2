@@ -98,7 +98,7 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <button type="button"
-                                                class="btn btn-sm btn-outline-danger rounded-3 orcha-tombol pcek-konfirmasi"
+                                                class="btn btn-sm orcha-bahaya pcek-konfirmasi"
                                                 data-action="hapus" data-arg="{{ $baris['id'] }}"
                                                 data-title="Hapus paket ini?"
                                                 data-text="{{ addslashes($baris['nama']) }} akan hilang dari website Orcha."
@@ -163,7 +163,7 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <button type="button"
-                                                class="btn btn-sm btn-outline-danger rounded-3 orcha-tombol pcek-konfirmasi"
+                                                class="btn btn-sm orcha-bahaya pcek-konfirmasi"
                                                 data-action="hapus" data-arg="{{ $baris['id'] }}"
                                                 data-title="Hapus unit ini?"
                                                 data-text="{{ addslashes($baris['nama']) }} akan hilang dari daftar sewa."

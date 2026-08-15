@@ -97,7 +97,7 @@
                                     <span>Ubah</span>
                                 </button>
 
-                                <button type="button" class="btn btn-sm btn-outline-danger rounded-3 orcha-tombol pcek-konfirmasi"
+                                <button type="button" class="btn btn-sm orcha-bahaya pcek-konfirmasi"
                                     data-action="hapus" data-arg="{{ $baris['id'] }}"
                                     data-title="Hapus {{ strtolower($judul) }}?"
                                     data-text="{{ addslashes($baris['nama']) }} akan dihapus dari website Orcha."
@@ -200,7 +200,9 @@
                         </div>
 
                         <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-light border rounded-3" wire:click="tutup">Batal</button>
+                            <button type="button" class="btn orcha-bahaya" wire:click="tutup">
+                                <i class="bi bi-x-lg"></i> Batal
+                            </button>
                             <button type="submit" class="btn btn-primary rounded-3" wire:loading.attr="disabled"
                                 wire:target="simpan">
                                 <span wire:loading.remove wire:target="simpan">Simpan</span>

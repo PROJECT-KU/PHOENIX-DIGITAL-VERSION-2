@@ -134,7 +134,9 @@ Pembatalan Orcha || lemon
                         <div class="form-text">Catatan ini tersimpan di Orcha dan terlihat di admin Orcha.</div>
                     </div>
                     <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-light border rounded-3" wire:click="tutup">Batal</button>
+                        <button type="button" class="btn orcha-bahaya" wire:click="tutup">
+                            <i class="bi bi-x-lg"></i> Batal
+                        </button>
                         <button type="button" class="btn btn-primary rounded-3" wire:click="simpan"
                             wire:loading.attr="disabled">
                             Simpan

@@ -124,8 +124,8 @@
     }
 
     /* ---------- Cip pilihan (destinasi & fasilitas) ----------
-       Satu irama jarak dipakai seluruh kartu: judul .75rem, antar blok 1rem,
-       antar cip .5rem. */
+       Satu irama jarak dipakai seluruh kartu: judul .35rem, petunjuk 1rem,
+       antar cip .5rem, antar blok 1rem. */
     .orcha-kepala-kartu {
         display: flex;
         align-items: center;
@@ -139,11 +139,6 @@
         font-size: .82rem;
         line-height: 1.5;
         margin-bottom: 1rem;
-    }
-
-    .orcha-petunjuk i {
-        font-size: .7rem;
-        vertical-align: middle;
     }
 
     .orcha-kosong {
@@ -172,9 +167,8 @@
         align-content: flex-start;
     }
 
-    /* Cip = satu wadah berisi tombol pilih dan (bila ada) tombol hapus.
-       Keduanya SELALU terlihat, tidak muncul-hilang saat disorot — supaya
-       tidak perlu menebak di mana harus mengarahkan kursor. */
+    /* Cip = satu wadah berisi tombol pilih dan tombol hapus. Keduanya SELALU
+       terlihat, tidak muncul-hilang saat disorot. */
     .orcha-cip {
         display: inline-flex;
         align-items: stretch;
@@ -191,19 +185,27 @@
     }
 
     .orcha-cip button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         border: 0;
         background: transparent;
         font-size: .85rem;
-        line-height: 1.2;
+        line-height: 1;
         color: #445;
         transition: background .15s ease, color .15s ease;
     }
 
-    .orcha-cip-pilih {
+    /* Ikon selalu sejajar tengah dengan tulisannya. */
+    .orcha-cip button i {
         display: inline-flex;
         align-items: center;
-        gap: .35rem;
-        padding: .45rem .8rem;
+        line-height: 1;
+    }
+
+    .orcha-cip-pilih {
+        gap: .4rem;
+        padding: .5rem .85rem;
     }
 
     .orcha-cip-pilih:hover {
@@ -212,49 +214,64 @@
     }
 
     .orcha-cip-pilih i {
-        font-size: .78rem;
-        opacity: .75;
+        font-size: .8rem;
+        opacity: .7;
     }
 
-    /* Tombol hapus dari daftar pilihan — merah lembut, terlihat tanpa disorot. */
+    /* Hapus dari daftar pilihan — merah terlihat tanpa perlu disorot. */
     .orcha-cip-hapus {
-        padding: .45rem .6rem;
-        border-left: 1px solid #eef0f4 !important;
-        color: #c2415a !important;
+        padding: .5rem .65rem;
+        border-left: 1px solid #f0dbe0 !important;
+        color: #d63955 !important;
+        background: #fef6f7;
     }
 
     .orcha-cip-hapus:hover {
-        background: #fdecef;
-        color: #a01c37 !important;
+        background: #f8d7dd;
+        color: #93122c !important;
     }
 
     .orcha-cip-hapus i {
-        font-size: .68rem;
+        font-size: .72rem;
     }
 
-    /* Sudah masuk paket: tetap bisa diklik untuk dikeluarkan. */
+    /* SUDAH MASUK PAKET — hijau, jelas beda dari yang belum dipilih. */
     .orcha-cip-sudah {
-        border-color: #b9d9ec;
-        background: #eef6fb;
+        border-color: #9fd6b4;
+        background: #eafaf1;
+    }
+
+    .orcha-cip-sudah:hover {
+        border-color: #34996a;
+        box-shadow: 0 2px 8px rgba(52, 153, 106, .18);
     }
 
     .orcha-cip-sudah .orcha-cip-pilih {
-        color: #0f2d4a;
-        font-weight: 600;
+        color: #14683f;
+        font-weight: 700;
+    }
+
+    .orcha-cip-sudah .orcha-cip-pilih:hover {
+        background: #d8f3e4;
+        color: #0d4e2f;
     }
 
     .orcha-cip-sudah .orcha-cip-pilih i {
-        color: #1d6fa5;
+        color: #1a8552;
         opacity: 1;
     }
 
-    /* Cip terpilih di baris atas. Warnanya tetap gelap saat disorot, dan
-       tanda silangnya tetap kontras — dulu ikut memudar sampai tak terbaca. */
+    .orcha-cip-sudah .orcha-cip-hapus {
+        border-left-color: #c3e6d2 !important;
+        background: #f4fbf7;
+    }
+
+    /* Cip terpilih di baris atas: tetap gelap saat disorot, silangnya kontras. */
     .orcha-cip-aktif {
         border-color: transparent;
         background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
         align-items: center;
-        padding-left: .8rem;
+        padding-left: .85rem;
         color: #fff;
         font-size: .85rem;
         font-weight: 600;
@@ -267,12 +284,12 @@
     }
 
     .orcha-cip-buang {
-        padding: .45rem .7rem .45rem .3rem;
+        padding: .5rem .7rem .5rem .35rem;
         color: #ffd772 !important;
     }
 
     .orcha-cip-buang:hover {
-        background: rgba(255, 255, 255, .16);
+        background: rgba(255, 255, 255, .18);
         color: #fff !important;
     }
 
@@ -287,16 +304,24 @@
         flex: 0 0 auto;
     }
 
-    .orcha-tambah .form-control,
-    .orcha-tambah .btn {
-        padding-top: .7rem;
-        padding-bottom: .7rem;
+    /* Kotak isian + tombol Tambah: diberi jarak, tidak lagi menempel. */
+    .orcha-tambah {
+        display: flex;
+        gap: .6rem;
+        align-items: stretch;
+    }
+
+    .orcha-tambah .form-control {
+        flex: 1 1 auto;
     }
 
     .orcha-tambah .btn {
+        flex: 0 0 auto;
         display: inline-flex;
         align-items: center;
-        gap: .35rem;
+        justify-content: center;
+        gap: .4rem;
+        padding: .7rem 1.1rem;
         white-space: nowrap;
     }
 
@@ -333,16 +358,103 @@
         background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
     }
 
-    /* Kolom jam sempit saja — isinya cuma "07.00" */
+    /* Kolom jam: cukup lebar supaya "07.00" tidak terpotong, dan padding
+       samping dikecilkan karena isinya memang pendek. */
     .orcha-jam {
-        flex: 0 0 108px;
+        flex: 0 0 128px;
         text-align: center;
+        padding-left: .5rem !important;
+        padding-right: .5rem !important;
         font-variant-numeric: tabular-nums;
+        letter-spacing: .02em;
     }
 
     @media (max-width: 575.98px) {
         .orcha-jam {
-            flex-basis: 84px;
+            flex-basis: 104px;
         }
+    }
+
+    /* Tambah kegiatan / Tambah hari — biru merek, bukan abu-abu yang
+       tenggelam di antara isian. */
+    .orcha-tambah-baris {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        border: 1px dashed #9ec7e0;
+        background: #f2f9fd;
+        color: #14618f;
+        font-size: .84rem;
+        font-weight: 600;
+        border-radius: .7rem;
+        padding: .5rem .9rem;
+        transition: all .15s ease;
+    }
+
+    .orcha-tambah-baris:hover {
+        background: #dcedf8;
+        border-color: #1d6fa5;
+        color: #0f2d4a;
+    }
+
+    .orcha-tambah-hari {
+        width: 100%;
+        border-style: solid;
+        padding: .75rem;
+    }
+
+    /* Tombol bahaya: merahnya terlihat tanpa perlu disorot. */
+    .orcha-bahaya {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        border: 1px solid #f1b6c1;
+        background: #fef6f7;
+        color: #c2415a;
+        font-weight: 600;
+        border-radius: .7rem;
+        transition: all .15s ease;
+    }
+
+    .orcha-bahaya:hover {
+        background: #f8d7dd;
+        border-color: #d63955;
+        color: #93122c;
+    }
+
+    .orcha-bahaya i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+    }
+
+    /* Kolom kanan ikut turun saat digulung, seperti halaman paket di publik.
+       Hanya di layar lebar — di layar sempit kolomnya sudah menumpuk. */
+    @media (min-width: 1200px) {
+        .orcha-lengket {
+            position: sticky;
+            top: 1rem;
+        }
+    }
+
+    /* Ikon di dalam tombol selalu sejajar tengah dengan tulisannya. */
+    .orcha-form .btn,
+    .orcha-tombol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .4rem;
+        white-space: nowrap;
+    }
+
+    .orcha-form .btn i,
+    .orcha-tombol i,
+    .orcha-ikon i,
+    .orcha-nomor-hari i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
     }
 </style>
