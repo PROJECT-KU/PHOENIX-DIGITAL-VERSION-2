@@ -104,4 +104,40 @@ trait MemanggilOrcha
             $this->dispatch('toast-error', message: $e->getMessage());
         }
     }
+
+    /**
+     * Simpan data baru atau perubahan (boleh dengan gambar).
+     *
+     * Mengembalikan true bila tersimpan, supaya pemanggilnya tahu kapan boleh
+     * menutup formulir atau berpindah halaman.
+     *
+     * @param  \Illuminate\Http\UploadedFile|null  $gambar
+     */
+    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null): bool
+    {
+        try {
+            $this->orcha()->kirim($jalur, $data, $gambar);
+            $this->dispatch('order-updated', message: $pesanSukses);
+
+            return true;
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return false;
+        }
+    }
+
+    protected function hapusData(string $jalur, string $pesanSukses): bool
+    {
+        try {
+            $this->orcha()->hapus($jalur);
+            $this->dispatch('order-updated', message: $pesanSukses);
+
+            return true;
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+
+            return false;
+        }
+    }
 }

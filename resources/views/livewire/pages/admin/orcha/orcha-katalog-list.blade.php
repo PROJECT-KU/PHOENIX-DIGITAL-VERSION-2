@@ -23,13 +23,21 @@
                                 placeholder="{{ $isPaket ? 'Cari nama paket...' : 'Cari nama atau merek kendaraan...' }}">
                         </div>
                     </div>
-                    <div class="col-12 col-lg-4">
+                    <div class="col-8 col-lg-2">
                         <select wire:model.live="filterStatus" class="form-select">
                             <option value="">{{ $isPaket ? 'Semua kategori' : 'Semua jenis' }}</option>
                             @foreach ($pilihan as $kunci => $label)
                                 <option value="{{ $kunci }}">{{ $label }}</option>
                             @endforeach
                         </select>
+                    </div>
+
+                    <div class="col-4 col-lg-2 text-end">
+                        <a href="{{ route($isPaket ? 'admin.orcha.paket.tambah' : 'admin.orcha.armada.tambah') }}"
+                            wire:navigate class="btn btn-primary rounded-3 orcha-tombol w-100 justify-content-center">
+                            <i class="bi bi-plus-lg"></i>
+                            <span class="d-none d-sm-inline">Tambah</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -79,12 +87,24 @@
                                         </td>
                                         <td class="text-center">{{ $baris['minimal_peserta'] }}</td>
                                         <td class="text-center fw-semibold">{{ $baris['jumlah_pendaftar'] ?? 0 }}</td>
-                                        <td class="text-end">
+                                        <td class="text-end text-nowrap">
                                             <a href="{{ $baris['tautan_publik'] }}" target="_blank" rel="noopener"
-                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol">
+                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                                title="Lihat di website">
                                                 <i class="bi bi-box-arrow-up-right"></i>
-                                                <span>Lihat</span>
                                             </a>
+                                            <a href="{{ route('admin.orcha.paket.ubah', $baris['id']) }}" wire:navigate
+                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol" title="Ubah">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger rounded-3 orcha-tombol pcek-konfirmasi"
+                                                data-action="hapus" data-arg="{{ $baris['id'] }}"
+                                                data-title="Hapus paket ini?"
+                                                data-text="{{ addslashes($baris['nama']) }} akan hilang dari website Orcha."
+                                                data-confirm="Ya, hapus" data-icon="warning" title="Hapus">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 @empty
@@ -108,6 +128,7 @@
                                     <th class="text-end">Per hari</th>
                                     <th class="text-end">Sopir</th>
                                     <th class="text-center">Status</th>
+                                    <th class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -136,10 +157,24 @@
                                                 <span class="badge bg-secondary-subtle text-secondary">Tidak aktif</span>
                                             @endif
                                         </td>
+                                        <td class="text-end text-nowrap">
+                                            <a href="{{ route('admin.orcha.armada.ubah', $baris['id']) }}" wire:navigate
+                                                class="btn btn-sm btn-light border rounded-3 orcha-tombol" title="Ubah">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger rounded-3 orcha-tombol pcek-konfirmasi"
+                                                data-action="hapus" data-arg="{{ $baris['id'] }}"
+                                                data-title="Hapus unit ini?"
+                                                data-text="{{ addslashes($baris['nama']) }} akan hilang dari daftar sewa."
+                                                data-confirm="Ya, hapus" data-icon="warning" title="Hapus">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center py-5">
+                                        <td colspan="8" class="text-center py-5">
                                             <div class="empty-state-icon-wrapper mx-auto mb-2">
                                                 <i class="bi bi-truck"></i>
                                             </div>

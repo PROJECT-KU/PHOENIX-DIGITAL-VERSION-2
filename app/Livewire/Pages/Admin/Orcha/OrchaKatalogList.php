@@ -24,6 +24,19 @@ class OrchaKatalogList extends Component
         $this->jenis = in_array($jenis, ['paket', 'armada'], true) ? $jenis : 'paket';
     }
 
+    /**
+     * Orcha menolak penghapusan yang bisa merugikan — paket yang sudah punya
+     * pendaftar, atau unit yang sudah pernah disewa. Alasannya diteruskan apa
+     * adanya ke admin lewat toast.
+     */
+    public function hapus(int $id): void
+    {
+        $this->hapusData(
+            $this->jenis === 'paket' ? "/paket-wisata/{$id}" : "/kendaraan/{$id}",
+            $this->jenis === 'paket' ? 'Paket wisata dihapus.' : 'Kendaraan dihapus.'
+        );
+    }
+
     public function render()
     {
         $isPaket = $this->jenis === 'paket';

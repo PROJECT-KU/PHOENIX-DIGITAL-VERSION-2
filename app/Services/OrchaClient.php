@@ -72,8 +72,21 @@ class OrchaClient
             throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Perubahan belum tersimpan.');
         }
 
+        return $this->bacaBalasan($balasan);
+    }
+
+    /**
+     * Terjemahkan balasan jadi larik, atau lemparkan pesan yang layak dibaca.
+     *
+     * @throws OrchaTidakTerjangkau
+     */
+    private function bacaBalasan(\Illuminate\Http\Client\Response $balasan): array
+    {
         if ($balasan->status() === 422) {
-            $pesan = collect($balasan->json('errors', []))->flatten()->first();
+            // Pesan galat per kolom dari Orcha sudah berbahasa Indonesia,
+            // jadi cukup diteruskan apa adanya ke admin.
+            $pesan = collect($balasan->json('errors', []))->flatten()->first()
+                ?: $balasan->json('pesan');
 
             throw new OrchaTidakTerjangkau($pesan ?: 'Isian ditolak oleh Orcha.');
         }
@@ -83,6 +96,85 @@ class OrchaClient
         }
 
         return $balasan->json() ?? [];
+    }
+
+    /**
+     * Kirim data baru atau perubahan, lengkap dengan gambar bila ada.
+     *
+     * Gambar diteruskan sebagai multipart ke Orcha — berkasnya disimpan di
+     * server Orcha, bukan di lemon, supaya website Orcha tetap bisa
+     * menampilkannya tanpa bergantung aplikasi ini.
+     *
+     * @param  \Illuminate\Http\UploadedFile|null  $gambar
+     *
+     * @throws OrchaTidakTerjangkau
+     */
+    public function kirim(string $jalur, array $data = [], $gambar = null): array
+    {
+        if (! $this->siap()) {
+            throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel.');
+        }
+
+        try {
+            $permintaan = $this->permintaan();
+
+            if ($gambar) {
+                $permintaan = $permintaan->attach(
+                    'gambar',
+                    file_get_contents($gambar->getRealPath()),
+                    $gambar->getClientOriginalName()
+                );
+            }
+
+            // Nilai larik dan boolean harus diratakan dulu: multipart hanya
+            // mengenal pasangan nama-nilai berupa teks.
+            $balasan = $permintaan->post($jalur, $gambar ? $this->ratakan($data) : $data);
+        } catch (\Throwable $e) {
+            throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Data belum tersimpan.');
+        }
+
+        return $this->bacaBalasan($balasan);
+    }
+
+    /**
+     * @throws OrchaTidakTerjangkau
+     */
+    public function hapus(string $jalur): array
+    {
+        if (! $this->siap()) {
+            throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel.');
+        }
+
+        try {
+            $balasan = $this->permintaan()->delete($jalur);
+        } catch (\Throwable $e) {
+            throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Data belum dihapus.');
+        }
+
+        return $this->bacaBalasan($balasan);
+    }
+
+    /**
+     * Ubah larik bersarang jadi pasangan bergaya `fasilitas[0]`, dan boolean
+     * jadi 1/0 — bentuk yang dipahami multipart.
+     */
+    private function ratakan(array $data, string $awalan = ''): array
+    {
+        $hasil = [];
+
+        foreach ($data as $kunci => $nilai) {
+            $nama = $awalan === '' ? (string) $kunci : "{$awalan}[{$kunci}]";
+
+            if (is_array($nilai)) {
+                $hasil += $this->ratakan($nilai, $nama);
+            } elseif (is_bool($nilai)) {
+                $hasil[$nama] = $nilai ? '1' : '0';
+            } elseif ($nilai !== null) {
+                $hasil[$nama] = (string) $nilai;
+            }
+        }
+
+        return $hasil;
     }
 
     /**

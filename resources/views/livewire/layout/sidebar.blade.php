@@ -398,11 +398,14 @@ new class extends Component
                             ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
                             ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
                             ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
+                            ['admin.orcha.destinasi', 'bi-geo-alt', 'Destinasi Populer'],
+                            ['admin.orcha.testimoni', 'bi-chat-quote', 'Testimoni'],
+                            ['admin.orcha.partner', 'bi-people', 'Partner'],
                         ];
                     @endphp
 
                     @foreach ($menuOrcha as [$rute, $ikon, $label])
-                        <li class="sidebar-item {{ request()->routeIs($rute) ? 'active' : '' }}">
+                        <li class="sidebar-item {{ request()->routeIs($rute) || request()->routeIs($rute . '.*') ? 'active' : '' }}">
                             <a href="{{ route($rute) }}" class="sidebar-link" wire:navigate>
                                 <i class="bi {{ $ikon }}"></i>
                                 <span>{{ $label }}</span>

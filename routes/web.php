@@ -39,9 +39,12 @@ use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
 use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
+use App\Livewire\Pages\Admin\Orcha\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\OrchaDashboard;
+use App\Livewire\Pages\Admin\Orcha\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\OrchaKatalogList;
 // Data Order
+use App\Livewire\Pages\Admin\Orcha\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\OrchaPembatalanList;
 use App\Livewire\Pages\Admin\Orcha\OrchaPendaftaranList;
 // Orcha Journey — data dari aplikasi tetangga lewat API
@@ -483,7 +486,16 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
     Route::get('/admin/orcha/paket-wisata', OrchaKatalogList::class)->name('admin.orcha.paket');
+    Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
+    Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');
+
     Route::get('/admin/orcha/armada', OrchaKatalogList::class)->defaults('jenis', 'armada')->name('admin.orcha.armada');
+    Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');
+    Route::get('/admin/orcha/armada/{kendaraan}/ubah', OrchaArmadaForm::class)->name('admin.orcha.armada.ubah');
+
+    Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
+    Route::get('/admin/orcha/testimoni', OrchaEtalaseList::class)->defaults('jenis', 'testimoni')->name('admin.orcha.testimoni');
+    Route::get('/admin/orcha/partner', OrchaEtalaseList::class)->defaults('jenis', 'partner')->name('admin.orcha.partner');
 });
 
 require __DIR__.'/auth.php';

@@ -1,5 +1,9 @@
 <?php
 
+use App\Livewire\Pages\Admin\Orcha\OrchaArmadaForm;
+use App\Livewire\Pages\Admin\Orcha\OrchaEtalaseList;
+use App\Livewire\Pages\Admin\Orcha\OrchaKatalogList;
+use App\Livewire\Pages\Admin\Orcha\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\OrchaPendaftaranList;
 use App\Models\EmployeeDetail;
 use App\Models\Permission;
@@ -228,4 +232,111 @@ test('penolakan dari orcha ditampilkan, tidak dianggap berhasil', function () {
         ->call('ubahStatus', 9, 'ngawur')
         ->assertDispatched('toast-error')
         ->assertNotDispatched('order-updated');
+});
+
+/* ------------------------ TAMBAH / UBAH DATA ------------------------ */
+
+test('halaman tambah paket dan armada bisa dibuka', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    $admin = adminOrcha();
+
+    $this->actingAs($admin)->get('/admin/orcha/paket-wisata/tambah')
+        ->assertOk()->assertSee('Tambah Paket Wisata');
+
+    $this->actingAs($admin)->get('/admin/orcha/armada/tambah')
+        ->assertOk()->assertSee('Tambah Kendaraan');
+});
+
+test('paket baru dikirim ke orcha, bukan disimpan di lemon', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', 'Open Trip Karimunjawa')
+        ->set('kategori', 'open_trip')
+        ->set('minimalPeserta', 6)
+        ->set('harga', 1250000)
+        ->set('destinasiTeks', "Pantai Ujung Gelam\n\nSnorkeling Menjangan")
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/paket-wisata')
+        && $request->method() === 'POST'
+        && $request['nama'] === 'Open Trip Karimunjawa'
+        // Baris kosong dibuang sebelum dikirim
+        && $request['destinasi'] === ['Pantai Ujung Gelam', 'Snorkeling Menjangan']);
+});
+
+test('paket tanpa nama ditolak sebelum menghubungi orcha', function () {
+    Http::fake();
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('nama', '')
+        ->call('simpan')
+        ->assertHasErrors(['nama']);
+
+    // Halaman ini memang mengambil daftar pilihan saat digambar; yang penting
+    // tidak ada pengiriman data.
+    Http::assertNotSent(fn ($request) => $request->method() === 'POST');
+});
+
+test('kendaraan wajib punya minimal satu transmisi', function () {
+    Http::fake();
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaArmadaForm::class)
+        ->set('nama', 'Innova Zenix')
+        ->set('merek', 'Toyota')
+        ->set('transmisi', [])
+        ->set('tarifHari', 700000)
+        ->call('simpan')
+        ->assertHasErrors(['transmisi']);
+
+    Http::assertNotSent(fn ($request) => $request->method() === 'POST');
+});
+
+test('penolakan dari orcha saat menghapus ditampilkan apa adanya', function () {
+    Http::fake([
+        '*/paket-wisata/9' => Http::response(['pesan' => 'Paket ini sudah punya pendaftar, jadi tidak bisa dihapus. Ubah saja isinya.'], 422),
+        '*' => Http::response(['data' => [], 'meta' => []]),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaKatalogList::class)
+        ->call('hapus', 9)
+        ->assertDispatched('toast-error')
+        ->assertNotDispatched('order-updated');
+});
+
+test('destinasi baru dikirim lengkap dengan wilayahnya', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaEtalaseList::class)
+        ->call('tambah')
+        ->set('nama', 'Nusa Penida')
+        ->set('wilayah', 'bali_nusa')
+        ->set('provinsi', 'Bali')
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertSet('formTerbuka', false);
+
+    Http::assertSent(fn ($request) => $request->method() === 'POST'
+        && str_ends_with($request->url(), '/destinasi')
+        && $request['nama'] === 'Nusa Penida'
+        && $request['wilayah'] === 'bali_nusa');
+});
+
+test('testimoni butuh isi dan rating', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaEtalaseList::class, ['jenis' => 'testimoni'])
+        ->call('tambah')
+        ->set('nama', 'Sari')
+        ->set('isi', '')
+        ->call('simpan')
+        ->assertHasErrors(['isi']);
 });
