@@ -102,4 +102,121 @@
     .orcha-gulung {
         overflow-x: auto;
     }
+
+    /* ---------- Formulir: isian lebih lega ---------- */
+    .orcha-form .form-control,
+    .orcha-form .form-select {
+        padding: .7rem .9rem;
+        font-size: .975rem;
+        border-radius: .7rem;
+        border-color: #e3e8ef;
+    }
+
+    .orcha-form .form-control:focus,
+    .orcha-form .form-select:focus {
+        border-color: #1d6fa5;
+        box-shadow: 0 0 0 .2rem rgba(29, 111, 165, .12);
+    }
+
+    .orcha-form .form-label {
+        color: #0f2d4a;
+        margin-bottom: .35rem;
+    }
+
+    /* ---------- Cip pilihan (destinasi & fasilitas) ---------- */
+    .orcha-terpilih,
+    .orcha-saran {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+    }
+
+    .orcha-saran {
+        max-height: 190px;
+        overflow-y: auto;
+        padding: .65rem;
+        border: 1px dashed #dbe3ec;
+        border-radius: .8rem;
+        background: #fbfcfe;
+    }
+
+    .orcha-cip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .4rem .8rem;
+        border-radius: 999px;
+        border: 1px solid #dbe3ec;
+        background: #fff;
+        color: #445;
+        font-size: .85rem;
+        line-height: 1.2;
+        transition: all .15s ease;
+    }
+
+    .orcha-cip:hover {
+        border-color: #1d6fa5;
+        color: #0f2d4a;
+        background: #eef6fb;
+    }
+
+    .orcha-cip-aktif {
+        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        border-color: transparent;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .orcha-cip-aktif button {
+        border: 0;
+        background: transparent;
+        color: #ffd772;
+        font-size: 1.05rem;
+        line-height: 1;
+        padding: 0 0 0 .15rem;
+    }
+
+    .orcha-cip-aktif button:hover {
+        color: #fff;
+    }
+
+    .orcha-hitung {
+        background: #eef6fb;
+        color: #0f2d4a;
+        font-weight: 700;
+    }
+
+    /* ---------- Itinerary per hari ---------- */
+    .orcha-hari {
+        padding: 1rem;
+        border: 1px solid #e8eef5;
+        border-radius: .9rem;
+        background: #fbfcfe;
+    }
+
+    .orcha-nomor-hari {
+        flex: 0 0 auto;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+    }
+
+    /* Kolom jam sempit saja — isinya cuma "07.00" */
+    .orcha-jam {
+        flex: 0 0 108px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 575.98px) {
+        .orcha-jam {
+            flex-basis: 84px;
+        }
+    }
 </style>

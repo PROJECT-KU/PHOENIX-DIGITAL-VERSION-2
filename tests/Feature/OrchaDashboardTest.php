@@ -257,15 +257,59 @@ test('paket baru dikirim ke orcha, bukan disimpan di lemon', function () {
         ->set('kategori', 'open_trip')
         ->set('minimalPeserta', 6)
         ->set('harga', 1250000)
-        ->set('destinasiTeks', "Pantai Ujung Gelam\n\nSnorkeling Menjangan")
+        ->call('jungkitDestinasi', 'Pantai Ujung Gelam')
+        ->set('destinasiBaru', 'Snorkeling Menjangan')
+        ->call('tambahDestinasi')
+        ->call('jungkitFasilitas', 'Homestay / penginapan')
+        ->set('hari', [[
+            'nama' => 'Day 1',
+            'agenda' => [
+                ['jam' => '07.00', 'kegiatan' => 'Berangkat dari Jepara'],
+                // Baris tanpa kegiatan tidak boleh ikut tersimpan
+                ['jam' => '', 'kegiatan' => ''],
+            ],
+        ]])
         ->call('simpan')
         ->assertHasNoErrors();
 
     Http::assertSent(fn ($request) => str_ends_with($request->url(), '/paket-wisata')
         && $request->method() === 'POST'
         && $request['nama'] === 'Open Trip Karimunjawa'
-        // Baris kosong dibuang sebelum dikirim
-        && $request['destinasi'] === ['Pantai Ujung Gelam', 'Snorkeling Menjangan']);
+        && $request['destinasi'] === ['Pantai Ujung Gelam', 'Snorkeling Menjangan']
+        && $request['fasilitas'] === ['Homestay / penginapan']
+        && $request['itinerary_teks'] === "Day 1\n07.00 | Berangkat dari Jepara");
+});
+
+test('destinasi yang sama tidak bisa masuk dua kali', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->call('jungkitDestinasi', 'Kawah Ijen')
+        ->set('destinasiBaru', 'Kawah Ijen')
+        ->call('tambahDestinasi')
+        ->assertSet('destinasi', ['Kawah Ijen'])
+        // Klik kedua pada saran yang sama justru mengeluarkannya
+        ->call('jungkitDestinasi', 'Kawah Ijen')
+        ->assertSet('destinasi', []);
+});
+
+test('baris itinerary bisa ditambah dan dibuang', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    $halaman = Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->assertCount('hari', 1)
+        ->call('tambahHari')
+        ->assertCount('hari', 2)
+        ->call('tambahAgenda', 0)
+        ->call('buangHari', 1)
+        ->assertCount('hari', 1);
+
+    expect($halaman->get('hari')[0]['agenda'])->toHaveCount(2);
+
+    // Hari terakhir tidak pernah habis — selalu tersisa satu untuk diisi
+    $halaman->call('buangHari', 0)->assertCount('hari', 1);
 });
 
 test('paket tanpa nama ditolak sebelum menghubungi orcha', function () {

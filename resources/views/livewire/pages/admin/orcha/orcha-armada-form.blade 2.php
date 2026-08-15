@@ -11,7 +11,7 @@
             'keterangan' => 'Tarif per jam, per 12 jam, dan per hari disimpan terpisah karena memang berbeda.',
         ])
 
-        <form wire:submit="simpan" class="orcha-form">
+        <form wire:submit="simpan">
             <div class="row g-4">
                 <div class="col-12 col-xl-8">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">

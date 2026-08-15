@@ -11,7 +11,7 @@
             'keterangan' => 'Tersimpan langsung di server Orcha, termasuk fotonya.',
         ])
 
-        <form wire:submit="simpan">
+        <form wire:submit="simpan" class="orcha-form">
             <div class="row g-4">
                 <div class="col-12 col-xl-8">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -77,27 +77,151 @@
                         </div>
                     </div>
 
+                    {{-- Destinasi: pilih dari yang sudah ada, ketik hanya bila belum terdaftar --}}
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">Isi Paket</h6>
-
-                            <label class="form-label small fw-semibold">Destinasi yang dikunjungi</label>
-                            <textarea class="form-control" rows="5" wire:model="destinasiTeks"
-                                placeholder="Satu destinasi satu baris:&#10;Kawah Ijen&#10;Pantai Pulau Merah&#10;Taman Nasional Baluran"></textarea>
-                            <div class="form-text mb-3">Satu baris satu destinasi.</div>
-
-                            <label class="form-label small fw-semibold">Fasilitas</label>
-                            <textarea class="form-control" rows="5" wire:model="fasilitasTeks"
-                                placeholder="Satu fasilitas satu baris:&#10;Transportasi AC&#10;Homestay&#10;Tiket masuk wisata"></textarea>
-                            <div class="form-text mb-3">Satu baris satu fasilitas.</div>
-
-                            <label class="form-label small fw-semibold">Itinerary</label>
-                            <textarea class="form-control font-monospace" rows="10" wire:model="itineraryTeks"
-                                placeholder="Day 1&#10;18.00 | Penjemputan meeting point&#10;19.00 | Perjalanan ke Banyuwangi&#10;&#10;Day 2&#10;03.00 | Tiba di Banyuwangi"></textarea>
-                            <div class="form-text">
-                                Baris tanpa tanda <code>|</code> dianggap judul hari; baris dengan <code>|</code>
-                                dianggap agenda (<code>jam | kegiatan</code>).
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0">Destinasi yang Dikunjungi</h6>
+                                <span class="badge orcha-hitung">{{ count($destinasi) }} dipilih</span>
                             </div>
+                            <p class="text-muted small mb-3">
+                                Klik destinasi yang masuk paket ini. Yang belum terdaftar bisa ditambah sendiri.
+                            </p>
+
+                            @if ($destinasi)
+                                <div class="orcha-terpilih mb-3">
+                                    @foreach ($destinasi as $urutan => $item)
+                                        <span class="orcha-cip orcha-cip-aktif">
+                                            {{ $item }}
+                                            <button type="button" wire:click="buangDestinasi({{ $urutan }})"
+                                                aria-label="Hapus {{ $item }}">&times;</button>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if ($saranDestinasi)
+                                <div class="orcha-saran mb-3">
+                                    @foreach ($saranDestinasi as $saran)
+                                        @continue(in_array($saran, $destinasi, true))
+                                        <button type="button" class="orcha-cip"
+                                            wire:click="jungkitDestinasi(@js($saran))">
+                                            <i class="bi bi-plus"></i> {{ $saran }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="input-group input-group-lg">
+                                <input type="text" class="form-control" wire:model="destinasiBaru"
+                                    wire:keydown.enter.prevent="tambahDestinasi"
+                                    placeholder="Destinasi lain yang belum ada di daftar...">
+                                <button type="button" class="btn btn-outline-primary" wire:click="tambahDestinasi">
+                                    Tambah
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Fasilitas: daftar yang sering dipakai, tinggal klik --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0">Fasilitas</h6>
+                                <span class="badge orcha-hitung">{{ count($fasilitas) }} dipilih</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Klik untuk memasukkan atau mengeluarkan dari paket.
+                            </p>
+
+                            @if ($fasilitas)
+                                <div class="orcha-terpilih mb-3">
+                                    @foreach ($fasilitas as $urutan => $item)
+                                        <span class="orcha-cip orcha-cip-aktif">
+                                            {{ $item }}
+                                            <button type="button" wire:click="buangFasilitas({{ $urutan }})"
+                                                aria-label="Hapus {{ $item }}">&times;</button>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="orcha-saran mb-3">
+                                @foreach ($saranFasilitas as $saran)
+                                    @continue(in_array($saran, $fasilitas, true))
+                                    <button type="button" class="orcha-cip"
+                                        wire:click="jungkitFasilitas(@js($saran))">
+                                        <i class="bi bi-plus"></i> {{ $saran }}
+                                    </button>
+                                @endforeach
+                            </div>
+
+                            <div class="input-group input-group-lg">
+                                <input type="text" class="form-control" wire:model="fasilitasBaru"
+                                    wire:keydown.enter.prevent="tambahFasilitas"
+                                    placeholder="Fasilitas lain...">
+                                <button type="button" class="btn btn-outline-primary" wire:click="tambahFasilitas">
+                                    Tambah
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Itinerary: baris per agenda, bukan mengetik format sendiri --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold mb-0">Itinerary</h6>
+                                <span class="badge orcha-hitung">{{ count($hari) }} hari</span>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Isi jam dan kegiatannya. Baris kosong tidak ikut tersimpan.
+                            </p>
+
+                            @foreach ($hari as $urutanHari => $satuHari)
+                                <div class="orcha-hari mb-3" wire:key="hari-{{ $urutanHari }}">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span class="orcha-nomor-hari">{{ $urutanHari + 1 }}</span>
+                                        <input type="text" class="form-control form-control-lg fw-semibold"
+                                            wire:model="hari.{{ $urutanHari }}.nama" placeholder="Day 1">
+
+                                        @if (count($hari) > 1)
+                                            <button type="button" class="btn btn-outline-danger rounded-3"
+                                                wire:click="buangHari({{ $urutanHari }})" title="Hapus hari ini">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    @foreach ($satuHari['agenda'] as $urutanAgenda => $agenda)
+                                        <div class="d-flex gap-2 mb-2" wire:key="agenda-{{ $urutanHari }}-{{ $urutanAgenda }}">
+                                            <input type="text" class="form-control form-control-lg orcha-jam"
+                                                wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.jam"
+                                                placeholder="07.00">
+                                            <input type="text" class="form-control form-control-lg"
+                                                wire:model="hari.{{ $urutanHari }}.agenda.{{ $urutanAgenda }}.kegiatan"
+                                                placeholder="Penjemputan di meeting point">
+                                            <button type="button" class="btn btn-light border rounded-3"
+                                                wire:click="buangAgenda({{ $urutanHari }}, {{ $urutanAgenda }})"
+                                                title="Hapus baris">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    @endforeach
+
+                                    <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol mt-1"
+                                        wire:click="tambahAgenda({{ $urutanHari }})">
+                                        <i class="bi bi-plus-lg"></i>
+                                        <span>Tambah kegiatan</span>
+                                    </button>
+                                </div>
+                            @endforeach
+
+                            <button type="button" class="btn btn-outline-primary rounded-3 orcha-tombol w-100"
+                                wire:click="tambahHari">
+                                <i class="bi bi-calendar-plus"></i>
+                                <span>Tambah Hari</span>
+                            </button>
                         </div>
                     </div>
                 </div>
