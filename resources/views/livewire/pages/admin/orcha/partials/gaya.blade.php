@@ -297,6 +297,38 @@
         font-size: .9rem;
     }
 
+    .orcha-otomatis {
+        background: #eafaf1;
+        color: #14683f;
+        font-weight: 700;
+        font-size: .62rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .orcha-hitung-ulang {
+        display: inline-flex;
+        align-items: center;
+        gap: .25rem;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        color: #1d6fa5;
+        font-size: .72rem;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    .orcha-hitung-ulang:hover {
+        color: #0f2d4a;
+    }
+
+    .orcha-hitung-ulang i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+    }
+
     .orcha-hitung {
         background: #eef6fb;
         color: #0f2d4a;

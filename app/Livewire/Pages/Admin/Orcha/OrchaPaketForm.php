@@ -31,6 +31,13 @@ class OrchaPaketForm extends Component
 
     public string $durasi = '';
 
+    /**
+     * Selama benar, durasi ikut tanggal berangkat/pulang. Begitu admin
+     * mengetiknya sendiri, hitungan berhenti mengganggu — sebagian paket
+     * memang perlu tulisan khusus, mis. "2 Hari 1 Malam (opsional extend)".
+     */
+    public bool $durasiOtomatis = true;
+
     public string $tanggalBerangkat = '';
 
     public string $tanggalPulang = '';
@@ -142,6 +149,78 @@ class OrchaPaketForm extends Component
         $this->tautanPublik = $isi['tautan_publik'] ?? null;
 
         $this->hari = $this->dariItinerary($isi['itinerary'] ?? []);
+        $this->durasiOtomatis = $this->durasi === '' || $this->durasi === $this->durasiTerhitung();
+    }
+
+    /* -------------------------------- DURASI -------------------------------- */
+
+    public function updatedTanggalBerangkat(): void
+    {
+        $this->hitungDurasiBila();
+    }
+
+    public function updatedTanggalPulang(): void
+    {
+        $this->hitungDurasiBila();
+    }
+
+    /** Admin mengetik sendiri: hitungan berhenti menimpa. */
+    public function updatedDurasi(): void
+    {
+        $this->durasiOtomatis = $this->durasi === $this->durasiTerhitung();
+    }
+
+    /** Tombol "hitung ulang" — mengembalikan durasi ke hasil hitungan. */
+    public function hitungDurasi(): void
+    {
+        $this->durasiOtomatis = true;
+        $this->durasi = $this->durasiTerhitung();
+    }
+
+    private function hitungDurasiBila(): void
+    {
+        if ($this->durasiOtomatis) {
+            $this->durasi = $this->durasiTerhitung();
+        }
+    }
+
+    /**
+     * "3 Hari 2 Malam" dari selisih tanggal. Bila tanggalnya belum diisi,
+     * jumlah hari di itinerary dipakai sebagai perkiraan.
+     */
+    public function durasiTerhitung(): string
+    {
+        $hari = $this->jumlahHari();
+
+        if ($hari < 1) {
+            return '';
+        }
+
+        $malam = $hari - 1;
+
+        return $malam > 0 ? "{$hari} Hari {$malam} Malam" : '1 Hari';
+    }
+
+    private function jumlahHari(): int
+    {
+        if ($this->tanggalBerangkat !== '' && $this->tanggalPulang !== '') {
+            try {
+                $berangkat = \Carbon\Carbon::parse($this->tanggalBerangkat)->startOfDay();
+                $pulang = \Carbon\Carbon::parse($this->tanggalPulang)->startOfDay();
+            } catch (\Throwable) {
+                return 0;
+            }
+
+            // Tanggal pulang sebelum berangkat berarti isiannya belum benar;
+            // validasi yang menegur, bukan hitungan ini.
+            return $pulang->lt($berangkat) ? 0 : $berangkat->diffInDays($pulang) + 1;
+        }
+
+        // Belum ada tanggal: pakai hari yang sudah ada isinya di itinerary.
+        return collect($this->hari)
+            ->filter(fn ($satuHari) => collect($satuHari['agenda'] ?? [])
+                ->contains(fn ($item) => trim($item['kegiatan'] ?? '') !== ''))
+            ->count();
     }
 
     /* ------------------------- DESTINASI & FASILITAS ------------------------- */

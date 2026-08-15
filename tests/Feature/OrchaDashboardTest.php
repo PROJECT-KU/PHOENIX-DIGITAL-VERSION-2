@@ -426,3 +426,62 @@ test('testimoni butuh isi dan rating', function () {
         ->call('simpan')
         ->assertHasErrors(['isi']);
 });
+
+/* ------------------------------- DURASI ------------------------------- */
+
+test('durasi terisi sendiri dari tanggal berangkat dan pulang', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('tanggalBerangkat', '2026-10-19')
+        ->set('tanggalPulang', '2026-10-21')
+        ->assertSet('durasi', '3 Hari 2 Malam')
+        // Pulang di hari yang sama = trip sehari
+        ->set('tanggalPulang', '2026-10-19')
+        ->assertSet('durasi', '1 Hari');
+});
+
+test('tanggal pulang sebelum berangkat tidak menghasilkan durasi ngawur', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('tanggalBerangkat', '2026-10-21')
+        ->set('tanggalPulang', '2026-10-19')
+        ->assertSet('durasi', '');
+});
+
+test('tanpa tanggal, durasi memakai jumlah hari itinerary yang ada isinya', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('hari', [
+            ['nama' => 'Day 1', 'agenda' => [['jam' => '07.00', 'kegiatan' => 'Berangkat']]],
+            ['nama' => 'Day 2', 'agenda' => [['jam' => '08.00', 'kegiatan' => 'Pulang']]],
+            // Hari kosong tidak ikut dihitung
+            ['nama' => 'Day 3', 'agenda' => [['jam' => '', 'kegiatan' => '']]],
+        ])
+        ->call('hitungDurasi')
+        ->assertSet('durasi', '2 Hari 1 Malam');
+});
+
+test('durasi yang ditulis sendiri tidak ditimpa hitungan', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class)
+        ->set('tanggalBerangkat', '2026-10-19')
+        ->set('tanggalPulang', '2026-10-21')
+        ->assertSet('durasi', '3 Hari 2 Malam')
+        ->set('durasi', '3 Hari 2 Malam (opsional extend)')
+        ->assertSet('durasiOtomatis', false)
+        // Mengubah tanggal tidak lagi menimpa tulisan admin
+        ->set('tanggalPulang', '2026-10-22')
+        ->assertSet('durasi', '3 Hari 2 Malam (opsional extend)')
+        // Sampai diminta menghitung ulang
+        ->call('hitungDurasi')
+        ->assertSet('durasi', '4 Hari 3 Malam')
+        ->assertSet('durasiOtomatis', true);
+});

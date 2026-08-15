@@ -36,22 +36,39 @@
                                 </div>
 
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold">Durasi</label>
-                                    <input type="text" class="form-control" wire:model="durasi" value="{{ $durasi }}"
-                                        placeholder="3 Hari 2 Malam">
+                                    <label class="form-label small fw-semibold d-flex align-items-center gap-2">
+                                        <span>Durasi</span>
+                                        @if ($durasiOtomatis)
+                                            <span class="badge orcha-otomatis">otomatis</span>
+                                        @else
+                                            <button type="button" class="orcha-hitung-ulang"
+                                                wire:click="hitungDurasi" title="Kembalikan ke hasil hitungan">
+                                                <i class="bi bi-arrow-repeat"></i> hitung ulang
+                                            </button>
+                                        @endif
+                                    </label>
+                                    <input type="text" class="form-control" wire:model.blur="durasi"
+                                        value="{{ $durasi }}" placeholder="3 Hari 2 Malam">
+                                    <div class="form-text">
+                                        @if ($durasiOtomatis)
+                                            Terisi sendiri dari tanggal berangkat &amp; pulang. Boleh ditimpa.
+                                        @else
+                                            Ditulis sendiri, tidak ikut tanggal.
+                                        @endif
+                                    </div>
                                 </div>
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Tanggal berangkat</label>
                                     <input type="date" class="form-control @error('tanggalBerangkat') is-invalid @enderror"
-                                        wire:model="tanggalBerangkat" value="{{ $tanggalBerangkat }}">
+                                        wire:model.live="tanggalBerangkat" value="{{ $tanggalBerangkat }}">
                                     @error('tanggalBerangkat') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Tanggal pulang</label>
                                     <input type="date" class="form-control @error('tanggalPulang') is-invalid @enderror"
-                                        wire:model="tanggalPulang" value="{{ $tanggalPulang }}">
+                                        wire:model.live="tanggalPulang" value="{{ $tanggalPulang }}">
                                     @error('tanggalPulang') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
 
