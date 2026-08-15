@@ -1,22 +1,3 @@
-@if (session('orcha_sukses'))
-    {{-- Pesan titipan dari halaman sebelumnya. Dijalankan langsung, sekali,
-         dan hanya menunggu SweetAlert siap — bukan menunggu peristiwa yang
-         bisa saja sudah lewat sebelum skrip ini sempat mendaftar. --}}
-    <script>
-        (function () {
-            var pesan = @js(session('orcha_sukses'));
-            var sisaCoba = 40;
-
-            function coba() {
-                if (window.orchaSukses && window.orchaSukses(pesan)) return;
-                if (sisaCoba-- > 0) setTimeout(coba, 100);
-            }
-
-            coba();
-        })();
-    </script>
-@endif
-
 {{--
     Pemberitahuan untuk halaman Orcha.
 
@@ -62,6 +43,32 @@
 
         Livewire.on('order-updated', (e) => {
             window.orchaSukses(ambilPesan(e, 'Berhasil diperbarui.'));
+        });
+
+        /* Simpan lalu berpindah halaman.
+
+           Popupnya ditampilkan DULU di halaman ini sampai selesai, baru
+           berpindah. Sebelumnya berpindah lebih dulu, dan popup yang terlanjur
+           tampil ikut terbuang saat isi halaman ditukar — jadi hanya sempat
+           terlihat sekejap sebelum teksnya muncul. */
+        Livewire.on('orcha-sukses-pindah', (e) => {
+            const rincian = Array.isArray(e) ? e[0] : e;
+            const tujuan = rincian?.url;
+
+            const pindah = () => { if (tujuan) window.location.href = tujuan; };
+
+            if (typeof Swal === 'undefined') return pindah();
+
+            Swal.fire({
+                title: 'Berhasil',
+                text: ambilPesan(e, 'Berhasil disimpan.'),
+                icon: 'success',
+                timer: 2600,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                ...glossy,
+            }).then(pindah);
         });
 
         Livewire.on('toast-error', (e) => {

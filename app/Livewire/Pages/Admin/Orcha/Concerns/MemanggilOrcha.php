@@ -113,23 +113,24 @@ trait MemanggilOrcha
      *
      * @param  \Illuminate\Http\UploadedFile|null  $gambar
      */
-    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null, bool $lintasHalaman = false): bool
+    /**
+     * Simpan data baru atau perubahan (boleh dengan gambar).
+     *
+     * Bila $tujuan diisi, pemberitahuan sukses ditampilkan DULU di halaman
+     * ini, baru berpindah setelah popupnya menutup. Sebelumnya urutannya
+     * terbalik — berpindah dulu lalu menitipkan pesan lewat sesi — dan
+     * popupnya ikut terbuang saat isi halaman ditukar, jadi hanya sempat
+     * terlihat sekejap tanpa teks.
+     *
+     * @param  \Illuminate\Http\UploadedFile|null  $gambar
+     */
+    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null, ?string $tujuan = null): bool
     {
         try {
             $this->orcha()->kirim($jalur, $data, $gambar);
 
-            // Setelah menyimpan, halaman formulir berpindah ke daftar — peristiwa
-            // Livewire ikut hilang saat berpindah, jadi pesannya dititipkan ke
-            // sesi.
-            //
-            // Kuncinya sengaja BUKAN 'success': penampil bawaan di
-            // layouts/app.blade.php memanggil dirinya dua kali (saat window
-            // load dan saat livewire:navigated), sehingga popupnya tertutup
-            // lalu terbuka lagi dan terlihat cuma sekejap. Dengan kunci
-            // sendiri, yang menampilkan hanya skrip halaman Orcha — sekali,
-            // dengan tampilan yang sama persis dengan pemberitahuan hapus.
-            $lintasHalaman
-                ? session()->flash('orcha_sukses', $pesanSukses)
+            $tujuan
+                ? $this->dispatch('orcha-sukses-pindah', message: $pesanSukses, url: $tujuan)
                 : $this->dispatch('order-updated', message: $pesanSukses);
 
             return true;

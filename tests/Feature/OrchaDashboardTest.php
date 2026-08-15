@@ -587,7 +587,7 @@ test('diskon yang ditulis sendiri tidak ditimpa hitungan', function () {
 
 /* --------------------------- PESAN SUKSES --------------------------- */
 
-test('pesan sukses dititipkan lewat kunci sesi yang dibaca layout lemon', function () {
+test('setelah simpan, pemberitahuan dan tujuan pindah dikirim bersama', function () {
     Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
 
     Livewire::actingAs(adminOrcha())
@@ -596,40 +596,44 @@ test('pesan sukses dititipkan lewat kunci sesi yang dibaca layout lemon', functi
         ->set('hargaTeks', '1000000')
         ->call('simpan')
         ->assertHasNoErrors()
-        ->assertRedirect(route('admin.orcha.paket'));
-
-    // Kuncinya sengaja bukan 'success': penampil bawaan layout memanggil
-    // dirinya dua kali, sehingga popupnya tertutup lalu terbuka lagi.
-    expect(session('orcha_sukses'))->toBe('Paket wisata ditambahkan.');
+        // Sengaja TIDAK redirect dari server: perpindahan dikerjakan skrip
+        // setelah popupnya menutup, supaya popup tidak ikut terbuang saat
+        // isi halaman ditukar.
+        ->assertNoRedirect()
+        ->assertDispatched('orcha-sukses-pindah',
+            message: 'Paket wisata ditambahkan.',
+            url: route('admin.orcha.paket'));
 });
 
-test('pemberitahuan sukses dari sesi dan dari peristiwa memakai satu kode yang sama', function () {
+test('mengubah paket juga menampilkan pemberitahuan sebelum berpindah', function () {
+    Http::fake(['*' => Http::response(['data' => ['nama' => 'Lama', 'harga' => 1000000], 'pesan' => 'ok'])]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPaketForm::class, ['paket' => 7])
+        ->set('nama', 'Open Trip Diubah')
+        ->set('hargaTeks', '1200000')
+        ->call('simpan')
+        ->assertHasNoErrors()
+        ->assertDispatched('orcha-sukses-pindah', message: 'Paket wisata diperbarui.');
+});
+
+test('popup menutup dulu, baru halaman berpindah', function () {
     $skrip = file_get_contents(base_path(
         'resources/views/livewire/pages/admin/orcha/partials/skrip.blade.php'
     ));
 
-    // Satu fungsi dipakai keduanya, jadi lamanya tampil tidak bisa berbeda
-    expect($skrip)->toContain('window.orchaSukses')
-        ->and(substr_count($skrip, 'timer: 2600'))->toBe(1)
-        ->and($skrip)->toContain("session('orcha_sukses')");
+    // Perpindahan menempel pada .then(...) milik Swal, bukan dijalankan
+    // langsung — itulah yang menjamin popupnya sempat terbaca.
+    expect($skrip)->toContain("Livewire.on('orcha-sukses-pindah'")
+        ->and($skrip)->toContain('}).then(pindah);')
+        ->and($skrip)->toContain('allowOutsideClick: false');
 
-    // Kunci 'success' tidak dipakai supaya penampil bawaan layout — yang
-    // memanggil dirinya dua kali — tidak ikut menyalakannya.
+    // Tidak ada lagi jalur titip-sesi yang dulu ikut ditampilkan penampil
+    // bawaan layout sampai popupnya tertutup dua kali.
     $trait = file_get_contents(base_path(
         'app/Livewire/Pages/Admin/Orcha/Concerns/MemanggilOrcha.php'
     ));
-    expect($trait)->toContain("flash('orcha_sukses'")
-        ->and($trait)->not->toContain("flash('success'");
-});
-
-test('halaman daftar menampilkan pesan titipan itu', function () {
-    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
-
-    $this->actingAs(adminOrcha())
-        ->withSession(['orcha_sukses' => 'Paket wisata ditambahkan.'])
-        ->get('/admin/orcha/paket-wisata')
-        ->assertOk()
-        ->assertSee('Paket wisata ditambahkan.');
+    expect($trait)->not->toContain('flash(');
 });
 
 test('kendaraan baru juga menitipkan pesannya', function () {
@@ -642,9 +646,9 @@ test('kendaraan baru juga menitipkan pesannya', function () {
         ->set('tarifHariTeks', '350000')
         ->call('simpan')
         ->assertHasNoErrors()
-        ->assertRedirect(route('admin.orcha.armada'));
-
-    expect(session('orcha_sukses'))->toBe('Kendaraan ditambahkan.');
+        ->assertDispatched('orcha-sukses-pindah',
+            message: 'Kendaraan ditambahkan.',
+            url: route('admin.orcha.armada'));
 });
 
 /* --------------------------- FORMAT RUPIAH --------------------------- */

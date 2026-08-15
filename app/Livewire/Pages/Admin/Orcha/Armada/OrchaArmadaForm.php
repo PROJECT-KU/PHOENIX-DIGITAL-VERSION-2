@@ -160,16 +160,11 @@ class OrchaArmadaForm extends Component
             'tersedia' => $this->tersedia,
         ];
 
-        $berhasil = $this->ubah
-            ? $this->kirimData("/kendaraan/{$this->kendaraanId}", $data, 'Kendaraan diperbarui.', $this->gambar)
-            : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, true);
-
-        if ($berhasil) {
-            // Sengaja memuat ulang halaman sepenuhnya, bukan wire:navigate:
-            // pemberitahuan sukses dititipkan lewat sesi, dan muat ulang biasa
-            // menjamin skrip penampilnya benar-benar dijalankan peramban.
-            $this->redirectRoute('admin.orcha.armada');
-        }
+        // Tujuan diteruskan supaya pemberitahuan sukses tampil utuh dulu di
+        // halaman ini, baru berpindah ke daftar setelah popupnya menutup.
+        $this->ubah
+            ? $this->kirimData("/kendaraan/{$this->kendaraanId}", $data, 'Kendaraan diperbarui.', $this->gambar, route('admin.orcha.armada'))
+            : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, route('admin.orcha.armada'));
     }
 
     public function render()

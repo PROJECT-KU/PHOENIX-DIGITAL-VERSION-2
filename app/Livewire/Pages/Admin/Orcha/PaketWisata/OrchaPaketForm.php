@@ -483,16 +483,11 @@ class OrchaPaketForm extends Component
             'itinerary_teks' => $this->keTeksItinerary(),
         ];
 
-        $berhasil = $this->ubah
-            ? $this->kirimData("/paket-wisata/{$this->paketId}", $data, 'Paket wisata diperbarui.', $this->gambar)
-            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, true);
-
-        if ($berhasil) {
-            // Sengaja memuat ulang halaman sepenuhnya, bukan wire:navigate:
-            // pemberitahuan sukses dititipkan lewat sesi, dan muat ulang biasa
-            // menjamin skrip penampilnya benar-benar dijalankan peramban.
-            $this->redirectRoute('admin.orcha.paket');
-        }
+        // Tujuan diteruskan supaya pemberitahuan sukses tampil utuh dulu di
+        // halaman ini, baru berpindah ke daftar setelah popupnya menutup.
+        $this->ubah
+            ? $this->kirimData("/paket-wisata/{$this->paketId}", $data, 'Paket wisata diperbarui.', $this->gambar, route('admin.orcha.paket'))
+            : $this->kirimData('/paket-wisata', $data, 'Paket wisata ditambahkan.', $this->gambar, route('admin.orcha.paket'));
     }
 
     /** Cerminan aturan tayang di Orcha, supaya akibat pilihan langsung terlihat. */
