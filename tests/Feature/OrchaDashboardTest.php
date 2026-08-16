@@ -822,10 +822,8 @@ test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
     $tautan = $komponen->instance()->tautanWa($baris);
     $pesan = $komponen->instance()->pesanWa($baris);
 
-    // Nomor 08xx harus jadi 62xx; wa.me menolak awalan nol
+    // Nomor 08xx harus jadi 62xx; WhatsApp menolak awalan nol
     expect($tautan)->toStartWith('https://api.whatsapp.com/send?phone=6281234567890&text=')
-        // Emoji disandikan sebagai UTF-8 persen, bukan dibuang atau jadi "?"
-        ->and($tautan)->toContain(rawurlencode('👋'))
         // Spasi TIDAK boleh jadi "+": WhatsApp menampilkan tanda plus itu apa
         // adanya, dan kalimatnya jadi penuh plus alih-alih spasi
         ->and($tautan)->not->toContain('+')
@@ -835,14 +833,34 @@ test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
     expect($pesan)->toContain('Rp 2.002.000')
         ->and($pesan)->toContain('Budi Santoso')
         ->and($pesan)->toContain('OT-1508-A7K3');
+});
 
-    // Emoji yang dipakai harus yang sudah lama ada di Unicode. Yang terbaru
-    // digambar sebagai kotak kosong di ponsel lama — dan pemakai ponsel lama
-    // justru yang paling perlu membaca kabar ini.
-    expect($pesan)->not->toContain('🧾')
-        // Penanda ragam (U+FE0F) tidak kelihatan tapi ikut disandikan, dan
-        // justru bagian itu yang paling sering rusak di perjalanan.
-        ->and($pesan)->not->toContain("\u{FE0F}");
+test('emoji tidak pernah ikut melewati respons server', function () {
+    $baris = [
+        'kode' => 'OT-1508-A7K3', 'nominal_formatted' => 'Rp 858.000', 'status' => 'diterima',
+        'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi', 'whatsapp' => '081234567890', 'keterangan' => null,
+            'tagihan' => ['lunas' => true]],
+    ];
+
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+    $komponen = Livewire::actingAs(adminOrcha())->test(OrchaPembayaranList::class)->instance();
+
+    $emoji = '/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u';
+
+    // Inilah inti perbaikannya. Empat putaran percobaan menunjukkan sisi kami
+    // bersih di tiap pemeriksaan, tapi yang sampai ke WhatsApp tetap tanda
+    // tanya — jadi emojinya tidak dikirim sama sekali. Server mengirim
+    // penanda, peramban yang merakitnya, persis seperti halaman detail order.
+    expect($komponen->pesanWa($baris))->not->toMatch($emoji)
+        ->and($komponen->pesanWa($baris))->toContain('[[E:1F44B]]')
+        // Tautannya pun bersih: yang tertulis di href adalah cadangan tanpa
+        // emoji, untuk keadaan ketika skrip perakitnya tidak sempat jalan.
+        ->and($komponen->tautanWa($baris))->not->toMatch($emoji)
+        ->and($komponen->tautanWa($baris))->not->toContain('%5B%5BE')
+        // Cadangan itu harus tetap kalimat utuh, bukan penanda mentah
+        ->and($komponen->pesanWaPolos($baris))->not->toContain('[[E:')
+        ->and($komponen->pesanWaPolos($baris))->toContain('Kode pesanan: *OT-1508-A7K3*');
 });
 
 test('emoji kabar whatsapp bisa dimatikan bila di lapangan tetap rusak', function () {
@@ -861,7 +879,7 @@ test('emoji kabar whatsapp bisa dimatikan bila di lapangan tetap rusak', functio
 
     // Tanpa emoji pun kabarnya harus tetap utuh dan terbaca: yang menyusun
     // bentuknya adalah tebal bawaan WhatsApp dan baris baru, bukan emojinya.
-    expect($tanpa)->not->toMatch('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u')
+    expect($tanpa)->not->toContain('[[E:')
         ->and($tanpa)->toContain('Kode pesanan: *OT-1508-A7K3*')
         ->and($tanpa)->toContain('LUNAS')
         ->and($tanpa)->toContain('Halo Budi');
@@ -892,7 +910,7 @@ test('pesan whatsapp ikut tersalin supaya emoji tidak bergantung tautan', functi
         ->get('/admin/orcha/pembayaran')
         ->assertOk()
         ->assertSee('data-wa-pesan', false)
-        ->assertSee('👋')
+        ->assertSee('[[E:1F44B]]', false)
         ->assertSee('Bila emojinya berantakan di WhatsApp, tempel saja');
 });
 

@@ -361,7 +361,10 @@ Bukti Pembayaran Orcha || lemon
                                     <summary>
                                         <i class="bi bi-eye"></i> Lihat pesan yang akan dikirim
                                     </summary>
-                                    <pre>{{ $this->pesanWa($terpilih) }}</pre>
+                                    {{-- Isinya diisi skrip perakit emoji. Cadangannya teks
+                                         tanpa emoji, supaya kotak ini tidak pernah kosong
+                                         maupun menampilkan penanda mentah. --}}
+                                    <pre data-wa-pratayang="{{ $this->pesanWa($terpilih) }}">{{ $this->pesanWaPolos($terpilih) }}</pre>
                                     <p class="mb-0">
                                         Emoji di atas tampil benar? Berarti pesannya memang benar.
                                         Bila di WhatsApp berubah jadi tanda tanya, pakai

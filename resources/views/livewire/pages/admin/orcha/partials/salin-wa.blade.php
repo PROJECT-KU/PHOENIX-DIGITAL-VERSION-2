@@ -45,6 +45,34 @@
     </style>
 
     <script>
+        // Perakit emoji.
+        //
+        // Server mengirim penanda "[[E:1F44B]]", bukan emojinya langsung, lalu
+        // emojinya dirakit di sini dengan String.fromCodePoint. Dengan begitu
+        // emoji tidak pernah ikut melewati respons server — dan justru di
+        // perjalanan itulah ia berubah jadi tanda tanya.
+        //
+        // Polanya menyalin halaman detail order, yang sudah lama memakai cara
+        // ini dengan alasan yang sama tertulis di komentarnya.
+        window.orchaRakitEmoji = function (teks) {
+            return (teks || '').replace(/\[\[E:([0-9A-F]+)\]\]/g,
+                (_, kode) => String.fromCodePoint(parseInt(kode, 16)));
+        };
+
+        // Pratayang di lembar cek pembayaran ikut dirakit, supaya yang dilihat
+        // admin sama persis dengan yang akan dikirim — termasuk emojinya.
+        const orchaGambarPratayang = () => {
+            document.querySelectorAll('[data-wa-pratayang]').forEach(function (kotak) {
+                kotak.textContent = window.orchaRakitEmoji(kotak.dataset.waPratayang);
+            });
+        };
+
+        document.addEventListener('livewire:navigated', orchaGambarPratayang);
+        document.addEventListener('DOMContentLoaded', orchaGambarPratayang);
+        // Livewire menggambar ulang lembarnya tiap kali isian berubah.
+        document.addEventListener('livewire:update', orchaGambarPratayang);
+        orchaGambarPratayang();
+
         // Dipasang sekali; pendengarnya di dokumen supaya tidak ikut hilang
         // tiap kali Livewire menggambar ulang daftarnya.
         if (! window.orchaSalinSiap) {
@@ -56,8 +84,17 @@
                 const tautan = e.target.closest('[data-wa-pesan]');
                 if (! tautan) return;
 
-                const pesan = tautan.dataset.waPesan;
+                const pesan = window.orchaRakitEmoji(tautan.dataset.waPesan);
                 if (! pesan) return;
+
+                // Tautannya disusun ulang di sini dengan pesan beremoji.
+                // Yang tertulis di href hanyalah cadangan tanpa emoji, untuk
+                // keadaan ketika skrip ini tidak sempat jalan.
+                if (tautan.tagName === 'A' && tautan.href.includes('api.whatsapp.com')) {
+                    const nomor = new URL(tautan.href).searchParams.get('phone') || '';
+                    tautan.href = 'https://api.whatsapp.com/send?phone=' + nomor
+                        + '&text=' + encodeURIComponent(pesan);
+                }
 
                 // Tautannya tetap dibiarkan terbuka seperti biasa; penyalinan
                 // ini tambahan, bukan pengganti.
