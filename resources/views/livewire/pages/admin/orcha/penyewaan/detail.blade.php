@@ -7,7 +7,11 @@ Detail Sewa Kendaraan || lemon
     $rp = fn ($angka) => 'Rp ' . number_format((int) $angka, 0, ',', '.');
 
     $tenggat = ($sewa['jadwal_selesai'] ?? null) ? \Carbon\Carbon::parse($sewa['jadwal_selesai']) : null;
-    $kerusakan = $sewa['kerusakan_baru'] ?? [];
+    // Perbandingan kondisi awal-akhir kosong lagi setelah unit diperiksa
+    // ulang: keadaan barunya sudah jadi patokan. Rincian yang sudah ditetapkan
+    // admin tetap ada, dan itulah yang masih ditagihkan — jadi dipakai sebagai
+    // gantinya supaya halaman ini tidak menampilkan denda tanpa sebab.
+    $kerusakan = $sewa['kerusakan_baru'] ?: ($sewa['rincian_denda'] ?? []);
 @endphp
 
 <div>
@@ -136,8 +140,15 @@ Detail Sewa Kendaraan || lemon
                         <strong>Kerusakan baru selama masa sewa</strong>
                         <div style="font-size:.88rem" class="mt-1">
                             @foreach ($kerusakan as $satu)
-                                <div>{{ $satu['bagian'] }}: {{ strtolower($satu['dari']) }} →
-                                    <strong>{{ strtolower($satu['jadi']) }}</strong></div>
+                                <div>
+                                    {{ $satu['bagian'] }}
+                                    {{-- Baris ketetapan lama belum tentu menyimpan perubahan
+                                         kondisinya; namanya saja sudah cukup menjelaskan. --}}
+                                    @if (($satu['dari'] ?? null) && ($satu['jadi'] ?? null))
+                                        : {{ strtolower($satu['dari']) }} →
+                                        <strong>{{ strtolower($satu['jadi']) }}</strong>
+                                    @endif
+                                </div>
                             @endforeach
                         </div>
                         <div style="font-size:.82rem" class="mt-1">

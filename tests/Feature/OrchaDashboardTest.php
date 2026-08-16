@@ -5,9 +5,9 @@ use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
-use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
+use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Models\EmployeeDetail;
 use App\Models\Permission;
 use App\Models\Role;
@@ -992,7 +992,7 @@ test('daftar bukti pembayaran juga memakai pratinjau', function () {
         ->assertSee('data-bukti=', false)
         ->assertSee('orcha-pratinjau', false)
         // Tombolnya bukan tautan yang membuka tab baru
-        ->assertDontSee('target="_blank" rel="noopener"' . "\n" . '                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat"', false);
+        ->assertDontSee('target="_blank" rel="noopener"'."\n".'                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat"', false);
 });
 
 /* ------------------- EKSPOR EXCEL & PDF ------------------- */
@@ -1071,14 +1071,14 @@ test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
     Http::fake([
         '*/pendaftaran/7/riwayat-kesehatan' => Http::response(['data' => [
             ['nama_peserta' => 'Siti Aminah', 'tingkat_perhatian' => 'tinggi',
-             'alasan_perhatian' => ['Gangguan jantung'], 'alasan_catatan' => [],
-             'kontak_darurat' => ['nama' => 'Budi', 'hubungan' => 'Suami', 'hp' => '0812']],
+                'alasan_perhatian' => ['Gangguan jantung'], 'alasan_catatan' => [],
+                'kontak_darurat' => ['nama' => 'Budi', 'hubungan' => 'Suami', 'hp' => '0812']],
             ['nama_peserta' => 'Rina', 'tingkat_perhatian' => 'sedang',
-             'alasan_perhatian' => [], 'alasan_catatan' => ['Pantangan makanan: Tidak suka pedas'],
-             'kontak_darurat' => ['nama' => 'Ani', 'hubungan' => 'Ibu', 'hp' => '0813']],
+                'alasan_perhatian' => [], 'alasan_catatan' => ['Pantangan makanan: Tidak suka pedas'],
+                'kontak_darurat' => ['nama' => 'Ani', 'hubungan' => 'Ibu', 'hp' => '0813']],
             ['nama_peserta' => 'Joko', 'tingkat_perhatian' => 'aman',
-             'alasan_perhatian' => [], 'alasan_catatan' => [],
-             'kontak_darurat' => ['nama' => 'Sri', 'hubungan' => 'Istri', 'hp' => '0814']],
+                'alasan_perhatian' => [], 'alasan_catatan' => [],
+                'kontak_darurat' => ['nama' => 'Sri', 'hubungan' => 'Istri', 'hp' => '0814']],
         ]]),
         '*/pendaftaran/7' => Http::response(balasanDetail()),
     ]);
@@ -1194,6 +1194,63 @@ test('serah terima diteruskan ke orcha lalu lembarnya menutup', function () {
     Http::assertSent(fn ($permintaan) => str_contains($permintaan->url(), '/serah-terima')
         && $permintaan['denda_kerusakan'] === 300000
         && $permintaan['catatan_denda'] === 'Spion kanan retak');
+});
+
+test('rincian yang sudah ditetapkan tetap tampil walau usulannya sudah habis', function () {
+    // Sesudah unit diperiksa, keadaan barunya jadi patokan dan selisihnya nol,
+    // jadi Orcha tidak lagi mengusulkan apa pun. Dendanya sendiri sudah
+    // ditagihkan — kalau baris-barisnya ikut hilang, admin melihat angka tanpa
+    // alasan, dan alasan itulah yang ditanya penyewa.
+    $baris = balasanSewa([
+        'rincian_denda_kerusakan' => [],
+        // Unitnya kembali tepat waktu, supaya yang diuji hanya soal kerusakan
+        'terlambat' => false, 'terlambat_menit' => 0, 'denda_keterlambatan_usulan' => 0,
+        'denda_kerusakan' => 450000, 'total_denda' => 450000, 'total_tagihan' => 950000,
+        'rincian_denda' => [
+            ['bagian' => 'Bodi depan & bemper', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 250000],
+            ['bagian' => 'Bodi samping kiri', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 200000],
+        ],
+    ]);
+
+    Http::fake(['*/rujukan' => Http::response(rujukanSewa()), '*' => Http::response($baris)]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', $baris['data'][0])
+        ->assertSee('Bodi depan & bemper')
+        ->assertSee('Bodi samping kiri')
+        // Disebut apa adanya: ini ketetapan yang sudah ditagihkan, bukan usulan
+        ->assertSee('Denda kerusakan yang sudah ditetapkan')
+        ->assertDontSee('Usulan denda kerusakan')
+        // Dan tidak dituduh belum tersimpan, karena memang sudah
+        ->assertDontSee('Angka di bawah ini belum tersimpan')
+        ->assertSet('biayaKerusakan.bodi_depan_bemper', '250.000');
+});
+
+test('rincian denda yang ditetapkan ikut terkirim saat serah terima disimpan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*/serah-terima' => Http::response(['data' => [], 'pesan' => 'ok']),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    $baris = balasanSewa(['rincian_denda_kerusakan' => [
+        ['kunci' => 'bodi_depan', 'bagian' => 'Bodi depan & bemper',
+            'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 250000],
+    ]])['data'][0];
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', $baris)
+        // Nota bengkelnya ternyata lebih mahal dari daftar tarif
+        ->set('biayaKerusakan.bodi_depan', '400.000')
+        ->call('simpanSerahTerima');
+
+    // Yang disimpan angka di layar, bukan tarif usulannya — kalau berbeda,
+    // rincian yang ditunjukkan ke penyewa tidak cocok dengan yang ditagih.
+    Http::assertSent(fn ($permintaan) => ! str_contains($permintaan->url(), '/serah-terima')
+        || ($permintaan['rincian_denda'][0]['biaya'] === 400000
+            && $permintaan['rincian_denda'][0]['bagian'] === 'Bodi depan & bemper'));
 });
 
 test('tombol kwitansi tersedia tanpa izin data kesehatan', function () {

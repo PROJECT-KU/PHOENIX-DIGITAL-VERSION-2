@@ -266,8 +266,22 @@ Sewa Kendaraan Masuk || lemon
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold">Foto berkas jaminan (KTP/SIM)</label>
                                 <div class="d-flex gap-2">
-                                    <input type="file" class="form-control" accept="image/*"
+                                    {{-- wire:ignore.self supaya isian berkasnya tidak digambar
+                                         ulang saat Livewire menyegarkan bagian lain — kalau
+                                         digambar ulang, berkas hasil jepretan yang baru
+                                         dimasukkan ikut hilang sebelum sempat terunggah. --}}
+                                    <input type="file" id="orcha-jaminan" class="form-control" accept="image/*"
                                         wire:model="berkasJaminan">
+
+                                    {{-- Kamera dibuka sendiri lewat peramban. Isian berkas biasa
+                                         hanya membuka pemilih berkas; di laptop tidak ada jalan
+                                         ke kamera sama sekali, padahal admin di loket memang
+                                         ingin memotret KTP saat itu juga. --}}
+                                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                        data-kamera-untuk="orcha-jaminan" title="Ambil foto lewat kamera perangkat">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </button>
+
                                     <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil"
                                         wire:click="simpanJaminan" wire:loading.attr="disabled"
                                         @disabled(! $berkasJaminan)>
@@ -376,7 +390,15 @@ Sewa Kendaraan Masuk || lemon
                             @if (! empty($sewa['rincian_denda_kerusakan']))
                                 <div class="orcha-alasan orcha-alasan-tinggi mt-2">
                                     <span class="orcha-label-kecil" style="color:#b91c1c">
-                                        Usulan denda kerusakan — dari hasil pemeriksaan
+                                        {{-- Sesudah unit diperiksa ulang, keadaan barunya jadi
+                                             patokan dan tidak ada lagi selisih untuk diusulkan.
+                                             Yang tampil sejak itu adalah ketetapan yang sudah
+                                             ditagihkan — dan itu perlu disebut apa adanya. --}}
+                                        @if ($dariKetetapan)
+                                            Denda kerusakan yang sudah ditetapkan
+                                        @else
+                                            Usulan denda kerusakan — dari hasil pemeriksaan
+                                        @endif
                                     </span>
                                     {{-- Tiap baris bisa disunting. Daftar tarif hanya perkiraan;
                                          harga bengkel berbeda tiap kejadian. Kalau admin hanya
@@ -408,8 +430,13 @@ Sewa Kendaraan Masuk || lemon
                                         </tr>
                                     </table>
                                     <div class="mt-1" style="font-size:.78rem">
-                                        Angka awal diambil dari daftar tarif — perkiraan, bukan tagihan.
-                                        Sesuaikan tiap baris dengan nota bengkel; totalnya ikut sendiri.
+                                        @if ($dariKetetapan)
+                                            Angka ini yang sudah tercatat dan ditagihkan ke penyewa.
+                                            Masih bisa diperbaiki bila nota bengkelnya berbeda.
+                                        @else
+                                            Angka awal diambil dari daftar tarif — perkiraan, bukan tagihan.
+                                            Sesuaikan tiap baris dengan nota bengkel; totalnya ikut sendiri.
+                                        @endif
                                     </div>
                                 </div>
                             @endif
@@ -519,6 +546,8 @@ Sewa Kendaraan Masuk || lemon
             </div>
         </div>
     @endif
+
+    @include('livewire.pages.admin.orcha.partials.kamera')
 
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

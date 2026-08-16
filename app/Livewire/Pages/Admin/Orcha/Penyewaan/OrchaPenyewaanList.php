@@ -50,6 +50,14 @@ class OrchaPenyewaanList extends Component
      */
     public array $biayaKerusakan = [];
 
+    /**
+     * Baris kerusakan yang tampil berasal dari ketetapan lama, bukan usulan.
+     *
+     * Membedakan keduanya penting di layar: "usulan" boleh diabaikan, sedangkan
+     * yang sudah ditetapkan berarti sudah ditagihkan ke penyewa.
+     */
+    public bool $dariKetetapan = false;
+
     public $dendaKeterlambatan = 0;
 
     public $dendaKerusakan = 0;
@@ -74,6 +82,21 @@ class OrchaPenyewaanList extends Component
     public function buka(array $baris): void
     {
         $this->serahTerimaUntuk = $baris['id'];
+
+        // Usulan sistem lahir dari selisih kondisi awal dan akhir, jadi ia
+        // hilang sendiri begitu unit selesai diperiksa: keadaan barunya sudah
+        // jadi patokan, dan selisihnya nol. Padahal dendanya sudah ditetapkan
+        // dan masih ditagihkan. Kalau baris-barisnya ikut lenyap dari layar,
+        // admin melihat total tanpa alasan — dan itu yang ditanya penyewa.
+        //
+        // Maka rincian yang sudah disimpan dipakai sebagai ganti usulan.
+        $this->dariKetetapan = ($baris['rincian_denda_kerusakan'] ?? []) === []
+            && ! empty($baris['rincian_denda']);
+
+        if ($this->dariKetetapan) {
+            $baris['rincian_denda_kerusakan'] = $baris['rincian_denda'];
+        }
+
         $this->sewa = $baris;
 
         $this->diserahkanPada = $this->waktuIsian($baris['diserahkan_pada'] ?? null);
@@ -184,9 +207,34 @@ class OrchaPenyewaanList extends Component
             'denda_kerusakan' => $this->angka($this->dendaKerusakan),
             'denda_lain' => $this->angka($this->dendaLain),
             'catatan_denda' => $this->catatanDenda ?: null,
+            'rincian_denda' => $this->rincianDitetapkan() ?: null,
         ], 'Catatan serah terima kendaraan tersimpan di Orcha.');
 
         $this->tutup();
+    }
+
+    /**
+     * Rincian denda kerusakan sebagaimana yang admin tetapkan, untuk disimpan.
+     *
+     * Angka yang dikirim adalah yang tertulis di layar, bukan tarif usulannya —
+     * yang ditagihkan ke penyewa harus sama persis dengan yang tercatat.
+     *
+     * @return array<int, array{bagian: string, dari: ?string, jadi: ?string, biaya: int}>
+     */
+    private function rincianDitetapkan(): array
+    {
+        return collect($this->sewa['rincian_denda_kerusakan'] ?? [])
+            ->map(function ($satu) {
+                $kunci = $satu['kunci'] ?? \Illuminate\Support\Str::slug($satu['bagian'], '_');
+
+                return [
+                    'bagian' => $satu['bagian'],
+                    'dari' => $satu['dari'] ?? null,
+                    'jadi' => $satu['jadi'] ?? null,
+                    'biaya' => $this->angka($this->biayaKerusakan[$kunci] ?? $satu['biaya']),
+                ];
+            })
+            ->all();
     }
 
     /** Bentuk yang diterima isian datetime-local di peramban. */
