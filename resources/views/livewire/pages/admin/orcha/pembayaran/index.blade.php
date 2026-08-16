@@ -347,6 +347,28 @@ Bukti Pembayaran Orcha || lemon
                                     @endforeach
                                 </div>
 
+                                {{-- Pratayang pesan WhatsApp.
+
+                                     Ditampilkan langsung di halaman, bukan lewat tautan. Isinya
+                                     teks yang sama persis dengan yang akan dikirim, jadi apa yang
+                                     terlihat di sini adalah yang benar-benar dihasilkan server.
+
+                                     Ini sekaligus alat pembanding: bila emojinya utuh di sini
+                                     tetapi berantakan setelah masuk WhatsApp, yang keliru bukan
+                                     penyusunan pesannya melainkan cara aplikasi WhatsApp membaca
+                                     tautan — dan tombol Salin di bawah adalah jalan keluarnya. --}}
+                                <details class="orcha-cek-pratayang mt-3">
+                                    <summary>
+                                        <i class="bi bi-eye"></i> Lihat pesan yang akan dikirim
+                                    </summary>
+                                    <pre>{{ $this->pesanWa($terpilih) }}</pre>
+                                    <p class="mb-0">
+                                        Emoji di atas tampil benar? Berarti pesannya memang benar.
+                                        Bila di WhatsApp berubah jadi tanda tanya, pakai
+                                        <strong>Salin Pesan</strong> lalu tempel (⌘V) di sana.
+                                    </p>
+                                </details>
+
                                 <div class="mt-3">
                                     <label class="form-label small fw-semibold mb-1">
                                         Catatan admin
@@ -585,6 +607,37 @@ Bukti Pembayaran Orcha || lemon
             margin-top: 1.25rem;
             padding-top: 1.1rem;
             border-top: 1px solid #eef2f6;
+        }
+
+        .orcha-cek-pratayang > summary {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            font-size: .82rem;
+            font-weight: 600;
+            color: #1d6fa5;
+            cursor: pointer;
+        }
+
+        .orcha-cek-pratayang > summary > i { line-height: 1; }
+
+        .orcha-cek-pratayang pre {
+            margin: .6rem 0 .5rem;
+            padding: .85rem 1rem;
+            border-radius: .7rem;
+            border: 1px solid #e3ecf3;
+            background: #f7f9fb;
+            color: #24384a;
+            font-family: inherit;
+            font-size: .84rem;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .orcha-cek-pratayang p {
+            font-size: .78rem;
+            color: #5b7186;
         }
 
         .orcha-cek-pilihan {
