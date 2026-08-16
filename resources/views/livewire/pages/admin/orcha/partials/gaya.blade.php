@@ -833,6 +833,88 @@
 
     .orcha-garis-waktu > div { position: relative; }
 
+    /* ============ IKON SEJAJAR TULISAN ============
+       Huruf ikon Bootstrap duduk sedikit di bawah garis dasar huruf biasa,
+       jadi di dalam kalimat ia terlihat melorot. Dua penanganan, sesuai
+       wadahnya:
+
+       1. Wadah yang memang berjajar (tombol, lencana, tautan) memakai flex
+          dengan align-items:center — ikonnya ikut tengah dengan sendirinya.
+       2. Ikon yang menempel pada tulisan biasa diangkat sedikit dengan
+          vertical-align. Nilainya tidak bulat karena memang mengikuti selisih
+          garis dasar huruf, bukan angka yang dikira-kira.
+
+       Aturan ini hanya berlaku di halaman Orcha: berkas gaya ini disisipkan
+       per halaman, tidak mengubah tampilan lemon yang lain. */
+
+    .orcha-label-kecil i,
+    .orcha-ringkas i,
+    .orcha-peserta i,
+    .orcha-kotak-darurat i,
+    .orcha-kotak-medis i,
+    .orcha-kesehatan i,
+    .alert i {
+        vertical-align: -.115em;
+    }
+
+    /* Judul kartu memakai cara yang sama dengan tombol dan lencana: flex,
+       bukan vertical-align. Diukur dari halaman hasil render, cara flex
+       menempatkan ikonnya tepat setinggi tulisan, sedangkan vertical-align
+       pada huruf sebesar judul justru menjatuhkannya beberapa piksel. */
+    .orcha-judul-ikon {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+    }
+
+    .orcha-judul-ikon i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        vertical-align: 0;
+        font-size: .95em;
+    }
+
+    /* Wadah bulat berisi satu ikon: benar-benar di tengah, mendatar maupun
+       menurun, berapa pun ukuran yang dipasang. */
+    .orcha-ringkas .stat-icon-wrapper,
+    .stat-icon-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .stat-icon-wrapper i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: middle;
+    }
+
+    /* Lencana kecil: ikon dan tulisannya satu baris, tidak pernah terpisah
+       saat tempatnya sempit. */
+    .orcha-lencana-awas,
+    .orcha-lencana-aman,
+    .orcha-tautan-wa,
+    .orcha-tautan-balik {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        line-height: 1.15;
+    }
+
+    .orcha-lencana-awas i,
+    .orcha-lencana-aman i,
+    .orcha-tautan-wa i,
+    .orcha-tautan-balik i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        vertical-align: 0;
+    }
+
     /* ============ TOMBOL BERWARNA ============
        Semua tombol pernah berwarna abu-abu yang sama, sehingga tindakan
        terpenting di layar tidak pernah menonjol. Warnanya sekarang mengikuti

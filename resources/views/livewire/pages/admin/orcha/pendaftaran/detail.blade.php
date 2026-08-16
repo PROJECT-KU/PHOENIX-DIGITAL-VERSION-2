@@ -148,7 +148,7 @@ Detail Pendaftaran || lemon
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3" style="font-size:1.05rem">
+                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
                                 <i class="bi bi-person-vcard text-primary"></i> Data Pemesan
                             </h2>
 
@@ -188,7 +188,7 @@ Detail Pendaftaran || lemon
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-3 p-lg-4">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <h2 class="fw-bold mb-0" style="font-size:1.05rem">
+                                <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
                                     <i class="bi bi-people-fill text-primary"></i> Peserta &amp; Titik Jemput
                                 </h2>
                                 <span class="badge {{ ($pendaftaran['kesehatan_lengkap'] ?? false) ? 'orcha-lencana-bayar-diterima' : 'orcha-lencana-bayar-menunggu' }}">
@@ -251,7 +251,7 @@ Detail Pendaftaran || lemon
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3" style="font-size:1.05rem">
+                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
                                 <i class="bi bi-suitcase-lg text-primary"></i> Perjalanan
                             </h2>
 
@@ -291,7 +291,7 @@ Detail Pendaftaran || lemon
                     <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body p-3 p-lg-4">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                                <h2 class="fw-bold mb-0" style="font-size:1.05rem">
+                                <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
                                     <i class="bi bi-cash-stack text-primary"></i> Bukti Pembayaran
                                 </h2>
                                 <a href="{{ route('admin.orcha.pembayaran') }}" class="text-decoration-none"
