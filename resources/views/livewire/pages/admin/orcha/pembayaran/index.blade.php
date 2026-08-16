@@ -55,21 +55,71 @@ Bukti Pembayaran Orcha || lemon
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
+                        @php
+                            // Satu pesanan hampir selalu berbuah lebih dari satu bukti: DP dulu,
+                            // pelunasan menyusul, kadang ditambah kiriman ulang karena yang pertama
+                            // buram. Berderet menurut waktu kirim, ketiganya terpisah jauh di layar
+                            // padahal pertanyaannya selalu satu — pesanan ini sudah masuk berapa.
+                            //
+                            // Pengelompokan hanya berlaku dalam satu halaman. Bukti yang terlempar
+                            // ke halaman berikutnya tidak ikut terjumlah, jadi angka di kepala
+                            // kelompok disebut apa adanya: yang tampil di halaman ini.
+                            $kelompok = collect($daftar)
+                                ->groupBy('kode')
+                                ->map(fn ($bukti) => $bukti->sortBy('dibuat_pada')->values());
+                        @endphp
+
                         <tbody>
-                            @forelse ($daftar as $baris)
-                                <tr wire:key="bayar-{{ $baris['id'] }}">
-                                    <td>
-                                        <span class="orcha-kode">{{ $baris['kode'] }}</span>
-                                        @if ($baris['pesanan'])
-                                            <div class="text-muted" style="font-size:.75rem">
-                                                {{ $baris['pesanan']['keterangan'] }}
+                            @forelse ($kelompok as $kode => $bukti)
+                                @php
+                                    $utama = $bukti->first();
+                                    $diterima = $bukti->where('status', 'diterima')->sum('nominal');
+                                    $menunggu = $bukti->where('status', 'menunggu')->count();
+                                @endphp
+
+                                <tr class="orcha-grup" wire:key="grup-{{ $kode }}">
+                                    <td colspan="7">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <span class="orcha-kode">{{ $kode }}</span>
+                                                @if ($utama['pesanan'])
+                                                    <span class="fw-semibold">{{ $utama['pesanan']['nama'] }}</span>
+                                                    <span class="text-muted" style="font-size:.78rem">
+                                                        {{ $utama['pesanan']['keterangan'] }}
+                                                    </span>
+                                                @else
+                                                    {{-- Kode salah ketik tetap masuk; ditandai supaya dicocokkan manual --}}
+                                                    <span class="text-danger" style="font-size:.78rem">
+                                                        <i class="bi bi-exclamation-triangle"></i> kode tak dikenal
+                                                    </span>
+                                                @endif
                                             </div>
-                                        @else
-                                            {{-- Kode salah ketik tetap masuk; ditandai supaya dicocokkan manual --}}
-                                            <div class="text-danger" style="font-size:.74rem">
-                                                <i class="bi bi-exclamation-triangle"></i> kode tak dikenal
+
+                                            <div class="d-flex flex-wrap align-items-center gap-2"
+                                                style="font-size:.78rem">
+                                                <span class="text-muted">
+                                                    {{ $bukti->count() }} bukti di halaman ini
+                                                </span>
+                                                {{-- Yang menentukan pesanan sudah dibayar hanya bukti
+                                                     yang diterima; yang menunggu belum uang. --}}
+                                                <span class="fw-bold text-success">
+                                                    diterima Rp {{ number_format($diterima, 0, ',', '.') }}
+                                                </span>
+                                                @if ($menunggu > 0)
+                                                    <span class="badge orcha-lencana-bayar-menunggu">
+                                                        {{ $menunggu }} menunggu dicek
+                                                    </span>
+                                                @endif
                                             </div>
-                                        @endif
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                @foreach ($bukti as $baris)
+                                <tr wire:key="bayar-{{ $baris['id'] }}" class="orcha-anggota">
+                                    <td class="text-muted text-nowrap" style="font-size:.78rem">
+                                        <i class="bi bi-arrow-return-right"></i>
+                                        Bukti {{ $loop->iteration }} dari {{ $bukti->count() }}
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $baris['atas_nama_pengirim'] }}</div>
@@ -107,6 +157,7 @@ Bukti Pembayaran Orcha || lemon
                                         </button>
                                     </td>
                                 </tr>
+                                @endforeach
                             @empty
                                 <tr>
                                     <td colspan="7" class="text-center py-5">

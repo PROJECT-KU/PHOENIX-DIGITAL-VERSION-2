@@ -762,6 +762,47 @@ test('halaman bukti pembayaran menampilkan kiriman pelanggan', function () {
         ->assertSee('Menunggu Dicek');
 });
 
+test('bukti transfer dikelompokkan per kode pesanan', function () {
+    $bukti = fn (array $ubah) => array_merge([
+        'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+        'nominal' => 500000, 'nominal_formatted' => 'Rp 500.000',
+        'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+        'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => null, 'catatan' => null,
+        'status' => 'menunggu', 'status_label' => 'Menunggu Dicek', 'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi Santoso', 'whatsapp' => '0812', 'keterangan' => 'Open Trip Banyuwangi'],
+        'dibuat_pada' => '2026-08-15T10:00:00+07:00',
+    ], $ubah);
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembayaran' => ['menunggu' => 'Menunggu Dicek']]]),
+        // Sengaja diselang-seling seperti yang datang dari Orcha: urutannya
+        // menurut waktu kirim, bukan menurut pesanan.
+        '*' => Http::response(['data' => [
+            $bukti(['id' => 1, 'kode' => 'OT-1508-A7K3', 'nominal' => 500000,
+                'nominal_formatted' => 'Rp 500.000', 'status' => 'diterima', 'status_label' => 'Diterima']),
+            $bukti(['id' => 2, 'kode' => 'OT-1508-ZZZZ', 'nominal' => 300000, 'nominal_formatted' => 'Rp 300.000']),
+            $bukti(['id' => 3, 'kode' => 'OT-1508-A7K3', 'nominal' => 700000,
+                'nominal_formatted' => 'Rp 700.000', 'jenis_label' => 'Pelunasan',
+                'dibuat_pada' => '2026-08-16T09:00:00+07:00',
+                'status' => 'diterima', 'status_label' => 'Diterima']),
+        ], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 3]]),
+    ]);
+
+    $halaman = $this->actingAs(adminOrcha())->get('/admin/orcha/pembayaran')->assertOk();
+
+    // Dua bukti pesanan yang sama berkumpul, dan totalnya sudah dijumlahkan —
+    // pertanyaan "pesanan ini sudah masuk berapa" tidak lagi dihitung manual.
+    $halaman->assertSee('diterima Rp 1.200.000')
+        ->assertSee('Bukti 1 dari 2')
+        ->assertSee('Bukti 2 dari 2')
+        // Pesanan lain berdiri sendiri, tidak ikut terjumlah
+        ->assertSee('OT-1508-ZZZZ')
+        ->assertSee('Bukti 1 dari 1');
+
+    // Yang masih menunggu bukan uang, jadi tidak masuk hitungan diterima
+    $halaman->assertSee('diterima Rp 0');
+});
+
 test('bukti dengan kode tak dikenal ditandai supaya dicocokkan manual', function () {
     Http::fake(['*' => Http::response(['data' => [[
         'id' => 4, 'kode' => 'OT-SALAH', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',

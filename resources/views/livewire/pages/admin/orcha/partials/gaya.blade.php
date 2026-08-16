@@ -84,6 +84,24 @@
         white-space: nowrap;
     }
 
+    /* Kepala kelompok: satu pesanan, berapa pun bukti transfernya.
+       Dibedakan dengan latar dan garis kiri supaya mata langsung menemukan
+       batas antar pesanan tanpa harus membaca kodenya baris demi baris. */
+    .orcha-tabel tr.orcha-grup > td {
+        background: #eef5fa;
+        border-left: 3px solid #1d6fa5;
+        padding-top: .55rem;
+        padding-bottom: .55rem;
+    }
+
+    .orcha-tabel tr.orcha-grup:hover > td {
+        background: #eef5fa;
+    }
+
+    .orcha-tabel tr.orcha-anggota > td:first-child {
+        border-left: 3px solid #dbe7f0;
+    }
+
     .orcha-halaman .page-link {
         border: 0;
         border-radius: .6rem;
