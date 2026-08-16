@@ -122,21 +122,27 @@
        di dalam kotak. */
     .orcha-cek-ikon > i,
     .orcha-ikon-kotak > i,
-    .orcha-cek-tutup > i,
-    .stat-icon-wrapper > i,
-    .empty-state-icon-wrapper > i {
+    .orcha-cek-tutup > i {
         display: block;
         line-height: 1;
     }
 
     .orcha-cek-ikon > i::before,
     .orcha-ikon-kotak > i::before,
-    .orcha-cek-tutup > i::before,
-    .stat-icon-wrapper > i::before,
-    .empty-state-icon-wrapper > i::before {
+    .orcha-cek-tutup > i::before {
         display: block;
-        vertical-align: 0;
     }
+
+    /* Kotak ikon bawaan layout (.stat-icon-wrapper, .empty-state-icon-wrapper)
+       SENGAJA tidak disentuh.
+
+       Keduanya sudah menengahkan glifnya dengan tepat — terukur 20px di
+       keempat sisinya — karena ikonnya sendiri dijadikan wadah flex. Aturan
+       di atas sempat saya berlakukan ke sini juga, dan justru merusaknya:
+       glif turun 12px sekaligus bergeser 12px ke kanan, persis yang terlihat
+       pada lingkaran di halaman pembatalan.
+
+       Yang sudah benar tidak perlu diseragamkan. */
 
     /* Isian tanpa ikon tidak lagi menyisakan tempat kosong untuk ikon.
 
