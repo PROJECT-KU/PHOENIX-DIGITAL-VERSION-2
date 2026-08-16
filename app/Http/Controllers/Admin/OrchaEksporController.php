@@ -104,8 +104,23 @@ class OrchaEksporController extends Controller
      */
     public function kwitansi(int $pendaftaran)
     {
+        return $this->teruskanBerkas("/pendaftaran/{$pendaftaran}/kwitansi");
+    }
+
+    /**
+     * Kwitansi sewa kendaraan — sebelum unit kembali berisi estimasi sewa,
+     * sesudahnya menjadi nota akhir lengkap dengan rincian dendanya.
+     */
+    public function kwitansiSewa(int $penyewaan)
+    {
+        return $this->teruskanBerkas("/penyewaan/{$penyewaan}/kwitansi");
+    }
+
+    /** Berkas dibuat di Orcha lalu diteruskan apa adanya, tanpa digambar ulang. */
+    private function teruskanBerkas(string $jalur)
+    {
         try {
-            $berkas = $this->orcha->berkas("/pendaftaran/{$pendaftaran}/kwitansi");
+            $berkas = $this->orcha->berkas($jalur);
         } catch (OrchaTidakTerjangkau $e) {
             abort(503, $e->getMessage());
         }

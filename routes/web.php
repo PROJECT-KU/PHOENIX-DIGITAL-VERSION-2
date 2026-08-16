@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\OrchaEksporController;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 // Orcha Journey — data dari aplikasi tetangga lewat API
+use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Livewire\Pages\Admin\Orcha\Pesan\OrchaPesanList;
 use App\Livewire\Pages\Admin\Order\OrderCreate;
@@ -492,6 +493,8 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/pdf', [OrchaEksporController::class, 'pdf'])->name('admin.orcha.pendaftaran.pdf');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/kwitansi', [OrchaEksporController::class, 'kwitansi'])->name('admin.orcha.pendaftaran.kwitansi');
     Route::get('/admin/orcha/penyewaan', OrchaPenyewaanList::class)->name('admin.orcha.penyewaan');
+    Route::get('/admin/orcha/penyewaan/{penyewaan}', OrchaPenyewaanDetail::class)->name('admin.orcha.penyewaan.detail');
+    Route::get('/admin/orcha/penyewaan/{penyewaan}/kwitansi', [OrchaEksporController::class, 'kwitansiSewa'])->name('admin.orcha.penyewaan.kwitansi');
     Route::get('/admin/orcha/pembayaran', OrchaPembayaranList::class)->name('admin.orcha.pembayaran');
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');

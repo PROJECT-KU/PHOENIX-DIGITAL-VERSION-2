@@ -1152,8 +1152,10 @@ test('lembar serah terima mengisi usulan denda keterlambatan', function () {
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPenyewaanList::class)
         ->call('buka', balasanSewa()['data'][0])
-        // Usulan sistem terisi supaya admin melanjutkan, bukan mengetik ulang
-        ->assertSet('dendaKeterlambatan', 150000)
+        // Usulan sistem terisi supaya admin melanjutkan, bukan mengetik ulang,
+        // dan angkanya bertitik: salah baca satu digit di kolom denda berarti
+        // salah tagih sepuluh kali lipat
+        ->assertSet('dendaKeterlambatan', '150.000')
         ->assertSee('Pemeriksaan Fisik')
         ->assertSee('Usulan sistem untuk keterlambatan');
 });
@@ -1203,4 +1205,56 @@ test('tombol kwitansi tersedia tanpa izin data kesehatan', function () {
         ->get('/admin/orcha/pendaftaran/7')
         ->assertOk()
         ->assertSee('Kwitansi');
+});
+
+test('detail penyewaan menampilkan jadwal, kerusakan, dan tombol nota', function () {
+    Http::fake(['*/penyewaan/12' => Http::response(['data' => balasanSewa([
+        'dikembalikan_pada' => '2026-09-11T11:00:00+07:00',
+        'denda_keterlambatan' => 150000, 'denda_kerusakan' => 900000,
+        'total_denda' => 1050000, 'total_tagihan' => 1550000,
+        'kondisi_awal' => ['bodi_depan' => 'lecet', 'kaca' => 'baik'],
+        'kondisi_akhir' => ['bodi_depan' => 'lecet', 'kaca' => 'rusak'],
+        'kerusakan_baru' => [['bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak']],
+        'catatan_denda' => 'Spion kanan retak',
+    ])['data'][0]]),
+        '*/rujukan' => Http::response(rujukanSewa()),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/penyewaan/12')
+        ->assertOk()
+        ->assertSee('SK-1608-B2M9')
+        ->assertSee('Kerusakan baru selama masa sewa')
+        ->assertSee('Kaca &amp; spion', false)
+        // Nota akhir bisa diunduh langsung dari halaman ini
+        ->assertSee('Nota Akhir')
+        ->assertSee('Spion kanan retak')
+        ->assertSee('Rp 1.550.000');
+});
+
+test('usulan denda kerusakan tampil dirinci per bagian', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*' => Http::response(balasanSewa([
+            'denda_kerusakan_usulan' => 1900000,
+            'rincian_denda_kerusakan' => [
+                ['bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
+                ['bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
+            ],
+        ])),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', balasanSewa([
+            'denda_kerusakan_usulan' => 1900000,
+            'rincian_denda_kerusakan' => [
+                ['bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
+                ['bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
+            ],
+        ])['data'][0])
+        // Terisi usulan, bertitik, dan catatannya sudah setengah jadi
+        ->assertSet('dendaKerusakan', '1.900.000')
+        ->assertSee('Usulan denda kerusakan')
+        ->assertSee('Rp 1.000.000');
 });

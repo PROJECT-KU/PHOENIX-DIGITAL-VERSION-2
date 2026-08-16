@@ -113,8 +113,12 @@ Sewa Kendaraan Masuk || lemon
                                             @endforeach
                                         </select>
                                     </td>
-                                    <td class="text-end">
-                                        <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil"
+                                    <td class="text-end text-nowrap">
+                                        <a href="{{ route('admin.orcha.penyewaan.detail', $baris['id']) }}"
+                                            class="btn btn-sm orcha-aksi orcha-aksi-lihat" title="Lihat detail penyewaan">
+                                            <i class="bi bi-truck-front"></i>
+                                        </a>
+                                        <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil")
                                             wire:click='buka(@json($baris))' title="Catat serah terima & denda">
                                             <i class="bi bi-clipboard-check"></i> Serah terima
                                         </button>
@@ -326,18 +330,66 @@ Sewa Kendaraan Masuk || lemon
                                 </div>
                             @endif
 
+                            {{-- Usulan denda kerusakan dirinci per bagian, bukan satu angka
+                                 gelondongan: baris inilah yang ditunjukkan ke penyewa saat
+                                 menagih. Yang dihitung hanya SELISIH kondisinya — unit yang
+                                 diserahkan sudah lecet lalu kembali rusak tidak ditagih
+                                 seolah sebelumnya mulus. --}}
+                            @if (! empty($sewa['rincian_denda_kerusakan']))
+                                <div class="orcha-alasan orcha-alasan-tinggi mt-2">
+                                    <span class="orcha-label-kecil" style="color:#b91c1c">
+                                        Usulan denda kerusakan — dari hasil pemeriksaan
+                                    </span>
+                                    <table class="table table-sm mb-0 mt-1" style="font-size:.82rem">
+                                        @foreach ($sewa['rincian_denda_kerusakan'] as $satu)
+                                            <tr>
+                                                <td class="ps-0 border-0">{{ $satu['bagian'] }}</td>
+                                                <td class="border-0 text-muted">
+                                                    {{ strtolower($satu['dari']) }} → {{ strtolower($satu['jadi']) }}
+                                                </td>
+                                                <td class="pe-0 border-0 text-end fw-bold">
+                                                    Rp {{ number_format($satu['biaya'], 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                        <tr>
+                                            <td colspan="2" class="ps-0 border-0 fw-bold">Usulan total</td>
+                                            <td class="pe-0 border-0 text-end fw-bold">
+                                                Rp {{ number_format($sewa['denda_kerusakan_usulan'] ?? 0, 0, ',', '.') }}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <div class="mt-1" style="font-size:.78rem">
+                                        Angka ini perkiraan dari daftar tarif, bukan tagihan —
+                                        nota bengkel yang sebenarnya selalu menang.
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda keterlambatan</label>
-                                    <input type="number" min="0" class="form-control" wire:model="dendaKeterlambatan">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control orcha-uang"
+                                            wire:model.blur="dendaKeterlambatan">
+                                    </div>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda kerusakan</label>
-                                    <input type="number" min="0" class="form-control" wire:model="dendaKerusakan">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control orcha-uang"
+                                            wire:model.blur="dendaKerusakan">
+                                    </div>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda lain</label>
-                                    <input type="number" min="0" class="form-control" wire:model="dendaLain">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" inputmode="numeric" class="form-control orcha-uang"
+                                            wire:model.blur="dendaLain">
+                                    </div>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label small fw-semibold">Catatan denda</label>

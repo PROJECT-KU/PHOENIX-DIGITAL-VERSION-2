@@ -73,10 +73,14 @@ class OrchaPenyewaanList extends Component
         $this->kondisiAwal = $baris['kondisi_awal'] ?: ($baris['kondisi_unit_terkini'] ?? []);
         $this->kondisiAkhir = $baris['kondisi_akhir'] ?: [];
 
+        // Keduanya terisi dengan usulan sistem supaya admin melanjutkan, bukan
+        // menaksir dari nol. Angka yang sudah pernah disimpan tidak ditimpa.
         $this->dendaKeterlambatan = $baris['denda_keterlambatan'] ?: ($baris['denda_keterlambatan_usulan'] ?? 0);
-        $this->dendaKerusakan = $baris['denda_kerusakan'] ?? 0;
+        $this->dendaKerusakan = $baris['denda_kerusakan'] ?: ($baris['denda_kerusakan_usulan'] ?? 0);
         $this->dendaLain = $baris['denda_lain'] ?? 0;
-        $this->catatanDenda = $baris['catatan_denda'] ?? '';
+        $this->catatanDenda = $baris['catatan_denda'] ?: $this->rangkumKerusakan($baris);
+
+        $this->rapikanRupiah();
     }
 
     /**
@@ -118,9 +122,9 @@ class OrchaPenyewaanList extends Component
             'jaminan' => $this->jaminan ?: null,
             'kondisi_awal' => $this->kondisiAwal ?: null,
             'kondisi_akhir' => $this->kondisiAkhir ?: null,
-            'denda_keterlambatan' => (int) $this->dendaKeterlambatan,
-            'denda_kerusakan' => (int) $this->dendaKerusakan,
-            'denda_lain' => (int) $this->dendaLain,
+            'denda_keterlambatan' => $this->angka($this->dendaKeterlambatan),
+            'denda_kerusakan' => $this->angka($this->dendaKerusakan),
+            'denda_lain' => $this->angka($this->dendaLain),
             'catatan_denda' => $this->catatanDenda ?: null,
         ], 'Catatan serah terima kendaraan tersimpan di Orcha.');
 
@@ -131,6 +135,63 @@ class OrchaPenyewaanList extends Component
     private function waktuIsian(?string $waktu): string
     {
         return $waktu ? \Carbon\Carbon::parse($waktu)->format('Y-m-d\TH:i') : '';
+    }
+
+    /**
+     * Catatan denda yang sudah setengah jadi.
+     *
+     * Isinya bagian mana yang memburuk berikut biayanya — kalimat itu yang
+     * dibacakan ke penyewa saat menagih, dan mengetiknya ulang dari ceklis
+     * yang baru saja diisi hanya membuang waktu.
+     */
+    private function rangkumKerusakan(array $baris): string
+    {
+        $rincian = $baris['rincian_denda_kerusakan'] ?? [];
+
+        if ($rincian === []) {
+            return '';
+        }
+
+        return collect($rincian)
+            ->map(fn ($satu) => $satu['bagian'].' ('.strtolower($satu['dari']).' → '
+                .strtolower($satu['jadi']).') Rp '.number_format($satu['biaya'], 0, ',', '.'))
+            ->implode("\n");
+    }
+
+    /**
+     * Rupiah dibaca dan ditulis bertitik.
+     *
+     * Angka denda di sini bisa berjuta-juta; "1500000" tanpa pemisah gampang
+     * dibaca keliru satu digit, dan salah satu digit di kolom denda berarti
+     * salah tagih sepuluh kali lipat.
+     */
+    public function updatedDendaKeterlambatan(): void
+    {
+        $this->rapikanRupiah();
+    }
+
+    public function updatedDendaKerusakan(): void
+    {
+        $this->rapikanRupiah();
+    }
+
+    public function updatedDendaLain(): void
+    {
+        $this->rapikanRupiah();
+    }
+
+    private function rapikanRupiah(): void
+    {
+        foreach (['dendaKeterlambatan', 'dendaKerusakan', 'dendaLain'] as $isian) {
+            $angka = (int) preg_replace('/\D/', '', (string) $this->{$isian});
+            $this->{$isian} = number_format($angka, 0, ',', '.');
+        }
+    }
+
+    /** Angka polos untuk dikirim ke Orcha, apa pun cara admin menuliskannya. */
+    private function angka($nilai): int
+    {
+        return (int) preg_replace('/\D/', '', (string) $nilai);
     }
 
     public function render()
