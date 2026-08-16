@@ -101,10 +101,16 @@ Bukti Pembayaran Orcha || lemon
                                                     {{ $bukti->count() }} bukti di halaman ini
                                                 </span>
                                                 {{-- Yang menentukan pesanan sudah dibayar hanya bukti
-                                                     yang diterima; yang menunggu belum uang. --}}
-                                                <span class="fw-bold text-success">
-                                                    diterima Rp {{ number_format($diterima, 0, ',', '.') }}
-                                                </span>
+                                                     yang diterima; yang menunggu belum uang. Nol
+                                                     ditulis sebagai kalimat — "diterima Rp 0"
+                                                     berwarna hijau membaca seperti kabar baik. --}}
+                                                @if ($diterima > 0)
+                                                    <span class="fw-bold text-success">
+                                                        diterima Rp {{ number_format($diterima, 0, ',', '.') }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted fst-italic">belum ada yang diterima</span>
+                                                @endif
                                                 @if ($menunggu > 0)
                                                     <span class="badge orcha-lencana-bayar-menunggu">
                                                         {{ $menunggu }} menunggu dicek
@@ -181,81 +187,181 @@ Bukti Pembayaran Orcha || lemon
         @php $terpilih = collect($daftar)->firstWhere('id', $sedangDicek); @endphp
 
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(15,45,74,.35)">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content border-0 rounded-4">
-                    <div class="modal-header border-0">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content border-0 rounded-4 orcha-cek">
+                    {{-- Kepala berwarna: yang dikerjakan di sini adalah memutuskan uang
+                         orang lain, dan kode pesanannya harus terbaca tanpa dicari. --}}
+                    <div class="orcha-cek-kepala">
                         <div>
-                            <h5 class="modal-title fw-bold mb-0">Cek Pembayaran</h5>
-                            <span class="text-muted small">{{ $terpilih['kode'] ?? '' }}</span>
+                            <div class="orcha-cek-judul">
+                                <i class="bi bi-check2-square"></i> Cek Pembayaran
+                            </div>
+                            <div class="orcha-cek-kode">
+                                {{ $terpilih['kode'] ?? '' }}
+                                @if ($terpilih)
+                                    <span class="orcha-cek-pisah">·</span> {{ $terpilih['jenis_label'] }}
+                                @endif
+                            </div>
                         </div>
-                        <button type="button" class="btn-close" wire:click="tutup"></button>
+                        <div class="d-flex align-items-center gap-2">
+                            @if ($terpilih)
+                                <span class="badge orcha-lencana-bayar-{{ $terpilih['status'] }}">
+                                    {{ $terpilih['status_label'] }}
+                                </span>
+                            @endif
+                            <button type="button" class="orcha-cek-tutup" wire:click="tutup" aria-label="Tutup">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="modal-body">
+                    <div class="modal-body p-3 p-lg-4">
                         @if ($terpilih)
                             <div class="row g-4">
-                                <div class="col-12 col-md-6">
-                                    <div class="row g-3">
-                                        @foreach ([['Pengirim', $terpilih['atas_nama_pengirim']], ['Bank', $terpilih['bank_pengirim']], ['Jenis', $terpilih['jenis_label']], ['Nominal', $terpilih['nominal_formatted']], ['Tanggal transfer', \Carbon\Carbon::parse($terpilih['tanggal_transfer'])->translatedFormat('j F Y')], ['Pemesan', $terpilih['pesanan']['nama'] ?? '— kode tak dikenal —'], ['Pesanan', $terpilih['pesanan']['keterangan'] ?? '—']] as [$label, $nilai])
+                                <div class="col-12 col-lg-7">
+                                    {{-- Nominal dibesarkan sendiri. Inilah angka yang dicocokkan
+                                         dengan mutasi rekening, dan salah baca satu digit di sini
+                                         berarti salah menyatakan pesanan sudah lunas. --}}
+                                    <div class="orcha-cek-nominal">
+                                        <div class="orcha-label-kecil">Nominal yang dikirim</div>
+                                        <div class="angka">{{ $terpilih['nominal_formatted'] }}</div>
+                                        <div class="orcha-cek-tanggal">
+                                            <i class="bi bi-calendar-event"></i>
+                                            {{ $terpilih['tanggal_transfer']
+                                                ? \Carbon\Carbon::parse($terpilih['tanggal_transfer'])->translatedFormat('j F Y')
+                                                : 'tanggal transfer tidak diisi' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-1">
+                                        @foreach ([
+                                            ['bi-person-badge', 'Pengirim', $terpilih['atas_nama_pengirim'], null],
+                                            ['bi-bank', 'Bank pengirim', $terpilih['bank_pengirim'], null],
+                                            ['bi-person-circle', 'Pemesan', $terpilih['pesanan']['nama'] ?? '—', $terpilih['pesanan']['whatsapp'] ?? null],
+                                            ['bi-signpost-split', 'Pesanan', $terpilih['pesanan']['keterangan'] ?? '—', null],
+                                        ] as [$ikon, $label, $nilai, $tambahan])
                                             <div class="col-6">
-                                                <p class="text-xs tracking-wider text-uppercase text-muted mb-0"
-                                                    style="font-size:.68rem">{{ $label }}</p>
-                                                <p class="fw-bold mb-0">{{ $nilai }}</p>
+                                                <div class="orcha-cek-fakta">
+                                                    <span class="orcha-cek-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                                    <div>
+                                                        <div class="orcha-label-kecil">{{ $label }}</div>
+                                                        <div class="fw-bold">{{ $nilai }}</div>
+                                                        @if ($tambahan)
+                                                            <div class="text-muted" style="font-size:.76rem">
+                                                                {{ $tambahan }}</div>
+                                                        @endif
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endforeach
                                     </div>
 
+                                    @unless ($terpilih['pesanan'])
+                                        {{-- Kode salah ketik tetap masuk. Yang tidak boleh terjadi
+                                             adalah admin menerimanya seolah pesanannya jelas. --}}
+                                        <div class="orcha-alasan orcha-alasan-tinggi mt-3">
+                                            <span class="orcha-label-kecil" style="color:#b91c1c">
+                                                <i class="bi bi-exclamation-triangle-fill"></i> Kode tidak dikenal
+                                            </span>
+                                            <div style="font-size:.84rem" class="mt-1">
+                                                Kode <strong>{{ $terpilih['kode'] }}</strong> tidak cocok dengan
+                                                pesanan mana pun. Cocokkan dulu dengan pemesannya sebelum
+                                                menerima — uang yang diakui ke pesanan yang salah lebih sulit
+                                                diurai daripada bukti yang ditunda.
+                                            </div>
+                                        </div>
+                                    @endunless
+
                                     @if ($terpilih['catatan'])
                                         <div class="mt-3">
-                                            <p class="text-uppercase text-muted mb-1" style="font-size:.68rem">Catatan
-                                                pelanggan</p>
-                                            <div class="p-3 rounded-3 bg-light small">{{ $terpilih['catatan'] }}</div>
+                                            <div class="orcha-label-kecil mb-1">Catatan pelanggan</div>
+                                            <div class="orcha-cek-catatan">{{ $terpilih['catatan'] }}</div>
                                         </div>
                                     @endif
                                 </div>
 
-                                <div class="col-12 col-md-6">
-                                    <p class="text-uppercase text-muted mb-1" style="font-size:.68rem">Bukti transfer</p>
+                                <div class="col-12 col-lg-5">
+                                    <div class="orcha-label-kecil mb-1">Bukti transfer</div>
                                     @if ($terpilih['bukti'])
-                                        <img src="{{ $tautanBukti($terpilih['bukti']) }}" alt="Bukti transfer"
-                                            class="img-fluid rounded-3 border"
+                                        <div class="orcha-cek-bukti"
                                             data-bukti="{{ $tautanBukti($terpilih['bukti']) }}"
                                             data-bukti-keterangan="{{ $terpilih['kode'] }} · {{ $terpilih['nominal_formatted'] }} · {{ $terpilih['bank_pengirim'] }} a.n. {{ $terpilih['atas_nama_pengirim'] }}">
-                                        <p class="form-text">Klik gambarnya untuk memperbesar.</p>
+                                            <img src="{{ $tautanBukti($terpilih['bukti']) }}" alt="Bukti transfer">
+                                            <span class="orcha-cek-perbesar">
+                                                <i class="bi bi-arrows-fullscreen"></i> Klik untuk memperbesar
+                                            </span>
+                                        </div>
                                     @else
-                                        <p class="text-muted small">Tidak ada berkas bukti.</p>
+                                        <div class="orcha-cek-kosong">
+                                            <div class="empty-state-icon-wrapper mx-auto mb-2">
+                                                <i class="bi bi-image"></i>
+                                            </div>
+                                            <p class="text-muted mb-0" style="font-size:.84rem">
+                                                Pelanggan tidak melampirkan berkas bukti.
+                                            </p>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
 
-                            <hr class="my-4">
+                            <div class="orcha-cek-putus">
+                                <div class="orcha-label-kecil mb-2">Keputusan</div>
 
-                            <div class="row g-3 align-items-end">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label small fw-semibold">Status</label>
-                                    <select wire:model="statusBaru" class="form-select">
-                                        @foreach ($pilihanStatus as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
+                                {{-- Ditampilkan sebagai pilihan berdampingan, bukan daftar
+                                     turun. Menerima dan menolak adalah dua tindakan yang
+                                     berbeda akibatnya, jadi keduanya pantas terlihat
+                                     sekaligus — bukan bersembunyi di balik satu klik. --}}
+                                <div class="orcha-cek-pilihan">
+                                    @foreach ($pilihanStatus as $kunci => $label)
+                                        <label class="orcha-cek-status orcha-cek-status-{{ $kunci }}">
+                                            {{-- @checked ditulis sendiri: tanpa itu tidak ada satu
+                                                 pun pilihan yang tersorot saat lembar ini dibuka,
+                                                 dan admin tidak bisa melihat status yang berlaku
+                                                 sekarang — padahal itu titik tolak keputusannya. --}}
+                                            <input type="radio" wire:model="statusBaru"
+                                                value="{{ $kunci }}" @checked($statusBaru === $kunci)>
+                                            <span>
+                                                <i
+                                                    class="bi {{ ['menunggu' => 'bi-hourglass-split', 'diterima' => 'bi-check-circle-fill', 'ditolak' => 'bi-x-circle-fill'][$kunci] ?? 'bi-circle' }}"></i>
+                                                {{ $label }}
+                                            </span>
+                                        </label>
+                                    @endforeach
                                 </div>
-                                <div class="col-12 col-md-7">
-                                    <label class="form-label small fw-semibold">Catatan admin</label>
+
+                                <div class="mt-3">
+                                    <label class="form-label small fw-semibold mb-1">
+                                        Catatan admin
+                                        <span class="text-muted fw-normal">(ikut terbaca oleh admin lain)</span>
+                                    </label>
                                     <input type="text" class="form-control" wire:model="catatanAdmin"
                                         placeholder="Mis. cocok dengan mutasi rekening 15 Agu.">
+                                    <div class="form-text">
+                                        Bila ditolak, tuliskan alasannya — kalimat inilah yang dikirim ke
+                                        pelanggan supaya ia tahu apa yang perlu diperbaiki.
+                                    </div>
                                 </div>
                             </div>
                         @endif
                     </div>
 
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn orcha-bahaya" wire:click="tutup">
-                            <i class="bi bi-x-lg"></i> Batal
-                        </button>
-                        <button type="button" class="btn btn-primary rounded-3" wire:click="simpan"
-                            wire:loading.attr="disabled">
-                            Simpan Status
-                        </button>
+                    <div class="modal-footer border-0 px-3 px-lg-4 pb-3 pb-lg-4 pt-0
+                        d-flex justify-content-between align-items-center gap-2">
+                        {{-- Disebutkan sebelum tombolnya ditekan, bukan sesudah: yang
+                             menerima email adalah pelanggan, dan email tidak bisa ditarik. --}}
+                        <span class="text-muted" style="font-size:.78rem">
+                            <i class="bi bi-envelope"></i>
+                            Pelanggan otomatis dikabari lewat email setelah status disimpan.
+                        </span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutup">
+                                Batal
+                            </button>
+                            <button type="button" class="orcha-btn orcha-btn-utama" wire:click="simpan"
+                                wire:loading.attr="disabled">
+                                <i class="bi bi-save"></i> Simpan Status
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -264,4 +370,218 @@ Bukti Pembayaran Orcha || lemon
 
     @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
     @include('livewire.pages.admin.orcha.partials.skrip')
+
+    {{-- Gaya khusus lembar cek pembayaran. Ditulis di sini, bukan di partial
+         gaya bersama, karena hanya halaman ini yang memakainya — dan inline,
+         bukan lewat Vite: public/build tidak ikut ter-deploy. --}}
+    <style>
+        .orcha-cek-kepala {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.1rem 1.35rem;
+            background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+            color: #fff;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .orcha-cek-judul {
+            font-weight: 700;
+            font-size: 1.05rem;
+            line-height: 1.2;
+        }
+
+        .orcha-cek-kode {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: .82rem;
+            color: #cfe4f2;
+            margin-top: .2rem;
+        }
+
+        .orcha-cek-pisah { opacity: .55; }
+
+        .orcha-cek-tutup {
+            width: 34px;
+            height: 34px;
+            flex: 0 0 34px;
+            border: 0;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, .16);
+            color: #fff;
+            font-size: .85rem;
+            line-height: 1;
+            transition: background .15s ease;
+        }
+
+        .orcha-cek-tutup:hover { background: rgba(255, 255, 255, .3); }
+
+        /* Angka yang dicocokkan dengan mutasi rekening. Diberi ruang sendiri
+           supaya tidak perlu dicari di antara keterangan lain. */
+        .orcha-cek-nominal {
+            padding: .9rem 1.1rem;
+            border-radius: .9rem;
+            background: linear-gradient(135deg, #f4f8fb, #e8f1f8);
+            border-left: 4px solid #1d6fa5;
+        }
+
+        .orcha-cek-nominal .angka {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #0f2d4a;
+            line-height: 1.15;
+            letter-spacing: -.01em;
+        }
+
+        .orcha-cek-tanggal {
+            font-size: .8rem;
+            color: #5b7186;
+            margin-top: .15rem;
+        }
+
+        .orcha-cek-fakta {
+            display: flex;
+            align-items: flex-start;
+            gap: .6rem;
+            font-size: .88rem;
+        }
+
+        .orcha-cek-ikon {
+            flex: 0 0 32px;
+            width: 32px;
+            height: 32px;
+            border-radius: .6rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef5fa;
+            color: #1d6fa5;
+            font-size: .9rem;
+        }
+
+        .orcha-cek-catatan {
+            padding: .75rem .9rem;
+            border-radius: .7rem;
+            background: #f7f9fb;
+            border-left: 3px solid #cfdbe6;
+            font-size: .85rem;
+            color: #3c5468;
+        }
+
+        /* Bingkai bukti: tingginya dibatasi supaya struk yang panjang tidak
+           mendorong tombol keputusan keluar layar. Utuhnya dilihat lewat
+           pratinjau, yang memang untuk itu. */
+        .orcha-cek-bukti {
+            position: relative;
+            border-radius: .9rem;
+            overflow: hidden;
+            border: 1px solid #e3ecf3;
+            background: #f7f9fb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 12rem;
+            max-height: 26rem;
+        }
+
+        .orcha-cek-bukti img {
+            max-width: 100%;
+            max-height: 26rem;
+            object-fit: contain;
+        }
+
+        .orcha-cek-perbesar {
+            position: absolute;
+            left: 50%;
+            bottom: .65rem;
+            transform: translateX(-50%);
+            padding: .3rem .7rem;
+            border-radius: 2rem;
+            background: rgba(15, 45, 74, .78);
+            color: #fff;
+            font-size: .74rem;
+            white-space: nowrap;
+        }
+
+        .orcha-cek-kosong {
+            border: 1px dashed #d5e1ea;
+            border-radius: .9rem;
+            padding: 2rem 1rem;
+            text-align: center;
+            background: #fafcfd;
+        }
+
+        .orcha-cek-putus {
+            margin-top: 1.25rem;
+            padding-top: 1.1rem;
+            border-top: 1px solid #eef2f6;
+        }
+
+        .orcha-cek-pilihan {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+
+        .orcha-cek-status { margin: 0; }
+
+        .orcha-cek-status input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .orcha-cek-status span {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .5rem .95rem;
+            border-radius: .7rem;
+            border: 1.5px solid #dbe7f0;
+            background: #fff;
+            color: #5b7186;
+            font-size: .86rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+        .orcha-cek-status span:hover { border-color: #b9d0e2; }
+
+        /* Warnanya baru muncul saat dipilih. Sebelum admin memutuskan, tidak
+           ada pilihan yang pantas terlihat seperti sudah dipilih. */
+        .orcha-cek-status-menunggu input:checked+span {
+            border-color: #d99a19;
+            background: #fdf6e7;
+            color: #8a6110;
+        }
+
+        .orcha-cek-status-diterima input:checked+span {
+            border-color: #1a8a52;
+            background: #e9f7f0;
+            color: #126b40;
+        }
+
+        .orcha-cek-status-ditolak input:checked+span {
+            border-color: #c2323c;
+            background: #fdecee;
+            color: #9b2530;
+        }
+
+        .orcha-cek-status input:focus-visible+span {
+            outline: 2px solid #1d6fa5;
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 575.98px) {
+            .orcha-cek-nominal .angka { font-size: 1.45rem; }
+
+            .orcha-cek-pilihan { flex-direction: column; }
+
+            .orcha-cek-status span { justify-content: center; }
+        }
+    </style>
 </div>

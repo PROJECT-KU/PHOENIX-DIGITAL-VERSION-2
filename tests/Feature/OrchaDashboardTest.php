@@ -800,7 +800,41 @@ test('bukti transfer dikelompokkan per kode pesanan', function () {
         ->assertSee('Bukti 1 dari 1');
 
     // Yang masih menunggu bukan uang, jadi tidak masuk hitungan diterima
-    $halaman->assertSee('diterima Rp 0');
+    $halaman->assertSee('belum ada yang diterima');
+});
+
+test('lembar cek pembayaran menampilkan keputusan yang sedang berlaku', function () {
+    $baris = [
+        'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+        'nominal' => 858000, 'nominal_formatted' => 'Rp 858.000',
+        'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+        'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => '/storage/bukti-bayar/a.webp',
+        'catatan' => 'Transfer dari rekening istri saya.',
+        'status' => 'diterima', 'status_label' => 'Diterima', 'catatan_admin' => 'Cocok mutasi.',
+        'pesanan' => ['nama' => 'Budi Santoso', 'whatsapp' => '0812', 'keterangan' => 'Open Trip Banyuwangi'],
+        'dibuat_pada' => '2026-08-15T10:00:00+07:00',
+    ];
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembayaran' => [
+            'menunggu' => 'Menunggu Dicek', 'diterima' => 'Diterima', 'ditolak' => 'Ditolak',
+        ]]]),
+        '*' => Http::response(['data' => [$baris], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    $lembar = Livewire::actingAs(adminOrcha())
+        ->test(OrchaPembayaranList::class)
+        ->call('buka', $baris);
+
+    // Tanpa penanda "checked" yang ditulis sendiri, tidak ada satu pun pilihan
+    // yang tersorot — admin tidak bisa melihat status yang berlaku sekarang,
+    // padahal itu titik tolak keputusannya.
+    $lembar->assertSeeHtml('value="diterima" checked')
+        ->assertSeeHtml('value="menunggu"')
+        ->assertSeeHtml('value="ditolak"')
+        // Kabar ke pelanggan disebut sebelum tombolnya ditekan, bukan sesudah
+        ->assertSee('Pelanggan otomatis dikabari lewat email setelah status disimpan.')
+        ->assertSee('Rp 858.000');
 });
 
 test('bukti dengan kode tak dikenal ditandai supaya dicocokkan manual', function () {
