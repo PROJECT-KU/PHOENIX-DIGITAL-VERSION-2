@@ -1029,7 +1029,25 @@
 
     .orcha-rupiah .form-control {
         padding-left: 2.4rem;
+        padding-right: .75rem;
         font-weight: 600;
+    }
+
+    /* Isian uang di dalam tabel: sempit, dan angkanya rata kanan. Tanpa
+       penyesuaian ini "Rp" di kiri memakan ruang yang sama sedangkan angkanya
+       tumbuh ke kiri — pada nominal jutaan, digit depannya tenggelam di balik
+       "Rp" dan yang terbaca tinggal ekornya. */
+    .orcha-rupiah-kecil::before {
+        left: .55rem;
+        font-size: .76rem;
+    }
+
+    .orcha-rupiah-kecil .form-control {
+        padding-left: 1.95rem;
+        padding-right: .5rem;
+        font-size: .84rem;
+        /* Cukup untuk "999.999.999" tanpa menyentuh awalan Rp */
+        min-width: 9.5rem;
     }
 
     .orcha-rupiah .form-control:focus + span,

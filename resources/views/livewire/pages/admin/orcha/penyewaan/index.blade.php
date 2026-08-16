@@ -391,8 +391,8 @@ Sewa Kendaraan Masuk || lemon
                                                 <td class="border-0 text-muted align-middle">
                                                     {{ strtolower($satu['dari']) }} → {{ strtolower($satu['jadi']) }}
                                                 </td>
-                                                <td class="pe-0 border-0" style="width:150px">
-                                                    <div class="orcha-rupiah">
+                                                <td class="pe-0 border-0" style="width:11rem">
+                                                    <div class="orcha-rupiah orcha-rupiah-kecil">
                                                         <input type="text" inputmode="numeric"
                                                             class="form-control form-control-sm text-end orcha-uang"
                                                             wire:model.blur="biayaKerusakan.{{ $satu['kunci'] ?? \Illuminate\Support\Str::slug($satu['bagian'], '_') }}">
