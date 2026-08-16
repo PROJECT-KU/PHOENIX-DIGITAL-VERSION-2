@@ -37,7 +37,7 @@ Detail Pendaftaran || lemon
                 <div class="card-body text-center py-5">
                     <div class="empty-state-icon-wrapper mx-auto mb-2"><i class="bi bi-person-x"></i></div>
                     <p class="text-muted mb-3">Data pendaftaran tidak bisa ditampilkan.</p>
-                    <a href="{{ route('admin.orcha.pendaftaran') }}" class="btn btn-primary rounded-3 orcha-tombol">
+                    <a href="{{ route('admin.orcha.pendaftaran') }}" class="orcha-btn orcha-btn-utama">
                         <i class="bi bi-arrow-left"></i> Kembali ke daftar
                     </a>
                 </div>
@@ -52,7 +52,7 @@ Detail Pendaftaran || lemon
                     <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
                         <div>
                             <a href="{{ route('admin.orcha.pendaftaran') }}"
-                                class="text-decoration-none text-muted orcha-tombol mb-2" style="font-size:.82rem">
+                                class="orcha-tautan-balik mb-2">
                                 <i class="bi bi-arrow-left"></i> Semua pendaftaran
                             </a>
                             <h1 class="gradient-text fw-bold mb-1" style="font-size:1.6rem">
@@ -70,7 +70,7 @@ Detail Pendaftaran || lemon
 
                         <div class="d-flex flex-wrap align-items-center gap-2">
                             <a href="{{ $wa($pendaftaran['whatsapp']) }}" target="_blank" rel="noopener"
-                                class="btn btn-success rounded-3 orcha-tombol">
+                                class="orcha-btn orcha-btn-wa">
                                 <i class="bi bi-whatsapp"></i> Hubungi Pemesan
                             </a>
 
@@ -231,7 +231,7 @@ Detail Pendaftaran || lemon
                                         <i class="bi bi-lock"></i> Riwayat kesehatan hanya bisa dibuka akun berizin.
                                     </span>
                                 @elseif (($pendaftaran['jumlah_riwayat_kesehatan'] ?? 0) > 0)
-                                    <button type="button" class="btn btn-primary rounded-3 orcha-tombol"
+                                    <button type="button" class="orcha-btn orcha-btn-kesehatan"
                                         wire:click="bukaRiwayat" wire:loading.attr="disabled">
                                         <i class="bi bi-heart-pulse"></i>
                                         Lihat Riwayat Kesehatan ({{ $pendaftaran['jumlah_riwayat_kesehatan'] }})
@@ -381,7 +381,7 @@ Detail Pendaftaran || lemon
                     </div>
 
                     <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-light border rounded-3" wire:click="tutupRiwayat">
+                        <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutupRiwayat">
                             Tutup
                         </button>
                     </div>

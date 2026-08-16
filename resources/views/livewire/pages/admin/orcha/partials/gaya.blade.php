@@ -833,6 +833,138 @@
 
     .orcha-garis-waktu > div { position: relative; }
 
+    /* ============ TOMBOL BERWARNA ============
+       Semua tombol pernah berwarna abu-abu yang sama, sehingga tindakan
+       terpenting di layar tidak pernah menonjol. Warnanya sekarang mengikuti
+       ARTI tindakannya, bukan selera: hijau untuk menghubungi lewat WhatsApp
+       (warna yang sudah dikenal orang), biru laut merek untuk tindakan utama,
+       merah muda untuk data kesehatan, dan putih bergaris untuk tindakan
+       netral seperti menutup atau kembali.
+
+       Gradasinya tipis dan bayangannya baru muncul saat disentuh — panel admin
+       yang dipakai berjam-jam tidak boleh berkilau berlebihan. */
+
+    .orcha-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        border: 1px solid transparent;
+        border-radius: .7rem;
+        padding: .5rem .95rem;
+        font-size: .86rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+    }
+
+    .orcha-btn i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        font-size: .95em;
+    }
+
+    .orcha-btn:hover {
+        transform: translateY(-1px);
+        filter: saturate(1.06);
+        text-decoration: none;
+    }
+
+    .orcha-btn:active { transform: translateY(0); }
+
+    .orcha-btn:disabled,
+    .orcha-btn[disabled] {
+        opacity: .6;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .orcha-btn-kecil {
+        padding: .34rem .7rem;
+        font-size: .78rem;
+        border-radius: .6rem;
+    }
+
+    /* Hijau WhatsApp — warna yang sudah dikenal, jadi tidak perlu dibaca dulu */
+    .orcha-btn-wa {
+        background: linear-gradient(135deg, #25d366, #128c7e);
+        color: #fff;
+    }
+
+    .orcha-btn-wa:hover {
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(18, 140, 126, .32);
+    }
+
+    /* Biru laut merek — tindakan utama halaman */
+    .orcha-btn-utama {
+        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        color: #fff;
+    }
+
+    .orcha-btn-utama:hover {
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(29, 111, 165, .34);
+    }
+
+    /* Merah muda — khusus data kesehatan, sewarna dengan ikon denyut nadinya */
+    .orcha-btn-kesehatan {
+        background: linear-gradient(135deg, #f43f5e, #be123c);
+        color: #fff;
+    }
+
+    .orcha-btn-kesehatan:hover {
+        color: #fff;
+        box-shadow: 0 6px 16px rgba(190, 18, 60, .3);
+    }
+
+    /* Emas merek — tindakan pendukung yang tetap perlu terlihat */
+    .orcha-btn-emas {
+        background: linear-gradient(135deg, #ffc74e, #f59e0b);
+        color: #4a3208;
+    }
+
+    .orcha-btn-emas:hover {
+        color: #4a3208;
+        box-shadow: 0 6px 16px rgba(245, 158, 11, .3);
+    }
+
+    /* Netral — menutup, kembali, membatalkan tampilan (bukan menghapus data) */
+    .orcha-btn-lembut {
+        background: #fff;
+        border-color: #dbe7f0;
+        color: #0f2d4a;
+    }
+
+    .orcha-btn-lembut:hover {
+        background: #f4f8fb;
+        border-color: #1d6fa5;
+        color: #0f2d4a;
+        box-shadow: 0 4px 12px rgba(15, 45, 74, .08);
+    }
+
+    /* Tautan kembali: bukan tombol penuh, tapi tetap punya wilayah sentuh */
+    .orcha-tautan-balik {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        padding: .2rem .5rem .2rem .1rem;
+        border-radius: .5rem;
+        transition: color .14s ease, background .14s ease;
+    }
+
+    .orcha-tautan-balik:hover {
+        color: #1d6fa5;
+        background: #eef6fb;
+    }
+
     .orcha-garis-waktu > div::before {
         content: '';
         position: absolute;

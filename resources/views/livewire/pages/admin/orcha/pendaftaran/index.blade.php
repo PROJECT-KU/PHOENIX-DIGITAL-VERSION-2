@@ -123,7 +123,7 @@ Pendaftaran Open Trip || lemon
                                         @if (! auth()->user()->hasPermission('view_orcha_kesehatan'))
                                             <span class="text-muted small">—</span>
                                         @elseif (($baris['jumlah_riwayat_kesehatan'] ?? 0) > 0)
-                                            <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                            <button type="button" class="orcha-btn orcha-btn-kesehatan orcha-btn-kecil"
                                                 wire:click="bukaRiwayat({{ $baris['id'] }}, '{{ addslashes($baris['nama']) }}')"
                                                 wire:loading.attr="disabled">
                                                 <i class="bi bi-heart-pulse"></i>
@@ -179,7 +179,7 @@ Pendaftaran Open Trip || lemon
                         @endforelse
                     </div>
                     <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-light border rounded-3" wire:click="tutupRiwayat">
+                        <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutupRiwayat">
                             Tutup
                         </button>
                     </div>
