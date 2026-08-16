@@ -266,7 +266,7 @@ Sewa Kendaraan Masuk || lemon
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold">Foto berkas jaminan (KTP/SIM)</label>
                                 <div class="d-flex gap-2">
-                                    <input type="file" class="form-control" accept="image/*" capture="environment"
+                                    <input type="file" class="form-control" accept="image/*"
                                         wire:model="berkasJaminan">
                                     <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil"
                                         wire:click="simpanJaminan" wire:loading.attr="disabled"
@@ -378,28 +378,38 @@ Sewa Kendaraan Masuk || lemon
                                     <span class="orcha-label-kecil" style="color:#b91c1c">
                                         Usulan denda kerusakan — dari hasil pemeriksaan
                                     </span>
+                                    {{-- Tiap baris bisa disunting. Daftar tarif hanya perkiraan;
+                                         harga bengkel berbeda tiap kejadian. Kalau admin hanya
+                                         bisa mengubah totalnya, rincian yang ditunjukkan ke
+                                         penyewa jadi tidak cocok dengan angka yang ditagih — dan
+                                         rincian yang tidak cocok lebih buruk daripada tidak ada
+                                         rincian sama sekali. --}}
                                     <table class="table table-sm mb-0 mt-1" style="font-size:.82rem">
                                         @foreach ($sewa['rincian_denda_kerusakan'] as $satu)
                                             <tr>
-                                                <td class="ps-0 border-0">{{ $satu['bagian'] }}</td>
-                                                <td class="border-0 text-muted">
+                                                <td class="ps-0 border-0 align-middle">{{ $satu['bagian'] }}</td>
+                                                <td class="border-0 text-muted align-middle">
                                                     {{ strtolower($satu['dari']) }} → {{ strtolower($satu['jadi']) }}
                                                 </td>
-                                                <td class="pe-0 border-0 text-end fw-bold">
-                                                    Rp {{ number_format($satu['biaya'], 0, ',', '.') }}
+                                                <td class="pe-0 border-0" style="width:150px">
+                                                    <div class="orcha-rupiah">
+                                                        <input type="text" inputmode="numeric"
+                                                            class="form-control form-control-sm text-end orcha-uang"
+                                                            wire:model.blur="biayaKerusakan.{{ $satu['bagian'] }}">
+                                                    </div>
                                                 </td>
                                             </tr>
                                         @endforeach
                                         <tr>
-                                            <td colspan="2" class="ps-0 border-0 fw-bold">Usulan total</td>
-                                            <td class="pe-0 border-0 text-end fw-bold">
-                                                Rp {{ number_format($sewa['denda_kerusakan_usulan'] ?? 0, 0, ',', '.') }}
+                                            <td colspan="2" class="ps-0 border-0 fw-bold align-middle">Total kerusakan</td>
+                                            <td class="pe-0 border-0 text-end fw-bold align-middle">
+                                                Rp {{ $dendaKerusakan }}
                                             </td>
                                         </tr>
                                     </table>
                                     <div class="mt-1" style="font-size:.78rem">
-                                        Angka ini perkiraan dari daftar tarif, bukan tagihan —
-                                        nota bengkel yang sebenarnya selalu menang.
+                                        Angka awal diambil dari daftar tarif — perkiraan, bukan tagihan.
+                                        Sesuaikan tiap baris dengan nota bengkel; totalnya ikut sendiri.
                                     </div>
                                 </div>
                             @endif

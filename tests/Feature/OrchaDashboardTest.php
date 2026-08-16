@@ -1253,8 +1253,13 @@ test('usulan denda kerusakan tampil dirinci per bagian', function () {
                 ['bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
             ],
         ])['data'][0])
-        // Terisi usulan, bertitik, dan catatannya sudah setengah jadi
+        // Terisi usulan, bertitik, dan tiap bagian punya isiannya sendiri
+        // supaya admin bisa menyesuaikan dengan nota bengkel
         ->assertSet('dendaKerusakan', '1.900.000')
+        ->assertSet('biayaKerusakan.Kaca & spion', '900.000')
+        ->assertSet('biayaKerusakan.Bodi samping kanan', '1.000.000')
         ->assertSee('Usulan denda kerusakan')
-        ->assertSee('Rp 1.000.000');
+        // Mengubah satu baris membuat totalnya ikut berubah
+        ->set('biayaKerusakan.Kaca & spion', '450000')
+        ->assertSet('dendaKerusakan', '1.450.000');
 });

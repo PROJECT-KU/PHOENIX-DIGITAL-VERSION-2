@@ -38,6 +38,18 @@ class OrchaPenyewaanList extends Component
 
     public array $kondisiAkhir = [];
 
+    /**
+     * Biaya tiap bagian yang rusak, bisa disunting satu per satu.
+     *
+     * Daftar tarif hanya perkiraan; harga bengkel yang sebenarnya berbeda tiap
+     * kejadian. Kalau admin hanya bisa mengubah totalnya, rincian yang
+     * ditunjukkan ke penyewa jadi tidak cocok dengan angka yang ditagih — dan
+     * rincian yang tidak cocok lebih buruk daripada tidak ada rincian.
+     *
+     * @var array<string, string> bagian => biaya
+     */
+    public array $biayaKerusakan = [];
+
     public $dendaKeterlambatan = 0;
 
     public $dendaKerusakan = 0;
@@ -81,6 +93,12 @@ class OrchaPenyewaanList extends Component
         // Keduanya terisi dengan usulan sistem supaya admin melanjutkan, bukan
         // menaksir dari nol. Angka yang sudah pernah disimpan tidak ditimpa.
         $this->dendaKeterlambatan = $baris['denda_keterlambatan'] ?: ($baris['denda_keterlambatan_usulan'] ?? 0);
+        // Tiap bagian yang rusak punya barisnya sendiri, terisi tarif usulan
+        // dan bisa disunting. Totalnya mengikuti jumlah baris-baris itu.
+        $this->biayaKerusakan = collect($baris['rincian_denda_kerusakan'] ?? [])
+            ->mapWithKeys(fn ($satu) => [$satu['bagian'] => number_format((int) $satu['biaya'], 0, ',', '.')])
+            ->all();
+
         $this->dendaKerusakan = $baris['denda_kerusakan'] ?: ($baris['denda_kerusakan_usulan'] ?? 0);
         $this->dendaLain = $baris['denda_lain'] ?? 0;
         $this->catatanDenda = $baris['catatan_denda'] ?: $this->rangkumKerusakan($baris);
@@ -207,6 +225,42 @@ class OrchaPenyewaanList extends Component
     public function updatedDendaKerusakan(): void
     {
         $this->rapikanRupiah();
+    }
+
+    /**
+     * Mengubah biaya satu bagian berarti totalnya ikut berubah.
+     *
+     * Yang disunting admin adalah barisnya; totalnya sekadar hasil penjumlahan
+     * — tidak ada tempat untuk mengetik total yang berbeda dari rinciannya.
+     */
+    public function updatedBiayaKerusakan(): void
+    {
+        $jumlah = 0;
+
+        foreach ($this->biayaKerusakan as $bagian => $biaya) {
+            $angka = $this->angka($biaya);
+            $this->biayaKerusakan[$bagian] = number_format($angka, 0, ',', '.');
+            $jumlah += $angka;
+        }
+
+        $this->dendaKerusakan = number_format($jumlah, 0, ',', '.');
+        $this->catatanDenda = $this->rangkumDariIsian();
+    }
+
+    /** Catatan denda ditulis ulang dari baris yang sedang tampil. */
+    private function rangkumDariIsian(): string
+    {
+        $rincian = $this->sewa['rincian_denda_kerusakan'] ?? [];
+
+        if ($rincian === []) {
+            return $this->catatanDenda;
+        }
+
+        return collect($rincian)
+            ->map(fn ($satu) => $satu['bagian'].' ('.strtolower($satu['dari']).' → '
+                .strtolower($satu['jadi']).') Rp '
+                .($this->biayaKerusakan[$satu['bagian']] ?? number_format((int) $satu['biaya'], 0, ',', '.')))
+            ->implode("\n");
     }
 
     public function updatedDendaLain(): void
