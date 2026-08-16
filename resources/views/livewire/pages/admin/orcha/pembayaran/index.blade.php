@@ -149,6 +149,21 @@ Bukti Pembayaran Orcha || lemon
                                         </span>
                                     </td>
                                     <td class="text-end text-nowrap">
+                                        {{-- Kabar lewat WhatsApp.
+
+                                             Surat sudah dikirim otomatis tiap status berubah,
+                                             tapi tidak semua pelanggan membuka kotak suratnya.
+                                             Pesannya dibuka dulu di WhatsApp, tidak langsung
+                                             terkirim — yang menekan kirim tetap admin. --}}
+                                        @php $wa = $this->tautanWa($baris); @endphp
+                                        @if ($wa)
+                                            <a href="{{ $wa }}" target="_blank" rel="noopener"
+                                                class="btn btn-sm orcha-aksi orcha-aksi-wa"
+                                                title="Kabari pelanggan lewat WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+                                        @endif
+
                                         @if ($baris['bukti'])
                                             {{-- Menumpang di halaman ini, bukan tab baru: daftar yang
                                                  sudah digulung tidak ikut kembali ke atas. --}}
@@ -356,6 +371,25 @@ Bukti Pembayaran Orcha || lemon
                             Pelanggan otomatis dikabari lewat email setelah status disimpan.
                         </span>
                         <div class="d-flex gap-2">
+                            {{-- Diletakkan di sini, bersebelahan dengan Simpan: begitu
+                                 statusnya diputuskan, kabar ke pelanggan adalah langkah
+                                 berikutnya yang wajar — bukan sesuatu yang harus dicari
+                                 lagi di daftar.
+
+                                 Isinya mengikuti status yang TERSIMPAN, bukan yang baru
+                                 dipilih di layar. Mengabari "sudah diterima" untuk sesuatu
+                                 yang belum disimpan berarti menjanjikan yang belum tercatat. --}}
+                            {{-- Kaki lembar tetap tergambar walau barisnya tidak ketemu di
+                                 halaman ini (mis. daftarnya sudah tersaring ulang), jadi
+                                 $terpilih perlu diperiksa dulu. --}}
+                            @php $waPopup = $terpilih ? $this->tautanWa($terpilih) : null; @endphp
+                            @if ($waPopup)
+                                <a href="{{ $waPopup }}" target="_blank" rel="noopener"
+                                    class="orcha-btn orcha-btn-wa">
+                                    <i class="bi bi-whatsapp"></i> Kabari via WA
+                                </a>
+                            @endif
+
                             <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutup">
                                 Batal
                             </button>

@@ -1173,6 +1173,20 @@
         color: #fff;
     }
 
+    /* Tombol aksi WhatsApp di dalam tabel — hijau khas WhatsApp supaya
+       terbedakan dari aksi lain tanpa perlu dibaca dulu. */
+    .orcha-aksi-wa {
+        background: #e7f8ee;
+        border-color: #b7e6cb;
+        color: #128c7e;
+    }
+
+    .orcha-aksi-wa:hover {
+        background: #d3f2e0;
+        border-color: #25d366;
+        color: #0b6b5e;
+    }
+
     .orcha-btn-wa:hover {
         color: #fff;
         box-shadow: 0 6px 16px rgba(18, 140, 126, .32);

@@ -803,6 +803,65 @@ test('bukti transfer dikelompokkan per kode pesanan', function () {
     $halaman->assertSee('belum ada yang diterima');
 });
 
+test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
+    $baris = [
+        'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+        'nominal' => 858000, 'nominal_formatted' => 'Rp 858.000',
+        'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+        'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => null, 'catatan' => null,
+        'status' => 'diterima', 'status_label' => 'Diterima', 'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi Santoso', 'whatsapp' => '081234567890',
+            'keterangan' => 'Open Trip Banyuwangi',
+            'tagihan' => ['sisa_teks' => 'Rp 2.002.000', 'lunas' => false]],
+        'dibuat_pada' => '2026-08-15T10:00:00+07:00',
+    ];
+
+    Http::fake(['*' => Http::response(['data' => [$baris], 'meta' => []])]);
+
+    $komponen = Livewire::actingAs(adminOrcha())->test(OrchaPembayaranList::class);
+    $tautan = $komponen->instance()->tautanWa($baris);
+    $pesan = $komponen->instance()->pesanWa($baris);
+
+    // Nomor 08xx harus jadi 62xx; wa.me menolak awalan nol
+    expect($tautan)->toStartWith('https://wa.me/6281234567890?text=')
+        // Emoji disandikan sebagai UTF-8 persen, bukan dibuang atau jadi "?"
+        ->and($tautan)->toContain(rawurlencode('👋'))
+        // Spasi TIDAK boleh jadi "+": WhatsApp menampilkan tanda plus itu apa
+        // adanya, dan kalimatnya jadi penuh plus alih-alih spasi
+        ->and($tautan)->not->toContain('+')
+        ->and($tautan)->toContain('%20');
+
+    // Yang ditanyakan pelanggan begitu buktinya diterima adalah sisanya
+    expect($pesan)->toContain('Rp 2.002.000')
+        ->and($pesan)->toContain('Budi Santoso')
+        ->and($pesan)->toContain('OT-1508-A7K3');
+});
+
+test('kabar whatsapp berbeda bunyinya menurut status bukti', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+    $komponen = Livewire::actingAs(adminOrcha())->test(OrchaPembayaranList::class)->instance();
+
+    $baris = fn (array $ubah) => array_merge([
+        'kode' => 'OT-1508-A7K3', 'nominal_formatted' => 'Rp 858.000', 'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi', 'whatsapp' => '0812', 'keterangan' => null, 'tagihan' => []],
+    ], $ubah);
+
+    expect($komponen->pesanWa($baris(['status' => 'menunggu'])))->toContain('sedang kami periksa')
+        ->and($komponen->pesanWa($baris(['status' => 'diterima', 'pesanan' => [
+            'nama' => 'Budi', 'whatsapp' => '0812', 'keterangan' => null,
+            'tagihan' => ['lunas' => true, 'sisa_teks' => 'Rp 0'],
+        ]])))->toContain('LUNAS')
+        // Alasan penolakan ikut terbawa; tanpa itu pelanggan tidak tahu apa
+        // yang harus diperbaiki dan hanya tahu buktinya ditolak
+        ->and($komponen->pesanWa($baris([
+            'status' => 'ditolak', 'catatan_admin' => 'Nominalnya kurang Rp 50.000.',
+        ])))->toContain('Nominalnya kurang Rp 50.000.');
+
+    // Tanpa nomor WhatsApp tidak ada tautan yang bisa dibuka — bukan tautan
+    // rusak yang menuju wa.me kosong
+    expect($komponen->tautanWa($baris(['status' => 'menunggu', 'pesanan' => null])))->toBeNull();
+});
+
 test('lembar cek pembayaran menampilkan keputusan yang sedang berlaku', function () {
     $baris = [
         'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
