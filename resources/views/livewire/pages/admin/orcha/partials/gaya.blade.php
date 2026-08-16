@@ -84,6 +84,54 @@
         white-space: nowrap;
     }
 
+    /* Pasangan ikon dan teks.
+       bootstrap-icons memasang vertical-align sendiri pada tiap glifnya, dan
+       nilainya dipatok terhadap ukuran huruf ikon — bukan terhadap teks di
+       sebelahnya. Begitu keduanya berbeda ukuran atau ketebalan, ikonnya
+       melayang naik sedikit di atas garis teks.
+       Di dalam flex, vertical-align tidak berlaku sama sekali, dan yang
+       menentukan tingginya adalah align-items. Karena itu perataannya
+       diserahkan ke flex, bukan ditambal dengan geseran em yang harus
+       dihitung ulang tiap kali ukuran hurufnya berubah. */
+    .orcha-ikon-teks {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+    }
+
+    .orcha-ikon-teks > i {
+        line-height: 1;
+        flex: 0 0 auto;
+    }
+
+    /* Isian tanpa ikon tidak lagi menyisakan tempat kosong untuk ikon.
+
+       Layout lemon memberi SETIAP .form-control ruang 45px di kiri, karena
+       isian pencarian di halaman-halaman lama selalu berikon. Isian yang tidak
+       berikon ikut kena: teksnya mulai jauh dari tepi kiri, menggantung tanpa
+       apa pun di sebelahnya, dan tidak sejajar dengan label maupun keterangan
+       di bawahnya.
+
+       Ruang itu dikembalikan hanya untuk isian yang ikonnya memang ada —
+       dikenali dari .form-control-icon yang berdiri sebagai saudaranya di
+       dalam pembungkus yang sama. Gaya ini hanya termuat di halaman Orcha,
+       jadi halaman lemon lainnya tidak tersentuh. */
+    .form-control {
+        padding-left: 20px !important;
+    }
+
+    .form-control-icon ~ .form-control {
+        padding-left: 45px !important;
+    }
+
+    /* Layout yang sama memasang padding tegak 0. Pada isian satu baris itu
+       tidak terasa karena tingginya sudah dipatok, tapi pada kotak berbaris
+       banyak teksnya menempel ke garis atas. */
+    textarea.form-control {
+        padding-top: .55rem !important;
+        padding-bottom: .55rem !important;
+    }
+
     /* Kepala kelompok: satu pesanan, berapa pun bukti transfernya.
        Dibedakan dengan latar dan garis kiri supaya mata langsung menemukan
        batas antar pesanan tanpa harus membaca kodenya baris demi baris. */

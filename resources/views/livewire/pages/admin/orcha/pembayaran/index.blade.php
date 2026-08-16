@@ -89,7 +89,7 @@ Bukti Pembayaran Orcha || lemon
                                                     </span>
                                                 @else
                                                     {{-- Kode salah ketik tetap masuk; ditandai supaya dicocokkan manual --}}
-                                                    <span class="text-danger" style="font-size:.78rem">
+                                                    <span class="text-danger orcha-ikon-teks" style="font-size:.78rem">
                                                         <i class="bi bi-exclamation-triangle"></i> kode tak dikenal
                                                     </span>
                                                 @endif
@@ -124,8 +124,10 @@ Bukti Pembayaran Orcha || lemon
                                 @foreach ($bukti as $baris)
                                 <tr wire:key="bayar-{{ $baris['id'] }}" class="orcha-anggota">
                                     <td class="text-muted text-nowrap" style="font-size:.78rem">
-                                        <i class="bi bi-arrow-return-right"></i>
-                                        Bukti {{ $loop->iteration }} dari {{ $bukti->count() }}
+                                        <span class="orcha-ikon-teks">
+                                            <i class="bi bi-arrow-return-right"></i>
+                                            Bukti {{ $loop->iteration }} dari {{ $bukti->count() }}
+                                        </span>
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $baris['atas_nama_pengirim'] }}</div>
@@ -260,7 +262,7 @@ Bukti Pembayaran Orcha || lemon
                                         {{-- Kode salah ketik tetap masuk. Yang tidak boleh terjadi
                                              adalah admin menerimanya seolah pesanannya jelas. --}}
                                         <div class="orcha-alasan orcha-alasan-tinggi mt-3">
-                                            <span class="orcha-label-kecil" style="color:#b91c1c">
+                                            <span class="orcha-label-kecil orcha-ikon-teks" style="color:#b91c1c">
                                                 <i class="bi bi-exclamation-triangle-fill"></i> Kode tidak dikenal
                                             </span>
                                             <div style="font-size:.84rem" class="mt-1">
@@ -349,7 +351,7 @@ Bukti Pembayaran Orcha || lemon
                         d-flex justify-content-between align-items-center gap-2">
                         {{-- Disebutkan sebelum tombolnya ditekan, bukan sesudah: yang
                              menerima email adalah pelanggan, dan email tidak bisa ditarik. --}}
-                        <span class="text-muted" style="font-size:.78rem">
+                        <span class="text-muted orcha-ikon-teks" style="font-size:.78rem">
                             <i class="bi bi-envelope"></i>
                             Pelanggan otomatis dikabari lewat email setelah status disimpan.
                         </span>
@@ -386,11 +388,18 @@ Bukti Pembayaran Orcha || lemon
             border-radius: 1rem 1rem 0 0;
         }
 
+        /* Ikon diratakan lewat flex, bukan vertical-align — lihat catatan pada
+           .orcha-ikon-teks di partial gaya. */
         .orcha-cek-judul {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
             font-weight: 700;
             font-size: 1.05rem;
             line-height: 1.2;
         }
+
+        .orcha-cek-judul > i { line-height: 1; }
 
         .orcha-cek-kode {
             font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -437,14 +446,22 @@ Bukti Pembayaran Orcha || lemon
         }
 
         .orcha-cek-tanggal {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
             font-size: .8rem;
             color: #5b7186;
             margin-top: .15rem;
         }
 
+        .orcha-cek-tanggal > i { line-height: 1; }
+
+        /* Ikonnya ditengahkan terhadap seluruh pasangan label-nilai, bukan
+           digantung di baris pertama: yang dilihat mata sebagai satu kesatuan
+           adalah kotak keterangannya, bukan barisnya satu per satu. */
         .orcha-cek-fakta {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: .6rem;
             font-size: .88rem;
         }
@@ -498,6 +515,9 @@ Bukti Pembayaran Orcha || lemon
             left: 50%;
             bottom: .65rem;
             transform: translateX(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
             padding: .3rem .7rem;
             border-radius: 2rem;
             background: rgba(15, 45, 74, .78);
@@ -548,6 +568,8 @@ Bukti Pembayaran Orcha || lemon
             cursor: pointer;
             transition: all .15s ease;
         }
+
+        .orcha-cek-status span > i { line-height: 1; }
 
         .orcha-cek-status span:hover { border-color: #b9d0e2; }
 
