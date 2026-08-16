@@ -993,3 +993,101 @@ test('daftar bukti pembayaran juga memakai pratinjau', function () {
         // Tombolnya bukan tautan yang membuka tab baru
         ->assertDontSee('target="_blank" rel="noopener"' . "\n" . '                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat"', false);
 });
+
+/* ------------------- EKSPOR EXCEL & PDF ------------------- */
+
+function balasanKesehatan(): array
+{
+    return ['data' => [
+        [
+            'nama_peserta' => 'Siti Aminah', 'usia' => 30, 'jenis_kelamin' => 'Perempuan',
+            'golongan_darah' => 'O', 'tinggi_badan' => 160, 'berat_badan' => 55,
+            'riwayat_penyakit' => 'Asma sejak kecil', 'kondisi_khusus' => ['Asma'],
+            'alergi' => 'Udang', 'obat_rutin' => 'Salbutamol', 'pantangan_makanan' => null,
+            'pantangan_kegiatan' => null, 'riwayat_operasi' => null,
+            'kemampuan_renang' => 'lancar', 'asuransi' => 'BPJS',
+            'kontak_darurat' => ['nama' => 'Budi', 'hubungan' => 'Suami', 'hp' => '081298765432'],
+            'catatan_tambahan' => null, 'ada_catatan_khusus' => true,
+            'tingkat_perhatian' => 'tinggi',
+            'alasan_perhatian' => ['Asma', 'Alergi: Udang', 'Obat rutin: Salbutamol'],
+            'alasan_catatan' => [],
+        ],
+    ]];
+}
+
+test('excel data lengkap bisa diunduh admin berizin kesehatan', function () {
+    Http::fake([
+        '*/pendaftaran/7/riwayat-kesehatan' => Http::response(balasanKesehatan()),
+        '*/pendaftaran/7' => Http::response(balasanDetail()),
+    ]);
+
+    $balasan = $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->get('/admin/orcha/pendaftaran/7/ekspor/excel')
+        ->assertOk();
+
+    expect($balasan->headers->get('content-disposition'))->toContain('DATA-LENGKAP-OT-1608-A7KD.xlsx');
+});
+
+test('manifes pdf tour leader memuat titik jemput dan penanda perhatian', function () {
+    Http::fake([
+        '*/pendaftaran/7/riwayat-kesehatan' => Http::response(balasanKesehatan()),
+        '*/pendaftaran/7' => Http::response(balasanDetail()),
+    ]);
+
+    $balasan = $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->get('/admin/orcha/pendaftaran/7/ekspor/pdf')
+        ->assertOk();
+
+    expect($balasan->headers->get('content-disposition'))->toContain('MANIFES-TOUR-LEADER-OT-1608-A7KD.pdf')
+        ->and(substr($balasan->getContent(), 0, 5))->toBe('%PDF-');
+});
+
+test('ekspor ditolak untuk akun tanpa izin data kesehatan', function () {
+    Http::fake();
+
+    $admin = adminOrcha();     // hanya akses_orcha
+
+    $this->actingAs($admin)->get('/admin/orcha/pendaftaran/7/ekspor/excel')->assertForbidden();
+    $this->actingAs($admin)->get('/admin/orcha/pendaftaran/7/ekspor/pdf')->assertForbidden();
+
+    // Tidak boleh ada permintaan data yang telanjur berangkat ke Orcha
+    Http::assertNothingSent();
+});
+
+test('tombol unduh hanya tampil untuk akun berizin', function () {
+    Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertDontSee('Manifes PDF');
+
+    $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertSee('Manifes PDF');
+});
+
+test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
+    Http::fake([
+        '*/pendaftaran/7/riwayat-kesehatan' => Http::response(['data' => [
+            ['nama_peserta' => 'Siti Aminah', 'tingkat_perhatian' => 'tinggi',
+             'alasan_perhatian' => ['Gangguan jantung'], 'alasan_catatan' => [],
+             'kontak_darurat' => ['nama' => 'Budi', 'hubungan' => 'Suami', 'hp' => '0812']],
+            ['nama_peserta' => 'Rina', 'tingkat_perhatian' => 'sedang',
+             'alasan_perhatian' => [], 'alasan_catatan' => ['Pantangan makanan: Tidak suka pedas'],
+             'kontak_darurat' => ['nama' => 'Ani', 'hubungan' => 'Ibu', 'hp' => '0813']],
+            ['nama_peserta' => 'Joko', 'tingkat_perhatian' => 'aman',
+             'alasan_perhatian' => [], 'alasan_catatan' => [],
+             'kontak_darurat' => ['nama' => 'Sri', 'hubungan' => 'Istri', 'hp' => '0814']],
+        ]]),
+        '*/pendaftaran/7' => Http::response(balasanDetail()),
+    ]);
+
+    Livewire::actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaRiwayat')
+        ->assertSee('Perlu perhatian')
+        ->assertSee('Menuntut kesiapan sebelum berangkat')
+        ->assertSee('Ada catatan')
+        ->assertSee('Cukup diingat di lapangan')
+        ->assertSee('Tanpa catatan');
+});

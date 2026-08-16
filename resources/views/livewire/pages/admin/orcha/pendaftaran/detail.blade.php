@@ -74,6 +74,20 @@ Detail Pendaftaran || lemon
                                 <i class="bi bi-whatsapp"></i> Hubungi Pemesan
                             </a>
 
+                            {{-- Dua berkas untuk dua pembaca: Excel untuk kantor,
+                                 PDF untuk tour leader di lapangan. Keduanya memuat
+                                 data kesehatan, jadi ikut dijaga izin yang sama. --}}
+                            @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
+                                <a href="{{ route('admin.orcha.pendaftaran.pdf', $pendaftaranId) }}"
+                                    class="orcha-btn orcha-btn-utama" title="Manifes untuk tour leader di lapangan">
+                                    <i class="bi bi-filetype-pdf"></i> Manifes PDF
+                                </a>
+                                <a href="{{ route('admin.orcha.pendaftaran.excel', $pendaftaranId) }}"
+                                    class="orcha-btn orcha-btn-emas" title="Data lengkap untuk kantor">
+                                    <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+                                </a>
+                            @endif
+
                             <select class="form-select" style="width:auto"
                                 wire:change="ubahStatus($event.target.value)">
                                 @foreach ($pilihanStatus as $kunci => $label)

@@ -11,7 +11,14 @@
      Butuh: $peserta (array satu riwayat).
 --}}
 @php
-    $khusus = $peserta['ada_catatan_khusus'] ?? false;
+    // Tiga tingkat, bukan dua. "Tinggi" menuntut kesiapan sebelum berangkat —
+    // obat, penyakit yang bisa kambuh, alergi. "Sedang" cukup diingat di
+    // lapangan, seperti pantangan makanan. Kalau semuanya ditandai merah,
+    // penandanya berhenti berarti.
+    $tingkat = $peserta['tingkat_perhatian'] ?? (($peserta['ada_catatan_khusus'] ?? false) ? 'tinggi' : 'aman');
+    $khusus = $tingkat === 'tinggi';
+    $alasanPerhatian = $peserta['alasan_perhatian'] ?? [];
+    $alasanCatatan = $peserta['alasan_catatan'] ?? [];
 
     $inisial = collect(explode(' ', trim($peserta['nama_peserta'] ?? '?')))
         ->filter()
@@ -55,16 +62,40 @@
                     </div>
                 </div>
 
-                @if ($khusus)
+                @if ($tingkat === 'tinggi')
                     <span class="orcha-lencana-awas">
                         <i class="bi bi-exclamation-triangle-fill"></i> Perlu perhatian
                     </span>
+                @elseif ($tingkat === 'sedang')
+                    <span class="orcha-lencana-catat">
+                        <i class="bi bi-journal-text"></i> Ada catatan
+                    </span>
                 @else
                     <span class="orcha-lencana-aman">
-                        <i class="bi bi-check-circle-fill"></i> Tanpa catatan khusus
+                        <i class="bi bi-check-circle-fill"></i> Tanpa catatan
                     </span>
                 @endif
             </div>
+
+            {{-- Alasannya disebut, bukan cuma penandanya. Admin tidak perlu
+                 menebak-nebak bagian mana yang membuatnya ditandai merah. --}}
+            @if ($alasanPerhatian)
+                <div class="orcha-alasan orcha-alasan-tinggi mt-2">
+                    <span class="orcha-label-kecil" style="color:#b91c1c">Menuntut kesiapan sebelum berangkat</span>
+                    <ul class="mb-0 mt-1 ps-3">
+                        @foreach ($alasanPerhatian as $alasan)
+                            <li>{{ $alasan }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if ($alasanCatatan)
+                <div class="orcha-alasan orcha-alasan-sedang mt-2">
+                    <span class="orcha-label-kecil" style="color:#8a6410">Cukup diingat di lapangan</span>
+                    <div class="mt-1">{{ implode(' · ', $alasanCatatan) }}</div>
+                </div>
+            @endif
 
             @if (! empty($peserta['kondisi_khusus']))
                 <div class="mt-2 d-flex flex-wrap gap-1">

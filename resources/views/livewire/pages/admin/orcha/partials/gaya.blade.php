@@ -773,6 +773,20 @@
 
     .orcha-lencana-awas { color: #b91c1c; background: #fee2e2; }
     .orcha-lencana-aman { color: #047857; background: #d1fae5; }
+    .orcha-lencana-catat { color: #8a6410; background: #fef3c7; }
+
+    /* Alasan di balik penandanya, supaya admin tidak menebak bagian mana yang
+       membuat peserta ini ditandai. */
+    .orcha-alasan {
+        font-size: .84rem;
+        border-radius: .65rem;
+        padding: .5rem .75rem;
+        line-height: 1.5;
+    }
+
+    .orcha-alasan-tinggi { background: #fff5f5; border-left: 3px solid #dc2626; color: #7f1d1d; }
+    .orcha-alasan-sedang { background: #fffaf0; border-left: 3px solid #f59e0b; color: #78350f; }
+    .orcha-alasan ul { font-size: .84rem; }
 
     .orcha-cip-kondisi {
         font-size: .72rem;
@@ -922,6 +936,7 @@
        saat tempatnya sempit. */
     .orcha-lencana-awas,
     .orcha-lencana-aman,
+    .orcha-lencana-catat,
     .orcha-tautan-wa,
     .orcha-tautan-balik {
         display: inline-flex;
@@ -932,6 +947,7 @@
 
     .orcha-lencana-awas i,
     .orcha-lencana-aman i,
+    .orcha-lencana-catat i,
     .orcha-tautan-wa i,
     .orcha-tautan-balik i {
         display: inline-flex;
