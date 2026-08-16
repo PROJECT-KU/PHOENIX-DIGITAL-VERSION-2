@@ -104,6 +104,40 @@
         flex: 0 0 auto;
     }
 
+    /* Ikon yang duduk sendirian di dalam kotak.
+
+       Kotaknya sudah menengahkan isinya dengan flex, tapi yang ditengahkan
+       adalah KOTAK BARIS ikonnya — bukan glifnya. Tinggi kotak baris itu
+       mengikuti line-height halaman (1,5), sedangkan glifnya digambar di
+       garis dasar, dekat sisi bawah kotak baris. Hasilnya glif turun sekitar
+       5px: kotak elemennya di tengah, gambarnya tidak.
+
+       Diukur, bukan dikira: sebelum ini ruang di atas ikon 14px sedangkan di
+       bawahnya 4px. Alat ukur yang membandingkan kotak elemen tidak melihat
+       apa pun — mata melihatnya, dan mata benar.
+
+       line-height 1 membuat kotak baris sepas glifnya, dan vertical-align
+       bawaan bootstrap-icons dinolkan karena geseran itu memang ditujukan
+       untuk ikon yang berdampingan dengan teks, bukan yang berdiri sendiri
+       di dalam kotak. */
+    .orcha-cek-ikon > i,
+    .orcha-ikon-kotak > i,
+    .orcha-cek-tutup > i,
+    .stat-icon-wrapper > i,
+    .empty-state-icon-wrapper > i {
+        display: block;
+        line-height: 1;
+    }
+
+    .orcha-cek-ikon > i::before,
+    .orcha-ikon-kotak > i::before,
+    .orcha-cek-tutup > i::before,
+    .stat-icon-wrapper > i::before,
+    .empty-state-icon-wrapper > i::before {
+        display: block;
+        vertical-align: 0;
+    }
+
     /* Isian tanpa ikon tidak lagi menyisakan tempat kosong untuk ikon.
 
        Layout lemon memberi SETIAP .form-control ruang 45px di kiri, karena
