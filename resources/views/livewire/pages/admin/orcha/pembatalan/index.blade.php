@@ -52,14 +52,24 @@ Pembatalan Orcha || lemon
                                 <tr wire:key="pembatalan-{{ $baris['id'] }}">
                                     <td>
                                         <span class="orcha-kode">{{ $baris['kode_pendaftaran'] }}</span>
+                                        {{-- Pembatalan kini datang dari dua jenis pesanan; jenisnya
+                                             disebut supaya admin tahu ke mana harus memeriksa. --}}
                                         <div class="text-muted" style="font-size:.75rem">
+                                            {{ $baris['jenis_label'] ?? 'Open Trip' }} ·
                                             {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y') }}
                                         </div>
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $baris['nama_pemohon'] }}</div>
                                         <div class="text-muted" style="font-size:.78rem">
-                                            {{ $baris['whatsapp'] }} · {{ $baris['jumlah_dibatalkan'] }} peserta
+                                            {{ $baris['whatsapp'] }}
+                                            {{-- "1 peserta" pada sewa kendaraan menyesatkan: yang
+                                                 dibatalkan unitnya, bukan orangnya. --}}
+                                            @if (($baris['jenis'] ?? 'open_trip') !== 'sewa_kendaraan')
+                                                · {{ $baris['jumlah_dibatalkan'] }} peserta
+                                            @else
+                                                · 1 unit
+                                            @endif
                                         </div>
                                     </td>
                                     <td>

@@ -1029,6 +1029,31 @@ test('detail pelanggan menampilkan tagihan, peserta, dan bukti bayarnya', functi
         ->assertSee('Bukti Pembayaran');
 });
 
+test('pembatalan sewa kendaraan tidak dihitung dalam peserta', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['diajukan' => 'Diajukan']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 5, 'kode_pendaftaran' => 'SK-1608-ZGAN',
+            'jenis' => 'sewa_kendaraan', 'jenis_label' => 'Sewa Kendaraan',
+            'nama_pemohon' => 'Rina Wijaya', 'whatsapp' => '081298765432', 'email' => null,
+            'alasan' => 'kondisi_kesehatan', 'alasan_label' => 'Kondisi kesehatan',
+            'penjelasan' => null, 'jumlah_dibatalkan' => 1,
+            'rekening' => ['bank' => 'BCA', 'nomor' => '123', 'atas_nama' => 'Rina Wijaya'],
+            'status' => 'diajukan', 'status_label' => 'Diajukan', 'catatan_admin' => null,
+            'dibuat_pada' => '2026-08-16T10:00:00+07:00',
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    // "1 peserta" pada sewa kendaraan menyesatkan: yang dibatalkan unitnya,
+    // bukan orangnya. Jenisnya pun disebut supaya admin tahu ke mana memeriksa.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembatalan')
+        ->assertOk()
+        ->assertSee('Sewa Kendaraan')
+        ->assertSee('1 unit')
+        ->assertDontSee('1 peserta');
+});
+
 test('pengajuan pembatalan tampil sebagai peringatan di detail', function () {
     Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail([
         'pembatalan' => [
