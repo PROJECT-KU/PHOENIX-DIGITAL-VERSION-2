@@ -92,9 +92,14 @@ class OrchaPembayaranList extends Component
         $paket = data_get($baris, 'pesanan.keterangan');
         $tagihan = data_get($baris, 'pesanan.tagihan') ?: [];
 
+        // Emoji dipilih dari yang sudah lama ada di Unicode (2010 ke bawah),
+        // bukan yang terbaru. Emoji baru seperti 🧾 belum tentu ada di ponsel
+        // lama, dan yang tidak ada digambar sebagai kotak kosong — pelanggan
+        // yang paling sering pakai ponsel lama justru yang paling perlu
+        // membaca kabar ini.
         $pembuka = "Halo {$nama} 👋\n\n"
             ."Kabar dari *Orcha Journey* soal pembayaran Anda:\n"
-            ."🧾 Kode pesanan: *{$kode}*\n"
+            ."📄 Kode pesanan: *{$kode}*\n"
             .($paket ? "📍 Pesanan: {$paket}\n" : '')
             ."💰 Nominal: *{$nominal}*\n\n";
 

@@ -159,7 +159,8 @@ Bukti Pembayaran Orcha || lemon
                                         @if ($wa)
                                             <a href="{{ $wa }}" target="_blank" rel="noopener"
                                                 class="btn btn-sm orcha-aksi orcha-aksi-wa"
-                                                title="Kabari pelanggan lewat WhatsApp">
+                                                data-wa-pesan="{{ $this->pesanWa($baris) }}"
+                                                title="Kabari pelanggan lewat WhatsApp — pesannya sekaligus disalin">
                                                 <i class="bi bi-whatsapp"></i>
                                             </a>
                                         @endif
@@ -385,7 +386,8 @@ Bukti Pembayaran Orcha || lemon
                             @php $waPopup = $terpilih ? $this->tautanWa($terpilih) : null; @endphp
                             @if ($waPopup)
                                 <a href="{{ $waPopup }}" target="_blank" rel="noopener"
-                                    class="orcha-btn orcha-btn-wa">
+                                    class="orcha-btn orcha-btn-wa"
+                                    data-wa-pesan="{{ $this->pesanWa($terpilih) }}">
                                     <i class="bi bi-whatsapp"></i> Kabari via WA
                                 </a>
                             @endif
@@ -404,7 +406,8 @@ Bukti Pembayaran Orcha || lemon
         </div>
     @endif
 
-    @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
+    @include("livewire.pages.admin.orcha.partials.salin-wa")
+    @include("livewire.pages.admin.orcha.partials.pratinjau-bukti")
     @include('livewire.pages.admin.orcha.partials.skrip')
 
     {{-- Gaya khusus lembar cek pembayaran. Ditulis di sini, bukan di partial

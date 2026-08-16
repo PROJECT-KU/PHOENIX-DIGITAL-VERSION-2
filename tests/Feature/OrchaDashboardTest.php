@@ -835,6 +835,40 @@ test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
     expect($pesan)->toContain('Rp 2.002.000')
         ->and($pesan)->toContain('Budi Santoso')
         ->and($pesan)->toContain('OT-1508-A7K3');
+
+    // Emoji yang dipakai harus yang sudah lama ada di Unicode. Yang terbaru
+    // digambar sebagai kotak kosong di ponsel lama — dan pemakai ponsel lama
+    // justru yang paling perlu membaca kabar ini.
+    expect($pesan)->not->toContain('🧾');
+});
+
+test('pesan whatsapp ikut tersalin supaya emoji tidak bergantung tautan', function () {
+    $baris = [
+        'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+        'nominal' => 858000, 'nominal_formatted' => 'Rp 858.000',
+        'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+        'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => null, 'catatan' => null,
+        'status' => 'diterima', 'status_label' => 'Diterima', 'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi Santoso', 'whatsapp' => '081234567890',
+            'keterangan' => 'Open Trip Banyuwangi', 'tagihan' => ['lunas' => true]],
+        'dibuat_pada' => '2026-08-15T10:00:00+07:00',
+    ];
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembayaran' => ['diterima' => 'Diterima']]]),
+        '*' => Http::response(['data' => [$baris], 'meta' => []]),
+    ]);
+
+    // Sebagian versi aplikasi WhatsApp salah membaca sandi persen pada
+    // tautannya, dan tiap emoji berubah jadi tanda tanya sebelum tampil.
+    // Teks yang disalin ke papan tempel tidak melewati penerjemahan itu sama
+    // sekali — menempel selalu memindahkan karakter yang sama persis.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembayaran')
+        ->assertOk()
+        ->assertSee('data-wa-pesan', false)
+        ->assertSee('👋')
+        ->assertSee('Bila emojinya berantakan di WhatsApp, tempel saja');
 });
 
 test('kabar whatsapp berbeda bunyinya menurut status bukti', function () {
