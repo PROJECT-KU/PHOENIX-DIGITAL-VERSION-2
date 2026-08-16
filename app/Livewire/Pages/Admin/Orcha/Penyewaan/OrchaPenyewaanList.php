@@ -4,10 +4,15 @@ namespace App\Livewire\Pages\Admin\Orcha\Penyewaan;
 
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class OrchaPenyewaanList extends Component
 {
     use MemanggilOrcha;
+    use WithFileUploads;
+
+    /** Foto berkas jaminan penyewa (KTP/SIM) yang baru dipilih admin. */
+    public $berkasJaminan;
 
     /** Penyewaan yang sedang dibuka lembar serah terimanya. */
     public ?int $serahTerimaUntuk = null;
@@ -94,6 +99,35 @@ class OrchaPenyewaanList extends Component
     public function kembaliSekarang(): void
     {
         $this->dikembalikanPada = now()->format('Y-m-d\TH:i');
+    }
+
+    /**
+     * Menyimpan foto berkas jaminan penyewa.
+     *
+     * Dikirim terpisah dari lembar serah terima, jadi admin bisa memotret KTP
+     * saat unit diserahkan tanpa harus menunggu seluruh lembarnya lengkap.
+     * Isian bertipe berkas juga tidak bisa ikut di badan JSON yang sama.
+     */
+    public function simpanJaminan(): void
+    {
+        if (! $this->serahTerimaUntuk || ! $this->berkasJaminan) {
+            return;
+        }
+
+        $this->validate([
+            'berkasJaminan' => 'image|max:8192',
+        ], [], ['berkasJaminan' => 'foto berkas jaminan']);
+
+        $berhasil = $this->kirimData(
+            "/penyewaan/{$this->serahTerimaUntuk}/berkas-jaminan",
+            [],
+            'Foto berkas jaminan tersimpan di Orcha.',
+            $this->berkasJaminan,
+        );
+
+        if ($berhasil) {
+            $this->reset('berkasJaminan');
+        }
     }
 
     public function tutup(): void

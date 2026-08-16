@@ -2,6 +2,14 @@
 Sewa Kendaraan Masuk || lemon
 @stop
 
+@php
+    // Berkas disimpan di Orcha, jadi jalurnya dilengkapi asal servernya.
+    $asalOrcha = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
+    $tautanBukti = fn ($jalur) => $jalur
+        ? (str_starts_with($jalur, 'http') ? $jalur : $asalOrcha . $jalur)
+        : null;
+@endphp
+
 <div>
     @include('livewire.pages.admin.orcha.partials.gaya')
 
@@ -245,10 +253,40 @@ Sewa Kendaraan Masuk || lemon
                                     wire:model="bahanBakarAkhir">
                             </div>
 
-                            <div class="col-12">
+                            <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold">Jaminan yang dititipkan</label>
                                 <input type="text" class="form-control" placeholder="Mis. KTP asli + fotokopi KK"
                                     wire:model="jaminan">
+                            </div>
+
+                            {{-- Tulisan "KTP asli" cukup untuk mengingat, tidak cukup untuk
+                                 membuktikan. Saat unit tidak kembali, yang dibutuhkan adalah
+                                 gambarnya: nama, alamat, dan nomor yang bisa dibaca. Bisa
+                                 dipotret langsung lewat kamera ponsel. --}}
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold">Foto berkas jaminan (KTP/SIM)</label>
+                                <div class="d-flex gap-2">
+                                    <input type="file" class="form-control" accept="image/*" capture="environment"
+                                        wire:model="berkasJaminan">
+                                    <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil"
+                                        wire:click="simpanJaminan" wire:loading.attr="disabled"
+                                        @disabled(! $berkasJaminan)>
+                                        <i class="bi bi-upload"></i> Simpan
+                                    </button>
+                                </div>
+                                @error('berkasJaminan')
+                                    <div class="text-danger" style="font-size:.8rem">{{ $message }}</div>
+                                @enderror
+                                <div class="form-text">
+                                    @if ($sewa['berkas_jaminan'] ?? null)
+                                        <a href="{{ $tautanBukti($sewa['berkas_jaminan']) }}" target="_blank"
+                                            rel="noopener" class="orcha-tautan-wa">
+                                            <i class="bi bi-image"></i> Foto tersimpan — klik untuk melihat
+                                        </a>
+                                    @else
+                                        Data pribadi; pengunggahannya tercatat di Orcha.
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
@@ -369,28 +407,56 @@ Sewa Kendaraan Masuk || lemon
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda keterlambatan</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
+                                    <div class="orcha-rupiah">
                                         <input type="text" inputmode="numeric" class="form-control orcha-uang"
                                             wire:model.blur="dendaKeterlambatan">
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda kerusakan</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
+                                    <div class="orcha-rupiah">
                                         <input type="text" inputmode="numeric" class="form-control orcha-uang"
                                             wire:model.blur="dendaKerusakan">
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Denda lain</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">Rp</span>
+                                    <div class="orcha-rupiah">
                                         <input type="text" inputmode="numeric" class="form-control orcha-uang"
                                             wire:model.blur="dendaLain">
                                     </div>
                                 </div>
+                                {{-- Total ikut berubah begitu salah satu denda diubah.
+                                     Angka inilah yang dibacakan ke penyewa; menjumlahkannya
+                                     di kepala sambil orangnya menunggu di loket adalah cara
+                                     paling mudah untuk salah. --}}
+                                @php
+                                    $angka = fn ($nilai) => (int) preg_replace('/\D/', '', (string) $nilai);
+                                    $totalDenda = $angka($dendaKeterlambatan) + $angka($dendaKerusakan) + $angka($dendaLain);
+                                    $totalTagihan = (int) ($sewa['estimasi_biaya'] ?? 0) + $totalDenda;
+                                @endphp
+
+                                <div class="col-12">
+                                    <div class="orcha-ringkas {{ $totalDenda > 0 ? 'sisa' : '' }}">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                            <div>
+                                                <div class="orcha-label-kecil">
+                                                    <i class="bi bi-calculator"></i> Total tagihan penyewa
+                                                </div>
+                                                <div class="angka">Rp {{ number_format($totalTagihan, 0, ',', '.') }}</div>
+                                            </div>
+                                            <div class="text-end" style="font-size:.82rem">
+                                                <div class="text-muted">
+                                                    Sewa Rp {{ number_format((int) ($sewa['estimasi_biaya'] ?? 0), 0, ',', '.') }}
+                                                </div>
+                                                <div class="{{ $totalDenda > 0 ? 'text-danger fw-bold' : 'text-muted' }}">
+                                                    Denda Rp {{ number_format($totalDenda, 0, ',', '.') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-12">
                                     <label class="form-label small fw-semibold">Catatan denda</label>
                                     <textarea rows="2" class="form-control" wire:model="catatanDenda"

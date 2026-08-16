@@ -1005,6 +1005,38 @@
         box-shadow: none;
     }
 
+    /* ============ ISIAN RUPIAH ============
+       "Rp" ditaruh DI DALAM kotak isian, bukan sebagai kotak tempelan di
+       sebelahnya. Kotak tempelan memecah satu isian jadi dua kotak bersebelahan
+       dengan garis di tengahnya, dan pada baris yang berisi beberapa isian uang
+       hasilnya terlihat seperti tabel yang patah-patah. */
+    .orcha-rupiah {
+        position: relative;
+    }
+
+    .orcha-rupiah::before {
+        content: 'Rp';
+        position: absolute;
+        left: .85rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: .86rem;
+        font-weight: 700;
+        color: #94a3b8;
+        pointer-events: none;
+        z-index: 3;
+    }
+
+    .orcha-rupiah .form-control {
+        padding-left: 2.4rem;
+        font-weight: 600;
+    }
+
+    .orcha-rupiah .form-control:focus + span,
+    .orcha-rupiah:focus-within::before {
+        color: #1d6fa5;
+    }
+
     .orcha-btn-kecil {
         padding: .34rem .7rem;
         font-size: .78rem;
