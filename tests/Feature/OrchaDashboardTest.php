@@ -1296,3 +1296,61 @@ test('ketikan biaya kerusakan bertahan walau nama bagiannya berspasi', function 
         ->assertSet('catatanDenda', fn ($catatan) => str_contains($catatan, 'Bodi depan & bemper')
             && str_contains($catatan, 'Rp 1.250.000'));
 });
+
+test('usulan denda yang belum disimpan ditandai, bukan dibiarkan menyesatkan', function () {
+    // Persis keadaan SK-1608-ZGAN: unit sudah kembali, sistem punya usulan,
+    // tapi tidak ada satu rupiah pun yang ditetapkan — sehingga lembar serah
+    // terima terlihat berbeda dengan nota dan halaman detail.
+    $baris = balasanSewa([
+        'dikembalikan_pada' => '2026-08-20T14:38:00+07:00',
+        'denda_keterlambatan' => 0, 'denda_kerusakan' => 0, 'denda_lain' => 0,
+        'total_denda' => 0, 'total_tagihan' => 300000, 'estimasi_biaya' => 300000,
+        'denda_keterlambatan_usulan' => 1200000,
+        'denda_kerusakan_usulan' => 650000,
+        'rincian_denda_kerusakan' => [
+            ['kunci' => 'bodi_kiri', 'bagian' => 'Bodi samping kiri', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 200000],
+        ],
+    ]);
+
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*/penyewaan/12' => Http::response(['data' => $baris['data'][0]]),
+        '*' => Http::response($baris),
+    ]);
+
+    // Di lembar serah terima: peringatan bahwa angkanya belum tersimpan
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', $baris['data'][0])
+        ->assertSee('belum tersimpan')
+        ->assertSee('Simpan Serah Terima');
+
+    // Di halaman detail: penanda bahwa ada usulan yang belum ditetapkan
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/penyewaan/12')
+        ->assertOk()
+        ->assertSee('Ada usulan denda yang belum ditetapkan')
+        ->assertSee('Rp 1.200.000')
+        ->assertSee('Rp 650.000');
+});
+
+test('denda yang sudah ditetapkan tidak lagi ditandai belum tersimpan', function () {
+    $baris = balasanSewa([
+        'dikembalikan_pada' => '2026-08-20T14:38:00+07:00',
+        'denda_keterlambatan' => 1200000, 'denda_kerusakan' => 650000, 'denda_lain' => 0,
+        'total_denda' => 1850000, 'total_tagihan' => 2150000, 'estimasi_biaya' => 300000,
+        'denda_keterlambatan_usulan' => 1200000, 'denda_kerusakan_usulan' => 650000,
+    ]);
+
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*/penyewaan/12' => Http::response(['data' => $baris['data'][0]]),
+        '*' => Http::response($baris),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/penyewaan/12')
+        ->assertOk()
+        ->assertDontSee('Ada usulan denda yang belum ditetapkan')
+        ->assertSee('Rp 2.150.000');
+});

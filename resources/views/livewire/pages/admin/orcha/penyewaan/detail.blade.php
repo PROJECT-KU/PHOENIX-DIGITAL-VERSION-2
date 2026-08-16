@@ -92,6 +92,43 @@ Detail Sewa Kendaraan || lemon
                 </div>
             </div>
 
+            {{-- Unit sudah kembali, sistem punya usulan denda, tetapi tidak ada
+                 satu rupiah pun yang ditetapkan. Tanpa penanda ini, angka di
+                 lembar serah terima terlihat berbeda dengan nota dan halaman
+                 ini — dan yang mengira ada yang rusak adalah admin, padahal
+                 yang kurang cuma satu tekanan tombol Simpan. --}}
+            @php
+                $usulanBelumDitetapkan = ($sewa['dikembalikan_pada'] ?? null)
+                    && ($sewa['total_denda'] ?? 0) === 0
+                    && (($sewa['denda_keterlambatan_usulan'] ?? 0) + ($sewa['denda_kerusakan_usulan'] ?? 0)) > 0;
+            @endphp
+
+            @if ($usulanBelumDitetapkan)
+                <div class="alert alert-warning border-0 rounded-4 d-flex gap-3 align-items-start">
+                    <i class="bi bi-exclamation-circle-fill fs-4"></i>
+                    <div>
+                        <strong>Ada usulan denda yang belum ditetapkan</strong>
+                        <div style="font-size:.88rem" class="mt-1">
+                            Sistem menghitung
+                            @if (($sewa['denda_keterlambatan_usulan'] ?? 0) > 0)
+                                keterlambatan {{ $rp($sewa['denda_keterlambatan_usulan']) }}
+                            @endif
+                            @if (($sewa['denda_keterlambatan_usulan'] ?? 0) > 0 && ($sewa['denda_kerusakan_usulan'] ?? 0) > 0)
+                                dan
+                            @endif
+                            @if (($sewa['denda_kerusakan_usulan'] ?? 0) > 0)
+                                kerusakan {{ $rp($sewa['denda_kerusakan_usulan']) }}
+                            @endif
+                            — tapi yang tercatat masih Rp 0, jadi nota dan tagihan belum memuatnya.
+                        </div>
+                        <div style="font-size:.85rem" class="mt-1">
+                            Buka <strong>Serah terima</strong> di daftar penyewaan, periksa angkanya,
+                            lalu simpan agar ikut ditagihkan.
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             @if ($kerusakan)
                 <div class="alert alert-danger border-0 rounded-4 d-flex gap-3 align-items-start">
                     <i class="bi bi-tools fs-4"></i>

@@ -444,7 +444,32 @@ Sewa Kendaraan Masuk || lemon
                                     $angka = fn ($nilai) => (int) preg_replace('/\D/', '', (string) $nilai);
                                     $totalDenda = $angka($dendaKeterlambatan) + $angka($dendaKerusakan) + $angka($dendaLain);
                                     $totalTagihan = (int) ($sewa['estimasi_biaya'] ?? 0) + $totalDenda;
+
+                                    // Yang tersimpan di Orcha vs yang sedang tampil di layar.
+                                    // Angka usulan terisi sendiri saat lembar ini dibuka, dan
+                                    // selama belum disimpan, nota serta halaman detail masih
+                                    // memakai angka lama — itu yang membuat ketiganya terlihat
+                                    // berbeda.
+                                    $dendaTersimpan = (int) ($sewa['total_denda'] ?? 0);
+                                    $belumTersimpan = $totalDenda !== $dendaTersimpan;
                                 @endphp
+
+                                @if ($belumTersimpan)
+                                    <div class="col-12">
+                                        <div class="alert alert-warning border-0 rounded-3 mb-0 d-flex gap-2 align-items-start"
+                                            style="font-size:.85rem">
+                                            <i class="bi bi-exclamation-circle-fill"></i>
+                                            <div>
+                                                <strong>Angka di bawah ini belum tersimpan.</strong>
+                                                Yang tercatat di Orcha masih
+                                                <strong>Rp {{ number_format($dendaTersimpan, 0, ',', '.') }}</strong>,
+                                                dan itulah yang dipakai nota serta halaman detail.
+                                                Tekan <strong>Simpan Serah Terima</strong> supaya dendanya benar-benar
+                                                ditagihkan.
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
 
                                 <div class="col-12">
                                     <div class="orcha-ringkas {{ $totalDenda > 0 ? 'sisa' : '' }}">
@@ -452,6 +477,9 @@ Sewa Kendaraan Masuk || lemon
                                             <div>
                                                 <div class="orcha-label-kecil">
                                                     <i class="bi bi-calculator"></i> Total tagihan penyewa
+                                                    @if ($belumTersimpan)
+                                                        <span class="orcha-lencana-catat ms-1">belum tersimpan</span>
+                                                    @endif
                                                 </div>
                                                 <div class="angka">Rp {{ number_format($totalTagihan, 0, ',', '.') }}</div>
                                             </div>
