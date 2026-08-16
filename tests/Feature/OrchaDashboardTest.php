@@ -5,6 +5,7 @@ use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Models\EmployeeDetail;
 use App\Models\Permission;
@@ -827,4 +828,129 @@ test('daftar pendaftaran mengelompokkan peserta per titik jemput', function () {
         ->assertSee('Jogja:')
         // Kelengkapan kesehatan ikut terlihat tanpa membuka apa pun
         ->assertSee('1/3 riwayat kesehatan');
+});
+
+/* --------------------- DETAIL PELANGGAN --------------------- */
+
+function balasanDetail(array $ubah = []): array
+{
+    return ['data' => array_merge([
+        'id' => 7,
+        'kode' => 'OT-1608-A7KD',
+        'nama' => 'Siti Aminah',
+        'whatsapp' => '081298765432',
+        'email' => 'siti@contoh.test',
+        'jumlah_peserta' => 2,
+        'peserta' => [
+            ['nama' => 'Siti Aminah', 'titik_jemput' => 'Jogja'],
+            ['nama' => 'Budi Santoso', 'titik_jemput' => 'Surakarta'],
+        ],
+        'jemput_per_titik' => ['Jogja' => ['Siti Aminah'], 'Surakarta' => ['Budi Santoso']],
+        'kesehatan_terisi' => 1,
+        'kesehatan_lengkap' => false,
+        'peserta_belum_isi' => ['Budi Santoso'],
+        'paket' => ['id' => 1, 'nama' => 'Open Trip Banyuwangi'],
+        'tanggal_berangkat' => '2026-09-12',
+        'titik_jemput' => 'Jogja, Surakarta',
+        'catatan' => 'Mohon dijemput di gerbang utama.',
+        'status' => 'baru',
+        'status_label' => 'Baru',
+        'jumlah_riwayat_kesehatan' => 1,
+        'dibuat_pada' => '2026-08-16T08:00:00+07:00',
+        'tagihan' => [
+            'total' => 2860000, 'total_teks' => 'Rp 2.860.000',
+            'sudah' => 858000, 'sudah_teks' => 'Rp 858.000',
+            'sisa' => 2002000, 'sisa_teks' => 'Rp 2.002.000',
+            'lunas' => false,
+        ],
+        'pembayaran' => [[
+            'id' => 3, 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+            'nominal' => 858000, 'nominal_formatted' => 'Rp 858.000',
+            'tanggal_transfer' => '2026-08-16', 'bank_pengirim' => 'BCA',
+            'atas_nama_pengirim' => 'Siti Aminah', 'bukti' => '/storage/bukti.webp',
+            'catatan' => null, 'status' => 'menunggu', 'status_label' => 'Menunggu Dicek',
+            'catatan_admin' => null, 'dibuat_pada' => '2026-08-16T08:05:00+07:00',
+        ]],
+        'pembatalan' => null,
+    ], $ubah)];
+}
+
+test('detail pelanggan menampilkan tagihan, peserta, dan bukti bayarnya', function () {
+    Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('Siti Aminah')
+        ->assertSee('OT-1608-A7KD')
+        // Posisi tagihan: yang paling sering ditanyakan lewat WhatsApp
+        ->assertSee('Rp 2.860.000')
+        ->assertSee('Rp 858.000')
+        ->assertSee('Rp 2.002.000')
+        // Peserta berikut titik jemput dan status pengisian kesehatannya
+        ->assertSee('Budi Santoso')
+        ->assertSee('Surakarta')
+        ->assertSee('Belum mengisi')
+        ->assertSee('Bukti Pembayaran');
+});
+
+test('pengajuan pembatalan tampil sebagai peringatan di detail', function () {
+    Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail([
+        'pembatalan' => [
+            'id' => 2, 'nama_pemohon' => 'Siti Aminah', 'alasan_label' => 'Kondisi kesehatan',
+            'penjelasan' => 'Sakit mendadak', 'jumlah_dibatalkan' => 1,
+            'rekening' => 'BCA · 1234567890 a.n. Siti Aminah',
+            'status' => 'diajukan', 'dibuat_pada' => '2026-08-16T09:00:00+07:00',
+        ],
+    ]))]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('Ada pengajuan pembatalan')
+        ->assertSee('Kondisi kesehatan')
+        ->assertSee('1234567890');
+});
+
+test('riwayat kesehatan di detail hanya untuk akun berizin', function () {
+    Http::fake([
+        '*/pendaftaran/7' => Http::response(balasanDetail()),
+        '*/riwayat-kesehatan' => Http::response(['data' => []]),
+    ]);
+
+    // Tanpa izin: tombolnya tidak ada, dan pemanggilannya ditolak di server
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('hanya bisa dibuka akun berizin')
+        ->assertDontSee('Lihat Riwayat Kesehatan');
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaRiwayat')
+        ->assertForbidden();
+});
+
+test('akun berizin bisa membuka riwayat kesehatan dari halaman detail', function () {
+    Http::fake([
+        '*/pendaftaran/7/riwayat-kesehatan' => Http::response(['data' => [[
+            'nama_peserta' => 'Siti Aminah',
+            'usia' => 30,
+            'jenis_kelamin' => 'Perempuan',
+            'golongan_darah' => 'O',
+            'riwayat_penyakit' => 'Asma ringan',
+            'kondisi_khusus' => ['Asma'],
+            'kontak_darurat' => ['nama' => 'Budi', 'hubungan' => 'Suami', 'hp' => '081298765432'],
+            'ada_catatan_khusus' => true,
+        ]]]),
+        '*/pendaftaran/7' => Http::response(balasanDetail()),
+    ]);
+
+    Livewire::actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaRiwayat')
+        ->assertSet('riwayatTerbuka', true)
+        ->assertSee('Asma ringan')
+        ->assertSee('Perlu perhatian')
+        ->assertSee('Kontak darurat');
 });

@@ -657,4 +657,191 @@
         align-items: center;
         line-height: 1;
     }
+
+    /* ============ DETAIL PELANGGAN & RIWAYAT KESEHATAN ============
+       Gayanya ditulis di sini, bukan lewat Vite: public/build tidak ikut
+       terkirim ke server, jadi kelas yang hanya ada di berkas CSS tidak
+       pernah sampai. */
+
+    .orcha-label-kecil {
+        font-size: .68rem;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        font-weight: 600;
+        display: block;
+    }
+
+    /* ---- ringkasan angka di kepala halaman detail ---- */
+    .orcha-ringkas {
+        background: linear-gradient(135deg, #f8fbfd 0%, #eef6fb 100%);
+        border: 1px solid #dbe7f0;
+        border-radius: 1rem;
+        padding: .95rem 1.1rem;
+        height: 100%;
+    }
+
+    .orcha-ringkas .angka {
+        font-size: 1.28rem;
+        font-weight: 800;
+        color: #0f2d4a;
+        line-height: 1.25;
+    }
+
+    .orcha-ringkas.sisa .angka { color: #b45309; }
+    .orcha-ringkas.lunas .angka { color: #047857; }
+
+    /* ---- palang kemajuan pembayaran ---- */
+    .orcha-palang {
+        height: 9px;
+        background: #e8eef5;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+
+    .orcha-palang span {
+        display: block;
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, #1d6fa5, #0f2d4a);
+    }
+
+    .orcha-palang.lunas span { background: linear-gradient(90deg, #10b981, #047857); }
+
+    /* ---- baris peserta ---- */
+    .orcha-peserta {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .6rem .8rem;
+        border: 1px solid #eef2f7;
+        border-radius: .85rem;
+        background: #fff;
+    }
+
+    .orcha-peserta + .orcha-peserta { margin-top: .45rem; }
+
+    .orcha-inisial {
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: .82rem;
+        letter-spacing: .02em;
+        color: #0f2d4a;
+        background: linear-gradient(135deg, #dbeafe, #cfe4f2);
+    }
+
+    .orcha-inisial-awas {
+        color: #7f1d1d;
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+    }
+
+    /* ---- kartu riwayat kesehatan ---- */
+    .orcha-kesehatan {
+        border: 1px solid #e6edf3;
+        border-left: 4px solid #cfe4f2;
+        border-radius: 1rem;
+        padding: 1rem 1.1rem;
+        background: #fff;
+    }
+
+    .orcha-kesehatan + .orcha-kesehatan { margin-top: .85rem; }
+
+    /* Pita merah di sisi kiri: saat rombongannya dua belas orang, lencana
+       kecil di pojok kartu tidak pernah terbaca. */
+    .orcha-kesehatan-awas {
+        border-left-color: #dc2626;
+        background: linear-gradient(90deg, #fff7f7 0%, #fff 42%);
+    }
+
+    .orcha-lencana-awas,
+    .orcha-lencana-aman {
+        font-size: .7rem;
+        font-weight: 700;
+        padding: .28rem .6rem;
+        border-radius: 99px;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+    }
+
+    .orcha-lencana-awas { color: #b91c1c; background: #fee2e2; }
+    .orcha-lencana-aman { color: #047857; background: #d1fae5; }
+
+    .orcha-cip-kondisi {
+        font-size: .72rem;
+        font-weight: 600;
+        color: #0f2d4a;
+        background: #eef6fb;
+        border: 1px solid #cfe4f2;
+        border-radius: 99px;
+        padding: .2rem .58rem;
+    }
+
+    .orcha-kotak-medis {
+        background: #fafcfd;
+        border: 1px solid #eef2f7;
+        border-radius: .75rem;
+        padding: .55rem .8rem;
+    }
+
+    .orcha-baris-medis {
+        padding: .32rem 0;
+        font-size: .86rem;
+    }
+
+    .orcha-baris-medis + .orcha-baris-medis { border-top: 1px dashed #e6edf3; }
+
+    .orcha-kotak-darurat {
+        background: #f7fbfd;
+        border: 1px dashed #cfe4f2;
+        border-radius: .75rem;
+        padding: .55rem .8rem;
+        font-size: .86rem;
+        color: #0f2d4a;
+    }
+
+    .orcha-tautan-wa {
+        color: #128c7e;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .orcha-tautan-wa:hover { text-decoration: underline; }
+
+    /* ---- bukti pembayaran ---- */
+    .orcha-bukti {
+        width: 62px;
+        height: 62px;
+        object-fit: cover;
+        border-radius: .7rem;
+        border: 1px solid #e6edf3;
+    }
+
+    .orcha-garis-waktu {
+        border-left: 2px solid #e8eef5;
+        padding-left: 1rem;
+        margin-left: .45rem;
+    }
+
+    .orcha-garis-waktu > div { position: relative; }
+
+    .orcha-garis-waktu > div::before {
+        content: '';
+        position: absolute;
+        left: -1.42rem;
+        top: .45rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #1d6fa5;
+        box-shadow: 0 0 0 3px #fff;
+    }
 </style>

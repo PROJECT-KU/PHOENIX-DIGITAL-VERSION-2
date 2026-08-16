@@ -112,7 +112,14 @@ Pendaftaran Open Trip || lemon
                                             @endforeach
                                         </select>
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end text-nowrap">
+                                        {{-- Data pelanggan selengkapnya — pembayaran, peserta, dan
+                                             pengajuan pembatalan — ada di halamannya sendiri. --}}
+                                        <a href="{{ route('admin.orcha.pendaftaran.detail', $baris['id']) }}"
+                                            class="btn btn-sm orcha-aksi orcha-aksi-lihat" title="Lihat detail pelanggan">
+                                            <i class="bi bi-person-lines-fill"></i>
+                                        </a>
+
                                         @if (! auth()->user()->hasPermission('view_orcha_kesehatan'))
                                             <span class="text-muted small">—</span>
                                         @elseif (($baris['jumlah_riwayat_kesehatan'] ?? 0) > 0)
@@ -166,66 +173,7 @@ Pendaftaran Open Trip || lemon
                         </div>
 
                         @forelse ($riwayat as $peserta)
-                            <div class="border rounded-4 p-3 mb-3">
-                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                    <div>
-                                        <div class="fw-bold">{{ $peserta['nama_peserta'] ?? '—' }}</div>
-                                        <div class="text-muted small">
-                                            {{ ($peserta['usia'] ?? null) ? $peserta['usia'] . ' tahun' : '' }}
-                                            {{ ($peserta['jenis_kelamin'] ?? null) ? '· ' . $peserta['jenis_kelamin'] : '' }}
-                                            {{ ($peserta['golongan_darah'] ?? null) ? '· Gol. ' . $peserta['golongan_darah'] : '' }}
-                                        </div>
-                                    </div>
-                                    @if ($peserta['ada_catatan_khusus'] ?? false)
-                                        <span class="badge bg-warning text-dark">Perlu perhatian</span>
-                                    @endif
-                                </div>
-
-                                <div class="row g-2 small">
-                                    @foreach ([
-                                        'Riwayat penyakit' => $peserta['riwayat_penyakit'] ?? null,
-                                        'Alergi' => $peserta['alergi'] ?? null,
-                                        'Obat rutin' => $peserta['obat_rutin'] ?? null,
-                                        'Riwayat operasi' => $peserta['riwayat_operasi'] ?? null,
-                                        'Pantangan makanan' => $peserta['pantangan_makanan'] ?? null,
-                                        'Pantangan kegiatan' => $peserta['pantangan_kegiatan'] ?? null,
-                                        'Kemampuan renang' => $peserta['kemampuan_renang'] ?? null,
-                                        'Asuransi' => $peserta['asuransi'] ?? null,
-                                    ] as $label => $nilai)
-                                        @if ($nilai)
-                                            <div class="col-12 col-md-6">
-                                                <span class="text-muted">{{ $label }}:</span>
-                                                <span class="fw-semibold">{{ $nilai }}</span>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                </div>
-
-                                @if (! empty($peserta['kondisi_khusus']))
-                                    <div class="mt-2">
-                                        <span class="text-muted small">Kondisi khusus:</span>
-                                        @foreach ($peserta['kondisi_khusus'] as $kondisi)
-                                            <span class="badge bg-light text-dark border">{{ $kondisi }}</span>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                <div class="mt-3 pt-2 border-top small">
-                                    <span class="text-muted">Kontak darurat:</span>
-                                    <span class="fw-semibold">
-                                        {{ data_get($peserta, 'kontak_darurat.nama') ?: '—' }}
-                                        ({{ data_get($peserta, 'kontak_darurat.hubungan') ?: '—' }})
-                                        · {{ data_get($peserta, 'kontak_darurat.hp') ?: '—' }}
-                                    </span>
-                                </div>
-
-                                @if (data_get($peserta, 'catatan_tambahan'))
-                                    <div class="mt-2 small">
-                                        <span class="text-muted">Catatan:</span>
-                                        <span>{{ $peserta['catatan_tambahan'] }}</span>
-                                    </div>
-                                @endif
-                            </div>
+                            @include('livewire.pages.admin.orcha.partials.kartu-kesehatan', ['peserta' => $peserta])
                         @empty
                             <p class="text-muted mb-0">Belum ada riwayat kesehatan yang diisi.</p>
                         @endforelse
