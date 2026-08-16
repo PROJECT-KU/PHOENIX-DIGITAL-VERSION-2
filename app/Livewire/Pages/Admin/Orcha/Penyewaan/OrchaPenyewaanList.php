@@ -66,13 +66,30 @@ class OrchaPenyewaanList extends Component
         $this->bahanBakarAwal = $baris['bahan_bakar_awal'] ?? '';
         $this->bahanBakarAkhir = $baris['bahan_bakar_akhir'] ?? '';
         $this->jaminan = $baris['jaminan'] ?? '';
-        $this->kondisiAwal = $baris['kondisi_awal'] ?: [];
+        // Kolom "saat diserahkan" diisikan dari kondisi terakhir unit yang
+        // tercatat. Tanpa ini admin mengetik ulang daftar lecet lama setiap
+        // kali unit disewakan — dan yang lupa diketik akan tertagih ke penyewa
+        // berikutnya sebagai kerusakan baru.
+        $this->kondisiAwal = $baris['kondisi_awal'] ?: ($baris['kondisi_unit_terkini'] ?? []);
         $this->kondisiAkhir = $baris['kondisi_akhir'] ?: [];
 
         $this->dendaKeterlambatan = $baris['denda_keterlambatan'] ?: ($baris['denda_keterlambatan_usulan'] ?? 0);
         $this->dendaKerusakan = $baris['denda_kerusakan'] ?? 0;
         $this->dendaLain = $baris['denda_lain'] ?? 0;
         $this->catatanDenda = $baris['catatan_denda'] ?? '';
+    }
+
+    /**
+     * Menandai unit kembali sekarang juga.
+     *
+     * Serah terima dicatat saat unitnya benar-benar ada di depan admin, jadi
+     * "sekarang" adalah jawaban yang benar hampir setiap kali. Mengetik tanggal
+     * dan jam sendiri hanya menambah peluang salah ketik — dan salah ketik di
+     * sini berarti denda keterlambatan yang salah.
+     */
+    public function kembaliSekarang(): void
+    {
+        $this->dikembalikanPada = now()->format('Y-m-d\TH:i');
     }
 
     public function tutup(): void

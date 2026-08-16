@@ -206,7 +206,20 @@ Sewa Kendaraan Masuk || lemon
                             </div>
                             <div class="col-12 col-md-6">
                                 <label class="form-label small fw-semibold">Unit kembali pada</label>
-                                <input type="datetime-local" class="form-control" wire:model.live="dikembalikanPada">
+                                <div class="d-flex gap-2">
+                                    <input type="datetime-local" class="form-control" wire:model.live="dikembalikanPada">
+                                    {{-- Serah terima dicatat saat unitnya ada di depan admin,
+                                         jadi "sekarang" hampir selalu jawaban yang benar.
+                                         Mengetik sendiri hanya menambah peluang salah ketik —
+                                         dan salah ketik di sini berarti denda yang salah. --}}
+                                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                        wire:click="kembaliSekarang" title="Isi dengan waktu sekarang">
+                                        <i class="bi bi-clock"></i> Sekarang
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    Statusnya otomatis menjadi <strong>Selesai</strong> begitu ini terisi.
+                                </div>
                             </div>
 
                             <div class="col-6 col-md-3">
