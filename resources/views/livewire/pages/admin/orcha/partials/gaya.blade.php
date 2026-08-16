@@ -875,6 +875,31 @@
         font-size: .95em;
     }
 
+    /* Wadah ikon ukuran kartu.
+       Wadah bawaan lemon berukuran 56 px dengan ikon 1,75rem — pas untuk kartu
+       angka di dashboard, terlalu besar untuk baris keterangan. Mengecilkan
+       kotaknya saja lewat gaya menempel membuat ikonnya justru sesak, karena
+       ukuran hurufnya tetap. Jadi keduanya diatur bersama di sini. */
+    .orcha-ikon-kotak {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        border-radius: 11px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        line-height: 1;
+        color: #fff;
+    }
+
+    .orcha-ikon-kotak i {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        vertical-align: 0;
+    }
+
     /* Wadah bulat berisi satu ikon: benar-benar di tengah, mendatar maupun
        menurun, berapa pun ukuran yang dipasang. */
     .orcha-ringkas .stat-icon-wrapper,

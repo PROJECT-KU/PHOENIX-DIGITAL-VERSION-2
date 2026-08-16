@@ -262,7 +262,7 @@ Detail Pendaftaran || lemon
                                     ['Titik jemput rombongan', $pendaftaran['titik_jemput'] ?: 'Dikonfirmasi tim', 'bi-geo-alt'],
                                 ] as [$label, $nilai, $ikon])
                                     <div class="d-flex gap-3">
-                                        <div class="stat-icon-wrapper bg-gradient-blue" style="width:38px;height:38px;flex:0 0 38px">
+                                        <div class="orcha-ikon-kotak bg-gradient-blue">
                                             <i class="bi {{ $ikon }}"></i>
                                         </div>
                                         <div>
