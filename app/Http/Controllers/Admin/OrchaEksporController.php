@@ -46,6 +46,31 @@ class OrchaEksporController extends Controller
     }
 
     /**
+     * Kwitansi pendaftaran — jaring pengaman saat surat tidak sampai.
+     *
+     * Berkasnya dibuat di Orcha, sama persis dengan yang dikirim ke pelanggan,
+     * lalu diteruskan apa adanya. Kalau lemon menggambarnya sendiri, cepat atau
+     * lambat yang dipegang admin berbeda isi dengan yang dipegang pelanggan.
+     *
+     * Tidak menuntut izin data kesehatan: isinya biaya dan peserta, bukan data
+     * medis — dan justru inilah yang perlu cepat dikirim ulang lewat WhatsApp
+     * saat pelanggan mengeluh suratnya tidak masuk.
+     */
+    public function kwitansi(int $pendaftaran)
+    {
+        try {
+            $berkas = $this->orcha->berkas("/pendaftaran/{$pendaftaran}/kwitansi");
+        } catch (OrchaTidakTerjangkau $e) {
+            abort(503, $e->getMessage());
+        }
+
+        return response($berkas['isi'], 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$berkas['nama'].'"',
+        ]);
+    }
+
+    /**
      * Mengambil data pendaftaran beserta riwayat kesehatannya.
      *
      * Riwayat kesehatan diminta lewat jalurnya sendiri, jadi pengunduhannya

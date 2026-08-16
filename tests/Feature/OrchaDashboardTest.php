@@ -5,6 +5,7 @@ use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
+use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Models\EmployeeDetail;
@@ -1090,4 +1091,116 @@ test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
         ->assertSee('Ada catatan')
         ->assertSee('Cukup diingat di lapangan')
         ->assertSee('Tanpa catatan');
+});
+
+/* ---------------- SEWA KENDARAAN: SERAH TERIMA & DENDA ---------------- */
+
+function balasanSewa(array $ubah = []): array
+{
+    return ['data' => [array_merge([
+        'id' => 12, 'kode' => 'SK-1608-B2M9', 'nama' => 'Budi Santoso',
+        'whatsapp' => '081234567890', 'email' => 'budi@contoh.test',
+        'kendaraan' => ['id' => 1, 'nama' => 'Avanza', 'transmisi' => 'Matic'],
+        'satuan' => 'hari', 'satuan_label' => 'Per hari (24 jam)',
+        'durasi' => 1, 'durasi_label' => '1 hari',
+        'tanggal_mulai' => '2026-09-10', 'jam_mulai' => '08:00',
+        'tanggal_selesai' => '2026-09-11', 'jam_selesai' => '08:00',
+        'jadwal_selesai' => '2026-09-11T08:00:00+07:00',
+        'terlambat' => true, 'terlambat_menit' => 180,
+        'denda_keterlambatan_usulan' => 150000,
+        'dengan_sopir' => false,
+        'lokasi_antar' => 'Bandara YIA', 'lokasi_kembali' => 'Kantor Orcha',
+        'diserahkan_pada' => null, 'dikembalikan_pada' => null,
+        'kilometer_awal' => null, 'kilometer_akhir' => null,
+        'bahan_bakar_awal' => null, 'bahan_bakar_akhir' => null,
+        'jaminan' => null, 'kondisi_awal' => [], 'kondisi_akhir' => [], 'kerusakan_baru' => [],
+        'estimasi_biaya' => 500000, 'denda_keterlambatan' => 0, 'denda_kerusakan' => 0,
+        'denda_lain' => 0, 'catatan_denda' => null, 'total_denda' => 0, 'total_tagihan' => 500000,
+        'catatan' => null, 'status' => 'berjalan', 'status_label' => 'Sedang Berjalan',
+        'dibuat_pada' => '2026-09-01T10:00:00+07:00',
+    ], $ubah)], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]];
+}
+
+function rujukanSewa(): array
+{
+    return ['data' => [
+        'status_penyewaan' => ['berjalan' => 'Sedang Berjalan', 'selesai' => 'Selesai'],
+        'pemeriksaan_kendaraan' => ['bodi_depan' => 'Bodi depan & bemper', 'kaca' => 'Kaca & spion'],
+        'kondisi_pemeriksaan' => ['baik' => 'Baik', 'lecet' => 'Lecet / minor', 'rusak' => 'Rusak'],
+    ]];
+}
+
+test('daftar sewa menandai unit yang telat kembali', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/penyewaan')
+        ->assertOk()
+        ->assertSee('telat 3 jam')
+        ->assertSee('Serah terima');
+});
+
+test('lembar serah terima mengisi usulan denda keterlambatan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', balasanSewa()['data'][0])
+        // Usulan sistem terisi supaya admin melanjutkan, bukan mengetik ulang
+        ->assertSet('dendaKeterlambatan', 150000)
+        ->assertSee('Pemeriksaan Fisik')
+        ->assertSee('Usulan sistem untuk keterlambatan');
+});
+
+test('kerusakan baru ditandai, lecet lama tidak', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        // Bodi depan SUDAH lecet sebelum diserahkan; kaca baru rusak
+        ->call('buka', balasanSewa(['kondisi_awal' => ['bodi_depan' => 'lecet', 'kaca' => 'baik']])['data'][0])
+        ->set('kondisiAkhir.bodi_depan', 'lecet')
+        ->set('kondisiAkhir.kaca', 'rusak')
+        ->assertSeeHtml('kerusakan baru');
+});
+
+test('serah terima diteruskan ke orcha lalu lembarnya menutup', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*/serah-terima' => Http::response(['data' => [], 'pesan' => 'ok']),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', balasanSewa()['data'][0])
+        ->set('dikembalikanPada', '2026-09-11T11:00')
+        ->set('dendaKerusakan', 300000)
+        ->set('catatanDenda', 'Spion kanan retak')
+        ->call('simpanSerahTerima')
+        ->assertSet('serahTerimaUntuk', null);
+
+    Http::assertSent(fn ($permintaan) => str_contains($permintaan->url(), '/serah-terima')
+        && $permintaan['denda_kerusakan'] === 300000
+        && $permintaan['catatan_denda'] === 'Spion kanan retak');
+});
+
+test('tombol kwitansi tersedia tanpa izin data kesehatan', function () {
+    Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
+
+    // Justru inilah yang perlu cepat dikirim ulang saat pelanggan mengeluh
+    // suratnya tidak masuk — jadi tidak dikunci di balik izin data medis.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('Kwitansi');
 });

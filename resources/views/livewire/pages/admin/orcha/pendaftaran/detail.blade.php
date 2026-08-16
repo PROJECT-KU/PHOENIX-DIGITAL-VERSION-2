@@ -74,6 +74,15 @@ Detail Pendaftaran || lemon
                                 <i class="bi bi-whatsapp"></i> Hubungi Pemesan
                             </a>
 
+                            {{-- Jaring pengaman saat surat tidak sampai: admin bisa
+                                 mengunduh kwitansi yang sama persis dengan yang dikirim
+                                 ke pelanggan, lalu meneruskannya lewat WhatsApp.
+                                 Tidak menuntut izin data kesehatan — isinya biaya. --}}
+                            <a href="{{ route('admin.orcha.pendaftaran.kwitansi', $pendaftaranId) }}"
+                                class="orcha-btn orcha-btn-lembut" title="Kwitansi yang sama dengan yang dikirim ke pelanggan">
+                                <i class="bi bi-receipt"></i> Kwitansi
+                            </a>
+
                             {{-- Dua berkas untuk dua pembaca: Excel untuk kantor,
                                  PDF untuk tour leader di lapangan. Keduanya memuat
                                  data kesehatan, jadi ikut dijaga izin yang sama. --}}

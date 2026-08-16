@@ -58,6 +58,43 @@ class OrchaClient
     }
 
     /**
+     * Mengambil berkas mentah (PDF) dari Orcha, bukan JSON.
+     *
+     * Dipakai untuk kwitansi: berkasnya dibuat di Orcha supaya sama persis
+     * dengan yang diterima pelanggan, lalu diteruskan apa adanya oleh lemon.
+     *
+     * @return array{isi: string, nama: string}
+     *
+     * @throws OrchaTidakTerjangkau
+     */
+    public function berkas(string $jalur, array $parameter = []): array
+    {
+        if (! $this->siap()) {
+            throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel. Isi ORCHA_API_URL dan ORCHA_API_KEY di .env.');
+        }
+
+        try {
+            $balasan = $this->permintaan()->get($jalur, $parameter);
+        } catch (\Throwable $e) {
+            throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Coba lagi beberapa saat lagi.');
+        }
+
+        if ($balasan->failed()) {
+            throw new OrchaTidakTerjangkau($this->pesanGagal($balasan->status()));
+        }
+
+        // Nama berkasnya ikut apa kata Orcha; kalau tidak disebut, dibuatkan
+        // nama sederhana supaya unduhannya tetap punya nama yang masuk akal.
+        $nama = 'berkas-orcha.pdf';
+
+        if (preg_match('/filename="?([^"]+)"?/', (string) $balasan->header('Content-Disposition'), $cocok)) {
+            $nama = $cocok[1];
+        }
+
+        return ['isi' => $balasan->body(), 'nama' => $nama];
+    }
+
+    /**
      * @throws OrchaTidakTerjangkau
      */
     public function ubah(string $jalur, array $data = []): array
