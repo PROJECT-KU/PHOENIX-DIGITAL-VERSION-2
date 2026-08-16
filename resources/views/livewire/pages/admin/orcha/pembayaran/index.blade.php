@@ -92,10 +92,14 @@ Bukti Pembayaran Orcha || lemon
                                     </td>
                                     <td class="text-end text-nowrap">
                                         @if ($baris['bukti'])
-                                            <a href="{{ $tautanBukti($baris['bukti']) }}" target="_blank" rel="noopener"
-                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat" title="Lihat bukti transfer">
+                                            {{-- Menumpang di halaman ini, bukan tab baru: daftar yang
+                                                 sudah digulung tidak ikut kembali ke atas. --}}
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat"
+                                                title="Lihat bukti transfer"
+                                                data-bukti="{{ $tautanBukti($baris['bukti']) }}"
+                                                data-bukti-keterangan="{{ $baris['kode'] }} · {{ $baris['nominal_formatted'] }} · {{ $baris['bank_pengirim'] }} a.n. {{ $baris['atas_nama_pengirim'] }}">
                                                 <i class="bi bi-receipt"></i>
-                                            </a>
+                                            </button>
                                         @endif
                                         <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-ubah"
                                             wire:click='buka(@json($baris))' title="Cek pembayaran">
@@ -162,11 +166,11 @@ Bukti Pembayaran Orcha || lemon
                                 <div class="col-12 col-md-6">
                                     <p class="text-uppercase text-muted mb-1" style="font-size:.68rem">Bukti transfer</p>
                                     @if ($terpilih['bukti'])
-                                        <a href="{{ $tautanBukti($terpilih['bukti']) }}" target="_blank" rel="noopener">
-                                            <img src="{{ $tautanBukti($terpilih['bukti']) }}" alt="Bukti transfer"
-                                                class="img-fluid rounded-3 border">
-                                        </a>
-                                        <p class="form-text">Klik untuk membuka ukuran penuh.</p>
+                                        <img src="{{ $tautanBukti($terpilih['bukti']) }}" alt="Bukti transfer"
+                                            class="img-fluid rounded-3 border"
+                                            data-bukti="{{ $tautanBukti($terpilih['bukti']) }}"
+                                            data-bukti-keterangan="{{ $terpilih['kode'] }} · {{ $terpilih['nominal_formatted'] }} · {{ $terpilih['bank_pengirim'] }} a.n. {{ $terpilih['atas_nama_pengirim'] }}">
+                                        <p class="form-text">Klik gambarnya untuk memperbesar.</p>
                                     @else
                                         <p class="text-muted small">Tidak ada berkas bukti.</p>
                                     @endif
@@ -207,5 +211,6 @@ Bukti Pembayaran Orcha || lemon
         </div>
     @endif
 
+    @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

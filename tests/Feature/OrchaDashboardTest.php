@@ -954,3 +954,42 @@ test('akun berizin bisa membuka riwayat kesehatan dari halaman detail', function
         ->assertSee('Perlu perhatian')
         ->assertSee('Kontak darurat');
 });
+
+/* ------------------- PRATINJAU BUKTI TRANSFER ------------------- */
+
+test('bukti transfer dibuka menumpang di halaman, bukan pindah tab', function () {
+    Http::fake(['*/pendaftaran/7' => Http::response(balasanDetail())]);
+
+    $html = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('data-bukti=', false)
+        ->assertSee('orcha-pratinjau', false)
+        ->getContent();
+
+    // Gambar buktinya tidak lagi dibungkus tautan yang membuka tab baru
+    expect($html)->not->toContain('<a href="'.rtrim(str_replace('/api/v1', '', config('orcha.url')), '/').'/storage/bukti.webp');
+});
+
+test('daftar bukti pembayaran juga memakai pratinjau', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembayaran' => ['menunggu' => 'Menunggu Dicek']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 3, 'kode' => 'OT-1508-A7K3', 'jenis' => 'dp', 'jenis_label' => 'Uang Muka (DP)',
+            'nominal' => 500000, 'nominal_formatted' => 'Rp 500.000',
+            'tanggal_transfer' => '2026-08-15', 'bank_pengirim' => 'BCA',
+            'atas_nama_pengirim' => 'Budi Santoso', 'bukti' => '/storage/bukti-bayar/a.webp',
+            'catatan' => null, 'status' => 'menunggu', 'status_label' => 'Menunggu Dicek',
+            'catatan_admin' => null, 'dibuat_pada' => '2026-08-15T10:00:00+07:00',
+            'pesanan' => null,
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembayaran')
+        ->assertOk()
+        ->assertSee('data-bukti=', false)
+        ->assertSee('orcha-pratinjau', false)
+        // Tombolnya bukan tautan yang membuka tab baru
+        ->assertDontSee('target="_blank" rel="noopener"' . "\n" . '                                                class="btn btn-sm orcha-aksi orcha-aksi-lihat"', false);
+});

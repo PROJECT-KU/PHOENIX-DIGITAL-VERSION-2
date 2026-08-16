@@ -301,10 +301,14 @@ Detail Pendaftaran || lemon
                             @forelse ($pembayaran as $bayar)
                                 <div class="d-flex gap-3 pb-3 mb-3 {{ ! $loop->last ? 'border-bottom' : '' }}">
                                     @if ($bayar['bukti'])
-                                        <a href="{{ $tautanBukti($bayar['bukti']) }}" target="_blank" rel="noopener">
-                                            <img src="{{ $tautanBukti($bayar['bukti']) }}" alt="Bukti transfer"
-                                                class="orcha-bukti">
-                                        </a>
+                                        {{-- Dibuka menumpang di halaman ini, bukan di tab baru:
+                                             admin yang sedang mencocokkan pembayaran tidak perlu
+                                             kehilangan posisi gulungnya. --}}
+                                        <img src="{{ $tautanBukti($bayar['bukti']) }}" alt="Bukti transfer"
+                                            class="orcha-bukti"
+                                            data-bukti="{{ $tautanBukti($bayar['bukti']) }}"
+                                            data-bukti-keterangan="{{ $bayar['nominal_formatted'] }} · {{ $bayar['jenis_label'] }} · {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }}"
+                                            title="Klik untuk memperbesar">
                                     @else
                                         <div class="orcha-bukti d-flex align-items-center justify-content-center text-muted">
                                             <i class="bi bi-image"></i>
@@ -390,5 +394,6 @@ Detail Pendaftaran || lemon
         </div>
     @endif
 
+    @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>
