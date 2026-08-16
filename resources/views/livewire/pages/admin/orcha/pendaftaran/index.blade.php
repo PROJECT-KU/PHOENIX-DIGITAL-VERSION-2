@@ -22,7 +22,7 @@ Pendaftaran Open Trip || lemon
                                 placeholder="Cari kode, nama, WhatsApp, atau paket...">
                         </div>
                     </div>
-                    <div class="col-12 col-lg-4">
+                    <div class="col-12 col-lg-3">
                         <select wire:model.live="filterStatus" class="form-select">
                             <option value="">Semua status</option>
                             @foreach ($pilihanStatus as $kunci => $label)
@@ -30,6 +30,19 @@ Pendaftaran Open Trip || lemon
                             @endforeach
                         </select>
                     </div>
+
+                    {{-- Manifes gabungan: open trip dibentuk dari banyak pendaftaran
+                         terpisah yang berangkat di hari yang sama, dan tour leader
+                         membawa satu lembar — bukan dua belas. Yang diekspor
+                         mengikuti saringan yang sedang dilihat di layar. --}}
+                    @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
+                        <div class="col-12 col-lg-1 d-grid">
+                            <a href="{{ route('admin.orcha.pendaftaran.manifes', array_filter(['cari' => $cari, 'status' => $filterStatus])) }}"
+                                class="orcha-btn orcha-btn-utama" title="Manifes tour leader untuk daftar yang sedang tampil">
+                                <i class="bi bi-filetype-pdf"></i>
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

@@ -486,6 +486,7 @@ Route::middleware('permission:view_message')->group(function () {
 Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/dashboard', OrchaDashboard::class)->name('admin.orcha.dashboard');
     Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
+    Route::get('/admin/orcha/pendaftaran-manifes', [OrchaEksporController::class, 'manifesDaftar'])->name('admin.orcha.pendaftaran.manifes');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}', OrchaPendaftaranDetail::class)->name('admin.orcha.pendaftaran.detail');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/excel', [OrchaEksporController::class, 'excel'])->name('admin.orcha.pendaftaran.excel');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/pdf', [OrchaEksporController::class, 'pdf'])->name('admin.orcha.pendaftaran.pdf');

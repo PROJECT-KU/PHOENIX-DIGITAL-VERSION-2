@@ -46,6 +46,52 @@ class OrchaEksporController extends Controller
     }
 
     /**
+     * Manifes gabungan untuk satu keberangkatan.
+     *
+     * Manifes per pendaftaran berguna saat satu rombongan datang bersama, tapi
+     * open trip justru dibentuk dari banyak pendaftaran terpisah yang berangkat
+     * di hari yang sama. Tour leader tidak membawa dua belas lembar; ia membawa
+     * satu, dengan seluruh peserta dikelompokkan per titik jemput.
+     *
+     * Yang diekspor mengikuti saringan yang sedang dilihat admin di layar,
+     * supaya tidak ada dua pengertian tentang "daftar mana".
+     */
+    public function manifesDaftar(Request $request)
+    {
+        abort_unless($request->user()?->hasPermission('view_orcha_kesehatan'), 403);
+
+        $saringan = array_filter([
+            'cari' => $request->string('cari')->toString(),
+            'status' => $request->string('status')->toString(),
+            'per_halaman' => 100,
+        ], fn ($nilai) => $nilai !== '' && $nilai !== null);
+
+        try {
+            $daftar = $this->orcha->ambil('/pendaftaran', $saringan)['data'] ?? [];
+
+            // Riwayat kesehatan diminta per pendaftaran lewat jalurnya sendiri
+            // supaya setiap pembukaannya tetap tercatat di Orcha. Dibatasi
+            // supaya satu klik tidak berubah jadi ratusan panggilan.
+            $kesehatan = [];
+
+            foreach (array_slice($daftar, 0, 40) as $satu) {
+                $kesehatan[$satu['id']] = $this->orcha
+                    ->ambil("/pendaftaran/{$satu['id']}/riwayat-kesehatan")['data'] ?? [];
+            }
+        } catch (OrchaTidakTerjangkau $e) {
+            abort(503, $e->getMessage());
+        }
+
+        abort_if($daftar === [], 404, 'Tidak ada pendaftaran yang cocok dengan saringan ini.');
+
+        return Pdf::loadView('exports.orcha-manifest-daftar-pdf', [
+            'daftar' => $daftar,
+            'kesehatan' => $kesehatan,
+            'saringan' => $saringan,
+        ])->setPaper('a4')->download('MANIFES-ROMBONGAN-'.now()->format('Ymd-Hi').'.pdf');
+    }
+
+    /**
      * Kwitansi pendaftaran — jaring pengaman saat surat tidak sampai.
      *
      * Berkasnya dibuat di Orcha, sama persis dengan yang dikirim ke pelanggan,

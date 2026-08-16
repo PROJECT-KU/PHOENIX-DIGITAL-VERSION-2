@@ -9,6 +9,11 @@
 
      Dompdf tidak mengenal flexbox, jadi tata letaknya memakai tabel. --}}
 @php
+    // Berkasnya disalin ke lemon supaya dompdf tidak perlu mengunduh gambar
+    // dari server Orcha saat merender — kalau servernya lambat, berkasnya
+    // terbit tanpa logo.
+    $logo = file_exists(public_path('orcha-logo.png')) ? public_path('orcha-logo.png') : null;
+
     $navy = '#0f2d4a';
     $ocean = '#1d6fa5';
     $emas = '#ffc74e';
@@ -32,7 +37,7 @@
     <meta charset="utf-8">
     <title>Manifes {{ $pendaftaran['kode'] }}</title>
     <style>
-        @page { margin: 0 0 44px; }
+        @page { margin: 0 0 56px; }
         body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; color: #475569; margin: 0; }
         .isi { padding: 0 30px 10px; }
         .pita { background-color: {{ $navy }}; padding: 16px 30px 14px; }
@@ -49,9 +54,16 @@
         .orang td { padding: 7px 12px; border-bottom: 1px solid #e9eff5; font-size: 11px; }
         .awas { background-color: #fff5f5; }
         .cap-awas { color: #b91c1c; font-weight: bold; font-size: 9px; }
-        .kotak-awas { background-color: #fff5f5; border-left: 3px solid #dc2626; padding: 10px 14px; }
-        .kotak-kuning { background-color: #fffaf0; border-left: 3px solid {{ $emas }}; padding: 9px 14px; }
-        .kaki { position: fixed; bottom: 0; left: 0; right: 0; background-color: {{ $navy }};
+        .kotak-awas { background-color: #fff5f5; border-left: 4px solid #dc2626; }
+        .kotak-awas td { padding: 11px 18px 12px 20px; }
+        .kotak-kuning { background-color: #fffaf0; border-left: 4px solid {{ $emas }}; }
+        .kotak-kuning td { padding: 10px 18px 10px 20px; }
+        /* Dompdf mengukur bottom dari tepi DALAM margin halaman, jadi offsetnya
+           dibuat negatif sebesar margin itu supaya pitanya menempel ke tepi
+           kertas — bukan mengambang dengan pias putih di bawahnya. */
+        .kaki-luar { position: fixed; bottom: -56px; left: 0; right: 0; }
+        .kaki-emas { height: 2px; background-color: {{ $emas }}; font-size: 0; line-height: 0; }
+        .kaki { background-color: {{ $navy }};
                 padding: 8px 30px; font-size: 8px; color: #7fb4d6; }
     </style>
 </head>
@@ -59,7 +71,15 @@
 <body>
     <table width="100%" cellpadding="0" cellspacing="0" class="pita">
         <tr>
-            <td>
+            {{-- Logo dibaca dari berkas di lemon, bukan tautan ke server Orcha:
+                 dompdf mengunduh gambar jarak jauh saat merender, dan kalau
+                 servernya sedang lambat berkasnya terbit tanpa logo. --}}
+            @if ($logo)
+                <td width="46" valign="middle">
+                    <img src="{{ $logo }}" width="38" height="38" alt="">
+                </td>
+            @endif
+            <td valign="middle" style="{{ $logo ? 'padding-left:10px;' : '' }}">
                 <div class="merek">ORCHA <span>JOURNEY</span></div>
                 <div class="slogan">{{ config('orcha.slogan', 'Teman Setia Perjalanan Anda!') }}</div>
             </td>
@@ -235,12 +255,37 @@
         @endif
     </div>
 
-    <table width="100%" cellpadding="0" cellspacing="0" class="kaki">
-        <tr>
-            <td>Manifes internal &middot; memuat data pribadi peserta &middot; jangan dibagikan ke luar tim</td>
-            <td align="right" style="color:{{ $emas }};font-family:Courier,monospace;">{{ $pendaftaran['kode'] }}</td>
-        </tr>
-    </table>
+    {{-- Pita kaki menempel ke tepi kertas, berpasangan dengan pita kepala:
+         berkasnya jadi berbingkai, bukan menggantung. --}}
+    <div class="kaki-luar">
+        <div class="kaki-emas"></div>
+
+        <table width="100%" cellpadding="0" cellspacing="0" class="kaki">
+            <tr>
+                @if ($logo)
+                    <td width="30" valign="middle">
+                        <img src="{{ $logo }}" width="22" height="22" alt="">
+                    </td>
+                @endif
+                <td valign="middle" style="{{ $logo ? 'padding-left:8px;' : '' }}">
+                    <span style="color:#fff;font-weight:bold;font-size:9px;letter-spacing:.6px;">
+                        ORCHA <span style="color:{{ $emas }};">JOURNEY</span>
+                    </span>
+                    <div style="font-size:7.5px;padding-top:1px;">
+                        Manifes internal &middot; memuat data pribadi peserta &middot; jangan dibagikan ke luar tim
+                    </div>
+                </td>
+                <td align="right" valign="middle">
+                    <div style="font-size:6.5px;color:#6f9cbd;letter-spacing:1.4px;text-transform:uppercase;">
+                        Kode Pendaftaran
+                    </div>
+                    <div style="color:{{ $emas }};font-family:Courier,monospace;font-weight:bold;font-size:9px;">
+                        {{ $pendaftaran['kode'] }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 
 </html>

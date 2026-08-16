@@ -31,12 +31,11 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
-                <a href="{{ route('admin.dashboard') }}" wire:navigate class="btn btn-light border rounded-3 orcha-tombol">
-                    <i class="bi bi-arrow-left-circle"></i>
-                    <span>Kembali ke lemon</span>
-                </a>
-            </div>
+            {{-- Jalan kembali ke lemon cukup satu, dan tempatnya di sidebar —
+                 sama seperti seluruh perpindahan menu lain. Mengulanginya di
+                 kepala tiap halaman membuat kartu judul penuh tombol yang
+                 jarang dipakai, dan menutupi tombol yang benar-benar dikerjakan
+                 di halaman itu. --}}
         </div>
     </div>
 </div>
