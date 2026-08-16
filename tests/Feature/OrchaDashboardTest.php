@@ -1106,6 +1106,59 @@ test('detail pelanggan menampilkan tagihan, peserta, dan bukti bayarnya', functi
         ->assertSee('Bukti Pembayaran');
 });
 
+test('perkiraan pengembalian tampil di daftar pembatalan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['diajukan' => 'Diajukan']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 6, 'kode_pendaftaran' => 'OT-1608-FXYK',
+            'jenis' => 'open_trip', 'jenis_label' => 'Open Trip',
+            'nama_pemohon' => 'Suparjiman', 'whatsapp' => '0812', 'email' => null,
+            'alasan' => 'kondisi_kesehatan', 'alasan_label' => 'Kondisi kesehatan',
+            'penjelasan' => null, 'jumlah_dibatalkan' => 2,
+            'rekening' => ['bank' => 'BCA', 'nomor' => '123', 'atas_nama' => 'Suparjiman'],
+            'status' => 'diajukan', 'status_label' => 'Diajukan', 'catatan_admin' => null,
+            'perkiraan' => [
+                'jenis' => 'open_trip', 'batas' => '15 – 30 hari sebelum keberangkatan',
+                'persen' => 25, 'lewat' => false,
+                'total_teks' => 'Rp 2.000.000', 'dibayar_teks' => 'Rp 2.000.000',
+                'potongan_teks' => 'Rp 500.000', 'kembali_teks' => 'Rp 1.500.000',
+                'kembali' => 1500000,
+            ],
+            'dibuat_pada' => '2026-08-16T10:00:00+07:00',
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    // Pertanyaan pertama pada tiap pengajuan selalu "kembalinya berapa".
+    // Sebelum ini jawabannya dihitung tangan satu per satu.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembatalan')
+        ->assertOk()
+        ->assertSee('Rp 1.500.000')
+        ->assertSee('potongan 25%')
+        ->assertSee('15 – 30 hari sebelum keberangkatan');
+});
+
+test('pembatalan tanpa tanggal berangkat tidak menampilkan angka tebakan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['diajukan' => 'Diajukan']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 7, 'kode_pendaftaran' => 'OT-SALAH', 'jenis' => 'open_trip',
+            'jenis_label' => 'Open Trip', 'nama_pemohon' => 'Rina', 'whatsapp' => '0812',
+            'email' => null, 'alasan' => 'lainnya', 'alasan_label' => 'Lainnya',
+            'penjelasan' => null, 'jumlah_dibatalkan' => 1,
+            'rekening' => ['bank' => 'BRI', 'nomor' => '9', 'atas_nama' => 'Rina'],
+            'status' => 'diajukan', 'status_label' => 'Diajukan', 'catatan_admin' => null,
+            'perkiraan' => null,
+            'dibuat_pada' => '2026-08-16T10:00:00+07:00',
+        ]], 'meta' => []]),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pembatalan')
+        ->assertOk()
+        ->assertSee('belum bisa dihitung');
+});
+
 test('pembatalan sewa kendaraan tidak dihitung dalam peserta', function () {
     Http::fake([
         '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['diajukan' => 'Diajukan']]]),

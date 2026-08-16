@@ -42,6 +42,7 @@ Pembatalan Orcha || lemon
                                 <th>Kode</th>
                                 <th>Pemohon</th>
                                 <th>Alasan</th>
+                                <th>Perkiraan Kembali</th>
                                 <th>Rekening</th>
                                 <th>Status</th>
                                 <th class="text-end">Aksi</th>
@@ -71,6 +72,27 @@ Pembatalan Orcha || lemon
                                                 · 1 unit
                                             @endif
                                         </div>
+                                    </td>
+                                    <td>
+                                        {{-- Perkiraan potongan menurut tangga yang berlaku,
+                                             dihitung Orcha. Pertanyaan pertama pada tiap
+                                             pengajuan selalu "kembalinya berapa", dan sebelum
+                                             ini jawabannya dihitung tangan satu per satu. --}}
+                                        @if ($baris['perkiraan'] ?? null)
+                                            @php $p = $baris['perkiraan']; @endphp
+                                            <div class="fw-bold {{ $p['kembali'] > 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ $p['kembali_teks'] }}
+                                            </div>
+                                            <div class="text-muted" style="font-size:.74rem">
+                                                dibayar {{ $p['dibayar_teks'] }} · potongan {{ $p['persen'] }}%
+                                            </div>
+                                            <div class="text-muted" style="font-size:.72rem">{{ $p['batas'] }}</div>
+                                        @else
+                                            {{-- Tanpa tanggal berangkat tidak ada jarak yang bisa
+                                                 dihitung; menebak angka pengembalian lebih buruk
+                                                 daripada mengosongkannya. --}}
+                                            <span class="text-muted" style="font-size:.78rem">belum bisa dihitung</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="small">{{ $baris['alasan_label'] }}</div>
@@ -105,7 +127,7 @@ Pembatalan Orcha || lemon
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5">
+                                    <td colspan="7" class="text-center py-5">
                                         <div class="empty-state-icon-wrapper mx-auto mb-2">
                                             <i class="bi bi-x-circle"></i>
                                         </div>
