@@ -73,7 +73,18 @@ class OrchaPembayaranList extends Component
 
         $nomor = preg_replace('/^0/', '62', $nomor);
 
-        return 'https://wa.me/'.$nomor.'?text='.rawurlencode($this->pesanWa($baris));
+        // Memakai api.whatsapp.com/send, bukan wa.me.
+        //
+        // Keduanya sah, tapi wa.me adalah tautan pendek yang dialihkan dulu
+        // sebelum sampai ke aplikasi — dan tiap pengalihan adalah kesempatan
+        // query-nya disandikan ulang. Emoji yang berubah jadi tanda tanya di
+        // layar pelanggan paling mungkin lahir di situ, karena tautan yang
+        // kami hasilkan sendiri sudah terbukti berisi UTF-8 yang sah.
+        //
+        // api.whatsapp.com adalah alamat resmi yang didokumentasikan WhatsApp,
+        // satu lompatan lebih pendek, dan sudah dipakai halaman publik Orcha.
+        return 'https://api.whatsapp.com/send?phone='.$nomor
+            .'&text='.rawurlencode($this->pesanWa($baris));
     }
 
     /**
@@ -92,35 +103,41 @@ class OrchaPembayaranList extends Component
         $paket = data_get($baris, 'pesanan.keterangan');
         $tagihan = data_get($baris, 'pesanan.tagihan') ?: [];
 
-        // Emoji dipilih dari yang sudah lama ada di Unicode (2010 ke bawah),
-        // bukan yang terbaru. Emoji baru seperti 🧾 belum tentu ada di ponsel
-        // lama, dan yang tidak ada digambar sebagai kotak kosong — pelanggan
-        // yang paling sering pakai ponsel lama justru yang paling perlu
-        // membaca kabar ini.
-        $pembuka = "Halo {$nama} 👋\n\n"
+        // Emoji dipasang lewat penolong ini supaya bisa dimatikan seluruhnya
+        // dari .env bila di lapangan ia tetap berubah jadi tanda tanya. Yang
+        // menyusun bentuk pesan adalah tebal bawaan WhatsApp dan baris baru,
+        // bukan emojinya — jadi tanpa emoji pun kabarnya tetap terbaca.
+        //
+        // Emoji yang dipakai sengaja yang polos: tanpa penanda ragam (U+FE0F)
+        // seperti pada ⚠️, karena penanda itu tidak kelihatan tapi ikut
+        // disandikan, dan justru bagian itu yang paling sering rusak di jalan.
+        $pakaiEmoji = (bool) config('orcha.emoji_wa', true);
+        $e = fn (string $emoji) => $pakaiEmoji ? $emoji.' ' : '';
+
+        $pembuka = 'Halo '.$nama.($pakaiEmoji ? ' 👋' : '')."\n\n"
             ."Kabar dari *Orcha Journey* soal pembayaran Anda:\n"
-            ."📄 Kode pesanan: *{$kode}*\n"
-            .($paket ? "📍 Pesanan: {$paket}\n" : '')
-            ."💰 Nominal: *{$nominal}*\n\n";
+            .$e('📄')."Kode pesanan: *{$kode}*\n"
+            .($paket ? $e('📍')."Pesanan: {$paket}\n" : '')
+            .$e('💰')."Nominal: *{$nominal}*\n\n";
 
         $isi = match ($baris['status'] ?? 'menunggu') {
-            'diterima' => "✅ Pembayaran Anda *sudah kami terima* dan tercatat.\n\n"
+            'diterima' => $e('✅')."Pembayaran Anda *sudah kami terima* dan tercatat.\n\n"
                 .(($tagihan['lunas'] ?? false)
-                    ? "🎉 Pesanan Anda sudah *LUNAS*. Tidak ada sisa yang perlu dibayar lagi.\n"
+                    ? $e('🎉')."Pesanan Anda sudah *LUNAS*. Tidak ada sisa yang perlu dibayar lagi.\n"
                     : (isset($tagihan['sisa_teks'])
-                        ? "📌 Sisa yang perlu dilunasi: *{$tagihan['sisa_teks']}*\n"
+                        ? $e('📌')."Sisa yang perlu dilunasi: *{$tagihan['sisa_teks']}*\n"
                         : '')),
 
-            'ditolak' => "⚠️ Maaf, bukti yang Anda kirim *belum bisa kami cocokkan* dengan mutasi rekening.\n\n"
-                .(($baris['catatan_admin'] ?? null) ? "📝 Catatan tim kami: {$baris['catatan_admin']}\n\n" : "\n")
+            'ditolak' => $e('❗')."Maaf, bukti yang Anda kirim *belum bisa kami cocokkan* dengan mutasi rekening.\n\n"
+                .(($baris['catatan_admin'] ?? null) ? $e('📝')."Catatan tim kami: {$baris['catatan_admin']}\n\n" : "\n")
                 ."Mohon kirim ulang buktinya ya. Kalau transfernya sudah benar-benar keluar, "
-                ."balas pesan ini — uang yang sudah berpindah tidak hilang. 🙏\n",
+                ."balas pesan ini — uang yang sudah berpindah tidak hilang.\n",
 
-            default => "⏳ Bukti Anda *sedang kami periksa*. Kami kabari lagi setelah "
+            default => $e('⏳')."Bukti Anda *sedang kami periksa*. Kami kabari lagi setelah "
                 ."dicocokkan dengan mutasi rekening.\n",
         };
 
-        return $pembuka.$isi."\nTerima kasih 🙏";
+        return $pembuka.$isi."\nTerima kasih".($pakaiEmoji ? ' 🙏' : '.');
     }
 
     public function render()

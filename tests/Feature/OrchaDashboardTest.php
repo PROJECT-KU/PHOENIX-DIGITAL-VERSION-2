@@ -823,7 +823,7 @@ test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
     $pesan = $komponen->instance()->pesanWa($baris);
 
     // Nomor 08xx harus jadi 62xx; wa.me menolak awalan nol
-    expect($tautan)->toStartWith('https://wa.me/6281234567890?text=')
+    expect($tautan)->toStartWith('https://api.whatsapp.com/send?phone=6281234567890&text=')
         // Emoji disandikan sebagai UTF-8 persen, bukan dibuang atau jadi "?"
         ->and($tautan)->toContain(rawurlencode('👋'))
         // Spasi TIDAK boleh jadi "+": WhatsApp menampilkan tanda plus itu apa
@@ -839,7 +839,32 @@ test('kabar whatsapp menyebut sisa tagihan dan emojinya terbaca', function () {
     // Emoji yang dipakai harus yang sudah lama ada di Unicode. Yang terbaru
     // digambar sebagai kotak kosong di ponsel lama — dan pemakai ponsel lama
     // justru yang paling perlu membaca kabar ini.
-    expect($pesan)->not->toContain('🧾');
+    expect($pesan)->not->toContain('🧾')
+        // Penanda ragam (U+FE0F) tidak kelihatan tapi ikut disandikan, dan
+        // justru bagian itu yang paling sering rusak di perjalanan.
+        ->and($pesan)->not->toContain("\u{FE0F}");
+});
+
+test('emoji kabar whatsapp bisa dimatikan bila di lapangan tetap rusak', function () {
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
+    $komponen = Livewire::actingAs(adminOrcha())->test(OrchaPembayaranList::class)->instance();
+
+    $baris = [
+        'kode' => 'OT-1508-A7K3', 'nominal_formatted' => 'Rp 858.000', 'status' => 'diterima',
+        'catatan_admin' => null,
+        'pesanan' => ['nama' => 'Budi', 'whatsapp' => '0812', 'keterangan' => null,
+            'tagihan' => ['lunas' => true]],
+    ];
+
+    config()->set('orcha.emoji_wa', false);
+    $tanpa = $komponen->pesanWa($baris);
+
+    // Tanpa emoji pun kabarnya harus tetap utuh dan terbaca: yang menyusun
+    // bentuknya adalah tebal bawaan WhatsApp dan baris baru, bukan emojinya.
+    expect($tanpa)->not->toMatch('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u')
+        ->and($tanpa)->toContain('Kode pesanan: *OT-1508-A7K3*')
+        ->and($tanpa)->toContain('LUNAS')
+        ->and($tanpa)->toContain('Halo Budi');
 });
 
 test('pesan whatsapp ikut tersalin supaya emoji tidak bergantung tautan', function () {

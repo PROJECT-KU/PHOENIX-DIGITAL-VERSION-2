@@ -385,6 +385,16 @@ Bukti Pembayaran Orcha || lemon
                                  $terpilih perlu diperiksa dulu. --}}
                             @php $waPopup = $terpilih ? $this->tautanWa($terpilih) : null; @endphp
                             @if ($waPopup)
+                                {{-- Tombol salin berdiri sendiri, tidak hanya menumpang di
+                                     tombol WA. Bila emojinya berantakan di aplikasi WhatsApp,
+                                     inilah jalan yang pasti: menempel memindahkan karakter
+                                     yang sama persis, tanpa sandi yang perlu dibaca ulang. --}}
+                                <button type="button" class="orcha-btn orcha-btn-lembut"
+                                    data-wa-pesan="{{ $this->pesanWa($terpilih) }}"
+                                    title="Salin teks pesannya untuk ditempel di WhatsApp">
+                                    <i class="bi bi-clipboard"></i> Salin Pesan
+                                </button>
+
                                 <a href="{{ $waPopup }}" target="_blank" rel="noopener"
                                     class="orcha-btn orcha-btn-wa"
                                     data-wa-pesan="{{ $this->pesanWa($terpilih) }}">
