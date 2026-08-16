@@ -1238,8 +1238,8 @@ test('usulan denda kerusakan tampil dirinci per bagian', function () {
         '*' => Http::response(balasanSewa([
             'denda_kerusakan_usulan' => 1900000,
             'rincian_denda_kerusakan' => [
-                ['bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
-                ['bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
+                ['kunci' => 'kaca', 'bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
+                ['kunci' => 'bodi_kanan', 'bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
             ],
         ])),
     ]);
@@ -1249,17 +1249,50 @@ test('usulan denda kerusakan tampil dirinci per bagian', function () {
         ->call('buka', balasanSewa([
             'denda_kerusakan_usulan' => 1900000,
             'rincian_denda_kerusakan' => [
-                ['bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
-                ['bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
+                ['kunci' => 'kaca', 'bagian' => 'Kaca & spion', 'dari' => 'Baik', 'jadi' => 'Rusak', 'biaya' => 900000],
+                ['kunci' => 'bodi_kanan', 'bagian' => 'Bodi samping kanan', 'dari' => 'Lecet / minor', 'jadi' => 'Rusak', 'biaya' => 1000000],
             ],
         ])['data'][0])
         // Terisi usulan, bertitik, dan tiap bagian punya isiannya sendiri
         // supaya admin bisa menyesuaikan dengan nota bengkel
         ->assertSet('dendaKerusakan', '1.900.000')
-        ->assertSet('biayaKerusakan.Kaca & spion', '900.000')
-        ->assertSet('biayaKerusakan.Bodi samping kanan', '1.000.000')
+        // Kuncinya slug bagian, bukan namanya: nama mengandung spasi dan "&",
+        // dan Livewire tidak bisa mengikat isian ke kunci seperti itu
+        ->assertSet('biayaKerusakan.kaca', '900.000')
+        ->assertSet('biayaKerusakan.bodi_kanan', '1.000.000')
         ->assertSee('Usulan denda kerusakan')
-        // Mengubah satu baris membuat totalnya ikut berubah
-        ->set('biayaKerusakan.Kaca & spion', '450000')
+        // Mengubah satu baris membuat totalnya ikut berubah, dan ketikannya
+        // tidak hilang begitu isiannya ditinggalkan
+        ->set('biayaKerusakan.kaca', '450000')
+        ->assertSet('biayaKerusakan.kaca', '450.000')
         ->assertSet('dendaKerusakan', '1.450.000');
+});
+
+test('ketikan biaya kerusakan bertahan walau nama bagiannya berspasi', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(rujukanSewa()),
+        '*' => Http::response(balasanSewa()),
+    ]);
+
+    $baris = balasanSewa([
+        'denda_kerusakan_usulan' => 650000,
+        'rincian_denda_kerusakan' => [
+            ['kunci' => 'bodi_kiri', 'bagian' => 'Bodi samping kiri', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 200000],
+            ['kunci' => 'bodi_depan', 'bagian' => 'Bodi depan & bemper', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 250000],
+            ['kunci' => 'bodi_kanan', 'bagian' => 'Bodi samping kanan', 'dari' => 'Baik', 'jadi' => 'Lecet / minor', 'biaya' => 200000],
+        ],
+    ])['data'][0];
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPenyewaanList::class)
+        ->call('buka', $baris)
+        ->assertSet('dendaKerusakan', '650.000')
+        // "Bodi depan & bemper" — nama dengan spasi DAN ampersand, yang dulu
+        // membuat ketikan admin lenyap begitu isiannya ditinggalkan
+        ->set('biayaKerusakan.bodi_depan', '1250000')
+        ->assertSet('biayaKerusakan.bodi_depan', '1.250.000')
+        ->assertSet('dendaKerusakan', '1.650.000')
+        // Catatan yang dibacakan ke penyewa ikut memakai angka barunya
+        ->assertSet('catatanDenda', fn ($catatan) => str_contains($catatan, 'Bodi depan & bemper')
+            && str_contains($catatan, 'Rp 1.250.000'));
 });

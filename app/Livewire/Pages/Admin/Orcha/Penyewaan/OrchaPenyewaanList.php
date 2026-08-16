@@ -95,8 +95,14 @@ class OrchaPenyewaanList extends Component
         $this->dendaKeterlambatan = $baris['denda_keterlambatan'] ?: ($baris['denda_keterlambatan_usulan'] ?? 0);
         // Tiap bagian yang rusak punya barisnya sendiri, terisi tarif usulan
         // dan bisa disunting. Totalnya mengikuti jumlah baris-baris itu.
+        // Dikunci dengan kunci bagian (bodi_kiri), bukan namanya ("Bodi
+        // samping kiri"). Nama bagian mengandung spasi dan "&", dan Livewire
+        // tidak bisa mengikat isian ke kunci seperti itu — ketikan admin hilang
+        // begitu isiannya ditinggalkan, persis seperti yang terjadi kemarin.
         $this->biayaKerusakan = collect($baris['rincian_denda_kerusakan'] ?? [])
-            ->mapWithKeys(fn ($satu) => [$satu['bagian'] => number_format((int) $satu['biaya'], 0, ',', '.')])
+            ->mapWithKeys(fn ($satu) => [
+                $satu['kunci'] ?? \Illuminate\Support\Str::slug($satu['bagian'], '_') => number_format((int) $satu['biaya'], 0, ',', '.'),
+            ])
             ->all();
 
         $this->dendaKerusakan = $baris['denda_kerusakan'] ?: ($baris['denda_kerusakan_usulan'] ?? 0);
@@ -257,9 +263,12 @@ class OrchaPenyewaanList extends Component
         }
 
         return collect($rincian)
-            ->map(fn ($satu) => $satu['bagian'].' ('.strtolower($satu['dari']).' → '
-                .strtolower($satu['jadi']).') Rp '
-                .($this->biayaKerusakan[$satu['bagian']] ?? number_format((int) $satu['biaya'], 0, ',', '.')))
+            ->map(function ($satu) {
+                $kunci = $satu['kunci'] ?? \Illuminate\Support\Str::slug($satu['bagian'], '_');
+
+                return $satu['bagian'].' ('.strtolower($satu['dari']).' → '.strtolower($satu['jadi']).') Rp '
+                    .($this->biayaKerusakan[$kunci] ?? number_format((int) $satu['biaya'], 0, ',', '.'));
+            })
             ->implode("\n");
     }
 

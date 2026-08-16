@@ -395,7 +395,7 @@ Sewa Kendaraan Masuk || lemon
                                                     <div class="orcha-rupiah">
                                                         <input type="text" inputmode="numeric"
                                                             class="form-control form-control-sm text-end orcha-uang"
-                                                            wire:model.blur="biayaKerusakan.{{ $satu['bagian'] }}">
+                                                            wire:model.blur="biayaKerusakan.{{ $satu['kunci'] ?? \Illuminate\Support\Str::slug($satu['bagian'], '_') }}">
                                                     </div>
                                                 </td>
                                             </tr>
