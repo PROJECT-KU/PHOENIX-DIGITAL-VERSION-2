@@ -13,15 +13,15 @@ Pesan Kontak Orcha || lemon
 
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-lg-4">
-                <div class="row g-2 align-items-center">
-                    <div class="col-12 col-lg-6">
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-lg-5">
                         <div class="form-group position-relative mb-0">
                             <div class="form-control-icon"><i class="bi bi-search"></i></div>
                             <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
                                 placeholder="Cari nama, WhatsApp, email, atau isi pesan...">
                         </div>
                     </div>
-                    <div class="col-8 col-lg-4">
+                    <div class="col-12 col-sm-6 col-lg-3">
                         <select wire:model.live="filterStatus" class="form-select">
                             <option value="">Semua keperluan</option>
                             @foreach ($pilihanKeperluan as $kunci => $label)
@@ -29,11 +29,28 @@ Pesan Kontak Orcha || lemon
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-4 col-lg-2">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="orcha-belum-dibaca"
-                                wire:model.live="hanyaBelumDibaca">
-                            <label class="form-check-label small" for="orcha-belum-dibaca">Belum dibaca</label>
+
+                    {{-- Dua pilihan berdampingan, bukan kotak centang.
+
+                         Kotak centang menyembunyikan dua hal yang justru ingin
+                         diketahui admin sebelum menekannya: bahwa yang sedang
+                         tampil adalah SEMUA pesan, dan bahwa masih ada sekian
+                         yang belum dibaca. Angkanya dibawa dari Orcha dan tidak
+                         ikut berubah oleh saringan — yang dihitung keadaan kotak
+                         masuk, bukan isi halaman ini. --}}
+                    <div class="col-12 col-sm-6 col-lg-4">
+                        <div class="orcha-saring-baca" role="group" aria-label="Saring pesan">
+                            <button type="button" class="{{ $hanyaBelumDibaca ? '' : 'aktif' }}"
+                                wire:click="$set('hanyaBelumDibaca', false)">
+                                <i class="bi bi-inbox"></i> Semua
+                            </button>
+                            <button type="button" class="{{ $hanyaBelumDibaca ? 'aktif' : '' }}"
+                                wire:click="$set('hanyaBelumDibaca', true)">
+                                <i class="bi bi-envelope-exclamation"></i> Belum dibaca
+                                @if (($meta['belum_dibaca'] ?? 0) > 0)
+                                    <span class="jumlah">{{ $meta['belum_dibaca'] }}</span>
+                                @endif
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -144,8 +161,66 @@ Pesan Kontak Orcha || lemon
             white-space: pre-line;
             display: -webkit-box;
             -webkit-line-clamp: 3;
+            line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
+        }
+
+        /* Penyaring baca/belum: dua tombol berdempet dalam satu bingkai,
+           supaya terbaca sebagai satu pilihan — bukan dua tombol terpisah
+           yang bisa ditekan bersamaan. */
+        .orcha-saring-baca {
+            display: inline-flex;
+            width: 100%;
+            padding: .25rem;
+            gap: .25rem;
+            border: 1px solid #dbe7f0;
+            background: #f4f8fb;
+            border-radius: .8rem;
+        }
+
+        .orcha-saring-baca > button {
+            flex: 1 1 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            padding: .45rem .6rem;
+            border: 0;
+            border-radius: .6rem;
+            background: transparent;
+            color: #5b7186;
+            font-size: .84rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+        }
+
+        .orcha-saring-baca > button > i { line-height: 1; }
+
+        .orcha-saring-baca > button:hover { color: #1d6fa5; }
+
+        /* Yang aktif diangkat dengan latar putih dan bayangan tipis; warnanya
+           saja tidak cukup untuk yang sulit membedakan warna. */
+        .orcha-saring-baca > button.aktif {
+            background: #fff;
+            color: #0f2d4a;
+            box-shadow: 0 1px 3px rgba(15, 45, 74, .12);
+        }
+
+        .orcha-saring-baca .jumlah {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.35rem;
+            height: 1.35rem;
+            padding: 0 .35rem;
+            border-radius: 1rem;
+            background: #1d6fa5;
+            color: #fff;
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1;
         }
     </style>
 </div>

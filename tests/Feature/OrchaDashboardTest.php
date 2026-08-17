@@ -1128,6 +1128,24 @@ function balasanPesan(array $ubah = []): array
     ], $ubah)];
 }
 
+test('penyaring kotak masuk menyebutkan jumlah yang belum dibaca', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['keperluan_kontak' => ['open_trip' => 'Open Trip']]]),
+        '*' => Http::response(['data' => [], 'meta' => [
+            'halaman' => 1, 'halaman_terakhir' => 1, 'total' => 0, 'belum_dibaca' => 7,
+        ]]),
+    ]);
+
+    // Kotak centang menyembunyikan yang justru ingin diketahui admin sebelum
+    // menekannya: masih ada berapa yang menunggu.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pesan')
+        ->assertOk()
+        ->assertSee('Belum dibaca')
+        ->assertSee('Semua')
+        ->assertSeeInOrder(['Belum dibaca', '7']);
+});
+
 test('detail pesan menunjukkan pesanan pengirim dan riwayat pesannya', function () {
     Http::fake(['*/pesan/4' => Http::response(balasanPesan())]);
 
