@@ -4,6 +4,7 @@ use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
+use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanDetail;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
@@ -1177,7 +1178,9 @@ function balasanPembatalan(array $ubah = []): array
             'potongan' => 500000, 'kembali' => 1500000,
             'total_teks' => 'Rp 2.000.000', 'dibayar_teks' => 'Rp 2.000.000',
             'potongan_teks' => 'Rp 500.000', 'kembali_teks' => 'Rp 1.500.000',
+            'ditetapkan' => false, 'usulan' => 500000, 'usulan_teks' => 'Rp 500.000',
         ],
+        'potongan_ditetapkan' => null,
         'pesanan' => [
             'jenis' => 'open_trip', 'nama' => 'Suparjiman', 'whatsapp' => '081234567890',
             'email' => 'suparjiman@contoh.test', 'status' => 'lunas', 'status_label' => 'Lunas',
@@ -1231,6 +1234,54 @@ test('detail pembatalan menandai pemohon yang bukan pemesan', function () {
         ->get('/admin/orcha/pembatalan/6')
         ->assertOk()
         ->assertSee('Nama pemohon berbeda dari pemesan');
+});
+
+test('admin bisa menghitung potongan sendiri, terisi dari usulan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembatalan' => [
+            'diajukan' => 'Diajukan', 'disetujui' => 'Disetujui',
+        ]]]),
+        '*/status' => Http::response(['data' => [], 'pesan' => 'ok']),
+        '*/pembatalan/6' => Http::response(balasanPembatalan()),
+    ]);
+
+    $komponen = Livewire::actingAs(adminOrcha())
+        ->test(OrchaPembatalanDetail::class, ['id' => 6])
+        // Terisi dari usulan kebijakan: admin melanjutkan, bukan menaksir nol
+        ->assertSet('potongan', '500.000');
+
+    // Ada biaya yang sudah terlanjur dibayarkan ke pihak ketiga, jadi
+    // potongannya ditetapkan lebih besar dari usulan.
+    $komponen->set('potongan', '750.000')
+        // Akibatnya terlihat seketika, tanpa menunggu jawaban server
+        ->assertSeeText('Rp 1.250.000')
+        ->assertSee('belum tersimpan')
+        ->set('statusBaru', 'disetujui')
+        ->call('simpan');
+
+    Http::assertSent(fn ($permintaan) => ! str_contains($permintaan->url(), '/status')
+        || ($permintaan['potongan_ditetapkan'] === 750000
+            && $permintaan['status'] === 'disetujui'));
+});
+
+test('potongan yang sudah ditetapkan yang dipakai, bukan usulannya lagi', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['disetujui' => 'Disetujui']]]),
+        '*/pembatalan/6' => Http::response(balasanPembatalan([
+            'potongan_ditetapkan' => 300000,
+            'perkiraan' => array_merge(balasanPembatalan()['data']['perkiraan'], [
+                'ditetapkan' => true, 'potongan' => 300000, 'potongan_teks' => 'Rp 300.000',
+                'kembali' => 1700000, 'kembali_teks' => 'Rp 1.700.000',
+            ]),
+        ])),
+    ]);
+
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaPembatalanDetail::class, ['id' => 6])
+        ->assertSet('potongan', '300.000')
+        // Tidak ditandai belum tersimpan, karena memang sudah
+        ->assertDontSee('belum tersimpan')
+        ->assertSee('Potongan ditetapkan');
 });
 
 test('detail pembatalan tanpa perkiraan tidak menampilkan angka tebakan', function () {

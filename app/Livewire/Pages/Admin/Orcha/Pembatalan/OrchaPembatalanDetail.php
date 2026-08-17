@@ -24,6 +24,17 @@ class OrchaPembatalanDetail extends Component
 
     public string $catatanAdmin = '';
 
+    /**
+     * Potongan yang ditetapkan admin, bertitik seperti "500.000".
+     *
+     * Terisi dari usulan kebijakan saat halaman dibuka, lalu boleh diubah.
+     * Sistem tidak tahu segalanya: ada tiket masuk yang sudah dibayarkan ke
+     * pihak ketiga dan tidak bisa ditarik, ada pula kelonggaran yang memang
+     * layak diberikan. Yang memutuskan tetap manusia — sistem hanya menghemat
+     * langkah pertamanya.
+     */
+    public string $potongan = '';
+
     /** Data pengajuan yang sedang dibuka; diisi ulang tiap kali digambar. */
     public array $data = [];
 
@@ -36,9 +47,48 @@ class OrchaPembatalanDetail extends Component
     {
         $this->kirimPerubahan(
             "/pembatalan/{$this->pembatalanId}/status",
-            ['status' => $this->statusBaru, 'catatan_admin' => $this->catatanAdmin],
-            'Status pembatalan diperbarui di Orcha.'
+            [
+                'status' => $this->statusBaru,
+                'catatan_admin' => $this->catatanAdmin,
+                'potongan_ditetapkan' => $this->angka($this->potongan),
+            ],
+            'Tindak lanjut pembatalan tersimpan di Orcha.'
         );
+    }
+
+    /** Rupiah dibaca dan ditulis bertitik, seperti isian denda di sewa. */
+    public function updatedPotongan(): void
+    {
+        $this->potongan = number_format($this->angka($this->potongan), 0, ',', '.');
+    }
+
+    /** "1.500.000" -> 1500000. Kosong berarti nol, bukan null. */
+    private function angka($nilai): int
+    {
+        return (int) preg_replace('/\D/', '', (string) $nilai);
+    }
+
+    /**
+     * Berapa yang kembali menurut angka yang sedang tertulis di layar.
+     *
+     * Dihitung di sini, bukan menunggu jawaban server, supaya admin melihat
+     * akibat ketikannya seketika — angka pengembalian yang baru diketahui
+     * setelah disimpan membuat orang menyimpan dua kali untuk memastikan.
+     */
+    public function kembaliSekarang(): int
+    {
+        $dibayar = (int) ($this->data['perkiraan']['dibayar'] ?? 0);
+
+        return max(0, $dibayar - min($this->angka($this->potongan), $dibayar));
+    }
+
+    /** Angka di layar belum sama dengan yang tersimpan di Orcha. */
+    public function belumTersimpan(): bool
+    {
+        $tersimpan = $this->data['potongan_ditetapkan'] ?? null;
+        $usulan = $this->data['perkiraan']['usulan'] ?? null;
+
+        return $this->angka($this->potongan) !== (int) ($tersimpan ?? $usulan ?? 0);
     }
 
     /**
@@ -95,6 +145,13 @@ class OrchaPembatalanDetail extends Component
         if ($this->statusBaru === '' && $this->data !== []) {
             $this->statusBaru = $this->data['status'] ?? 'diajukan';
             $this->catatanAdmin = (string) ($this->data['catatan_admin'] ?? '');
+
+            // Terisi dari yang pernah ditetapkan; bila belum pernah, dari usulan
+            // kebijakan. Admin melanjutkan, bukan menaksir dari nol.
+            $awal = $this->data['potongan_ditetapkan']
+                ?? ($this->data['perkiraan']['usulan'] ?? 0);
+
+            $this->potongan = number_format((int) $awal, 0, ',', '.');
         }
 
         return view('livewire.pages.admin.orcha.pembatalan.detail', [

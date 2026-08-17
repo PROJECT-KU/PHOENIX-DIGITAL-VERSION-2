@@ -104,6 +104,16 @@
         flex: 0 0 auto;
     }
 
+    /* .orcha-label-kecil memakai display:block, dan kekhususannya sama dengan
+       .orcha-ikon-teks — yang tertulis belakangan di berkas ini yang menang.
+       Akibatnya pada label ber-ikon, flex-nya TIDAK PERNAH berlaku: ikonnya
+       kembali jadi elemen inline, align-items tidak berpengaruh, dan koreksi
+       apa pun mandul.
+       Butuh dua kelas supaya menang tanpa !important. */
+    .orcha-label-kecil.orcha-ikon-teks {
+        display: inline-flex;
+    }
+
     /* Ikon yang duduk sendirian di dalam kotak.
 
        Kotaknya sudah menengahkan isinya dengan flex, tapi yang ditengahkan
