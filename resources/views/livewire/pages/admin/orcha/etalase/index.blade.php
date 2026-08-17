@@ -46,7 +46,7 @@
                     @endif
 
                     <div class="col-12 {{ $jenis === 'destinasi' ? 'col-lg-3' : 'col-lg-6' }} text-lg-end">
-                        <button type="button" class="btn btn-primary rounded-3 orcha-tombol" wire:click="tambah">
+                        <button type="button" class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah" wire:click="tambah">
                             <i class="bi bi-plus-lg"></i>
                             <span>Tambah {{ $judul }}</span>
                         </button>

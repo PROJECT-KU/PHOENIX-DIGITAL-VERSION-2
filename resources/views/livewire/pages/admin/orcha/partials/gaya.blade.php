@@ -757,6 +757,20 @@
         }
     }
 
+    /* Tombol "Tambah" di kepala halaman daftar.
+
+       Tingginya dipatok pada angka yang sama dengan isian di layout —
+       .form-control dan .form-select di sana dipasang height: 48px — supaya
+       tombol, kotak pencarian, dan penyaring di satu baris berhenti di garis
+       yang sama. Sebelumnya tombolnya 44px: empat piksel lebih pendek, cukup
+       untuk membuat barisnya terlihat tidak rata di setiap halaman daftar.
+
+       Sengaja TIDAK dipasang pada .orcha-tombol, karena kelas itu juga dipakai
+       tombol kecil (btn-sm) di Etalase yang memang tidak boleh ikut membesar. */
+    .orcha-tombol-tambah {
+        height: 48px;
+    }
+
     /* Ikon di dalam tombol selalu sejajar tengah dengan tulisannya. */
     .orcha-form .btn,
     .orcha-tombol {

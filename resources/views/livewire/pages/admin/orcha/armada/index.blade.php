@@ -45,7 +45,7 @@ Armada Orcha || lemon
                              sendiri (font .86rem), sehingga tombolnya 35px sementara
                              tombol tambah di fitur lain 44px — terukur di peramban. --}}
                         <a href="{{ route('admin.orcha.armada.tambah') }}" wire:navigate
-                            class="btn btn-primary rounded-3 orcha-tombol w-100 justify-content-center">
+                            class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah w-100 justify-content-center">
                             <i class="bi bi-plus-lg"></i>
                             <span class="d-none d-sm-inline">Tambah Unit</span>
                         </a>

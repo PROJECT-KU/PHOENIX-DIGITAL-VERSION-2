@@ -33,7 +33,7 @@ Paket Wisata Orcha || lemon
 
                     <div class="col-4 col-lg-2 text-end">
                         <a href="{{ route('admin.orcha.paket.tambah') }}" wire:navigate
-                            class="btn btn-primary rounded-3 orcha-tombol w-100 justify-content-center">
+                            class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah w-100 justify-content-center">
                             <i class="bi bi-plus-lg"></i>
                             <span class="d-none d-sm-inline">Tambah</span>
                         </a>
