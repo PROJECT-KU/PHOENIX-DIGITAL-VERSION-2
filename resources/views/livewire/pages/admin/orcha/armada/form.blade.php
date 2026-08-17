@@ -56,33 +56,59 @@
 
                                 <div class="col-12">
                                     <label class="form-label small fw-semibold">Transmisi tersedia <span class="text-danger">*</span></label>
-                                    <div class="d-flex gap-4">
-                                        @foreach (['Manual', 'Matic'] as $pilihan)
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                    id="transmisi-{{ $pilihan }}" value="{{ $pilihan }}"
-                                                    wire:model="transmisi">
-                                                <label class="form-check-label" for="transmisi-{{ $pilihan }}">
-                                                    {{ $pilihan }}
-                                                </label>
-                                            </div>
+
+                                    {{-- Kotak centang kecil diganti kartu yang bisa ditekan.
+                                         Sasaran kliknya jadi seluruh kartu, bukan kotak 16px —
+                                         dan pilihan yang sedang aktif terbaca sekilas, tanpa
+                                         perlu memicingkan mata ke tanda centangnya. --}}
+                                    <div class="orcha-pilih-kartu" wire:key="transmisi">
+                                        @foreach ([
+                                            ['Manual', 'bi-gear-wide-connected', 'Tuas persneling'],
+                                            ['Matic', 'bi-lightning-charge-fill', 'Tanpa kopling'],
+                                        ] as [$pilihan, $ikon, $keterangan])
+                                            <label class="orcha-kartu-pilihan {{ in_array($pilihan, $transmisi) ? 'aktif' : '' }}">
+                                                <input type="checkbox" value="{{ $pilihan }}" wire:model.live="transmisi">
+                                                <span class="tanda"><i class="bi bi-check-lg"></i></span>
+                                                <i class="bi {{ $ikon }} rupa"></i>
+                                                <span>
+                                                    <span class="judul">{{ $pilihan }}</span>
+                                                    <span class="ket">{{ $keterangan }}</span>
+                                                </span>
+                                            </label>
                                         @endforeach
                                     </div>
+
                                     @error('transmisi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                     <div class="form-text">
-                                        Centang keduanya bila unit ini tersedia dalam dua transmisi — daftar di
+                                        Pilih keduanya bila unit ini tersedia dalam dua transmisi — daftar di
                                         website akan menulis "Manual &amp; Matic".
                                     </div>
                                 </div>
 
+                                {{-- Sakelar kecil diganti kartu yang warnanya ikut berubah.
+                                     Ini menentukan unitnya tampil di website atau tidak —
+                                     akibat yang terlalu besar untuk disampaikan oleh sakelar
+                                     16px dengan satu baris teks abu-abu. --}}
                                 <div class="col-12">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="unit-tersedia"
-                                            wire:model="tersedia">
-                                        <label class="form-check-label small" for="unit-tersedia">
-                                            Unit siap disewakan (tampil di website)
-                                        </label>
-                                    </div>
+                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
+                                            </span>
+                                            <span class="ket">
+                                                {{ $tersedia
+                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
+                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="tersedia">
+                                        </span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
@@ -386,5 +412,144 @@
             color: #9b2530;
             font-weight: 600;
         }
-    </style>
+            /* Kartu pilihan (transmisi): sasaran kliknya seluruh kartu, dan yang
+           terpilih ditandai warna SEKALIGUS tanda centang — warna saja tidak
+           cukup bagi yang sulit membedakannya. */
+        .orcha-pilih-kartu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+            gap: .6rem;
+        }
+
+        .orcha-kartu-pilihan {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .75rem .9rem;
+            border: 1.5px solid #dbe7f0;
+            border-radius: .8rem;
+            background: #fff;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+        .orcha-kartu-pilihan input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .orcha-kartu-pilihan:hover { border-color: #b9d0e2; }
+
+        .orcha-kartu-pilihan.aktif {
+            border-color: #1d6fa5;
+            background: #f2f8fc;
+        }
+
+        .orcha-kartu-pilihan .rupa {
+            font-size: 1.15rem;
+            line-height: 1;
+            color: #94a3b8;
+        }
+
+        .orcha-kartu-pilihan.aktif .rupa { color: #1d6fa5; }
+
+        .orcha-kartu-pilihan .judul {
+            display: block;
+            font-weight: 700;
+            font-size: .9rem;
+            color: #0f2d4a;
+        }
+
+        .orcha-kartu-pilihan .ket {
+            display: block;
+            font-size: .76rem;
+            color: #94a3b8;
+        }
+
+        .orcha-kartu-pilihan .tanda {
+            position: absolute;
+            top: .5rem;
+            right: .6rem;
+            width: 1.1rem;
+            height: 1.1rem;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #1d6fa5;
+            color: #fff;
+            font-size: .62rem;
+            opacity: 0;
+            transform: scale(.6);
+            transition: all .15s ease;
+        }
+
+        .orcha-kartu-pilihan.aktif .tanda { opacity: 1; transform: scale(1); }
+
+        /* Sakelar penayangan: kartunya sendiri ikut berubah warna, karena yang
+           diputuskan di sini adalah unitnya terlihat pelanggan atau tidak. */
+        .orcha-sakelar-kartu {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            width: 100%;
+            margin: 0;
+            padding: .85rem 1rem;
+            border: 1.5px solid #dbe7f0;
+            border-radius: .8rem;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+        .orcha-sakelar-kartu.nyala {
+            border-color: #1a8a52;
+            background: #f0faf5;
+        }
+
+        .orcha-sakelar-kartu .rupa {
+            flex: 0 0 2.4rem;
+            width: 2.4rem;
+            height: 2.4rem;
+            border-radius: .7rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8edf2;
+            color: #64748b;
+            font-size: 1.05rem;
+        }
+
+        .orcha-sakelar-kartu .rupa > i { line-height: 1; }
+
+        .orcha-sakelar-kartu.nyala .rupa { background: #d7f0e2; color: #126b40; }
+
+        .orcha-sakelar-kartu .isi { flex: 1 1 auto; }
+
+        .orcha-sakelar-kartu .judul {
+            display: block;
+            font-weight: 700;
+            font-size: .9rem;
+            color: #0f2d4a;
+        }
+
+        .orcha-sakelar-kartu .ket {
+            display: block;
+            font-size: .78rem;
+            color: #64748b;
+        }
+
+        .orcha-sakelar-kartu .form-check-input {
+            width: 2.4rem;
+            height: 1.3rem;
+            cursor: pointer;
+        }
+
+        .orcha-sakelar-kartu.nyala .form-check-input:checked {
+            background-color: #1a8a52;
+            border-color: #1a8a52;
+        }
+</style>
 </div>
