@@ -77,6 +77,16 @@ class OrchaArmadaForm extends Component
 
     public bool $lepasKunciDiubahManual = false;
 
+    /**
+     * Tarif sewa sudah termasuk sopir.
+     *
+     * Untuk HiAce dan bus yang tarifnya memang dihitung bersama sopirnya —
+     * "2.500.000 per hari, sudah termasuk sopir". Sebelumnya satu-satunya cara
+     * menyatakannya adalah mengosongkan tarif sopir, dan itu bermakna ganda:
+     * bisa "sudah termasuk", bisa "belum diisi".
+     */
+    public bool $termasukSopir = false;
+
     public array $transmisi = ['Manual'];
 
     public $tarifHari = 0;
@@ -172,6 +182,16 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'nullable|numeric|min:0',
             'tarif12Jam' => 'nullable|numeric|min:0',
             'tarifSopir' => 'nullable|numeric|min:0',
+            // Unit yang selalu dengan sopir harus menyatakan salah satu: tarifnya
+            // sudah termasuk sopir, atau berapa tambahannya. Tanpa keduanya,
+            // halaman publik menampilkan unit yang pasti bersopir tanpa
+            // keterangan biaya sopirnya sama sekali.
+            'termasukSopir' => ['boolean', function ($atribut, $nilai, $gagal) {
+                if (! $this->lepasKunci && ! $nilai && ! $this->tarifSopir) {
+                    $gagal('Unit yang selalu dengan sopir harus menyebut tarif sopirnya, '
+                        .'atau ditandai tarifnya sudah termasuk sopir.');
+                }
+            }],
             'biayaPos.*' => 'nullable|numeric|min:0|max:100000000',
             'gambar' => 'nullable|image|max:4096',
         ];
@@ -191,6 +211,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'tarif per jam',
             'tarif12Jam' => 'tarif paket 12 jam',
             'tarifSopir' => 'tarif sopir',
+            'termasukSopir' => 'keterangan sopir',
             'biayaPos.bbm' => 'biaya BBM',
             'biayaPos.tol' => 'biaya tol',
             'biayaPos.parkir' => 'biaya parkir',
@@ -518,9 +539,26 @@ class OrchaArmadaForm extends Component
      * meninggalkan angka yang menjanjikan satu kursi lebih daripada yang ada —
      * persis kesalahan yang sakelar ini ada untuk mencegah.
      */
+    /**
+     * Menandai tarif sudah termasuk sopir mengosongkan tarif sopirnya.
+     *
+     * Angka yang tertinggal di sana ikut ditagihkan begitu penandanya dimatikan,
+     * dan pemiliknya tidak ingat pernah mengisinya.
+     */
+    public function updatedTermasukSopir(): void
+    {
+        if ($this->termasukSopir) {
+            $this->tarifSopir = '';
+            $this->tarifSopirTeks = '';
+        }
+
+        $this->resetValidation('termasukSopir');
+    }
+
     public function updatedLepasKunci(): void
     {
         $this->lepasKunciDiubahManual = true;
+        $this->resetValidation('termasukSopir');
 
         if ($this->kapasitasDiubahManual) {
             return;
@@ -688,6 +726,7 @@ class OrchaArmadaForm extends Component
         $this->tahun = $isi['tahun'] ?? '';
         $this->cc = $isi['cc'] ?? '';
         $this->lepasKunci = (bool) ($isi['lepas_kunci'] ?? true);
+        $this->termasukSopir = (bool) ($isi['termasuk_sopir'] ?? false);
         $this->transmisi = $isi['transmisi_tersedia'] ?: ['Manual'];
         $this->tarifHari = $isi['tarif']['hari'] ?? 0;
         $this->tarifJam = $isi['tarif']['jam'] ?? '';
@@ -724,7 +763,8 @@ class OrchaArmadaForm extends Component
             'tarif_hari' => $this->tarifHari,
             'tarif_jam' => $this->tarifJam ?: null,
             'tarif_12jam' => $this->tarif12Jam ?: null,
-            'tarif_sopir' => $this->tarifSopir ?: null,
+            'tarif_sopir' => $this->termasukSopir ? null : ($this->tarifSopir ?: null),
+            'termasuk_sopir' => $this->termasukSopir,
             'tersedia' => $this->tersedia,
             ...$this->muatanPos(),
         ];

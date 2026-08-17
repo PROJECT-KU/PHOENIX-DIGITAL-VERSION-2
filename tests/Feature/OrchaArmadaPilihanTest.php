@@ -677,6 +677,9 @@ test('lepas kunci ikut terkirim saat disimpan', function () {
         ->set('merek', 'Toyota')
         ->set('nama', 'HiAce Commuter')
         ->set('tarifHariTeks', '1.200.000')
+        // Unit yang selalu dengan sopir wajib menyebut biaya sopirnya; di sini
+        // dipenuhi dengan tarif sopir supaya yang diuji tetap soal lepas kunci.
+        ->set('tarifSopirTeks', '200000')
         ->call('simpan')
         ->assertHasNoErrors();
 
@@ -1122,4 +1125,86 @@ test('penyegaran katalog mengirim peta tipe utuh', function () {
         ->assertDispatched('orcha-katalog-segar', function ($nama, $parameter) {
             return isset($parameter['varian']['Toyota']['HiAce Commuter']);
         });
+});
+
+/* -------- TARIF SUDAH TERMASUK SOPIR -------- */
+
+test('tarif yang sudah termasuk sopir terkirim tanpa tarif sopir', function () {
+    fakeArmada();
+
+    // 2.500.000 sudah termasuk sopir: tidak ada tambahan yang ditagihkan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->set('tarifHariTeks', '2.500.000')
+        ->set('termasukSopir', true)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['termasuk_sopir'] ?? null) === true
+        && $p->data()['tarif_sopir'] === null);
+});
+
+test('menandai sudah termasuk sopir mengosongkan tarif sopirnya', function () {
+    fakeArmada();
+
+    // Angka yang tertinggal ikut ditagihkan begitu penandanya dimatikan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('tarifSopirTeks', '150000')
+        ->assertSet('tarifSopir', 150000)
+        ->set('termasukSopir', true)
+        ->assertSet('tarifSopir', '')
+        ->assertSet('tarifSopirTeks', '');
+});
+
+test('isian tarif sopir disembunyikan bila sudah termasuk', function () {
+    fakeArmada();
+
+    // Menampilkan isian yang nilainya pasti diabaikan hanya mengundang angka
+    // yang tidak berarti.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Sopir dihitung terpisah')
+        ->set('termasukSopir', true)
+        ->assertSee('Sudah termasuk tarif')
+        ->assertSee('Tarif sudah termasuk sopir');
+});
+
+test('unit selalu dengan sopir wajib menyebut biaya sopirnya', function () {
+    fakeArmada();
+
+    // Tanpa keduanya, halaman publik menampilkan unit yang pasti bersopir tanpa
+    // keterangan biaya sopirnya sama sekali.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('lepasKunci', false)
+        ->set('tarifHariTeks', '2.500.000')
+        ->call('simpan')
+        ->assertHasErrors('termasukSopir');
+
+    Http::assertNotSent(fn ($p) => $p->method() === 'POST' && str_contains($p->url(), '/kendaraan'));
+});
+
+test('unit lepas kunci boleh tanpa keterangan sopir', function () {
+    fakeArmada();
+
+    // Mobil yang hanya disewakan lepas kunci tidak perlu menyebut sopir.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->assertSet('lepasKunci', true)
+        ->set('tarifHariTeks', '400.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+});
+
+test('menyunting unit memuat penanda termasuk sopir tersimpannya', function () {
+    fakeArmada(['termasuk_sopir' => true, 'tarif' => [
+        'jam' => null, '12jam' => null, 'hari' => 2500000, 'sopir_per_hari' => null,
+    ]]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('termasukSopir', true)
+        ->assertSee('Tarif sudah termasuk sopir');
 });
