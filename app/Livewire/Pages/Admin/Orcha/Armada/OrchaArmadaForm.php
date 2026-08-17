@@ -25,6 +25,31 @@ class OrchaArmadaForm extends Component
 
     public string $merek = '';
 
+    /**
+     * Nilai yang menandai "isi manual" pada dropdown merek dan nama unit.
+     *
+     * Bukan string kosong, karena kosong sudah berarti "belum memilih" — dua
+     * keadaan yang harus bisa dibedakan.
+     */
+    public const MANUAL = '__manual__';
+
+    /**
+     * Isi dropdown merek dan nama unit.
+     *
+     * $merek dan $nama tetap satu-satunya nilai yang dikirim ke Orcha dan
+     * divalidasi; keempat properti di bawah ini hanya keadaan tampilan, dan
+     * diringkas menjadi keduanya di serapPilihan() tepat sebelum disimpan.
+     * Menyimpan nilai akhirnya di satu tempat mencegah keadaan yang saling
+     * bertentangan — dropdown menunjuk Toyota sementara yang tersimpan Honda.
+     */
+    public string $merekPilihan = '';
+
+    public string $merekManual = '';
+
+    public string $namaPilihan = '';
+
+    public string $namaManual = '';
+
     public string $jenis = 'mobil';
 
     public string $nopol = '';
@@ -99,6 +124,7 @@ class OrchaArmadaForm extends Component
     {
         return [
             'nama' => 'nama unit',
+            'merek' => 'merek',
             'transmisi' => 'transmisi',
             'tarifHari' => 'tarif per hari',
             'tarifJam' => 'tarif per jam',
@@ -131,6 +157,79 @@ class OrchaArmadaForm extends Component
         $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
     }
 
+    /**
+     * @return array<string, list<string>> merek => daftar model
+     */
+    public function katalog(): array
+    {
+        return $this->rujukan('katalog_kendaraan');
+    }
+
+    /**
+     * Model yang tersedia untuk merek yang sedang dipilih.
+     *
+     * @return list<string>
+     */
+    public function modelPilihan(): array
+    {
+        if ($this->merekPilihan === '' || $this->merekPilihan === self::MANUAL) {
+            return [];
+        }
+
+        return $this->katalog()[$this->merekPilihan] ?? [];
+    }
+
+    /**
+     * Mengganti merek mengosongkan pilihan nama unit.
+     *
+     * Model melekat pada mereknya. Tanpa pengosongan ini, memilih Toyota lalu
+     * "Avanza" lalu berpindah ke Suzuki akan menyimpan "Suzuki Avanza" — unit
+     * yang tidak pernah ada.
+     */
+    public function updatedMerekPilihan(): void
+    {
+        $this->namaPilihan = $this->merekPilihan === self::MANUAL ? self::MANUAL : '';
+        $this->namaManual = '';
+        $this->nama = '';
+        $this->resetValidation(['merek', 'nama']);
+    }
+
+    /**
+     * Meringkas pilihan dropdown menjadi nilai yang benar-benar disimpan.
+     */
+    private function serapPilihan(): void
+    {
+        $this->merek = $this->merekPilihan === self::MANUAL
+            ? trim($this->merekManual)
+            : trim($this->merekPilihan);
+
+        $this->nama = $this->namaPilihan === self::MANUAL
+            ? trim($this->namaManual)
+            : trim($this->namaPilihan);
+    }
+
+    /**
+     * Menyiapkan dropdown dari nilai yang sudah tersimpan.
+     *
+     * Merek atau model yang tidak ada di katalog TIDAK dibuang: dropdown-nya
+     * dialihkan ke "isi manual" dengan nilai lamanya utuh di kotak teks. Unit
+     * yang sudah benar tidak boleh berubah hanya karena katalognya belum
+     * memuat namanya.
+     */
+    private function pasangPilihan(string $merek, string $nama): void
+    {
+        $katalog = $this->katalog();
+
+        $merekDikenal = $merek !== '' && array_key_exists($merek, $katalog);
+        $this->merekPilihan = $merek === '' ? '' : ($merekDikenal ? $merek : self::MANUAL);
+        $this->merekManual = $merekDikenal ? '' : $merek;
+
+        $daftarModel = $merekDikenal ? $katalog[$merek] : [];
+        $namaDikenal = $nama !== '' && in_array($nama, $daftarModel, true);
+        $this->namaPilihan = $nama === '' ? '' : ($namaDikenal ? $nama : self::MANUAL);
+        $this->namaManual = $namaDikenal ? '' : $nama;
+    }
+
     public function mount(?int $kendaraan = null): void
     {
         if (! $kendaraan) {
@@ -154,6 +253,7 @@ class OrchaArmadaForm extends Component
 
         $this->nama = $isi['nama'] ?? '';
         $this->merek = $isi['merek'] ?? '';
+        $this->pasangPilihan($this->merek, $this->nama);
         $this->jenis = $isi['jenis'] ?? 'mobil';
         $this->nopol = (string) ($isi['nopol'] ?? '');
         $this->kapasitas = (int) ($isi['kapasitas'] ?? 7);
@@ -172,6 +272,7 @@ class OrchaArmadaForm extends Component
 
     public function simpan(): void
     {
+        $this->serapPilihan();
         $this->validate();
 
         $data = [
@@ -259,6 +360,8 @@ class OrchaArmadaForm extends Component
             'daftarBagian' => $this->rujukan('pemeriksaan_kendaraan'),
             'daftarKondisi' => $this->rujukan('kondisi_pemeriksaan'),
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
+            'katalog' => $this->katalog(),
+            'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }
 }

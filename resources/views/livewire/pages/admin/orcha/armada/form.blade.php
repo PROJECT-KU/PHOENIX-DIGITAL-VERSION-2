@@ -19,18 +19,51 @@
                             <h6 class="fw-bold mb-3">Keterangan Unit</h6>
 
                             <div class="row g-3">
+                                {{-- Merek dahulu, lalu nama unit.
+
+                                     Urutannya bukan selera: daftar model diambil dari mereknya,
+                                     jadi memilih merek lebih dulu membuat ketergantungan itu
+                                     terlihat. Keduanya dipilih, tidak diketik, karena mengetik
+                                     bebas menghasilkan ejaan berbeda untuk unit yang sama —
+                                     "Avanza", "avanza", "All New Avanza" — dan penyaringan di
+                                     halaman publik jadi tidak dapat diandalkan. --}}
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label small fw-semibold">Nama unit <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model="nama" value="{{ $nama }}" placeholder="All New Avanza">
-                                    @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <label class="form-label small fw-semibold">Merek <span class="text-danger">*</span></label>
+                                    <select class="form-select" wire:model.live="merekPilihan">
+                                        <option value="">— pilih merek —</option>
+                                        @foreach ($katalog as $namaMerek => $daftarModelnya)
+                                            <option value="{{ $namaMerek }}">{{ $namaMerek }}</option>
+                                        @endforeach
+                                        <option value="__manual__">Merek lain (tulis sendiri)…</option>
+                                    </select>
+
+                                    @if ($merekPilihan === '__manual__')
+                                        <input type="text" class="form-control mt-2" wire:model.blur="merekManual"
+                                            placeholder="Tulis mereknya, mis. Chery">
+                                    @endif
+
+                                    @error('merek') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label small fw-semibold">Merek <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('merek') is-invalid @enderror"
-                                        wire:model="merek" value="{{ $merek }}" placeholder="Toyota">
-                                    @error('merek') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <label class="form-label small fw-semibold">Nama unit <span class="text-danger">*</span></label>
+                                    <select class="form-select" wire:model.live="namaPilihan"
+                                        @disabled($merekPilihan === '')>
+                                        <option value="">
+                                            {{ $merekPilihan === '' ? '— pilih merek dahulu —' : '— pilih nama unit —' }}
+                                        </option>
+                                        @foreach ($modelPilihan as $satuModel)
+                                            <option value="{{ $satuModel }}">{{ $satuModel }}</option>
+                                        @endforeach
+                                        <option value="__manual__">Unit lain (tulis sendiri)…</option>
+                                    </select>
+
+                                    @if ($namaPilihan === '__manual__')
+                                        <input type="text" class="form-control mt-2" wire:model.blur="namaManual"
+                                            placeholder="Tulis nama unitnya, mis. Tiggo 8 Pro">
+                                    @endif
+
+                                    @error('nama') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-md-4">
