@@ -905,3 +905,139 @@ test('isian nopol memakai kelas yang mengapitalkan tampilannya', function () {
         ->assertSee('orcha-isian-nopol')
         ->assertSee('AB 4169 TE');
 });
+
+/* -------- BBM, TOL, PARKIR -------- */
+
+test('paket all-in tersimpan beserta biayanya', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('tarifHariTeks', '500.000')
+        ->set('termasukOperasional', true)
+        ->set('biayaOperasionalTeks', '250000')
+        // Isian rupiah membakukan tampilannya seperti tarif yang lain.
+        ->assertSet('biayaOperasionalTeks', '250.000')
+        ->assertSet('biayaOperasional', 250000)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['termasuk_operasional'] ?? null) === true
+        && ($p->data()['biaya_operasional'] ?? null) === 250000);
+});
+
+test('mematikan paket mengosongkan biayanya', function () {
+    fakeArmada();
+
+    // Angka yang tertinggal adalah biaya siluman: ikut terpakai begitu
+    // penandanya dinyalakan lagi, dan pemiliknya tidak ingat pernah mengisinya.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('termasukOperasional', true)
+        ->set('biayaOperasionalTeks', '250000')
+        ->set('termasukOperasional', false)
+        ->assertSet('biayaOperasional', '')
+        ->assertSet('biayaOperasionalTeks', '');
+});
+
+test('biaya tidak terkirim bila paketnya tidak termasuk', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('tarifHariTeks', '500.000')
+        ->set('termasukOperasional', false)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['termasuk_operasional'] ?? null) === false
+        && array_key_exists('biaya_operasional', $p->data())
+        && $p->data()['biaya_operasional'] === null);
+});
+
+test('paket all-in boleh tanpa biaya tambahan', function () {
+    fakeArmada();
+
+    // Unit yang tarifnya sudah dihitung all-in sejak awal memang tidak menambah
+    // biaya apa pun — kosong itu keadaan yang sah, bukan isian yang terlupa.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('tarifHariTeks', '500.000')
+        ->set('termasukOperasional', true)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['termasuk_operasional'] ?? null) === true
+        && $p->data()['biaya_operasional'] === null);
+});
+
+test('isian biaya hanya tampil bila paketnya termasuk', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertDontSee('Biaya BBM, tol, parkir / hari')
+        ->assertSee('ditanggung penyewa')
+        ->set('termasukOperasional', true)
+        ->assertSee('Biaya BBM, tol, parkir / hari')
+        ->assertSee('Kosongkan bila sudah termasuk harga sewa');
+});
+
+test('menyunting unit memuat paket all-in tersimpannya', function () {
+    fakeArmada(['termasuk_operasional' => true, 'biaya_operasional' => 300000]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('termasukOperasional', true)
+        ->assertSet('biayaOperasional', 300000)
+        ->assertSet('biayaOperasionalTeks', '300.000');
+});
+
+test('daftar armada melencanai unit all-in beserta biayanya', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 4, 'uuid' => 'z', 'nama' => 'Avanza', 'merek' => 'Toyota',
+            'varian' => null, 'tahun' => null, 'cc' => null,
+            'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
+            'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
+            'termasuk_operasional' => true, 'biaya_operasional' => 250000,
+            'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
+            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 500000, 'sopir_per_hari' => null],
+            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
+            'kondisi' => null, 'kondisi_terkini' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('All-in')
+        ->assertSee('+250.000/hari');
+});
+
+test('unit yang biayanya ditanggung penyewa tidak dilencanai', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 4, 'uuid' => 'z', 'nama' => 'Avanza', 'merek' => 'Toyota',
+            'varian' => null, 'tahun' => null, 'cc' => null,
+            'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
+            'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
+            'termasuk_operasional' => false, 'biaya_operasional' => null,
+            'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
+            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 500000, 'sopir_per_hari' => null],
+            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
+            'kondisi' => null, 'kondisi_terkini' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    // Melencanai keadaan biasa membuat lencananya berhenti berarti.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertDontSee('All-in');
+});

@@ -98,6 +98,20 @@ class OrchaArmadaForm extends Component
 
     public bool $tersedia = true;
 
+    /**
+     * BBM, tol, dan parkir sudah termasuk atau ditanggung penyewa.
+     *
+     * Satu penanda untuk ketiganya, bukan tiga penanda: dalam praktiknya
+     * ditawarkan sebagai satu paket — unit yang BBM-nya ditanggung pemilik hampir
+     * pasti tolnya juga. Tiga sakelar untuk satu keputusan hanya memperbanyak
+     * keadaan tanpa menambah kemampuan.
+     */
+    public bool $termasukOperasional = false;
+
+    public $biayaOperasional = '';
+
+    public string $biayaOperasionalTeks = '';
+
     public $gambar;
 
     public ?string $gambarLama = null;
@@ -152,6 +166,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'nullable|numeric|min:0',
             'tarif12Jam' => 'nullable|numeric|min:0',
             'tarifSopir' => 'nullable|numeric|min:0',
+            'biayaOperasional' => 'nullable|numeric|min:0|max:100000000',
             'gambar' => 'nullable|image|max:4096',
         ];
     }
@@ -170,6 +185,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'tarif per jam',
             'tarif12Jam' => 'tarif paket 12 jam',
             'tarifSopir' => 'tarif sopir',
+            'biayaOperasional' => 'biaya BBM, tol, dan parkir',
         ];
     }
 
@@ -189,6 +205,27 @@ class OrchaArmadaForm extends Component
     {
         $this->tarif12Jam = $this->angkaDari($this->tarif12JamTeks) ?: '';
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
+    }
+
+    public function updatedBiayaOperasionalTeks(): void
+    {
+        $this->biayaOperasional = $this->angkaDari($this->biayaOperasionalTeks);
+        $this->biayaOperasionalTeks = $this->keRupiah($this->biayaOperasional);
+    }
+
+    /**
+     * Mematikan paketnya mengosongkan nominalnya.
+     *
+     * Angka yang tertinggal pada unit yang tidak all-in adalah biaya siluman: ia
+     * ikut terpakai begitu penandanya dinyalakan lagi, dan pemiliknya tidak ingat
+     * pernah mengisinya.
+     */
+    public function updatedTermasukOperasional(): void
+    {
+        if (! $this->termasukOperasional) {
+            $this->biayaOperasional = '';
+            $this->biayaOperasionalTeks = '';
+        }
     }
 
     public function updatedTarifSopirTeks(): void
@@ -590,6 +627,9 @@ class OrchaArmadaForm extends Component
         $this->tarif12Jam = $isi['tarif']['12jam'] ?? '';
         $this->tarifSopir = $isi['tarif']['sopir_per_hari'] ?? '';
         $this->tersedia = (bool) ($isi['tersedia'] ?? true);
+        $this->termasukOperasional = (bool) ($isi['termasuk_operasional'] ?? false);
+        $this->biayaOperasional = $isi['biaya_operasional'] ?? '';
+        $this->biayaOperasionalTeks = $this->keRupiah($this->biayaOperasional);
         $this->tarifHariTeks = $this->keRupiah($this->tarifHari);
         $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
@@ -617,6 +657,8 @@ class OrchaArmadaForm extends Component
             'tarif_12jam' => $this->tarif12Jam ?: null,
             'tarif_sopir' => $this->tarifSopir ?: null,
             'tersedia' => $this->tersedia,
+            'termasuk_operasional' => $this->termasukOperasional,
+            'biaya_operasional' => $this->termasukOperasional ? ($this->biayaOperasional ?: null) : null,
         ];
 
         // Tujuan diteruskan supaya pemberitahuan sukses tampil utuh dulu di

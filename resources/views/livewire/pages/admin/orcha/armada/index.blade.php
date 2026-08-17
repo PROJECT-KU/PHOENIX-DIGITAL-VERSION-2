@@ -119,12 +119,29 @@ Armada Orcha || lemon
                                         @if (($baris['cc'] ?? null)) · {{ number_format($baris['cc'], 0, ',', '.') }} cc @endif
                                     </div>
 
-                                    @unless ($baris['lepas_kunci'] ?? true)
-                                        <div class="orcha-lencana-sopir mt-1">
-                                            <i class="bi bi-person-badge"></i>
-                                            <span>Selalu dengan sopir</span>
-                                        </div>
-                                    @endunless
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        @unless ($baris['lepas_kunci'] ?? true)
+                                            <span class="orcha-lencana-sopir">
+                                                <i class="bi bi-person-badge"></i>
+                                                <span>Selalu dengan sopir</span>
+                                            </span>
+                                        @endunless
+
+                                        {{-- Hanya unit all-in yang dilencanai: yang ditanggung
+                                             penyewa adalah keadaan biasa, dan melencanai keadaan
+                                             biasa membuat lencananya berhenti berarti. --}}
+                                        @if ($baris['termasuk_operasional'] ?? false)
+                                            <span class="orcha-lencana-allin">
+                                                <i class="bi bi-fuel-pump"></i>
+                                                <span>
+                                                    All-in
+                                                    @if ($baris['biaya_operasional'] ?? null)
+                                                        +{{ number_format($baris['biaya_operasional'], 0, ',', '.') }}/hari
+                                                    @endif
+                                                </span>
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
                                 @if ($baris['nopol'])
                                     <span class="orcha-nopol">{{ $baris['nopol'] }}</span>
@@ -419,6 +436,22 @@ Armada Orcha || lemon
             line-height: 1.3;
         }
 
+        /* Lencana all-in: hijau, karena ini keuntungan bagi penyewa — bukan
+           peringatan seperti lencana sopir yang kuning. */
+        .orcha-lencana-allin {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .12rem .45rem;
+            border-radius: 7px;
+            background: #d7f0e2;
+            color: #1a6b43;
+            font-size: .68rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .orcha-lencana-allin i,
         .orcha-lencana-sopir i {
             display: inline-flex;
             align-items: center;

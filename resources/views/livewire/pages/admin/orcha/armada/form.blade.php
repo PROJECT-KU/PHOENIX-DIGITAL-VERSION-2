@@ -330,6 +330,68 @@
                                             placeholder="150.000">
                                     </div>
                                 </div>
+
+                                {{-- BBM, tol, dan parkir: ditanggung penyewa atau termasuk.
+
+                                     Sebelumnya halaman publik menyatakan ketiganya tidak
+                                     termasuk untuk SEMUA unit, padahal paket all-in memang
+                                     ditawarkan — kesepakatannya hanya ada di percakapan
+                                     WhatsApp. Penyewa lalu bertanya ulang, atau mengira sudah
+                                     termasuk padahal belum dan berselisih saat membayar.
+
+                                     Satu penanda untuk ketiganya karena memang ditawarkan
+                                     sebagai satu paket. --}}
+                                <div class="col-12">
+                                    <label class="orcha-sakelar-kartu {{ $termasukOperasional ? 'nyala' : '' }} mb-0">
+                                        <span class="rupa">
+                                            <i class="bi {{ $termasukOperasional ? 'bi-fuel-pump' : 'bi-wallet2' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $termasukOperasional
+                                                    ? 'BBM, tol, dan parkir termasuk'
+                                                    : 'BBM, tol, dan parkir ditanggung penyewa' }}
+                                            </span>
+                                            <span class="ket">
+                                                @if ($termasukOperasional)
+                                                    Biaya di bawah ditambahkan ke perkiraan harga di website,
+                                                    dihitung per hari.
+                                                @else
+                                                    Penyewa mengisi BBM dan membayar tol serta parkir sendiri.
+                                                @endif
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="termasukOperasional">
+                                        </span>
+                                    </label>
+                                </div>
+
+                                @if ($termasukOperasional)
+                                    <div class="col-6 col-md-4">
+                                        <label class="form-label small fw-semibold">
+                                            Biaya BBM, tol, parkir / hari
+                                        </label>
+                                        <div class="orcha-rupiah">
+                                            <input type="text" inputmode="numeric"
+                                                class="orcha-uang form-control @error('biayaOperasional') is-invalid @enderror"
+                                                wire:model.blur="biayaOperasionalTeks" value="{{ $biayaOperasionalTeks }}"
+                                                placeholder="250.000">
+                                        </div>
+                                        @error('biayaOperasional')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @else
+                                            {{-- Kosong itu keadaan yang sah, bukan isian yang terlupa:
+                                                 unit yang tarifnya sudah dihitung all-in sejak awal
+                                                 memang tidak menambah biaya apa pun. --}}
+                                            <div class="orcha-kursi-beda mt-1">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>Kosongkan bila sudah termasuk harga sewa.</span>
+                                            </div>
+                                        @enderror
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
