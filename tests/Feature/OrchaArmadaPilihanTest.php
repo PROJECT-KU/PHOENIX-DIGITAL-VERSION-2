@@ -70,6 +70,10 @@ function fakeArmada(array $ubahUnit = []): void
                 'Toyota' => ['Avanza' => 1500, 'HiAce Commuter' => 2500],
                 'Suzuki' => ['Ertiga' => 1500],
             ],
+            'lepas_kunci_per_model' => [
+                'Toyota' => ['Avanza' => true, 'HiAce Commuter' => false],
+                'Suzuki' => ['Ertiga' => true],
+            ],
             'varian_per_model' => [
                 'Toyota' => ['Avanza' => ['E', 'G', 'Veloz']],
                 'Suzuki' => ['Ertiga' => ['GA', 'GL', 'GX']],
@@ -563,4 +567,111 @@ test('tipe dan tahun boleh dibiarkan kosong', function () {
     Http::assertSent(fn ($p) => $p->method() === 'POST'
         && array_key_exists('varian', $p->data()) && $p->data()['varian'] === null
         && array_key_exists('tahun', $p->data()) && $p->data()['tahun'] === null);
+});
+
+/* ------------- LEPAS KUNCI & KURSI PENUMPANG ------------- */
+
+test('memilih unit besar menandainya selalu dengan sopir', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('lepasKunci', false)
+        // Akibatnya terlihat sebelum disimpan: 15 kursi, 14 penumpang.
+        ->assertSee('14 penumpang')
+        ->assertSee('Selalu dengan sopir');
+});
+
+test('mobil biasa tetap boleh lepas kunci dengan kursi penuh', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->assertSet('lepasKunci', true)
+        ->assertSee('Boleh lepas kunci');
+
+    expect(Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')->set('nama', 'Avanza')
+        ->instance()->kursiPenumpang())->toBe(7);
+});
+
+test('kursi penumpang mengikuti sakelar lepas kunci secara langsung', function () {
+    fakeArmada();
+
+    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza');
+
+    expect($uji->instance()->kursiPenumpang())->toBe(7);
+
+    // Mobil biasa pun bisa disewakan dengan sopir; angkanya harus ikut berubah
+    // saat itu juga, bukan setelah disimpan.
+    $uji->set('lepasKunci', false);
+
+    expect($uji->instance()->kursiPenumpang())->toBe(6);
+});
+
+test('pilihan lepas kunci admin tidak ditimpa saran', function () {
+    fakeArmada();
+
+    // Pemilik boleh memutuskan HiAce tertentu memang dilepas kunci; sistem tidak
+    // berhak memaksakan saran atas keputusan itu.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('lepasKunci', false)
+        ->set('lepasKunci', true)
+        ->set('nama', 'Avanza')
+        ->assertSet('lepasKunci', true);
+});
+
+test('mengganti merek melepas pilihan lepas kunci', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('lepasKunci', false)
+        ->set('merek', 'Toyota')
+        ->assertSet('lepasKunciDiubahManual', false)
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('lepasKunci', false);
+});
+
+test('lepas kunci ikut terkirim saat disimpan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->set('tarifHariTeks', '1.200.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['lepas_kunci'] ?? null) === false
+        && ($p->data()['kapasitas'] ?? null) === 15);
+});
+
+test('membuka halaman ubah memakai lepas kunci tersimpannya', function () {
+    fakeArmada(['nama' => 'HiAce Commuter', 'kapasitas' => 15, 'lepas_kunci' => true]);
+
+    // Keputusan yang sudah tercatat tidak diubah tanpa diminta, walau saran
+    // katalog menyebut sebaliknya.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('lepasKunci', true);
+});
+
+test('kursi penumpang tidak pernah nol', function () {
+    fakeArmada();
+
+    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('kapasitas', 1)
+        ->set('lepasKunci', false);
+
+    // Kapasitas 1 dengan sopir menghasilkan 0 bila dikurangi lugas — angka yang
+    // tidak berarti apa-apa.
+    expect($uji->instance()->kursiPenumpang())->toBe(1);
 });

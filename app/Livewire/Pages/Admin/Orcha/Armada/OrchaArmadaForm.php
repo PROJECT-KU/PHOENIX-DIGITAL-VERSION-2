@@ -66,6 +66,17 @@ class OrchaArmadaForm extends Component
     /** Unit sumber angka cc, untuk keterangan di layar. */
     public string $ccOtomatisDari = '';
 
+    /**
+     * Unit boleh disewa lepas kunci (tanpa sopir).
+     *
+     * HiAce dan bus tidak dilepas tanpa sopir, dan kolom ini juga menentukan
+     * hitungan kursi penumpang: unit yang selalu dengan sopir kehilangan satu
+     * kursi untuk sopirnya.
+     */
+    public bool $lepasKunci = true;
+
+    public bool $lepasKunciDiubahManual = false;
+
     public array $transmisi = ['Manual'];
 
     public $tarifHari = 0;
@@ -222,6 +233,25 @@ class OrchaArmadaForm extends Component
         return $this->rujukan('jenis_per_model')[trim($this->merek)][trim($this->nama)] ?? null;
     }
 
+    public function lepasKunciDisarankan(): ?bool
+    {
+        $nilai = $this->rujukan('lepas_kunci_per_model')[trim($this->merek)][trim($this->nama)] ?? null;
+
+        return $nilai === null ? null : (bool) $nilai;
+    }
+
+    /**
+     * Kursi yang benar-benar bisa dipakai penumpang.
+     *
+     * Dihitung di sini juga supaya admin melihat akibatnya SEBELUM menyimpan —
+     * kalau angka ini hanya muncul di halaman publik, selisih satu kursi baru
+     * ketahuan setelah ada rombongan yang dijanjikan muat.
+     */
+    public function kursiPenumpang(): int
+    {
+        return $this->lepasKunci ? $this->kapasitas : max(1, $this->kapasitas - 1);
+    }
+
     public function ccDisarankan(): ?int
     {
         $cc = $this->rujukan('cc_per_model')[trim($this->merek)][trim($this->nama)] ?? null;
@@ -291,6 +321,10 @@ class OrchaArmadaForm extends Component
             $this->cc = $cc;
             $this->ccOtomatisDari = $sumber;
         }
+
+        if (! $this->lepasKunciDiubahManual && ($lepas = $this->lepasKunciDisarankan()) !== null) {
+            $this->lepasKunci = $lepas;
+        }
     }
 
     /**
@@ -311,6 +345,11 @@ class OrchaArmadaForm extends Component
     {
         $this->ccDiubahManual = true;
         $this->ccOtomatisDari = '';
+    }
+
+    public function updatedLepasKunci(): void
+    {
+        $this->lepasKunciDiubahManual = true;
     }
 
     /**
@@ -417,6 +456,7 @@ class OrchaArmadaForm extends Component
         $this->kapasitasDiubahManual = false;
         $this->jenisDiubahManual = false;
         $this->ccDiubahManual = false;
+        $this->lepasKunciDiubahManual = false;
         $this->kursiOtomatisDari = '';
         $this->ccOtomatisDari = '';
         $this->resetValidation(['merek', 'nama']);
@@ -451,6 +491,7 @@ class OrchaArmadaForm extends Component
         $this->varian = (string) ($isi['varian'] ?? '');
         $this->tahun = $isi['tahun'] ?? '';
         $this->cc = $isi['cc'] ?? '';
+        $this->lepasKunci = (bool) ($isi['lepas_kunci'] ?? true);
         $this->transmisi = $isi['transmisi_tersedia'] ?: ['Manual'];
         $this->tarifHari = $isi['tarif']['hari'] ?? 0;
         $this->tarifJam = $isi['tarif']['jam'] ?? '';
@@ -477,6 +518,7 @@ class OrchaArmadaForm extends Component
             'jenis' => $this->jenis,
             'nopol' => $this->nopol,
             'kapasitas' => $this->kapasitas,
+            'lepas_kunci' => $this->lepasKunci,
             'transmisi_tersedia' => array_values($this->transmisi),
             'tarif_hari' => $this->tarifHari,
             'tarif_jam' => $this->tarifJam ?: null,
@@ -561,6 +603,7 @@ class OrchaArmadaForm extends Component
             'kursiDisarankan' => $this->kursiDisarankan(),
             'ccDisarankan' => $this->ccDisarankan(),
             'varianPilihan' => $this->varianPilihan(),
+            'kursiPenumpang' => $this->kursiPenumpang(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }

@@ -103,9 +103,28 @@ Armada Orcha || lemon
                                 <div>
                                     <div class="fw-bold" style="font-size:1.02rem">{{ $baris['nama'] }}</div>
                                     <div class="text-muted" style="font-size:.78rem">
-                                        {{ $baris['merek'] }} · {{ $baris['jenis_label'] }} ·
-                                        {{ $baris['kapasitas'] }} kursi · {{ $baris['transmisi_label'] }}
+                                        {{ $baris['merek'] }}{{ ($baris['varian'] ?? '') ? ' '.$baris['varian'] : '' }}
+                                        @if ($baris['tahun'] ?? null) · {{ $baris['tahun'] }} @endif
+                                        · {{ $baris['jenis_label'] }} ·
+                                        {{-- Kursi penumpang disebut terpisah HANYA bila berbeda dari
+                                             jumlah kursinya, yaitu saat unit selalu dengan sopir.
+                                             Menuliskan "7 kursi · 7 penumpang" di semua baris hanya
+                                             menambah kata tanpa menambah keterangan. --}}
+                                        @if (($baris['kursi_penumpang'] ?? null) && $baris['kursi_penumpang'] !== $baris['kapasitas'])
+                                            {{ $baris['kapasitas'] }} kursi ({{ $baris['kursi_penumpang'] }} penumpang)
+                                        @else
+                                            {{ $baris['kapasitas'] }} kursi
+                                        @endif
+                                        · {{ $baris['transmisi_label'] }}
+                                        @if (($baris['cc'] ?? null)) · {{ number_format($baris['cc'], 0, ',', '.') }} cc @endif
                                     </div>
+
+                                    @unless ($baris['lepas_kunci'] ?? true)
+                                        <div class="orcha-lencana-sopir mt-1">
+                                            <i class="bi bi-person-badge"></i>
+                                            <span>Selalu dengan sopir</span>
+                                        </div>
+                                    @endunless
                                 </div>
                                 @if ($baris['nopol'])
                                     <span class="orcha-nopol">{{ $baris['nopol'] }}</span>
@@ -384,5 +403,28 @@ Armada Orcha || lemon
         }
 
         .orcha-unit-jadwal > i { line-height: 1; }
-    </style>
+    
+        /* Lencana unit yang tidak boleh lepas kunci. Kuning kehijauan, bukan
+           merah: ini keterangan cara pakai, bukan kesalahan. */
+        .orcha-lencana-sopir {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .12rem .45rem;
+            border-radius: 7px;
+            background: #f6edd0;
+            color: #8a6d1f;
+            font-size: .68rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .orcha-lencana-sopir i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            vertical-align: middle;
+        }
+</style>
 </div>

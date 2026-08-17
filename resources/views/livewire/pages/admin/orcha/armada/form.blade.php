@@ -205,6 +205,43 @@
                                      akibat yang terlalu besar untuk disampaikan oleh sakelar
                                      16px dengan satu baris teks abu-abu. --}}
                                 <div class="col-12">
+                                    {{-- Lepas kunci: menentukan dua hal sekaligus.
+
+                                         Pertama, boleh tidaknya unit disewa tanpa sopir —
+                                         HiAce dan bus tidak dilepas, dan sampai sekarang
+                                         aturan itu hanya ada di kepala pemilik.
+
+                                         Kedua, hitungan kursi penumpang. Unit yang selalu
+                                         dengan sopir kehilangan satu kursi untuk sopirnya:
+                                         HiAce 15 kursi berarti 14 penumpang. Angkanya
+                                         ditampilkan di sini supaya akibatnya terlihat SEBELUM
+                                         disimpan, bukan setelah ada rombongan yang dijanjikan
+                                         muat. --}}
+                                    <label class="orcha-sakelar-kartu {{ $lepasKunci ? 'nyala' : 'peringatan' }} mb-3">
+                                        <span class="rupa">
+                                            <i class="bi {{ $lepasKunci ? 'bi-key' : 'bi-person-badge' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $lepasKunci ? 'Boleh lepas kunci' : 'Selalu dengan sopir' }}
+                                            </span>
+                                            <span class="ket">
+                                                @if ($lepasKunci)
+                                                    Penyewa boleh menyetir sendiri — {{ $kursiPenumpang }} kursi
+                                                    terpakai penumpang semua.
+                                                @else
+                                                    Sopir dari kami, jadi satu kursi terpakai:
+                                                    <strong>{{ $kursiPenumpang }} penumpang</strong> dari
+                                                    {{ $kapasitas }} kursi.
+                                                @endif
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="lepasKunci">
+                                        </span>
+                                    </label>
+
                                     <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
                                         <span class="rupa">
                                             <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
@@ -969,6 +1006,18 @@
         justify-content: center;
         line-height: 1;
         vertical-align: middle;
+    }
+
+    /* Kartu "selalu dengan sopir" bukan keadaan salah, jadi bukan merah —
+       kuning kehijauan yang menandakan "perhatikan", bukan "perbaiki". */
+    .orcha-sakelar-kartu.peringatan {
+        border-color: #d9c48a;
+        background: linear-gradient(135deg, rgba(217, 196, 138, .16), rgba(217, 196, 138, .05));
+    }
+
+    .orcha-sakelar-kartu.peringatan .rupa {
+        background: #f6edd0;
+        color: #8a6d1f;
     }
 
     .orcha-pick-row {
