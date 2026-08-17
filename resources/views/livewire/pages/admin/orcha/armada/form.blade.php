@@ -72,7 +72,7 @@
                                      tahun 2025 1200cc". Nama seperti itu tidak bisa disaring
                                      dan tidak bisa diurutkan menurut tahun; sebutan lengkapnya
                                      dirakit Orcha saat ditampilkan. --}}
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Tipe</label>
                                     <button type="button" onclick="orchaPilihVarian(this)"
                                         class="form-select text-start orcha-picker"
@@ -88,7 +88,7 @@
                                     @error('varian') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Tahun</label>
                                     <input type="number" class="form-control @error('tahun') is-invalid @enderror"
                                         wire:model.blur="tahun" min="1980" max="{{ date('Y') + 1 }}"
@@ -104,7 +104,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Isi silinder (cc)</label>
                                     <input type="number" class="form-control @error('cc') is-invalid @enderror"
                                         wire:model.live="cc" min="500" max="20000" placeholder="1200">
@@ -132,7 +132,7 @@
                                      memindahkan kursor ke belakang dan menyulitkan mengoreksi
                                      huruf di tengah. Penormalan spasinya menunggu blur, lalu
                                      yang terlihat sama dengan yang tersimpan. --}}
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Nomor polisi</label>
                                     <input type="text" class="form-control orcha-isian-nopol @error('nopol') is-invalid @enderror"
                                         wire:model.blur="nopol" placeholder="AB 4169 TE"
@@ -155,7 +155,7 @@
                             <p class="text-muted small mb-3">Muat berapa orang, dan bagaimana unit ini dilepas.</p>
 
                             <div class="row g-3">
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
                                     <select class="form-select" wire:model.live="jenis">
                                         @foreach ($pilihanJenis as $kunci => $label)
@@ -176,7 +176,7 @@
                                      tercatat sebagai koreksi — dengan .blur, mengganti nama
                                      unit sebelum berpindah fokus akan menimpa angka yang
                                      baru saja diperbaiki. --}}
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-6">
                                     <label class="form-label small fw-semibold">Kapasitas (kursi) <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control @error('kapasitas') is-invalid @enderror"
                                         wire:model.live="kapasitas" min="1">
@@ -319,7 +319,7 @@
                                      perjalanan ke Bromo tidak selesai dalam dua belas jam.
                                      Menyediakan ketiganya berarti membuat dua isian yang tidak
                                      akan pernah diisi. --}}
-                                <div class="col-6 col-md-4">
+                                <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Luar kota / hari</label>
                                     <div class="orcha-rupiah">
                                         <input type="text" inputmode="numeric"
@@ -337,7 +337,7 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-6 col-md-3">
+                                <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Sopir / hari</label>
 
                                     {{-- Tarif sopir disembunyikan bila tarifnya sudah termasuk
@@ -366,7 +366,10 @@
                                      mengosongkan tarif sopir, dan itu bermakna ganda: bisa
                                      "sudah termasuk", bisa "belum diisi". Kartu unit di website
                                      pun tidak menyebut sopir sama sekali untuk unit semacam itu. --}}
-                                <div class="col-12">
+                                {{-- Berdampingan dengan tarif sopir yang diaturnya, bukan
+                                     sebaris sendiri: barisnya jadi penuh, dan keduanya terbaca
+                                     sebagai satu keputusan. --}}
+                                <div class="col-12 col-md-8">
                                     <label class="orcha-sakelar-kartu {{ $termasukSopir ? 'nyala' : '' }} mb-0">
                                         <span class="rupa">
                                             <i class="bi {{ $termasukSopir ? 'bi-person-check' : 'bi-person-plus' }}"></i>
@@ -480,6 +483,60 @@
 
                 <div class="col-12 col-xl-4">
                     <div class="orcha-lengket orcha-lengket-armada">
+                    {{-- Tombol simpan di PALING ATAS kolom kanan.
+
+                         Sebelumnya di bawah, dan setiap kartu baru yang ditambahkan
+                         mendorongnya makin turun — sampai masuk ke bagian kolom lengket
+                         yang menggulung sendiri, sehingga tombolnya harus dicari. Tombol
+                         yang harus dicari adalah tombol yang gagal, apalagi tombol yang
+                         menyimpan pekerjaan.
+
+                         Di atas, ia terlihat sejak halaman dibuka dan tetap terlihat
+                         selama menggulung karena kolomnya lengket. --}}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
+                            wire:target="simpan">
+                            <i class="bi bi-save"></i>
+                            <span wire:loading.remove wire:target="simpan">
+                                {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
+                            </span>
+                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
+                        </button>
+                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
+                            Batal
+                        </a>
+                    </div>
+                    </div>
+
+                    {{-- Penayangan berdampingan dengan tombol simpan.
+
+                         Ini keputusan yang berbeda jenis dari isian di kiri: bukan "unit ini
+                         apa", melainkan "boleh dilihat pelanggan atau belum". Menaruhnya di
+                         tengah daftar isian membuatnya mudah terlewat, padahal akibatnya
+                         paling langsung terasa — dan di sini ia terbaca bersama tombol yang
+                         mewujudkannya. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-3">
+                        <div class="card-body p-3">
+                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
+                                            </span>
+                                            <span class="ket">
+                                                {{ $tersedia
+                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
+                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="tersedia">
+                                        </span>
+                                    </label>
+                        </div>
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Foto Unit</h6>
@@ -724,50 +781,8 @@
                         </div>
                     @endif
 
-                    {{-- Penayangan diletakkan di sini, berdampingan dengan tombol simpan.
-
-                         Ini keputusan yang berbeda jenis dari isian di kiri: bukan "unit ini
-                         apa", melainkan "boleh dilihat pelanggan atau belum". Menaruhnya di
-                         tengah daftar isian membuatnya mudah terlewat, padahal akibatnya
-                         paling langsung terasa. --}}
-                    <div class="card border-0 shadow-sm rounded-4 mb-3">
-                        <div class="card-body p-3">
-                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
-                                        <span class="rupa">
-                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
-                                        </span>
-                                        <span class="isi">
-                                            <span class="judul">
-                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
-                                            </span>
-                                            <span class="ket">
-                                                {{ $tersedia
-                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
-                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
-                                            </span>
-                                        </span>
-                                        <span class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                wire:model.live="tersedia">
-                                        </span>
-                                    </label>
-                        </div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
-                            wire:target="simpan">
-                            <i class="bi bi-save"></i>
-                            <span wire:loading.remove wire:target="simpan">
-                                {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
-                            </span>
-                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
-                        </button>
-                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
-                            Batal
-                        </a>
-                    </div>
-                    </div>
                 </div>
             </div>
 
