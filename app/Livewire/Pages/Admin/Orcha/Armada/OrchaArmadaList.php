@@ -13,6 +13,19 @@ class OrchaArmadaList extends Component
     use MemanggilOrcha;
 
     /**
+     * Sembilan, bukan sepuluh.
+     *
+     * Daftar armada berbentuk kartu tiga kolom (col-xl-4), jadi sembilan mengisi
+     * tepat tiga baris penuh. Sepuluh menyisakan satu kartu sendirian di baris
+     * keempat — baris yang tampak seperti kesalahan tata letak, bukan akhir
+     * daftar.
+     */
+    protected function perHalaman(): int
+    {
+        return 9;
+    }
+
+    /**
      * Orcha menolak menghapus unit yang sudah pernah disewa — datanya masih
      * dipakai pemesanan lama.
      */

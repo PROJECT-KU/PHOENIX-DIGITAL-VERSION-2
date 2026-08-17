@@ -63,13 +63,29 @@ trait MemanggilOrcha
     /**
      * Parameter daftar yang seragam: cari, status, halaman.
      */
+    /**
+     * Baris per halaman untuk daftar.
+     *
+     * Metode, bukan properti: properti trait yang ditimpa kelas pemakainya
+     * dengan nilai berbeda adalah galat fatal di PHP. Metode boleh ditimpa
+     * begitu saja.
+     *
+     * Ditimpa oleh daftar berbentuk kartu bergrid, yang perlu angka habis dibagi
+     * jumlah kolomnya supaya baris terakhirnya tidak menyisakan satu kartu
+     * menggantung sendirian.
+     */
+    protected function perHalaman(): int
+    {
+        return 10;
+    }
+
     protected function parameterDaftar(array $tambahan = []): array
     {
         return array_filter(array_merge([
             'cari' => $this->cari,
             'status' => $this->filterStatus,
             'page' => $this->halaman,
-            'per_halaman' => 10,
+            'per_halaman' => $this->perHalaman(),
         ], $tambahan), fn ($nilai) => $nilai !== '' && $nilai !== null);
     }
 

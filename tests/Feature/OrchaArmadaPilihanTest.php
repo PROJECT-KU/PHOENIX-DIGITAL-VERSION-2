@@ -1401,3 +1401,56 @@ test('halaman tambah dan ubah memakai empat kartu bertema yang sama', function (
             ->assertSee('Pratinjau di Website');
     }
 });
+
+/* -------- PAGINATION & SINKRON DENGAN SUREL -------- */
+
+test('daftar armada meminta sembilan baris per halaman', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 0]]),
+    ]);
+
+    // Kartunya tiga kolom (col-xl-4), jadi sembilan mengisi tepat tiga baris
+    // penuh. Sepuluh menyisakan satu kartu sendirian di baris keempat.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class);
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/kendaraan')
+        && str_contains($p->url(), 'per_halaman=9'));
+});
+
+test('daftar lain tetap sepuluh baris per halaman', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['kategori_paket' => ['wisata' => 'Wisata']]]),
+        '*' => Http::response(['data' => [], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 0]]),
+    ]);
+
+    // Hanya daftar berbentuk kartu bergrid yang perlu angka khusus.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList::class);
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/paket-wisata')
+        && str_contains($p->url(), 'per_halaman=10'));
+});
+
+test('detail penyewaan menyebut keterangan unit yang sama dengan surat', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_penyewaan' => ['baru' => 'Baru']]]),
+        '*' => Http::response(balasanSewaTujuan(['kendaraan' => [
+            'id' => 1, 'nama' => 'HiAce Commuter', 'transmisi' => 'Manual',
+            'sebutan' => 'Toyota HiAce Commuter Standar 2023 · 2.500 cc',
+            'kapasitas' => 14, 'kursi_total' => 15,
+            'sopir_label' => 'Harga sudah termasuk sopir',
+            'operasional_label' => 'BBM termasuk · tol dan parkir ditanggung penyewa',
+        ], 'luar_kota' => true])),
+    ]);
+
+    // Admin sebelumnya membaca "HiAce Commuter" sementara penyewa memegang surat
+    // yang menyebut merek, tipe, tahun, kapasitas, dan siapa menanggung BBM.
+    Livewire::actingAs(adminArmada())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 7])
+        ->assertSee('Toyota HiAce Commuter Standar 2023')
+        ->assertSee('14 penumpang')
+        ->assertSee('(15 kursi)')
+        ->assertSee('Harga sudah termasuk sopir')
+        ->assertSee('BBM termasuk')
+        ->assertSee('Luar kota');
+});

@@ -169,6 +169,22 @@ Detail Sewa Kendaraan || lemon
 
                             <div class="row g-3">
                                 @foreach ([
+                                    {{-- Keterangan unitnya disebut di sini juga.
+
+                                         Admin sebelumnya membaca "HiAce Commuter" sementara
+                                         penyewa memegang surat yang menyebut merek, tipe, tahun,
+                                         kapasitas, dan siapa menanggung BBM. Ketika penyewa
+                                         menelepon menanyakan salah satunya, admin tidak punya
+                                         jawabannya di layar yang sedang dibukanya. --}}
+                                    ['Unit', $sewa['kendaraan']['sebutan'] ?? $sewa['kendaraan']['nama'] ?? '—'],
+                                    ['Kapasitas', ($sewa['kendaraan']['kapasitas'] ?? null)
+                                        ? $sewa['kendaraan']['kapasitas'].' penumpang'
+                                            .(($sewa['kendaraan']['kursi_total'] ?? null) !== ($sewa['kendaraan']['kapasitas'] ?? null)
+                                                ? ' ('.$sewa['kendaraan']['kursi_total'].' kursi)' : '')
+                                        : '—'],
+                                    ['Keterangan sopir', $sewa['kendaraan']['sopir_label'] ?? '—'],
+                                    ['BBM, tol, parkir', $sewa['kendaraan']['operasional_label'] ?? '—'],
+                                    ['Wilayah', ($sewa['luar_kota'] ?? false) ? 'Luar kota' : 'Dalam kota'],
                                     ['Mulai', ($sewa['tanggal_mulai'] ?? null)
                                         ? \Carbon\Carbon::parse($sewa['tanggal_mulai'])->translatedFormat('l, d F Y') . ' · ' . $sewa['jam_mulai']
                                         : '—'],
