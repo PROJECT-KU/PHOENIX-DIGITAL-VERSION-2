@@ -16,7 +16,10 @@
                 <div class="col-12 col-xl-8">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3">Keterangan Unit</h6>
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-card-heading text-primary"></i> Identitas Unit
+                            </h6>
+                            <p class="text-muted small mb-3">Siapa unit ini — yang tertulis di penawaran dan dicari pelanggan.</p>
 
                             <div class="row g-3">
                                 {{-- Merek dan nama unit dipilih lewat popup pencarian.
@@ -122,15 +125,6 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
-                                    <select class="form-select" wire:model.live="jenis">
-                                        @foreach ($pilihanJenis as $kunci => $label)
-                                            <option value="{{ $kunci }}">{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
                                 {{-- Nomor polisi: kapital sejak diketik, dirapikan saat keluar.
 
                                      text-transform membuat kapitalnya terlihat seketika tanpa
@@ -147,6 +141,27 @@
                                     @error('nopol')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-people text-primary"></i> Daya Angkut &amp; Transmisi
+                            </h6>
+                            <p class="text-muted small mb-3">Muat berapa orang, dan bagaimana unit ini dilepas.</p>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
+                                    <select class="form-select" wire:model.live="jenis">
+                                        @foreach ($pilihanJenis as $kunci => $label)
+                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
 
                                 {{-- Kapasitas: terisi sendiri saat nama unit dipilih, tetap bisa diubah.
@@ -193,41 +208,6 @@
                                 </div>
 
                                 <div class="col-12">
-                                    <label class="form-label small fw-semibold">Transmisi tersedia <span class="text-danger">*</span></label>
-
-                                    {{-- Kotak centang kecil diganti kartu yang bisa ditekan.
-                                         Sasaran kliknya jadi seluruh kartu, bukan kotak 16px —
-                                         dan pilihan yang sedang aktif terbaca sekilas, tanpa
-                                         perlu memicingkan mata ke tanda centangnya. --}}
-                                    <div class="orcha-pilih-kartu" wire:key="transmisi">
-                                        @foreach ([
-                                            ['Manual', 'bi-gear-wide-connected', 'Tuas persneling'],
-                                            ['Matic', 'bi-lightning-charge-fill', 'Tanpa kopling'],
-                                        ] as [$pilihan, $ikon, $keterangan])
-                                            <label class="orcha-kartu-pilihan {{ in_array($pilihan, $transmisi) ? 'aktif' : '' }}">
-                                                <input type="checkbox" value="{{ $pilihan }}" wire:model.live="transmisi">
-                                                <span class="tanda"><i class="bi bi-check-lg"></i></span>
-                                                <i class="bi {{ $ikon }} rupa"></i>
-                                                <span>
-                                                    <span class="judul">{{ $pilihan }}</span>
-                                                    <span class="ket">{{ $keterangan }}</span>
-                                                </span>
-                                            </label>
-                                        @endforeach
-                                    </div>
-
-                                    @error('transmisi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                    <div class="form-text">
-                                        Pilih keduanya bila unit ini tersedia dalam dua transmisi — daftar di
-                                        website akan menulis "Manual &amp; Matic".
-                                    </div>
-                                </div>
-
-                                {{-- Sakelar kecil diganti kartu yang warnanya ikut berubah.
-                                     Ini menentukan unitnya tampil di website atau tidak —
-                                     akibat yang terlalu besar untuk disampaikan oleh sakelar
-                                     16px dengan satu baris teks abu-abu. --}}
-                                <div class="col-12">
                                     {{-- Lepas kunci: menentukan dua hal sekaligus.
 
                                          Pertama, boleh tidaknya unit disewa tanpa sopir —
@@ -264,37 +244,48 @@
                                                 wire:model.live="lepasKunci">
                                         </span>
                                     </label>
-
-                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
-                                        <span class="rupa">
-                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
-                                        </span>
-                                        <span class="isi">
-                                            <span class="judul">
-                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
-                                            </span>
-                                            <span class="ket">
-                                                {{ $tersedia
-                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
-                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
-                                            </span>
-                                        </span>
-                                        <span class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                wire:model.live="tersedia">
-                                        </span>
-                                    </label>
                                 </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Transmisi tersedia <span class="text-danger">*</span></label>
+
+                                    {{-- Kotak centang kecil diganti kartu yang bisa ditekan.
+                                         Sasaran kliknya jadi seluruh kartu, bukan kotak 16px —
+                                         dan pilihan yang sedang aktif terbaca sekilas, tanpa
+                                         perlu memicingkan mata ke tanda centangnya. --}}
+                                    <div class="orcha-pilih-kartu" wire:key="transmisi">
+                                        @foreach ([
+                                            ['Manual', 'bi-gear-wide-connected', 'Tuas persneling'],
+                                            ['Matic', 'bi-lightning-charge-fill', 'Tanpa kopling'],
+                                        ] as [$pilihan, $ikon, $keterangan])
+                                            <label class="orcha-kartu-pilihan {{ in_array($pilihan, $transmisi) ? 'aktif' : '' }}">
+                                                <input type="checkbox" value="{{ $pilihan }}" wire:model.live="transmisi">
+                                                <span class="tanda"><i class="bi bi-check-lg"></i></span>
+                                                <i class="bi {{ $ikon }} rupa"></i>
+                                                <span>
+                                                    <span class="judul">{{ $pilihan }}</span>
+                                                    <span class="ket">{{ $keterangan }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+
+                                    @error('transmisi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    <div class="form-text">
+                                        Pilih keduanya bila unit ini tersedia dalam dua transmisi — daftar di
+                                        website akan menulis "Manual &amp; Matic".
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
 
-                    <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
-                            <h6 class="fw-bold mb-1">Tarif</h6>
-                            <p class="text-muted small mb-3">
-                                Kosongkan satuan yang memang tidak dijual — bus biasanya tidak dilepas per jam.
-                            </p>
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-cash-coin text-primary"></i> Tarif
+                            </h6>
+                            <p class="text-muted small mb-3">Kosongkan satuan yang memang tidak dijual — bus biasanya tidak dilepas per jam.</p>
 
                             <div class="row g-3">
                                 <div class="col-6 col-md-3">
@@ -322,27 +313,6 @@
                                             placeholder="280.000">
                                     </div>
                                 </div>
-                                <div class="col-6 col-md-3">
-                                    <label class="form-label small fw-semibold">Sopir / hari</label>
-
-                                    {{-- Tarif sopir disembunyikan bila tarifnya sudah termasuk
-                                         sopir: menampilkan isian yang nilainya pasti diabaikan
-                                         hanya mengundang angka yang tidak berarti. --}}
-                                    @if ($termasukSopir)
-                                        <div class="orcha-sopir-termasuk">
-                                            <i class="bi bi-check-circle-fill"></i>
-                                            <span>Sudah termasuk tarif</span>
-                                        </div>
-                                    @else
-                                        <div class="orcha-rupiah">
-                                            <input type="text" inputmode="numeric"
-                                                class="orcha-uang form-control @error('tarifSopir') is-invalid @enderror"
-                                                wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
-                                                placeholder="150.000">
-                                        </div>
-                                    @endif
-                                </div>
-
                                 {{-- Tarif luar kota: HANYA harian.
 
                                      Sewa luar kota tidak dijual per jam atau paket 12 jam —
@@ -365,6 +335,27 @@
                                             <span>Kosongkan bila sama dengan tarif harian.</span>
                                         </div>
                                     @enderror
+                                </div>
+
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-semibold">Sopir / hari</label>
+
+                                    {{-- Tarif sopir disembunyikan bila tarifnya sudah termasuk
+                                         sopir: menampilkan isian yang nilainya pasti diabaikan
+                                         hanya mengundang angka yang tidak berarti. --}}
+                                    @if ($termasukSopir)
+                                        <div class="orcha-sopir-termasuk">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            <span>Termasuk tarif</span>
+                                        </div>
+                                    @else
+                                        <div class="orcha-rupiah">
+                                            <input type="text" inputmode="numeric"
+                                                class="orcha-uang form-control @error('tarifSopir') is-invalid @enderror"
+                                                wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
+                                                placeholder="150.000">
+                                        </div>
+                                    @endif
                                 </div>
 
                                 {{-- Tarif sudah termasuk sopir atau belum.
@@ -407,6 +398,18 @@
                                     @enderror
                                 </div>
 
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm rounded-4 ">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-receipt text-primary"></i> Biaya Perjalanan
+                            </h6>
+                            <p class="text-muted small mb-3">BBM, tol, dan parkir — masing-masing ditanggung penyewa atau sudah termasuk.</p>
+
+                            <div class="row g-3">
                                 {{-- BBM, tol, dan parkir: masing-masing berdiri sendiri.
 
                                      Ada unit yang BBM-nya ditanggung pemilik tetapi tolnya
@@ -586,6 +589,36 @@
                             </div>
                         </div>
                     @endif
+
+                    {{-- Penayangan diletakkan di sini, berdampingan dengan tombol simpan.
+
+                         Ini keputusan yang berbeda jenis dari isian di kiri: bukan "unit ini
+                         apa", melainkan "boleh dilihat pelanggan atau belum". Menaruhnya di
+                         tengah daftar isian membuatnya mudah terlewat, padahal akibatnya
+                         paling langsung terasa. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-3">
+                        <div class="card-body p-3">
+                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
+                                            </span>
+                                            <span class="ket">
+                                                {{ $tersedia
+                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
+                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="tersedia">
+                                        </span>
+                                    </label>
+                        </div>
+                    </div>
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
@@ -1222,6 +1255,9 @@
         display: flex;
         align-items: center;
         gap: .4rem;
+        /* Tidak boleh pecah dua baris: kolomnya sempit, dan tulisan yang
+           terlipat membuat kotaknya lebih tinggi daripada isian di sebelahnya. */
+        white-space: nowrap;
         height: 48px;
         padding: 0 .9rem;
         border: 1px solid #a8d5bd;

@@ -1166,7 +1166,7 @@ test('isian tarif sopir disembunyikan bila sudah termasuk', function () {
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->assertSee('Sopir dihitung terpisah')
         ->set('termasukSopir', true)
-        ->assertSee('Sudah termasuk tarif')
+        ->assertSee('Termasuk tarif')
         ->assertSee('Tarif sudah termasuk sopir');
 });
 
