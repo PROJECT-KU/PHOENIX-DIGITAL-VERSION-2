@@ -159,6 +159,93 @@
                         </div>
                     </div>
 
+                    {{-- Ringkasan unit: keadaannya sekarang, bukan isian.
+
+                         Kolom ini sebelumnya hanya memuat kotak unggah foto dan dua
+                         tombol, sementara kolom kiri memanjang — separuhnya kosong.
+                         Yang pantas mengisinya adalah hal yang perlu diketahui admin
+                         SEBELUM menyimpan: unitnya sedang di mana, sudah berapa kali
+                         dipakai, dan apakah keadaannya cocok dengan status yang
+                         sedang dipilih. --}}
+                    @if ($ubah)
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3 orcha-judul-ikon">
+                                    <i class="bi bi-clipboard-data text-primary"></i> Ringkasan Unit
+                                </h6>
+
+                                @php $bermasalah = $this->bagianBermasalah(); @endphp
+
+                                {{-- Peringatan yang paling penting di halaman ini: unit
+                                     dengan bagian rusak masih ditawarkan di website.
+                                     Sengaja TIDAK memblokir — kadang unit tetap layak jalan
+                                     meski spionnya lecet, dan yang tahu itu pemiliknya,
+                                     bukan sistem. --}}
+                                @if ($tersedia && $bermasalah)
+                                    <div class="alert alert-warning border-0 rounded-3 d-flex gap-2 align-items-start"
+                                        style="font-size:.82rem">
+                                        <i class="bi bi-exclamation-triangle-fill" style="line-height:1.5"></i>
+                                        <span>
+                                            Unit ditandai <strong>siap disewakan</strong> padahal
+                                            {{ implode(', ', array_slice($bermasalah, 0, 3)) }}
+                                            @if (count($bermasalah) > 3)
+                                                dan {{ count($bermasalah) - 3 }} bagian lain
+                                            @endif
+                                            masih bermasalah. Pastikan memang layak jalan sebelum
+                                            menyimpan.
+                                        </span>
+                                    </div>
+                                @endif
+
+                                <div class="orcha-ringkas {{ ($jadwal['sedang_disewa'] ?? false) ? 'sisa' : 'lunas' }}"
+                                    style="height:auto">
+                                    <div class="orcha-label-kecil orcha-ikon-teks">
+                                        <i class="bi {{ ($jadwal['sedang_disewa'] ?? false) ? 'bi-arrow-up-right-circle' : 'bi-check-circle' }}"></i>
+                                        Keadaan sekarang
+                                    </div>
+                                    <div class="angka" style="font-size:1rem">
+                                        @if ($jadwal['sedang_disewa'] ?? false)
+                                            Sedang disewa
+                                        @elseif (! $tersedia)
+                                            Tidak ditawarkan
+                                        @else
+                                            Siap disewakan
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mt-1">
+                                    @foreach (array_filter([
+                                        ['Sudah disewa', $jumlahPenyewaan . '×'],
+                                        ($jadwal['kembali_pada'] ?? null)
+                                            ? ['Dijadwalkan kembali', \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M, H:i')]
+                                            : null,
+                                        ($jadwal['mulai_berikutnya'] ?? null)
+                                            ? ['Terpesan berikutnya', \Carbon\Carbon::parse($jadwal['mulai_berikutnya'])->translatedFormat('j M, H:i')]
+                                            : null,
+                                        ($kondisi['diperiksa_pada'] ?? null)
+                                            ? ['Diperiksa terakhir', \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y')]
+                                            : ['Diperiksa terakhir', 'Belum pernah'],
+                                    ]) as [$label, $nilai])
+                                        <div class="col-6">
+                                            <div class="orcha-label-kecil">{{ $label }}</div>
+                                            <div class="fw-bold" style="font-size:.88rem">{{ $nilai }}</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @if ($jadwal['kode_berjalan'] ?? $jadwal['kode_berikutnya'] ?? null)
+                                    <a href="{{ route('admin.orcha.penyewaan') }}" wire:navigate
+                                        class="orcha-tautan-balik mt-3" style="font-size:.8rem">
+                                        Lihat penyewaannya
+                                        <span class="orcha-kode">{{ $jadwal['kode_berjalan'] ?? $jadwal['kode_berikutnya'] }}</span>
+                                        <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="d-grid gap-2">
                         <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
                             wire:target="simpan">

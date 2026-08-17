@@ -1169,6 +1169,32 @@ test('unit yang belum pernah diperiksa disebut apa adanya', function () {
         ->assertSee('Siap disewakan');
 });
 
+test('unit siap disewakan yang bagiannya rusak diperingatkan, bukan diblokir', function () {
+    $unit = balasanArmada()['data'][0];
+    $unit['kondisi_terkini'] = ['kaca' => 'rusak', 'bodi_depan' => 'baik'];
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'jenis_kendaraan' => ['mobil' => 'Mobil'],
+            'pemeriksaan_kendaraan' => ['kaca' => 'Kaca & spion', 'bodi_depan' => 'Bodi depan & bemper'],
+            'kondisi_pemeriksaan' => ['baik' => 'Baik', 'rusak' => 'Rusak'],
+        ]]),
+        '*/kendaraan/1' => Http::response(['data' => $unit]),
+    ]);
+
+    // Sengaja tidak memblokir: kadang unit tetap layak jalan meski spionnya
+    // lecet, dan yang tahu itu pemiliknya — bukan sistem.
+    $komponen = Livewire::actingAs(adminOrcha())
+        ->test(OrchaArmadaForm::class, ['kendaraan' => 1])
+        ->assertSee('siap disewakan')
+        ->assertSee('Kaca &amp; spion', false);
+
+    // Peringatannya ikut hilang begitu bagiannya ditandai baik, tanpa perlu
+    // disimpan lebih dulu
+    $komponen->set('kondisiIsian.kaca', 'baik')
+        ->assertDontSee('masih bermasalah');
+});
+
 test('pemilik bisa mencatat kondisi unit sesudah diperbaiki', function () {
     $unit = balasanArmada()['data'][0];
     $unit['kondisi_terkini'] = ['kaca' => 'rusak', 'bodi_depan' => 'lecet'];

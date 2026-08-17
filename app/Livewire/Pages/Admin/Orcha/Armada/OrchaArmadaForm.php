@@ -75,6 +75,9 @@ class OrchaArmadaForm extends Component
 
     public string $kondisiCatatan = '';
 
+    /** Berapa kali unit ini pernah disewa — untuk kartu ringkasan. */
+    public int $jumlahPenyewaan = 0;
+
     protected function rules(): array
     {
         return [
@@ -146,6 +149,7 @@ class OrchaArmadaForm extends Component
         $this->kondisi = $isi['kondisi'] ?? null;
         $this->jadwal = $isi['jadwal'] ?? [];
         $this->kondisiIsian = (array) ($isi['kondisi_terkini'] ?? []);
+        $this->jumlahPenyewaan = (int) ($isi['jumlah_penyewaan'] ?? 0);
         $this->kondisiCatatan = (string) ($isi['kondisi']['catatan'] ?? '');
 
         $this->nama = $isi['nama'] ?? '';
@@ -219,6 +223,26 @@ class OrchaArmadaForm extends Component
             $this->kondisi = $isi['kondisi'] ?? null;
             $this->kondisiIsian = (array) ($isi['kondisi_terkini'] ?? []);
         }
+    }
+
+    /**
+     * Bagian yang sedang ditandai rusak atau hilang pada isian.
+     *
+     * Dibaca dari isian, bukan dari data tersimpan, supaya peringatan "siap
+     * disewakan padahal rusak" ikut berubah begitu admin mengganti pilihannya —
+     * tanpa menunggu disimpan lebih dulu.
+     *
+     * @return array<int, string>
+     */
+    public function bagianBermasalah(): array
+    {
+        $label = $this->rujukan('pemeriksaan_kendaraan');
+
+        return collect($this->kondisiIsian)
+            ->filter(fn ($nilai) => in_array($nilai, ['rusak', 'hilang'], true))
+            ->map(fn ($nilai, $bagian) => $label[$bagian] ?? $bagian)
+            ->values()
+            ->all();
     }
 
     /** Semua bagian ditandai baik — jalan pintas sesudah perbaikan menyeluruh. */
