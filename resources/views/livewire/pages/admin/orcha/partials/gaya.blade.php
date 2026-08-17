@@ -694,6 +694,21 @@
         color: #0f2d4a;
     }
 
+    /* Hapus — merah, dan merahnya terlihat tanpa perlu disentuh dulu.
+       Tindakan yang tidak bisa dibatalkan tidak pantas menyamar jadi tombol
+       biasa sampai kursor lewat di atasnya. */
+    .orcha-aksi-hapus {
+        background: #fdecee;
+        border-color: #f6c9cd;
+        color: #9b2530;
+    }
+
+    .orcha-aksi-hapus:hover {
+        background: #fbd9dd;
+        border-color: #c2323c;
+        color: #7f1d28;
+    }
+
     /* Ubah — emas merek, tindakan yang paling sering dipakai */
     .orcha-aksi-ubah {
         background: #fff6e3;

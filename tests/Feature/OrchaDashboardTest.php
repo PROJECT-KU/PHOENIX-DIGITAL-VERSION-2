@@ -1107,6 +1107,68 @@ test('detail pelanggan menampilkan tagihan, peserta, dan bukti bayarnya', functi
         ->assertSee('Bukti Pembayaran');
 });
 
+function balasanArmada(array $ubah = []): array
+{
+    return ['data' => [array_merge([
+        'id' => 1, 'uuid' => 'abc', 'nama' => 'All New Avanza', 'merek' => 'Toyota',
+        'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => 'AB 1234 CD',
+        'kapasitas' => 7, 'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
+        'tarif' => ['jam' => 55000, '12jam' => 280000, 'hari' => 500000, 'sopir_per_hari' => 150000],
+        'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 12,
+        'kondisi' => [
+            'diperiksa_pada' => '2026-08-15T10:00:00+07:00', 'rusak' => 1, 'lecet' => 1,
+            'hilang' => 0, 'perlu_perhatian' => true,
+            'rincian' => [
+                ['bagian' => 'Kaca & spion', 'kondisi' => 'Rusak', 'nilai' => 'rusak'],
+                ['bagian' => 'Bodi depan & bemper', 'kondisi' => 'Lecet / minor', 'nilai' => 'lecet'],
+            ],
+        ],
+        'jadwal' => [
+            'sedang_disewa' => true, 'kode_berjalan' => 'SK-1608-ZGAN',
+            'kembali_pada' => '2026-08-18T08:00:00+07:00',
+            'kode_berikutnya' => null, 'mulai_berikutnya' => null,
+        ],
+    ], $ubah)], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]];
+}
+
+test('daftar armada menunjukkan kondisi unit dan jadwal pakainya', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(balasanArmada()),
+    ]);
+
+    // Kondisi dicatat tiap serah terima lalu tidak pernah terbaca lagi —
+    // halaman armada dulu hanya menampilkan tarif. Unit yang kacanya retak
+    // bisa disewakan lagi tanpa ada yang tahu.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/armada')
+        ->assertOk()
+        ->assertSee('All New Avanza')
+        ->assertSee('AB 1234 CD')
+        ->assertSee('Kondisi terakhir')
+        ->assertSee('Kaca &amp; spion: rusak', false)
+        // Unit yang sedang keluar disebut, berikut kapan kembalinya
+        ->assertSee('Sedang disewa')
+        ->assertSee('SK-1608-ZGAN');
+});
+
+test('unit yang belum pernah diperiksa disebut apa adanya', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(balasanArmada([
+            'kondisi' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ])),
+    ]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/armada')
+        ->assertOk()
+        ->assertSee('Belum pernah diperiksa serah terima')
+        ->assertSee('Siap disewakan');
+});
+
 function balasanPesan(array $ubah = []): array
 {
     return ['data' => array_merge([

@@ -56,6 +56,20 @@ class OrchaArmadaForm extends Component
 
     public ?string $gambarLama = null;
 
+    /**
+     * Kondisi fisik dan jadwal pakai unit, hanya untuk dibaca.
+     *
+     * Ditampilkan saat mengubah unit karena keduanya menentukan apakah
+     * perubahan yang sedang dikerjakan aman: menonaktifkan unit yang sedang
+     * disewa, atau menaikkan tarif unit yang kacanya masih retak, adalah dua
+     * hal yang lebih baik disadari sebelum tombol simpan ditekan.
+     *
+     * Tidak bisa disunting di sini — kondisi hanya berubah lewat serah terima.
+     */
+    public ?array $kondisi = null;
+
+    public array $jadwal = [];
+
     protected function rules(): array
     {
         return [
@@ -123,6 +137,9 @@ class OrchaArmadaForm extends Component
         if ($isi === []) {
             return;
         }
+
+        $this->kondisi = $isi['kondisi'] ?? null;
+        $this->jadwal = $isi['jadwal'] ?? [];
 
         $this->nama = $isi['nama'] ?? '';
         $this->merek = $isi['merek'] ?? '';

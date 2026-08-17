@@ -99,35 +99,35 @@
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per hari <span class="text-danger">*</span></label>
                                     <div class="orcha-rupiah">
-                                <input type="text" inputmode="numeric" class="orcha-uang form-control @error('tarifHari') is-invalid @enderror"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control @error('tarifHari') is-invalid @enderror"
                                             wire:model.blur="tarifHariTeks" value="{{ $tarifHariTeks }}"
                                             placeholder="350.000">
-                            </div>
+                                    </div>
                                     @error('tarifHari') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Per jam</label>
                                     <div class="orcha-rupiah">
-                                <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarifJamTeks" value="{{ $tarifJamTeks }}"
                                             placeholder="55.000">
-                            </div>
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Paket 12 jam</label>
                                     <div class="orcha-rupiah">
-                                <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarif12JamTeks" value="{{ $tarif12JamTeks }}"
                                             placeholder="280.000">
-                            </div>
+                                    </div>
                                 </div>
                                 <div class="col-6 col-md-3">
                                     <label class="form-label small fw-semibold">Sopir / hari</label>
                                     <div class="orcha-rupiah">
-                                <input type="text" inputmode="numeric" class="orcha-uang form-control"
+                                        <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                             wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
                                             placeholder="150.000">
-                            </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -159,16 +159,83 @@
                         </div>
                     </div>
 
+                    {{-- Kondisi dan jadwal unit, hanya untuk dibaca.
+
+                         Keduanya menentukan apakah perubahan yang sedang dikerjakan
+                         aman: menonaktifkan unit yang sedang disewa, atau menaikkan
+                         tarif unit yang kacanya masih retak, lebih baik disadari
+                         sebelum tombol simpan ditekan.
+
+                         Tidak bisa disunting di sini — kondisi hanya berubah lewat
+                         serah terima, dan itu memang tempatnya. --}}
+                    @if ($ubah && ($kondisi || ($jadwal['sedang_disewa'] ?? false)))
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3 orcha-judul-ikon">
+                                    <i class="bi bi-clipboard-check text-primary"></i> Keadaan Unit
+                                </h6>
+
+                                @if ($jadwal['sedang_disewa'] ?? false)
+                                    <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start mb-3"
+                                        style="font-size:.82rem">
+                                        <i class="bi bi-arrow-up-right-circle" style="line-height:1.5"></i>
+                                        <span>
+                                            Unit ini <strong>sedang disewa</strong>
+                                            @if ($jadwal['kode_berjalan'] ?? null)
+                                                ({{ $jadwal['kode_berjalan'] }})
+                                            @endif
+                                            @if ($jadwal['kembali_pada'] ?? null)
+                                                dan dijadwalkan kembali
+                                                {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
+                                            @endif
+                                        </span>
+                                    </div>
+                                @endif
+
+                                @if ($kondisi)
+                                    <div class="orcha-label-kecil orcha-ikon-teks mb-1">
+                                        <i class="bi bi-tools"></i> Pemeriksaan terakhir
+                                        @if ($kondisi['diperiksa_pada'])
+                                            <span class="text-muted fw-normal">
+                                                · {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    @forelse ($kondisi['rincian'] as $satu)
+                                        <div class="d-flex justify-content-between gap-2" style="font-size:.84rem">
+                                            <span>{{ $satu['bagian'] }}</span>
+                                            <span class="{{ in_array($satu['nilai'], ['rusak', 'hilang']) ? 'fw-bold text-danger' : 'text-muted' }}">
+                                                {{ $satu['kondisi'] }}
+                                            </span>
+                                        </div>
+                                    @empty
+                                        <div style="font-size:.84rem">Semua bagian dalam keadaan baik.</div>
+                                    @endforelse
+
+                                    @if ($kondisi['perlu_perhatian'])
+                                        <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0"
+                                            style="font-size:.8rem">
+                                            Ada bagian yang rusak atau hilang. Perbaiki dulu sebelum unit ini
+                                            ditawarkan lagi di website.
+                                        </div>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary rounded-3" wire:loading.attr="disabled"
+                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
                             wire:target="simpan">
+                            <i class="bi bi-save"></i>
                             <span wire:loading.remove wire:target="simpan">
                                 {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
                             </span>
                             <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
                         </button>
-                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="btn orcha-bahaya">
-                            <i class="bi bi-x-lg"></i> Batal
+                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
+                            Batal
                         </a>
                     </div>
                     </div>
