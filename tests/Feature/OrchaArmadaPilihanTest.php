@@ -1455,31 +1455,35 @@ test('detail penyewaan menyebut keterangan unit yang sama dengan surat', functio
         ->assertSee('Luar kota');
 });
 
-test('tombol simpan berada di atas kolom kanan, bukan di bawah kartu', function () {
+test('tombol simpan dipaku ke dasar kolom, bukan hanyut ke bawah', function () {
     fakeArmada();
 
     $html = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])->html();
-
     $kanan = substr($html, strpos($html, 'col-12 col-xl-4'));
-    $simpan = strpos($kanan, 'Simpan Perubahan');
-    $foto = strpos($kanan, 'Foto Unit');
-    $pratinjau = strpos($kanan, 'Pratinjau di Website');
 
-    // Tiap kartu baru yang ditambahkan mendorong tombol di bawah makin turun,
-    // sampai masuk ke bagian kolom lengket yang menggulung sendiri dan harus
-    // dicari. Tombol yang harus dicari adalah tombol yang gagal — apalagi tombol
-    // yang menyimpan pekerjaan.
-    expect($simpan)->toBeLessThan($foto)
-        ->and($simpan)->toBeLessThan($pratinjau);
+    // Letaknya di dasar sebagaimana lazimnya — tetapi dipaku, supaya tiap kartu
+    // baru yang ditambahkan tidak mendorongnya ke bagian yang menggulung sendiri
+    // dan membuatnya harus dicari.
+    $paku = strpos($kanan, 'orcha-aksi-paku');
+    $simpan = strpos($kanan, 'Simpan Perubahan');
+
+    expect($paku)->not->toBeFalse()
+        ->and($simpan)->toBeGreaterThan($paku)
+        // Di dasar: sesudah seluruh kartu keterangan.
+        ->and($simpan)->toBeGreaterThan(strpos($kanan, 'Foto Unit'))
+        ->and($simpan)->toBeGreaterThan(strpos($kanan, 'Pratinjau di Website'));
 });
 
-test('sakelar penayangan berdampingan dengan tombolnya', function () {
+test('sakelar penayangan tetap berdampingan dengan tombolnya', function () {
     fakeArmada();
 
     $html = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])->html();
     $kanan = substr($html, strpos($html, 'col-12 col-xl-4'));
 
     // Keputusan "boleh dilihat pelanggan atau belum" terbaca bersama tombol yang
-    // mewujudkannya.
-    expect(strpos($kanan, 'Ditawarkan di website'))->toBeLessThan(strpos($kanan, 'Foto Unit'));
+    // mewujudkannya — keduanya di dasar kolom, berurutan.
+    $tayang = strpos($kanan, 'Ditawarkan di website');
+
+    expect($tayang)->toBeGreaterThan(strpos($kanan, 'Foto Unit'))
+        ->and($tayang)->toBeLessThan(strpos($kanan, 'Simpan Perubahan'));
 });

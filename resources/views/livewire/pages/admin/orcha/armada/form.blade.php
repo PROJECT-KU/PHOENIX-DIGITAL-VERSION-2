@@ -370,6 +370,15 @@
                                      sebaris sendiri: barisnya jadi penuh, dan keduanya terbaca
                                      sebagai satu keputusan. --}}
                                 <div class="col-12 col-md-8">
+                                    {{-- Label kosong sebagai pengganjal.
+
+                                         Isian di sebelahnya punya label di atasnya, kartu ini
+                                         tidak — sehingga kartunya naik setinggi label dan
+                                         keduanya tidak sejajar. Pengganjal ini menyamakan
+                                         titik mulainya, dan hanya berlaku di layar lebar
+                                         karena di layar sempit keduanya memang bertumpuk. --}}
+                                    <label class="form-label small fw-semibold d-none d-md-block" aria-hidden="true">&nbsp;</label>
+
                                     <label class="orcha-sakelar-kartu {{ $termasukSopir ? 'nyala' : '' }} mb-0">
                                         <span class="rupa">
                                             <i class="bi {{ $termasukSopir ? 'bi-person-check' : 'bi-person-plus' }}"></i>
@@ -483,60 +492,8 @@
 
                 <div class="col-12 col-xl-4">
                     <div class="orcha-lengket orcha-lengket-armada">
-                    {{-- Tombol simpan di PALING ATAS kolom kanan.
-
-                         Sebelumnya di bawah, dan setiap kartu baru yang ditambahkan
-                         mendorongnya makin turun — sampai masuk ke bagian kolom lengket
-                         yang menggulung sendiri, sehingga tombolnya harus dicari. Tombol
-                         yang harus dicari adalah tombol yang gagal, apalagi tombol yang
-                         menyimpan pekerjaan.
-
-                         Di atas, ia terlihat sejak halaman dibuka dan tetap terlihat
-                         selama menggulung karena kolomnya lengket. --}}
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
-                            wire:target="simpan">
-                            <i class="bi bi-save"></i>
-                            <span wire:loading.remove wire:target="simpan">
-                                {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
-                            </span>
-                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
-                        </button>
-                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
-                            Batal
-                        </a>
-                    </div>
                     </div>
 
-                    {{-- Penayangan berdampingan dengan tombol simpan.
-
-                         Ini keputusan yang berbeda jenis dari isian di kiri: bukan "unit ini
-                         apa", melainkan "boleh dilihat pelanggan atau belum". Menaruhnya di
-                         tengah daftar isian membuatnya mudah terlewat, padahal akibatnya
-                         paling langsung terasa — dan di sini ia terbaca bersama tombol yang
-                         mewujudkannya. --}}
-                    <div class="card border-0 shadow-sm rounded-4 mb-3">
-                        <div class="card-body p-3">
-                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
-                                        <span class="rupa">
-                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
-                                        </span>
-                                        <span class="isi">
-                                            <span class="judul">
-                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
-                                            </span>
-                                            <span class="ket">
-                                                {{ $tersedia
-                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
-                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
-                                            </span>
-                                        </span>
-                                        <span class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                wire:model.live="tersedia">
-                                        </span>
-                                    </label>
-                        </div>
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Foto Unit</h6>
@@ -780,6 +737,62 @@
                             </div>
                         </div>
                     @endif
+
+                    {{-- Penayangan berdampingan dengan tombol simpan.
+
+                         Ini keputusan yang berbeda jenis dari isian di kiri: bukan "unit ini
+                         apa", melainkan "boleh dilihat pelanggan atau belum". Menaruhnya di
+                         tengah daftar isian membuatnya mudah terlewat, padahal akibatnya
+                         paling langsung terasa — dan di sini ia terbaca bersama tombol yang
+                         mewujudkannya. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-3">
+                        <div class="card-body p-3">
+                                    <label class="orcha-sakelar-kartu {{ $tersedia ? 'nyala' : '' }}">
+                                        <span class="rupa">
+                                            <i class="bi {{ $tersedia ? 'bi-globe-americas' : 'bi-eye-slash' }}"></i>
+                                        </span>
+                                        <span class="isi">
+                                            <span class="judul">
+                                                {{ $tersedia ? 'Ditawarkan di website' : 'Disembunyikan dari website' }}
+                                            </span>
+                                            <span class="ket">
+                                                {{ $tersedia
+                                                    ? 'Pelanggan bisa melihat dan memesan unit ini.'
+                                                    : 'Unit tetap tersimpan, tapi tidak muncul di daftar sewa.' }}
+                                            </span>
+                                        </span>
+                                        <span class="form-check form-switch mb-0">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                wire:model.live="tersedia">
+                                        </span>
+                                    </label>
+                        </div>
+                    {{-- Tombol simpan di dasar kolom, sebagaimana lazimnya — TETAPI dipaku.
+
+                         Sebelumnya benar-benar di dasar, dan tiap kartu yang ditambahkan
+                         mendorongnya makin turun sampai masuk ke bagian yang menggulung
+                         sendiri; tombolnya harus dicari. Sempat saya naikkan ke paling atas,
+                         dan itu menukar "harus dicari" dengan "berada di tempat yang tidak
+                         diduga" — bukan perbaikan.
+
+                         position: sticky pada dasar kolom menyelesaikan keduanya: letaknya
+                         tetap di tempat yang diharapkan, dan tetap terlihat berapa pun
+                         panjang kartu di atasnya. --}}
+                    <div class="orcha-aksi-paku">
+<div class="d-grid gap-2">
+                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
+                            wire:target="simpan">
+                            <i class="bi bi-save"></i>
+                            <span wire:loading.remove wire:target="simpan">
+                                {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
+                            </span>
+                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
+                        </button>
+                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
+                            Batal
+                        </a>
+                    </div>
+                    </div>
 
                     </div>
 
@@ -1442,6 +1455,19 @@
     /* Pratinjau kartu unit seperti yang dilihat pelanggan. Bentuknya menirukan
        kartu di website secukupnya — cukup untuk mengenali salah tulis, tanpa
        menjadi salinan yang harus ikut dirawat tiap kali kartu aslinya berubah. */
+    /* Tombol simpan dipaku ke dasar kolom lengket.
+
+       Latarnya dibuat pekat, bukan tembus pandang: kartu yang lewat di bawahnya
+       saat menggulung akan terbaca sebagai tulisan yang menembus tombol. */
+    .orcha-aksi-paku {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        margin: 0 -.25rem;
+        padding: .75rem .25rem .25rem;
+        background: linear-gradient(to bottom, rgba(246, 248, 251, 0), #f6f8fb 28%);
+    }
+
     .orcha-pratinjau {
         border: 1px solid #e3e8ef;
         border-radius: 14px;
