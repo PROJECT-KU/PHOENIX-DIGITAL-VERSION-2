@@ -159,108 +159,6 @@
                         </div>
                     </div>
 
-                    {{-- Kondisi dan jadwal unit, hanya untuk dibaca.
-
-                         Keduanya menentukan apakah perubahan yang sedang dikerjakan
-                         aman: menonaktifkan unit yang sedang disewa, atau menaikkan
-                         tarif unit yang kacanya masih retak, lebih baik disadari
-                         sebelum tombol simpan ditekan.
-
-                         Tidak bisa disunting di sini — kondisi hanya berubah lewat
-                         serah terima, dan itu memang tempatnya. --}}
-                    {{-- Kondisi unit: dibaca DAN disunting.
-
-                         Sebelumnya kondisi hanya bisa berubah saat penyewa
-                         mengembalikan unitnya. Setelah pemilik membawa mobilnya ke
-                         bengkel dan kacanya diganti, tidak ada tempat untuk
-                         menyatakan unit itu sudah baik lagi — ia terus terbaca
-                         "rusak" sampai ada penyewa berikutnya yang mengembalikannya.
-
-                         Disimpan lewat tombolnya sendiri, bukan ikut tombol simpan
-                         utama: yang ini mengubah keadaan fisik unit, yang itu
-                         mengubah tarif dan keterangannya. Menggabungkan keduanya
-                         berarti mengubah tarif sambil tanpa sengaja menyatakan
-                         unitnya sudah diperbaiki. --}}
-                    @if ($ubah)
-                        <div class="card border-0 shadow-sm rounded-4 mb-4">
-                            <div class="card-body p-4">
-                                <h6 class="fw-bold mb-3 orcha-judul-ikon">
-                                    <i class="bi bi-tools text-primary"></i> Kondisi Unit
-                                </h6>
-
-                                @if ($jadwal['sedang_disewa'] ?? false)
-                                    <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start mb-3"
-                                        style="font-size:.82rem">
-                                        <i class="bi bi-arrow-up-right-circle" style="line-height:1.5"></i>
-                                        <span>
-                                            Unit ini <strong>sedang disewa</strong>
-                                            @if ($jadwal['kode_berjalan'] ?? null)
-                                                ({{ $jadwal['kode_berjalan'] }})
-                                            @endif
-                                            @if ($jadwal['kembali_pada'] ?? null)
-                                                dan dijadwalkan kembali
-                                                {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
-                                            @endif
-                                            Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
-                                            saat unitnya kembali.
-                                        </span>
-                                    </div>
-                                @endif
-
-                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                    <span class="orcha-label-kecil mb-0">
-                                        @if ($kondisi && $kondisi['diperiksa_pada'])
-                                            Terakhir diperiksa
-                                            {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
-                                        @else
-                                            Belum pernah diperiksa
-                                        @endif
-                                    </span>
-                                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                                        wire:click="semuaBaik">
-                                        <i class="bi bi-check2-all"></i> Semua baik
-                                    </button>
-                                </div>
-
-                                <div class="orcha-kondisi-daftar">
-                                    @foreach ($daftarBagian as $kunci => $label)
-                                        <div class="orcha-kondisi-baris">
-                                            <span>{{ $label }}</span>
-                                            <select class="form-select form-select-sm
-                                                {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
-                                                wire:model.live="kondisiIsian.{{ $kunci }}">
-                                                @foreach ($daftarKondisi as $nilai => $teks)
-                                                    <option value="{{ $nilai }}">{{ $teks }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <label class="form-label small fw-semibold mt-3 mb-1">Catatan perbaikan</label>
-                                <input type="text" class="form-control" wire:model="kondisiCatatan"
-                                    maxlength="500" placeholder="Mis. kaca diganti 17 Agu di bengkel Slamet.">
-                                <div class="form-text">
-                                    Ditulis sekarang supaya enam bulan lagi masih ada yang bisa menjelaskan
-                                    kenapa unit ini pernah ditandai rusak lalu kembali baik.
-                                </div>
-
-                                <button type="button" class="orcha-btn orcha-btn-utama w-100 mt-3"
-                                    wire:click="simpanKondisi" wire:loading.attr="disabled"
-                                    wire:target="simpanKondisi">
-                                    <i class="bi bi-save"></i>
-                                    <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
-                                    <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
-                                </button>
-
-                                <div class="text-muted mt-2" style="font-size:.76rem">
-                                    Menyimpan kondisi tidak menghapus catatan denda penyewaan sebelumnya —
-                                    denda melekat pada penyewaannya, bukan pada unitnya.
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
                     <div class="d-grid gap-2">
                         <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
                             wire:target="simpan">
@@ -277,6 +175,103 @@
                     </div>
                 </div>
             </div>
+
+                {{-- Kondisi unit: dibaca DAN disunting.
+
+                     Sebelumnya kondisi hanya bisa berubah saat penyewa
+                     mengembalikan unitnya. Setelah pemilik membawa mobilnya ke
+                     bengkel dan kacanya diganti, tidak ada tempat untuk
+                     menyatakan unit itu sudah baik lagi — ia terus terbaca
+                     "rusak" sampai ada penyewa berikutnya yang mengembalikannya.
+
+                     Disimpan lewat tombolnya sendiri, bukan ikut tombol simpan
+                     utama: yang ini mengubah keadaan fisik unit, yang itu
+                     mengubah tarif dan keterangannya. Menggabungkan keduanya
+                     berarti mengubah tarif sambil tanpa sengaja menyatakan
+                     unitnya sudah diperbaiki. --}}
+                @if ($ubah)
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 orcha-judul-ikon">
+                                <i class="bi bi-tools text-primary"></i> Kondisi Unit
+                            </h6>
+
+                            @if ($jadwal['sedang_disewa'] ?? false)
+                                <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start mb-3"
+                                    style="font-size:.82rem">
+                                    <i class="bi bi-arrow-up-right-circle" style="line-height:1.5"></i>
+                                    <span>
+                                        Unit ini <strong>sedang disewa</strong>
+                                        @if ($jadwal['kode_berjalan'] ?? null)
+                                            ({{ $jadwal['kode_berjalan'] }})
+                                        @endif
+                                        @if ($jadwal['kembali_pada'] ?? null)
+                                            dan dijadwalkan kembali
+                                            {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
+                                        @endif
+                                        Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
+                                        saat unitnya kembali.
+                                    </span>
+                                </div>
+                            @endif
+
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <span class="orcha-label-kecil mb-0">
+                                    @if ($kondisi && $kondisi['diperiksa_pada'])
+                                        Terakhir diperiksa
+                                        {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                    @else
+                                        Belum pernah diperiksa
+                                    @endif
+                                </span>
+                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                    wire:click="semuaBaik">
+                                    <i class="bi bi-check2-all"></i> Semua baik
+                                </button>
+                            </div>
+
+                            {{-- Tiga kolom, bukan satu tumpukan. Dua belas bagian yang
+                                 berderet ke bawah membuat kartunya jauh lebih tinggi
+                                 daripada isi kolom di sebelahnya — dan separuh halaman
+                                 jadi bidang kosong. --}}
+                            <div class="orcha-kondisi-daftar">
+                                @foreach ($daftarBagian as $kunci => $label)
+                                    <div class="orcha-kondisi-baris">
+                                        <span>{{ $label }}</span>
+                                        <select class="form-select form-select-sm
+                                            {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
+                                            wire:model.live="kondisiIsian.{{ $kunci }}">
+                                            @foreach ($daftarKondisi as $nilai => $teks)
+                                                <option value="{{ $nilai }}">{{ $teks }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <label class="form-label small fw-semibold mt-3 mb-1">Catatan perbaikan</label>
+                            <input type="text" class="form-control" wire:model="kondisiCatatan"
+                                maxlength="500" placeholder="Mis. kaca diganti 17 Agu di bengkel Slamet.">
+                            <div class="form-text">
+                                Ditulis sekarang supaya enam bulan lagi masih ada yang bisa menjelaskan
+                                kenapa unit ini pernah ditandai rusak lalu kembali baik.
+                            </div>
+
+                            <button type="button" class="orcha-btn orcha-btn-utama mt-3"
+                                wire:click="simpanKondisi" wire:loading.attr="disabled"
+                                wire:target="simpanKondisi">
+                                <i class="bi bi-save"></i>
+                                <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
+                                <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
+                            </button>
+
+                            <div class="text-muted mt-2" style="font-size:.76rem">
+                                Menyimpan kondisi tidak menghapus catatan denda penyewaan sebelumnya —
+                                denda melekat pada penyewaannya, bukan pada unitnya.
+                            </div>
+                        </div>
+                    </div>
+                @endif
         </form>
     </div>
 
@@ -284,7 +279,8 @@
     <style>
         .orcha-kondisi-daftar {
             display: grid;
-            gap: .4rem;
+            gap: .5rem 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
         }
 
         .orcha-kondisi-baris {
