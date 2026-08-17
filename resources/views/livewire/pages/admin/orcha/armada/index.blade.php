@@ -130,13 +130,24 @@ Armada Orcha || lemon
                                         {{-- Hanya unit all-in yang dilencanai: yang ditanggung
                                              penyewa adalah keadaan biasa, dan melencanai keadaan
                                              biasa membuat lencananya berhenti berarti. --}}
-                                        @if ($baris['termasuk_operasional'] ?? false)
+                                        @php
+                                            $posTermasuk = collect($baris['operasional'] ?? [])
+                                                ->filter(fn ($pos) => $pos['termasuk'] ?? false);
+                                        @endphp
+
+                                        @if ($posTermasuk->isNotEmpty())
                                             <span class="orcha-lencana-allin">
                                                 <i class="bi bi-fuel-pump"></i>
                                                 <span>
-                                                    All-in
-                                                    @if ($baris['biaya_operasional'] ?? null)
-                                                        +{{ number_format($baris['biaya_operasional'], 0, ',', '.') }}/hari
+                                                    {{-- Pos yang termasuk disebut namanya, bukan
+                                                         "All-in" untuk semua keadaan: unit yang hanya
+                                                         BBM-nya termasuk bukan all-in, dan menyebutnya
+                                                         begitu menjanjikan lebih dari yang benar. --}}
+                                                    {{ $posTermasuk->count() === count($baris['operasional'] ?? [])
+                                                        ? 'All-in'
+                                                        : $posTermasuk->pluck('label')->join(' + ').' termasuk' }}
+                                                    @if (($baris['biaya_operasional_total'] ?? 0) > 0)
+                                                        +{{ number_format($baris['biaya_operasional_total'], 0, ',', '.') }}/hari
                                                     @endif
                                                 </span>
                                             </span>

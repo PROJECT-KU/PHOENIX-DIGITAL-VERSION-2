@@ -331,67 +331,69 @@
                                     </div>
                                 </div>
 
-                                {{-- BBM, tol, dan parkir: ditanggung penyewa atau termasuk.
+                                {{-- BBM, tol, dan parkir: masing-masing berdiri sendiri.
 
-                                     Sebelumnya halaman publik menyatakan ketiganya tidak
-                                     termasuk untuk SEMUA unit, padahal paket all-in memang
-                                     ditawarkan — kesepakatannya hanya ada di percakapan
-                                     WhatsApp. Penyewa lalu bertanya ulang, atau mengira sudah
-                                     termasuk padahal belum dan berselisih saat membayar.
+                                     Ada unit yang BBM-nya ditanggung pemilik tetapi tolnya
+                                     tidak, dan parkir hampir selalu urusan tersendiri. Satu
+                                     penanda gabungan memaksa ketiganya diputuskan bersama,
+                                     sehingga keadaan yang sebenarnya tidak bisa dinyatakan.
 
-                                     Satu penanda untuk ketiganya karena memang ditawarkan
-                                     sebagai satu paket. --}}
+                                     Ditampilkan sebagai satu kartu berisi tiga baris, bukan
+                                     tiga kartu sakelar terpisah: ketiganya menjawab pertanyaan
+                                     yang sama, dan tiga kartu besar berturut-turut membuat
+                                     tarif di atasnya terdorong jauh dari pandangan. --}}
                                 <div class="col-12">
-                                    <label class="orcha-sakelar-kartu {{ $termasukOperasional ? 'nyala' : '' }} mb-0">
-                                        <span class="rupa">
-                                            <i class="bi {{ $termasukOperasional ? 'bi-fuel-pump' : 'bi-wallet2' }}"></i>
-                                        </span>
-                                        <span class="isi">
+                                    <div class="orcha-pos-biaya">
+                                        <div class="orcha-pos-kepala">
                                             <span class="judul">
-                                                {{ $termasukOperasional
-                                                    ? 'BBM, tol, dan parkir termasuk'
-                                                    : 'BBM, tol, dan parkir ditanggung penyewa' }}
+                                                <i class="bi bi-receipt"></i>
+                                                Biaya perjalanan
                                             </span>
-                                            <span class="ket">
-                                                @if ($termasukOperasional)
-                                                    Biaya di bawah ditambahkan ke perkiraan harga di website,
-                                                    dihitung per hari.
-                                                @else
-                                                    Penyewa mengisi BBM dan membayar tol serta parkir sendiri.
-                                                @endif
-                                            </span>
-                                        </span>
-                                        <span class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                wire:model.live="termasukOperasional">
-                                        </span>
-                                    </label>
-                                </div>
-
-                                @if ($termasukOperasional)
-                                    <div class="col-6 col-md-4">
-                                        <label class="form-label small fw-semibold">
-                                            Biaya BBM, tol, parkir / hari
-                                        </label>
-                                        <div class="orcha-rupiah">
-                                            <input type="text" inputmode="numeric"
-                                                class="orcha-uang form-control @error('biayaOperasional') is-invalid @enderror"
-                                                wire:model.blur="biayaOperasionalTeks" value="{{ $biayaOperasionalTeks }}"
-                                                placeholder="250.000">
+                                            <span class="ket">Nyalakan yang sudah termasuk harga sewa.</span>
                                         </div>
-                                        @error('biayaOperasional')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @else
-                                            {{-- Kosong itu keadaan yang sah, bukan isian yang terlupa:
-                                                 unit yang tarifnya sudah dihitung all-in sejak awal
-                                                 memang tidak menambah biaya apa pun. --}}
-                                            <div class="orcha-kursi-beda mt-1">
+
+                                        @foreach ($posOperasional as $pos => $label)
+                                            <label class="orcha-pos-baris {{ ($termasukPos[$pos] ?? false) ? 'nyala' : '' }}">
+                                                <span class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" role="switch"
+                                                        wire:model.live="termasukPos.{{ $pos }}">
+                                                </span>
+
+                                                <span class="nama">{{ $label }}</span>
+
+                                                @if ($termasukPos[$pos] ?? false)
+                                                    <span class="orcha-rupiah orcha-rupiah-kecil">
+                                                        <input type="text" inputmode="numeric"
+                                                            class="orcha-uang form-control @error('biayaPos.'.$pos) is-invalid @enderror"
+                                                            wire:model.blur="biayaPosTeks.{{ $pos }}"
+                                                            placeholder="0" aria-label="Biaya {{ $label }} per hari">
+                                                    </span>
+                                                @else
+                                                    <span class="ditanggung">Ditanggung penyewa</span>
+                                                @endif
+                                            </label>
+
+                                            @error('biayaPos.'.$pos)
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
+                                        @endforeach
+
+                                        {{-- Totalnya disebut supaya admin melihat angka yang
+                                             benar-benar ditambahkan ke perkiraan harga di
+                                             website, bukan menjumlahkan tiga isian di kepala. --}}
+                                        <div class="orcha-pos-total">
+                                            @if ($totalPos > 0)
+                                                <i class="bi bi-plus-circle"></i>
+                                                <span>Ditambahkan ke perkiraan:
+                                                    <strong>Rp {{ number_format($totalPos, 0, ',', '.') }}/hari</strong></span>
+                                            @else
                                                 <i class="bi bi-info-circle"></i>
-                                                <span>Kosongkan bila sudah termasuk harga sewa.</span>
-                                            </div>
-                                        @enderror
+                                                <span>Tidak ada tambahan biaya —
+                                                    kosongkan bila sudah termasuk harga sewa.</span>
+                                            @endif
+                                        </div>
                                     </div>
-                                @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1130,6 +1132,95 @@
         text-transform: none;
         letter-spacing: normal;
         font-weight: 400;
+    }
+
+    /* Tiga pos biaya dalam satu kartu: sakelar, nama, lalu nominalnya. */
+    .orcha-pos-biaya {
+        border: 1px solid #e3e8ef;
+        border-radius: 14px;
+        padding: .85rem 1rem 1rem;
+        background: #fbfdff;
+    }
+
+    .orcha-pos-kepala {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: .1rem .6rem;
+        margin-bottom: .5rem;
+    }
+
+    .orcha-pos-kepala .judul {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .82rem;
+        font-weight: 700;
+        color: #2b3a4a;
+    }
+
+    .orcha-pos-kepala .judul i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        color: #1d6fa5;
+    }
+
+    .orcha-pos-kepala .ket {
+        font-size: .74rem;
+        color: #94a3b8;
+    }
+
+    .orcha-pos-baris {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .5rem .65rem;
+        border: 1px solid #e8edf3;
+        border-radius: 11px;
+        background: #fff;
+        margin-bottom: .4rem;
+        cursor: pointer;
+        transition: border-color .15s ease, background .15s ease;
+    }
+
+    .orcha-pos-baris.nyala {
+        border-color: #a8d5bd;
+        background: linear-gradient(135deg, rgba(26, 138, 82, .08), rgba(26, 138, 82, .02));
+    }
+
+    .orcha-pos-baris .nama {
+        flex: 1 1 auto;
+        font-size: .86rem;
+        font-weight: 600;
+        color: #2b3a4a;
+    }
+
+    .orcha-pos-baris .ditanggung {
+        flex: 0 0 auto;
+        font-size: .74rem;
+        color: #94a3b8;
+    }
+
+    .orcha-pos-baris .orcha-rupiah-kecil {
+        flex: 0 0 9.5rem;
+    }
+
+    .orcha-pos-total {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        margin-top: .55rem;
+        font-size: .78rem;
+        color: #1a8a52;
+    }
+
+    .orcha-pos-total i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
     }
 
     .orcha-pick-row {

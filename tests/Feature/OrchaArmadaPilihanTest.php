@@ -70,6 +70,7 @@ function fakeArmada(array $ubahUnit = []): void
                 'Toyota' => ['Avanza' => 1500, 'HiAce Commuter' => 2500],
                 'Suzuki' => ['Ertiga' => 1500],
             ],
+            'pos_operasional' => ['bbm' => 'BBM', 'tol' => 'Tol', 'parkir' => 'Parkir'],
             'lepas_kunci_per_model' => [
                 'Toyota' => ['Avanza' => true, 'HiAce Commuter' => false],
                 'Suzuki' => ['Ertiga' => true],
@@ -906,138 +907,186 @@ test('isian nopol memakai kelas yang mengapitalkan tampilannya', function () {
         ->assertSee('AB 4169 TE');
 });
 
-/* -------- BBM, TOL, PARKIR -------- */
+/* -------- BBM, TOL, PARKIR — TIGA POS TERPISAH -------- */
 
-test('paket all-in tersimpan beserta biayanya', function () {
+test('tiap pos tersimpan dengan penanda dan biayanya sendiri', function () {
     fakeArmada();
 
+    // Inti pemisahannya: BBM termasuk, tol tidak — keadaan yang tidak bisa
+    // dinyatakan sama sekali dengan satu penanda gabungan.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
         ->set('nama', 'Avanza')
         ->set('tarifHariTeks', '500.000')
-        ->set('termasukOperasional', true)
-        ->set('biayaOperasionalTeks', '250000')
-        // Isian rupiah membakukan tampilannya seperti tarif yang lain.
-        ->assertSet('biayaOperasionalTeks', '250.000')
-        ->assertSet('biayaOperasional', 250000)
+        ->set('termasukPos.bbm', true)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->set('termasukPos.parkir', true)
+        ->set('biayaPosTeks.parkir', '25000')
+        ->assertSet('biayaPosTeks.bbm', '200.000')
+        ->assertSet('biayaPos.bbm', 200000)
         ->call('simpan')
         ->assertHasNoErrors();
 
     Http::assertSent(fn ($p) => $p->method() === 'POST'
-        && ($p->data()['termasuk_operasional'] ?? null) === true
-        && ($p->data()['biaya_operasional'] ?? null) === 250000);
+        && ($p->data()['termasuk_bbm'] ?? null) === true
+        && ($p->data()['biaya_bbm'] ?? null) === 200000
+        && ($p->data()['termasuk_tol'] ?? null) === false
+        && $p->data()['biaya_tol'] === null
+        && ($p->data()['termasuk_parkir'] ?? null) === true
+        && ($p->data()['biaya_parkir'] ?? null) === 25000);
 });
 
-test('mematikan paket mengosongkan biayanya', function () {
+test('mematikan satu pos mengosongkan nominalnya saja', function () {
     fakeArmada();
 
-    // Angka yang tertinggal adalah biaya siluman: ikut terpakai begitu
-    // penandanya dinyalakan lagi, dan pemiliknya tidak ingat pernah mengisinya.
+    // Angka yang tertinggal pada pos yang ditanggung penyewa ikut terpakai
+    // begitu penandanya dinyalakan lagi.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('termasukOperasional', true)
-        ->set('biayaOperasionalTeks', '250000')
-        ->set('termasukOperasional', false)
-        ->assertSet('biayaOperasional', '')
-        ->assertSet('biayaOperasionalTeks', '');
+        ->set('termasukPos.bbm', true)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->set('termasukPos.tol', true)
+        ->set('biayaPosTeks.tol', '100000')
+        ->set('termasukPos.bbm', false)
+        ->assertSet('biayaPos.bbm', '')
+        ->assertSet('biayaPosTeks.bbm', '')
+        // Pos lain tidak ikut terpengaruh.
+        ->assertSet('biayaPos.tol', 100000);
 });
 
-test('biaya tidak terkirim bila paketnya tidak termasuk', function () {
+test('total yang tampil hanya menjumlahkan pos yang termasuk', function () {
     fakeArmada();
 
+    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('termasukPos.bbm', true)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->set('termasukPos.tol', true)
+        ->set('biayaPosTeks.tol', '100000');
+
+    expect($uji->instance()->totalPos())->toBe(300000);
+
+    $uji->set('termasukPos.tol', false);
+
+    expect($uji->instance()->totalPos())->toBe(200000);
+});
+
+test('total ditampilkan supaya tidak perlu dijumlahkan di kepala', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Tidak ada tambahan biaya')
+        ->set('termasukPos.bbm', true)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->assertSee('Rp 200.000/hari');
+});
+
+test('isian biaya hanya tampil untuk pos yang termasuk', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Ditanggung penyewa')
+        ->assertSee('Biaya perjalanan')
+        ->set('termasukPos.bbm', true)
+        ->assertSee('Biaya BBM per hari');
+});
+
+test('pos boleh termasuk tanpa biaya tambahan', function () {
+    fakeArmada();
+
+    // Unit yang tarifnya sudah dihitung all-in sejak awal tidak menambah biaya.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
         ->set('nama', 'Avanza')
         ->set('tarifHariTeks', '500.000')
-        ->set('termasukOperasional', false)
+        ->set('termasukPos.bbm', true)
         ->call('simpan')
         ->assertHasNoErrors();
 
     Http::assertSent(fn ($p) => $p->method() === 'POST'
-        && ($p->data()['termasuk_operasional'] ?? null) === false
-        && array_key_exists('biaya_operasional', $p->data())
-        && $p->data()['biaya_operasional'] === null);
+        && ($p->data()['termasuk_bbm'] ?? null) === true
+        && $p->data()['biaya_bbm'] === null);
 });
 
-test('paket all-in boleh tanpa biaya tambahan', function () {
-    fakeArmada();
-
-    // Unit yang tarifnya sudah dihitung all-in sejak awal memang tidak menambah
-    // biaya apa pun — kosong itu keadaan yang sah, bukan isian yang terlupa.
-    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merek', 'Toyota')
-        ->set('nama', 'Avanza')
-        ->set('tarifHariTeks', '500.000')
-        ->set('termasukOperasional', true)
-        ->call('simpan')
-        ->assertHasNoErrors();
-
-    Http::assertSent(fn ($p) => $p->method() === 'POST'
-        && ($p->data()['termasuk_operasional'] ?? null) === true
-        && $p->data()['biaya_operasional'] === null);
-});
-
-test('isian biaya hanya tampil bila paketnya termasuk', function () {
-    fakeArmada();
-
-    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->assertDontSee('Biaya BBM, tol, parkir / hari')
-        ->assertSee('ditanggung penyewa')
-        ->set('termasukOperasional', true)
-        ->assertSee('Biaya BBM, tol, parkir / hari')
-        ->assertSee('Kosongkan bila sudah termasuk harga sewa');
-});
-
-test('menyunting unit memuat paket all-in tersimpannya', function () {
-    fakeArmada(['termasuk_operasional' => true, 'biaya_operasional' => 300000]);
+test('menyunting unit memuat perincian pos tersimpannya', function () {
+    fakeArmada(['operasional' => [
+        'bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 200000],
+        'tol' => ['label' => 'Tol', 'termasuk' => false, 'biaya' => 0],
+        'parkir' => ['label' => 'Parkir', 'termasuk' => true, 'biaya' => 25000],
+    ]]);
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
-        ->assertSet('termasukOperasional', true)
-        ->assertSet('biayaOperasional', 300000)
-        ->assertSet('biayaOperasionalTeks', '300.000');
+        ->assertSet('termasukPos.bbm', true)
+        ->assertSet('biayaPosTeks.bbm', '200.000')
+        ->assertSet('termasukPos.tol', false)
+        ->assertSet('biayaPosTeks.tol', '')
+        ->assertSet('termasukPos.parkir', true)
+        ->assertSet('biayaPosTeks.parkir', '25.000');
 });
 
-test('daftar armada melencanai unit all-in beserta biayanya', function () {
+function barisArmadaOperasional(array $operasional, int $total): array
+{
+    return ['data' => [[
+        'id' => 4, 'uuid' => 'z', 'nama' => 'Avanza', 'merek' => 'Toyota',
+        'varian' => null, 'tahun' => null, 'cc' => null,
+        'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
+        'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
+        'operasional' => $operasional, 'biaya_operasional_total' => $total,
+        'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
+        'tarif' => ['jam' => null, '12jam' => null, 'hari' => 500000, 'sopir_per_hari' => null],
+        'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
+        'kondisi' => null, 'kondisi_terkini' => null,
+        'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+            'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+    ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]];
+}
+
+function fakeDaftarOperasional(array $operasional, int $total): void
+{
     Http::fake([
         '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
-        '*' => Http::response(['data' => [[
-            'id' => 4, 'uuid' => 'z', 'nama' => 'Avanza', 'merek' => 'Toyota',
-            'varian' => null, 'tahun' => null, 'cc' => null,
-            'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
-            'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
-            'termasuk_operasional' => true, 'biaya_operasional' => 250000,
-            'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
-            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 500000, 'sopir_per_hari' => null],
-            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
-            'kondisi' => null, 'kondisi_terkini' => null,
-            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
-                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
-        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+        '*' => Http::response(barisArmadaOperasional($operasional, $total)),
     ]);
+}
+
+test('daftar armada menyebut All-in hanya bila ketiganya termasuk', function () {
+    fakeDaftarOperasional([
+        'bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 200000],
+        'tol' => ['label' => 'Tol', 'termasuk' => true, 'biaya' => 100000],
+        'parkir' => ['label' => 'Parkir', 'termasuk' => true, 'biaya' => 50000],
+    ], 350000);
 
     Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
         ->assertSee('All-in')
-        ->assertSee('+250.000/hari');
+        ->assertSee('+350.000/hari');
 });
 
-test('unit yang biayanya ditanggung penyewa tidak dilencanai', function () {
-    Http::fake([
-        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
-        '*' => Http::response(['data' => [[
-            'id' => 4, 'uuid' => 'z', 'nama' => 'Avanza', 'merek' => 'Toyota',
-            'varian' => null, 'tahun' => null, 'cc' => null,
-            'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
-            'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
-            'termasuk_operasional' => false, 'biaya_operasional' => null,
-            'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
-            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 500000, 'sopir_per_hari' => null],
-            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
-            'kondisi' => null, 'kondisi_terkini' => null,
-            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
-                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
-        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
-    ]);
+test('sebagian pos termasuk disebut namanya, bukan All-in', function () {
+    fakeDaftarOperasional([
+        'bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 200000],
+        'tol' => ['label' => 'Tol', 'termasuk' => false, 'biaya' => 0],
+        'parkir' => ['label' => 'Parkir', 'termasuk' => false, 'biaya' => 0],
+    ], 200000);
+
+    // Unit yang hanya BBM-nya termasuk bukan all-in, dan menyebutnya begitu
+    // menjanjikan lebih dari yang benar.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('BBM termasuk')
+        ->assertDontSee('All-in');
+});
+
+test('unit yang seluruh biayanya ditanggung penyewa tidak dilencanai', function () {
+    fakeDaftarOperasional([
+        'bbm' => ['label' => 'BBM', 'termasuk' => false, 'biaya' => 0],
+        'tol' => ['label' => 'Tol', 'termasuk' => false, 'biaya' => 0],
+        'parkir' => ['label' => 'Parkir', 'termasuk' => false, 'biaya' => 0],
+    ], 0);
 
     // Melencanai keadaan biasa membuat lencananya berhenti berarti.
+    //
+    // Yang diperiksa ikon lencananya. Kata "termasuk" muncul juga di keterangan
+    // lain, dan nama kelasnya selalu ada di blok <style> halaman ini entah
+    // lencananya terpakai atau tidak — keduanya menghasilkan uji yang lulus
+    // atau gagal karena alasan yang salah.
     Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
-        ->assertDontSee('All-in');
+        ->assertDontSee('All-in')
+        ->assertDontSee('bi-fuel-pump');
 });

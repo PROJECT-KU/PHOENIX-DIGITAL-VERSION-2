@@ -99,18 +99,24 @@ class OrchaArmadaForm extends Component
     public bool $tersedia = true;
 
     /**
-     * BBM, tol, dan parkir sudah termasuk atau ditanggung penyewa.
+     * BBM, tol, dan parkir — masing-masing berdiri sendiri.
      *
-     * Satu penanda untuk ketiganya, bukan tiga penanda: dalam praktiknya
-     * ditawarkan sebagai satu paket — unit yang BBM-nya ditanggung pemilik hampir
-     * pasti tolnya juga. Tiga sakelar untuk satu keputusan hanya memperbanyak
-     * keadaan tanpa menambah kemampuan.
+     * Ada unit yang BBM-nya ditanggung pemilik tetapi tolnya tidak, dan parkir
+     * hampir selalu urusan tersendiri. Satu penanda gabungan memaksa ketiganya
+     * diputuskan bersama, sehingga keadaan yang sebenarnya tidak bisa dinyatakan.
+     *
+     * Disimpan sebagai array berkunci pos supaya penambahan pos berikutnya cukup
+     * mengubah config di Orcha, bukan menambah properti dan cabang baru di sini.
+     *
+     * @var array<string, bool>
      */
-    public bool $termasukOperasional = false;
+    public array $termasukPos = [];
 
-    public $biayaOperasional = '';
+    /** @var array<string, int|string> nominal murni per pos */
+    public array $biayaPos = [];
 
-    public string $biayaOperasionalTeks = '';
+    /** @var array<string, string> bentuk bertitik yang tampil di layar */
+    public array $biayaPosTeks = [];
 
     public $gambar;
 
@@ -166,7 +172,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'nullable|numeric|min:0',
             'tarif12Jam' => 'nullable|numeric|min:0',
             'tarifSopir' => 'nullable|numeric|min:0',
-            'biayaOperasional' => 'nullable|numeric|min:0|max:100000000',
+            'biayaPos.*' => 'nullable|numeric|min:0|max:100000000',
             'gambar' => 'nullable|image|max:4096',
         ];
     }
@@ -185,7 +191,9 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'tarif per jam',
             'tarif12Jam' => 'tarif paket 12 jam',
             'tarifSopir' => 'tarif sopir',
-            'biayaOperasional' => 'biaya BBM, tol, dan parkir',
+            'biayaPos.bbm' => 'biaya BBM',
+            'biayaPos.tol' => 'biaya tol',
+            'biayaPos.parkir' => 'biaya parkir',
         ];
     }
 
@@ -207,24 +215,57 @@ class OrchaArmadaForm extends Component
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
     }
 
-    public function updatedBiayaOperasionalTeks(): void
+    /**
+     * @return array<string, string> kunci pos => label
+     */
+    public function posOperasional(): array
     {
-        $this->biayaOperasional = $this->angkaDari($this->biayaOperasionalTeks);
-        $this->biayaOperasionalTeks = $this->keRupiah($this->biayaOperasional);
+        return $this->rujukan('pos_operasional');
     }
 
     /**
-     * Mematikan paketnya mengosongkan nominalnya.
+     * Jumlah biaya harian dari pos yang termasuk saja.
      *
-     * Angka yang tertinggal pada unit yang tidak all-in adalah biaya siluman: ia
-     * ikut terpakai begitu penandanya dinyalakan lagi, dan pemiliknya tidak ingat
-     * pernah mengisinya.
+     * Ditampilkan di formulir supaya admin melihat angka yang benar-benar
+     * ditambahkan ke perkiraan harga, bukan menjumlahkan tiga isian di kepala.
      */
-    public function updatedTermasukOperasional(): void
+    public function totalPos(): int
     {
-        if (! $this->termasukOperasional) {
-            $this->biayaOperasional = '';
-            $this->biayaOperasionalTeks = '';
+        $total = 0;
+
+        foreach (array_keys($this->posOperasional()) as $pos) {
+            if ($this->termasukPos[$pos] ?? false) {
+                $total += (int) ($this->biayaPos[$pos] ?? 0);
+            }
+        }
+
+        return $total;
+    }
+
+    /**
+     * Isian rupiah tiap pos dibakukan tampilannya.
+     *
+     * Satu hook untuk seluruh array — Livewire menyebut nama medan bertitik
+     * ("biayaPosTeks.bbm"), jadi posnya diambil dari situ.
+     */
+    public function updatedBiayaPosTeks(string $nilai, string $pos): void
+    {
+        $this->biayaPos[$pos] = $this->angkaDari($nilai);
+        $this->biayaPosTeks[$pos] = $this->keRupiah($this->biayaPos[$pos]);
+    }
+
+    /**
+     * Mematikan sebuah pos mengosongkan nominalnya.
+     *
+     * Angka yang tertinggal pada pos yang ditanggung penyewa adalah biaya
+     * siluman: ia ikut terpakai begitu penandanya dinyalakan lagi, dan pemiliknya
+     * tidak ingat pernah mengisinya.
+     */
+    public function updatedTermasukPos($nilai, string $pos): void
+    {
+        if (! $nilai) {
+            $this->biayaPos[$pos] = '';
+            $this->biayaPosTeks[$pos] = '';
         }
     }
 
@@ -627,9 +668,11 @@ class OrchaArmadaForm extends Component
         $this->tarif12Jam = $isi['tarif']['12jam'] ?? '';
         $this->tarifSopir = $isi['tarif']['sopir_per_hari'] ?? '';
         $this->tersedia = (bool) ($isi['tersedia'] ?? true);
-        $this->termasukOperasional = (bool) ($isi['termasuk_operasional'] ?? false);
-        $this->biayaOperasional = $isi['biaya_operasional'] ?? '';
-        $this->biayaOperasionalTeks = $this->keRupiah($this->biayaOperasional);
+        foreach ($isi['operasional'] ?? [] as $pos => $rinci) {
+            $this->termasukPos[$pos] = (bool) ($rinci['termasuk'] ?? false);
+            $this->biayaPos[$pos] = ($rinci['biaya'] ?? 0) ?: '';
+            $this->biayaPosTeks[$pos] = $this->keRupiah($this->biayaPos[$pos]);
+        }
         $this->tarifHariTeks = $this->keRupiah($this->tarifHari);
         $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
@@ -657,8 +700,7 @@ class OrchaArmadaForm extends Component
             'tarif_12jam' => $this->tarif12Jam ?: null,
             'tarif_sopir' => $this->tarifSopir ?: null,
             'tersedia' => $this->tersedia,
-            'termasuk_operasional' => $this->termasukOperasional,
-            'biaya_operasional' => $this->termasukOperasional ? ($this->biayaOperasional ?: null) : null,
+            ...$this->muatanPos(),
         ];
 
         // Tujuan diteruskan supaya pemberitahuan sukses tampil utuh dulu di
@@ -666,6 +708,25 @@ class OrchaArmadaForm extends Component
         $this->ubah
             ? $this->kirimData("/kendaraan/{$this->kendaraanId}", $data, 'Kendaraan diperbarui.', $this->gambar, route('admin.orcha.armada'))
             : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, route('admin.orcha.armada'));
+    }
+
+    /**
+     * Penanda dan biaya tiap pos untuk dikirim ke Orcha.
+     *
+     * @return array<string, bool|int|null>
+     */
+    private function muatanPos(): array
+    {
+        $muatan = [];
+
+        foreach (array_keys($this->posOperasional()) as $pos) {
+            $termasuk = (bool) ($this->termasukPos[$pos] ?? false);
+
+            $muatan["termasuk_{$pos}"] = $termasuk;
+            $muatan["biaya_{$pos}"] = $termasuk ? (($this->biayaPos[$pos] ?? null) ?: null) : null;
+        }
+
+        return $muatan;
     }
 
     /**
@@ -738,6 +799,8 @@ class OrchaArmadaForm extends Component
             'ccDisarankan' => $this->ccDisarankan(),
             'varianPilihan' => $this->varianPilihan(),
             'kursiTotal' => $this->kursiTotal(),
+            'posOperasional' => $this->posOperasional(),
+            'totalPos' => $this->totalPos(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }
