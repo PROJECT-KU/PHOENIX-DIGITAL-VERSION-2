@@ -478,12 +478,31 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            line-height: 1;
             background: #1d6fa5;
             color: #fff;
             font-size: .62rem;
             opacity: 0;
             transform: scale(.6);
             transition: all .15s ease;
+        }
+
+        /* Cakramnya sudah memakai flex, tapi yang ditengahkan adalah KOTAK BARIS
+           ikonnya, bukan glifnya: kotak itu setinggi line-height halaman dan
+           bootstrap-icons masih menggeser glifnya turun (vertical-align: sub).
+           Lebar kotaknya pun lebih besar daripada lebar glifnya, sehingga
+           centangnya duduk di kiri-bawah dan menyisakan tempat kosong di
+           kanan-atas — terukur 3px ke kiri dan 1,4px ke bawah pada cakram 18px.
+
+           Ikonnya sendiri dijadikan wadah flex, mengikuti pola yang sudah
+           dipakai .stat-icon-wrapper: kotaknya menyusut sepas glifnya dan
+           vertical-align jadi tidak berlaku lagi. */
+        .orcha-kartu-pilihan .tanda i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            vertical-align: middle;
         }
 
         .orcha-kartu-pilihan.aktif .tanda { opacity: 1; transform: scale(1); }
