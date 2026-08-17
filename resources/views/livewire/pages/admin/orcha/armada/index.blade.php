@@ -40,8 +40,12 @@ Armada Orcha || lemon
                     </div>
 
                     <div class="col-4 col-lg-2 text-end">
+                        {{-- Kelasnya mengikuti tombol tambah di Paket Wisata dan Etalase.
+                             Sebelumnya memakai keluarga .orcha-btn yang memasang ukuran
+                             sendiri (font .86rem), sehingga tombolnya 35px sementara
+                             tombol tambah di fitur lain 44px — terukur di peramban. --}}
                         <a href="{{ route('admin.orcha.armada.tambah') }}" wire:navigate
-                            class="orcha-btn orcha-btn-utama w-100">
+                            class="btn btn-primary rounded-3 orcha-tombol w-100 justify-content-center">
                             <i class="bi bi-plus-lg"></i>
                             <span class="d-none d-sm-inline">Tambah Unit</span>
                         </a>
