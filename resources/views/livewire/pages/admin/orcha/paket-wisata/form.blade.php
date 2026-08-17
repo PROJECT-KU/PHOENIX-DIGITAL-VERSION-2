@@ -288,8 +288,7 @@
                             <h6 class="fw-bold mb-3">Harga</h6>
 
                             <label class="form-label small fw-semibold">Harga jual <span class="text-danger">*</span></label>
-                            <div class="input-group mb-3">
-                                <span class="input-group-text orcha-rp">Rp</span>
+                            <div class="orcha-rupiah mb-3">
                                 <input type="text" inputmode="numeric"
                                     class="orcha-uang form-control @error('harga') is-invalid @enderror"
                                     wire:model.blur="hargaTeks" value="{{ $hargaTeks }}" placeholder="1.430.000">
@@ -297,8 +296,7 @@
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
 
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
-                            <div class="input-group mb-1">
-                                <span class="input-group-text orcha-rp">Rp</span>
+                            <div class="orcha-rupiah mb-1">
                                 <input type="text" inputmode="numeric" class="orcha-uang form-control"
                                     wire:model.blur="hargaAsliTeks" value="{{ $hargaAsliTeks }}"
                                     placeholder="1.700.000">

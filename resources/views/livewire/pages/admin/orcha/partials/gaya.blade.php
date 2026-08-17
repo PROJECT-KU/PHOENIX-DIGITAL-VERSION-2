@@ -413,24 +413,11 @@
         font-size: .9rem;
     }
 
-    /* Awalan "Rp" pada isian uang. */
-    .orcha-rp {
-        background: #f4f8fb;
-        border-color: #e3e8ef;
-        color: #0f2d4a;
-        font-weight: 700;
-        font-size: .9rem;
-    }
-
-    .orcha-form .input-group .form-control {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
-    }
-
-    .orcha-form .input-group .orcha-rp {
-        border-top-left-radius: .7rem;
-        border-bottom-left-radius: .7rem;
-    }
+    /* Awalan "Rp" dalam kotak terpisah (input-group) sudah tidak dipakai —
+       seluruh isian uang kini memakai .orcha-rupiah, yang menaruh "Rp" di
+       dalam isiannya. Aturannya dihapus, bukan ditinggalkan menganggur:
+       gaya yang tidak lagi menempel pada apa pun akan dipakai ulang keliru
+       oleh orang berikutnya yang mencarinya. */
 
     /* Pratinjau kartu: perbandingan 16:10, sama seperti kartu paket di website. */
     .orcha-pratinjau-kartu {
