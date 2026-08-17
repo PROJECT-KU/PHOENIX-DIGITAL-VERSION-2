@@ -117,10 +117,13 @@ Detail Pembatalan || lemon
                             </div>
                         </div>
                     @else
-                        <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0 orcha-ikon-teks" style="font-size:.86rem">
-                            <i class="bi bi-exclamation-circle"></i>
-                            Perkiraan belum bisa dihitung — pesanannya tidak ditemukan atau belum punya
-                            tanggal mulai. Cocokkan kodenya dengan pemohon lebih dulu.
+                        <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0 d-flex gap-2 align-items-start"
+                            style="font-size:.86rem">
+                            <i class="bi bi-exclamation-circle" style="line-height:1.5"></i>
+                            <span>
+                                Perkiraan belum bisa dihitung — pesanannya tidak ditemukan atau belum punya
+                                tanggal mulai. Cocokkan kodenya dengan pemohon lebih dulu.
+                            </span>
                         </div>
                     @endif
                 </div>
@@ -170,32 +173,6 @@ Detail Pembatalan || lemon
                                     </div>
                                 </div>
                             @endif
-                        </div>
-                    </div>
-
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                <i class="bi bi-bank text-primary"></i> Rekening Pengembalian
-                            </h2>
-
-                            <div class="row g-3">
-                                @foreach ([
-                                    ['Bank', $rekening['bank'] ?? '—'],
-                                    ['Nomor rekening', $rekening['nomor'] ?? '—'],
-                                    ['Atas nama', $rekening['atas_nama'] ?? '—'],
-                                ] as [$label, $nilai])
-                                    <div class="col-6 col-md-4">
-                                        <div class="orcha-label-kecil">{{ $label }}</div>
-                                        <div class="fw-bold" style="font-size:.9rem">{{ $nilai }}</div>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="mt-3 text-muted orcha-ikon-teks" style="font-size:.8rem">
-                                <i class="bi bi-shield-check"></i>
-                                Dana hanya dikirim ke rekening atas nama pemesan yang melakukan pembayaran.
-                            </div>
                         </div>
                     </div>
 
@@ -302,107 +279,158 @@ Detail Pembatalan || lemon
                         </div>
                     @endif
 
-                    <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-3 p-lg-4">
                             <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                <i class="bi bi-check2-square text-primary"></i> Tindak Lanjut
+                                <i class="bi bi-bank text-primary"></i> Rekening Pengembalian
                             </h2>
 
-                            {{-- Hitung manual.
-
-                                 Usulan kebijakan sudah terisi supaya admin melanjutkan,
-                                 bukan menaksir dari nol. Tapi sistem tidak tahu segalanya:
-                                 tiket masuk yang sudah dibayarkan ke pihak ketiga tidak bisa
-                                 ditarik, dan ada kelonggaran yang memang layak diberikan
-                                 ketika alasannya musibah. Yang memutuskan tetap manusia. --}}
-                            @if ($p)
-                                <div class="orcha-label-kecil mb-1">Potongan yang ditetapkan</div>
-                                <div class="orcha-rupiah">
-                                    <input type="text" inputmode="numeric" class="form-control orcha-uang"
-                                        wire:model.blur="potongan">
-                                </div>
-
-                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
-                                    <span class="text-muted" style="font-size:.78rem">
-                                        Usulan kebijakan: <strong>{{ $p['usulan_teks'] }}</strong>
-                                        ({{ $p['persen'] }}% dari total)
-                                    </span>
-                                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                                        wire:click="$set('potongan', '{{ number_format($p['usulan'], 0, ',', '.') }}')">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Pakai usulan
-                                    </button>
-                                </div>
-
-                                <div class="orcha-ringkas {{ $this->kembaliSekarang() > 0 ? 'lunas' : 'sisa' }} mt-2">
-                                    <div class="orcha-label-kecil orcha-ikon-teks">
-                                        <i class="bi bi-arrow-return-left"></i> Dikembalikan ke pelanggan
-                                        @if ($this->belumTersimpan())
-                                            <span class="orcha-lencana-catat ms-1">belum tersimpan</span>
-                                        @endif
+                            <div class="row g-3">
+                                @foreach ([
+                                    ['Bank', $rekening['bank'] ?? '—'],
+                                    ['Nomor rekening', $rekening['nomor'] ?? '—'],
+                                    ['Atas nama', $rekening['atas_nama'] ?? '—'],
+                                ] as [$label, $nilai])
+                                    <div class="col-6 col-md-4">
+                                        <div class="orcha-label-kecil">{{ $label }}</div>
+                                        <div class="fw-bold" style="font-size:.9rem">{{ $nilai }}</div>
                                     </div>
-                                    <div class="angka">Rp {{ number_format($this->kembaliSekarang(), 0, ',', '.') }}</div>
-                                </div>
-
-                                @if ($this->belumTersimpan())
-                                    <div class="alert alert-warning border-0 rounded-3 mt-2 mb-0" style="font-size:.8rem">
-                                        <i class="bi bi-exclamation-circle"></i>
-                                        Angka ini belum tersimpan. Yang tercatat di Orcha masih
-                                        <strong>Rp {{ number_format((int) ($pembatalan['potongan_ditetapkan'] ?? $p['usulan']), 0, ',', '.') }}</strong>,
-                                        dan itulah yang dipakai pesan ke pelanggan.
-                                    </div>
-                                @endif
-
-                                <hr class="my-3">
-                            @endif
-
-                            <div class="orcha-label-kecil mb-2">Status pengajuan</div>
-
-                            {{-- Berdampingan, bukan daftar turun: menyetujui dan menolak
-                                 adalah dua tindakan yang berbeda akibatnya, dan yang
-                                 disetujui ikut membatalkan pesanannya. --}}
-                            <div class="orcha-pilihan-status">
-                                @foreach ($pilihanStatus as $kunci => $label)
-                                    <label class="orcha-status-pil orcha-status-{{ $kunci }}">
-                                        <input type="radio" wire:model="statusBaru" value="{{ $kunci }}">
-                                        <span>
-                                            <i class="bi {{ [
-                                                'diajukan' => 'bi-hourglass-split',
-                                                'diproses' => 'bi-arrow-repeat',
-                                                'disetujui' => 'bi-check-circle-fill',
-                                                'dana_dikirim' => 'bi-send-check-fill',
-                                                'ditolak' => 'bi-x-circle-fill',
-                                            ][$kunci] ?? 'bi-circle' }}"></i>
-                                            {{ $label }}
-                                        </span>
-                                    </label>
                                 @endforeach
                             </div>
 
-                            <div class="mt-3">
-                                <label class="form-label small fw-semibold mb-1">Catatan admin</label>
-                                <textarea class="form-control" rows="3" wire:model="catatanAdmin"
-                                    placeholder="Mis. potongan 25% sesuai kebijakan."></textarea>
-                                <div class="form-text">
-                                    Catatan ini ikut terbaca admin lain, dan menjadi penjelasan bila
-                                    perhitungannya dipersoalkan kemudian.
-                                </div>
+                            <div class="mt-3 text-muted d-flex gap-2 align-items-start" style="font-size:.8rem">
+                                <i class="bi bi-shield-check" style="line-height:1.5"></i>
+                                Dana hanya dikirim ke rekening atas nama pemesan yang melakukan pembayaran.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-3 p-lg-4">
+                        <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
+                            <i class="bi bi-check2-square text-primary"></i> Tindak Lanjut
+                        </h2>
+
+                        {{-- Dua kolom: kiri menghitung, kanan memutuskan.
+                             Sebelumnya seluruh panel ini menumpuk di kolom kanan yang
+                             sempit — pilihan statusnya patah jadi dua baris, keterangannya
+                             berdesakan, dan kolom kiri berakhir jauh lebih pendek sehingga
+                             separuh halaman kosong. --}}
+                        <div class="row g-4">
+                            <div class="col-12 col-lg-5">
+
+                        {{-- Hitung manual.
+
+                             Usulan kebijakan sudah terisi supaya admin melanjutkan,
+                             bukan menaksir dari nol. Tapi sistem tidak tahu segalanya:
+                             tiket masuk yang sudah dibayarkan ke pihak ketiga tidak bisa
+                             ditarik, dan ada kelonggaran yang memang layak diberikan
+                             ketika alasannya musibah. Yang memutuskan tetap manusia. --}}
+                        @if ($p)
+                            <div class="orcha-label-kecil mb-1">Potongan yang ditetapkan</div>
+                            <div class="orcha-rupiah">
+                                <input type="text" inputmode="numeric" class="form-control orcha-uang"
+                                    wire:model.blur="potongan">
                             </div>
 
-                            <div class="alert alert-info border-0 rounded-3 mt-3 orcha-ikon-teks" style="font-size:.8rem">
-                                <i class="bi bi-info-circle"></i>
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+                                <span class="text-muted" style="font-size:.78rem">
+                                    Usulan kebijakan: <strong>{{ $p['usulan_teks'] }}</strong>
+                                    ({{ $p['persen'] }}% dari total)
+                                </span>
+                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                    wire:click="$set('potongan', '{{ number_format($p['usulan'], 0, ',', '.') }}')">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Pakai usulan
+                                </button>
+                            </div>
+
+                            {{-- height:auto melawan .orcha-ringkas yang memakai height:100%.
+                                 Kelas itu memang untuk kartu berjajar yang tingginya harus
+                                 sama; di sini ia justru memuaikan kotaknya sampai ke dasar
+                                 kolom dan meninggalkan bidang kosong. --}}
+                            <div class="orcha-ringkas {{ $this->kembaliSekarang() > 0 ? 'lunas' : 'sisa' }} mt-2"
+                                style="height:auto">
+                                <div class="orcha-label-kecil orcha-ikon-teks">
+                                    <i class="bi bi-arrow-return-left"></i> Dikembalikan ke pelanggan
+                                    @if ($this->belumTersimpan())
+                                        <span class="orcha-lencana-catat ms-1">belum tersimpan</span>
+                                    @endif
+                                </div>
+                                <div class="angka">Rp {{ number_format($this->kembaliSekarang(), 0, ',', '.') }}</div>
+                            </div>
+
+                            @if ($this->belumTersimpan())
+                                <div class="alert alert-warning border-0 rounded-3 mt-2 mb-0" style="font-size:.8rem">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    Angka ini belum tersimpan. Yang tercatat di Orcha masih
+                                    <strong>Rp {{ number_format((int) ($pembatalan['potongan_ditetapkan'] ?? $p['usulan']), 0, ',', '.') }}</strong>,
+                                    dan itulah yang dipakai pesan ke pelanggan.
+                                </div>
+                            @endif
+
+                        @endif
+                            </div>
+
+                            <div class="col-12 col-lg-7">
+                        <div class="orcha-label-kecil mb-2">Status pengajuan</div>
+
+                        {{-- Berdampingan, bukan daftar turun: menyetujui dan menolak
+                             adalah dua tindakan yang berbeda akibatnya, dan yang
+                             disetujui ikut membatalkan pesanannya. --}}
+                        <div class="orcha-pilihan-status">
+                            @foreach ($pilihanStatus as $kunci => $label)
+                                <label class="orcha-status-pil orcha-status-{{ $kunci }}">
+                                    <input type="radio" wire:model="statusBaru" value="{{ $kunci }}">
+                                    <span>
+                                        <i class="bi {{ [
+                                            'diajukan' => 'bi-hourglass-split',
+                                            'diproses' => 'bi-arrow-repeat',
+                                            'disetujui' => 'bi-check-circle-fill',
+                                            'dana_dikirim' => 'bi-send-check-fill',
+                                            'ditolak' => 'bi-x-circle-fill',
+                                        ][$kunci] ?? 'bi-circle' }}"></i>
+                                        {{ $label }}
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-3">
+                            <label class="form-label small fw-semibold mb-1">Catatan admin</label>
+                            <textarea class="form-control" rows="3" wire:model="catatanAdmin"
+                                placeholder="Mis. potongan 25% sesuai kebijakan."></textarea>
+                            <div class="form-text">
+                                Catatan ini ikut terbaca admin lain, dan menjadi penjelasan bila
+                                perhitungannya dipersoalkan kemudian.
+                            </div>
+                        </div>
+
+                        {{-- Ikonnya jadi item flex tersendiri, teksnya dibungkus satu span.
+                             Sempat memakai .orcha-ikon-teks di sini, dan itu keliru:
+                             inline-flex membuat SETIAP anak jadi item flex, sehingga tiap
+                             <strong> terlempar ke kolomnya sendiri dan kalimatnya berantakan. --}}
+                        <div class="alert alert-info border-0 rounded-3 mt-3 d-flex gap-2 align-items-start"
+                            style="font-size:.8rem">
+                            <i class="bi bi-info-circle" style="line-height:1.5"></i>
+                            <span>
                                 Status <strong>Disetujui</strong> atau <strong>Dana dikirim</strong> ikut
                                 menandai pesanannya batal. Bukti bayar yang masih menunggu tidak diputuskan
                                 sendiri — jumlah yang benar-benar masuk menentukan besar pengembalian.
-                            </div>
-
-                            <button type="button" class="orcha-btn orcha-btn-utama w-100 mt-1"
-                                wire:click="simpan" wire:loading.attr="disabled">
-                                <i class="bi bi-save"></i> Simpan Tindak Lanjut
-                            </button>
+                            </span>
                         </div>
+
+                            </div>
+                        </div>
+
+                        <button type="button" class="orcha-btn orcha-btn-utama w-100 mt-3"
+                            wire:click="simpan" wire:loading.attr="disabled">
+                            <i class="bi bi-save"></i> Simpan Tindak Lanjut
+                        </button>
                     </div>
                 </div>
-            </div>
         @endif
     </div>
 

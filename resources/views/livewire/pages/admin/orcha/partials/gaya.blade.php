@@ -1143,8 +1143,13 @@
         z-index: 3;
     }
 
+    /* !important-nya terpaksa: aturan "isian tanpa ikon" di atas memakai
+       !important untuk mengalahkan padding-left 45px milik layout, dan
+       !important mengalahkan kekhususan apa pun. Tanpa penyeimbang ini,
+       angkanya mulai di 20px dan bertumpuk dengan awalan "Rp" — terjadi di
+       seluruh isian rupiah, termasuk lembar serah terima kendaraan. */
     .orcha-rupiah .form-control {
-        padding-left: 2.4rem;
+        padding-left: 2.4rem !important;
         padding-right: .75rem;
         font-weight: 600;
     }
@@ -1159,7 +1164,7 @@
     }
 
     .orcha-rupiah-kecil .form-control {
-        padding-left: 1.95rem;
+        padding-left: 1.95rem !important;
         padding-right: .5rem;
         font-size: .84rem;
         /* Cukup untuk "999.999.999" tanpa menyentuh awalan Rp */
