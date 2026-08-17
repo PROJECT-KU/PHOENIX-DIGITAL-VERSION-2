@@ -343,6 +343,30 @@
                                     @endif
                                 </div>
 
+                                {{-- Tarif luar kota: HANYA harian.
+
+                                     Sewa luar kota tidak dijual per jam atau paket 12 jam —
+                                     perjalanan ke Bromo tidak selesai dalam dua belas jam.
+                                     Menyediakan ketiganya berarti membuat dua isian yang tidak
+                                     akan pernah diisi. --}}
+                                <div class="col-6 col-md-4">
+                                    <label class="form-label small fw-semibold">Luar kota / hari</label>
+                                    <div class="orcha-rupiah">
+                                        <input type="text" inputmode="numeric"
+                                            class="orcha-uang form-control @error('tarifLuarKota') is-invalid @enderror"
+                                            wire:model.blur="tarifLuarKotaTeks" value="{{ $tarifLuarKotaTeks }}"
+                                            placeholder="800.000">
+                                    </div>
+                                    @error('tarifLuarKota')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @else
+                                        <div class="orcha-kursi-beda mt-1">
+                                            <i class="bi bi-info-circle"></i>
+                                            <span>Kosongkan bila sama dengan tarif harian.</span>
+                                        </div>
+                                    @enderror
+                                </div>
+
                                 {{-- Tarif sudah termasuk sopir atau belum.
 
                                      Untuk HiAce dan bus yang tarifnya memang dihitung bersama

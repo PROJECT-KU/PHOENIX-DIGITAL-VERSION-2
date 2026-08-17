@@ -97,6 +97,15 @@ class OrchaArmadaForm extends Component
 
     public $tarifSopir = '';
 
+    /**
+     * Tarif harian untuk perjalanan luar kota.
+     *
+     * Hanya harian: sewa luar kota tidak dijual per jam atau paket 12 jam —
+     * perjalanan ke Bromo tidak selesai dalam dua belas jam. Kosong berarti
+     * tarifnya sama dengan dalam kota.
+     */
+    public $tarifLuarKota = '';
+
     /** Bentuk bertitik yang tampil di layar. */
     public string $tarifHariTeks = '';
 
@@ -105,6 +114,8 @@ class OrchaArmadaForm extends Component
     public string $tarif12JamTeks = '';
 
     public string $tarifSopirTeks = '';
+
+    public string $tarifLuarKotaTeks = '';
 
     public bool $tersedia = true;
 
@@ -182,6 +193,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'nullable|numeric|min:0',
             'tarif12Jam' => 'nullable|numeric|min:0',
             'tarifSopir' => 'nullable|numeric|min:0',
+            'tarifLuarKota' => 'nullable|numeric|min:0',
             // Unit yang selalu dengan sopir harus menyatakan salah satu: tarifnya
             // sudah termasuk sopir, atau berapa tambahannya. Tanpa keduanya,
             // halaman publik menampilkan unit yang pasti bersopir tanpa
@@ -211,6 +223,7 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'tarif per jam',
             'tarif12Jam' => 'tarif paket 12 jam',
             'tarifSopir' => 'tarif sopir',
+            'tarifLuarKota' => 'tarif luar kota',
             'termasukSopir' => 'keterangan sopir',
             'biayaPos.bbm' => 'biaya BBM',
             'biayaPos.tol' => 'biaya tol',
@@ -290,10 +303,17 @@ class OrchaArmadaForm extends Component
         }
     }
 
+    public function updatedTarifLuarKotaTeks(): void
+    {
+        $this->tarifLuarKota = $this->angkaDari($this->tarifLuarKotaTeks);
+        $this->tarifLuarKotaTeks = $this->keRupiah($this->tarifLuarKota);
+    }
+
     public function updatedTarifSopirTeks(): void
     {
         $this->tarifSopir = $this->angkaDari($this->tarifSopirTeks) ?: '';
         $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
+        $this->tarifLuarKotaTeks = $this->keRupiah($this->tarifLuarKota);
     }
 
     /**
@@ -732,6 +752,7 @@ class OrchaArmadaForm extends Component
         $this->tarifJam = $isi['tarif']['jam'] ?? '';
         $this->tarif12Jam = $isi['tarif']['12jam'] ?? '';
         $this->tarifSopir = $isi['tarif']['sopir_per_hari'] ?? '';
+        $this->tarifLuarKota = $isi['tarif']['luar_kota'] ?? '';
         $this->tersedia = (bool) ($isi['tersedia'] ?? true);
         foreach ($isi['operasional'] ?? [] as $pos => $rinci) {
             $this->termasukPos[$pos] = (bool) ($rinci['termasuk'] ?? false);
@@ -742,6 +763,7 @@ class OrchaArmadaForm extends Component
         $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
         $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
+        $this->tarifLuarKotaTeks = $this->keRupiah($this->tarifLuarKota);
         $this->gambarLama = $isi['gambar'] ?? null;
     }
 
@@ -764,6 +786,7 @@ class OrchaArmadaForm extends Component
             'tarif_jam' => $this->tarifJam ?: null,
             'tarif_12jam' => $this->tarif12Jam ?: null,
             'tarif_sopir' => $this->termasukSopir ? null : ($this->tarifSopir ?: null),
+            'tarif_luar_kota' => $this->tarifLuarKota ?: null,
             'termasuk_sopir' => $this->termasukSopir,
             'tersedia' => $this->tersedia,
             ...$this->muatanPos(),

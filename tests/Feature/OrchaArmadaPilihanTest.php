@@ -1274,3 +1274,61 @@ test('detail penyewaan lepas kunci tetap menyebut antar dan kembali', function (
         ->assertSee('Kantor Orcha')
         ->assertDontSee('Tujuan perjalanan');
 });
+
+/* -------- TARIF LUAR KOTA -------- */
+
+test('tarif luar kota tersimpan dan hanya harian', function () {
+    fakeArmada();
+
+    // Sewa luar kota tidak dijual per jam atau paket 12 jam, jadi hanya satu
+    // isian — bukan tiga yang dua di antaranya tak akan pernah diisi.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->set('tarifHariTeks', '1.200.000')
+        // Unit yang selalu dengan sopir wajib menyebut biaya sopirnya.
+        ->set('termasukSopir', true)
+        ->set('tarifLuarKotaTeks', '1800000')
+        ->assertSet('tarifLuarKotaTeks', '1.800.000')
+        ->assertSet('tarifLuarKota', 1800000)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['tarif_luar_kota'] ?? null) === 1800000);
+});
+
+test('tarif luar kota boleh dikosongkan', function () {
+    fakeArmada();
+
+    // Kosong berarti tidak dibedakan — keadaan yang sah untuk sebagian unit.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('tarifHariTeks', '400.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && array_key_exists('tarif_luar_kota', $p->data())
+        && $p->data()['tarif_luar_kota'] === null);
+});
+
+test('isian tarif luar kota tampil dengan keterangannya', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Luar kota / hari')
+        ->assertSee('Kosongkan bila sama dengan tarif harian');
+});
+
+test('menyunting unit memuat tarif luar kota tersimpannya', function () {
+    fakeArmada(['tarif' => [
+        'jam' => null, '12jam' => null, 'hari' => 1200000,
+        'sopir_per_hari' => null, 'luar_kota' => 1800000,
+    ]]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('tarifLuarKota', 1800000)
+        ->assertSet('tarifLuarKotaTeks', '1.800.000');
+});
