@@ -1107,6 +1107,70 @@ test('detail pelanggan menampilkan tagihan, peserta, dan bukti bayarnya', functi
         ->assertSee('Bukti Pembayaran');
 });
 
+function balasanPesan(array $ubah = []): array
+{
+    return ['data' => array_merge([
+        'id' => 4, 'nama' => 'Rina Wijaya', 'whatsapp' => '081298765432',
+        'email' => 'rina@contoh.test', 'keperluan' => 'open_trip',
+        'keperluan_label' => 'Open Trip', 'pesan' => "Halo, saya mau tanya jadwal open trip\nBanyuwangi bulan depan.",
+        'sudah_dibaca' => false, 'dibaca_pada' => null,
+        'dibuat_pada' => '2026-08-16T10:00:00+07:00',
+        'pesanan_terkait' => [[
+            'kode' => 'OT-1508-A7K3', 'jenis' => 'open_trip', 'jenis_label' => 'Open Trip',
+            'keterangan' => 'Open Trip Banyuwangi', 'status' => 'dp_masuk',
+            'status_label' => 'DP Masuk', 'mulai' => '2026-09-10',
+        ]],
+        'pesan_lain' => [[
+            'id' => 2, 'keperluan_label' => 'Sewa Kendaraan',
+            'pesan' => 'Pertanyaan saya sebelumnya.', 'sudah_dibaca' => false,
+            'dibuat_pada' => '2026-08-14T09:00:00+07:00',
+        ]],
+    ], $ubah)];
+}
+
+test('detail pesan menunjukkan pesanan pengirim dan riwayat pesannya', function () {
+    Http::fake(['*/pesan/4' => Http::response(balasanPesan())]);
+
+    // Pertanyaan pertama admin bukan "apa isinya" — itu sudah terbaca di
+    // daftar — melainkan "orang ini siapa": calon pelanggan, atau pemesan yang
+    // sedang menanyakan pesanannya sendiri.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pesan/4')
+        ->assertOk()
+        ->assertSee('Rina Wijaya')
+        ->assertSee('jadwal open trip')
+        ->assertSee('OT-1508-A7K3')
+        ->assertSee('DP Masuk')
+        ->assertSee('Pesan Lain dari Pengirim Ini')
+        ->assertSee('Balas via WA');
+});
+
+test('pengirim yang belum pernah memesan disebut apa adanya', function () {
+    Http::fake(['*/pesan/4' => Http::response(balasanPesan([
+        'pesanan_terkait' => [], 'pesan_lain' => [],
+    ]))]);
+
+    // Bukan kekurangan data, melainkan keterangan yang berguna: pesannya
+    // pertanyaan calon pelanggan, dan nada balasannya berbeda.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pesan/4')
+        ->assertOk()
+        ->assertSee('Belum pernah memesan')
+        ->assertDontSee('Pesan Lain dari Pengirim Ini');
+});
+
+test('pesan yang sudah dibaca tidak menawarkan tombol tandai dibaca', function () {
+    Http::fake(['*/pesan/4' => Http::response(balasanPesan([
+        'sudah_dibaca' => true, 'dibaca_pada' => '2026-08-16T11:00:00+07:00',
+    ]))]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pesan/4')
+        ->assertOk()
+        ->assertDontSee('Tandai Dibaca')
+        ->assertSee('dibaca');
+});
+
 test('perkiraan pengembalian tampil di daftar pembatalan', function () {
     Http::fake([
         '*/rujukan' => Http::response(['data' => ['status_pembatalan' => ['diajukan' => 'Diajukan']]]),

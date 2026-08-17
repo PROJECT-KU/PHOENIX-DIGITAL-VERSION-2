@@ -43,45 +43,62 @@ Pesan Kontak Orcha || lemon
         <div class="row g-3">
             @forelse ($daftar as $baris)
                 <div class="col-12 col-xl-6" wire:key="pesan-{{ $baris['id'] }}">
-                    <div class="card orcha-kartu h-100">
+                    {{-- Yang belum dibaca diberi garis tebal di kiri. Kotak masuk dibuka
+                         untuk mencari apa yang belum dikerjakan, bukan untuk membaca
+                         ulang yang sudah selesai. --}}
+                    <div class="card orcha-kartu h-100 orcha-pesan-kartu {{ $baris['sudah_dibaca'] ? '' : 'belum' }}">
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                 <div>
-                                    <div class="fw-bold">{{ $baris['nama'] }}</div>
+                                    <div class="fw-bold">
+                                        {{ $baris['nama'] }}
+                                        @unless ($baris['sudah_dibaca'])
+                                            <span class="orcha-titik-baru" title="Belum dibaca"></span>
+                                        @endunless
+                                    </div>
                                     <div class="text-muted small">
                                         {{ $baris['whatsapp'] }}
                                         {{ $baris['email'] ? '· ' . $baris['email'] : '' }}
                                     </div>
                                 </div>
-                                <span class="badge bg-light text-dark">{{ $baris['keperluan_label'] }}</span>
+                                <span class="badge orcha-lencana-bayar-diterima">{{ $baris['keperluan_label'] }}</span>
                             </div>
 
-                            <p class="small mb-3" style="white-space: pre-line">{{ $baris['pesan'] }}</p>
+                            {{-- Dipenggal tiga baris: kartu yang tingginya mengikuti panjang
+                                 pesan membuat daftar melompat-lompat, dan yang panjang justru
+                                 perlu dibuka utuh di halaman detailnya. --}}
+                            <p class="small mb-3 orcha-pesan-cuplik">{{ $baris['pesan'] }}</p>
 
                             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
                                 <span class="text-muted" style="font-size:.78rem">
                                     {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y, H:i') }}
                                 </span>
 
-                                <div class="d-flex gap-2">
-                                    <a href="https://api.whatsapp.com/send?phone={{ preg_replace('/^0/', '62', preg_replace('/\D/', '', $baris['whatsapp'])) }}"
-                                        target="_blank" rel="noopener"
-                                        class="btn btn-sm btn-success rounded-3 orcha-tombol">
-                                        <i class="bi bi-whatsapp"></i>
-                                        <span>Balas</span>
+                                <div class="d-flex gap-2 align-items-center">
+                                    @if ($baris['sudah_dibaca'])
+                                        <span class="text-muted orcha-ikon-teks" style="font-size:.76rem">
+                                            <i class="bi bi-check2-all"></i> dibaca
+                                        </span>
+                                    @endif
+
+                                    <a href="{{ route('admin.orcha.pesan.detail', $baris['id']) }}" wire:navigate
+                                        class="btn btn-sm orcha-aksi orcha-aksi-lihat" title="Buka pesan selengkapnya">
+                                        <i class="bi bi-eye"></i>
                                     </a>
 
-                                    @if ($baris['sudah_dibaca'])
-                                        <span class="badge bg-success-subtle text-success align-self-center">
-                                            Sudah dibaca
-                                        </span>
-                                    @else
-                                        <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                    <a href="{{ \App\Support\TautanWa::kirim($baris['whatsapp'], 'Halo ' . $baris['nama'] . ', terima kasih sudah menghubungi Orcha Journey.') }}"
+                                        target="_blank" rel="noopener"
+                                        class="btn btn-sm orcha-aksi orcha-aksi-wa" title="Balas lewat WhatsApp">
+                                        <i class="bi bi-whatsapp"></i>
+                                    </a>
+
+                                    @unless ($baris['sudah_dibaca'])
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-ubah"
+                                            title="Tandai sudah dibaca"
                                             wire:click="tandaiDibaca({{ $baris['id'] }})" wire:loading.attr="disabled">
                                             <i class="bi bi-check2"></i>
-                                            <span>Tandai dibaca</span>
                                         </button>
-                                    @endif
+                                    @endunless
                                 </div>
                             </div>
                         </div>
@@ -105,4 +122,30 @@ Pesan Kontak Orcha || lemon
     </div>
 
     @include('livewire.pages.admin.orcha.partials.skrip')
+    <style>
+        /* Garis kiri tebal + titik: dua penanda untuk hal yang sama, karena
+           yang belum dibaca harus terlihat tanpa dicari. */
+        .orcha-pesan-kartu.belum {
+            border-left: 4px solid #1d6fa5;
+        }
+
+        .orcha-titik-baru {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-left: .35rem;
+            border-radius: 50%;
+            background: #1d6fa5;
+            vertical-align: middle;
+        }
+
+        /* Tiga baris, sisanya di halaman detail. */
+        .orcha-pesan-cuplik {
+            white-space: pre-line;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
 </div>
