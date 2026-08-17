@@ -177,8 +177,13 @@ Detail Sewa Kendaraan || lemon
                                     ['Kembali pada', ($sewa['dikembalikan_pada'] ?? null)
                                         ? \Carbon\Carbon::parse($sewa['dikembalikan_pada'])->translatedFormat('d F Y, H:i')
                                         : 'Belum kembali'],
-                                    ['Lokasi pengantaran', $sewa['lokasi_antar'] ?: '—'],
-                                    ['Lokasi pengembalian', $sewa['lokasi_kembali'] ?: '—'],
+                                    {{-- Sebutannya mengikuti moda sewanya. Pada sewa bersopir
+                                         unitnya tidak diserahkan ke penyewa, jadi "lokasi
+                                         pengantaran unit" menyebut hal yang tidak terjadi. --}}
+                                    [($sewa['dengan_sopir'] ?? false) ? 'Titik penjemputan' : 'Lokasi pengantaran',
+                                        $sewa['lokasi_antar'] ?: '—'],
+                                    [($sewa['dengan_sopir'] ?? false) ? 'Tujuan perjalanan' : 'Lokasi pengembalian',
+                                        (($sewa['dengan_sopir'] ?? false) ? ($sewa['tujuan'] ?? null) : $sewa['lokasi_kembali']) ?: '—'],
                                 ] as [$label, $nilai])
                                     <div class="col-12 col-md-6">
                                         <div class="orcha-label-kecil">{{ $label }}</div>

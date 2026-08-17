@@ -205,8 +205,15 @@ Sewa Kendaraan Masuk || lemon
                             </div>
                             <div class="col-12 col-md-4">
                                 <div class="orcha-ringkas">
-                                    <div class="orcha-label-kecil"><i class="bi bi-geo-alt"></i> Dikembalikan di</div>
-                                    <div class="angka" style="font-size:1.05rem">{{ $sewa['lokasi_kembali'] ?: '—' }}</div>
+                                    {{-- Sewa bersopir tidak "dikembalikan" ke mana pun: yang
+                                         berguna dilihat sekilas adalah tujuannya. --}}
+                                    <div class="orcha-label-kecil">
+                                        <i class="bi {{ ($sewa['dengan_sopir'] ?? false) ? 'bi-signpost-2' : 'bi-geo-alt' }}"></i>
+                                        {{ ($sewa['dengan_sopir'] ?? false) ? 'Tujuan' : 'Dikembalikan di' }}
+                                    </div>
+                                    <div class="angka" style="font-size:1.05rem">
+                                        {{ (($sewa['dengan_sopir'] ?? false) ? ($sewa['tujuan'] ?? null) : $sewa['lokasi_kembali']) ?: '—' }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

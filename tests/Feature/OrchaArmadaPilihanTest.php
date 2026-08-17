@@ -1208,3 +1208,69 @@ test('menyunting unit memuat penanda termasuk sopir tersimpannya', function () {
         ->assertSet('termasukSopir', true)
         ->assertSee('Tarif sudah termasuk sopir');
 });
+
+/* -------- TUJUAN VS LOKASI PENGEMBALIAN -------- */
+
+/**
+ * Bernama khas supaya tidak bentrok dengan balasanSewa() di OrchaDashboardTest —
+ * seluruh berkas uji dimuat dalam proses yang sama.
+ */
+function balasanSewaTujuan(array $ubah = []): array
+{
+    return ['data' => array_merge([
+        'id' => 7, 'kode' => 'SK-1708-AAAA', 'nama' => 'Budi Santoso',
+        'whatsapp' => '081234567890', 'email' => 'budi@contoh.test',
+        'kendaraan' => ['id' => 1, 'nama' => 'HiAce Commuter', 'transmisi' => 'Manual'],
+        'satuan' => 'hari', 'satuan_label' => 'Per hari (24 jam)',
+        'durasi' => 2, 'durasi_label' => '2 hari',
+        'tanggal_mulai' => '2026-08-25', 'jam_mulai' => '07:00',
+        'tanggal_selesai' => '2026-08-27', 'jam_selesai' => '07:00',
+        'jadwal_selesai' => '2026-08-27T07:00:00+07:00',
+        'terlambat' => false, 'terlambat_menit' => 0, 'denda_keterlambatan_usulan' => 0,
+        'dengan_sopir' => true,
+        'lokasi_antar' => 'Hotel Malioboro', 'lokasi_kembali' => 'Hotel Malioboro',
+        'tujuan' => 'Borobudur — Dieng',
+        'diserahkan_pada' => null, 'dikembalikan_pada' => null,
+        'kilometer_awal' => null, 'kilometer_akhir' => null,
+        'bahan_bakar_awal' => null, 'bahan_bakar_akhir' => null,
+        'jaminan' => null, 'kondisi_awal' => [], 'kondisi_akhir' => [], 'kerusakan_baru' => [],
+        'estimasi_biaya' => 2400000, 'denda_keterlambatan' => 0, 'denda_kerusakan' => 0,
+        'denda_lain' => 0, 'catatan_denda' => null, 'total_denda' => 0, 'total_tagihan' => 2400000,
+        'rincian_denda' => [], 'berkas_jaminan' => null,
+        'catatan' => null, 'status' => 'baru', 'status_label' => 'Baru',
+        'dibuat_pada' => '2026-08-17T10:00:00+07:00',
+    ], $ubah)];
+}
+
+test('detail penyewaan bersopir menyebut penjemputan dan tujuan', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_penyewaan' => ['baru' => 'Baru']]]),
+        '*' => Http::response(balasanSewaTujuan()),
+    ]);
+
+    // Pada sewa bersopir unitnya tidak diserahkan ke penyewa, jadi "lokasi
+    // pengantaran unit" menyebut hal yang tidak terjadi.
+    Livewire::actingAs(adminArmada())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 7])
+        ->assertSee('Titik penjemputan')
+        ->assertSee('Tujuan perjalanan')
+        ->assertSee('Borobudur — Dieng')
+        ->assertDontSee('Lokasi pengantaran');
+});
+
+test('detail penyewaan lepas kunci tetap menyebut antar dan kembali', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['status_penyewaan' => ['baru' => 'Baru']]]),
+        '*' => Http::response(balasanSewaTujuan([
+            'dengan_sopir' => false, 'tujuan' => null,
+            'lokasi_antar' => 'Bandara YIA', 'lokasi_kembali' => 'Kantor Orcha',
+        ])),
+    ]);
+
+    Livewire::actingAs(adminArmada())
+        ->test(App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail::class, ['penyewaan' => 7])
+        ->assertSee('Lokasi pengantaran')
+        ->assertSee('Lokasi pengembalian')
+        ->assertSee('Kantor Orcha')
+        ->assertDontSee('Tujuan perjalanan');
+});
