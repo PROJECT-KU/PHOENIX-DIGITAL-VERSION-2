@@ -833,3 +833,75 @@ test('tipe manual yang kosong diabaikan', function () {
 
     Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
 });
+
+/* ---------------- NOMOR POLISI ---------------- */
+
+test('nopol dirapikan begitu admin keluar dari isiannya', function (string $masukan, string $harapan) {
+    fakeArmada();
+
+    // Kapitalnya sudah terlihat sejak diketik lewat text-transform, tapi itu
+    // hanya tampilan. Penormalan ini yang membuat yang TERLIHAT sama dengan yang
+    // TERSIMPAN, jadi admin tidak menekan simpan sambil menyangka nopolnya rapi.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('nopol', $masukan)
+        ->assertSet('nopol', $harapan);
+})->with([
+    ['ab4169te', 'AB 4169 TE'],
+    ['AB-4169-TE', 'AB 4169 TE'],
+    ['  ab 4169  te ', 'AB 4169 TE'],
+    ['b1234xyz', 'B 1234 XYZ'],
+    ['ab1234', 'AB 1234'],
+    ['', ''],
+]);
+
+test('nopol terkirim dalam bentuk baku', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('nopol', 'ab-4169-te')
+        ->set('tarifHariTeks', '400.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['nopol'] ?? null) === 'AB 4169 TE');
+});
+
+test('nopol yang jelas bukan nomor polisi ditolak sebelum dikirim', function () {
+    fakeArmada();
+
+    // Galat di sebelah isiannya lebih berguna daripada galat yang datang setelah
+    // permintaan bolak-balik ke Orcha.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('nopol', 'mobil bagus banget')
+        ->set('tarifHariTeks', '400.000')
+        ->call('simpan')
+        ->assertHasErrors('nopol');
+
+    Http::assertNotSent(fn ($p) => $p->method() === 'POST' && str_contains($p->url(), '/kendaraan'));
+});
+
+test('nopol boleh dibiarkan kosong', function () {
+    fakeArmada();
+
+    // Unit yang platnya masih dalam proses memang belum punya nomor.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('nopol', '')
+        ->set('tarifHariTeks', '400.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+});
+
+test('isian nopol memakai kelas yang mengapitalkan tampilannya', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('orcha-isian-nopol')
+        ->assertSee('AB 4169 TE');
+});

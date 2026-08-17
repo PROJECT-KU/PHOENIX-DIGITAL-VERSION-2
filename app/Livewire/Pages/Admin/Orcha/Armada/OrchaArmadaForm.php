@@ -136,7 +136,16 @@ class OrchaArmadaForm extends Component
             // salah ketik tahun tidak pernah kelihatan salah.
             'tahun' => 'nullable|integer|min:1980|max:'.(date('Y') + 1),
             'cc' => 'nullable|integer|min:500|max:20000',
-            'nopol' => 'nullable|string|max:20',
+            // Bentuknya diperiksa di sini juga, bukan hanya di Orcha: pesan galat
+            // yang muncul di sebelah isiannya lebih berguna daripada galat yang
+            // datang setelah permintaan bolak-balik.
+            'nopol' => ['nullable', 'string', 'max:20', function ($atribut, $nilai, $gagal) {
+                $telanjang = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $nilai));
+
+                if ($telanjang !== '' && ! preg_match('/^[A-Z]{1,2}\d{1,5}[A-Z]{0,3}$/', $telanjang)) {
+                    $gagal('Nomor polisi belum benar. Contoh: AB 4169 TE.');
+                }
+            }],
             'kapasitas' => 'required|integer|min:1|max:80',
             'transmisi' => 'required|array|min:1',
             'tarifHari' => 'required|numeric|min:0',
@@ -153,6 +162,7 @@ class OrchaArmadaForm extends Component
             'nama' => 'nama unit',
             'merek' => 'merek',
             'varian' => 'tipe',
+            'nopol' => 'nomor polisi',
             'tahun' => 'tahun',
             'cc' => 'isi silinder',
             'transmisi' => 'transmisi',
@@ -300,6 +310,33 @@ class OrchaArmadaForm extends Component
      * isiannya dibiarkan daripada diisi angka yang belum tentu benar, karena
      * angka yang sudah tertulis cenderung tidak diperiksa lagi.
      */
+    /**
+     * Nomor polisi dirapikan begitu admin keluar dari isiannya.
+     *
+     * Kapitalnya sudah terlihat sejak diketik lewat text-transform, tetapi itu
+     * hanya tampilan — nilainya tetap apa adanya. Penormalan di sini yang membuat
+     * yang TERLIHAT sama dengan yang TERSIMPAN, sehingga admin tidak menekan
+     * simpan sambil menyangka nopolnya sudah rapi padahal belum.
+     *
+     * Aturan bakunya tetap ada di Orcha (App\Support\SewaKendaraan\NomorPolisi);
+     * yang di sini hanya menyamakan tampilannya lebih awal.
+     */
+    public function updatedNopol(): void
+    {
+        $telanjang = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $this->nopol));
+
+        if ($telanjang === '') {
+            $this->nopol = '';
+
+            return;
+        }
+
+        $this->nopol = preg_match('/^([A-Z]{1,2})(\d{1,5})([A-Z]{0,3})$/', $telanjang, $bagian)
+            ? trim($bagian[1].' '.$bagian[2].' '.$bagian[3])
+            // Bentuk tak terduga tidak dibuang isinya — hanya dikapitalkan.
+            : trim(preg_replace('/\s+/', ' ', strtoupper($this->nopol)));
+    }
+
     public function updatedNama(): void
     {
         $this->nama = trim($this->nama);

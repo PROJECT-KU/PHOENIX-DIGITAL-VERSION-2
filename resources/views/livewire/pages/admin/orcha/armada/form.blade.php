@@ -131,9 +131,22 @@
                                     </select>
                                 </div>
 
+                                {{-- Nomor polisi: kapital sejak diketik, dirapikan saat keluar.
+
+                                     text-transform membuat kapitalnya terlihat seketika tanpa
+                                     mengganggu kursor — mengubah nilai isian tiap ketikan
+                                     memindahkan kursor ke belakang dan menyulitkan mengoreksi
+                                     huruf di tengah. Penormalan spasinya menunggu blur, lalu
+                                     yang terlihat sama dengan yang tersimpan. --}}
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Nomor polisi</label>
-                                    <input type="text" class="form-control" wire:model="nopol" value="{{ $nopol }}" placeholder="AB 1234 CD">
+                                    <input type="text" class="form-control orcha-isian-nopol @error('nopol') is-invalid @enderror"
+                                        wire:model.blur="nopol" placeholder="AB 4169 TE"
+                                        autocapitalize="characters" autocomplete="off" spellcheck="false"
+                                        maxlength="20">
+                                    @error('nopol')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
                                 </div>
 
                                 {{-- Kapasitas: terisi sendiri saat nama unit dipilih, tetap bisa diubah.
@@ -1037,6 +1050,24 @@
     .orcha-sakelar-kartu.peringatan .rupa {
         background: #f6edd0;
         color: #8a6d1f;
+    }
+
+    /* Nomor polisi selalu tampak kapital, dan spasinya sedikit dilebarkan
+       supaya kelompok huruf-angka-huruf mudah dibaca sekilas.
+
+       Namanya dibedakan dari .orcha-nopol di daftar armada: yang itu lencana
+       plat bergaya monospace, yang ini isian. Dua hal berbeda dengan satu nama
+       cepat tertukar saat salah satunya diubah. */
+    .orcha-isian-nopol {
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-weight: 600;
+    }
+
+    .orcha-isian-nopol::placeholder {
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
     }
 
     .orcha-pick-row {
