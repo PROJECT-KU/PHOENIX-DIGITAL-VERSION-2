@@ -241,15 +241,15 @@ class OrchaArmadaForm extends Component
     }
 
     /**
-     * Kursi yang benar-benar bisa dipakai penumpang.
+     * Kursi total, termasuk kursi sopir.
      *
-     * Dihitung di sini juga supaya admin melihat akibatnya SEBELUM menyimpan —
-     * kalau angka ini hanya muncul di halaman publik, selisih satu kursi baru
-     * ketahuan setelah ada rombongan yang dijanjikan muat.
+     * Isian Kapasitas sudah berisi kursi penumpang, jadi yang ditambahkan di sini
+     * kursi sopirnya — supaya spesifikasi pabriknya tetap bisa disebut di layar
+     * ("14 penumpang dari 15 kursi") tanpa admin perlu menghitung sendiri.
      */
-    public function kursiPenumpang(): int
+    public function kursiTotal(): int
     {
-        return $this->lepasKunci ? $this->kapasitas : max(1, $this->kapasitas - 1);
+        return $this->lepasKunci ? $this->kapasitas : $this->kapasitas + 1;
     }
 
     public function ccDisarankan(): ?int
@@ -260,13 +260,33 @@ class OrchaArmadaForm extends Component
     }
 
     /**
-     * Kursi yang disarankan untuk merek + nama unit yang sedang dipilih.
+     * Kursi total menurut katalog — termasuk kursi sopir, sesuai spesifikasi pabrik.
      */
-    public function kursiDisarankan(): ?int
+    public function kursiTotalKatalog(): ?int
     {
         $kursi = $this->kapasitasKatalog()[trim($this->merek)][trim($this->nama)] ?? null;
 
         return is_numeric($kursi) && (int) $kursi > 0 ? (int) $kursi : null;
+    }
+
+    /**
+     * Kapasitas yang disarankan, yaitu kursi PENUMPANG.
+     *
+     * Unit yang selalu dengan sopir sudah dikurangi satu di sini, karena isian
+     * Kapasitas menyimpan angka yang dipakai menjawab "muat berapa orang?" —
+     * angka itulah yang tertulis di penawaran dan dijanjikan ke pelanggan.
+     * Menyimpan kursi total lalu menguranginya belakangan berarti angka yang
+     * paling sering dibaca justru yang harus dihitung ulang tiap kali.
+     */
+    public function kursiDisarankan(): ?int
+    {
+        $total = $this->kursiTotalKatalog();
+
+        if ($total === null) {
+            return null;
+        }
+
+        return $this->lepasKunci ? $total : max(1, $total - 1);
     }
 
     /**
@@ -308,22 +328,25 @@ class OrchaArmadaForm extends Component
         $this->kursiOtomatisDari = '';
         $this->ccOtomatisDari = '';
 
+        if (! $this->jenisDiubahManual && ($jenis = $this->jenisDisarankan()) !== null) {
+            $this->jenis = $jenis;
+        }
+
+        // Lepas kunci diputuskan LEBIH DAHULU daripada kapasitas: jumlah kursi
+        // penumpang bergantung padanya. Urutan sebaliknya mengisi 15 lalu baru
+        // tahu unitnya selalu dengan sopir, dan angkanya tertinggal salah.
+        if (! $this->lepasKunciDiubahManual && ($lepas = $this->lepasKunciDisarankan()) !== null) {
+            $this->lepasKunci = $lepas;
+        }
+
         if (! $this->kapasitasDiubahManual && ($kursi = $this->kursiDisarankan()) !== null) {
             $this->kapasitas = $kursi;
             $this->kursiOtomatisDari = $sumber;
         }
 
-        if (! $this->jenisDiubahManual && ($jenis = $this->jenisDisarankan()) !== null) {
-            $this->jenis = $jenis;
-        }
-
         if (! $this->ccDiubahManual && ($cc = $this->ccDisarankan()) !== null) {
             $this->cc = $cc;
             $this->ccOtomatisDari = $sumber;
-        }
-
-        if (! $this->lepasKunciDiubahManual && ($lepas = $this->lepasKunciDisarankan()) !== null) {
-            $this->lepasKunci = $lepas;
         }
     }
 
@@ -347,9 +370,33 @@ class OrchaArmadaForm extends Component
         $this->ccOtomatisDari = '';
     }
 
+    /**
+     * Menggeser sakelar lepas kunci menghitung ulang kapasitasnya.
+     *
+     * Menandai unit "selalu dengan sopir" tanpa mengubah kapasitasnya akan
+     * meninggalkan angka yang menjanjikan satu kursi lebih daripada yang ada —
+     * persis kesalahan yang sakelar ini ada untuk mencegah.
+     */
     public function updatedLepasKunci(): void
     {
         $this->lepasKunciDiubahManual = true;
+
+        if ($this->kapasitasDiubahManual) {
+            return;
+        }
+
+        if (($kursi = $this->kursiDisarankan()) !== null) {
+            $this->kapasitas = $kursi;
+            $this->kursiOtomatisDari = trim($this->merek.' '.$this->nama);
+
+            return;
+        }
+
+        // Tanpa angka katalog, kapasitas yang sudah tertulis tetap disesuaikan
+        // arah perubahannya: satu kursi dilepas untuk sopir, atau dikembalikan.
+        $this->kapasitas = $this->lepasKunci
+            ? $this->kapasitas + 1
+            : max(1, $this->kapasitas - 1);
     }
 
     /**
@@ -603,7 +650,7 @@ class OrchaArmadaForm extends Component
             'kursiDisarankan' => $this->kursiDisarankan(),
             'ccDisarankan' => $this->ccDisarankan(),
             'varianPilihan' => $this->varianPilihan(),
-            'kursiPenumpang' => $this->kursiPenumpang(),
+            'kursiTotal' => $this->kursiTotal(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }

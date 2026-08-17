@@ -75,7 +75,10 @@ function fakeArmada(array $ubahUnit = []): void
                 'Suzuki' => ['Ertiga' => true],
             ],
             'varian_per_model' => [
-                'Toyota' => ['Avanza' => ['E', 'G', 'Veloz']],
+                'Toyota' => [
+                    'Avanza' => ['E', 'G', 'Veloz'],
+                    'HiAce Commuter' => ['Kursi Kulit', 'Standar'],
+                ],
                 'Suzuki' => ['Ertiga' => ['GA', 'GL', 'GX']],
             ],
             'pemeriksaan_kendaraan' => ['kaca' => 'Kaca & spion'],
@@ -346,7 +349,8 @@ test('memilih nama unit mengisi kapasitas dari katalog', function () {
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
         ->set('nama', 'HiAce Commuter')
-        ->assertSet('kapasitas', 15)
+        // 15 kursi menurut spesifikasi, satu untuk sopir — jadi 14 penumpang.
+        ->assertSet('kapasitas', 14)
         ->assertSet('kursiOtomatisDari', 'Toyota HiAce Commuter')
         // Keterangannya tampil supaya angkanya tidak dianggap keputusan mati.
         ->assertSee('ubah bila unit ini berbeda');
@@ -437,7 +441,7 @@ test('memilih unit mengisi kapasitas, jenis, dan cc sekaligus', function () {
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
         ->set('nama', 'HiAce Commuter')
-        ->assertSet('kapasitas', 15)
+        ->assertSet('kapasitas', 14)
         ->assertSet('jenis', 'hiace')
         ->assertSet('cc', 2500);
 });
@@ -464,7 +468,7 @@ test('semi otomatis juga berlaku saat mengganti unit di halaman ubah', function 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
         ->assertSet('kapasitas', 4)
         ->set('nama', 'HiAce Commuter')
-        ->assertSet('kapasitas', 15)
+        ->assertSet('kapasitas', 14)
         ->assertSet('jenis', 'hiace')
         ->assertSet('cc', 2500);
 });
@@ -578,7 +582,8 @@ test('memilih unit besar menandainya selalu dengan sopir', function () {
         ->set('merek', 'Toyota')
         ->set('nama', 'HiAce Commuter')
         ->assertSet('lepasKunci', false)
-        // Akibatnya terlihat sebelum disimpan: 15 kursi, 14 penumpang.
+        // Akibatnya terlihat sebelum disimpan, di isian Kapasitas maupun kartunya.
+        ->assertSet('kapasitas', 14)
         ->assertSee('14 penumpang')
         ->assertSee('Selalu dengan sopir');
 });
@@ -594,23 +599,47 @@ test('mobil biasa tetap boleh lepas kunci dengan kursi penuh', function () {
 
     expect(Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')->set('nama', 'Avanza')
-        ->instance()->kursiPenumpang())->toBe(7);
+        ->instance()->kursiTotal())->toBe(7);
 });
 
-test('kursi penumpang mengikuti sakelar lepas kunci secara langsung', function () {
+test('menggeser sakelar lepas kunci menghitung ulang kapasitasnya', function () {
     fakeArmada();
 
-    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+    // Menandai unit "selalu dengan sopir" tanpa mengubah kapasitasnya akan
+    // meninggalkan angka yang menjanjikan satu kursi lebih daripada yang ada.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
-        ->set('nama', 'Avanza');
+        ->set('nama', 'Avanza')
+        ->assertSet('kapasitas', 7)
+        ->set('lepasKunci', false)
+        ->assertSet('kapasitas', 6)
+        ->set('lepasKunci', true)
+        ->assertSet('kapasitas', 7);
+});
 
-    expect($uji->instance()->kursiPenumpang())->toBe(7);
+test('tanpa angka katalog, sakelar tetap menyesuaikan kapasitas yang sudah tertulis', function () {
+    fakeArmada();
 
-    // Mobil biasa pun bisa disewakan dengan sopir; angkanya harus ikut berubah
-    // saat itu juga, bukan setelah disimpan.
-    $uji->set('lepasKunci', false);
+    // Unit di luar katalog tidak punya angka rujukan, tapi arah perubahannya
+    // tetap jelas: satu kursi dilepas untuk sopir, atau dikembalikan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Chery')
+        ->set('nama', 'Tiggo 8 Pro')
+        ->set('kapasitas', 7)
+        ->set('kapasitasDiubahManual', false)
+        ->set('lepasKunci', false)
+        ->assertSet('kapasitas', 6);
+});
 
-    expect($uji->instance()->kursiPenumpang())->toBe(6);
+test('kapasitas yang sudah dikoreksi tidak dihitung ulang oleh sakelar', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('kapasitas', 5)
+        ->set('lepasKunci', false)
+        ->assertSet('kapasitas', 5);
 });
 
 test('pilihan lepas kunci admin tidak ditimpa saran', function () {
@@ -652,7 +681,7 @@ test('lepas kunci ikut terkirim saat disimpan', function () {
 
     Http::assertSent(fn ($p) => $p->method() === 'POST'
         && ($p->data()['lepas_kunci'] ?? null) === false
-        && ($p->data()['kapasitas'] ?? null) === 15);
+        && ($p->data()['kapasitas'] ?? null) === 14);
 });
 
 test('membuka halaman ubah memakai lepas kunci tersimpannya', function () {
@@ -664,14 +693,77 @@ test('membuka halaman ubah memakai lepas kunci tersimpannya', function () {
         ->assertSet('lepasKunci', true);
 });
 
-test('kursi penumpang tidak pernah nol', function () {
+test('kapasitas tidak pernah turun di bawah satu', function () {
+    fakeArmada();
+
+    // Kapasitas 1 lalu ditandai dengan sopir menghasilkan 0 bila dikurangi
+    // lugas — angka yang tidak berarti apa-apa.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('kapasitas', 1)
+        ->set('kapasitasDiubahManual', false)
+        ->set('lepasKunci', false)
+        ->assertSet('kapasitas', 1);
+});
+
+test('tipe tersedia untuk unit besar, bukan daftar kosong', function () {
     fakeArmada();
 
     $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('kapasitas', 1)
-        ->set('lepasKunci', false);
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter');
 
-    // Kapasitas 1 dengan sopir menghasilkan 0 bila dikurangi lugas — angka yang
-    // tidak berarti apa-apa.
-    expect($uji->instance()->kursiPenumpang())->toBe(1);
+    // Daftar tipe yang kosong justru untuk unit yang paling perlu dibedakan
+    // adalah keluhan yang wajar.
+    expect($uji->instance()->varianPilihan())->toBe(['Kursi Kulit', 'Standar']);
+});
+
+test('daftar armada menyebut penumpang dan kursi total untuk unit dengan sopir', function () {
+    // Rujukan ke nama medan yang sudah berganti gagal DIAM-DIAM di blade: ?? null
+    // membuatnya jatuh ke cabang lain dan menampilkan angka yang salah tanpa
+    // galat. Uji ini yang menangkapnya, bukan mata.
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['hiace' => 'HiAce']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 9, 'uuid' => 'x', 'nama' => 'HiAce Commuter', 'merek' => 'Toyota',
+            'varian' => 'Standar', 'tahun' => 2023, 'cc' => 2500,
+            'jenis' => 'hiace', 'jenis_label' => 'HiAce', 'nopol' => 'AB 9 XX',
+            'kapasitas' => 14, 'kursi_total' => 15, 'lepas_kunci' => false,
+            'transmisi_tersedia' => ['Manual'], 'transmisi_label' => 'Manual',
+            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 1200000, 'sopir_per_hari' => 200000],
+            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 2,
+            'kondisi' => null, 'kondisi_terkini' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('14 penumpang (15 kursi)')
+        ->assertSee('Selalu dengan sopir')
+        ->assertSee('Standar')
+        ->assertSee('2023')
+        ->assertSee('2.500 cc');
+});
+
+test('daftar armada tidak mengulang angka untuk unit lepas kunci', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 3, 'uuid' => 'y', 'nama' => 'Avanza', 'merek' => 'Toyota',
+            'varian' => null, 'tahun' => null, 'cc' => 1500,
+            'jenis' => 'mobil', 'jenis_label' => 'Mobil', 'nopol' => null,
+            'kapasitas' => 7, 'kursi_total' => 7, 'lepas_kunci' => true,
+            'transmisi_tersedia' => ['Matic'], 'transmisi_label' => 'Matic',
+            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 400000, 'sopir_per_hari' => null],
+            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
+            'kondisi' => null, 'kondisi_terkini' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('7 kursi')
+        ->assertDontSee('7 penumpang (7 kursi)')
+        ->assertDontSee('Selalu dengan sopir');
 });

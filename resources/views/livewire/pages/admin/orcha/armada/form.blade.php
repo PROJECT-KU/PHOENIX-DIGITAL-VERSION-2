@@ -77,7 +77,7 @@
                                             <span class="text-dark fw-semibold">{{ $varian }}</span>
                                         @else
                                             <span class="text-muted">
-                                                {{ trim($nama) === '' ? '— pilih unit dahulu —' : '— tanpa tipe —' }}
+                                                {{ trim($nama) === '' ? '— pilih unit dahulu —' : '— pilih atau tulis tipe —' }}
                                             </span>
                                         @endif
                                     </button>
@@ -158,7 +158,16 @@
                                         @if ($kursiOtomatisDari !== '')
                                             <div class="orcha-kursi-otomatis mt-1">
                                                 <i class="bi bi-magic"></i>
-                                                <span>Terisi dari {{ $kursiOtomatisDari }} — ubah bila unit ini berbeda.</span>
+                                                <span>
+                                                    {{-- Kursi penumpang, bukan kursi total: kalau asal angkanya
+                                                         tidak disebut, admin melihat 14 untuk unit yang
+                                                         spesifikasinya 15 dan mengira ada yang salah. --}}
+                                                    Kursi penumpang, terisi dari {{ $kursiOtomatisDari }}
+                                                    @unless ($lepasKunci)
+                                                        ({{ $kursiTotal }} kursi, satu untuk sopir)
+                                                    @endunless
+                                                    — ubah bila unit ini berbeda.
+                                                </span>
                                             </div>
                                         @elseif ($kapasitasDiubahManual && $kursiDisarankan !== null && $kursiDisarankan !== $kapasitas)
                                             <div class="orcha-kursi-beda mt-1">
@@ -227,12 +236,12 @@
                                             </span>
                                             <span class="ket">
                                                 @if ($lepasKunci)
-                                                    Penyewa boleh menyetir sendiri — {{ $kursiPenumpang }} kursi
-                                                    terpakai penumpang semua.
+                                                    Penyewa menyetir sendiri, jadi
+                                                    <strong>{{ $kapasitas }} kursi</strong> terpakai penumpang semua.
                                                 @else
-                                                    Sopir dari kami, jadi satu kursi terpakai:
-                                                    <strong>{{ $kursiPenumpang }} penumpang</strong> dari
-                                                    {{ $kapasitas }} kursi.
+                                                    Satu kursi untuk sopir kami, dan kapasitas di atas
+                                                    sudah dikurangi: <strong>{{ $kapasitas }} penumpang</strong>
+                                                    dari {{ $kursiTotal }} kursi.
                                                 @endif
                                             </span>
                                         </span>

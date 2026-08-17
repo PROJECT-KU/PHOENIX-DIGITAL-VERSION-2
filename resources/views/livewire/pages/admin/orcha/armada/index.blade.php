@@ -106,12 +106,12 @@ Armada Orcha || lemon
                                         {{ $baris['merek'] }}{{ ($baris['varian'] ?? '') ? ' '.$baris['varian'] : '' }}
                                         @if ($baris['tahun'] ?? null) · {{ $baris['tahun'] }} @endif
                                         · {{ $baris['jenis_label'] }} ·
-                                        {{-- Kursi penumpang disebut terpisah HANYA bila berbeda dari
-                                             jumlah kursinya, yaitu saat unit selalu dengan sopir.
-                                             Menuliskan "7 kursi · 7 penumpang" di semua baris hanya
-                                             menambah kata tanpa menambah keterangan. --}}
-                                        @if (($baris['kursi_penumpang'] ?? null) && $baris['kursi_penumpang'] !== $baris['kapasitas'])
-                                            {{ $baris['kapasitas'] }} kursi ({{ $baris['kursi_penumpang'] }} penumpang)
+                                        {{-- kapasitas berisi kursi PENUMPANG. Kursi totalnya disebut
+                                             dalam tanda kurung HANYA bila berbeda, yaitu saat unit
+                                             selalu dengan sopir — menuliskan "7 penumpang (7 kursi)"
+                                             di semua baris menambah kata tanpa menambah keterangan. --}}
+                                        @if (($baris['kursi_total'] ?? null) && $baris['kursi_total'] !== $baris['kapasitas'])
+                                            {{ $baris['kapasitas'] }} penumpang ({{ $baris['kursi_total'] }} kursi)
                                         @else
                                             {{ $baris['kapasitas'] }} kursi
                                         @endif
