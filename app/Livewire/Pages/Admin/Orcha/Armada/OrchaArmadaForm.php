@@ -70,6 +70,11 @@ class OrchaArmadaForm extends Component
 
     public array $jadwal = [];
 
+    /** @var array<string, string> bagian => kondisi, yang sedang tampil di isian */
+    public array $kondisiIsian = [];
+
+    public string $kondisiCatatan = '';
+
     protected function rules(): array
     {
         return [
@@ -140,6 +145,8 @@ class OrchaArmadaForm extends Component
 
         $this->kondisi = $isi['kondisi'] ?? null;
         $this->jadwal = $isi['jadwal'] ?? [];
+        $this->kondisiIsian = (array) ($isi['kondisi_terkini'] ?? []);
+        $this->kondisiCatatan = (string) ($isi['kondisi']['catatan'] ?? '');
 
         $this->nama = $isi['nama'] ?? '';
         $this->merek = $isi['merek'] ?? '';
@@ -184,9 +191,49 @@ class OrchaArmadaForm extends Component
             : $this->kirimData('/kendaraan', $data, 'Kendaraan ditambahkan.', $this->gambar, route('admin.orcha.armada'));
     }
 
+    /**
+     * Mencatat kondisi unit sesudah diperbaiki.
+     *
+     * Dikirim ke jalur tersendiri, bukan ikut tombol simpan utama: yang ini
+     * mengubah keadaan fisik unit, sedangkan yang itu mengubah keterangan dan
+     * tarifnya. Menggabungkan keduanya berarti mengubah tarif tanpa sengaja
+     * ikut menyatakan unitnya sudah diperbaiki.
+     *
+     * Jejak kerusakan sebelumnya tidak hilang: denda dan rinciannya melekat
+     * pada penyewaannya masing-masing, bukan pada unitnya.
+     */
+    public function simpanKondisi(): void
+    {
+        if (! $this->ubah) {
+            return;
+        }
+
+        $berhasil = $this->kirimData(
+            "/kendaraan/{$this->kendaraanId}/kondisi",
+            ['kondisi' => $this->kondisiIsian, 'catatan' => $this->kondisiCatatan ?: null],
+            'Kondisi unit tersimpan di Orcha.',
+        );
+
+        if ($berhasil) {
+            $isi = $this->muat("/kendaraan/{$this->kendaraanId}")['data'] ?? [];
+            $this->kondisi = $isi['kondisi'] ?? null;
+            $this->kondisiIsian = (array) ($isi['kondisi_terkini'] ?? []);
+        }
+    }
+
+    /** Semua bagian ditandai baik — jalan pintas sesudah perbaikan menyeluruh. */
+    public function semuaBaik(): void
+    {
+        foreach (array_keys($this->rujukan('pemeriksaan_kendaraan')) as $bagian) {
+            $this->kondisiIsian[$bagian] = 'baik';
+        }
+    }
+
     public function render()
     {
         return view('livewire.pages.admin.orcha.armada.form', [
+            'daftarBagian' => $this->rujukan('pemeriksaan_kendaraan'),
+            'daftarKondisi' => $this->rujukan('kondisi_pemeriksaan'),
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
         ])->layout('livewire.layout.templateindex');
     }

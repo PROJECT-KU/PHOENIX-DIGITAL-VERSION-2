@@ -168,11 +168,24 @@
 
                          Tidak bisa disunting di sini — kondisi hanya berubah lewat
                          serah terima, dan itu memang tempatnya. --}}
-                    @if ($ubah && ($kondisi || ($jadwal['sedang_disewa'] ?? false)))
+                    {{-- Kondisi unit: dibaca DAN disunting.
+
+                         Sebelumnya kondisi hanya bisa berubah saat penyewa
+                         mengembalikan unitnya. Setelah pemilik membawa mobilnya ke
+                         bengkel dan kacanya diganti, tidak ada tempat untuk
+                         menyatakan unit itu sudah baik lagi — ia terus terbaca
+                         "rusak" sampai ada penyewa berikutnya yang mengembalikannya.
+
+                         Disimpan lewat tombolnya sendiri, bukan ikut tombol simpan
+                         utama: yang ini mengubah keadaan fisik unit, yang itu
+                         mengubah tarif dan keterangannya. Menggabungkan keduanya
+                         berarti mengubah tarif sambil tanpa sengaja menyatakan
+                         unitnya sudah diperbaiki. --}}
+                    @if ($ubah)
                         <div class="card border-0 shadow-sm rounded-4 mb-4">
                             <div class="card-body p-4">
                                 <h6 class="fw-bold mb-3 orcha-judul-ikon">
-                                    <i class="bi bi-clipboard-check text-primary"></i> Keadaan Unit
+                                    <i class="bi bi-tools text-primary"></i> Kondisi Unit
                                 </h6>
 
                                 @if ($jadwal['sedang_disewa'] ?? false)
@@ -188,39 +201,62 @@
                                                 dan dijadwalkan kembali
                                                 {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
                                             @endif
+                                            Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
+                                            saat unitnya kembali.
                                         </span>
                                     </div>
                                 @endif
 
-                                @if ($kondisi)
-                                    <div class="orcha-label-kecil orcha-ikon-teks mb-1">
-                                        <i class="bi bi-tools"></i> Pemeriksaan terakhir
-                                        @if ($kondisi['diperiksa_pada'])
-                                            <span class="text-muted fw-normal">
-                                                · {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
-                                            </span>
+                                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                    <span class="orcha-label-kecil mb-0">
+                                        @if ($kondisi && $kondisi['diperiksa_pada'])
+                                            Terakhir diperiksa
+                                            {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                        @else
+                                            Belum pernah diperiksa
                                         @endif
-                                    </div>
+                                    </span>
+                                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                        wire:click="semuaBaik">
+                                        <i class="bi bi-check2-all"></i> Semua baik
+                                    </button>
+                                </div>
 
-                                    @forelse ($kondisi['rincian'] as $satu)
-                                        <div class="d-flex justify-content-between gap-2" style="font-size:.84rem">
-                                            <span>{{ $satu['bagian'] }}</span>
-                                            <span class="{{ in_array($satu['nilai'], ['rusak', 'hilang']) ? 'fw-bold text-danger' : 'text-muted' }}">
-                                                {{ $satu['kondisi'] }}
-                                            </span>
+                                <div class="orcha-kondisi-daftar">
+                                    @foreach ($daftarBagian as $kunci => $label)
+                                        <div class="orcha-kondisi-baris">
+                                            <span>{{ $label }}</span>
+                                            <select class="form-select form-select-sm
+                                                {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
+                                                wire:model.live="kondisiIsian.{{ $kunci }}">
+                                                @foreach ($daftarKondisi as $nilai => $teks)
+                                                    <option value="{{ $nilai }}">{{ $teks }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
-                                    @empty
-                                        <div style="font-size:.84rem">Semua bagian dalam keadaan baik.</div>
-                                    @endforelse
+                                    @endforeach
+                                </div>
 
-                                    @if ($kondisi['perlu_perhatian'])
-                                        <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0"
-                                            style="font-size:.8rem">
-                                            Ada bagian yang rusak atau hilang. Perbaiki dulu sebelum unit ini
-                                            ditawarkan lagi di website.
-                                        </div>
-                                    @endif
-                                @endif
+                                <label class="form-label small fw-semibold mt-3 mb-1">Catatan perbaikan</label>
+                                <input type="text" class="form-control" wire:model="kondisiCatatan"
+                                    maxlength="500" placeholder="Mis. kaca diganti 17 Agu di bengkel Slamet.">
+                                <div class="form-text">
+                                    Ditulis sekarang supaya enam bulan lagi masih ada yang bisa menjelaskan
+                                    kenapa unit ini pernah ditandai rusak lalu kembali baik.
+                                </div>
+
+                                <button type="button" class="orcha-btn orcha-btn-utama w-100 mt-3"
+                                    wire:click="simpanKondisi" wire:loading.attr="disabled"
+                                    wire:target="simpanKondisi">
+                                    <i class="bi bi-save"></i>
+                                    <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
+                                    <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
+                                </button>
+
+                                <div class="text-muted mt-2" style="font-size:.76rem">
+                                    Menyimpan kondisi tidak menghapus catatan denda penyewaan sebelumnya —
+                                    denda melekat pada penyewaannya, bukan pada unitnya.
+                                </div>
                             </div>
                         </div>
                     @endif
@@ -245,4 +281,27 @@
     </div>
 
     @include('livewire.pages.admin.orcha.partials.skrip')
+    <style>
+        .orcha-kondisi-daftar {
+            display: grid;
+            gap: .4rem;
+        }
+
+        .orcha-kondisi-baris {
+            display: grid;
+            grid-template-columns: 1fr 9.5rem;
+            align-items: center;
+            gap: .6rem;
+            font-size: .84rem;
+        }
+
+        /* Pilihan rusak/hilang diberi warna supaya baris bermasalah terlihat
+           tanpa membaca seluruh daftar dua belas bagian. */
+        .orcha-kondisi-baris select.awas {
+            border-color: #f6c9cd;
+            background-color: #fdecee;
+            color: #9b2530;
+            font-weight: 600;
+        }
+    </style>
 </div>

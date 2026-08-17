@@ -1169,6 +1169,36 @@ test('unit yang belum pernah diperiksa disebut apa adanya', function () {
         ->assertSee('Siap disewakan');
 });
 
+test('pemilik bisa mencatat kondisi unit sesudah diperbaiki', function () {
+    $unit = balasanArmada()['data'][0];
+    $unit['kondisi_terkini'] = ['kaca' => 'rusak', 'bodi_depan' => 'lecet'];
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'jenis_kendaraan' => ['mobil' => 'Mobil'],
+            'pemeriksaan_kendaraan' => ['kaca' => 'Kaca & spion', 'bodi_depan' => 'Bodi depan & bemper'],
+            'kondisi_pemeriksaan' => ['baik' => 'Baik', 'lecet' => 'Lecet / minor', 'rusak' => 'Rusak'],
+        ]]),
+        '*/kondisi' => Http::response(['data' => [], 'pesan' => 'ok']),
+        '*/kendaraan/1' => Http::response(['data' => $unit]),
+    ]);
+
+    // Tanpa jalur ini, unit yang kacanya sudah diganti tetap terbaca "rusak"
+    // sampai ada penyewa berikutnya yang mengembalikannya.
+    Livewire::actingAs(adminOrcha())
+        ->test(OrchaArmadaForm::class, ['kendaraan' => 1])
+        ->assertSet('kondisiIsian.kaca', 'rusak')
+        ->call('semuaBaik')
+        ->assertSet('kondisiIsian.kaca', 'baik')
+        ->assertSet('kondisiIsian.bodi_depan', 'baik')
+        ->set('kondisiCatatan', 'Kaca diganti di bengkel Slamet.')
+        ->call('simpanKondisi');
+
+    Http::assertSent(fn ($permintaan) => ! str_contains($permintaan->url(), '/kondisi')
+        || ($permintaan['kondisi']['kaca'] === 'baik'
+            && $permintaan['catatan'] === 'Kaca diganti di bengkel Slamet.'));
+});
+
 function balasanPesan(array $ubah = []): array
 {
     return ['data' => array_merge([
