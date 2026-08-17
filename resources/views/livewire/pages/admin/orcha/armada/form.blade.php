@@ -77,11 +77,38 @@
                                     <input type="text" class="form-control" wire:model="nopol" value="{{ $nopol }}" placeholder="AB 1234 CD">
                                 </div>
 
+                                {{-- Kapasitas: terisi sendiri saat nama unit dipilih, tetap bisa diubah.
+
+                                     Semi otomatis dan bukan otomatis, karena unit yang sama
+                                     bisa dipasangi kursi berbeda — Gran Max niaga dua kursi
+                                     sedangkan minibusnya delapan, dan HiAce yang kursinya
+                                     dicabut untuk barang tidak lagi lima belas. Angkanya
+                                     saran; yang menentukan tetap admin.
+
+                                     wire:model.live dipakai supaya koreksi admin langsung
+                                     tercatat sebagai koreksi — dengan .blur, mengganti nama
+                                     unit sebelum berpindah fokus akan menimpa angka yang
+                                     baru saja diperbaiki. --}}
                                 <div class="col-6 col-md-4">
                                     <label class="form-label small fw-semibold">Kapasitas (kursi) <span class="text-danger">*</span></label>
                                     <input type="number" class="form-control @error('kapasitas') is-invalid @enderror"
-                                        wire:model="kapasitas" value="{{ $kapasitas }}" min="1">
-                                    @error('kapasitas') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                        wire:model.live="kapasitas" min="1">
+
+                                    @error('kapasitas')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @else
+                                        @if ($kursiOtomatisDari !== '')
+                                            <div class="orcha-kursi-otomatis mt-1">
+                                                <i class="bi bi-magic"></i>
+                                                <span>Terisi dari {{ $kursiOtomatisDari }} — ubah bila unit ini berbeda.</span>
+                                            </div>
+                                        @elseif ($kapasitasDiubahManual && $kursiDisarankan !== null && $kursiDisarankan !== $kapasitas)
+                                            <div class="orcha-kursi-beda mt-1">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>Umumnya {{ $kursiDisarankan }} kursi.</span>
+                                            </div>
+                                        @endif
+                                    @enderror
                                 </div>
 
                                 <div class="col-12">
@@ -829,6 +856,34 @@
         flex-direction: column;
         gap: .4rem;
         padding: .2rem;
+    }
+
+    /* Keterangan kecil di bawah isian kapasitas. Ikon dan tulisannya sejajar
+       lewat flex, bukan ditambal geseran em. */
+    .orcha-kursi-otomatis,
+    .orcha-kursi-beda {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .74rem;
+        line-height: 1.3;
+    }
+
+    .orcha-kursi-otomatis {
+        color: #1a8a52;
+    }
+
+    .orcha-kursi-beda {
+        color: #94a3b8;
+    }
+
+    .orcha-kursi-otomatis i,
+    .orcha-kursi-beda i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: middle;
     }
 
     .orcha-pick-row {

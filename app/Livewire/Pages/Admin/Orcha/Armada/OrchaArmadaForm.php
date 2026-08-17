@@ -32,6 +32,18 @@ class OrchaArmadaForm extends Component
 
     public int $kapasitas = 7;
 
+    /**
+     * Kapasitas sudah diubah admin sendiri.
+     *
+     * Sekali diubah, saran dari katalog tidak menimpanya lagi. Tanpa penanda ini,
+     * admin yang mengoreksi jumlah kursi lalu mengganti nama unit akan kehilangan
+     * koreksinya tanpa tahu kenapa.
+     */
+    public bool $kapasitasDiubahManual = false;
+
+    /** Unit yang menjadi sumber angka kapasitas, untuk keterangan di layar. */
+    public string $kursiOtomatisDari = '';
+
     public array $transmisi = ['Manual'];
 
     public $tarifHari = 0;
@@ -155,6 +167,70 @@ class OrchaArmadaForm extends Component
     }
 
     /**
+     * Sumber angka untuk mengisi kapasitas otomatis.
+     *
+     * @return array<string, array<string, int>>
+     */
+    public function kapasitasKatalog(): array
+    {
+        return $this->rujukan('kapasitas_kendaraan');
+    }
+
+    /**
+     * Kursi yang disarankan untuk merek + nama unit yang sedang dipilih.
+     */
+    public function kursiDisarankan(): ?int
+    {
+        $kursi = $this->kapasitasKatalog()[trim($this->merek)][trim($this->nama)] ?? null;
+
+        return is_numeric($kursi) && (int) $kursi > 0 ? (int) $kursi : null;
+    }
+
+    /**
+     * Memilih nama unit mengisi kapasitas — tetap bisa diubah admin.
+     *
+     * Semi otomatis, bukan otomatis: unit yang sama bisa dipasangi kursi berbeda
+     * (Gran Max niaga vs minibus, HiAce yang kursinya dicabut), jadi angkanya
+     * saran dan bukan keputusan. Yang sudah diubah admin tidak ditimpa lagi.
+     *
+     * Model yang kursinya belum dipastikan tidak mengubah apa pun: lebih baik
+     * isiannya dibiarkan daripada diisi angka yang belum tentu benar, karena
+     * angka yang sudah tertulis cenderung tidak diperiksa lagi.
+     */
+    public function updatedNama(): void
+    {
+        $this->nama = trim($this->nama);
+        $this->isiKursiOtomatis();
+    }
+
+    private function isiKursiOtomatis(): void
+    {
+        $this->kursiOtomatisDari = '';
+
+        if ($this->kapasitasDiubahManual) {
+            return;
+        }
+
+        $kursi = $this->kursiDisarankan();
+
+        if ($kursi === null) {
+            return;
+        }
+
+        $this->kapasitas = $kursi;
+        $this->kursiOtomatisDari = trim($this->merek.' '.$this->nama);
+    }
+
+    /**
+     * Admin mengubah kapasitas sendiri: saran tidak boleh menimpanya lagi.
+     */
+    public function updatedKapasitas(): void
+    {
+        $this->kapasitasDiubahManual = true;
+        $this->kursiOtomatisDari = '';
+    }
+
+    /**
      * @return list<array{id: int, merek: string, model: string|null}>
      */
     public function katalogKustom(): array
@@ -199,6 +275,10 @@ class OrchaArmadaForm extends Component
         $this->simpanKatalog($untukUnit
             ? ['merek' => trim($this->merek), 'model' => $nilai]
             : ['merek' => $nilai]);
+
+        if ($untukUnit) {
+            $this->isiKursiOtomatis();
+        }
     }
 
     public function hapusKatalog(int $id): void
@@ -248,12 +328,11 @@ class OrchaArmadaForm extends Component
     {
         $this->merek = trim($this->merek);
         $this->nama = '';
+        // Unitnya berganti, jadi koreksi kursi untuk unit sebelumnya tidak lagi
+        // berlaku dan saran boleh mengisi lagi.
+        $this->kapasitasDiubahManual = false;
+        $this->kursiOtomatisDari = '';
         $this->resetValidation(['merek', 'nama']);
-    }
-
-    public function updatedNama(): void
-    {
-        $this->nama = trim($this->nama);
     }
 
     public function mount(?int $kendaraan = null): void
@@ -282,6 +361,9 @@ class OrchaArmadaForm extends Component
         $this->jenis = $isi['jenis'] ?? 'mobil';
         $this->nopol = (string) ($isi['nopol'] ?? '');
         $this->kapasitas = (int) ($isi['kapasitas'] ?? 7);
+        // Unit yang sudah ada memakai kapasitas tersimpannya. Menimpanya dengan
+        // saran katalog akan mengubah data yang benar tanpa diminta.
+        $this->kapasitasDiubahManual = true;
         $this->transmisi = $isi['transmisi_tersedia'] ?: ['Manual'];
         $this->tarifHari = $isi['tarif']['hari'] ?? 0;
         $this->tarifJam = $isi['tarif']['jam'] ?? '';
@@ -386,6 +468,7 @@ class OrchaArmadaForm extends Component
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
             'katalog' => $this->katalog(),
             'katalogKustom' => $this->katalogKustom(),
+            'kursiDisarankan' => $this->kursiDisarankan(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }

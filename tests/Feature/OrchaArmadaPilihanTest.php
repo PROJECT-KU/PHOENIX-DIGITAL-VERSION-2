@@ -58,6 +58,10 @@ function fakeArmada(array $ubahUnit = []): void
         '*/rujukan' => Http::response(['data' => [
             'jenis_kendaraan' => ['mobil' => 'Mobil'],
             'katalog_kendaraan' => katalogUji(),
+            'kapasitas_kendaraan' => [
+                'Toyota' => ['Avanza' => 7, 'HiAce Commuter' => 15],
+                'Suzuki' => ['Ertiga' => 7],
+            ],
             'pemeriksaan_kendaraan' => ['kaca' => 'Kaca & spion'],
             'kondisi_pemeriksaan' => ['baik' => 'Baik', 'rusak' => 'Rusak'],
         ]]),
@@ -316,4 +320,94 @@ test('tambahan manual yang kosong diabaikan, tidak dikirim ke Orcha', function (
         ->assertSet('merek', '');
 
     Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
+});
+
+/* ------------------- KAPASITAS SEMI OTOMATIS ------------------- */
+
+test('memilih nama unit mengisi kapasitas dari katalog', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('kapasitas', 15)
+        ->assertSet('kursiOtomatisDari', 'Toyota HiAce Commuter')
+        // Keterangannya tampil supaya angkanya tidak dianggap keputusan mati.
+        ->assertSee('ubah bila unit ini berbeda');
+});
+
+test('kapasitas tetap bisa diubah admin sesudah terisi otomatis', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->assertSet('kapasitas', 7)
+        ->set('kapasitas', 6)
+        ->assertSet('kapasitas', 6)
+        ->assertSet('kapasitasDiubahManual', true);
+});
+
+test('koreksi kapasitas tidak ditimpa saat nama unit diganti dalam merek yang sama', function () {
+    fakeArmada();
+
+    // Kalau koreksi ikut tertimpa, admin kehilangan angkanya tanpa tahu kenapa.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('kapasitas', 6)
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('kapasitas', 6);
+});
+
+test('mengganti merek melepas koreksi, saran boleh mengisi lagi', function () {
+    fakeArmada();
+
+    // Unitnya berganti sama sekali, jadi koreksi untuk unit sebelumnya memang
+    // tidak lagi berlaku.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('kapasitas', 6)
+        ->set('merek', 'Suzuki')
+        ->assertSet('kapasitasDiubahManual', false)
+        ->set('nama', 'Ertiga')
+        ->assertSet('kapasitas', 7);
+});
+
+test('model tanpa angka kursi tidak mengubah kapasitas', function () {
+    fakeArmada();
+
+    // Lebih baik isiannya dibiarkan daripada diisi angka yang belum tentu benar:
+    // angka yang sudah tertulis cenderung tidak diperiksa lagi.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('kapasitas', 9)
+        ->set('kapasitasDiubahManual', false)
+        ->set('merek', 'Suzuki')
+        ->set('nama', 'XL7')
+        ->assertSet('kapasitas', 9)
+        ->assertSet('kursiOtomatisDari', '');
+});
+
+test('menyunting unit memakai kapasitas tersimpannya, bukan saran katalog', function () {
+    // Unit tersimpan berkapasitas 7 sedangkan katalog juga 7; yang diuji di sini
+    // penandanya, supaya saran tidak pernah menimpa data yang sudah benar.
+    fakeArmada(['kapasitas' => 4]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('kapasitas', 4)
+        ->assertSet('kapasitasDiubahManual', true)
+        ->assertSet('kursiOtomatisDari', '');
+});
+
+test('unit baru yang ditulis manual ikut mengisi kursi bila katalog mengetahuinya', function () {
+    fakeArmada();
+
+    // "Avanza" ditulis manual padahal sudah ada di katalog: Orcha menjawabnya
+    // sudah ada, dan kursinya tetap terisi.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->call('tambahKatalog', 'Avanza', true)
+        ->assertSet('nama', 'Avanza')
+        ->assertSet('kapasitas', 7);
 });
