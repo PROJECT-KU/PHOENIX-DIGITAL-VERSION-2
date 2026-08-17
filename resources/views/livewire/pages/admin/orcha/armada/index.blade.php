@@ -75,8 +75,13 @@ Armada Orcha || lemon
                             @if ($tautanGambar($baris['gambar']))
                                 <img src="{{ $tautanGambar($baris['gambar']) }}" alt="{{ $baris['nama'] }}">
                             @else
+                                {{-- Ikonnya dibungkus kotak berukuran tetap yang memusatkan
+                                     sendiri isinya. Sebagai <i> lepas, tingginya ditentukan
+                                     kotak barisnya: font-size 1,8rem terpasang tetapi
+                                     kotaknya terukur 16px di peramban, jadi ikonnya
+                                     menempel ke tulisan di bawahnya. --}}
                                 <div class="orcha-unit-kosong">
-                                    <i class="bi bi-truck"></i>
+                                    <span class="orcha-unit-kosong-rupa"><i class="bi bi-image"></i></span>
                                     <span>Belum ada foto</span>
                                 </div>
                             @endif
@@ -98,7 +103,13 @@ Armada Orcha || lemon
                             @endif
                         </div>
 
-                        <div class="card-body p-3 p-lg-4">
+                        {{-- Kolom lentur supaya kaki kartu bisa dipaku ke dasar.
+                             Sebelumnya isi kartu berhenti di mana saja: unit tanpa
+                             catatan kondisi menyisakan 169px kosong di bawah tombolnya
+                             sementara unit yang ada catatannya hanya 60px — terukur di
+                             peramban — sehingga tombol ubah/hapus tiap kartu berbeda
+                             tingginya dan deretannya terlihat berantakan. --}}
+                        <div class="card-body p-3 p-lg-4 d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-start gap-2">
                                 <div>
                                     <div class="fw-bold" style="font-size:1.02rem">{{ $baris['nama'] }}</div>
@@ -160,21 +171,42 @@ Armada Orcha || lemon
                             </div>
 
                             {{-- Tarif harian ditebalkan, sisanya keterangan: hampir semua
-                                 pemesanan memakai satuan hari. --}}
+                                 pemesanan memakai satuan hari.
+
+                                 Keterangan rata kiri, nominal rata KANAN. Sebelumnya
+                                 label dan angka berdempetan dalam satu kolom kanan yang
+                                 sempit, sehingga admin harus membaca tiap barisnya untuk
+                                 membandingkan; sekarang angkanya jatuh di satu garis
+                                 tegak dan bisa disusuri sekali lihat. --}}
                             <div class="orcha-unit-tarif mt-3">
-                                <div>
-                                    <div class="orcha-label-kecil">Per hari</div>
-                                    <div class="angka">{{ $rupiah($baris['tarif']['hari']) }}</div>
+                                <div class="orcha-tarif-utama">
+                                    <span class="orcha-label-kecil">Per hari</span>
+                                    <span class="angka">{{ $rupiah($baris['tarif']['hari']) }}</span>
                                 </div>
+
+                                @php
+                                    // Sopir disebut keadaannya, bukan hanya angkanya: unit yang
+                                    // tarifnya sudah termasuk sopir dulu menampilkan "—" — tanda
+                                    // yang di baris lain berarti "belum diisi".
+                                    $barisTarif = [
+                                        ['Per jam', $rupiah($baris['tarif']['jam'] ?? null), (bool) ($baris['tarif']['jam'] ?? null)],
+                                        ['12 jam', $rupiah($baris['tarif']['12jam'] ?? null), (bool) ($baris['tarif']['12jam'] ?? null)],
+                                    ];
+
+                                    if ($baris['tarif']['luar_kota'] ?? null) {
+                                        $barisTarif[] = ['Luar kota / hari', $rupiah($baris['tarif']['luar_kota']), true];
+                                    }
+
+                                    $barisTarif[] = ($baris['termasuk_sopir'] ?? false)
+                                        ? ['Sopir / hari', 'Sudah termasuk', true]
+                                        : ['Sopir / hari', $rupiah($baris['tarif']['sopir_per_hari'] ?? null), (bool) ($baris['tarif']['sopir_per_hari'] ?? null)];
+                                @endphp
+
                                 <div class="orcha-unit-tarif-lain">
-                                    @foreach ([
-                                        ['Per jam', $baris['tarif']['jam']],
-                                        ['12 jam', $baris['tarif']['12jam']],
-                                        ['Sopir', $baris['tarif']['sopir_per_hari']],
-                                    ] as [$label, $nilai])
+                                    @foreach ($barisTarif as [$label, $nilai, $terisi])
                                         <div>
                                             <span class="orcha-label-kecil">{{ $label }}</span>
-                                            <span class="{{ $nilai ? '' : 'text-muted' }}">{{ $rupiah($nilai) }}</span>
+                                            <span class="{{ $terisi ? 'nilai' : 'nilai text-muted' }}">{{ $nilai }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -183,8 +215,13 @@ Armada Orcha || lemon
                             {{-- Kondisi dari pemeriksaan serah terima terakhir. Dicatat
                                  tiap unit kembali, dan sebelum ini tidak pernah terbaca
                                  lagi di mana pun. --}}
+                            {{-- Blok tengah menyerap sisa ruang kartu lewat my-auto, jadi
+                                 selisih tinggi antar-unit terbagi ke atas dan ke bawah
+                                 sebagai dua jarak napas — bukan menumpuk jadi satu lubang
+                                 di atas tombol seperti sebelumnya. --}}
+                            <div class="my-auto py-3">
                             @if ($kondisi)
-                                <div class="orcha-unit-kondisi {{ $kondisi['perlu_perhatian'] ? 'awas' : '' }} mt-3">
+                                <div class="orcha-unit-kondisi {{ $kondisi['perlu_perhatian'] ? 'awas' : '' }}">
                                     <div class="orcha-label-kecil orcha-ikon-teks">
                                         <i class="bi {{ $kondisi['perlu_perhatian'] ? 'bi-exclamation-triangle-fill' : 'bi-clipboard-check' }}"></i>
                                         Kondisi terakhir
@@ -213,8 +250,20 @@ Armada Orcha || lemon
                                     @endif
                                 </div>
                             @else
-                                <div class="text-muted mt-3 orcha-ikon-teks" style="font-size:.78rem">
-                                    <i class="bi bi-clipboard-x"></i> Belum pernah diperiksa serah terima
+                                {{-- Diberi bentuk kotak seperti blok kondisi, bukan satu
+                                     baris tipis. Sebagai baris telanjang ia melayang di
+                                     tengah kartu — unit yang belum pernah diperiksa jadi
+                                     terlihat seperti kartu yang gagal dimuat, padahal
+                                     "belum diperiksa" itu sendiri keterangan yang perlu
+                                     dilihat admin. --}}
+                                <div class="orcha-unit-kondisi kosong">
+                                    <div class="orcha-label-kecil orcha-ikon-teks">
+                                        <i class="bi bi-clipboard-x"></i>
+                                        Belum ada pemeriksaan
+                                    </div>
+                                    <div class="mt-1" style="font-size:.78rem">
+                                        Belum pernah diperiksa serah terima.
+                                    </div>
                                 </div>
                             @endif
 
@@ -239,8 +288,9 @@ Armada Orcha || lemon
                                     @endif
                                 </div>
                             @endif
+                            </div>
 
-                            <div class="d-flex justify-content-between align-items-center gap-2 mt-3">
+                            <div class="orcha-unit-kaki d-flex justify-content-between align-items-center gap-2">
                                 <span class="text-muted" style="font-size:.76rem">
                                     {{ $baris['jumlah_penyewaan'] ?? 0 }}× disewa
                                 </span>
@@ -300,9 +350,15 @@ Armada Orcha || lemon
             border-left: 4px solid #c2323c !important;
         }
 
+        /* Lebih rendah dari sebelumnya (16/10, terukur 295px). Di daftar admin
+           fotonya penanda pengenal, bukan pajangan: hampir semua unit belum
+           berfoto, sehingga tiga per baris berarti tiga kotak abu-abu besar yang
+           mendorong keterangan pentingnya turun. Dibatasi tingginya supaya di
+           layar lebar pun tidak melar. */
         .orcha-unit-foto {
             position: relative;
-            aspect-ratio: 16 / 10;
+            aspect-ratio: 16 / 9;
+            max-height: 200px;
             background: #eef2f6;
         }
 
@@ -319,12 +375,26 @@ Armada Orcha || lemon
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: .35rem;
+            gap: .45rem;
             color: #94a3b8;
-            font-size: .8rem;
+            font-size: .76rem;
         }
 
-        .orcha-unit-kosong > i { font-size: 1.8rem; line-height: 1; }
+        /* Kotak berukuran tetap yang memusatkan sendiri ikonnya. Ikon telanjang
+           tingginya ditentukan kotak baris — terukur 16px walau font-size-nya
+           1,8rem — sehingga ia menempel ke tulisan di bawahnya. */
+        .orcha-unit-kosong-rupa {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.6rem;
+            height: 2.6rem;
+            border-radius: .8rem;
+            background: #e2e8f0;
+            color: #94a3b8;
+        }
+
+        .orcha-unit-kosong-rupa > i { font-size: 1.15rem; line-height: 1; }
 
         .orcha-unit-status {
             position: absolute;
@@ -363,14 +433,22 @@ Armada Orcha || lemon
         }
 
         .orcha-unit-tarif {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: .75rem;
             padding: .7rem .85rem;
             border-radius: .8rem;
             background: linear-gradient(135deg, #f8fbfd, #eef6fb);
             border: 1px solid #e3ecf3;
+            /* Angka berjajar rapi hanya bila lebar tiap digitnya sama; tanpa ini
+               "Rp 1.000.000" dan "Rp 250.000" tidak pernah benar-benar lurus. */
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Keterangan di kiri, nominal di kanan — di baris utama maupun rinciannya,
+           sehingga semua angka jatuh di satu garis tegak. */
+        .orcha-tarif-utama {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: .5rem;
         }
 
         .orcha-unit-tarif .angka {
@@ -382,14 +460,44 @@ Armada Orcha || lemon
 
         .orcha-unit-tarif-lain {
             display: grid;
-            gap: .1rem;
+            gap: .15rem;
+            margin-top: .45rem;
+            padding-top: .45rem;
+            border-top: 1px solid #e3ecf3;
             font-size: .76rem;
-            text-align: right;
         }
 
+        .orcha-unit-tarif-lain > div {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: .5rem;
+        }
+
+        /* Label rincian dikembalikan ke huruf biasa. Sebagai kapital berspasi
+           semua — PER JAM, 12 JAM, SOPIR / HARI — empat baris berurutan terbaca
+           seperti teriakan dan justru lebih lambat dibaca; kapital disisakan
+           untuk satu label utama saja supaya penekanannya masih berarti. */
         .orcha-unit-tarif-lain .orcha-label-kecil {
-            display: inline;
-            margin-right: .35rem;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: .76rem;
+            font-weight: 500;
+        }
+
+        .orcha-unit-tarif-lain .nilai {
+            font-weight: 600;
+            color: #1d4d75;
+            white-space: nowrap;
+        }
+
+        .orcha-unit-tarif-lain .nilai.text-muted { font-weight: 500; }
+
+        /* Kaki kartu: dipisahkan garis supaya terbaca sebagai tempat tombol,
+           bukan sebagai baris keterangan berikutnya. */
+        .orcha-unit-kaki {
+            padding-top: .7rem;
+            border-top: 1px solid #eef2f6;
         }
 
         .orcha-unit-kondisi {
@@ -402,6 +510,16 @@ Armada Orcha || lemon
         .orcha-unit-kondisi.awas {
             background: #fdecee;
             border-color: #f6c9cd;
+        }
+
+        /* Garis putus-putus: bentuknya sama dengan blok kondisi supaya kartunya
+           tidak berlubang, tapi tetap terbaca sebagai "belum ada isinya" — bukan
+           sebagai catatan yang sudah pernah dibuat. */
+        .orcha-unit-kondisi.kosong {
+            background: transparent;
+            border-style: dashed;
+            border-color: #dbe4ec;
+            color: #94a3b8;
         }
 
         /* Cacat ringan dan berat dibedakan warnanya: lecet lama wajar pada

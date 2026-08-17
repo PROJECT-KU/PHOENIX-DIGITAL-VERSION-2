@@ -1487,3 +1487,66 @@ test('sakelar penayangan tetap berdampingan dengan tombolnya', function () {
     expect($tayang)->toBeGreaterThan(strpos($kanan, 'Foto Unit'))
         ->and($tayang)->toBeLessThan(strpos($kanan, 'Simpan Perubahan'));
 });
+
+/* ---------- TATA LETAK KARTU DAFTAR ARMADA ---------- */
+
+function fakeDaftarTarif(array $tarif, array $ubah = []): void
+{
+    $baris = barisArmadaOperasional([], 0)['data'][0];
+    $baris['tarif'] = $tarif;
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [array_merge($baris, $ubah)],
+            'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+}
+
+test('unit yang tarifnya sudah termasuk sopir tidak ditulis bergaris', function () {
+    fakeDaftarTarif(
+        ['jam' => null, '12jam' => null, 'hari' => 500000, 'luar_kota' => null, 'sopir_per_hari' => null],
+        ['termasuk_sopir' => true],
+    );
+
+    // "—" di baris lain berarti "belum diisi". Memakai tanda yang sama untuk
+    // "sudah termasuk" membuat admin mengira tarif sopirnya lupa dimasukkan,
+    // lalu menagihkannya lagi ke penyewa.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('Sudah termasuk');
+});
+
+test('tarif luar kota ikut terbaca di daftar armada', function () {
+    fakeDaftarTarif(['jam' => null, '12jam' => null, 'hari' => 500000,
+        'luar_kota' => 700000, 'sopir_per_hari' => null]);
+
+    // Tarifnya sudah tersimpan dan dipakai halaman publik, tetapi daftar admin
+    // tidak pernah menyebutnya — admin harus membuka formulir ubah untuk tahu.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('Luar kota / hari')
+        ->assertSee('Rp 700.000');
+});
+
+test('unit tanpa tarif luar kota tidak menambah barisnya', function () {
+    fakeDaftarTarif(['jam' => null, '12jam' => null, 'hari' => 500000,
+        'luar_kota' => null, 'sopir_per_hari' => null]);
+
+    // Baris "—" untuk sesuatu yang memang tidak berlaku hanya memanjangkan kartu.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertDontSee('Luar kota / hari');
+});
+
+test('kaki kartu dipaku ke dasar supaya tombol tiap unit sebaris', function () {
+    // Isi tiap kartu tidak sama panjang: unit tanpa catatan kondisi menyisakan
+    // 169px kosong di bawah tombolnya sementara unit yang ada catatannya hanya
+    // 60px — terukur di peramban — sehingga tombol ubah/hapus tiap kartu
+    // berbeda tingginya. Kolom lentur + my-auto pada blok tengah yang
+    // menghabiskan sisa ruang sebelum kaki kartu.
+    $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/armada/index.blade.php'));
+
+    expect($berkas)->toContain('card-body p-3 p-lg-4 d-flex flex-column')
+        ->and($berkas)->toContain('my-auto')
+        ->and($berkas)->toContain('orcha-unit-kaki');
+
+    // Urutannya yang menentukan: penyerap sisa ruang dulu, kaki kartu terakhir.
+    expect(strpos($berkas, 'orcha-unit-kaki d-flex'))->toBeGreaterThan(strpos($berkas, 'my-auto py-3'));
+});
