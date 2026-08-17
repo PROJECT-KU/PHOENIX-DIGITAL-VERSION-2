@@ -1,9 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\OrchaEksporController;
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
-use App\Http\Controllers\PushSubscriptionController;
 // Data Banners
+use App\Http\Controllers\PushSubscriptionController;
 use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
 use App\Livewire\Pages\Admin\Banners\BannersCreate;
 use App\Livewire\Pages\Admin\Banners\BannersEdit;
@@ -12,28 +13,28 @@ use App\Livewire\Pages\Admin\CashFlow\CashFlowDetail;
 use App\Livewire\Pages\Admin\CashFlow\CashFlowList;
 use App\Livewire\Pages\Admin\Customer\CustomerCreate;
 use App\Livewire\Pages\Admin\Customer\CustomerEdit;
-use App\Livewire\Pages\Admin\Customer\CustomerList;
 // Data Customer
+use App\Livewire\Pages\Admin\Customer\CustomerList;
 use App\Livewire\Pages\Admin\Dashboard;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunCreate;
-use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 // Data Data Akun
+use App\Livewire\Pages\Admin\DataAkun\DataAkunEdit;
 use App\Livewire\Pages\Admin\DataAkun\DataAkunList;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansCreate;
-use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 // Data Gajikaryawan
+use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansEdit;
 use App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansList;
 use App\Livewire\Pages\Admin\Karyawan\KaryawanCreate;
-use App\Livewire\Pages\Admin\Karyawan\KaryawanEdit;
 // Data Loan
+use App\Livewire\Pages\Admin\Karyawan\KaryawanEdit;
 use App\Livewire\Pages\Admin\Karyawan\KaryawanList;
 use App\Livewire\Pages\Admin\Loan\LoanCreate;
-use App\Livewire\Pages\Admin\Loan\LoanEdit;
 // Data Gaji Karyawan
+use App\Livewire\Pages\Admin\Loan\LoanEdit;
 use App\Livewire\Pages\Admin\Loan\LoanList;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanCreate;
-use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 // Data Lowongan Pekerjaan
+use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanEdit;
 use App\Livewire\Pages\Admin\LowonganPekerjaan\LowonganPekerjaanList;
 use App\Livewire\Pages\Admin\Message\CustomerMessageDetail;
 use App\Livewire\Pages\Admin\Message\CustomerMessageList;
@@ -43,12 +44,12 @@ use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList;
 use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
-use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 // Data Order
+use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
+use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanDetail;
 use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanList;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
-use App\Http\Controllers\Admin\OrchaEksporController;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 // Orcha Journey — data dari aplikasi tetangga lewat API
@@ -497,6 +498,7 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/penyewaan/{penyewaan}/kwitansi', [OrchaEksporController::class, 'kwitansiSewa'])->name('admin.orcha.penyewaan.kwitansi');
     Route::get('/admin/orcha/pembayaran', OrchaPembayaranList::class)->name('admin.orcha.pembayaran');
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
+    Route::get('/admin/orcha/pembatalan/{id}', OrchaPembatalanDetail::class)->name('admin.orcha.pembatalan.detail');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
     Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');

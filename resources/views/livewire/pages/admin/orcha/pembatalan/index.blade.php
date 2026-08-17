@@ -117,11 +117,20 @@ Pembatalan Orcha || lemon
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                    <td class="text-end text-nowrap">
+                                        {{-- Detail dulu, baru tindak lanjut: keputusan pembatalan
+                                             menyangkut uang yang dikirim balik, dan itu tidak
+                                             pantas diambil dari satu baris tabel. --}}
+                                        <a href="{{ route('admin.orcha.pembatalan.detail', $baris['id']) }}"
+                                            wire:navigate class="btn btn-sm orcha-aksi orcha-aksi-lihat"
+                                            title="Lihat detail lengkap beserta perhitungannya">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+
+                                        <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-ubah"
+                                            title="Ubah status pengajuan"
                                             wire:click="buka({{ $baris['id'] }}, '{{ $baris['status'] }}', '{{ addslashes((string) $baris['catatan_admin']) }}')">
-                                            <i class="bi bi-pencil-square"></i>
-                                            <span>Tindak lanjuti</span>
+                                            <i class="bi bi-check2-square"></i>
                                         </button>
                                     </td>
                                 </tr>
@@ -165,14 +174,30 @@ Pembatalan Orcha || lemon
                             placeholder="Mis. potongan 50%, dana dikirim 12 Agustus."></textarea>
                         <div class="form-text">Catatan ini tersimpan di Orcha dan terlihat di admin Orcha.</div>
                     </div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn orcha-bahaya" wire:click="tutup">
-                            <i class="bi bi-x-lg"></i> Batal
-                        </button>
-                        <button type="button" class="btn btn-primary rounded-3" wire:click="simpan"
-                            wire:loading.attr="disabled">
-                            Simpan
-                        </button>
+                    {{-- Disebutkan sebelum tombolnya ditekan: menyetujui di sini ikut
+                         membatalkan pesanannya, dan itu bukan akibat yang pantas
+                         ditemukan sesudahnya. --}}
+                    <div class="alert alert-info border-0 rounded-3 mx-3 mb-0" style="font-size:.8rem">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Disetujui</strong> dan <strong>Dana dikirim</strong> ikut menandai
+                        pesanannya batal. Untuk melihat perhitungan pengembaliannya lebih dulu,
+                        buka detailnya.
+                    </div>
+
+                    <div class="modal-footer border-0 d-flex justify-content-between gap-2">
+                        <a href="{{ route('admin.orcha.pembatalan.detail', $sedangDiubah) }}" wire:navigate
+                            class="orcha-btn orcha-btn-lembut">
+                            <i class="bi bi-eye"></i> Lihat Detail
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutup">
+                                Batal
+                            </button>
+                            <button type="button" class="orcha-btn orcha-btn-utama" wire:click="simpan"
+                                wire:loading.attr="disabled">
+                                <i class="bi bi-save"></i> Simpan
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
