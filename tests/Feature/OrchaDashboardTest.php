@@ -1279,8 +1279,12 @@ test('potongan yang sudah ditetapkan yang dipakai, bukan usulannya lagi', functi
     Livewire::actingAs(adminOrcha())
         ->test(OrchaPembatalanDetail::class, ['id' => 6])
         ->assertSet('potongan', '300.000')
-        // Tidak ditandai belum tersimpan, karena memang sudah
-        ->assertDontSee('belum tersimpan')
+        // Tidak ditandai belum tersimpan, karena memang sudah.
+        //
+        // Diperiksa lewat atribut hidden, bukan ketiadaan teksnya: lencananya
+        // selalu ada di HTML supaya skrip di halaman bisa menyalakannya sambil
+        // admin mengetik, tanpa menunggu jawaban server.
+        ->assertSee('data-lencana-belum hidden', false)
         ->assertSee('Potongan ditetapkan');
 });
 

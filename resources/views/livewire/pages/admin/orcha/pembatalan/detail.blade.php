@@ -363,8 +363,10 @@ Detail Pembatalan || lemon
                                 style="height:auto" data-kotak-kembali>
                                 <div class="orcha-label-kecil orcha-ikon-teks">
                                     <i class="bi bi-arrow-return-left"></i> Dikembalikan ke pelanggan
-                                    <span class="orcha-lencana-catat ms-1" data-lencana-belum
-                                        @unless ($this->belumTersimpan()) hidden @endunless>belum tersimpan</span>
+                                    {{-- Selalu ada di HTML, disembunyikan bila tidak perlu:
+                                         skrip di halaman menyalakannya sambil admin mengetik,
+                                         tanpa menunggu jawaban server. --}}
+                                    <span class="orcha-lencana-catat ms-1" data-lencana-belum {{ $this->belumTersimpan() ? '' : 'hidden' }}>belum tersimpan</span>
                                 </div>
                                 <div class="angka" data-angka-kembali>
                                     Rp {{ number_format($this->kembaliSekarang(), 0, ',', '.') }}
