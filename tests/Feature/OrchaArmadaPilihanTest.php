@@ -1090,3 +1090,36 @@ test('unit yang seluruh biayanya ditanggung penyewa tidak dilencanai', function 
         ->assertDontSee('All-in')
         ->assertDontSee('bi-fuel-pump');
 });
+
+test('peta tipe dikirim utuh, bukan hanya untuk unit yang sedang dipilih', function () {
+    fakeArmada();
+
+    // Livewire tidak menjalankan ulang <script> inline saat me-render ulang, jadi
+    // nilai yang hanya berisi pilihan saat ini membeku pada keadaan pemuatan
+    // pertama — kosong. Gejalanya: daftar tipe kosong sesudah memilih merek dan
+    // unit, lalu tiba-tiba terisi begitu ada tipe ditambahkan.
+    //
+    // Peta utuh membuat pencariannya bisa dilakukan di peramban saat diklik.
+    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class);
+
+    // Belum memilih apa pun: pilihan saat ini kosong, TAPI petanya sudah lengkap.
+    expect($uji->instance()->varianPilihan())->toBe([])
+        ->and($uji->instance()->varianSemua())->toHaveKey('Toyota')
+        ->and($uji->instance()->varianSemua()['Toyota']['Avanza'])->toBe(['E', 'G', 'Veloz']);
+
+    expect($uji->viewData('varianSemua')['Toyota']['HiAce Commuter'])->toBe(['Kursi Kulit', 'Standar']);
+});
+
+test('penyegaran katalog mengirim peta tipe utuh', function () {
+    fakeArmada();
+
+    // Kalau yang dikirim hanya potongan pilihan saat ini, peramban kehilangan
+    // tipe untuk unit lain begitu ada satu tipe ditambahkan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->call('tambahKatalog', 'Veloz Q', 'varian')
+        ->assertDispatched('orcha-katalog-segar', function ($nama, $parameter) {
+            return isset($parameter['varian']['Toyota']['HiAce Commuter']);
+        });
+});

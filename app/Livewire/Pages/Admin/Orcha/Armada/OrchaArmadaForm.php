@@ -307,13 +307,39 @@ class OrchaArmadaForm extends Component
     }
 
     /**
-     * Tipe/varian yang tersedia untuk merek + model yang sedang dipilih.
+     * SELURUH peta tipe: merek => model => daftar tipe.
+     *
+     * Dikirim utuh ke peramban, bukan hanya tipe untuk unit yang sedang dipilih.
+     *
+     * Alasannya: Livewire TIDAK menjalankan ulang <script> inline saat me-render
+     * ulang komponennya. Nilai yang hanya berisi pilihan saat ini akan membeku
+     * pada keadaan pemuatan pertama — yaitu kosong, karena belum ada merek yang
+     * dipilih. Gejalanya tepat seperti yang dilaporkan: daftar tipe kosong
+     * setelah memilih merek dan unit, lalu tiba-tiba terisi begitu ada tipe
+     * ditambahkan, karena penambahan itu memancarkan peristiwa yang menyegarkan
+     * datanya.
+     *
+     * Dengan peta utuh, pencariannya dilakukan saat tombolnya diklik — sama
+     * seperti daftar model yang memang sudah bekerja benar sejak awal.
+     *
+     * @return array<string, array<string, list<string>>>
+     */
+    public function varianSemua(): array
+    {
+        return $this->rujukan('varian_per_model');
+    }
+
+    /**
+     * Tipe untuk merek + model yang sedang dipilih.
+     *
+     * Dipakai sisi server: menentukan keadaan nonaktif tombolnya dan diuji
+     * tersendiri. Peramban memakai varianSemua() — lihat keterangan di atas.
      *
      * @return list<string>
      */
     public function varianPilihan(): array
     {
-        return $this->rujukan('varian_per_model')[trim($this->merek)][trim($this->nama)] ?? [];
+        return $this->varianSemua()[trim($this->merek)][trim($this->nama)] ?? [];
     }
 
     public function jenisDisarankan(): ?string
@@ -606,7 +632,7 @@ class OrchaArmadaForm extends Component
         $this->dispatch('orcha-katalog-segar',
             katalog: $this->katalog(),
             kustom: $this->katalogKustom(),
-            varian: $this->varianPilihan());
+            varian: $this->varianSemua());
     }
 
     /**
@@ -798,6 +824,7 @@ class OrchaArmadaForm extends Component
             'kursiDisarankan' => $this->kursiDisarankan(),
             'ccDisarankan' => $this->ccDisarankan(),
             'varianPilihan' => $this->varianPilihan(),
+            'varianSemua' => $this->varianSemua(),
             'kursiTotal' => $this->kursiTotal(),
             'posOperasional' => $this->posOperasional(),
             'totalPos' => $this->totalPos(),

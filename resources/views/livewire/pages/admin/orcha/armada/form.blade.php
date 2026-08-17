@@ -837,7 +837,12 @@
 <script>
     window.__orchaKatalog = @json($katalog);
     window.__orchaKustom = @json($katalogKustom);
-    window.__orchaVarian = @json($varianPilihan);
+    {{-- Peta tipe dikirim UTUH, bukan hanya untuk unit yang sedang dipilih.
+
+         Livewire tidak menjalankan ulang <script> inline saat me-render ulang,
+         jadi nilai yang berisi pilihan saat ini akan membeku pada keadaan
+         pemuatan pertama — kosong. Pencariannya dilakukan saat diklik. --}}
+    window.__orchaVarian = @json($varianSemua);
 
     if (!window.__orchaPickerTerpasang) {
         window.__orchaPickerTerpasang = true;
@@ -917,7 +922,7 @@
                 const daftarEl = document.getElementById('orchaPickDaftar');
                 if (!daftarEl) return;
                 opsi.daftar = opsi.untuk === 'varian'
-                    ? (window.__orchaVarian || [])
+                    ? (((window.__orchaVarian || {})[opsi.merek] || {})[opsi.nama] || [])
                     : (opsi.untuk === 'unit'
                         ? ((window.__orchaKatalog || {})[opsi.merek] || [])
                         : Object.keys(window.__orchaKatalog || {}));
@@ -1025,7 +1030,7 @@
                 tombol, properti: 'varian', ikon: 'bi-tag', untuk: 'varian',
                 judul: 'Pilih Tipe',
                 petunjuk: 'Ketik untuk mencari tipe…',
-                daftar: window.__orchaVarian || [],
+                daftar: ((window.__orchaVarian || {})[merek] || {})[nama] || [],
                 kosong: 'Belum ada daftar tipe untuk unit ini. Pakai "Tulis sendiri" di bawah.',
                 judulManual: 'Tambah Tipe', contohManual: 'mis. GR Sport',
             });
