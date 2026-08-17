@@ -129,6 +129,14 @@
                 untukIsian = idIsian;
                 if (! kotak()) return;
 
+                // Dipindahkan ke <body> karena alasan yang sama dengan
+                // pratinjau bukti: will-change:opacity pada #page-content
+                // mengurung position:fixed ke kotak konten dan menenggelamkan
+                // z-index-nya di bawah sidebar.
+                if (kotak().parentElement !== document.body) {
+                    document.body.appendChild(kotak());
+                }
+
                 kotak().hidden = false;
                 pesan().textContent = '';
 

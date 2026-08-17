@@ -95,6 +95,26 @@
         if (! window.orchaPratinjauSiap) {
             window.orchaPratinjauSiap = true;
 
+            /*
+             * Dipindahkan ke <body> sebelum ditampilkan.
+             *
+             * Layout lemon memasang will-change:opacity pada #page-content.
+             * Sifatnya tidak kelihatan tapi berakibat dua hal: elemen
+             * position:fixed di dalamnya diukur terhadap kotak konten — bukan
+             * terhadap layar — dan seluruh isinya masuk ke lapisan tersendiri,
+             * sehingga z-index setinggi apa pun tetap kalah oleh sidebar.
+             *
+             * Hasilnya pratinjau bukti tergambar hanya di area konten dan
+             * tertutup sidebar. Memindahkannya keluar dari #page-content
+             * mengembalikannya ke ukuran layar penuh, tanpa perlu mengutak-atik
+             * layout yang dipakai seluruh halaman lemon.
+             */
+            const keBody = (kotak) => {
+                if (kotak.parentElement !== document.body) {
+                    document.body.appendChild(kotak);
+                }
+            };
+
             document.addEventListener('click', function (e) {
                 const pemicu = e.target.closest('[data-bukti]');
                 const kotak = document.getElementById('orcha-pratinjau');
@@ -102,6 +122,7 @@
 
                 if (pemicu) {
                     e.preventDefault();
+                    keBody(kotak);
                     kotak.querySelector('img').src = pemicu.dataset.bukti;
                     kotak.querySelector('figcaption').textContent = pemicu.dataset.buktiKeterangan || '';
                     kotak.hidden = false;
