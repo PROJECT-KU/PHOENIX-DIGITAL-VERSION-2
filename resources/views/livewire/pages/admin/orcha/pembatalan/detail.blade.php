@@ -332,8 +332,16 @@ Detail Pembatalan || lemon
                         @if ($p)
                             <div class="orcha-label-kecil mb-1">Potongan yang ditetapkan</div>
                             <div class="orcha-rupiah">
+                                {{-- data-dibayar dan data-tersimpan dipakai skrip di bawah untuk
+                                     menghitung ulang angka pengembalian sambil admin mengetik.
+                                     wire:model tetap .blur: mengirim tiap ketikan ke server akan
+                                     menulis ulang isian di tengah pengetikan dan memindahkan
+                                     kursor. --}}
                                 <input type="text" inputmode="numeric" class="form-control orcha-uang"
-                                    wire:model.blur="potongan">
+                                    wire:model.blur="potongan"
+                                    data-potongan
+                                    data-dibayar="{{ (int) $p['dibayar'] }}"
+                                    data-tersimpan="{{ (int) ($pembatalan['potongan_ditetapkan'] ?? $p['usulan']) }}">
                             </div>
 
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
@@ -352,14 +360,15 @@ Detail Pembatalan || lemon
                                  sama; di sini ia justru memuaikan kotaknya sampai ke dasar
                                  kolom dan meninggalkan bidang kosong. --}}
                             <div class="orcha-ringkas {{ $this->kembaliSekarang() > 0 ? 'lunas' : 'sisa' }} mt-2"
-                                style="height:auto">
+                                style="height:auto" data-kotak-kembali>
                                 <div class="orcha-label-kecil orcha-ikon-teks">
                                     <i class="bi bi-arrow-return-left"></i> Dikembalikan ke pelanggan
-                                    @if ($this->belumTersimpan())
-                                        <span class="orcha-lencana-catat ms-1">belum tersimpan</span>
-                                    @endif
+                                    <span class="orcha-lencana-catat ms-1" data-lencana-belum
+                                        @unless ($this->belumTersimpan()) hidden @endunless>belum tersimpan</span>
                                 </div>
-                                <div class="angka">Rp {{ number_format($this->kembaliSekarang(), 0, ',', '.') }}</div>
+                                <div class="angka" data-angka-kembali>
+                                    Rp {{ number_format($this->kembaliSekarang(), 0, ',', '.') }}
+                                </div>
                             </div>
 
                             @if ($this->belumTersimpan())
@@ -433,6 +442,53 @@ Detail Pembatalan || lemon
                 </div>
         @endif
     </div>
+
+    {{-- Angka pengembalian mengikuti ketikan, bukan menunggu isian ditinggalkan.
+
+         Hitungannya sederhana — dibayar dikurangi potongan — jadi dikerjakan di
+         peramban saja. Mengirim tiap ketikan ke server berarti Livewire menulis
+         ulang isiannya di tengah pengetikan; kursor melompat ke ujung dan angka
+         yang sedang diketik berantakan.
+
+         Server tetap yang berwenang: saat isian ditinggalkan, wire:model.blur
+         mengirimkan nilainya dan seluruh kotak ini digambar ulang dari sana.
+         Yang di sini hanya supaya admin melihat akibat ketikannya seketika.
+
+         Ditulis inline sesuai aturan repo: public/build tidak ikut ter-deploy. --}}
+    <script>
+        if (! window.orchaHitungKembaliSiap) {
+            window.orchaHitungKembaliSiap = true;
+
+            const angka = (teks) => parseInt(String(teks || '').replace(/\D/g, ''), 10) || 0;
+
+            const titik = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+            document.addEventListener('input', function (e) {
+                const isian = e.target.closest('[data-potongan]');
+                if (! isian) return;
+
+                const dibayar = parseInt(isian.dataset.dibayar, 10) || 0;
+                const tersimpan = parseInt(isian.dataset.tersimpan, 10) || 0;
+                const potongan = Math.min(angka(isian.value), dibayar);
+                const kembali = Math.max(0, dibayar - potongan);
+
+                const kotak = document.querySelector('[data-kotak-kembali]');
+                const teks = document.querySelector('[data-angka-kembali]');
+                const lencana = document.querySelector('[data-lencana-belum]');
+
+                if (teks) teks.textContent = 'Rp ' + titik(kembali);
+
+                // Warnanya ikut berubah: hijau bila masih ada yang dikembalikan,
+                // merah bila habis — sama seperti yang digambar server.
+                if (kotak) {
+                    kotak.classList.toggle('lunas', kembali > 0);
+                    kotak.classList.toggle('sisa', kembali <= 0);
+                }
+
+                if (lencana) lencana.hidden = angka(isian.value) === tersimpan;
+            });
+        }
+    </script>
 
     @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
     @include('livewire.pages.admin.orcha.partials.salin-wa')
