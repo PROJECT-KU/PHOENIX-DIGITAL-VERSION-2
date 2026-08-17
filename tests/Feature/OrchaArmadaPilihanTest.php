@@ -1332,3 +1332,72 @@ test('menyunting unit memuat tarif luar kota tersimpannya', function () {
         ->assertSet('tarifLuarKota', 1800000)
         ->assertSet('tarifLuarKotaTeks', '1.800.000');
 });
+
+/* -------- PRATINJAU & KERAPIAN HALAMAN -------- */
+
+test('halaman tambah menampilkan kerangka pratinjau, bukan kolom kosong', function () {
+    fakeArmada();
+
+    // Kolom kanan di halaman tambah terukur nyaris kosong — 1209px — karena
+    // Ringkasan dan Kondisi Unit hanya tampil saat menyunting.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Pratinjau di Website')
+        ->assertSee('pratinjaunya terisi sendiri');
+});
+
+test('pratinjau terisi dari isian yang sedang diketik', function () {
+    fakeArmada();
+
+    // Dibaca dari keadaan formulir, bukan unit tersimpan — salah tulis ketahuan
+    // sebelum menyimpan, bukan setelah tayang.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->set('varian', 'Standar')
+        ->set('tahun', 2024)
+        ->set('tarifHariTeks', '1.200.000')
+        ->assertSee('Toyota HiAce Commuter')
+        ->assertSee('Standar')
+        ->assertSee('2024')
+        ->assertSee('Rp 1.200.000')
+        // Diperiksa lewat teksnya, bukan nama kelasnya: kelas itu selalu ada di
+        // blok <style> halaman entah kerangkanya terpakai atau tidak.
+        ->assertDontSee('pratinjaunya terisi sendiri');
+});
+
+test('pratinjau menyebut penumpang dan lencana sopir sesuai isian', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('lepasKunci', false)
+        // 15 kursi menurut katalog, satu untuk sopir.
+        ->assertSee('14 penumpang')
+        ->assertSee('(15 kursi)')
+        ->assertSee('Selalu dengan sopir');
+});
+
+test('pratinjau memberi tahu bila unit belum ditawarkan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->assertDontSee('kartu ini tidak muncul di website')
+        ->set('tersedia', false)
+        ->assertSee('kartu ini tidak muncul di website');
+});
+
+test('halaman tambah dan ubah memakai empat kartu bertema yang sama', function () {
+    fakeArmada();
+
+    foreach ([[], ['kendaraan' => 5]] as $parameter) {
+        Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, $parameter)
+            ->assertSee('Identitas Unit')
+            ->assertSee('Daya Angkut')
+            ->assertSee('Tarif')
+            ->assertSee('Biaya perjalanan')
+            ->assertSee('Pratinjau di Website');
+    }
+});

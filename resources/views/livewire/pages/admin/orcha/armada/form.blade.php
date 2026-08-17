@@ -511,6 +511,140 @@
                          SEBELUM menyimpan: unitnya sedang di mana, sudah berapa kali
                          dipakai, dan apakah keadaannya cocok dengan status yang
                          sedang dipilih. --}}
+                    {{-- Pratinjau kartu di website.
+
+                         Kolom ini nyaris kosong di halaman tambah — terukur 1209px — sementara
+                         kolom kiri memanjang. Yang pantas mengisinya bukan hiasan, melainkan
+                         akibat dari isian yang sedang diketik: admin melihat apa yang akan
+                         dibaca pelanggan sebelum menyimpan, jadi salah tulis ketahuan di sini,
+                         bukan setelah tayang.
+
+                         Dibaca dari keadaan formulir, bukan unit tersimpan, jadi ikut berubah
+                         saat diketik. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 orcha-judul-ikon">
+                                <i class="bi bi-eye text-primary"></i> Pratinjau di Website
+                            </h6>
+
+                            @if (trim($merek) === '' && trim($nama) === '')
+                                {{-- Kerangka kartunya, bukan satu baris teks.
+
+                                     Bentuknya sudah terlihat sejak isian pertama, jadi admin
+                                     tahu apa yang sedang ia isi menuju ke mana — dan kolom ini
+                                     tidak menganga kosong di halaman tambah. --}}
+                                <div class="orcha-pratinjau orcha-pratinjau-rangka">
+                                    <div class="kepala">
+                                        <span class="lencana">Jenis</span>
+                                        <span class="lencana">Transmisi</span>
+                                    </div>
+                                    <div class="badan">
+                                        <div class="rangka-garis lebar"></div>
+                                        <div class="rangka-garis sedang"></div>
+                                        <div class="rangka-garis"></div>
+                                        <div class="rangka-garis"></div>
+                                        <div class="rangka-garis sedang"></div>
+                                    </div>
+                                </div>
+
+                                <div class="orcha-pratinjau-kosong">
+                                    <i class="bi bi-card-image"></i>
+                                    <span>Pilih merek dan nama unit — pratinjaunya terisi sendiri.</span>
+                                </div>
+                            @else
+                                <div class="orcha-pratinjau">
+                                    <div class="kepala">
+                                        <span class="lencana">{{ $pilihanJenis[$jenis] ?? 'Unit' }}</span>
+                                        @if ($transmisi)
+                                            <span class="lencana">{{ implode(' & ', $transmisi) }}</span>
+                                        @endif
+                                    </div>
+
+                                    <div class="badan">
+                                        <div class="nama">
+                                            {{ trim($merek.' '.$nama) }}
+                                            @if (trim($varian) !== '')
+                                                <span class="varian">{{ $varian }}</span>
+                                            @endif
+                                        </div>
+
+                                        @if ($tahun || $cc)
+                                            {{-- Ditulis begini, bukan "cc@endif": Blade tidak
+                                                 mengenali direktif yang didahului huruf, jadi
+                                                 @endif di sana terbaca sebagai teks biasa dan
+                                                 blok @if-nya menggantung sampai akhir berkas. --}}
+                                            <div class="rinci">
+                                                @if ($tahun)
+                                                    {{ $tahun }}
+                                                @endif
+                                                @if ($tahun && $cc) · @endif
+                                                @if ($cc)
+                                                    {{ number_format((int) $cc, 0, ',', '.') }} cc
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        <div class="baris">
+                                            <i class="bi bi-people"></i>
+                                            <span>
+                                                {{ $kapasitas }} penumpang
+                                                @unless ($lepasKunci)
+                                                    <span class="samar">({{ $kursiTotal }} kursi)</span>
+                                                @endunless
+                                            </span>
+                                        </div>
+
+                                        @foreach ([['Per hari', $tarifHari], ['Luar kota', $tarifLuarKota]] as [$labelTarif, $nilaiTarif])
+                                            @if ($nilaiTarif)
+                                                <div class="tarif">
+                                                    <span>{{ $labelTarif }}</span>
+                                                    <strong>Rp {{ number_format((int) $nilaiTarif, 0, ',', '.') }}</strong>
+                                                </div>
+                                            @endif
+                                        @endforeach
+
+                                        <div class="baris samar">
+                                            <i class="bi bi-person-badge"></i>
+                                            <span>
+                                                {{ $termasukSopir
+                                                    ? 'Harga sudah termasuk sopir'
+                                                    : ($tarifSopir
+                                                        ? 'Sopir +Rp '.number_format((int) $tarifSopir, 0, ',', '.').'/hari'
+                                                        : 'Tanpa sopir') }}
+                                            </span>
+                                        </div>
+
+                                        @php
+                                            $posIkut = collect($posOperasional)
+                                                ->filter(fn ($l, $k) => $termasukPos[$k] ?? false)
+                                                ->values();
+                                        @endphp
+                                        <div class="baris samar">
+                                            <i class="bi bi-fuel-pump"></i>
+                                            <span>
+                                                {{ $posIkut->isEmpty()
+                                                    ? 'BBM, tol, dan parkir ditanggung penyewa'
+                                                    : $posIkut->join(', ').' termasuk'
+                                                        .($totalPos > 0 ? ' (+Rp '.number_format($totalPos, 0, ',', '.').'/hari)' : '') }}
+                                            </span>
+                                        </div>
+
+                                        @unless ($lepasKunci)
+                                            <span class="tanda-sopir">Selalu dengan sopir</span>
+                                        @endunless
+                                    </div>
+                                </div>
+
+                                @unless ($tersedia)
+                                    <div class="orcha-pratinjau-sembunyi">
+                                        <i class="bi bi-eye-slash"></i>
+                                        <span>Belum ditawarkan — kartu ini tidak muncul di website.</span>
+                                    </div>
+                                @endunless
+                            @endif
+                        </div>
+                    </div>
+
                     @if ($ubah)
                         <div class="card border-0 shadow-sm rounded-4 mb-4">
                             <div class="card-body p-4">
@@ -887,6 +1021,21 @@
             background: #e8edf2;
             color: #64748b;
             font-size: 1.05rem;
+            line-height: 1;
+        }
+
+        /* Ikonnya sendiri dijadikan wadah flex.
+
+           Kotaknya sudah ditengahkan, tapi yang ditengahkan adalah KOTAK BARIS
+           ikonnya — bukan glifnya. Terukur dari tintanya di dalam cakram 38px:
+           meleset sampai 4,9px ke bawah dan 2,8px ke samping. Pola yang sama
+           sudah dipakai .stat-icon-wrapper dan centang transmisi. */
+        .orcha-sakelar-kartu .rupa i {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            vertical-align: middle;
         }
 
         .orcha-sakelar-kartu .rupa > i { line-height: 1; }
@@ -1273,6 +1422,168 @@
         align-items: center;
         justify-content: center;
         line-height: 1;
+    }
+
+    /* Pratinjau kartu unit seperti yang dilihat pelanggan. Bentuknya menirukan
+       kartu di website secukupnya — cukup untuk mengenali salah tulis, tanpa
+       menjadi salinan yang harus ikut dirawat tiap kali kartu aslinya berubah. */
+    .orcha-pratinjau {
+        border: 1px solid #e3e8ef;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .orcha-pratinjau .kepala {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .3rem;
+        padding: .6rem .8rem;
+        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+    }
+
+    .orcha-pratinjau .lencana {
+        padding: .12rem .5rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .92);
+        color: #0f2d4a;
+        font-size: .66rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+    }
+
+    .orcha-pratinjau .badan {
+        padding: .8rem;
+    }
+
+    .orcha-pratinjau .nama {
+        font-size: .95rem;
+        font-weight: 800;
+        color: #0f2d4a;
+        line-height: 1.25;
+    }
+
+    .orcha-pratinjau .varian {
+        color: #1d6fa5;
+    }
+
+    .orcha-pratinjau .rinci {
+        font-size: .74rem;
+        color: #94a3b8;
+        margin-bottom: .5rem;
+    }
+
+    .orcha-pratinjau .baris {
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .76rem;
+        color: #2b3a4a;
+        margin-top: .3rem;
+    }
+
+    .orcha-pratinjau .baris i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        color: #1d6fa5;
+        flex: 0 0 auto;
+    }
+
+    .orcha-pratinjau .samar {
+        color: #94a3b8;
+    }
+
+    .orcha-pratinjau .tarif {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: .5rem;
+        margin-top: .35rem;
+        padding-top: .35rem;
+        border-top: 1px dashed #e8edf3;
+        font-size: .76rem;
+        color: #64748b;
+    }
+
+    .orcha-pratinjau .tarif strong {
+        color: #0f2d4a;
+        font-size: .86rem;
+    }
+
+    .orcha-pratinjau .tanda-sopir {
+        display: inline-block;
+        margin-top: .5rem;
+        padding: .12rem .45rem;
+        border-radius: 7px;
+        background: #f6edd0;
+        color: #8a6d1f;
+        font-size: .68rem;
+        font-weight: 700;
+    }
+
+    /* Keadaan kosong: kartunya tetap bertubuh, isinya digantikan garis abu.
+       Kolom kanan jadi tidak menganga di halaman tambah, dan bentuk yang akan
+       muncul sudah terbaca sejak awal. */
+    .orcha-pratinjau-rangka .kepala {
+        background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+    }
+
+    .orcha-pratinjau-rangka .lencana {
+        background: rgba(255, 255, 255, .75);
+        color: #64748b;
+    }
+
+    .rangka-garis {
+        height: .7rem;
+        width: 45%;
+        margin-bottom: .55rem;
+        border-radius: 999px;
+        background: #eef2f7;
+    }
+
+    .rangka-garis.lebar {
+        width: 80%;
+        height: .95rem;
+    }
+
+    .rangka-garis.sedang {
+        width: 62%;
+    }
+
+    .orcha-pratinjau-kosong,
+    .orcha-pratinjau-sembunyi {
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .7rem .8rem;
+        border-radius: 12px;
+        font-size: .76rem;
+        line-height: 1.35;
+    }
+
+    .orcha-pratinjau-kosong {
+        margin-top: .6rem;
+        border: 1px dashed #d7dee8;
+        background: #fbfdff;
+        color: #94a3b8;
+    }
+
+    .orcha-pratinjau-sembunyi {
+        margin-top: .6rem;
+        background: #f6edd0;
+        color: #8a6d1f;
+    }
+
+    .orcha-pratinjau-kosong i,
+    .orcha-pratinjau-sembunyi i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        flex: 0 0 auto;
     }
 
     .orcha-pos-biaya {
