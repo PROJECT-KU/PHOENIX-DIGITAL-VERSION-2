@@ -210,3 +210,110 @@ test('katalog kosong tidak mengunci admin, unit tetap bisa ditulis manual', func
         && ($p->data()['merek'] ?? null) === 'Toyota'
         && ($p->data()['nama'] ?? null) === 'Avanza');
 });
+
+/* --------- TAMBAHAN MANUAL MASUK DAFTAR & BISA DIHAPUS --------- */
+
+test('merek yang ditulis manual didaftarkan ke katalog Orcha', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', 'Esemka')
+        ->assertSet('merek', 'Esemka');
+
+    // Tidak cukup memakainya untuk unit ini saja — harus ikut terdaftar supaya
+    // unit sejenis berikutnya tinggal memilih.
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/katalog-kendaraan')
+        && ($p->data()['merek'] ?? null) === 'Esemka');
+});
+
+test('nama unit manual didaftarkan di bawah merek yang sedang dipilih', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->call('tambahKatalog', 'Kijang Krista', true)
+        ->assertSet('nama', 'Kijang Krista');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/katalog-kendaraan')
+        && ($p->data()['merek'] ?? null) === 'Toyota'
+        && ($p->data()['model'] ?? null) === 'Kijang Krista');
+});
+
+test('nama unit tidak didaftarkan bila mereknya belum dipilih', function () {
+    fakeArmada();
+
+    // Entri model harus menempel pada mereknya; mengirim model tanpa merek hanya
+    // menghasilkan baris yatim di katalog.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', 'Bima 1.3', true)
+        ->assertSet('nama', 'Bima 1.3');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
+});
+
+test('menambah merek mengosongkan nama unit sebelumnya', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->call('tambahKatalog', 'Esemka')
+        ->assertSet('merek', 'Esemka')
+        ->assertSet('nama', '');
+});
+
+test('entri katalog bisa dihapus dari picker', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('hapusKatalog', 12);
+
+    Http::assertSent(fn ($p) => $p->method() === 'DELETE'
+        && str_contains($p->url(), '/katalog-kendaraan/12'));
+});
+
+test('daftar terbaru dikirim ke peramban sesudah menambah atau menghapus', function () {
+    fakeArmada();
+
+    // Rujukan disimpan 10 menit. Tanpa dibuang dan dikirim ulang, merek yang
+    // baru didaftarkan tidak muncul sampai simpanannya kedaluwarsa — terlihat
+    // seperti penambahannya gagal padahal tersimpan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', 'Esemka')
+        ->assertDispatched('orcha-katalog-segar');
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('hapusKatalog', 3)
+        ->assertDispatched('orcha-katalog-segar');
+});
+
+test('Orcha tak terjangkau saat mendaftarkan tidak menghalangi pemakaian nilainya', function () {
+    Http::fake(['*' => Http::response(['pesan' => 'gagal'], 500)]);
+
+    // Menghalangi admin menyimpan unit karena katalognya gagal diperbarui adalah
+    // menukar masalah kecil dengan masalah besar.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', 'Esemka')
+        ->assertSet('merek', 'Esemka')
+        ->assertDispatched('toast-error');
+});
+
+test('spasi berlebih pada tambahan manual dirapikan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', '  Great   Wall  ')
+        ->assertSet('merek', 'Great Wall');
+});
+
+test('tambahan manual yang kosong diabaikan, tidak dikirim ke Orcha', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->call('tambahKatalog', '   ')
+        ->assertSet('merek', '');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
+});

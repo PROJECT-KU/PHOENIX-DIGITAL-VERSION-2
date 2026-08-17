@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\Armada;
 
+use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -154,6 +155,89 @@ class OrchaArmadaForm extends Component
     }
 
     /**
+     * @return list<array{id: int, merek: string, model: string|null}>
+     */
+    public function katalogKustom(): array
+    {
+        return $this->rujukan('katalog_kustom');
+    }
+
+    /**
+     * Mendaftarkan merek atau nama unit yang ditulis admin sendiri.
+     *
+     * Sebelum ini nilai manual hanya bertahan bila unitnya ikut tersimpan, jadi
+     * merek yang sama harus ditulis ulang untuk setiap unit sejenis — dan salah
+     * tulis tidak bisa dibetulkan.
+     *
+     * Gagal mendaftar TIDAK membatalkan pemakaiannya untuk unit ini: nilainya
+     * tetap dipakai, hanya belum masuk daftar. Menghalangi admin menyimpan unit
+     * karena katalognya gagal diperbarui adalah menukar masalah kecil dengan
+     * masalah besar.
+     */
+    public function tambahKatalog(string $nilai, bool $untukUnit = false): void
+    {
+        $nilai = trim(preg_replace('/\s+/', ' ', $nilai));
+
+        if ($nilai === '') {
+            return;
+        }
+
+        if ($untukUnit) {
+            $this->nama = $nilai;
+        } else {
+            $this->merek = $nilai;
+            // Merek berganti, jadi nama unit sebelumnya tidak lagi berlaku.
+            $this->nama = '';
+        }
+
+        // Nama unit tanpa merek tidak bisa didaftarkan: entri modelnya harus
+        // menempel pada mereknya.
+        if ($untukUnit && trim($this->merek) === '') {
+            return;
+        }
+
+        $this->simpanKatalog($untukUnit
+            ? ['merek' => trim($this->merek), 'model' => $nilai]
+            : ['merek' => $nilai]);
+    }
+
+    public function hapusKatalog(int $id): void
+    {
+        try {
+            $this->orcha()->hapus("/katalog-kendaraan/{$id}");
+            $this->segarkanKatalog();
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    private function simpanKatalog(array $data): void
+    {
+        try {
+            $this->orcha()->kirim('/katalog-kendaraan', $data);
+            $this->segarkanKatalog();
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Membuang simpanan rujukan lalu mengirim daftar terbaru ke peramban.
+     *
+     * Rujukan disimpan 10 menit. Tanpa dibuang, merek yang baru didaftarkan tidak
+     * akan muncul di daftar pilihan sampai simpanannya kedaluwarsa — terlihat
+     * seperti penambahannya gagal padahal tersimpan.
+     */
+    private function segarkanKatalog(): void
+    {
+        cache()->forget('orcha.rujukan');
+
+        $this->dispatch('orcha-katalog-segar',
+            katalog: $this->katalog(),
+            kustom: $this->katalogKustom());
+    }
+
+    /**
      * Mengganti merek mengosongkan nama unit.
      *
      * Model melekat pada mereknya. Tanpa pengosongan ini, memilih Toyota lalu
@@ -301,6 +385,7 @@ class OrchaArmadaForm extends Component
             'daftarKondisi' => $this->rujukan('kondisi_pemeriksaan'),
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
             'katalog' => $this->katalog(),
+            'katalogKustom' => $this->katalogKustom(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }

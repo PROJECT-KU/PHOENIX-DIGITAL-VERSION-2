@@ -627,6 +627,7 @@
      berubah tidak akan pernah terbaca setelah render pertama. --}}
 <script>
     window.__orchaKatalog = @json($katalog);
+    window.__orchaKustom = @json($katalogKustom);
 
     if (!window.__orchaPickerTerpasang) {
         window.__orchaPickerTerpasang = true;
@@ -635,61 +636,110 @@
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
         }[m]));
 
-        // Popup dasar: kotak cari + daftar tersaring + "tulis sendiri".
-        // Dipakai dua kali (merek dan nama unit) supaya keduanya berperilaku
-        // sama persis — dua salinan yang mirip pasti berbeda suatu saat.
+        // Id entri kustom, dicari dengan kunci "merek" atau "merek|model".
+        // Hanya entri inilah yang boleh punya tombol hapus: katalog bawaan ikut
+        // versi kode, dan merek yang terbaca dari armada dipakai unit nyata.
+        const orchaIdKustom = (merek, model) => {
+            const cocok = (window.__orchaKustom || []).find((e) => e.merek === merek
+                && ((model == null && e.model == null) || e.model === model));
+            return cocok ? cocok.id : null;
+        };
+
+        const orchaBaris = (opsi) => opsi.daftar.length
+            ? opsi.daftar.map((n) => {
+                const id = opsi.untukUnit ? orchaIdKustom(opsi.merek, n) : orchaIdKustom(n, null);
+                return '<div class="orcha-pick-row">'
+                    + '<button type="button" class="orcha-pick-item" data-nilai="' + orchaEsc(n)
+                    + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
+                    + '<i class="bi ' + opsi.ikon + ' me-2" style="color:#1d6fa5;"><\/i>' + orchaEsc(n)
+                    + '<\/button>'
+                    + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
+                        + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
+                    + '<\/div>';
+            }).join('')
+            : '<div class="orcha-pick-empty">' + orchaEsc(opsi.kosong) + '<\/div>';
+
         window.__orchaPicker = function (opsi) {
             if (typeof Swal === 'undefined') return;
 
-            const tombol = opsi.tombol.closest('[wire\\:id]');
-            if (!tombol) return;
+            const wadah = opsi.tombol.closest('[wire\\:id]');
+            if (!wadah) return;
 
-            const cid = tombol.getAttribute('wire:id');
-            const setNilai = (nilai) => window.Livewire && window.Livewire.find(cid).set(opsi.properti, nilai);
+            const cid = wadah.getAttribute('wire:id');
+            const komponen = () => window.Livewire && window.Livewire.find(cid);
+            const setNilai = (nilai) => komponen() && komponen().set(opsi.properti, nilai);
 
-            const baris = opsi.daftar.length
-                ? opsi.daftar.map((n) => '<button type="button" class="orcha-pick-item" data-nilai="'
-                    + orchaEsc(n) + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
-                    + '<i class="bi ' + opsi.ikon + ' me-2" style="color:#1d6fa5;"></i>' + orchaEsc(n)
-                    + '<\/button>').join('')
-                : '<div class="orcha-pick-empty">' + orchaEsc(opsi.kosong) + '<\/div>';
+            // Dicatat supaya daftarnya bisa digambar ulang di tempat sesudah ada
+            // entri ditambah atau dihapus — tanpa menutup popupnya.
+            window.__orchaPickerAktif = opsi;
+
+            const pasangPendengar = () => {
+                const daftarEl = document.getElementById('orchaPickDaftar');
+                if (!daftarEl) return;
+
+                daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                    b.addEventListener('click', () => { setNilai(b.dataset.nilai); Swal.close(); });
+                });
+
+                daftarEl.querySelectorAll('.orcha-pick-del').forEach((b) => {
+                    b.addEventListener('click', (ev) => {
+                        // Jangan sampai menghapus berarti sekaligus memilih.
+                        ev.stopPropagation();
+                        b.disabled = true;
+                        komponen() && komponen().call('hapusKatalog', Number(b.dataset.id));
+                    });
+                });
+            };
+
+            const gambarUlang = () => {
+                const daftarEl = document.getElementById('orchaPickDaftar');
+                if (!daftarEl) return;
+                opsi.daftar = opsi.untukUnit
+                    ? ((window.__orchaKatalog || {})[opsi.merek] || [])
+                    : Object.keys(window.__orchaKatalog || {});
+                daftarEl.innerHTML = orchaBaris(opsi);
+                pasangPendengar();
+                const cari = document.getElementById('orchaPickCari');
+                if (cari) cari.dispatchEvent(new Event('input'));
+            };
+            window.__orchaGambarUlang = gambarUlang;
 
             Swal.fire({
                 title: opsi.judul,
                 html: '<input id="orchaPickCari" class="form-control mb-2" placeholder="' + orchaEsc(opsi.petunjuk) + '">'
-                    + '<div id="orchaPickDaftar" class="orcha-pick-list">' + baris + '<\/div>'
+                    + '<div id="orchaPickDaftar" class="orcha-pick-list">' + orchaBaris(opsi) + '<\/div>'
                     + '<div id="orchaPickKosong" class="orcha-pick-empty" style="display:none">Tidak ada yang cocok. Pakai "Tulis sendiri" di bawah.<\/div>'
                     + '<button type="button" id="orchaPickManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
-                    + '<i class="bi bi-pencil me-2" style="color:#64748b;"></i>Tulis sendiri…<\/button>',
+                    + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                 background: 'rgba(255, 255, 255, 0.92)',
                 backdrop: 'rgba(29, 111, 165, 0.15)',
                 customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                 buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                 width: 480, padding: '1.25rem',
+                willClose: () => { window.__orchaPickerAktif = null; window.__orchaGambarUlang = null; },
                 didOpen: () => {
                     const cari = document.getElementById('orchaPickCari');
-                    const daftar = document.getElementById('orchaPickDaftar');
+                    const daftarEl = document.getElementById('orchaPickDaftar');
                     const kosong = document.getElementById('orchaPickKosong');
 
                     if (cari) {
                         cari.addEventListener('input', () => {
                             const q = cari.value.toLowerCase().trim();
                             let terlihat = 0;
-                            daftar.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                            daftarEl.querySelectorAll('.orcha-pick-row').forEach((baris) => {
+                                const b = baris.querySelector('.orcha-pick-item');
                                 const cocok = b.dataset.cari.includes(q);
-                                b.style.display = cocok ? '' : 'none';
+                                baris.style.display = cocok ? '' : 'none';
                                 if (cocok) terlihat++;
                             });
-                            // Daftar yang kosong tanpa keterangan terbaca seperti
-                            // halaman rusak, bukan seperti "tidak ada yang cocok".
+                            // Daftar kosong tanpa keterangan terbaca seperti halaman
+                            // rusak, bukan seperti "tidak ada yang cocok".
                             kosong.style.display = terlihat === 0 && opsi.daftar.length ? '' : 'none';
                         });
                         setTimeout(() => cari.focus(), 100);
                     }
 
-                    daftar.querySelectorAll('.orcha-pick-item').forEach((b) => {
-                        b.addEventListener('click', () => { setNilai(b.dataset.nilai); Swal.close(); });
-                    });
+                    pasangPendengar();
 
                     const manual = document.getElementById('orchaPickManual');
                     if (manual) manual.addEventListener('click', () => {
@@ -697,7 +747,6 @@
                             title: opsi.judulManual,
                             input: 'text',
                             inputPlaceholder: opsi.contohManual,
-                            inputValue: opsi.nilaiSekarang || '',
                             background: 'rgba(255, 255, 255, 0.92)',
                             backdrop: 'rgba(29, 111, 165, 0.15)',
                             customClass: {
@@ -705,41 +754,54 @@
                                 confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
                             },
                             buttonsStyling: false, showCancelButton: true,
-                            confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+                            confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
                             inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
-                        }).then((h) => { if (h.isConfirmed && h.value) setNilai(h.value.trim()); });
+                        }).then((h) => {
+                            if (!h.isConfirmed || !h.value) return;
+                            // Sekali ditulis langsung terdaftar, jadi unit sejenis
+                            // berikutnya tinggal memilih.
+                            komponen() && komponen().call('tambahKatalog', h.value.trim(), !!opsi.untukUnit);
+                        });
                     });
                 },
             });
         };
 
+        // Daftar terbaru dari server: dipasang ke global, lalu popup yang sedang
+        // terbuka digambar ulang di tempat.
+        window.addEventListener('orcha-katalog-segar', function (e) {
+            const d = e.detail || {};
+            if (d.katalog) window.__orchaKatalog = d.katalog;
+            if (d.kustom) window.__orchaKustom = d.kustom;
+            if (window.__orchaGambarUlang) window.__orchaGambarUlang();
+        });
+
         window.orchaPilihMerek = function (tombol) {
             window.__orchaPicker({
-                tombol, properti: 'merek', ikon: 'bi-award',
+                tombol, properti: 'merek', ikon: 'bi-award', untukUnit: false,
                 judul: 'Pilih Merek', petunjuk: 'Ketik untuk mencari merek…',
                 daftar: Object.keys(window.__orchaKatalog || {}),
                 kosong: 'Katalog belum termuat. Pakai "Tulis sendiri" di bawah.',
-                judulManual: 'Tulis Merek', contohManual: 'mis. Hyundai',
-                nilaiSekarang: tombol.innerText.trim().startsWith('—') ? '' : tombol.innerText.trim(),
+                judulManual: 'Tambah Merek', contohManual: 'mis. Esemka',
             });
         };
 
         window.orchaPilihUnit = function (tombol) {
             // Daftar model dibaca dari merek yang sedang terpilih, bukan dari
             // seluruh katalog: "Ertiga" tidak boleh muncul saat mereknya Toyota.
-            const el = tombol.closest('[wire\\:id]');
-            const merek = el ? (el.querySelector('[data-orcha-merek]')?.dataset.orchaMerek || '') : '';
+            const wadah = tombol.closest('[wire\\:id]');
+            const merek = wadah ? (wadah.querySelector('[data-orcha-merek]')?.dataset.orchaMerek || '') : '';
 
             window.__orchaPicker({
-                tombol, properti: 'nama', ikon: 'bi-truck-front',
+                tombol, properti: 'nama', ikon: 'bi-truck-front', untukUnit: true, merek,
                 judul: merek ? ('Pilih Unit ' + merek) : 'Pilih Nama Unit',
                 petunjuk: 'Ketik untuk mencari unit…',
                 daftar: (window.__orchaKatalog || {})[merek] || [],
                 kosong: merek
                     ? ('Belum ada daftar unit untuk ' + merek + '. Pakai "Tulis sendiri" di bawah.')
                     : 'Pilih mereknya dahulu.',
-                judulManual: 'Tulis Nama Unit', contohManual: 'mis. Tiggo 8 Pro',
-                nilaiSekarang: tombol.innerText.trim().startsWith('—') ? '' : tombol.innerText.trim(),
+                judulManual: merek ? ('Tambah Unit ' + merek) : 'Tambah Nama Unit',
+                contohManual: 'mis. Bima 1.3',
             });
         };
     }
@@ -767,6 +829,45 @@
         flex-direction: column;
         gap: .4rem;
         padding: .2rem;
+    }
+
+    .orcha-pick-row {
+        display: flex;
+        align-items: stretch;
+        gap: .4rem;
+    }
+
+    .orcha-pick-row .orcha-pick-item {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* Tombol hapus hanya muncul pada entri yang ditambahkan admin sendiri.
+       Merahnya terlihat tanpa perlu disentuh dulu, karena yang dilakukannya
+       memang membuang sesuatu. */
+    .orcha-pick-del {
+        flex: 0 0 auto;
+        width: 40px;
+        border: 1px solid #f3c9c9;
+        background: #fff5f5;
+        color: #c0392b;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        transition: all .15s ease;
+    }
+
+    .orcha-pick-del:hover {
+        background: #c0392b;
+        border-color: #c0392b;
+        color: #fff;
+    }
+
+    .orcha-pick-del:disabled {
+        opacity: .5;
+        cursor: wait;
     }
 
     .orcha-pick-item {
