@@ -645,8 +645,8 @@ test('kendaraan baru juga menitipkan pesannya', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', 'Toyota')
-        ->set('namaPilihan', 'All New Avanza')
+        ->set('merek', 'Toyota')
+        ->set('nama', 'All New Avanza')
         ->set('tarifHariTeks', '350000')
         ->call('simpan')
         ->assertHasNoErrors()
@@ -698,8 +698,8 @@ test('tarif armada juga bertitik', function () {
 
     Livewire::actingAs(adminOrcha())
         ->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', 'Toyota')
-        ->set('namaPilihan', 'All New Avanza')
+        ->set('merek', 'Toyota')
+        ->set('nama', 'All New Avanza')
         ->set('tarifHariTeks', '350000')
         ->set('tarifJamTeks', '55000')
         ->assertSet('tarifHariTeks', '350.000')

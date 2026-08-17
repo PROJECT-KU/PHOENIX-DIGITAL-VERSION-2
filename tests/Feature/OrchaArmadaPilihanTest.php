@@ -87,11 +87,11 @@ test('nama unit yang tampil mengikuti merek yang dipilih', function () {
     fakeArmada();
 
     $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', 'Suzuki');
+        ->set('merek', 'Suzuki');
 
     expect($uji->instance()->modelPilihan())->toBe(['Ertiga', 'XL7']);
 
-    $uji->set('merekPilihan', 'Toyota');
+    $uji->set('merek', 'Toyota');
 
     expect($uji->instance()->modelPilihan())->toBe(['Avanza', 'HiAce Commuter', 'Innova Zenix']);
 });
@@ -102,10 +102,10 @@ test('mengganti merek mengosongkan nama unit yang sudah dipilih', function () {
     // Tanpa pengosongan ini, memilih Toyota lalu Avanza lalu berpindah ke
     // Suzuki akan menyimpan "Suzuki Avanza" — unit yang tidak pernah ada.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', 'Toyota')
-        ->set('namaPilihan', 'Avanza')
-        ->set('merekPilihan', 'Suzuki')
-        ->assertSet('namaPilihan', '')
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('merek', 'Suzuki')
+        ->assertSet('nama', '')
         ->assertSet('nama', '');
 });
 
@@ -113,8 +113,8 @@ test('unit tersimpan memakai nilai dari dropdown', function () {
     fakeArmada();
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', 'Suzuki')
-        ->set('namaPilihan', 'Ertiga')
+        ->set('merek', 'Suzuki')
+        ->set('nama', 'Ertiga')
         ->set('nopol', 'AB 9 XY')
         ->set('kapasitas', 7)
         ->set('tarifHariTeks', '450.000')
@@ -132,9 +132,8 @@ test('merek di luar katalog bisa ditulis manual', function () {
     fakeArmada();
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', '__manual__')
-        ->set('merekManual', 'Chery')
-        ->set('namaManual', 'Tiggo 8 Pro')
+        ->set('merek', 'Chery')
+        ->set('nama', 'Tiggo 8 Pro')
         ->set('nopol', 'AB 7 ZZ')
         ->set('tarifHariTeks', '600.000')
         ->call('simpan')
@@ -145,35 +144,34 @@ test('merek di luar katalog bisa ditulis manual', function () {
         && ($p->data()['nama'] ?? null) === 'Tiggo 8 Pro');
 });
 
-test('memilih isi manual pada merek langsung menyiapkan nama unit manual', function () {
-    fakeArmada();
-
-    // Merek di luar katalog tidak punya daftar model, jadi memaksa admin
-    // memilih dari daftar kosong hanya membuang satu langkah.
-    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', '__manual__')
-        ->assertSet('namaPilihan', '__manual__');
-});
-
-test('manual yang dibiarkan kosong ditolak, bukan tersimpan tanpa nama', function () {
+test('merek dan nama unit yang kosong ditolak, bukan tersimpan tanpa nama', function () {
     fakeArmada();
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', '__manual__')
-        ->set('merekManual', '   ')
         ->set('tarifHariTeks', '300.000')
         ->call('simpan')
         ->assertHasErrors(['merek', 'nama']);
 });
 
-test('menyunting unit menyiapkan dropdown pada nilai tersimpannya', function () {
+test('merek yang hanya berisi spasi dianggap kosong', function () {
+    fakeArmada();
+
+    // Popup "tulis sendiri" sudah menolak isian kosong di peramban, tapi dialog
+    // bukan pengaman — komponennya memangkas dan memeriksa sendiri.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', '   ')
+        ->set('tarifHariTeks', '300.000')
+        ->call('simpan')
+        ->assertHasErrors('merek');
+});
+
+test('menyunting unit memuat merek dan nama tersimpannya', function () {
     fakeArmada();
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
-        ->assertSet('merekPilihan', 'Toyota')
-        ->assertSet('namaPilihan', 'Avanza')
-        ->assertSet('merekManual', '')
-        ->assertSet('namaManual', '');
+        ->assertSet('merek', 'Toyota')
+        ->assertSet('nama', 'Avanza')
+        ->assertSee('Avanza');
 });
 
 test('unit lama di luar katalog tidak kehilangan mereknya saat disunting', function () {
@@ -183,10 +181,10 @@ test('unit lama di luar katalog tidak kehilangan mereknya saat disunting', funct
     // sendiri akan memaksa admin mengubahnya jadi merek lain. Nilainya harus
     // utuh di kotak manual, bukan hilang.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
-        ->assertSet('merekPilihan', '__manual__')
-        ->assertSet('merekManual', 'Chery')
-        ->assertSet('namaPilihan', '__manual__')
-        ->assertSet('namaManual', 'Tiggo 8 Pro')
+        ->assertSet('merek', 'Chery')
+        ->assertSet('nama', 'Tiggo 8 Pro')
+        ->assertSee('Chery')
+        ->assertSee('Tiggo 8 Pro')
         ->call('simpan')
         ->assertHasNoErrors();
 
@@ -202,9 +200,8 @@ test('katalog kosong tidak mengunci admin, unit tetap bisa ditulis manual', func
     Http::fake(['*' => Http::response(['data' => [], 'pesan' => 'ok'])]);
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->set('merekPilihan', '__manual__')
-        ->set('merekManual', 'Toyota')
-        ->set('namaManual', 'Avanza')
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
         ->set('tarifHariTeks', '350.000')
         ->call('simpan')
         ->assertHasNoErrors();

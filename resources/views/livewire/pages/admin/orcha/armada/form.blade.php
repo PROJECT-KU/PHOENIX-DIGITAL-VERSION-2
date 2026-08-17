@@ -19,50 +19,47 @@
                             <h6 class="fw-bold mb-3">Keterangan Unit</h6>
 
                             <div class="row g-3">
-                                {{-- Merek dahulu, lalu nama unit.
+                                {{-- Merek dan nama unit dipilih lewat popup pencarian.
 
-                                     Urutannya bukan selera: daftar model diambil dari mereknya,
-                                     jadi memilih merek lebih dulu membuat ketergantungan itu
-                                     terlihat. Keduanya dipilih, tidak diketik, karena mengetik
-                                     bebas menghasilkan ejaan berbeda untuk unit yang sama —
-                                     "Avanza", "avanza", "All New Avanza" — dan penyaringan di
-                                     halaman publik jadi tidak dapat diandalkan. --}}
+                                     Mengikuti pola picker yang sudah dipakai di Phoenix
+                                     (lihat picker nama add-on di product-form): tombol yang
+                                     bergaya seperti select, popup SweetAlert berisi kotak
+                                     cari, daftar yang tersaring, dan pilihan "tulis sendiri"
+                                     untuk yang belum ada di katalog.
+
+                                     Dipilih daripada <select> biasa karena katalognya kini
+                                     179 model — menggulung daftar sepanjang itu di dropdown
+                                     bawaan lebih lambat daripada mengetik tiga huruf.
+
+                                     Merek diletakkan lebih dahulu: daftar modelnya diambil
+                                     dari mereknya. --}}
                                 <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Merek <span class="text-danger">*</span></label>
-                                    <select class="form-select" wire:model.live="merekPilihan">
-                                        <option value="">— pilih merek —</option>
-                                        @foreach ($katalog as $namaMerek => $daftarModelnya)
-                                            <option value="{{ $namaMerek }}">{{ $namaMerek }}</option>
-                                        @endforeach
-                                        <option value="__manual__">Merek lain (tulis sendiri)…</option>
-                                    </select>
-
-                                    @if ($merekPilihan === '__manual__')
-                                        <input type="text" class="form-control mt-2" wire:model.blur="merekManual"
-                                            placeholder="Tulis mereknya, mis. Chery">
-                                    @endif
-
+                                    <button type="button" onclick="orchaPilihMerek(this)"
+                                        class="form-select text-start orcha-picker @error('merek') is-invalid @enderror">
+                                        @if (trim($merek) !== '')
+                                            <span class="text-dark fw-semibold">{{ $merek }}</span>
+                                        @else
+                                            <span class="text-muted">— Pilih merek —</span>
+                                        @endif
+                                    </button>
                                     @error('merek') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
                                 <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Nama unit <span class="text-danger">*</span></label>
-                                    <select class="form-select" wire:model.live="namaPilihan"
-                                        @disabled($merekPilihan === '')>
-                                        <option value="">
-                                            {{ $merekPilihan === '' ? '— pilih merek dahulu —' : '— pilih nama unit —' }}
-                                        </option>
-                                        @foreach ($modelPilihan as $satuModel)
-                                            <option value="{{ $satuModel }}">{{ $satuModel }}</option>
-                                        @endforeach
-                                        <option value="__manual__">Unit lain (tulis sendiri)…</option>
-                                    </select>
-
-                                    @if ($namaPilihan === '__manual__')
-                                        <input type="text" class="form-control mt-2" wire:model.blur="namaManual"
-                                            placeholder="Tulis nama unitnya, mis. Tiggo 8 Pro">
-                                    @endif
-
+                                    <span data-orcha-merek="{{ $merek }}" class="d-none"></span>
+                                    <button type="button" onclick="orchaPilihUnit(this)"
+                                        class="form-select text-start orcha-picker @error('nama') is-invalid @enderror"
+                                        @disabled(trim($merek) === '')>
+                                        @if (trim($nama) !== '')
+                                            <span class="text-dark fw-semibold">{{ $nama }}</span>
+                                        @else
+                                            <span class="text-muted">
+                                                {{ trim($merek) === '' ? '— Pilih merek dahulu —' : '— Pilih nama unit —' }}
+                                            </span>
+                                        @endif
+                                    </button>
                                     @error('nama') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
@@ -621,5 +618,182 @@
                 overscroll-behavior: contain;
             }
         }
+</style>
+
+{{-- ============ PICKER MEREK & NAMA UNIT ============
+     Pola diambil dari picker nama add-on di Phoenix (product-form): data
+     disegarkan tiap render DI LUAR guard, sedangkan pemasangan fungsinya
+     dijaga sekali saja. Kalau datanya ikut di dalam guard, katalog yang
+     berubah tidak akan pernah terbaca setelah render pertama. --}}
+<script>
+    window.__orchaKatalog = @json($katalog);
+
+    if (!window.__orchaPickerTerpasang) {
+        window.__orchaPickerTerpasang = true;
+
+        const orchaEsc = (t) => String(t).replace(/[&<>"']/g, (m) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[m]));
+
+        // Popup dasar: kotak cari + daftar tersaring + "tulis sendiri".
+        // Dipakai dua kali (merek dan nama unit) supaya keduanya berperilaku
+        // sama persis — dua salinan yang mirip pasti berbeda suatu saat.
+        window.__orchaPicker = function (opsi) {
+            if (typeof Swal === 'undefined') return;
+
+            const tombol = opsi.tombol.closest('[wire\\:id]');
+            if (!tombol) return;
+
+            const cid = tombol.getAttribute('wire:id');
+            const setNilai = (nilai) => window.Livewire && window.Livewire.find(cid).set(opsi.properti, nilai);
+
+            const baris = opsi.daftar.length
+                ? opsi.daftar.map((n) => '<button type="button" class="orcha-pick-item" data-nilai="'
+                    + orchaEsc(n) + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
+                    + '<i class="bi ' + opsi.ikon + ' me-2" style="color:#1d6fa5;"></i>' + orchaEsc(n)
+                    + '<\/button>').join('')
+                : '<div class="orcha-pick-empty">' + orchaEsc(opsi.kosong) + '<\/div>';
+
+            Swal.fire({
+                title: opsi.judul,
+                html: '<input id="orchaPickCari" class="form-control mb-2" placeholder="' + orchaEsc(opsi.petunjuk) + '">'
+                    + '<div id="orchaPickDaftar" class="orcha-pick-list">' + baris + '<\/div>'
+                    + '<div id="orchaPickKosong" class="orcha-pick-empty" style="display:none">Tidak ada yang cocok. Pakai "Tulis sendiri" di bawah.<\/div>'
+                    + '<button type="button" id="orchaPickManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
+                    + '<i class="bi bi-pencil me-2" style="color:#64748b;"></i>Tulis sendiri…<\/button>',
+                background: 'rgba(255, 255, 255, 0.92)',
+                backdrop: 'rgba(29, 111, 165, 0.15)',
+                customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
+                width: 480, padding: '1.25rem',
+                didOpen: () => {
+                    const cari = document.getElementById('orchaPickCari');
+                    const daftar = document.getElementById('orchaPickDaftar');
+                    const kosong = document.getElementById('orchaPickKosong');
+
+                    if (cari) {
+                        cari.addEventListener('input', () => {
+                            const q = cari.value.toLowerCase().trim();
+                            let terlihat = 0;
+                            daftar.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                                const cocok = b.dataset.cari.includes(q);
+                                b.style.display = cocok ? '' : 'none';
+                                if (cocok) terlihat++;
+                            });
+                            // Daftar yang kosong tanpa keterangan terbaca seperti
+                            // halaman rusak, bukan seperti "tidak ada yang cocok".
+                            kosong.style.display = terlihat === 0 && opsi.daftar.length ? '' : 'none';
+                        });
+                        setTimeout(() => cari.focus(), 100);
+                    }
+
+                    daftar.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                        b.addEventListener('click', () => { setNilai(b.dataset.nilai); Swal.close(); });
+                    });
+
+                    const manual = document.getElementById('orchaPickManual');
+                    if (manual) manual.addEventListener('click', () => {
+                        Swal.fire({
+                            title: opsi.judulManual,
+                            input: 'text',
+                            inputPlaceholder: opsi.contohManual,
+                            inputValue: opsi.nilaiSekarang || '',
+                            background: 'rgba(255, 255, 255, 0.92)',
+                            backdrop: 'rgba(29, 111, 165, 0.15)',
+                            customClass: {
+                                popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
+                                confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
+                            },
+                            buttonsStyling: false, showCancelButton: true,
+                            confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+                            inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
+                        }).then((h) => { if (h.isConfirmed && h.value) setNilai(h.value.trim()); });
+                    });
+                },
+            });
+        };
+
+        window.orchaPilihMerek = function (tombol) {
+            window.__orchaPicker({
+                tombol, properti: 'merek', ikon: 'bi-award',
+                judul: 'Pilih Merek', petunjuk: 'Ketik untuk mencari merek…',
+                daftar: Object.keys(window.__orchaKatalog || {}),
+                kosong: 'Katalog belum termuat. Pakai "Tulis sendiri" di bawah.',
+                judulManual: 'Tulis Merek', contohManual: 'mis. Hyundai',
+                nilaiSekarang: tombol.innerText.trim().startsWith('—') ? '' : tombol.innerText.trim(),
+            });
+        };
+
+        window.orchaPilihUnit = function (tombol) {
+            // Daftar model dibaca dari merek yang sedang terpilih, bukan dari
+            // seluruh katalog: "Ertiga" tidak boleh muncul saat mereknya Toyota.
+            const el = tombol.closest('[wire\\:id]');
+            const merek = el ? (el.querySelector('[data-orcha-merek]')?.dataset.orchaMerek || '') : '';
+
+            window.__orchaPicker({
+                tombol, properti: 'nama', ikon: 'bi-truck-front',
+                judul: merek ? ('Pilih Unit ' + merek) : 'Pilih Nama Unit',
+                petunjuk: 'Ketik untuk mencari unit…',
+                daftar: (window.__orchaKatalog || {})[merek] || [],
+                kosong: merek
+                    ? ('Belum ada daftar unit untuk ' + merek + '. Pakai "Tulis sendiri" di bawah.')
+                    : 'Pilih mereknya dahulu.',
+                judulManual: 'Tulis Nama Unit', contohManual: 'mis. Tiggo 8 Pro',
+                nilaiSekarang: tombol.innerText.trim().startsWith('—') ? '' : tombol.innerText.trim(),
+            });
+        };
+    }
+</script>
+
+<style>
+    /* Tombol yang menyamar sebagai select: tingginya mengikuti .form-select
+       dari layout, jadi barisnya tetap rata dengan isian di sebelahnya. */
+    .orcha-picker {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+    }
+
+    .orcha-picker:disabled {
+        cursor: not-allowed;
+        opacity: .65;
+    }
+
+    .orcha-pick-list {
+        max-height: 340px;
+        overflow-y: auto;
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+        padding: .2rem;
+    }
+
+    .orcha-pick-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #e6e8f2;
+        background: #fff;
+        border-radius: 12px;
+        padding: .7rem .9rem;
+        font-weight: 600;
+        color: #1e293b;
+        font-size: .92rem;
+        transition: all .15s ease;
+    }
+
+    .orcha-pick-item:hover {
+        border-color: #1d6fa5;
+        background: linear-gradient(135deg, rgba(29, 111, 165, .10), rgba(15, 45, 74, .04));
+        transform: translateY(-1px);
+    }
+
+    .orcha-pick-empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 1.5rem;
+        font-size: .9rem;
+    }
 </style>
 </div>
