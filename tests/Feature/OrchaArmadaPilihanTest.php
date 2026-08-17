@@ -255,7 +255,7 @@ test('nama unit manual didaftarkan di bawah merek yang sedang dipilih', function
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
-        ->call('tambahKatalog', 'Kijang Krista', true)
+        ->call('tambahKatalog', 'Kijang Krista', 'unit')
         ->assertSet('nama', 'Kijang Krista');
 
     Http::assertSent(fn ($p) => $p->method() === 'POST'
@@ -270,7 +270,7 @@ test('nama unit tidak didaftarkan bila mereknya belum dipilih', function () {
     // Entri model harus menempel pada mereknya; mengirim model tanpa merek hanya
     // menghasilkan baris yatim di katalog.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->call('tambahKatalog', 'Bima 1.3', true)
+        ->call('tambahKatalog', 'Bima 1.3', 'unit')
         ->assertSet('nama', 'Bima 1.3');
 
     Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
@@ -428,7 +428,7 @@ test('unit baru yang ditulis manual ikut mengisi kursi bila katalog mengetahuiny
     // sudah ada, dan kursinya tetap terisi.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->set('merek', 'Toyota')
-        ->call('tambahKatalog', 'Avanza', true)
+        ->call('tambahKatalog', 'Avanza', 'unit')
         ->assertSet('nama', 'Avanza')
         ->assertSet('kapasitas', 7);
 });
@@ -766,4 +766,70 @@ test('daftar armada tidak mengulang angka untuk unit lepas kunci', function () {
         ->assertSee('7 kursi')
         ->assertDontSee('7 penumpang (7 kursi)')
         ->assertDontSee('Selalu dengan sopir');
+});
+
+/* ---------- TIPE MANUAL MASUK DAFTAR ---------- */
+
+test('tipe yang ditulis manual didaftarkan ke katalog', function () {
+    fakeArmada();
+
+    // Keluhannya: tipe manual tidak masuk daftar. Sebelumnya ia hanya mengisi
+    // isian, jadi tipe yang sama harus ditulis ulang untuk unit sejenis.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->call('tambahKatalog', 'Kursi Kulit Premium', 'varian')
+        ->assertSet('varian', 'Kursi Kulit Premium');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/katalog-kendaraan')
+        && ($p->data()['merek'] ?? null) === 'Toyota'
+        && ($p->data()['model'] ?? null) === 'HiAce Commuter'
+        && ($p->data()['varian'] ?? null) === 'Kursi Kulit Premium');
+});
+
+test('tipe tidak didaftarkan bila nama unitnya belum dipilih', function () {
+    fakeArmada();
+
+    // Entri tipe harus menempel pada modelnya; tanpa itu barisnya yatim.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->call('tambahKatalog', 'Deluxe', 'varian')
+        ->assertSet('varian', 'Deluxe');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
+});
+
+test('daftar tipe terbaru ikut dikirim ke peramban sesudah mendaftar', function () {
+    fakeArmada();
+
+    // Tanpa ini, simpanan rujukan sepuluh menit membuat tipe yang baru
+    // didaftarkan belum muncul — persis gejala yang dikeluhkan.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->call('tambahKatalog', 'Kursi Kulit Premium', 'varian')
+        ->assertDispatched('orcha-katalog-segar');
+});
+
+test('spasi berlebih pada tipe manual dirapikan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->call('tambahKatalog', '  Veloz   Q  ', 'varian')
+        ->assertSet('varian', 'Veloz Q');
+});
+
+test('tipe manual yang kosong diabaikan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->call('tambahKatalog', '   ', 'varian')
+        ->assertSet('varian', '');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/katalog-kendaraan'));
 });

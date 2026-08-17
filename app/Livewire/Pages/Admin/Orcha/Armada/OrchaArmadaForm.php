@@ -419,7 +419,7 @@ class OrchaArmadaForm extends Component
      * karena katalognya gagal diperbarui adalah menukar masalah kecil dengan
      * masalah besar.
      */
-    public function tambahKatalog(string $nilai, bool $untukUnit = false): void
+    public function tambahKatalog(string $nilai, string $untuk = 'merek'): void
     {
         $nilai = trim(preg_replace('/\s+/', ' ', $nilai));
 
@@ -427,25 +427,32 @@ class OrchaArmadaForm extends Component
             return;
         }
 
-        if ($untukUnit) {
-            $this->nama = $nilai;
-        } else {
-            $this->merek = $nilai;
-            // Merek berganti, jadi nama unit sebelumnya tidak lagi berlaku.
-            $this->nama = '';
-        }
+        // Nilainya dipakai lebih dahulu, apa pun hasil pendaftarannya: admin
+        // sudah menyatakan maksudnya, dan kegagalan mendaftar tidak boleh
+        // menghalanginya menyimpan unit ini.
+        match ($untuk) {
+            'unit' => $this->nama = $nilai,
+            'varian' => $this->varian = $nilai,
+            default => [$this->merek = $nilai, $this->nama = ''],
+        };
 
-        // Nama unit tanpa merek tidak bisa didaftarkan: entri modelnya harus
-        // menempel pada mereknya.
-        if ($untukUnit && trim($this->merek) === '') {
+        // Entri model harus menempel pada mereknya, dan entri tipe pada modelnya.
+        // Tanpa itu barisnya jadi yatim dan tidak pernah terbaca sebagai pilihan.
+        if ($untuk !== 'merek' && trim($this->merek) === '') {
             return;
         }
 
-        $this->simpanKatalog($untukUnit
-            ? ['merek' => trim($this->merek), 'model' => $nilai]
-            : ['merek' => $nilai]);
+        if ($untuk === 'varian' && trim($this->nama) === '') {
+            return;
+        }
 
-        if ($untukUnit) {
+        $this->simpanKatalog(match ($untuk) {
+            'unit' => ['merek' => trim($this->merek), 'model' => $nilai],
+            'varian' => ['merek' => trim($this->merek), 'model' => trim($this->nama), 'varian' => $nilai],
+            default => ['merek' => $nilai],
+        });
+
+        if ($untuk === 'unit') {
             $this->isiOtomatis();
         }
     }
@@ -483,7 +490,8 @@ class OrchaArmadaForm extends Component
 
         $this->dispatch('orcha-katalog-segar',
             katalog: $this->katalog(),
-            kustom: $this->katalogKustom());
+            kustom: $this->katalogKustom(),
+            varian: $this->varianPilihan());
     }
 
     /**

@@ -49,6 +49,7 @@
                                 <div class="col-12 col-md-6">
                                     <label class="form-label small fw-semibold">Nama unit <span class="text-danger">*</span></label>
                                     <span data-orcha-merek="{{ $merek }}" class="d-none"></span>
+                                    <span data-orcha-nama="{{ $nama }}" class="d-none"></span>
                                     <button type="button" onclick="orchaPilihUnit(this)"
                                         class="form-select text-start orcha-picker @error('nama') is-invalid @enderror"
                                         @disabled(trim($merek) === '')>
@@ -771,16 +772,27 @@
         // Id entri kustom, dicari dengan kunci "merek" atau "merek|model".
         // Hanya entri inilah yang boleh punya tombol hapus: katalog bawaan ikut
         // versi kode, dan merek yang terbaca dari armada dipakai unit nyata.
-        const orchaIdKustom = (merek, model) => {
+        // Entri kustom dicocokkan pada tingkat yang tepat: merek saja, model di
+        // bawah merek, atau tipe di bawah model. Hanya entri inilah yang boleh
+        // punya tombol hapus — katalog bawaan ikut versi kode, dan merek yang
+        // terbaca dari armada dipakai unit nyata.
+        const orchaSama = (a, b) => (a == null && b == null) || a === b;
+
+        const orchaIdKustom = (merek, model, varian) => {
             const cocok = (window.__orchaKustom || []).find((e) => e.merek === merek
-                && ((model == null && e.model == null) || e.model === model));
+                && orchaSama(e.model ?? null, model ?? null)
+                && orchaSama(e.varian ?? null, varian ?? null));
+
             return cocok ? cocok.id : null;
         };
 
         const orchaBaris = (opsi) => opsi.daftar.length
             ? opsi.daftar.map((n) => {
-                const id = opsi.tanpaHapus ? null
-                    : (opsi.untukUnit ? orchaIdKustom(opsi.merek, n) : orchaIdKustom(n, null));
+                const id = opsi.untuk === 'varian'
+                    ? orchaIdKustom(opsi.merek, opsi.nama, n)
+                    : (opsi.untuk === 'unit'
+                        ? orchaIdKustom(opsi.merek, n, null)
+                        : orchaIdKustom(n, null, null));
                 return '<div class="orcha-pick-row">'
                     + '<button type="button" class="orcha-pick-item" data-nilai="' + orchaEsc(n)
                     + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
@@ -827,9 +839,9 @@
             const gambarUlang = () => {
                 const daftarEl = document.getElementById('orchaPickDaftar');
                 if (!daftarEl) return;
-                opsi.daftar = opsi.tanpaDaftar
+                opsi.daftar = opsi.untuk === 'varian'
                     ? (window.__orchaVarian || [])
-                    : (opsi.untukUnit
+                    : (opsi.untuk === 'unit'
                         ? ((window.__orchaKatalog || {})[opsi.merek] || [])
                         : Object.keys(window.__orchaKatalog || {}));
                 daftarEl.innerHTML = orchaBaris(opsi);
@@ -893,18 +905,11 @@
                             inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
                         }).then((h) => {
                             if (!h.isConfirmed || !h.value) return;
-                            // Sekali ditulis langsung terdaftar, jadi unit sejenis
-                            // berikutnya tinggal memilih.
-                            if (opsi.tanpaDaftar) {
-                                // Tipe bukan baris katalog tersendiri: ia ikut
-                                // tersimpan pada unitnya, dan dari sana masuk
-                                // daftar pilihan untuk unit sejenis berikutnya.
-                                komponen() && komponen().set(opsi.properti, h.value.trim());
-
-                                return;
-                            }
-
-                            komponen() && komponen().call('tambahKatalog', h.value.trim(), !!opsi.untukUnit);
+                            // Sekali ditulis langsung terdaftar — berlaku untuk
+                            // merek, nama unit, MAUPUN tipe. Sebelumnya tipe hanya
+                            // mengisi isian dan baru terbaca sesudah unitnya
+                            // tersimpan, jadi tampak seperti tidak masuk daftar.
+                            komponen() && komponen().call('tambahKatalog', h.value.trim(), opsi.untuk);
                         });
                     });
                 },
@@ -917,12 +922,13 @@
             const d = e.detail || {};
             if (d.katalog) window.__orchaKatalog = d.katalog;
             if (d.kustom) window.__orchaKustom = d.kustom;
+            if (d.varian) window.__orchaVarian = d.varian;
             if (window.__orchaGambarUlang) window.__orchaGambarUlang();
         });
 
         window.orchaPilihMerek = function (tombol) {
             window.__orchaPicker({
-                tombol, properti: 'merek', ikon: 'bi-award', untukUnit: false,
+                tombol, properti: 'merek', ikon: 'bi-award', untuk: 'merek',
                 judul: 'Pilih Merek', petunjuk: 'Ketik untuk mencari merek…',
                 daftar: Object.keys(window.__orchaKatalog || {}),
                 kosong: 'Katalog belum termuat. Pakai "Tulis sendiri" di bawah.',
@@ -933,14 +939,18 @@
         // Tipe/varian: daftarnya melekat pada modelnya, dan boleh kosong —
         // banyak unit memang tidak punya tipe yang perlu disebut.
         window.orchaPilihVarian = function (tombol) {
+            const wadah = tombol.closest('[wire\\:id]');
+            const merek = wadah ? (wadah.querySelector('[data-orcha-merek]')?.dataset.orchaMerek || '') : '';
+            const nama = wadah ? (wadah.querySelector('[data-orcha-nama]')?.dataset.orchaNama || '') : '';
+
             window.__orchaPicker({
-                tombol, properti: 'varian', ikon: 'bi-tag', untukUnit: false, tanpaHapus: true,
+                merek, nama,
+                tombol, properti: 'varian', ikon: 'bi-tag', untuk: 'varian',
                 judul: 'Pilih Tipe',
                 petunjuk: 'Ketik untuk mencari tipe…',
                 daftar: window.__orchaVarian || [],
                 kosong: 'Belum ada daftar tipe untuk unit ini. Pakai "Tulis sendiri" di bawah.',
-                judulManual: 'Tulis Tipe', contohManual: 'mis. GR Sport',
-                tanpaDaftar: true,
+                judulManual: 'Tambah Tipe', contohManual: 'mis. GR Sport',
             });
         };
 
@@ -951,7 +961,7 @@
             const merek = wadah ? (wadah.querySelector('[data-orcha-merek]')?.dataset.orchaMerek || '') : '';
 
             window.__orchaPicker({
-                tombol, properti: 'nama', ikon: 'bi-truck-front', untukUnit: true, merek,
+                tombol, properti: 'nama', ikon: 'bi-truck-front', untuk: 'unit', merek,
                 judul: merek ? ('Pilih Unit ' + merek) : 'Pilih Nama Unit',
                 petunjuk: 'Ketik untuk mencari unit…',
                 daftar: (window.__orchaKatalog || {})[merek] || [],
