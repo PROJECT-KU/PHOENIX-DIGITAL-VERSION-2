@@ -12,7 +12,7 @@
         ])
 
         <form wire:submit="simpan" class="orcha-form">
-            <div class="row g-4">
+            <div class="row g-4 mb-4">
                 <div class="col-12 col-xl-8">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
@@ -161,7 +161,7 @@
                 </div>
 
                 <div class="col-12 col-xl-4">
-                    <div class="orcha-lengket">
+                    <div class="orcha-lengket orcha-lengket-armada">
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-3">Foto Unit</h6>
@@ -550,6 +550,24 @@
         .orcha-sakelar-kartu.nyala .form-check-input:checked {
             background-color: #1a8a52;
             border-color: #1a8a52;
+        }
+        /* Kolom kanan yang lengket diberi jarak bawah sendiri.
+
+           Tanpa ini tombol Batal berhenti persis menempel pada kartu Kondisi
+           Unit saat halaman digulung — keduanya terbaca seperti satu tumpukan,
+           dan tombol yang membatalkan pekerjaan tidak pantas tampak menyatu
+           dengan isian di bawahnya.
+
+           max-height menjaga kolom ini tetap muat di layar: bila isinya lebih
+           tinggi dari jendela, bagian bawahnya digulung sendiri alih-alih
+           menyeruduk keluar. */
+        @media (min-width: 1200px) {
+            .orcha-lengket-armada {
+                padding-bottom: 2rem;
+                max-height: calc(100vh - 2rem);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
         }
 </style>
 </div>
