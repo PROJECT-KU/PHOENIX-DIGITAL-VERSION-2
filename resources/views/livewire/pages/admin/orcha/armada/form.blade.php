@@ -63,9 +63,67 @@
                                     @error('nama') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
 
+                                {{-- Tipe, tahun, dan cc disimpan sebagai isian tersendiri,
+                                     bukan dijejalkan ke dalam nama unit menjadi "Agya tipe E
+                                     tahun 2025 1200cc". Nama seperti itu tidak bisa disaring
+                                     dan tidak bisa diurutkan menurut tahun; sebutan lengkapnya
+                                     dirakit Orcha saat ditampilkan. --}}
+                                <div class="col-6 col-md-4">
+                                    <label class="form-label small fw-semibold">Tipe</label>
+                                    <button type="button" onclick="orchaPilihVarian(this)"
+                                        class="form-select text-start orcha-picker"
+                                        @disabled(trim($nama) === '')>
+                                        @if (trim($varian) !== '')
+                                            <span class="text-dark fw-semibold">{{ $varian }}</span>
+                                        @else
+                                            <span class="text-muted">
+                                                {{ trim($nama) === '' ? '— pilih unit dahulu —' : '— tanpa tipe —' }}
+                                            </span>
+                                        @endif
+                                    </button>
+                                    @error('varian') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="col-6 col-md-4">
+                                    <label class="form-label small fw-semibold">Tahun</label>
+                                    <input type="number" class="form-control @error('tahun') is-invalid @enderror"
+                                        wire:model.blur="tahun" min="1980" max="{{ date('Y') + 1 }}"
+                                        placeholder="{{ date('Y') }}">
+                                    @error('tahun')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @else
+                                        {{-- Tahun tidak bisa disimpulkan dari modelnya, jadi
+                                             satu-satunya jalan memang diketik. --}}
+                                        <div class="orcha-kursi-beda mt-1">
+                                            <i class="bi bi-pencil"></i><span>Diisi manual.</span>
+                                        </div>
+                                    @enderror
+                                </div>
+
+                                <div class="col-6 col-md-4">
+                                    <label class="form-label small fw-semibold">Isi silinder (cc)</label>
+                                    <input type="number" class="form-control @error('cc') is-invalid @enderror"
+                                        wire:model.live="cc" min="500" max="20000" placeholder="1200">
+                                    @error('cc')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @else
+                                        @if ($ccOtomatisDari !== '')
+                                            <div class="orcha-kursi-otomatis mt-1">
+                                                <i class="bi bi-magic"></i>
+                                                <span>Terisi dari {{ $ccOtomatisDari }}.</span>
+                                            </div>
+                                        @elseif ($ccDiubahManual && $ccDisarankan !== null && (int) $cc !== $ccDisarankan)
+                                            <div class="orcha-kursi-beda mt-1">
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>Umumnya {{ number_format($ccDisarankan, 0, ',', '.') }} cc.</span>
+                                            </div>
+                                        @endif
+                                    @enderror
+                                </div>
+
                                 <div class="col-12 col-md-4">
                                     <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
-                                    <select class="form-select" wire:model="jenis">
+                                    <select class="form-select" wire:model.live="jenis">
                                         @foreach ($pilihanJenis as $kunci => $label)
                                             <option value="{{ $kunci }}">{{ $label }}</option>
                                         @endforeach
@@ -655,6 +713,7 @@
 <script>
     window.__orchaKatalog = @json($katalog);
     window.__orchaKustom = @json($katalogKustom);
+    window.__orchaVarian = @json($varianPilihan);
 
     if (!window.__orchaPickerTerpasang) {
         window.__orchaPickerTerpasang = true;
@@ -674,7 +733,8 @@
 
         const orchaBaris = (opsi) => opsi.daftar.length
             ? opsi.daftar.map((n) => {
-                const id = opsi.untukUnit ? orchaIdKustom(opsi.merek, n) : orchaIdKustom(n, null);
+                const id = opsi.tanpaHapus ? null
+                    : (opsi.untukUnit ? orchaIdKustom(opsi.merek, n) : orchaIdKustom(n, null));
                 return '<div class="orcha-pick-row">'
                     + '<button type="button" class="orcha-pick-item" data-nilai="' + orchaEsc(n)
                     + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
@@ -721,9 +781,11 @@
             const gambarUlang = () => {
                 const daftarEl = document.getElementById('orchaPickDaftar');
                 if (!daftarEl) return;
-                opsi.daftar = opsi.untukUnit
-                    ? ((window.__orchaKatalog || {})[opsi.merek] || [])
-                    : Object.keys(window.__orchaKatalog || {});
+                opsi.daftar = opsi.tanpaDaftar
+                    ? (window.__orchaVarian || [])
+                    : (opsi.untukUnit
+                        ? ((window.__orchaKatalog || {})[opsi.merek] || [])
+                        : Object.keys(window.__orchaKatalog || {}));
                 daftarEl.innerHTML = orchaBaris(opsi);
                 pasangPendengar();
                 const cari = document.getElementById('orchaPickCari');
@@ -787,6 +849,15 @@
                             if (!h.isConfirmed || !h.value) return;
                             // Sekali ditulis langsung terdaftar, jadi unit sejenis
                             // berikutnya tinggal memilih.
+                            if (opsi.tanpaDaftar) {
+                                // Tipe bukan baris katalog tersendiri: ia ikut
+                                // tersimpan pada unitnya, dan dari sana masuk
+                                // daftar pilihan untuk unit sejenis berikutnya.
+                                komponen() && komponen().set(opsi.properti, h.value.trim());
+
+                                return;
+                            }
+
                             komponen() && komponen().call('tambahKatalog', h.value.trim(), !!opsi.untukUnit);
                         });
                     });
@@ -810,6 +881,20 @@
                 daftar: Object.keys(window.__orchaKatalog || {}),
                 kosong: 'Katalog belum termuat. Pakai "Tulis sendiri" di bawah.',
                 judulManual: 'Tambah Merek', contohManual: 'mis. Esemka',
+            });
+        };
+
+        // Tipe/varian: daftarnya melekat pada modelnya, dan boleh kosong —
+        // banyak unit memang tidak punya tipe yang perlu disebut.
+        window.orchaPilihVarian = function (tombol) {
+            window.__orchaPicker({
+                tombol, properti: 'varian', ikon: 'bi-tag', untukUnit: false, tanpaHapus: true,
+                judul: 'Pilih Tipe',
+                petunjuk: 'Ketik untuk mencari tipe…',
+                daftar: window.__orchaVarian || [],
+                kosong: 'Belum ada daftar tipe untuk unit ini. Pakai "Tulis sendiri" di bawah.',
+                judulManual: 'Tulis Tipe', contohManual: 'mis. GR Sport',
+                tanpaDaftar: true,
             });
         };
 

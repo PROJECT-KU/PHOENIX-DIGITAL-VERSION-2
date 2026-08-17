@@ -44,6 +44,28 @@ class OrchaArmadaForm extends Component
     /** Unit yang menjadi sumber angka kapasitas, untuk keterangan di layar. */
     public string $kursiOtomatisDari = '';
 
+    /** Tipe/varian unit: "E", "G", "GR Sport". */
+    public string $varian = '';
+
+    /** Tahun perakitan. Tidak bisa disimpulkan dari model — selalu diketik. */
+    public $tahun = '';
+
+    /** Isi silinder dalam cc. */
+    public $cc = '';
+
+    /**
+     * Jenis dan cc sudah diubah admin sendiri.
+     *
+     * Sama seperti kapasitas: sekali dikoreksi, saran tidak menimpanya lagi
+     * selama mereknya belum berganti.
+     */
+    public bool $jenisDiubahManual = false;
+
+    public bool $ccDiubahManual = false;
+
+    /** Unit sumber angka cc, untuk keterangan di layar. */
+    public string $ccOtomatisDari = '';
+
     public array $transmisi = ['Manual'];
 
     public $tarifHari = 0;
@@ -97,6 +119,12 @@ class OrchaArmadaForm extends Component
             'nama' => 'required|string|max:255',
             'merek' => 'required|string|max:100',
             'jenis' => 'required|string',
+            'varian' => 'nullable|string|max:60',
+            // Batas ke belakang longgar (Kijang Kapsul 1997 masih disewakan),
+            // ke depan hanya satu tahun: unit tahun 2035 pasti salah ketik, dan
+            // salah ketik tahun tidak pernah kelihatan salah.
+            'tahun' => 'nullable|integer|min:1980|max:'.(date('Y') + 1),
+            'cc' => 'nullable|integer|min:500|max:20000',
             'nopol' => 'nullable|string|max:20',
             'kapasitas' => 'required|integer|min:1|max:80',
             'transmisi' => 'required|array|min:1',
@@ -113,6 +141,9 @@ class OrchaArmadaForm extends Component
         return [
             'nama' => 'nama unit',
             'merek' => 'merek',
+            'varian' => 'tipe',
+            'tahun' => 'tahun',
+            'cc' => 'isi silinder',
             'transmisi' => 'transmisi',
             'tarifHari' => 'tarif per hari',
             'tarifJam' => 'tarif per jam',
@@ -177,6 +208,28 @@ class OrchaArmadaForm extends Component
     }
 
     /**
+     * Tipe/varian yang tersedia untuk merek + model yang sedang dipilih.
+     *
+     * @return list<string>
+     */
+    public function varianPilihan(): array
+    {
+        return $this->rujukan('varian_per_model')[trim($this->merek)][trim($this->nama)] ?? [];
+    }
+
+    public function jenisDisarankan(): ?string
+    {
+        return $this->rujukan('jenis_per_model')[trim($this->merek)][trim($this->nama)] ?? null;
+    }
+
+    public function ccDisarankan(): ?int
+    {
+        $cc = $this->rujukan('cc_per_model')[trim($this->merek)][trim($this->nama)] ?? null;
+
+        return is_numeric($cc) && (int) $cc > 0 ? (int) $cc : null;
+    }
+
+    /**
      * Kursi yang disarankan untuk merek + nama unit yang sedang dipilih.
      */
     public function kursiDisarankan(): ?int
@@ -200,34 +253,64 @@ class OrchaArmadaForm extends Component
     public function updatedNama(): void
     {
         $this->nama = trim($this->nama);
-        $this->isiKursiOtomatis();
-    }
 
-    private function isiKursiOtomatis(): void
-    {
-        $this->kursiOtomatisDari = '';
+        // Tipe melekat pada modelnya: tipe "Veloz" tidak berlaku untuk Ertiga.
+        $this->varian = '';
 
-        if ($this->kapasitasDiubahManual) {
-            return;
-        }
-
-        $kursi = $this->kursiDisarankan();
-
-        if ($kursi === null) {
-            return;
-        }
-
-        $this->kapasitas = $kursi;
-        $this->kursiOtomatisDari = trim($this->merek.' '.$this->nama);
+        $this->isiOtomatis();
     }
 
     /**
-     * Admin mengubah kapasitas sendiri: saran tidak boleh menimpanya lagi.
+     * Mengisi kapasitas, jenis, dan cc dari katalog.
+     *
+     * Berlaku di TAMBAH maupun UBAH: yang membedakan hanya siapa yang menang saat
+     * halaman dibuka. Di halaman ubah, nilai tersimpan unitnya dipakai apa adanya
+     * dan tidak ditimpa; begitu admin mengganti modelnya, saran berlaku seperti
+     * biasa — karena unit yang dimaksud sudah bukan unit yang sama.
+     *
+     * Tiap isian punya penandanya sendiri, jadi mengoreksi kapasitas tidak ikut
+     * membekukan cc dan sebaliknya.
+     */
+    private function isiOtomatis(): void
+    {
+        $sumber = trim($this->merek.' '.$this->nama);
+
+        $this->kursiOtomatisDari = '';
+        $this->ccOtomatisDari = '';
+
+        if (! $this->kapasitasDiubahManual && ($kursi = $this->kursiDisarankan()) !== null) {
+            $this->kapasitas = $kursi;
+            $this->kursiOtomatisDari = $sumber;
+        }
+
+        if (! $this->jenisDiubahManual && ($jenis = $this->jenisDisarankan()) !== null) {
+            $this->jenis = $jenis;
+        }
+
+        if (! $this->ccDiubahManual && ($cc = $this->ccDisarankan()) !== null) {
+            $this->cc = $cc;
+            $this->ccOtomatisDari = $sumber;
+        }
+    }
+
+    /**
+     * Admin mengubah isiannya sendiri: saran tidak boleh menimpanya lagi.
      */
     public function updatedKapasitas(): void
     {
         $this->kapasitasDiubahManual = true;
         $this->kursiOtomatisDari = '';
+    }
+
+    public function updatedJenis(): void
+    {
+        $this->jenisDiubahManual = true;
+    }
+
+    public function updatedCc(): void
+    {
+        $this->ccDiubahManual = true;
+        $this->ccOtomatisDari = '';
     }
 
     /**
@@ -277,7 +360,7 @@ class OrchaArmadaForm extends Component
             : ['merek' => $nilai]);
 
         if ($untukUnit) {
-            $this->isiKursiOtomatis();
+            $this->isiOtomatis();
         }
     }
 
@@ -328,10 +411,14 @@ class OrchaArmadaForm extends Component
     {
         $this->merek = trim($this->merek);
         $this->nama = '';
-        // Unitnya berganti, jadi koreksi kursi untuk unit sebelumnya tidak lagi
-        // berlaku dan saran boleh mengisi lagi.
+        $this->varian = '';
+        // Unitnya berganti, jadi koreksi untuk unit sebelumnya tidak lagi berlaku
+        // dan saran boleh mengisi lagi.
         $this->kapasitasDiubahManual = false;
+        $this->jenisDiubahManual = false;
+        $this->ccDiubahManual = false;
         $this->kursiOtomatisDari = '';
+        $this->ccOtomatisDari = '';
         $this->resetValidation(['merek', 'nama']);
     }
 
@@ -361,9 +448,9 @@ class OrchaArmadaForm extends Component
         $this->jenis = $isi['jenis'] ?? 'mobil';
         $this->nopol = (string) ($isi['nopol'] ?? '');
         $this->kapasitas = (int) ($isi['kapasitas'] ?? 7);
-        // Unit yang sudah ada memakai kapasitas tersimpannya. Menimpanya dengan
-        // saran katalog akan mengubah data yang benar tanpa diminta.
-        $this->kapasitasDiubahManual = true;
+        $this->varian = (string) ($isi['varian'] ?? '');
+        $this->tahun = $isi['tahun'] ?? '';
+        $this->cc = $isi['cc'] ?? '';
         $this->transmisi = $isi['transmisi_tersedia'] ?: ['Manual'];
         $this->tarifHari = $isi['tarif']['hari'] ?? 0;
         $this->tarifJam = $isi['tarif']['jam'] ?? '';
@@ -384,6 +471,9 @@ class OrchaArmadaForm extends Component
         $data = [
             'nama' => $this->nama,
             'merek' => $this->merek,
+            'varian' => $this->varian ?: null,
+            'tahun' => $this->tahun !== '' ? (int) $this->tahun : null,
+            'cc' => $this->cc !== '' ? (int) $this->cc : null,
             'jenis' => $this->jenis,
             'nopol' => $this->nopol,
             'kapasitas' => $this->kapasitas,
@@ -469,6 +559,8 @@ class OrchaArmadaForm extends Component
             'katalog' => $this->katalog(),
             'katalogKustom' => $this->katalogKustom(),
             'kursiDisarankan' => $this->kursiDisarankan(),
+            'ccDisarankan' => $this->ccDisarankan(),
+            'varianPilihan' => $this->varianPilihan(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }

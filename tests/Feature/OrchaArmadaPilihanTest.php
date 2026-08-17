@@ -62,6 +62,18 @@ function fakeArmada(array $ubahUnit = []): void
                 'Toyota' => ['Avanza' => 7, 'HiAce Commuter' => 15],
                 'Suzuki' => ['Ertiga' => 7],
             ],
+            'jenis_per_model' => [
+                'Toyota' => ['Avanza' => 'mobil', 'HiAce Commuter' => 'hiace'],
+                'Suzuki' => ['Ertiga' => 'mobil'],
+            ],
+            'cc_per_model' => [
+                'Toyota' => ['Avanza' => 1500, 'HiAce Commuter' => 2500],
+                'Suzuki' => ['Ertiga' => 1500],
+            ],
+            'varian_per_model' => [
+                'Toyota' => ['Avanza' => ['E', 'G', 'Veloz']],
+                'Suzuki' => ['Ertiga' => ['GA', 'GL', 'GX']],
+            ],
             'pemeriksaan_kendaraan' => ['kaca' => 'Kaca & spion'],
             'kondisi_pemeriksaan' => ['baik' => 'Baik', 'rusak' => 'Rusak'],
         ]]),
@@ -390,13 +402,14 @@ test('model tanpa angka kursi tidak mengubah kapasitas', function () {
 });
 
 test('menyunting unit memakai kapasitas tersimpannya, bukan saran katalog', function () {
-    // Unit tersimpan berkapasitas 7 sedangkan katalog juga 7; yang diuji di sini
-    // penandanya, supaya saran tidak pernah menimpa data yang sudah benar.
     fakeArmada(['kapasitas' => 4]);
 
+    // Nilai tersimpan menang saat halaman dibuka: unit ini benar-benar berkursi
+    // 4 walau katalog menyebut 7, dan saran tidak boleh mengubahnya tanpa
+    // diminta. Yang menyalakan saran lagi adalah penggantian modelnya — diuji
+    // tersendiri di 'semi otomatis juga berlaku saat mengganti unit'.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
         ->assertSet('kapasitas', 4)
-        ->assertSet('kapasitasDiubahManual', true)
         ->assertSet('kursiOtomatisDari', '');
 });
 
@@ -410,4 +423,144 @@ test('unit baru yang ditulis manual ikut mengisi kursi bila katalog mengetahuiny
         ->call('tambahKatalog', 'Avanza', true)
         ->assertSet('nama', 'Avanza')
         ->assertSet('kapasitas', 7);
+});
+
+/* ---------- JENIS & CC SEMI OTOMATIS, TIPE, TAHUN ---------- */
+
+test('memilih unit mengisi kapasitas, jenis, dan cc sekaligus', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('kapasitas', 15)
+        ->assertSet('jenis', 'hiace')
+        ->assertSet('cc', 2500);
+});
+
+test('semi otomatis berlaku di halaman tambah', function () {
+    fakeArmada();
+
+    // Halaman tambah adalah jalur utamanya: unit baru justru yang paling sering
+    // diketik dari nol.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSet('ubah', false)
+        ->set('merek', 'Suzuki')
+        ->set('nama', 'Ertiga')
+        ->assertSet('kapasitas', 7)
+        ->assertSet('jenis', 'mobil')
+        ->assertSet('cc', 1500);
+});
+
+test('semi otomatis juga berlaku saat mengganti unit di halaman ubah', function () {
+    fakeArmada(['kapasitas' => 4, 'nama' => 'Avanza', 'merek' => 'Toyota']);
+
+    // Saat halaman dibuka, nilai tersimpan unitnya yang dipakai. Begitu modelnya
+    // diganti, unit yang dimaksud sudah bukan yang sama — jadi saran berlaku.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('kapasitas', 4)
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('kapasitas', 15)
+        ->assertSet('jenis', 'hiace')
+        ->assertSet('cc', 2500);
+});
+
+test('membuka halaman ubah tidak menimpa nilai tersimpan dengan saran', function () {
+    fakeArmada(['kapasitas' => 4, 'cc' => 1300, 'varian' => 'E', 'tahun' => 2019]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('kapasitas', 4)
+        ->assertSet('cc', 1300)
+        ->assertSet('varian', 'E')
+        ->assertSet('tahun', 2019)
+        ->assertSet('kursiOtomatisDari', '')
+        ->assertSet('ccOtomatisDari', '');
+});
+
+test('koreksi tiap isian berdiri sendiri', function () {
+    fakeArmada();
+
+    // Mengoreksi kapasitas tidak boleh ikut membekukan cc, dan sebaliknya.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('kapasitas', 6)
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('kapasitas', 6)
+        ->assertSet('cc', 2500)
+        ->assertSet('jenis', 'hiace');
+});
+
+test('jenis yang diubah admin tidak ditimpa saran', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->assertSet('jenis', 'mobil')
+        ->set('jenis', 'bus')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('jenis', 'bus');
+});
+
+test('tipe tersedia sebagai pilihan dan dikosongkan saat unit berganti', function () {
+    fakeArmada();
+
+    $uji = Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza');
+
+    expect($uji->instance()->varianPilihan())->toBe(['E', 'G', 'Veloz']);
+
+    // Tipe melekat pada modelnya: "Veloz" tidak berlaku untuk Ertiga.
+    $uji->set('varian', 'Veloz')
+        ->set('nama', 'HiAce Commuter')
+        ->assertSet('varian', '');
+});
+
+test('tipe, tahun, dan cc ikut terkirim saat disimpan', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('varian', 'Veloz')
+        ->set('tahun', 2025)
+        ->set('tarifHariTeks', '500.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && ($p->data()['varian'] ?? null) === 'Veloz'
+        && ($p->data()['tahun'] ?? null) === 2025
+        && ($p->data()['cc'] ?? null) === 1500);
+});
+
+test('tahun jauh di depan ditolak sebelum dikirim', function () {
+    fakeArmada();
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')
+        ->set('nama', 'Avanza')
+        ->set('tahun', 2035)
+        ->set('tarifHariTeks', '500.000')
+        ->call('simpan')
+        ->assertHasErrors('tahun');
+});
+
+test('tipe dan tahun boleh dibiarkan kosong', function () {
+    fakeArmada();
+
+    // Unit lama tidak tahu tahunnya, dan memaksa angka ke sana hanya
+    // menghasilkan data karangan yang terlihat seperti fakta.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Suzuki')
+        ->set('nama', 'Ertiga')
+        ->set('tarifHariTeks', '450.000')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && array_key_exists('varian', $p->data()) && $p->data()['varian'] === null
+        && array_key_exists('tahun', $p->data()) && $p->data()['tahun'] === null);
 });
