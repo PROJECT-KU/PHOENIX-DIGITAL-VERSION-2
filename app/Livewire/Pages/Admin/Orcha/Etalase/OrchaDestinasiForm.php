@@ -193,6 +193,67 @@ class OrchaDestinasiForm extends Component
         }
     }
 
+    /**
+     * Menambahkan wilayah yang belum terdaftar, langsung ke daftar pilihan.
+     *
+     * Wilayah bukan sekadar isian: ia jadi tab penyaring di halaman publik.
+     * Karena itu Orcha yang menentukan kuncinya dari labelnya — kunci yang
+     * dibuat dua tempat berbeda cepat atau lambat akan berbeda bentuknya.
+     */
+    public function tambahWilayah(string $label): void
+    {
+        $label = trim($label);
+
+        if ($label === '') {
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/wilayah', ['label' => $label]);
+
+            cache()->forget('orcha.rujukan');
+
+            // Wilayah yang baru dibuat langsung dipilih; kuncinya dibaca dari
+            // daftar terbaru, bukan ditebak sendiri di sini.
+            $kunci = array_search($label, $this->rujukan('wilayah'), true);
+
+            if ($kunci !== false) {
+                $this->wilayah = $kunci;
+                $this->updatedWilayah();
+            }
+
+            $this->kabarkanWilayah($balasan['pesan'] ?? 'Wilayah ditambahkan.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghapus wilayah tambahan. Orcha menolak bila masih dipakai destinasi —
+     * pesannya diteruskan apa adanya supaya admin tahu harus berbuat apa.
+     */
+    public function hapusWilayah(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/wilayah/{$id}");
+
+            cache()->forget('orcha.rujukan');
+            $this->kabarkanWilayah($balasan['pesan'] ?? 'Wilayah dihapus.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    private function kabarkanWilayah(string $pesan): void
+    {
+        $this->dispatch('orcha-wilayah-segar',
+            daftar: $this->rujukan('wilayah'),
+            kustom: $this->rujukan('wilayah_kustom'),
+        );
+
+        $this->dispatch('order-updated', message: $pesan);
+    }
+
     public function hapusProvinsi(int $id): void
     {
         try {
@@ -362,6 +423,7 @@ class OrchaDestinasiForm extends Component
     {
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
+            'wilayahKustom' => $this->rujukan('wilayah_kustom'),
             'daftarProvinsi' => $this->provinsiTersedia(),
             'petaProvinsi' => $this->petaProvinsi(),
             'provinsiKustom' => $this->provinsiKustom(),

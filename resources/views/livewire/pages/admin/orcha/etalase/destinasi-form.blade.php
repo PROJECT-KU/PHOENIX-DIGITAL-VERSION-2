@@ -380,6 +380,7 @@
         window.__orchaPetaProvinsi = @json($petaProvinsi);
         window.__orchaProvinsiKustom = @json($provinsiKustom);
         window.__orchaDaftarWilayah = @json($daftarWilayah);
+        window.__orchaWilayahKustom = @json($wilayahKustom);
 
         if (!window.__orchaProvinsiTerpasang) {
             window.__orchaProvinsiTerpasang = true;
@@ -549,20 +550,35 @@
                 const komponen = () => window.Livewire && window.Livewire.find(cid);
                 const sekarang = provWilayah();
 
-                const baris = Object.entries(window.__orchaDaftarWilayah || {})
-                    .map(([kunci, label]) => '<div class="orcha-pick-row">'
-                        + '<button type="button" class="orcha-pick-item' + (kunci === sekarang ? ' terpilih' : '')
-                        + '" data-nilai="' + provEsc(kunci)
-                        + '" data-cari="' + provEsc(String(label).toLowerCase()) + '">'
-                        + '<i class="bi bi-compass me-2" style="color:#1d6fa5;"><\/i>' + provEsc(label)
-                        + '<\/button><\/div>')
-                    .join('');
+                // Hanya wilayah tambahan yang punya tombol hapus; yang bawaan
+                // ikut versi kode dan dipakai destinasi yang sudah ada.
+                const wilIdKustom = (kunci) => {
+                    const cocok = (window.__orchaWilayahKustom || []).find((e) => e.kunci === kunci);
+
+                    return cocok ? cocok.id : null;
+                };
+
+                const wilBaris = () => Object.entries(window.__orchaDaftarWilayah || {})
+                    .map(([kunci, label]) => {
+                        const id = wilIdKustom(kunci);
+
+                        return '<div class="orcha-pick-row">'
+                            + '<button type="button" class="orcha-pick-item' + (kunci === sekarang ? ' terpilih' : '')
+                            + '" data-nilai="' + provEsc(kunci)
+                            + '" data-cari="' + provEsc(String(label).toLowerCase()) + '">'
+                            + '<i class="bi bi-compass me-2" style="color:#1d6fa5;"><\/i>' + provEsc(label)
+                            + '<\/button>'
+                            + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
+                                + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
+                            + '<\/div>';
+                    }).join('');
 
                 Swal.fire({
                     title: 'Pilih Wilayah',
                     html: '<input id="orchaWilCari" class="form-control mb-2" placeholder="Ketik untuk mencari wilayah…">'
-                        + '<div id="orchaWilDaftar" class="orcha-pick-list">' + baris + '<\/div>'
-                        + '<div class="orcha-pick-empty mt-2">Wilayah mengikuti tab penyaring di website, jadi tidak bisa ditambah dari sini.<\/div>',
+                        + '<div id="orchaWilDaftar" class="orcha-pick-list">' + wilBaris() + '<\/div>'
+                        + '<button type="button" id="orchaWilManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
+                        + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                     background: 'rgba(255, 255, 255, 0.92)',
                     backdrop: 'rgba(29, 111, 165, 0.15)',
                     customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
@@ -583,15 +599,60 @@
                             setTimeout(() => cari.focus(), 100);
                         }
 
-                        daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
-                            b.addEventListener('click', () => {
-                                komponen() && komponen().set('wilayah', b.dataset.nilai);
-                                Swal.close();
+                        const pasangWil = () => {
+                            daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                                b.addEventListener('click', () => {
+                                    komponen() && komponen().set('wilayah', b.dataset.nilai);
+                                    Swal.close();
+                                });
+                            });
+
+                            daftarEl.querySelectorAll('.orcha-pick-del').forEach((b) => {
+                                b.addEventListener('click', (ev) => {
+                                    // Jangan sampai menghapus berarti sekaligus memilih.
+                                    ev.stopPropagation();
+                                    b.disabled = true;
+                                    komponen() && komponen().call('hapusWilayah', Number(b.dataset.id));
+                                });
+                            });
+                        };
+
+                        pasangWil();
+                        window.__orchaWilGambarUlang = () => { daftarEl.innerHTML = wilBaris(); pasangWil(); };
+
+                        const manual = document.getElementById('orchaWilManual');
+                        if (manual) manual.addEventListener('click', () => {
+                            Swal.fire({
+                                title: 'Tambah Wilayah',
+                                input: 'text',
+                                inputPlaceholder: 'mis. Jalur Rempah',
+                                text: 'Langsung jadi tab penyaring di halaman Destinasi.',
+                                background: 'rgba(255, 255, 255, 0.92)',
+                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                customClass: {
+                                    popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
+                                    confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
+                                },
+                                buttonsStyling: false, showCancelButton: true,
+                                confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
+                                inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
+                            }).then((h) => {
+                                if (!h.isConfirmed || !h.value) return;
+                                komponen() && komponen().call('tambahWilayah', h.value.trim());
                             });
                         });
                     },
+                    willClose: () => { window.__orchaWilGambarUlang = null; },
                 });
             };
+
+            // Daftar wilayah terbaru dari server.
+            window.addEventListener('orcha-wilayah-segar', function (e) {
+                const d = e.detail || {};
+                if (d.daftar) window.__orchaDaftarWilayah = d.daftar;
+                if (d.kustom) window.__orchaWilayahKustom = d.kustom;
+                if (window.__orchaWilGambarUlang) window.__orchaWilGambarUlang();
+            });
 
             // Daftar terbaru dari server: dipasang ke global, lalu popup yang
             // sedang terbuka digambar ulang di tempat.

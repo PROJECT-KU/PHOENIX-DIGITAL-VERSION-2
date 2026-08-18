@@ -247,19 +247,63 @@ test('memilih wilayah menyaring pilihan provinsinya', function () {
         ->and($uji->html())->toContain('data-orcha-wilayah="sumatera"');
 });
 
-test('wilayah dipilih lewat pemilih yang sama, tanpa tulis sendiri', function () {
+test('wilayah dan provinsi sama-sama punya jalur tulis sendiri', function () {
     fakeProvinsi();
 
-    // Wilayah bukan sekadar isian: keenamnya jadi tab penyaring di halaman
-    // publik. Wilayah ketujuh yang ditambahkan dari sini tidak punya tab, tidak
-    // punya urutan, dan destinasinya tidak ketemu oleh siapa pun.
+    // Dulu wilayah sengaja tidak bisa ditambah karena tab penyaring di halaman
+    // publik dibaca dari config. Sesudah halaman publik ikut membaca daftar
+    // gabungan, alasannya hilang: wilayah baru langsung punya tabnya sendiri.
     $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
 
     expect($html)->toContain('orchaPilihWilayah')
-        ->and($html)->toContain('Wilayah mengikuti tab penyaring di website');
+        ->and($html)->toContain('orchaWilManual')
+        ->and($html)->toContain('orchaProvManual');
+});
 
-    // Pemilih provinsi tetap punya jalur tulis sendiri.
-    expect($html)->toContain('orchaProvManual');
+test('wilayah yang ditulis sendiri langsung terdaftar dan terpilih', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    // Http::fake() yang dipanggil dua kali MENGGABUNGKAN stubnya, dan yang
+    // terdaftar lebih dulu yang menang — jadi fakeProvinsi() tidak boleh
+    // dipakai di sini, kalau tidak daftar rujukan yang baru tidak akan pernah
+    // terbaca dan yang teruji justru stub lamanya.
+    Http::fake([
+        '*/rujukan' => Http::sequence()
+            ->push(['data' => [
+                'wilayah' => ['jawa' => 'Jawa'],
+                'provinsi_wilayah' => ['Jawa Timur' => 'jawa'],
+                'provinsi_kustom' => [], 'wilayah_kustom' => [],
+            ]])
+            ->whenEmpty(Http::response(['data' => [
+                'wilayah' => ['jawa' => 'Jawa', 'jalur_rempah' => 'Jalur Rempah'],
+                'provinsi_wilayah' => ['Jawa Timur' => 'jawa'],
+                'provinsi_kustom' => [],
+                'wilayah_kustom' => [['id' => 4, 'kunci' => 'jalur_rempah', 'label' => 'Jalur Rempah']],
+            ]])),
+        '*/wilayah' => Http::response(['pesan' => 'Jalur Rempah ditambahkan.'], 201),
+        '*' => Http::response(['data' => []]),
+    ]);
+
+    // Kuncinya dibaca dari daftar terbaru, bukan ditebak di lemon: kunci yang
+    // dibuat dua tempat berbeda cepat atau lambat akan berbeda bentuknya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('tambahWilayah', 'Jalur Rempah')
+        ->assertSet('wilayah', 'jalur_rempah')
+        ->assertDispatched('orcha-wilayah-segar');
+});
+
+test('menghapus wilayah meneruskan penolakan orcha apa adanya', function () {
+    fakeProvinsi();
+
+    // Orcha menolak menghapus wilayah yang masih dipakai destinasi. Pesannya
+    // diteruskan supaya admin tahu harus berbuat apa, bukan sekadar "gagal".
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('hapusWilayah', 4)
+        ->assertDispatched('orcha-wilayah-segar');
+
+    Http::assertSent(fn ($p) => $p->method() === 'DELETE' && str_contains($p->url(), '/wilayah/4'));
 });
 
 test('provinsi yang tidak cocok dikosongkan saat wilayah diganti', function () {
