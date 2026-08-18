@@ -778,3 +778,46 @@ test('usulan yang datang tidak lengkap tidak meruntuhkan halaman', function () {
         ->assertSet('provinsi', '')
         ->assertHasNoErrors();
 });
+
+/* ---------- SIMPANAN RUJUKAN ---------- */
+
+test('rujukan yang gagal tidak ikut disimpan', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    // Dulu jawaban kosong dari Orcha yang sedang bermasalah tersimpan sepuluh
+    // menit penuh, dan selama itu SELURUH pemilih di admin tampak rusak —
+    // wilayah, provinsi, daerah, dan katalog destinasi sama-sama kosong, tanpa
+    // satu pun pesan yang menjelaskan sebabnya.
+    Http::fake(['*' => Http::response([], 500)]);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class);
+
+    expect(cache()->get('orcha.rujukan'))->toBeNull();
+});
+
+test('simpanan yang terlanjur kosong dianggap belum ada', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+
+    // Keadaan yang benar-benar terjadi: simpanan berisi larik kosong warisan
+    // kegagalan sebelumnya. Tanpa perlakuan ini, admin harus menunggu sepuluh
+    // menit tanpa tahu apa yang ditunggunya.
+    cache()->put('orcha.rujukan', [], now()->addMinutes(10));
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa'],
+            'provinsi_wilayah' => ['Jawa Timur' => 'jawa'],
+            'provinsi_kustom' => [], 'wilayah_kustom' => [],
+            'katalog_daerah' => [], 'katalog_daerah_kustom' => [],
+            'katalog_destinasi' => [], 'katalog_destinasi_kustom' => [],
+        ]]),
+        '*' => Http::response(['data' => []]),
+    ]);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->assertSee('Jawa');
+
+    expect(cache()->get('orcha.rujukan'))->toHaveKey('wilayah');
+});

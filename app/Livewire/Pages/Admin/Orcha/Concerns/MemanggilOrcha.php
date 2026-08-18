@@ -95,13 +95,29 @@ trait MemanggilOrcha
      */
     protected function rujukan(string $kunci): array
     {
-        $semua = cache()->remember('orcha.rujukan', now()->addMinutes(10), function () {
+        $semua = cache()->get('orcha.rujukan');
+
+        // Kegagalan TIDAK ikut disimpan.
+        //
+        // Dulu memakai cache()->remember, sehingga jawaban kosong dari Orcha
+        // yang sedang bermasalah tersimpan sepuluh menit penuh — dan selama itu
+        // SELURUH pemilih di admin tampak rusak: wilayah, provinsi, daerah, dan
+        // katalog destinasi sama-sama kosong, tanpa satu pun pesan yang
+        // menjelaskan sebabnya. Admin melihatnya sebagai fitur yang tidak jalan,
+        // padahal cukup menunggu — dan menunggu itulah yang tidak diberitahukan.
+        //
+        // Sekarang yang gagal dicoba lagi pada permintaan berikutnya.
+        if (! is_array($semua) || $semua === []) {
             try {
-                return $this->orcha()->ambil('/rujukan')['data'] ?? [];
+                $semua = $this->orcha()->ambil('/rujukan')['data'] ?? [];
             } catch (OrchaTidakTerjangkau) {
                 return [];
             }
-        });
+
+            if ($semua !== []) {
+                cache()->put('orcha.rujukan', $semua, now()->addMinutes(10));
+            }
+        }
 
         return $semua[$kunci] ?? [];
     }
