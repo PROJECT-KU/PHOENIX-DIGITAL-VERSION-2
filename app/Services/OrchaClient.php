@@ -146,7 +146,7 @@ class OrchaClient
      *
      * @throws OrchaTidakTerjangkau
      */
-    public function kirim(string $jalur, array $data = [], $gambar = null): array
+    public function kirim(string $jalur, array $data = [], $gambar = null, array $berkasLain = []): array
     {
         if (! $this->siap()) {
             throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel.');
@@ -163,9 +163,24 @@ class OrchaClient
                 );
             }
 
+            // Berkas jamak, misalnya gambar tambahan destinasi. Namanya dikirim
+            // bergaya `sub_foto[]` supaya sampai di sisi Orcha sebagai larik —
+            // satu nama tanpa kurung hanya menyisakan berkas terakhir.
+            foreach ($berkasLain as $nama => $daftar) {
+                foreach ($daftar as $berkas) {
+                    $permintaan = $permintaan->attach(
+                        $nama.'[]',
+                        file_get_contents($berkas->getRealPath()),
+                        $berkas->getClientOriginalName()
+                    );
+                }
+            }
+
+            $adaBerkas = (bool) $gambar || $berkasLain !== [];
+
             // Nilai larik dan boolean harus diratakan dulu: multipart hanya
             // mengenal pasangan nama-nilai berupa teks.
-            $balasan = $permintaan->post($jalur, $gambar ? $this->ratakan($data) : $data);
+            $balasan = $permintaan->post($jalur, $adaBerkas ? $this->ratakan($data) : $data);
         } catch (\Throwable $e) {
             throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Data belum tersimpan.');
         }

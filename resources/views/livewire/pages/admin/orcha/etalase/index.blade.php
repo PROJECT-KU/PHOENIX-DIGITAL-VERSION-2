@@ -177,26 +177,108 @@
                             @endif
 
                             <label class="form-label small fw-semibold">
-                                {{ $jenis === 'partner' ? 'Logo' : ($jenis === 'testimoni' ? 'Foto orangnya' : 'Foto') }}
+                                {{ $jenis === 'partner' ? 'Logo' : ($jenis === 'testimoni' ? 'Foto orangnya' : 'Foto utama') }}
                             </label>
 
-                            @if ($gambar)
-                                <div class="mb-2">
-                                    <img src="{{ $gambar->temporaryUrl() }}" alt=""
-                                        class="img-fluid rounded-3" style="max-height: 140px">
+                            {{-- Pratinjau dan pemilih berkas dijadikan satu kotak.
+                                 Sebelumnya gambarnya melayang di atas isian tanpa
+                                 pembatas, sehingga tidak terbaca sebagai pasangan. --}}
+                            <div class="orcha-foto-kotak @error('gambar') galat @enderror">
+                                <div class="orcha-foto-rupa">
+                                    @if ($gambar)
+                                        <img src="{{ $gambar->temporaryUrl() }}" alt="">
+                                    @elseif ($gambarLama && $tautanGambar($gambarLama))
+                                        <img src="{{ $tautanGambar($gambarLama) }}" alt="">
+                                    @else
+                                        <span class="orcha-foto-kosong"><i class="bi bi-image"></i></span>
+                                    @endif
                                 </div>
-                            @elseif ($gambarLama && $tautanGambar($gambarLama))
-                                <div class="mb-2">
-                                    <img src="{{ $tautanGambar($gambarLama) }}" alt=""
-                                        class="img-fluid rounded-3" style="max-height: 140px">
+
+                                <div class="orcha-foto-isi">
+                                    <input type="file" class="form-control form-control-sm @error('gambar') is-invalid @enderror"
+                                        wire:model="gambar" accept="image/*">
+                                    <div class="form-text">Maksimal 4 MB. Kosong berarti gambar lama tetap dipakai.</div>
+                                    <div wire:loading wire:target="gambar" class="text-muted small">Mengunggah…</div>
+                                    @error('gambar') <div class="text-danger small">{{ $message }}</div> @enderror
+                                </div>
+                            </div>
+
+                            {{-- Gambar tambahan — hanya destinasi yang punya.
+
+                                 Kartu destinasi di halaman publik menampilkannya di
+                                 bawah keterangan, tetapi jendela ini dulu hanya
+                                 mengenal satu foto: admin yang mengurus destinasi dari
+                                 sini tidak punya cara menambah maupun menghapusnya, dan
+                                 harus membuka admin bawaan Orcha — yang justru
+                                 dihindari dengan adanya halaman ini. --}}
+                            @if ($jenis === 'destinasi')
+                                <div class="orcha-sub-foto mt-3">
+                                    <div class="orcha-sub-kepala">
+                                        <span class="judul">
+                                            <i class="bi bi-images"></i>
+                                            Gambar tambahan
+                                        </span>
+                                        <span class="ket">
+                                            Tampil di kartu destinasi —
+                                            sisa {{ $this->sisaSubFoto() }} dari {{ $batasSubFoto }}
+                                        </span>
+                                    </div>
+
+                                    @if ($subFotoTetap || $subFoto)
+                                        <div class="orcha-sub-petak">
+                                            @foreach ($subFotoTetap as $jalur)
+                                                <div class="petak" wire:key="sub-tetap-{{ md5($jalur) }}">
+                                                    <img src="{{ $tautanGambar($jalur) }}" alt="">
+                                                    {{-- Berkasnya baru dibuang di Orcha saat
+                                                         perubahan disimpan, jadi menutup jendela
+                                                         tanpa menyimpan tidak menghilangkan apa
+                                                         pun. --}}
+                                                    <button type="button" class="buang"
+                                                        wire:click="hapusSubFoto('{{ $jalur }}')"
+                                                        title="Keluarkan gambar ini">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+
+                                            @foreach ($subFoto as $urutan => $berkas)
+                                                <div class="petak baru" wire:key="sub-baru-{{ $urutan }}">
+                                                    <img src="{{ $berkas->temporaryUrl() }}" alt="">
+                                                    <span class="tanda">Baru</span>
+                                                    <button type="button" class="buang"
+                                                        wire:click="batalkanSubFoto({{ $urutan }})"
+                                                        title="Batalkan gambar ini">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="orcha-sub-kosong">
+                                            <i class="bi bi-image"></i>
+                                            Belum ada gambar tambahan.
+                                        </p>
+                                    @endif
+
+                                    @if ($this->sisaSubFoto() > 0)
+                                        <input type="file" multiple
+                                            class="form-control form-control-sm mt-2 @error('subFoto.0') is-invalid @enderror"
+                                            wire:model="subFoto" accept="image/*">
+                                        <div class="form-text">
+                                            Bisa pilih beberapa sekaligus — maksimal 2 MB per gambar.
+                                        </div>
+                                    @else
+                                        <p class="orcha-sub-penuh mt-2">
+                                            <i class="bi bi-check-circle"></i>
+                                            Sudah {{ $batasSubFoto }} gambar — hapus salah satu untuk menambah.
+                                        </p>
+                                    @endif
+
+                                    <div wire:loading wire:target="subFoto" class="text-muted small mt-1">Mengunggah…</div>
+                                    @error('subFoto') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    @error('subFoto.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 </div>
                             @endif
-
-                            <input type="file" class="form-control @error('gambar') is-invalid @enderror"
-                                wire:model="gambar" accept="image/*">
-                            @error('gambar') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            <div class="form-text">Maksimal 4 MB. Kosong berarti gambar lama tetap dipakai.</div>
-                            <div wire:loading wire:target="gambar" class="text-muted small mt-2">Mengunggah…</div>
                         </div>
 
                         <div class="modal-footer border-0">
@@ -216,4 +298,157 @@
     @endif
 
     @include('livewire.pages.admin.orcha.partials.skrip')
+
+    <style>
+        /* Pratinjau dan pemilih berkas sebagai satu kotak: keduanya satu
+           keputusan, dan gambar yang melayang tanpa pembatas tidak terbaca
+           sebagai pasangan isiannya. */
+        .orcha-foto-kotak {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .75rem;
+            border: 1px solid #e3e8ef;
+            border-radius: 14px;
+            background: #fbfdff;
+        }
+
+        .orcha-foto-kotak.galat {
+            border-color: #f6c9cd;
+            background: #fdf7f8;
+        }
+
+        .orcha-foto-rupa {
+            width: 5.5rem;
+            height: 4rem;
+            flex-shrink: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #eef2f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .orcha-foto-rupa img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Ikon dibungkus kotak yang memusatkan sendiri isinya — ikon telanjang
+           tingginya ditentukan kotak barisnya, bukan oleh font-size-nya. */
+        .orcha-foto-kosong {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #94a3b8;
+            font-size: 1.15rem;
+        }
+
+        .orcha-foto-isi { flex: 1; min-width: 0; }
+
+        .orcha-foto-isi .form-text { margin-bottom: 0; }
+
+        .orcha-sub-foto {
+            padding: .85rem;
+            border: 1px solid #e3e8ef;
+            border-radius: 14px;
+            background: #fbfdff;
+        }
+
+        .orcha-sub-kepala {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: .1rem .6rem;
+            margin-bottom: .6rem;
+        }
+
+        .orcha-sub-kepala .judul {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-size: .82rem;
+            font-weight: 700;
+            color: #0f2d4a;
+        }
+
+        .orcha-sub-kepala .ket { font-size: .74rem; color: #64748b; }
+
+        /* Petak seukuran sama supaya deretannya rapi berapa pun rasio
+           gambarnya — kartu di website pun memotongnya begitu. */
+        .orcha-sub-petak {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+            gap: .6rem;
+        }
+
+        .orcha-sub-petak .petak {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e3e8ef;
+            background: #eef2f6;
+        }
+
+        .orcha-sub-petak .petak img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Yang baru dipilih ditandai: sebelum disimpan, keduanya terlihat sama
+           padahal yang satu belum tersimpan di mana pun. */
+        .orcha-sub-petak .petak.baru { border-color: #9fd0b4; }
+
+        .orcha-sub-petak .tanda {
+            position: absolute;
+            left: .35rem;
+            bottom: .35rem;
+            padding: .05rem .35rem;
+            border-radius: 5px;
+            background: rgba(26, 138, 82, .92);
+            color: #fff;
+            font-size: .62rem;
+            font-weight: 700;
+        }
+
+        .orcha-sub-petak .buang {
+            position: absolute;
+            top: .3rem;
+            right: .3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.4rem;
+            height: 1.4rem;
+            padding: 0;
+            border: 0;
+            border-radius: 50%;
+            background: rgba(15, 45, 74, .78);
+            color: #fff;
+            font-size: .62rem;
+            line-height: 1;
+        }
+
+        .orcha-sub-petak .buang:hover { background: #c2323c; }
+
+        .orcha-sub-kosong,
+        .orcha-sub-penuh {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            margin: 0;
+            font-size: .78rem;
+            color: #64748b;
+        }
+
+        .orcha-sub-penuh { color: #1a6b43; }
+    </style>
 </div>

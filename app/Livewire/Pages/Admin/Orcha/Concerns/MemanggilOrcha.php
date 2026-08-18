@@ -140,10 +140,10 @@ trait MemanggilOrcha
      *
      * @param  \Illuminate\Http\UploadedFile|null  $gambar
      */
-    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null, ?string $tujuan = null): bool
+    protected function kirimData(string $jalur, array $data, string $pesanSukses, $gambar = null, ?string $tujuan = null, array $berkasLain = []): bool
     {
         try {
-            $this->orcha()->kirim($jalur, $data, $gambar);
+            $this->orcha()->kirim($jalur, $data, $gambar, $berkasLain);
 
             $tujuan
                 ? $this->dispatch('orcha-sukses-pindah', message: $pesanSukses, url: $tujuan)
