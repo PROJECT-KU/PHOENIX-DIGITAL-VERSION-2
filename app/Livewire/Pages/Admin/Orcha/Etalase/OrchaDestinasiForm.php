@@ -29,6 +29,14 @@ class OrchaDestinasiForm extends Component
 
     public string $provinsi = '';
 
+    /**
+     * Daerah: kabupaten, kota, atau kawasan tempat destinasinya berada.
+     *
+     * Alamat yang melompat dari nama langsung ke provinsi menyembunyikan yang
+     * justru ditanyakan penyewa — berangkat dari mana, menginap di mana.
+     */
+    public string $daerah = '';
+
     public string $deskripsi = '';
 
     public $totalPengunjung = 0;
@@ -82,6 +90,7 @@ class OrchaDestinasiForm extends Component
         $this->nama = (string) ($isi['nama'] ?? '');
         $this->wilayah = (string) ($isi['wilayah'] ?? 'jawa');
         $this->provinsi = (string) ($isi['provinsi'] ?? '');
+        $this->daerah = (string) ($isi['daerah'] ?? '');
         $this->deskripsi = (string) ($isi['deskripsi'] ?? '');
         $this->totalPengunjung = $isi['total_pengunjung'] ?? 0;
         $this->gambarLama = $isi['foto'] ?? null;
@@ -103,6 +112,94 @@ class OrchaDestinasiForm extends Component
         if ($wilayah) {
             $this->wilayah = $wilayah;
         }
+
+        // Daerah yang bukan milik provinsi baru dikosongkan — "Banyuwangi, Bali"
+        // adalah alamat yang tidak pernah ada, dan yang salah begitu tidak
+        // ketahuan sampai ada penyewa yang bertanya.
+        if ($this->daerah !== '' && ($this->katalogDaerah()[$this->daerah] ?? null) !== $this->provinsi) {
+            $this->daerah = '';
+        }
+    }
+
+    /**
+     * @return array<string, string> nama daerah => provinsi
+     */
+    public function katalogDaerah(): array
+    {
+        return $this->rujukan('katalog_daerah');
+    }
+
+    public function katalogDaerahKustom(): array
+    {
+        return $this->rujukan('katalog_daerah_kustom');
+    }
+
+    /**
+     * Daerah yang termasuk provinsi terpilih.
+     *
+     * @return list<string>
+     */
+    public function daerahTersedia(): array
+    {
+        $cocok = array_keys(array_filter(
+            $this->katalogDaerah(),
+            fn (string $provinsi) => $provinsi === $this->provinsi,
+        ));
+
+        sort($cocok);
+
+        return $cocok;
+    }
+
+    /**
+     * Menambahkan daerah yang belum terdaftar, lalu memilihnya.
+     *
+     * Provinsi yang sedang dipilih ikut terkirim: daftar daerah yang tidak tahu
+     * provinsinya tidak bisa disaring, dan yang tidak tersaring akan menawarkan
+     * Banyuwangi kepada admin yang sedang mengisi destinasi di Bali.
+     */
+    public function tambahDaerah(string $nama): void
+    {
+        $nama = trim($nama);
+
+        if ($nama === '' || $this->provinsi === '') {
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/daerah', [
+                'nama' => $nama,
+                'provinsi' => $this->provinsi,
+            ]);
+
+            $this->daerah = $nama;
+            cache()->forget('orcha.rujukan');
+            $this->kabarkanDaerah($balasan['pesan'] ?? 'Daerah ditambahkan.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function hapusDaerah(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/daerah/{$id}");
+
+            cache()->forget('orcha.rujukan');
+            $this->kabarkanDaerah($balasan['pesan'] ?? 'Daerah dihapus.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    private function kabarkanDaerah(string $pesan): void
+    {
+        $this->dispatch('orcha-daerah-segar',
+            katalog: $this->katalogDaerah(),
+            kustom: $this->katalogDaerahKustom(),
+        );
+
+        $this->dispatch('order-updated', message: $pesan);
     }
 
     /**
@@ -391,12 +488,21 @@ class OrchaDestinasiForm extends Component
 
         $usulan = $this->cariLokasi($this->nama);
 
-        if ($usulan === null) {
+        // Jawaban yang datang tetapi tidak lengkap diperlakukan sama dengan
+        // tidak ada jawaban. Sebelumnya hanya null yang dijaga, sehingga
+        // balasan kosong ({} atau []) membuat halaman galat justru saat admin
+        // sedang mengetik — dan galat sewaktu mengetik adalah yang paling
+        // merusak kepercayaan pada isian yang mengisi dirinya sendiri.
+        if (blank($usulan['provinsi'] ?? null) || blank($usulan['wilayah'] ?? null)) {
             return;
         }
 
         $this->provinsi = $usulan['provinsi'];
         $this->wilayah = $usulan['wilayah'];
+
+        if ($this->daerah === '' && ! blank($usulan['daerah'] ?? null)) {
+            $this->daerah = $usulan['daerah'];
+        }
 
         $this->usulanLokasi = ($usulan['sumber'] ?? '') === 'destinasi'
             ? 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.'
@@ -425,6 +531,7 @@ class OrchaDestinasiForm extends Component
             'nama' => 'required|string|max:191',
             'wilayah' => 'required|string',
             'provinsi' => 'nullable|string|max:100',
+            'daerah' => 'nullable|string|max:100',
             'deskripsi' => 'nullable|string|max:1000',
             'totalPengunjung' => 'nullable|integer|min:0',
             'gambar' => 'nullable|image|max:4096',
@@ -489,6 +596,7 @@ class OrchaDestinasiForm extends Component
             'nama' => $this->nama,
             'wilayah' => $this->wilayah,
             'provinsi' => $this->provinsi,
+            'daerah' => $this->daerah,
             'deskripsi' => $this->deskripsi,
             'total_pengunjung' => $this->totalPengunjung ?: 0,
             // Selalu dikirim, termasuk saat kosong: daftar kosong berarti "semua
@@ -515,6 +623,8 @@ class OrchaDestinasiForm extends Component
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
             'wilayahKustom' => $this->rujukan('wilayah_kustom'),
+            'katalogDaerah' => $this->katalogDaerah(),
+            'katalogDaerahKustom' => $this->katalogDaerahKustom(),
             'katalogDestinasi' => $this->katalogDestinasi(),
             'katalogDestinasiKustom' => $this->katalogDestinasiKustom(),
             'daftarProvinsi' => $this->provinsiTersedia(),

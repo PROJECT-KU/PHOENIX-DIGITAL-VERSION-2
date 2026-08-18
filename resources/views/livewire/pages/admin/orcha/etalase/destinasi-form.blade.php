@@ -143,6 +143,30 @@
                                     </div>
                                 </div>
 
+                                <div class="col-6 col-md-7">
+                                    <label class="form-label small fw-semibold">Daerah</label>
+
+                                    {{-- Provinsi yang sedang dipilih ditempel di DOM: pemilih
+                                         daerah menyaring memakainya, dan nilai yang ditulis di
+                                         dalam <script> membeku pada pemuatan pertama. --}}
+                                    <span data-orcha-provinsi="{{ $provinsi }}" class="d-none"></span>
+
+                                    <button type="button" onclick="orchaPilihDaerah(this)"
+                                        class="form-select text-start orcha-picker @error('daerah') is-invalid @enderror">
+                                        @if (trim($daerah) !== '')
+                                            <span class="text-dark fw-semibold">{{ $daerah }}</span>
+                                        @else
+                                            <span class="text-muted">— Pilih daerah —</span>
+                                        @endif
+                                    </button>
+
+                                    @error('daerah') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                    <div class="form-text">
+                                        Kabupaten, kota, atau kawasannya — tampil di kartu sebagai
+                                        "{{ $daerah ?: 'Banyuwangi' }}, {{ $provinsi ?: 'Jawa Timur' }}".
+                                    </div>
+                                </div>
+
                                 <div class="col-6 col-md-5">
                                     <label class="form-label small fw-semibold">Perkiraan pengunjung</label>
                                     <input type="number" min="0"
@@ -298,8 +322,13 @@
 
                                         <div class="orcha-dest-judul">
                                             <strong>{{ $nama ?: 'Nama destinasi' }}</strong>
-                                            @if ($provinsi)
-                                                <span><i class="bi bi-geo-alt-fill"></i> {{ $provinsi }}</span>
+                                            @php
+                                                $alamat = collect([$daerah, $provinsi])
+                                                    ->filter(fn ($b) => trim((string) $b) !== '')
+                                                    ->implode(', ');
+                                            @endphp
+                                            @if ($alamat)
+                                                <span><i class="bi bi-geo-alt-fill"></i> {{ $alamat }}</span>
                                             @endif
                                         </div>
                                     </div>
@@ -394,6 +423,8 @@
         window.__orchaProvinsiKustom = @json($provinsiKustom);
         window.__orchaDaftarWilayah = @json($daftarWilayah);
         window.__orchaWilayahKustom = @json($wilayahKustom);
+        window.__orchaKatalogDaerah = @json($katalogDaerah);
+        window.__orchaKatalogDaerahKustom = @json($katalogDaerahKustom);
         window.__orchaKatalogDestinasi = @json($katalogDestinasi);
         window.__orchaKatalogDestinasiKustom = @json($katalogDestinasiKustom);
 
@@ -660,6 +691,161 @@
                     willClose: () => { window.__orchaWilGambarUlang = null; },
                 });
             };
+
+            /**
+             * Pemilih daerah — menyaring mengikuti provinsi yang sedang dipilih,
+             * sama seperti provinsi menyaring mengikuti wilayah.
+             */
+            window.orchaPilihDaerah = function (tombol) {
+                if (typeof Swal === 'undefined') return;
+
+                const wadah = tombol.closest('[wire\\:id]');
+                if (!wadah) return;
+
+                const cid = wadah.getAttribute('wire:id');
+                const komponen = () => window.Livewire && window.Livewire.find(cid);
+
+                // Dibaca dari DOM, bukan dari nilai yang dibekukan <script>.
+                const provSekarang = () => {
+                    const penanda = document.querySelector('[data-orcha-provinsi]');
+
+                    return penanda ? penanda.getAttribute('data-orcha-provinsi') : '';
+                };
+
+                const daerahIdKustom = (nama) => {
+                    const cocok = (window.__orchaKatalogDaerahKustom || [])
+                        .find((e) => e.nama === nama && e.provinsi === provSekarang());
+
+                    return cocok ? cocok.id : null;
+                };
+
+                const daerahDaftar = () => Object.keys(window.__orchaKatalogDaerah || {})
+                    .filter((n) => window.__orchaKatalogDaerah[n] === provSekarang())
+                    .sort((a, b) => a.localeCompare(b, 'id'));
+
+                const daerahBaris = () => {
+                    const daftar = daerahDaftar();
+
+                    if (! provSekarang()) {
+                        return '<div class="orcha-pick-empty">Pilih provinsinya dulu — daftar daerah mengikuti provinsi.<\/div>';
+                    }
+
+                    if (! daftar.length) {
+                        return '<div class="orcha-pick-empty">Belum ada daerah di provinsi ini. Pakai "Tulis sendiri" di bawah.<\/div>';
+                    }
+
+                    return daftar.map((n) => {
+                        const id = daerahIdKustom(n);
+
+                        return '<div class="orcha-pick-row">'
+                            + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
+                            + '" data-cari="' + provEsc(String(n).toLowerCase()) + '">'
+                            + '<i class="bi bi-pin-map me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                            + '<\/button>'
+                            + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
+                                + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
+                            + '<\/div>';
+                    }).join('');
+                };
+
+                const pasangDaerah = () => {
+                    const daftarEl = document.getElementById('orchaDaerahDaftar');
+                    if (!daftarEl) return;
+
+                    daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                        b.addEventListener('click', () => {
+                            komponen() && komponen().set('daerah', b.dataset.nilai);
+                            Swal.close();
+                        });
+                    });
+
+                    daftarEl.querySelectorAll('.orcha-pick-del').forEach((b) => {
+                        b.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            b.disabled = true;
+                            komponen() && komponen().call('hapusDaerah', Number(b.dataset.id));
+                        });
+                    });
+                };
+
+                Swal.fire({
+                    title: 'Pilih Daerah',
+                    html: '<input id="orchaDaerahCari" class="form-control mb-2" placeholder="Ketik untuk mencari daerah…">'
+                        + '<div id="orchaDaerahDaftar" class="orcha-pick-list">' + daerahBaris() + '<\/div>'
+                        + '<button type="button" id="orchaDaerahManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
+                        + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
+                    width: 480, padding: '1.25rem',
+                    willClose: () => { window.__orchaDaerahGambarUlang = null; },
+                    didOpen: () => {
+                        const cari = document.getElementById('orchaDaerahCari');
+                        const daftarEl = document.getElementById('orchaDaerahDaftar');
+
+                        if (cari) {
+                            cari.addEventListener('input', () => {
+                                const q = cari.value.toLowerCase().trim();
+                                daftarEl.querySelectorAll('.orcha-pick-row').forEach((r) => {
+                                    r.style.display = r.querySelector('.orcha-pick-item')
+                                        .dataset.cari.includes(q) ? '' : 'none';
+                                });
+                            });
+                            setTimeout(() => cari.focus(), 100);
+                        }
+
+                        pasangDaerah();
+                        window.__orchaDaerahGambarUlang = () => {
+                            daftarEl.innerHTML = daerahBaris();
+                            pasangDaerah();
+                        };
+
+                        const manual = document.getElementById('orchaDaerahManual');
+                        if (manual) manual.addEventListener('click', () => {
+                            if (! provSekarang()) {
+                                Swal.fire({
+                                    title: 'Pilih provinsinya dulu',
+                                    text: 'Daerah disimpan bersama provinsinya, supaya daftarnya bisa disaring.',
+                                    icon: 'info',
+                                    background: 'rgba(255, 255, 255, 0.92)',
+                                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' },
+                                    buttonsStyling: false,
+                                    confirmButtonText: 'Mengerti',
+                                });
+
+                                return;
+                            }
+
+                            Swal.fire({
+                                title: 'Tambah Daerah',
+                                input: 'text',
+                                inputPlaceholder: 'mis. Situbondo',
+                                text: 'Ditambahkan ke provinsi ' + provSekarang() + '.',
+                                background: 'rgba(255, 255, 255, 0.92)',
+                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                customClass: {
+                                    popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
+                                    confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
+                                },
+                                buttonsStyling: false, showCancelButton: true,
+                                confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
+                                inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
+                            }).then((h) => {
+                                if (!h.isConfirmed || !h.value) return;
+                                komponen() && komponen().call('tambahDaerah', h.value.trim());
+                            });
+                        });
+                    },
+                });
+            };
+
+            window.addEventListener('orcha-daerah-segar', function (e) {
+                const d = e.detail || {};
+                if (d.katalog) window.__orchaKatalogDaerah = d.katalog;
+                if (d.kustom) window.__orchaKatalogDaerahKustom = d.kustom;
+                if (window.__orchaDaerahGambarUlang) window.__orchaDaerahGambarUlang();
+            });
 
             /**
              * Pemilih nama destinasi.

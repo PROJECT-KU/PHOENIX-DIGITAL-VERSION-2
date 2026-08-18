@@ -582,3 +582,124 @@ test('hanya entri tambahan yang punya tombol hapus di daftar destinasi', functio
         ->and($html)->toContain('orchaDestManual')
         ->and($html)->toContain('Pantai Rahasia');
 });
+
+/* ---------- DAERAH ---------- */
+
+function fakeDaerah(): void
+{
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa', 'bali' => 'Bali'],
+            'wilayah_kustom' => [],
+            'provinsi_wilayah' => ['Jawa Timur' => 'jawa', 'Bali' => 'bali'],
+            'provinsi_kustom' => [],
+            'katalog_daerah' => [
+                'Banyuwangi' => 'Jawa Timur', 'Malang' => 'Jawa Timur',
+                'Nusa Penida' => 'Bali', 'Badung' => 'Bali',
+            ],
+            'katalog_daerah_kustom' => [['id' => 7, 'nama' => 'Situbondo', 'provinsi' => 'Jawa Timur']],
+            'katalog_destinasi' => [], 'katalog_destinasi_kustom' => [],
+        ]]),
+        '*/daerah*' => Http::response(['pesan' => 'ditambahkan'], 201),
+        '*' => Http::response(['data' => []]),
+    ]);
+}
+
+test('daftar daerah menyusut mengikuti provinsi', function () {
+    fakeDaerah();
+
+    $uji = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur');
+
+    expect($uji->instance()->daerahTersedia())->toBe(['Banyuwangi', 'Malang']);
+
+    $uji->set('provinsi', 'Bali');
+
+    expect($uji->instance()->daerahTersedia())->toBe(['Badung', 'Nusa Penida']);
+
+    // Provinsinya ditempel di DOM: pemilih daerah membacanya saat diklik, dan
+    // nilai yang ditulis di dalam <script> membeku pada pemuatan pertama.
+    expect($uji->html())->toContain('data-orcha-provinsi="Bali"');
+});
+
+test('daerah yang tidak cocok dikosongkan saat provinsi diganti', function () {
+    fakeDaerah();
+
+    // "Banyuwangi, Bali" adalah alamat yang tidak pernah ada, dan yang salah
+    // begitu tidak ketahuan sampai ada penyewa yang bertanya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->set('daerah', 'Banyuwangi')
+        ->set('provinsi', 'Bali')
+        ->assertSet('daerah', '');
+});
+
+test('daerah yang masih cocok tidak ikut dikosongkan', function () {
+    fakeDaerah();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->set('daerah', 'Banyuwangi')
+        ->set('provinsi', 'Jawa Timur')
+        ->assertSet('daerah', 'Banyuwangi');
+});
+
+test('menambah daerah menyertakan provinsi yang sedang dipilih', function () {
+    fakeDaerah();
+
+    // Daftar daerah yang tidak tahu provinsinya tidak bisa disaring, dan yang
+    // tidak tersaring akan menawarkan Banyuwangi kepada admin yang sedang
+    // mengisi destinasi di Bali.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->call('tambahDaerah', 'Situbondo')
+        ->assertSet('daerah', 'Situbondo')
+        ->assertDispatched('orcha-daerah-segar');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/daerah')
+        && ($p->data()['nama'] ?? null) === 'Situbondo'
+        && ($p->data()['provinsi'] ?? null) === 'Jawa Timur');
+});
+
+test('daerah tidak bisa ditambah sebelum provinsinya dipilih', function () {
+    fakeDaerah();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('tambahDaerah', 'Situbondo')
+        ->assertSet('daerah', '');
+
+    Http::assertNotSent(fn ($p) => $p->method() === 'POST' && str_contains($p->url(), '/daerah'));
+});
+
+test('daerah ikut tersimpan dan tampil di pratinjau', function () {
+    fakeDaerah();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Kawah Ijen')
+        ->set('provinsi', 'Jawa Timur')
+        ->set('daerah', 'Banyuwangi')
+        ->assertSee('Banyuwangi, Jawa Timur')
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/destinasi')
+        && ($p->data()['daerah'] ?? null) === 'Banyuwangi');
+});
+
+test('usulan yang datang tidak lengkap tidak meruntuhkan halaman', function () {
+    fakeUsulan([]);
+
+    // Balasan kosong dari Orcha dulu membuat halaman galat justru saat admin
+    // sedang mengetik — dan galat sewaktu mengetik paling merusak kepercayaan
+    // pada isian yang mengisi dirinya sendiri.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Tempat Antah Berantah')
+        ->assertSet('provinsi', '')
+        ->assertHasNoErrors();
+});
