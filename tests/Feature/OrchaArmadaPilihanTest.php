@@ -1167,11 +1167,29 @@ test('isian tarif sopir disembunyikan bila sudah termasuk', function () {
 
     // Menampilkan isian yang nilainya pasti diabaikan hanya mengundang angka
     // yang tidak berarti.
+    //
+    // Kendalinya kini berada di dalam blok "Dalam kota", sebentuk dengan blok
+    // luar kota di sebelahnya — sebelumnya ia di kartu Tarif, dan di sana tidak
+    // ada satu kata pun yang menyebut wilayahnya, sehingga admin melihat dua
+    // sakelar sopir tanpa tahu mana mengatur apa.
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
-        ->assertSee('Sopir dihitung terpisah')
+        ->assertSee('Tarif sopir dalam kota per hari')
         ->set('termasukSopir', true)
-        ->assertSee('Termasuk tarif')
-        ->assertSee('Tarif sudah termasuk sopir');
+        ->assertSee('Sudah termasuk harga')
+        ->assertDontSee('Tarif sopir dalam kota per hari');
+});
+
+test('kedua sakelar sopir menyebut wilayahnya masing-masing', function () {
+    fakeArmada();
+
+    // Dua sakelar bernama sama di satu halaman membingungkan; yang membedakan
+    // keduanya wilayahnya, jadi wilayahnya yang harus terbaca.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->assertSee('Tarif sopir dalam kota per hari')
+        ->assertSee('Tarif sopir luar kota per hari')
+        // Dan tidak ada lagi sakelar sopir yang berdiri tanpa wilayah.
+        ->assertDontSee('Sopir dihitung terpisah')
+        ->assertDontSee('Tarif sudah termasuk sopir');
 });
 
 test('unit selalu dengan sopir wajib menyebut biaya sopirnya', function () {
@@ -1210,7 +1228,7 @@ test('menyunting unit memuat penanda termasuk sopir tersimpannya', function () {
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
         ->assertSet('termasukSopir', true)
-        ->assertSee('Tarif sudah termasuk sopir');
+        ->assertSee('Sudah termasuk harga');
 });
 
 /* -------- TUJUAN VS LOKASI PENGEMBALIAN -------- */

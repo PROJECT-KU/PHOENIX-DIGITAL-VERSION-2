@@ -337,78 +337,6 @@
                                     @enderror
                                 </div>
 
-                                <div class="col-6 col-md-4">
-                                    <label class="form-label small fw-semibold">Sopir / hari</label>
-
-                                    {{-- Tarif sopir disembunyikan bila tarifnya sudah termasuk
-                                         sopir: menampilkan isian yang nilainya pasti diabaikan
-                                         hanya mengundang angka yang tidak berarti. --}}
-                                    @if ($termasukSopir)
-                                        <div class="orcha-sopir-termasuk">
-                                            <i class="bi bi-check-circle-fill"></i>
-                                            <span>Termasuk tarif</span>
-                                        </div>
-                                    @else
-                                        <div class="orcha-rupiah">
-                                            <input type="text" inputmode="numeric"
-                                                class="orcha-uang form-control @error('tarifSopir') is-invalid @enderror"
-                                                wire:model.blur="tarifSopirTeks" value="{{ $tarifSopirTeks }}"
-                                                placeholder="150.000">
-                                        </div>
-                                    @endif
-                                </div>
-
-                                {{-- Tarif sudah termasuk sopir atau belum.
-
-                                     Untuk HiAce dan bus yang tarifnya memang dihitung bersama
-                                     sopirnya — "2.500.000 per hari, sudah termasuk sopir".
-                                     Sebelumnya satu-satunya cara menyatakannya adalah
-                                     mengosongkan tarif sopir, dan itu bermakna ganda: bisa
-                                     "sudah termasuk", bisa "belum diisi". Kartu unit di website
-                                     pun tidak menyebut sopir sama sekali untuk unit semacam itu. --}}
-                                {{-- Berdampingan dengan tarif sopir yang diaturnya, bukan
-                                     sebaris sendiri: barisnya jadi penuh, dan keduanya terbaca
-                                     sebagai satu keputusan. --}}
-                                <div class="col-12 col-md-8">
-                                    {{-- Label kosong sebagai pengganjal.
-
-                                         Isian di sebelahnya punya label di atasnya, kartu ini
-                                         tidak — sehingga kartunya naik setinggi label dan
-                                         keduanya tidak sejajar. Pengganjal ini menyamakan
-                                         titik mulainya, dan hanya berlaku di layar lebar
-                                         karena di layar sempit keduanya memang bertumpuk. --}}
-                                    <label class="form-label small fw-semibold d-none d-md-block" aria-hidden="true">&nbsp;</label>
-
-                                    <label class="orcha-sakelar-kartu {{ $termasukSopir ? 'nyala' : '' }} mb-0">
-                                        <span class="rupa">
-                                            <i class="bi {{ $termasukSopir ? 'bi-person-check' : 'bi-person-plus' }}"></i>
-                                        </span>
-                                        <span class="isi">
-                                            <span class="judul">
-                                                {{ $termasukSopir
-                                                    ? 'Tarif sudah termasuk sopir'
-                                                    : 'Sopir dihitung terpisah' }}
-                                            </span>
-                                            <span class="ket">
-                                                @if ($termasukSopir)
-                                                    Tidak ada tambahan sopir di perkiraan harga —
-                                                    tarif per hari di atas sudah mencakupnya.
-                                                @else
-                                                    Tarif sopir di atas ditambahkan bila penyewa
-                                                    memilih paket dengan sopir.
-                                                @endif
-                                            </span>
-                                        </span>
-                                        <span class="form-check form-switch mb-0">
-                                            <input class="form-check-input" type="checkbox" role="switch"
-                                                wire:model.live="termasukSopir">
-                                        </span>
-                                    </label>
-
-                                    @error('termasukSopir')
-                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                    @enderror
-                                </div>
 
                             </div>
                         </div>
@@ -446,13 +374,7 @@
                                                 <i class="bi bi-building"></i>
                                                 Dalam kota
                                             </span>
-                                            {{-- Sakelar sopir dalam kota ada di kartu Tarif di
-                                                 atas, sementara sopir luar kota ada di blok bawah.
-                                                 Ketimpangan itu membingungkan bila dibiarkan
-                                                 tanpa penunjuk: admin mencarinya di sini, tidak
-                                                 menemukannya, lalu mengira memang tidak ada. --}}
-                                            <span class="ket">Nyalakan yang sudah termasuk harga sewa —
-                                                sopir diatur di kartu Tarif.</span>
+                                            <span class="ket">Nyalakan yang sudah termasuk harga sewa.</span>
                                         </div>
 
                                         @foreach ($posOperasional as $pos => $label)
@@ -480,6 +402,43 @@
                                                 <div class="text-danger small">{{ $message }}</div>
                                             @enderror
                                         @endforeach
+
+                                        {{-- Sopir sebaris dengan pos biaya lain, sebentuk persis
+                                             dengan blok luar kota di sebelahnya.
+
+                                             Sebelumnya kendali ini berada di kartu Tarif, dan di
+                                             sana tidak ada satu kata pun yang menyebut "dalam
+                                             kota" — admin melihat dua sakelar sopir di halaman
+                                             yang sama tanpa tahu mana mengatur apa. Yang
+                                             membedakan keduanya wilayahnya, jadi tempatnya
+                                             memang di dalam blok wilayahnya. --}}
+                                        <label class="orcha-pos-baris {{ $termasukSopir ? 'nyala' : '' }}">
+                                            <span class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    wire:model.live="termasukSopir">
+                                            </span>
+
+                                            <span class="nama">Sopir</span>
+
+                                            @if ($termasukSopir)
+                                                <span class="ditanggung">Sudah termasuk harga</span>
+                                            @else
+                                                <span class="orcha-rupiah orcha-rupiah-kecil">
+                                                    <input type="text" inputmode="numeric"
+                                                        class="orcha-uang form-control @error('tarifSopir') is-invalid @enderror"
+                                                        wire:model.blur="tarifSopirTeks"
+                                                        value="{{ $tarifSopirTeks }}" placeholder="0"
+                                                        aria-label="Tarif sopir dalam kota per hari">
+                                                </span>
+                                            @endif
+                                        </label>
+
+                                        @error('termasukSopir')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                        @error('tarifSopir')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
 
                                         {{-- Totalnya disebut supaya admin melihat angka yang
                                              benar-benar ditambahkan ke perkiraan harga di
@@ -563,7 +522,13 @@
                                                 <span class="orcha-rupiah orcha-rupiah-kecil">
                                                     <input type="text" inputmode="numeric"
                                                         class="orcha-uang form-control @error('luarTarifSopir') is-invalid @enderror"
-                                                        wire:model.blur="luarTarifSopirTeks" placeholder="0"
+                                                        {{-- value= disebut sendiri: isian ini muncul-hilang
+                                                             mengikuti sakelarnya, dan simpul yang dipasang ulang
+                                                             lahir kosong bila HTML-nya tidak menyebutkan
+                                                             isinya — angka yang sudah diketik hilang begitu
+                                                             saja. --}}
+                                                        wire:model.blur="luarTarifSopirTeks"
+                                                        value="{{ $luarTarifSopirTeks }}" placeholder="0"
                                                         aria-label="Tarif sopir luar kota per hari">
                                                 </span>
                                             @endif
