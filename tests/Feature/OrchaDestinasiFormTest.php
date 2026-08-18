@@ -846,3 +846,16 @@ test('lokasi yang belum diisi mengatakan apa yang kurang', function () {
         ->set('wilayah', '')
         ->assertSee('Belum ada lokasi — pilih wilayahnya dulu.');
 });
+
+test('tombol pilih destinasi mengundang, bukan disamarkan', function () {
+    fakeKatalog();
+
+    // Sebagai tombol abu-abu bersebelahan dengan isian, ia terbaca seperti
+    // hiasan — padahal justru jalan tercepatnya: satu ketukan mengisi empat
+    // isian sekaligus.
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    expect($html)->toContain('orcha-tombol-daftar')
+        ->and($html)->toContain('Pilih dari daftar')
+        ->and($html)->not->toContain('class="btn btn-light border" title="Pilih dari daftar destinasi"');
+});

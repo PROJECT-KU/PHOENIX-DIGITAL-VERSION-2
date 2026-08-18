@@ -65,9 +65,17 @@
                                         <input type="text" class="form-control @error('nama') is-invalid @enderror"
                                             wire:model.live.debounce.900ms="nama"
                                             placeholder="Ketik, atau pilih dari daftar">
+                                        {{-- Tombolnya bukan pelengkap yang disamarkan.
+
+                                             Sebagai tombol abu-abu bersebelahan dengan isian,
+                                             ia terbaca seperti hiasan — padahal justru jalan
+                                             tercepatnya: satu ketukan mengisi empat isian
+                                             sekaligus. Warna dan tulisannya dibuat mengundang
+                                             supaya jalan itu terlihat, bukan ditemukan sendiri. --}}
                                         <button type="button" onclick="orchaPilihDestinasi(this)"
-                                            class="btn btn-light border" title="Pilih dari daftar destinasi">
-                                            <i class="bi bi-list-ul"></i>
+                                            class="orcha-tombol-daftar" title="Pilih dari daftar destinasi">
+                                            <i class="bi bi-compass"></i>
+                                            <span class="d-none d-sm-inline">Pilih dari daftar</span>
                                         </button>
                                     </div>
                                     @error('nama') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
@@ -1228,6 +1236,35 @@
             border-radius: 8px;
             border: 1px solid #e3ecf3;
         }
+
+        /* Tombol "pilih dari daftar" di samping nama destinasi.
+
+           Sewarna dengan tombol utama halaman ini, karena memang tindakan yang
+           paling menghemat pekerjaan: satu ketukan mengisi nama, daerah,
+           provinsi, dan wilayah sekaligus. Radiusnya menyambung ke isian di
+           sebelahnya supaya keduanya terbaca sebagai satu isian. */
+        .orcha-tombol-daftar {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .5rem .9rem;
+            border: 0;
+            border-radius: 0 10px 10px 0;
+            background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+            color: #fff;
+            font-size: .82rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: box-shadow .15s ease, transform .15s ease;
+        }
+
+        .orcha-tombol-daftar:hover {
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(29, 111, 165, .34);
+        }
+
+        .orcha-tombol-daftar > i { font-size: .95rem; line-height: 1; }
 
         /* Rantai lokasi: tiga pemilih berurutan dengan panah di antaranya.
            Panahnya hanya di layar lebar — bertumpuk, arah "berikutnya" sudah
