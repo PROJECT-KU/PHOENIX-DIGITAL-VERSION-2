@@ -146,6 +146,22 @@ Armada Orcha || lemon
                                                 ->filter(fn ($pos) => $pos['termasuk'] ?? false);
                                         @endphp
 
+                                        {{-- Aturan luar kota disebut HANYA bila berbeda.
+                                             Unit yang aturannya sama di kedua wilayah tidak
+                                             perlu dua lencana yang isinya sama; yang berbeda
+                                             wajib terlihat di daftar, karena lencana di
+                                             sebelahnya hanya berlaku untuk dalam kota. --}}
+                                        @php
+                                            $luar = $baris['luar_kota'] ?? null;
+                                            $luarTermasuk = collect($luar['operasional'] ?? [])
+                                                ->filter(fn ($pos) => $pos['termasuk'] ?? false)
+                                                ->pluck('label');
+
+                                            if ($luar['termasuk_sopir'] ?? false) {
+                                                $luarTermasuk->push('sopir');
+                                            }
+                                        @endphp
+
                                         @if ($posTermasuk->isNotEmpty())
                                             <span class="orcha-lencana-allin">
                                                 <i class="bi bi-fuel-pump"></i>
@@ -160,6 +176,18 @@ Armada Orcha || lemon
                                                     @if (($baris['biaya_operasional_total'] ?? 0) > 0)
                                                         +{{ number_format($baris['biaya_operasional_total'], 0, ',', '.') }}/hari
                                                     @endif
+                                                </span>
+                                            </span>
+                                        @endif
+
+                                        @if ($baris['beda_aturan_luar_kota'] ?? false)
+                                            <span class="orcha-lencana-luar">
+                                                <i class="bi bi-signpost-split"></i>
+                                                <span>
+                                                    Luar kota:
+                                                    {{ $luarTermasuk->isEmpty()
+                                                        ? 'semua ditanggung penyewa'
+                                                        : $luarTermasuk->join(' + ').' termasuk' }}
                                                 </span>
                                             </span>
                                         @endif
@@ -580,6 +608,23 @@ Armada Orcha || lemon
             line-height: 1.3;
         }
 
+        /* Lencana aturan luar kota: kuning kehijauan seperti lencana sopir,
+           karena keduanya sama-sama keterangan cara pakai — bukan keuntungan
+           harga seperti lencana all-in yang hijau. */
+        .orcha-lencana-luar {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .12rem .45rem;
+            border-radius: 7px;
+            background: #e6eefb;
+            color: #1d4d75;
+            font-size: .68rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .orcha-lencana-luar i,
         .orcha-lencana-allin i,
         .orcha-lencana-sopir i {
             display: inline-flex;

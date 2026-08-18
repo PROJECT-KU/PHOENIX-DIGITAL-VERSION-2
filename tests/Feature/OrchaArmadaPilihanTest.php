@@ -987,9 +987,13 @@ test('isian biaya hanya tampil untuk pos yang termasuk', function () {
 
     Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
         ->assertSee('Ditanggung penyewa')
-        ->assertSee('Biaya perjalanan')
+        // Dua blok, satu per wilayah: aturan biayanya memang bisa berbeda.
+        ->assertSee('Dalam kota')
+        ->assertSee('Luar kota')
         ->set('termasukPos.bbm', true)
-        ->assertSee('Biaya BBM per hari');
+        ->assertSee('Biaya BBM per hari')
+        ->set('luarTermasukPos.bbm', true)
+        ->assertSee('Biaya BBM luar kota per hari');
 });
 
 test('pos boleh termasuk tanpa biaya tambahan', function () {
@@ -1397,7 +1401,7 @@ test('halaman tambah dan ubah memakai empat kartu bertema yang sama', function (
             ->assertSee('Identitas Unit')
             ->assertSee('Daya Angkut')
             ->assertSee('Tarif')
-            ->assertSee('Biaya perjalanan')
+            ->assertSee('Biaya Perjalanan')
             ->assertSee('Pratinjau di Website');
     }
 });
@@ -1549,4 +1553,123 @@ test('kaki kartu dipaku ke dasar supaya tombol tiap unit sebaris', function () {
 
     // Urutannya yang menentukan: penyerap sisa ruang dulu, kaki kartu terakhir.
     expect(strpos($berkas, 'orcha-unit-kaki d-flex'))->toBeGreaterThan(strpos($berkas, 'my-auto py-3'));
+});
+
+/* ---------- BIAYA DALAM KOTA vs LUAR KOTA ---------- */
+
+test('aturan luar kota mengikuti dalam kota sampai disunting sendiri', function () {
+    fakeArmada();
+
+    // Mengisi dua daftar yang isinya sama untuk unit yang aturannya memang tidak
+    // berbeda adalah pekerjaan dua kali — dan pekerjaan dua kali adalah cara
+    // tercepat membuat salah satunya lupa diisi.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('termasukPos.bbm', true)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->assertSet('luarTermasukPos.bbm', true)
+        ->assertSet('luarBiayaPos.bbm', 200000)
+        ->set('tarifSopirTeks', '175000')
+        ->assertSet('luarTarifSopir', 175000);
+});
+
+test('penyalinan berhenti begitu blok luar kota disentuh', function () {
+    fakeArmada();
+
+    // Sejak admin menyentuhnya, yang tertulis di sana keputusannya — bukan
+    // bayangan blok di atasnya. Menimpanya lagi menghapus perbedaan yang justru
+    // sengaja dibuat.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('termasukPos.bbm', true)
+        ->set('luarTermasukPos.bbm', false)
+        ->set('biayaPosTeks.bbm', '200000')
+        ->assertSet('luarTermasukPos.bbm', false);
+});
+
+test('aturan kedua wilayah terkirim ke orcha', function () {
+    fakeArmada();
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'jenis_kendaraan' => ['mobil' => 'Mobil'],
+            'katalog_kendaraan' => katalogUji(),
+            'pos_operasional' => ['bbm' => 'BBM', 'tol' => 'Tol', 'parkir' => 'Parkir'],
+        ]]),
+        '*' => Http::response(['data' => ['id' => 9]], 201),
+    ]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class)
+        ->set('merek', 'Toyota')->set('nama', 'Avanza')
+        ->set('jenis', 'mobil')->set('kapasitas', 7)
+        ->set('transmisi', ['Matic'])->set('tarifHariTeks', '400000')
+        ->set('termasukPos.bbm', false)
+        ->set('luarTermasukPos.bbm', true)
+        ->set('luarBiayaPosTeks.bbm', '300000')
+        ->set('luarTermasukSopir', true)
+        ->call('simpan')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/kendaraan')
+        && ! ($p->data()['termasuk_bbm'] ?? true)
+        && ($p->data()['luar_termasuk_bbm'] ?? false)
+        && (int) ($p->data()['luar_biaya_bbm'] ?? 0) === 300000
+        && ($p->data()['luar_termasuk_sopir'] ?? false));
+});
+
+test('unit yang sudah tersimpan membawa aturan luar kotanya sendiri', function () {
+    fakeArmada(['luar_kota' => [
+        'operasional' => ['bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 300000]],
+        'termasuk_sopir' => true, 'harga_sopir' => null,
+    ], 'operasional' => ['bbm' => ['label' => 'BBM', 'termasuk' => false, 'biaya' => 0]]]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('termasukPos.bbm', false)
+        ->assertSet('luarTermasukPos.bbm', true)
+        ->assertSet('luarTermasukSopir', true)
+        // Penyalinan harus sudah mati: menyentuh blok dalam kota tidak boleh
+        // menghapus aturan luar kota yang sengaja dibedakan.
+        ->set('termasukPos.tol', true)
+        ->assertSet('luarTermasukPos.bbm', true);
+});
+
+test('unit dari orcha versi lama mewarisi aturan dalam kotanya', function () {
+    // Tanpa blok luar_kota, formulir yang mengosongkannya akan menampilkan
+    // "semua ditanggung penyewa di luar kota" untuk unit yang sebenarnya all-in,
+    // lalu menyimpannya begitu saat admin menekan Simpan.
+    fakeArmada(['operasional' => ['bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 150000]]]);
+
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSet('luarTermasukPos.bbm', true)
+        ->assertSet('luarBiayaPos.bbm', 150000);
+});
+
+test('daftar armada menandai unit yang aturan luar kotanya berbeda', function () {
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['jenis_kendaraan' => ['mobil' => 'Mobil']]]),
+        '*' => Http::response(['data' => [[
+            'id' => 8, 'uuid' => 'w', 'nama' => 'HiAce', 'merek' => 'Toyota',
+            'varian' => null, 'tahun' => null, 'cc' => null,
+            'jenis' => 'hiace', 'jenis_label' => 'HiAce', 'nopol' => null,
+            'kapasitas' => 14, 'kursi_total' => 15, 'lepas_kunci' => false,
+            'transmisi_tersedia' => ['Manual'], 'transmisi_label' => 'Manual',
+            'operasional' => ['bbm' => ['label' => 'BBM', 'termasuk' => false, 'biaya' => 0]],
+            'biaya_operasional_total' => 0,
+            'luar_kota' => [
+                'operasional' => ['bbm' => ['label' => 'BBM', 'termasuk' => true, 'biaya' => 300000]],
+                'termasuk_sopir' => true, 'harga_sopir' => null,
+            ],
+            'beda_aturan_luar_kota' => true,
+            'tarif' => ['jam' => null, '12jam' => null, 'hari' => 1000000,
+                'luar_kota' => 1500000, 'sopir_per_hari' => 200000],
+            'gambar' => null, 'tersedia' => true, 'jumlah_penyewaan' => 0,
+            'kondisi' => null, 'kondisi_terkini' => null,
+            'jadwal' => ['sedang_disewa' => false, 'kode_berjalan' => null, 'kembali_pada' => null,
+                'kode_berikutnya' => null, 'mulai_berikutnya' => null],
+        ]], 'meta' => ['halaman' => 1, 'halaman_terakhir' => 1, 'total' => 1]]),
+    ]);
+
+    // Tanpa lencana ini, lencana di sebelahnya terbaca berlaku untuk semua
+    // pesanan — padahal ia hanya menggambarkan perjalanan dalam kota.
+    Livewire::actingAs(adminArmada())->test(App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList::class)
+        ->assertSee('Luar kota:')
+        ->assertSee('BBM + sopir termasuk');
 });

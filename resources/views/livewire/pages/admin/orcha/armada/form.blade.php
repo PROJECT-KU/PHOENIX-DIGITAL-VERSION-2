@@ -419,7 +419,8 @@
                             <h6 class="fw-bold mb-1 orcha-judul-ikon">
                                 <i class="bi bi-receipt text-primary"></i> Biaya Perjalanan
                             </h6>
-                            <p class="text-muted small mb-3">BBM, tol, dan parkir — masing-masing ditanggung penyewa atau sudah termasuk.</p>
+                            <p class="text-muted small mb-3">BBM, tol, dan parkir — masing-masing ditanggung penyewa
+                                atau sudah termasuk, dan bisa berbeda antara dalam kota dan luar kota.</p>
 
                             <div class="row g-3">
                                 {{-- BBM, tol, dan parkir: masing-masing berdiri sendiri.
@@ -437,10 +438,16 @@
                                     <div class="orcha-pos-biaya">
                                         <div class="orcha-pos-kepala">
                                             <span class="judul">
-                                                <i class="bi bi-receipt"></i>
-                                                Biaya perjalanan
+                                                <i class="bi bi-building"></i>
+                                                Dalam kota
                                             </span>
-                                            <span class="ket">Nyalakan yang sudah termasuk harga sewa.</span>
+                                            {{-- Sakelar sopir dalam kota ada di kartu Tarif di
+                                                 atas, sementara sopir luar kota ada di blok bawah.
+                                                 Ketimpangan itu membingungkan bila dibiarkan
+                                                 tanpa penunjuk: admin mencarinya di sini, tidak
+                                                 menemukannya, lalu mengira memang tidak ada. --}}
+                                            <span class="ket">Nyalakan yang sudah termasuk harga sewa —
+                                                sopir diatur di kartu Tarif.</span>
                                         </div>
 
                                         @foreach ($posOperasional as $pos => $label)
@@ -481,6 +488,98 @@
                                                 <i class="bi bi-info-circle"></i>
                                                 <span>Tidak ada tambahan biaya —
                                                     kosongkan bila sudah termasuk harga sewa.</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Aturan yang sama untuk perjalanan LUAR kota.
+
+                                     Blok terpisah, bukan satu daftar yang dipakai
+                                     bersama: keduanya memang berbeda di lapangan. Unit
+                                     yang dalam kota diserahkan apa adanya — BBM, tol,
+                                     dan sopir ditanggung penyewa — sering ditawarkan
+                                     sepaket bersama sopir dan bahan bakarnya untuk jalan
+                                     jauh, karena tidak ada penyewa yang mau mengurus itu
+                                     sendiri di perjalanan jauh.
+
+                                     Sakelar sopir ikut di sini, bukan di kartu Tarif:
+                                     yang dijawab admin pada blok ini satu pertanyaan
+                                     utuh — "untuk luar kota, apa saja yang sudah
+                                     termasuk?" --}}
+                                <div class="col-12">
+                                    <div class="orcha-pos-biaya orcha-pos-luar">
+                                        <div class="orcha-pos-kepala">
+                                            <span class="judul">
+                                                <i class="bi bi-signpost-split"></i>
+                                                Luar kota
+                                            </span>
+                                            <span class="ket">Boleh berbeda dari aturan dalam kota.</span>
+                                        </div>
+
+                                        @foreach ($posOperasional as $pos => $label)
+                                            <label class="orcha-pos-baris {{ ($luarTermasukPos[$pos] ?? false) ? 'nyala' : '' }}">
+                                                <span class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" role="switch"
+                                                        wire:model.live="luarTermasukPos.{{ $pos }}">
+                                                </span>
+
+                                                <span class="nama">{{ $label }}</span>
+
+                                                @if ($luarTermasukPos[$pos] ?? false)
+                                                    <span class="orcha-rupiah orcha-rupiah-kecil">
+                                                        <input type="text" inputmode="numeric"
+                                                            class="orcha-uang form-control @error('luarBiayaPos.'.$pos) is-invalid @enderror"
+                                                            wire:model.blur="luarBiayaPosTeks.{{ $pos }}"
+                                                            placeholder="0"
+                                                            aria-label="Biaya {{ $label }} luar kota per hari">
+                                                    </span>
+                                                @else
+                                                    <span class="ditanggung">Ditanggung penyewa</span>
+                                                @endif
+                                            </label>
+
+                                            @error('luarBiayaPos.'.$pos)
+                                                <div class="text-danger small">{{ $message }}</div>
+                                            @enderror
+                                        @endforeach
+
+                                        <label class="orcha-pos-baris {{ $luarTermasukSopir ? 'nyala' : '' }}">
+                                            <span class="form-check form-switch mb-0">
+                                                <input class="form-check-input" type="checkbox" role="switch"
+                                                    wire:model.live="luarTermasukSopir">
+                                            </span>
+
+                                            <span class="nama">Sopir</span>
+
+                                            @if ($luarTermasukSopir)
+                                                <span class="ditanggung">Sudah termasuk harga</span>
+                                            @else
+                                                <span class="orcha-rupiah orcha-rupiah-kecil">
+                                                    <input type="text" inputmode="numeric"
+                                                        class="orcha-uang form-control @error('luarTarifSopir') is-invalid @enderror"
+                                                        wire:model.blur="luarTarifSopirTeks" placeholder="0"
+                                                        aria-label="Tarif sopir luar kota per hari">
+                                                </span>
+                                            @endif
+                                        </label>
+
+                                        @error('luarTermasukSopir')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+                                        @error('luarTarifSopir')
+                                            <div class="text-danger small">{{ $message }}</div>
+                                        @enderror
+
+                                        <div class="orcha-pos-total">
+                                            @if ($totalPosLuar > 0)
+                                                <i class="bi bi-plus-circle"></i>
+                                                <span>Ditambahkan ke perkiraan luar kota:
+                                                    <strong>Rp
+                                                        {{ number_format($totalPosLuar, 0, ',', '.') }}/hari</strong></span>
+                                            @else
+                                                <i class="bi bi-info-circle"></i>
+                                                <span>Tidak ada tambahan biaya untuk perjalanan luar kota.</span>
                                             @endif
                                         </div>
                                     </div>
@@ -642,6 +741,38 @@
                                                         .($totalPos > 0 ? ' (+Rp '.number_format($totalPos, 0, ',', '.').'/hari)' : '') }}
                                             </span>
                                         </div>
+
+                                        {{-- Aturan luar kota ikut dipratinjau, dan HANYA bila
+                                             memang berbeda — persis seperti kartu di website.
+                                             Pratinjau yang melewatkannya membuat admin mengira
+                                             aturan yang baru saja diisinya tidak berlaku. --}}
+                                        @php
+                                            $luarIkut = collect($posOperasional)
+                                                ->filter(fn ($l, $k) => $luarTermasukPos[$k] ?? false)
+                                                ->values()
+                                                ->all();
+
+                                            if ($luarTermasukSopir) {
+                                                $luarIkut[] = 'sopir';
+                                            }
+
+                                            $bedaWilayah = collect($posOperasional)->keys()->contains(
+                                                fn ($k) => ($termasukPos[$k] ?? false) !== ($luarTermasukPos[$k] ?? false)
+                                                    || (int) ($biayaPos[$k] ?? 0) !== (int) ($luarBiayaPos[$k] ?? 0),
+                                            ) || $termasukSopir !== $luarTermasukSopir
+                                                || (int) ($tarifSopir ?: 0) !== (int) ($luarTarifSopir ?: 0);
+                                        @endphp
+
+                                        @if ($bedaWilayah)
+                                            <div class="baris samar">
+                                                <i class="bi bi-signpost-split"></i>
+                                                <span>
+                                                    {{ $luarIkut === []
+                                                        ? 'Luar kota: semuanya ditanggung penyewa'
+                                                        : 'Luar kota: '.implode(', ', $luarIkut).' termasuk' }}
+                                                </span>
+                                            </div>
+                                        @endif
 
                                         @unless ($lepasKunci)
                                             <span class="tanda-sopir">Selalu dengan sopir</span>
@@ -1632,6 +1763,19 @@
         border-radius: 14px;
         padding: .85rem 1rem 1rem;
         background: #fbfdff;
+    }
+
+    /* Blok luar kota dibedakan warnanya. Dua daftar sakelar yang serupa persis
+       berurutan mudah tertukar — admin mengira sedang menyunting yang satu
+       padahal yang lain, dan kekeliruan itu baru terlihat di tagihan. */
+    .orcha-pos-biaya.orcha-pos-luar {
+        margin-top: .75rem;
+        background: #fffdf6;
+        border-color: #efe3c4;
+    }
+
+    .orcha-pos-biaya.orcha-pos-luar .orcha-pos-kepala .judul {
+        color: #8a6d1f;
     }
 
     .orcha-pos-kepala {

@@ -139,6 +139,46 @@ class OrchaArmadaForm extends Component
     /** @var array<string, string> bentuk bertitik yang tampil di layar */
     public array $biayaPosTeks = [];
 
+    /**
+     * Aturan biaya yang sama, tetapi untuk perjalanan LUAR kota.
+     *
+     * Dipisah karena memang berbeda di lapangan: unit yang dalam kota
+     * diserahkan apa adanya — BBM, tol, dan sopir ditanggung penyewa — sering
+     * ditawarkan sepaket bersama sopir dan bahan bakarnya untuk jalan jauh.
+     * Dengan satu aturan, admin terpaksa memilih salah satu lalu menjelaskan
+     * sisanya lewat percakapan, dan yang tertulis di kartu unit maupun surat
+     * pemesanan tidak berlaku untuk separuh pesanan.
+     *
+     * @var array<string, bool>
+     */
+    public array $luarTermasukPos = [];
+
+    /** @var array<string, int|string> */
+    public array $luarBiayaPos = [];
+
+    /** @var array<string, string> */
+    public array $luarBiayaPosTeks = [];
+
+    /**
+     * Apakah aturan luar kota sudah disunting sendiri oleh admin.
+     *
+     * Selama belum, aturan luar kota MENGIKUTI dalam kota — tiap perubahan di
+     * blok atas ikut tersalin ke bawah. Tanpa ini, admin harus mengisi dua
+     * daftar yang isinya sama untuk unit yang aturannya memang tidak berbeda,
+     * dan pekerjaan dua kali adalah cara tercepat membuat salah satunya lupa
+     * diisi.
+     *
+     * Begitu satu sakelar di blok luar kota disentuh, penyalinan berhenti:
+     * sejak saat itu yang tertulis di sana keputusan admin, bukan bayangan.
+     */
+    public bool $luarDiubahManual = false;
+
+    public bool $luarTermasukSopir = false;
+
+    public $luarTarifSopir = '';
+
+    public string $luarTarifSopirTeks = '';
+
     public $gambar;
 
     public ?string $gambarLama = null;
@@ -205,6 +245,17 @@ class OrchaArmadaForm extends Component
                 }
             }],
             'biayaPos.*' => 'nullable|numeric|min:0|max:100000000',
+            'luarTarifSopir' => 'nullable|numeric|min:0',
+            'luarBiayaPos.*' => 'nullable|numeric|min:0|max:100000000',
+            // Aturan yang sama berlaku untuk perjalanan luar kota: unit yang
+            // pasti bersopir tidak boleh tampil di halaman publik tanpa
+            // keterangan biaya sopirnya, wilayah mana pun.
+            'luarTermasukSopir' => ['boolean', function ($atribut, $nilai, $gagal) {
+                if (! $this->lepasKunci && ! $nilai && ! $this->luarTarifSopir) {
+                    $gagal('Unit yang selalu dengan sopir harus menyebut tarif sopirnya '
+                        .'untuk perjalanan luar kota juga.');
+                }
+            }],
             'gambar' => 'nullable|image|max:4096',
         ];
     }
@@ -223,6 +274,8 @@ class OrchaArmadaForm extends Component
             'tarifJam' => 'tarif per jam',
             'tarif12Jam' => 'tarif paket 12 jam',
             'tarifSopir' => 'tarif sopir',
+            'luarTarifSopir' => 'tarif sopir luar kota',
+            'luarTermasukSopir' => 'keterangan sopir luar kota',
             'tarifLuarKota' => 'tarif luar kota',
             'termasukSopir' => 'keterangan sopir',
             'biayaPos.bbm' => 'biaya BBM',
@@ -286,6 +339,7 @@ class OrchaArmadaForm extends Component
     {
         $this->biayaPos[$pos] = $this->angkaDari($nilai);
         $this->biayaPosTeks[$pos] = $this->keRupiah($this->biayaPos[$pos]);
+        $this->cerminkanLuar();
     }
 
     /**
@@ -301,6 +355,82 @@ class OrchaArmadaForm extends Component
             $this->biayaPos[$pos] = '';
             $this->biayaPosTeks[$pos] = '';
         }
+
+        $this->cerminkanLuar();
+    }
+
+    /**
+     * Menyalin aturan dalam kota ke luar kota, selama admin belum menyuntingnya.
+     */
+    private function cerminkanLuar(): void
+    {
+        if ($this->luarDiubahManual) {
+            return;
+        }
+
+        foreach (array_keys($this->posOperasional()) as $pos) {
+            $this->luarTermasukPos[$pos] = (bool) ($this->termasukPos[$pos] ?? false);
+            $this->luarBiayaPos[$pos] = $this->biayaPos[$pos] ?? '';
+            $this->luarBiayaPosTeks[$pos] = $this->biayaPosTeks[$pos] ?? '';
+        }
+
+        $this->luarTermasukSopir = $this->termasukSopir;
+        $this->luarTarifSopir = $this->tarifSopir;
+        $this->luarTarifSopirTeks = $this->tarifSopirTeks;
+
+        $this->resetValidation('luarTermasukSopir');
+    }
+
+    /** Jumlah biaya harian pos luar kota yang termasuk. */
+    public function totalPosLuar(): int
+    {
+        $total = 0;
+
+        foreach (array_keys($this->posOperasional()) as $pos) {
+            if ($this->luarTermasukPos[$pos] ?? false) {
+                $total += (int) ($this->luarBiayaPos[$pos] ?? 0);
+            }
+        }
+
+        return $total;
+    }
+
+    public function updatedLuarBiayaPosTeks(string $nilai, string $pos): void
+    {
+        $this->luarDiubahManual = true;
+
+        $this->luarBiayaPos[$pos] = $this->angkaDari($nilai);
+        $this->luarBiayaPosTeks[$pos] = $this->keRupiah($this->luarBiayaPos[$pos]);
+    }
+
+    public function updatedLuarTermasukPos($nilai, string $pos): void
+    {
+        $this->luarDiubahManual = true;
+
+        if (! $nilai) {
+            $this->luarBiayaPos[$pos] = '';
+            $this->luarBiayaPosTeks[$pos] = '';
+        }
+    }
+
+    public function updatedLuarTarifSopirTeks(): void
+    {
+        $this->luarDiubahManual = true;
+
+        $this->luarTarifSopir = $this->angkaDari($this->luarTarifSopirTeks) ?: '';
+        $this->luarTarifSopirTeks = $this->keRupiah($this->luarTarifSopir);
+    }
+
+    public function updatedLuarTermasukSopir(): void
+    {
+        $this->luarDiubahManual = true;
+
+        if ($this->luarTermasukSopir) {
+            $this->luarTarifSopir = '';
+            $this->luarTarifSopirTeks = '';
+        }
+
+        $this->resetValidation('luarTermasukSopir');
     }
 
     public function updatedTarifLuarKotaTeks(): void
@@ -313,6 +443,8 @@ class OrchaArmadaForm extends Component
     {
         $this->tarifSopir = $this->angkaDari($this->tarifSopirTeks) ?: '';
         $this->tarifSopirTeks = $this->keRupiah($this->tarifSopir);
+        $this->cerminkanLuar();
+        $this->luarTarifSopirTeks = $this->keRupiah($this->luarTarifSopir);
         $this->tarifLuarKotaTeks = $this->keRupiah($this->tarifLuarKota);
     }
 
@@ -573,12 +705,14 @@ class OrchaArmadaForm extends Component
         }
 
         $this->resetValidation('termasukSopir');
+        $this->cerminkanLuar();
     }
 
     public function updatedLepasKunci(): void
     {
         $this->lepasKunciDiubahManual = true;
         $this->resetValidation('termasukSopir');
+        $this->resetValidation('luarTermasukSopir');
 
         if ($this->kapasitasDiubahManual) {
             return;
@@ -759,6 +893,32 @@ class OrchaArmadaForm extends Component
             $this->biayaPos[$pos] = ($rinci['biaya'] ?? 0) ?: '';
             $this->biayaPosTeks[$pos] = $this->keRupiah($this->biayaPos[$pos]);
         }
+
+        // Aturan luar kota. Unit yang datang dari Orcha versi lama tidak
+        // membawa blok ini; yang benar untuk itu MENGIKUTI aturan dalam kota,
+        // bukan mengosongkannya — mengosongkannya berarti formulir menampilkan
+        // "semua ditanggung penyewa di luar kota" untuk unit yang sebenarnya
+        // all-in, lalu menyimpannya begitu saat admin menekan Simpan.
+        $luar = $isi['luar_kota'] ?? null;
+
+        foreach ($isi['operasional'] ?? [] as $pos => $rinci) {
+            $rinciLuar = $luar['operasional'][$pos] ?? $rinci;
+
+            $this->luarTermasukPos[$pos] = (bool) ($rinciLuar['termasuk'] ?? false);
+            $this->luarBiayaPos[$pos] = ($rinciLuar['biaya'] ?? 0) ?: '';
+            $this->luarBiayaPosTeks[$pos] = $this->keRupiah($this->luarBiayaPos[$pos]);
+        }
+
+        $this->luarTermasukSopir = (bool) ($luar['termasuk_sopir'] ?? $isi['termasuk_sopir'] ?? false);
+        $this->luarTarifSopir = $luar === null
+            ? ($isi['tarif']['sopir_per_hari'] ?? '')
+            : ($luar['harga_sopir'] ?? '');
+
+        // Unit yang sudah tersimpan membawa aturannya sendiri. Membiarkan
+        // penyalinan tetap hidup akan menimpanya begitu admin menyentuh satu
+        // sakelar di blok dalam kota — menghapus aturan luar kota yang justru
+        // sengaja dibedakan.
+        $this->luarDiubahManual = true;
         $this->tarifHariTeks = $this->keRupiah($this->tarifHari);
         $this->tarifJamTeks = $this->keRupiah($this->tarifJam);
         $this->tarif12JamTeks = $this->keRupiah($this->tarif12Jam);
@@ -788,6 +948,8 @@ class OrchaArmadaForm extends Component
             'tarif_sopir' => $this->termasukSopir ? null : ($this->tarifSopir ?: null),
             'tarif_luar_kota' => $this->tarifLuarKota ?: null,
             'termasuk_sopir' => $this->termasukSopir,
+            'luar_termasuk_sopir' => $this->luarTermasukSopir,
+            'luar_tarif_sopir' => $this->luarTermasukSopir ? null : ($this->luarTarifSopir ?: null),
             'tersedia' => $this->tersedia,
             ...$this->muatanPos(),
         ];
@@ -813,6 +975,13 @@ class OrchaArmadaForm extends Component
 
             $muatan["termasuk_{$pos}"] = $termasuk;
             $muatan["biaya_{$pos}"] = $termasuk ? (($this->biayaPos[$pos] ?? null) ?: null) : null;
+
+            $termasukLuar = (bool) ($this->luarTermasukPos[$pos] ?? false);
+
+            $muatan["luar_termasuk_{$pos}"] = $termasukLuar;
+            $muatan["luar_biaya_{$pos}"] = $termasukLuar
+                ? (($this->luarBiayaPos[$pos] ?? null) ?: null)
+                : null;
         }
 
         return $muatan;
@@ -891,6 +1060,7 @@ class OrchaArmadaForm extends Component
             'kursiTotal' => $this->kursiTotal(),
             'posOperasional' => $this->posOperasional(),
             'totalPos' => $this->totalPos(),
+            'totalPosLuar' => $this->totalPosLuar(),
             'modelPilihan' => $this->modelPilihan(),
         ])->layout('livewire.layout.templateindex');
     }
