@@ -59,13 +59,26 @@
                                     <label class="form-label small fw-semibold">
                                         Wilayah <span class="text-danger">*</span>
                                     </label>
-                                    <select class="form-select @error('wilayah') is-invalid @enderror"
-                                        wire:model.live="wilayah">
-                                        @foreach ($daftarWilayah as $kunci => $label)
-                                            <option value="{{ $kunci }}" @selected($wilayah === $kunci)>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('wilayah') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                                    {{-- Wilayah yang sedang dipilih ditempel di DOM, BUKAN hanya
+                                         di dalam <script> di bawah.
+
+                                         Livewire tidak menjalankan ulang <script> inline saat
+                                         me-render ulang, jadi nilai yang ditulis di sana membeku
+                                         pada keadaan pemuatan pertama: mengganti wilayah tidak
+                                         mengubah daftar provinsi sama sekali. Penanda ini ikut
+                                         ter-render tiap kali, dan pemilihnya membacanya saat
+                                         diklik. --}}
+                                    <span data-orcha-wilayah="{{ $wilayah }}" class="d-none"></span>
+
+                                    <button type="button" onclick="orchaPilihWilayah(this)"
+                                        class="form-select text-start orcha-picker @error('wilayah') is-invalid @enderror">
+                                        <span class="text-dark fw-semibold">
+                                            {{ $daftarWilayah[$wilayah] ?? '— Pilih wilayah —' }}
+                                        </span>
+                                    </button>
+
+                                    @error('wilayah') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                     <div class="form-text">Menyaring pilihan provinsi di sebelah.</div>
                                 </div>
 
@@ -349,7 +362,7 @@
     <script>
         window.__orchaPetaProvinsi = @json($petaProvinsi);
         window.__orchaProvinsiKustom = @json($provinsiKustom);
-        window.__orchaWilayahDipilih = @json($wilayah);
+        window.__orchaDaftarWilayah = @json($daftarWilayah);
 
         if (!window.__orchaProvinsiTerpasang) {
             window.__orchaProvinsiTerpasang = true;
@@ -366,8 +379,17 @@
                 return cocok ? cocok.id : null;
             };
 
+            // Dibaca dari DOM, bukan dari nilai yang dibekukan <script> saat
+            // halaman pertama dimuat — itulah sebabnya mengganti wilayah dulu
+            // tidak mengubah daftar provinsinya sama sekali.
+            const provWilayah = () => {
+                const penanda = document.querySelector('[data-orcha-wilayah]');
+
+                return penanda ? penanda.getAttribute('data-orcha-wilayah') : '';
+            };
+
             const provDaftar = () => Object.keys(window.__orchaPetaProvinsi || {})
-                .filter((n) => window.__orchaPetaProvinsi[n] === window.__orchaWilayahDipilih)
+                .filter((n) => window.__orchaPetaProvinsi[n] === provWilayah())
                 .sort((a, b) => a.localeCompare(b, 'id'));
 
             const provBaris = (daftar) => daftar.length
@@ -485,6 +507,69 @@
                                 // Sekali ditulis langsung terdaftar — bukan hanya
                                 // mengisi isian lalu hilang saat halaman ditutup.
                                 komponen() && komponen().call('tambahProvinsi', h.value.trim());
+                            });
+                        });
+                    },
+                });
+            };
+
+            /**
+             * Pemilih wilayah — bentuknya sama, tetapi TANPA "tulis sendiri".
+             *
+             * Wilayah bukan sekadar isian: keenamnya jadi tab penyaring di
+             * halaman publik dan dipakai kartu destinasi maupun armada.
+             * Menambah wilayah ketujuh dari sini akan menghasilkan wilayah yang
+             * tidak punya tab, tidak punya urutan, dan destinasinya tidak
+             * ketemu oleh siapa pun.
+             */
+            window.orchaPilihWilayah = function (tombol) {
+                if (typeof Swal === 'undefined') return;
+
+                const wadah = tombol.closest('[wire\\:id]');
+                if (!wadah) return;
+
+                const cid = wadah.getAttribute('wire:id');
+                const komponen = () => window.Livewire && window.Livewire.find(cid);
+                const sekarang = provWilayah();
+
+                const baris = Object.entries(window.__orchaDaftarWilayah || {})
+                    .map(([kunci, label]) => '<div class="orcha-pick-row">'
+                        + '<button type="button" class="orcha-pick-item' + (kunci === sekarang ? ' terpilih' : '')
+                        + '" data-nilai="' + provEsc(kunci)
+                        + '" data-cari="' + provEsc(String(label).toLowerCase()) + '">'
+                        + '<i class="bi bi-compass me-2" style="color:#1d6fa5;"><\/i>' + provEsc(label)
+                        + '<\/button><\/div>')
+                    .join('');
+
+                Swal.fire({
+                    title: 'Pilih Wilayah',
+                    html: '<input id="orchaWilCari" class="form-control mb-2" placeholder="Ketik untuk mencari wilayah…">'
+                        + '<div id="orchaWilDaftar" class="orcha-pick-list">' + baris + '<\/div>'
+                        + '<div class="orcha-pick-empty mt-2">Wilayah mengikuti tab penyaring di website, jadi tidak bisa ditambah dari sini.<\/div>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
+                    width: 460, padding: '1.25rem',
+                    didOpen: () => {
+                        const cari = document.getElementById('orchaWilCari');
+                        const daftarEl = document.getElementById('orchaWilDaftar');
+
+                        if (cari) {
+                            cari.addEventListener('input', () => {
+                                const q = cari.value.toLowerCase().trim();
+                                daftarEl.querySelectorAll('.orcha-pick-row').forEach((r) => {
+                                    r.style.display = r.querySelector('.orcha-pick-item')
+                                        .dataset.cari.includes(q) ? '' : 'none';
+                                });
+                            });
+                            setTimeout(() => cari.focus(), 100);
+                        }
+
+                        daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                            b.addEventListener('click', () => {
+                                komponen() && komponen().set('wilayah', b.dataset.nilai);
+                                Swal.close();
                             });
                         });
                     },

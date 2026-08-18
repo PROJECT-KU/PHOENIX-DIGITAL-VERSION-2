@@ -234,12 +234,32 @@ test('memilih wilayah menyaring pilihan provinsinya', function () {
     // Diperiksa juga pada HTML yang benar-benar dikirim: pemilihnya menyaring
     // di sisi peramban memakai wilayah yang sedang dipilih, jadi nilai itu harus
     // ikut terkirim dan ikut berubah.
-    expect($uji->html())->toContain('window.__orchaWilayahDipilih = "jawa"');
+    // Diperiksa pada HTML yang benar-benar dikirim. Wilayahnya ditempel sebagai
+    // atribut DOM, BUKAN ditulis di dalam <script>: Livewire tidak menjalankan
+    // ulang script inline saat me-render ulang, jadi nilai di sana membeku pada
+    // pemuatan pertama dan mengganti wilayah tidak mengubah daftar provinsi
+    // sama sekali.
+    expect($uji->html())->toContain('data-orcha-wilayah="jawa"');
 
     $uji->set('wilayah', 'sumatera');
 
     expect($uji->instance()->provinsiTersedia())->toBe(['Aceh'])
-        ->and($uji->html())->toContain('window.__orchaWilayahDipilih = "sumatera"');
+        ->and($uji->html())->toContain('data-orcha-wilayah="sumatera"');
+});
+
+test('wilayah dipilih lewat pemilih yang sama, tanpa tulis sendiri', function () {
+    fakeProvinsi();
+
+    // Wilayah bukan sekadar isian: keenamnya jadi tab penyaring di halaman
+    // publik. Wilayah ketujuh yang ditambahkan dari sini tidak punya tab, tidak
+    // punya urutan, dan destinasinya tidak ketemu oleh siapa pun.
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    expect($html)->toContain('orchaPilihWilayah')
+        ->and($html)->toContain('Wilayah mengikuti tab penyaring di website');
+
+    // Pemilih provinsi tetap punya jalur tulis sendiri.
+    expect($html)->toContain('orchaProvManual');
 });
 
 test('provinsi yang tidak cocok dikosongkan saat wilayah diganti', function () {
