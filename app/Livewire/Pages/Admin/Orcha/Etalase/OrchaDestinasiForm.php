@@ -72,6 +72,17 @@ class OrchaDestinasiForm extends Component
      */
     public string $usulanLokasi = '';
 
+    /**
+     * Provinsi yang sekarang terisi berasal dari sistem, bukan dari admin.
+     *
+     * Penjagaan "jangan timpa provinsi yang sudah terisi" benar untuk yang
+     * DIKETIK admin — tebakan tidak berhak mengalahkan keputusan. Tetapi salah
+     * untuk yang diisi sistem dari pilihan sebelumnya: memilih Ambon lalu
+     * berganti ke Banyuwangi meninggalkan provinsi Maluku, dan destinasi
+     * tercatat di provinsi yang sama sekali tidak ada hubungannya.
+     */
+    public bool $lokasiDiisiSistem = false;
+
     public function mount(?int $destinasi = null): void
     {
         if (! $destinasi) {
@@ -91,6 +102,10 @@ class OrchaDestinasiForm extends Component
         $this->wilayah = (string) ($isi['wilayah'] ?? 'jawa');
         $this->provinsi = (string) ($isi['provinsi'] ?? '');
         $this->daerah = (string) ($isi['daerah'] ?? '');
+
+        // Destinasi yang sudah tersimpan membawa lokasinya sendiri: itu
+        // keputusan yang pernah diambil admin, bukan isian yang menunggu diisi.
+        $this->lokasiDiisiSistem = false;
         $this->deskripsi = (string) ($isi['deskripsi'] ?? '');
         $this->totalPengunjung = $isi['total_pengunjung'] ?? 0;
         $this->gambarLama = $isi['foto'] ?? null;
@@ -107,6 +122,11 @@ class OrchaDestinasiForm extends Component
      */
     public function updatedProvinsi(): void
     {
+        // Disentuh sendiri oleh admin: sejak sekarang isinya keputusan, bukan
+        // bayangan pilihan sebelumnya.
+        $this->lokasiDiisiSistem = false;
+        $this->usulanLokasi = '';
+
         $wilayah = $this->petaProvinsi()[$this->provinsi] ?? null;
 
         if ($wilayah) {
@@ -213,6 +233,9 @@ class OrchaDestinasiForm extends Component
      */
     public function updatedWilayah(): void
     {
+        $this->lokasiDiisiSistem = false;
+        $this->usulanLokasi = '';
+
         if ($this->provinsi === '') {
             return;
         }
@@ -409,7 +432,7 @@ class OrchaDestinasiForm extends Component
 
         $provinsi = $this->katalogDestinasi()[$nama] ?? null;
 
-        if (! $provinsi || $this->provinsi !== '') {
+        if (! $provinsi || ! $this->bolehDiisiSistem()) {
             return;
         }
 
@@ -419,8 +442,7 @@ class OrchaDestinasiForm extends Component
             return;
         }
 
-        $this->provinsi = $provinsi;
-        $this->wilayah = $wilayah;
+        $this->pasangLokasi($provinsi, $wilayah);
         $this->usulanLokasi = 'Provinsi dan wilayah terisi dari daftar destinasi — betulkan bila keliru.';
     }
 
@@ -482,7 +504,7 @@ class OrchaDestinasiForm extends Component
     {
         $this->usulanLokasi = '';
 
-        if ($this->provinsi !== '' || mb_strlen(trim($this->nama)) < 4) {
+        if (! $this->bolehDiisiSistem() || mb_strlen(trim($this->nama)) < 4) {
             return;
         }
 
@@ -497,16 +519,44 @@ class OrchaDestinasiForm extends Component
             return;
         }
 
-        $this->provinsi = $usulan['provinsi'];
-        $this->wilayah = $usulan['wilayah'];
-
-        if ($this->daerah === '' && ! blank($usulan['daerah'] ?? null)) {
-            $this->daerah = $usulan['daerah'];
-        }
+        $this->pasangLokasi($usulan['provinsi'], $usulan['wilayah'], $usulan['daerah'] ?? null);
 
         $this->usulanLokasi = ($usulan['sumber'] ?? '') === 'destinasi'
             ? 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.'
             : 'Terisi dari peta OpenStreetMap — betulkan bila keliru.';
+    }
+
+    /**
+     * Boleh tidaknya sistem mengisi lokasi.
+     *
+     * Kosong berarti belum ada yang mengisinya; terisi oleh sistem berarti
+     * isinya bayangan pilihan sebelumnya, bukan keputusan admin.
+     */
+    private function bolehDiisiSistem(): bool
+    {
+        return $this->provinsi === '' || $this->lokasiDiisiSistem;
+    }
+
+    /**
+     * Memasang provinsi, wilayah, dan daerah sekaligus.
+     *
+     * Daerah yang tidak termasuk provinsi baru DIBUANG — dibiarkan, ia akan
+     * berbunyi "Banyuwangi, Maluku": alamat yang tidak pernah ada, dan yang
+     * salah begitu tidak ketahuan sampai ada penyewa yang bertanya.
+     */
+    private function pasangLokasi(string $provinsi, string $wilayah, ?string $daerah = null): void
+    {
+        $this->provinsi = $provinsi;
+        $this->wilayah = $wilayah;
+        $this->lokasiDiisiSistem = true;
+
+        if ($this->daerah !== '' && ($this->katalogDaerah()[$this->daerah] ?? null) !== $provinsi) {
+            $this->daerah = '';
+        }
+
+        if ($this->daerah === '' && ! blank($daerah)) {
+            $this->daerah = $daerah;
+        }
     }
 
     /**

@@ -493,10 +493,14 @@ function fakeKatalog(array $katalog = ['Banyuwangi' => 'Jawa Timur', 'Raja Ampat
 
     Http::fake([
         '*/rujukan' => Http::response(['data' => [
-            'wilayah' => ['jawa' => 'Jawa', 'papua' => 'Papua'],
+            'wilayah' => ['jawa' => 'Jawa', 'papua' => 'Papua', 'maluku' => 'Maluku'],
             'wilayah_kustom' => [],
-            'provinsi_wilayah' => ['Jawa Timur' => 'jawa', 'Papua Barat Daya' => 'papua'],
+            'provinsi_wilayah' => [
+                'Jawa Timur' => 'jawa', 'Papua Barat Daya' => 'papua', 'Maluku' => 'maluku',
+            ],
             'provinsi_kustom' => [],
+            'katalog_daerah' => ['Ambon' => 'Maluku', 'Banyuwangi' => 'Jawa Timur'],
+            'katalog_daerah_kustom' => [],
             'katalog_destinasi' => $katalog,
             'katalog_destinasi_kustom' => [['id' => 5, 'nama' => 'Pantai Rahasia', 'provinsi' => 'Jawa Timur']],
         ]]),
@@ -518,16 +522,58 @@ test('memilih destinasi dari daftar mengisi nama, provinsi, dan wilayah sekaligu
         ->assertSee('terisi dari daftar destinasi');
 });
 
-test('memilih destinasi tidak menimpa provinsi yang sudah ditulis admin', function () {
+test('memilih destinasi tidak menimpa provinsi yang DIKETIK admin', function () {
     fakeKatalog();
 
     // Nama tempat yang mirip ada di beberapa provinsi; tebakan tidak berhak
-    // mengalahkan keputusan.
+    // mengalahkan keputusan. updatedProvinsi menandai isinya sebagai keputusan
+    // admin — bukan sekadar "terisi".
     Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
         ->set('provinsi', 'Jawa Timur')
         ->call('pilihDestinasi', 'Raja Ampat')
         ->assertSet('nama', 'Raja Ampat')
         ->assertSet('provinsi', 'Jawa Timur');
+});
+
+test('berganti destinasi mengganti provinsi dan wilayah yang diisi sistem', function () {
+    fakeKatalog(['Ambon' => 'Maluku', 'Banyuwangi' => 'Jawa Timur']);
+
+    // Keluhannya: pilih Ambon lalu ganti ke Banyuwangi, dan provinsinya tetap
+    // Maluku. Penjagaan "jangan timpa yang sudah terisi" benar untuk yang
+    // diketik admin, tetapi yang terisi di sini adalah bayangan pilihan
+    // sebelumnya — dan destinasi tercatat di provinsi yang sama sekali tidak
+    // ada hubungannya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Ambon')
+        ->assertSet('provinsi', 'Maluku')
+        ->assertSet('wilayah', 'maluku')
+        ->call('pilihDestinasi', 'Banyuwangi')
+        ->assertSet('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'jawa');
+});
+
+test('mengetik nama lain juga memperbarui lokasi yang diisi sistem', function () {
+    fakeUsulan(['provinsi' => 'Bali', 'wilayah' => 'bali', 'daerah' => 'Badung', 'sumber' => 'peta']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Pantai Melasti')
+        ->assertSet('provinsi', 'Bali')
+        // Nama berganti: lokasinya ikut, karena yang terisi bukan keputusan admin.
+        ->set('nama', 'Pantai Lain Lagi')
+        ->assertSet('provinsi', 'Bali')
+        ->assertSet('wilayah', 'bali');
+});
+
+test('daerah dari provinsi lama ikut dibuang saat destinasi berganti', function () {
+    fakeKatalog(['Ambon' => 'Maluku', 'Banyuwangi' => 'Jawa Timur']);
+
+    // Dibiarkan, ia akan berbunyi "Ambon, Jawa Timur" — alamat yang tidak
+    // pernah ada.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Ambon')
+        ->set('daerah', 'Ambon')
+        ->call('pilihDestinasi', 'Banyuwangi')
+        ->assertSet('daerah', '');
 });
 
 test('nama yang ditulis sendiri masuk daftar lalu terpilih', function () {
