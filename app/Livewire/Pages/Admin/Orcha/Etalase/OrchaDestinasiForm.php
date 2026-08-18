@@ -55,6 +55,15 @@ class OrchaDestinasiForm extends Component
     /** Batas dari Orcha; kartu publiknya hanya menampung sekian gambar. */
     public int $batasSubFoto = 3;
 
+    /**
+     * Keterangan asal usulan lokasi, untuk ditampilkan di bawah isian nama.
+     *
+     * Usulan yang mengisi dua isian tanpa mengatakan apa-apa terasa seperti
+     * sistem yang mengubah pekerjaan admin diam-diam. Menyebut asalnya membuat
+     * admin tahu itu tebakan yang boleh dibetulkan.
+     */
+    public string $usulanLokasi = '';
+
     public function mount(?int $destinasi = null): void
     {
         if (! $destinasi) {
@@ -211,6 +220,51 @@ class OrchaDestinasiForm extends Component
         );
 
         $this->dispatch('order-updated', message: $pesan);
+    }
+
+    /**
+     * Nama destinasi mengusulkan provinsi dan wilayahnya.
+     *
+     * Hanya MENGISI YANG MASIH KOSONG. Menimpa provinsi yang sudah ditulis admin
+     * berarti tebakan mengalahkan keputusan — dan tebakan tentang nama tempat
+     * yang mirip ("Pantai Baru" ada di beberapa provinsi) cukup sering meleset.
+     */
+    public function updatedNama(): void
+    {
+        $this->usulanLokasi = '';
+
+        if ($this->provinsi !== '' || mb_strlen(trim($this->nama)) < 4) {
+            return;
+        }
+
+        $usulan = $this->cariLokasi($this->nama);
+
+        if ($usulan === null) {
+            return;
+        }
+
+        $this->provinsi = $usulan['provinsi'];
+        $this->wilayah = $usulan['wilayah'];
+
+        $this->usulanLokasi = ($usulan['sumber'] ?? '') === 'destinasi'
+            ? 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.'
+            : 'Terisi dari peta OpenStreetMap — betulkan bila keliru.';
+    }
+
+    /**
+     * Bertanya ke Orcha, dan diam bila tidak terjawab.
+     *
+     * Usulan yang gagal bukan kegagalan admin: yang benar adalah ia mengisi
+     * sendiri seperti biasa, bukan melihat pesan galat yang tidak bisa
+     * ditindaklanjuti.
+     */
+    private function cariLokasi(string $nama): ?array
+    {
+        try {
+            return $this->orcha()->ambil('/cari-lokasi', ['nama' => $nama])['data'] ?? null;
+        } catch (\App\Exceptions\OrchaTidakTerjangkau) {
+            return null;
+        }
     }
 
     protected function rules(): array

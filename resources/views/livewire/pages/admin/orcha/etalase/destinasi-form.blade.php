@@ -50,9 +50,26 @@
                                     <label class="form-label small fw-semibold">
                                         Nama destinasi <span class="text-danger">*</span>
                                     </label>
+                                    {{-- .live.debounce, bukan .blur: usulannya baru berguna
+                                         bila muncul saat admin masih mengetik, bukan setelah ia
+                                         pindah ke isian berikutnya dan mengisinya sendiri.
+                                         Jedanya panjang supaya tidak menembak tiap huruf. --}}
                                     <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model="nama" placeholder="Contoh: Bromo Tengger Semeru">
+                                        wire:model.live.debounce.900ms="nama"
+                                        placeholder="Contoh: Bromo Tengger Semeru">
                                     @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                                    <div wire:loading wire:target="nama" class="form-text">Mencari lokasinya…</div>
+
+                                    @if ($usulanLokasi)
+                                        {{-- Asal usulannya disebut: yang mengisi dua isian tanpa
+                                             mengatakan apa-apa terasa seperti sistem yang mengubah
+                                             pekerjaan admin diam-diam. --}}
+                                        <div class="orcha-usulan">
+                                            <i class="bi bi-magic"></i>
+                                            <span>{{ $usulanLokasi }}</span>
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <div class="col-6 col-md-5">
@@ -772,6 +789,23 @@
             border-radius: 8px;
             border: 1px solid #e3ecf3;
         }
+
+        /* Keterangan usulan lokasi: hijau lembut, bukan kuning peringatan —
+           ini kabar baik yang menghemat pekerjaan, bukan sesuatu yang salah. */
+        .orcha-usulan {
+            display: flex;
+            align-items: flex-start;
+            gap: .4rem;
+            margin-top: .35rem;
+            padding: .4rem .6rem;
+            border-radius: 9px;
+            background: #eef8f2;
+            color: #1a6b43;
+            font-size: .76rem;
+            line-height: 1.4;
+        }
+
+        .orcha-usulan > i { line-height: 1.4; }
 
         /* Ringkasan: label kiri, nilai kanan — angka dan keterangannya jatuh di
            satu garis tegak, sama seperti daftar tarif di formulir armada. */

@@ -367,3 +367,74 @@ test('menghapus provinsi tambahan menyegarkan daftarnya', function () {
     Http::assertSent(fn ($p) => $p->method() === 'DELETE'
         && str_contains($p->url(), '/provinsi/7'));
 });
+
+/* ---------- NAMA MENGUSULKAN PROVINSI & WILAYAH ---------- */
+
+function fakeUsulan(?array $usulan): void
+{
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa', 'bali_nusa' => 'Bali & Nusa Tenggara', 'sumatera' => 'Sumatera'],
+            'provinsi_wilayah' => ['Jawa Timur' => 'jawa', 'Bali' => 'bali_nusa', 'Aceh' => 'sumatera'],
+            'provinsi_kustom' => [],
+        ]]),
+        '*/cari-lokasi*' => Http::response(['data' => $usulan]),
+        '*' => Http::response(['data' => []]),
+    ]);
+}
+
+test('mengetik nama destinasi mengisi provinsi dan wilayahnya', function () {
+    fakeUsulan(['provinsi' => 'Jawa Timur', 'wilayah' => 'jawa', 'sumber' => 'peta']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Bromo Tengger Semeru')
+        ->assertSet('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'jawa')
+        // Asalnya disebut: usulan yang mengisi dua isian tanpa mengatakan
+        // apa-apa terasa seperti sistem yang mengubah pekerjaan admin diam-diam.
+        ->assertSee('OpenStreetMap');
+});
+
+test('usulan tidak menimpa provinsi yang sudah ditulis admin', function () {
+    fakeUsulan(['provinsi' => 'Bali', 'wilayah' => 'bali_nusa', 'sumber' => 'peta']);
+
+    // Tebakan tentang nama tempat yang mirip cukup sering meleset; menimpa
+    // keputusan admin dengan tebakan adalah cara tercepat kehilangan
+    // kepercayaannya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->set('nama', 'Pantai Baru')
+        ->assertSet('provinsi', 'Jawa Timur');
+});
+
+test('nama terlalu pendek tidak menembak orcha', function () {
+    fakeUsulan(['provinsi' => 'Bali', 'wilayah' => 'bali_nusa', 'sumber' => 'peta']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->set('nama', 'Bro');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), 'cari-lokasi'));
+});
+
+test('usulan kosong tidak mengubah apa pun dan tidak menampilkan pesan', function () {
+    fakeUsulan(null);
+
+    // Usulan yang gagal bukan kegagalan admin: yang benar adalah ia mengisi
+    // sendiri seperti biasa.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Tempat Antah Berantah')
+        ->assertSet('provinsi', '')
+        ->assertSet('usulanLokasi', '')
+        ->assertHasNoErrors();
+});
+
+test('usulan dari destinasi lain menyebut asalnya sendiri', function () {
+    fakeUsulan(['provinsi' => 'Bali', 'wilayah' => 'bali_nusa', 'sumber' => 'destinasi']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Pantai Melasti')
+        ->assertSee('destinasi lain yang namanya mirip');
+});
