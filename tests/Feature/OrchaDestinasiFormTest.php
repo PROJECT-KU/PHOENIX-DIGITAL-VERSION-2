@@ -485,7 +485,10 @@ test('usulan dari destinasi lain menyebut asalnya sendiri', function () {
 
 /* ---------- KATALOG NAMA DESTINASI ---------- */
 
-function fakeKatalog(array $katalog = ['Banyuwangi' => 'Jawa Timur', 'Raja Ampat' => 'Papua Barat Daya']): void
+function fakeKatalog(array $katalog = [
+    'Banyuwangi' => ['provinsi' => 'Jawa Timur', 'daerah' => 'Banyuwangi'],
+    'Raja Ampat' => ['provinsi' => 'Papua Barat Daya', 'daerah' => 'Raja Ampat'],
+]): void
 {
     config()->set('orcha.url', 'https://orcha.test/api/v1');
     config()->set('orcha.kunci', 'kunci-uji');
@@ -519,7 +522,9 @@ test('memilih destinasi dari daftar mengisi nama, provinsi, dan wilayah sekaligu
         ->assertSet('nama', 'Raja Ampat')
         ->assertSet('provinsi', 'Papua Barat Daya')
         ->assertSet('wilayah', 'papua')
-        ->assertSee('terisi dari daftar destinasi');
+        // Daerahnya ikut: satu pilihan mengisi empat isian.
+        ->assertSet('daerah', 'Raja Ampat')
+        ->assertSee('Daerah, provinsi, dan wilayah terisi dari daftar destinasi');
 });
 
 test('memilih destinasi tidak menimpa provinsi yang DIKETIK admin', function () {
@@ -536,7 +541,10 @@ test('memilih destinasi tidak menimpa provinsi yang DIKETIK admin', function () 
 });
 
 test('berganti destinasi mengganti provinsi dan wilayah yang diisi sistem', function () {
-    fakeKatalog(['Ambon' => 'Maluku', 'Banyuwangi' => 'Jawa Timur']);
+    fakeKatalog([
+        'Ambon' => ['provinsi' => 'Maluku', 'daerah' => 'Ambon'],
+        'Banyuwangi' => ['provinsi' => 'Jawa Timur', 'daerah' => 'Banyuwangi'],
+    ]);
 
     // Keluhannya: pilih Ambon lalu ganti ke Banyuwangi, dan provinsinya tetap
     // Maluku. Penjagaan "jangan timpa yang sudah terisi" benar untuk yang
@@ -549,7 +557,8 @@ test('berganti destinasi mengganti provinsi dan wilayah yang diisi sistem', func
         ->assertSet('wilayah', 'maluku')
         ->call('pilihDestinasi', 'Banyuwangi')
         ->assertSet('provinsi', 'Jawa Timur')
-        ->assertSet('wilayah', 'jawa');
+        ->assertSet('wilayah', 'jawa')
+        ->assertSet('daerah', 'Banyuwangi');
 });
 
 test('mengetik nama lain juga memperbarui lokasi yang diisi sistem', function () {
@@ -564,15 +573,34 @@ test('mengetik nama lain juga memperbarui lokasi yang diisi sistem', function ()
         ->assertSet('wilayah', 'bali');
 });
 
-test('daerah dari provinsi lama ikut dibuang saat destinasi berganti', function () {
-    fakeKatalog(['Ambon' => 'Maluku', 'Banyuwangi' => 'Jawa Timur']);
+test('daerah dari provinsi lama diganti, bukan ditinggalkan', function () {
+    fakeKatalog([
+        'Ambon' => ['provinsi' => 'Maluku', 'daerah' => 'Ambon'],
+        'Banyuwangi' => ['provinsi' => 'Jawa Timur', 'daerah' => 'Banyuwangi'],
+    ]);
 
     // Dibiarkan, ia akan berbunyi "Ambon, Jawa Timur" — alamat yang tidak
     // pernah ada.
     Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
         ->call('pilihDestinasi', 'Ambon')
-        ->set('daerah', 'Ambon')
+        ->assertSet('daerah', 'Ambon')
         ->call('pilihDestinasi', 'Banyuwangi')
+        ->assertSet('daerah', 'Banyuwangi');
+});
+
+test('daerah lama dikosongkan bila pilihan barunya tidak menyebut daerah', function () {
+    fakeKatalog([
+        'Ambon' => ['provinsi' => 'Maluku', 'daerah' => 'Ambon'],
+        'Tempat Baru' => ['provinsi' => 'Jawa Timur', 'daerah' => null],
+    ]);
+
+    // Separuh alamat yang keliru lebih berbahaya daripada alamat yang belum
+    // lengkap: yang kosong terlihat, yang salah tidak.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Ambon')
+        ->assertSet('daerah', 'Ambon')
+        ->call('pilihDestinasi', 'Tempat Baru')
+        ->assertSet('provinsi', 'Jawa Timur')
         ->assertSet('daerah', '');
 });
 
@@ -593,7 +621,7 @@ test('nama yang ditulis sendiri masuk daftar lalu terpilih', function () {
             ->whenEmpty(Http::response(['data' => [
                 'wilayah' => ['jawa' => 'Jawa'], 'wilayah_kustom' => [],
                 'provinsi_wilayah' => ['Jawa Timur' => 'jawa'], 'provinsi_kustom' => [],
-                'katalog_destinasi' => ['Pantai Pulau Merah' => 'Jawa Timur'],
+                'katalog_destinasi' => ['Pantai Pulau Merah' => ['provinsi' => 'Jawa Timur', 'daerah' => 'Banyuwangi']],
                 'katalog_destinasi_kustom' => [['id' => 6, 'nama' => 'Pantai Pulau Merah', 'provinsi' => 'Jawa Timur']],
             ]])),
         '*/katalog-destinasi' => Http::response(['pesan' => 'ditambahkan'], 201),
@@ -606,6 +634,7 @@ test('nama yang ditulis sendiri masuk daftar lalu terpilih', function () {
         ->assertSet('nama', 'Pantai Pulau Merah')
         ->assertSet('provinsi', 'Jawa Timur')
         ->assertSet('wilayah', 'jawa')
+        ->assertSet('daerah', 'Banyuwangi')
         ->assertDispatched('orcha-katalog-destinasi-segar');
 });
 

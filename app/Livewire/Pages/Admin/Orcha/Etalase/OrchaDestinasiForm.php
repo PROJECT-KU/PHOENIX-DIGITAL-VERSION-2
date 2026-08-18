@@ -430,9 +430,10 @@ class OrchaDestinasiForm extends Component
         $this->nama = $nama;
         $this->usulanLokasi = '';
 
-        $provinsi = $this->katalogDestinasi()[$nama] ?? null;
+        $baris = $this->katalogDestinasi()[$nama] ?? null;
+        $provinsi = $baris['provinsi'] ?? null;
 
-        if (! $provinsi || ! $this->bolehDiisiSistem()) {
+        if (blank($provinsi) || ! $this->bolehDiisiSistem()) {
             return;
         }
 
@@ -442,8 +443,13 @@ class OrchaDestinasiForm extends Component
             return;
         }
 
-        $this->pasangLokasi($provinsi, $wilayah);
-        $this->usulanLokasi = 'Provinsi dan wilayah terisi dari daftar destinasi — betulkan bila keliru.';
+        // Daerahnya ikut: satu pilihan mengisi empat isian, dan itu yang
+        // membuat daftar ini berguna — admin sudah tahu nama tempatnya.
+        $this->pasangLokasi($provinsi, $wilayah, $baris['daerah'] ?? null);
+
+        $this->usulanLokasi = blank($baris['daerah'] ?? null)
+            ? 'Provinsi dan wilayah terisi dari daftar destinasi — betulkan bila keliru.'
+            : 'Daerah, provinsi, dan wilayah terisi dari daftar destinasi — betulkan bila keliru.';
     }
 
     /**

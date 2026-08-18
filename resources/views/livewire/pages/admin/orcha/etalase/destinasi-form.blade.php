@@ -879,13 +879,16 @@
 
                     return nama.map((n) => {
                         const id = destIdKustom(n);
-                        const provinsi = katalog[n];
+                        const baris = katalog[n] || {};
+                        // Daerahnya ikut disebut dan ikut dicari: admin yang ingat
+                        // "yang di Banyuwangi itu" menemukannya tanpa ingat namanya.
+                        const alamat = [baris.daerah, baris.provinsi].filter(Boolean).join(', ');
 
                         return '<div class="orcha-pick-row">'
                             + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
-                            + '" data-cari="' + provEsc((n + ' ' + (provinsi || '')).toLowerCase()) + '">'
+                            + '" data-cari="' + provEsc((n + ' ' + alamat).toLowerCase()) + '">'
                             + '<i class="bi bi-geo me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
-                            + (provinsi ? '<small class="text-muted ms-2">' + provEsc(provinsi) + '<\/small>' : '')
+                            + (alamat ? '<small class="text-muted ms-2">' + provEsc(alamat) + '<\/small>' : '')
                             + '<\/button>'
                             + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
                                 + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
