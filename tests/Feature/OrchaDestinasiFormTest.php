@@ -482,3 +482,103 @@ test('usulan dari destinasi lain menyebut asalnya sendiri', function () {
         ->set('nama', 'Pantai Melasti')
         ->assertSee('destinasi lain yang namanya mirip');
 });
+
+/* ---------- KATALOG NAMA DESTINASI ---------- */
+
+function fakeKatalog(array $katalog = ['Banyuwangi' => 'Jawa Timur', 'Raja Ampat' => 'Papua Barat Daya']): void
+{
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa', 'papua' => 'Papua'],
+            'wilayah_kustom' => [],
+            'provinsi_wilayah' => ['Jawa Timur' => 'jawa', 'Papua Barat Daya' => 'papua'],
+            'provinsi_kustom' => [],
+            'katalog_destinasi' => $katalog,
+            'katalog_destinasi_kustom' => [['id' => 5, 'nama' => 'Pantai Rahasia', 'provinsi' => 'Jawa Timur']],
+        ]]),
+        '*/katalog-destinasi*' => Http::response(['pesan' => 'ditambahkan'], 201),
+        '*' => Http::response(['data' => []]),
+    ]);
+}
+
+test('memilih destinasi dari daftar mengisi nama, provinsi, dan wilayah sekaligus', function () {
+    fakeKatalog();
+
+    // Satu tindakan mengisi tiga isian — itu yang membuat daftar ini berguna,
+    // bukan namanya (admin sudah tahu namanya).
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Raja Ampat')
+        ->assertSet('nama', 'Raja Ampat')
+        ->assertSet('provinsi', 'Papua Barat Daya')
+        ->assertSet('wilayah', 'papua')
+        ->assertSee('terisi dari daftar destinasi');
+});
+
+test('memilih destinasi tidak menimpa provinsi yang sudah ditulis admin', function () {
+    fakeKatalog();
+
+    // Nama tempat yang mirip ada di beberapa provinsi; tebakan tidak berhak
+    // mengalahkan keputusan.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->call('pilihDestinasi', 'Raja Ampat')
+        ->assertSet('nama', 'Raja Ampat')
+        ->assertSet('provinsi', 'Jawa Timur');
+});
+
+test('nama yang ditulis sendiri masuk daftar lalu terpilih', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    // Http::fake() yang dipanggil dua kali menggabungkan stub dan yang lebih
+    // dulu menang — jadi seluruh stub didaftarkan sekali di sini.
+    Http::fake([
+        '*/rujukan' => Http::sequence()
+            ->push(['data' => [
+                'wilayah' => ['jawa' => 'Jawa'], 'wilayah_kustom' => [],
+                'provinsi_wilayah' => ['Jawa Timur' => 'jawa'], 'provinsi_kustom' => [],
+                'katalog_destinasi' => [], 'katalog_destinasi_kustom' => [],
+            ]])
+            ->whenEmpty(Http::response(['data' => [
+                'wilayah' => ['jawa' => 'Jawa'], 'wilayah_kustom' => [],
+                'provinsi_wilayah' => ['Jawa Timur' => 'jawa'], 'provinsi_kustom' => [],
+                'katalog_destinasi' => ['Pantai Pulau Merah' => 'Jawa Timur'],
+                'katalog_destinasi_kustom' => [['id' => 6, 'nama' => 'Pantai Pulau Merah', 'provinsi' => 'Jawa Timur']],
+            ]])),
+        '*/katalog-destinasi' => Http::response(['pesan' => 'ditambahkan'], 201),
+        '*' => Http::response(['data' => []]),
+    ]);
+
+    // Provinsinya dicari Orcha sendiri, jadi sekali tulis pun tiga isian terisi.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('tambahDestinasi', 'Pantai Pulau Merah')
+        ->assertSet('nama', 'Pantai Pulau Merah')
+        ->assertSet('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'jawa')
+        ->assertDispatched('orcha-katalog-destinasi-segar');
+});
+
+test('nama destinasi kosong tidak dikirim ke orcha', function () {
+    fakeKatalog();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->call('tambahDestinasi', '  ');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), 'katalog-destinasi'));
+});
+
+test('hanya entri tambahan yang punya tombol hapus di daftar destinasi', function () {
+    fakeKatalog();
+
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    // Katalog bawaan ikut versi kode, dan nama destinasi yang sudah tercatat
+    // dipakai barisnya sendiri — keduanya tidak boleh bisa dihapus dari sini.
+    expect($html)->toContain('orchaPilihDestinasi')
+        ->and($html)->toContain('orchaDestManual')
+        ->and($html)->toContain('Pantai Rahasia');
+});

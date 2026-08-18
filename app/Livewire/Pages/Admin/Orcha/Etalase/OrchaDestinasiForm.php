@@ -284,6 +284,97 @@ class OrchaDestinasiForm extends Component
     }
 
     /**
+     * Katalog nama destinasi beserta provinsinya.
+     *
+     * @return array<string, string|null>
+     */
+    public function katalogDestinasi(): array
+    {
+        return $this->rujukan('katalog_destinasi');
+    }
+
+    public function katalogDestinasiKustom(): array
+    {
+        return $this->rujukan('katalog_destinasi_kustom');
+    }
+
+    /**
+     * Memilih nama dari katalog sekaligus mengisi provinsi dan wilayahnya.
+     *
+     * Satu tindakan mengisi tiga isian. Provinsi yang sudah ditulis admin tidak
+     * ditimpa — nama tempat yang mirip ada di beberapa provinsi, dan tebakan
+     * tidak berhak mengalahkan keputusan.
+     */
+    public function pilihDestinasi(string $nama): void
+    {
+        $this->nama = $nama;
+        $this->usulanLokasi = '';
+
+        $provinsi = $this->katalogDestinasi()[$nama] ?? null;
+
+        if (! $provinsi || $this->provinsi !== '') {
+            return;
+        }
+
+        $wilayah = $this->petaProvinsi()[$provinsi] ?? null;
+
+        if (! $wilayah) {
+            return;
+        }
+
+        $this->provinsi = $provinsi;
+        $this->wilayah = $wilayah;
+        $this->usulanLokasi = 'Provinsi dan wilayah terisi dari daftar destinasi — betulkan bila keliru.';
+    }
+
+    /**
+     * Menambahkan nama yang belum terdaftar, lalu memilihnya.
+     *
+     * Provinsinya dicari Orcha sendiri bila belum diketahui, jadi sekali tulis
+     * pun tiga isian bisa langsung terisi.
+     */
+    public function tambahDestinasi(string $nama): void
+    {
+        $nama = trim($nama);
+
+        if ($nama === '') {
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/katalog-destinasi', ['nama' => $nama]);
+
+            cache()->forget('orcha.rujukan');
+            $this->pilihDestinasi($nama);
+            $this->kabarkanKatalog($balasan['pesan'] ?? 'Destinasi ditambahkan ke daftar.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function hapusKatalogDestinasi(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/katalog-destinasi/{$id}");
+
+            cache()->forget('orcha.rujukan');
+            $this->kabarkanKatalog($balasan['pesan'] ?? 'Dihapus dari daftar.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    private function kabarkanKatalog(string $pesan): void
+    {
+        $this->dispatch('orcha-katalog-destinasi-segar',
+            katalog: $this->katalogDestinasi(),
+            kustom: $this->katalogDestinasiKustom(),
+        );
+
+        $this->dispatch('order-updated', message: $pesan);
+    }
+
+    /**
      * Nama destinasi mengusulkan provinsi dan wilayahnya.
      *
      * Hanya MENGISI YANG MASIH KOSONG. Menimpa provinsi yang sudah ditulis admin
@@ -424,6 +515,8 @@ class OrchaDestinasiForm extends Component
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
             'wilayahKustom' => $this->rujukan('wilayah_kustom'),
+            'katalogDestinasi' => $this->katalogDestinasi(),
+            'katalogDestinasiKustom' => $this->katalogDestinasiKustom(),
             'daftarProvinsi' => $this->provinsiTersedia(),
             'petaProvinsi' => $this->petaProvinsi(),
             'provinsiKustom' => $this->provinsiKustom(),

@@ -50,14 +50,27 @@
                                     <label class="form-label small fw-semibold">
                                         Nama destinasi <span class="text-danger">*</span>
                                     </label>
-                                    {{-- .live.debounce, bukan .blur: usulannya baru berguna
-                                         bila muncul saat admin masih mengetik, bukan setelah ia
-                                         pindah ke isian berikutnya dan mengisinya sendiri.
-                                         Jedanya panjang supaya tidak menembak tiap huruf. --}}
-                                    <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                        wire:model.live.debounce.900ms="nama"
-                                        placeholder="Contoh: Bromo Tengger Semeru">
-                                    @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    {{-- Isian DAN pemilih berdampingan.
+
+                                         Nama destinasi tidak bisa didaftar habis, jadi mengetik
+                                         harus tetap mungkin — tetapi tempat yang paling sering
+                                         diminta layak tinggal dipilih, lengkap dengan
+                                         provinsinya. Yang diketik pun tetap diusulkan
+                                         provinsinya lewat peta.
+
+                                         .live.debounce, bukan .blur: usulannya baru berguna bila
+                                         muncul saat admin masih mengetik, bukan setelah ia
+                                         pindah ke isian berikutnya dan mengisinya sendiri. --}}
+                                    <div class="input-group">
+                                        <input type="text" class="form-control @error('nama') is-invalid @enderror"
+                                            wire:model.live.debounce.900ms="nama"
+                                            placeholder="Ketik, atau pilih dari daftar">
+                                        <button type="button" onclick="orchaPilihDestinasi(this)"
+                                            class="btn btn-light border" title="Pilih dari daftar destinasi">
+                                            <i class="bi bi-list-ul"></i>
+                                        </button>
+                                    </div>
+                                    @error('nama') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
                                     <div wire:loading wire:target="nama" class="form-text">Mencari lokasinya…</div>
 
@@ -381,6 +394,8 @@
         window.__orchaProvinsiKustom = @json($provinsiKustom);
         window.__orchaDaftarWilayah = @json($daftarWilayah);
         window.__orchaWilayahKustom = @json($wilayahKustom);
+        window.__orchaKatalogDestinasi = @json($katalogDestinasi);
+        window.__orchaKatalogDestinasiKustom = @json($katalogDestinasiKustom);
 
         if (!window.__orchaProvinsiTerpasang) {
             window.__orchaProvinsiTerpasang = true;
@@ -645,6 +660,142 @@
                     willClose: () => { window.__orchaWilGambarUlang = null; },
                 });
             };
+
+            /**
+             * Pemilih nama destinasi.
+             *
+             * Barisnya menyebut provinsinya sekalian: yang membuat daftar ini
+             * berguna bukan namanya — admin sudah tahu namanya — melainkan
+             * provinsi yang ikut terisi begitu dipilih.
+             */
+            window.orchaPilihDestinasi = function (tombol) {
+                if (typeof Swal === 'undefined') return;
+
+                const wadah = tombol.closest('[wire\\:id]');
+                if (!wadah) return;
+
+                const cid = wadah.getAttribute('wire:id');
+                const komponen = () => window.Livewire && window.Livewire.find(cid);
+
+                const destIdKustom = (nama) => {
+                    const cocok = (window.__orchaKatalogDestinasiKustom || []).find((e) => e.nama === nama);
+
+                    return cocok ? cocok.id : null;
+                };
+
+                const destBaris = () => {
+                    const katalog = window.__orchaKatalogDestinasi || {};
+                    const nama = Object.keys(katalog).sort((a, b) => a.localeCompare(b, 'id'));
+
+                    if (!nama.length) {
+                        return '<div class="orcha-pick-empty">Daftar belum termuat. Pakai "Tulis sendiri" di bawah.<\/div>';
+                    }
+
+                    return nama.map((n) => {
+                        const id = destIdKustom(n);
+                        const provinsi = katalog[n];
+
+                        return '<div class="orcha-pick-row">'
+                            + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
+                            + '" data-cari="' + provEsc((n + ' ' + (provinsi || '')).toLowerCase()) + '">'
+                            + '<i class="bi bi-geo me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                            + (provinsi ? '<small class="text-muted ms-2">' + provEsc(provinsi) + '<\/small>' : '')
+                            + '<\/button>'
+                            + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
+                                + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
+                            + '<\/div>';
+                    }).join('');
+                };
+
+                const pasangDest = () => {
+                    const daftarEl = document.getElementById('orchaDestDaftar');
+                    if (!daftarEl) return;
+
+                    daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                        b.addEventListener('click', () => {
+                            komponen() && komponen().call('pilihDestinasi', b.dataset.nilai);
+                            Swal.close();
+                        });
+                    });
+
+                    daftarEl.querySelectorAll('.orcha-pick-del').forEach((b) => {
+                        b.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            b.disabled = true;
+                            komponen() && komponen().call('hapusKatalogDestinasi', Number(b.dataset.id));
+                        });
+                    });
+                };
+
+                Swal.fire({
+                    title: 'Pilih Destinasi',
+                    html: '<input id="orchaDestCari" class="form-control mb-2" placeholder="Ketik nama atau provinsinya…">'
+                        + '<div id="orchaDestDaftar" class="orcha-pick-list">' + destBaris() + '<\/div>'
+                        + '<div id="orchaDestKosong" class="orcha-pick-empty" style="display:none">Tidak ada yang cocok. Pakai "Tulis sendiri" di bawah.<\/div>'
+                        + '<button type="button" id="orchaDestManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
+                        + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
+                    width: 520, padding: '1.25rem',
+                    willClose: () => { window.__orchaDestGambarUlang = null; },
+                    didOpen: () => {
+                        const cari = document.getElementById('orchaDestCari');
+                        const daftarEl = document.getElementById('orchaDestDaftar');
+                        const kosong = document.getElementById('orchaDestKosong');
+
+                        if (cari) {
+                            // Pencariannya ikut membaca provinsi: admin yang tahu
+                            // tujuannya di Jawa Timur tetapi lupa namanya tetap
+                            // bisa menemukannya.
+                            cari.addEventListener('input', () => {
+                                const q = cari.value.toLowerCase().trim();
+                                let terlihat = 0;
+                                daftarEl.querySelectorAll('.orcha-pick-row').forEach((r) => {
+                                    const cocok = r.querySelector('.orcha-pick-item').dataset.cari.includes(q);
+                                    r.style.display = cocok ? '' : 'none';
+                                    if (cocok) terlihat++;
+                                });
+                                kosong.style.display = terlihat === 0 ? '' : 'none';
+                            });
+                            setTimeout(() => cari.focus(), 100);
+                        }
+
+                        pasangDest();
+                        window.__orchaDestGambarUlang = () => { daftarEl.innerHTML = destBaris(); pasangDest(); };
+
+                        const manual = document.getElementById('orchaDestManual');
+                        if (manual) manual.addEventListener('click', () => {
+                            Swal.fire({
+                                title: 'Tambah Destinasi ke Daftar',
+                                input: 'text',
+                                inputPlaceholder: 'mis. Pantai Pulau Merah',
+                                text: 'Provinsinya dicari otomatis bila dikenali.',
+                                background: 'rgba(255, 255, 255, 0.92)',
+                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                customClass: {
+                                    popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
+                                    confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
+                                },
+                                buttonsStyling: false, showCancelButton: true,
+                                confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
+                                inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
+                            }).then((h) => {
+                                if (!h.isConfirmed || !h.value) return;
+                                komponen() && komponen().call('tambahDestinasi', h.value.trim());
+                            });
+                        });
+                    },
+                });
+            };
+
+            window.addEventListener('orcha-katalog-destinasi-segar', function (e) {
+                const d = e.detail || {};
+                if (d.katalog) window.__orchaKatalogDestinasi = d.katalog;
+                if (d.kustom) window.__orchaKatalogDestinasiKustom = d.kustom;
+                if (window.__orchaDestGambarUlang) window.__orchaDestGambarUlang();
+            });
 
             // Daftar wilayah terbaru dari server.
             window.addEventListener('orcha-wilayah-segar', function (e) {
