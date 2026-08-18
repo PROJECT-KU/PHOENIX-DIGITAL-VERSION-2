@@ -434,8 +434,13 @@
                                      tiga kartu sakelar terpisah: ketiganya menjawab pertanyaan
                                      yang sama, dan tiga kartu besar berturut-turut membuat
                                      tarif di atasnya terdorong jauh dari pandangan. --}}
-                                <div class="col-12">
-                                    <div class="orcha-pos-biaya">
+                                {{-- Bersanding, bukan bertumpuk. Dua aturan yang memang
+                                     untuk dibandingkan lebih mudah dibaca berdampingan, dan
+                                     menumpuknya menambah ~340px pada kolom kiri — cukup untuk
+                                     membuat kolom kanan tampak kosong sepanjang sisa halaman.
+                                     Di layar sempit keduanya kembali bertumpuk sendiri. --}}
+                                <div class="col-12 col-lg-6">
+                                    <div class="orcha-pos-biaya h-100">
                                         <div class="orcha-pos-kepala">
                                             <span class="judul">
                                                 <i class="bi bi-building"></i>
@@ -507,8 +512,8 @@
                                      yang dijawab admin pada blok ini satu pertanyaan
                                      utuh — "untuk luar kota, apa saja yang sudah
                                      termasuk?" --}}
-                                <div class="col-12">
-                                    <div class="orcha-pos-biaya orcha-pos-luar">
+                                <div class="col-12 col-lg-6">
+                                    <div class="orcha-pos-biaya orcha-pos-luar h-100">
                                         <div class="orcha-pos-kepala">
                                             <span class="judul">
                                                 <i class="bi bi-signpost-split"></i>
@@ -587,11 +592,115 @@
                             </div>
                         </div>
                     </div>
+                {{-- Kondisi unit: dibaca DAN disunting.
+
+                     Sebelumnya kondisi hanya bisa berubah saat penyewa
+                     mengembalikan unitnya. Setelah pemilik membawa mobilnya ke
+                     bengkel dan kacanya diganti, tidak ada tempat untuk
+                     menyatakan unit itu sudah baik lagi — ia terus terbaca
+                     "rusak" sampai ada penyewa berikutnya yang mengembalikannya.
+
+                     Disimpan lewat tombolnya sendiri, bukan ikut tombol simpan
+                     utama: yang ini mengubah keadaan fisik unit, yang itu
+                     mengubah tarif dan keterangannya. Menggabungkan keduanya
+                     berarti mengubah tarif sambil tanpa sengaja menyatakan
+                     unitnya sudah diperbaiki. --}}
+                @if ($ubah)
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-3 orcha-judul-ikon">
+                                <i class="bi bi-tools text-primary"></i> Kondisi Unit
+                            </h6>
+
+                            @if ($jadwal['sedang_disewa'] ?? false)
+                                <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start mb-3"
+                                    style="font-size:.82rem">
+                                    <i class="bi bi-arrow-up-right-circle" style="line-height:1.5"></i>
+                                    <span>
+                                        Unit ini <strong>sedang disewa</strong>
+                                        @if ($jadwal['kode_berjalan'] ?? null)
+                                            ({{ $jadwal['kode_berjalan'] }})
+                                        @endif
+                                        @if ($jadwal['kembali_pada'] ?? null)
+                                            dan dijadwalkan kembali
+                                            {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
+                                        @endif
+                                        Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
+                                        saat unitnya kembali.
+                                    </span>
+                                </div>
+                            @endif
+
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                                <span class="orcha-label-kecil mb-0">
+                                    @if ($kondisi && $kondisi['diperiksa_pada'])
+                                        Terakhir diperiksa
+                                        {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                    @else
+                                        Belum pernah diperiksa
+                                    @endif
+                                </span>
+                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                    wire:click="semuaBaik">
+                                    <i class="bi bi-check2-all"></i> Semua baik
+                                </button>
+                            </div>
+
+                            {{-- Tiga kolom, bukan satu tumpukan. Dua belas bagian yang
+                                 berderet ke bawah membuat kartunya jauh lebih tinggi
+                                 daripada isi kolom di sebelahnya — dan separuh halaman
+                                 jadi bidang kosong. --}}
+                            <div class="orcha-kondisi-daftar">
+                                @foreach ($daftarBagian as $kunci => $label)
+                                    <div class="orcha-kondisi-baris">
+                                        <span>{{ $label }}</span>
+                                        <select class="form-select form-select-sm
+                                            {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
+                                            wire:model.live="kondisiIsian.{{ $kunci }}">
+                                            @foreach ($daftarKondisi as $nilai => $teks)
+                                                <option value="{{ $nilai }}">{{ $teks }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <label class="form-label small fw-semibold mt-3 mb-1">Catatan perbaikan</label>
+                            <input type="text" class="form-control" wire:model="kondisiCatatan"
+                                maxlength="500" placeholder="Mis. kaca diganti 17 Agu di bengkel Slamet.">
+                            <div class="form-text">
+                                Ditulis sekarang supaya enam bulan lagi masih ada yang bisa menjelaskan
+                                kenapa unit ini pernah ditandai rusak lalu kembali baik.
+                            </div>
+
+                            <button type="button" class="orcha-btn orcha-btn-utama mt-3"
+                                wire:click="simpanKondisi" wire:loading.attr="disabled"
+                                wire:target="simpanKondisi">
+                                <i class="bi bi-save"></i>
+                                <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
+                                <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
+                            </button>
+
+                            <div class="text-muted mt-2" style="font-size:.76rem">
+                                Menyimpan kondisi tidak menghapus catatan denda penyewaan sebelumnya —
+                                denda melekat pada penyewaannya, bukan pada unitnya.
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 </div>
 
                 <div class="col-12 col-xl-4">
+                    {{-- Kartu kanan berada DI DALAM pembungkus lengket ini.
+
+                         Sebelumnya pembungkusnya dibuka lalu langsung ditutup dan
+                         semua kartu jadi saudaranya, bukan isinya — position:
+                         sticky pun berlaku pada kotak kosong setinggi 32px,
+                         sehingga rel kanan tidak pernah benar-benar menempel.
+                         Akibatnya, begitu kartu kiri memanjang, kolom kanan
+                         tampak kosong sepanjang sisa halaman dan tombol Simpan
+                         ikut hilang tergulung ke atas. --}}
                     <div class="orcha-lengket orcha-lengket-armada">
-                    </div>
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
@@ -898,6 +1007,7 @@
                                         </span>
                                     </label>
                         </div>
+                    </div>{{-- kartu "Ditawarkan di website" --}}
                     {{-- Tombol simpan di dasar kolom, sebagaimana lazimnya — TETAPI dipaku.
 
                          Sebelumnya benar-benar di dasar, dan tiap kartu yang ditambahkan
@@ -925,107 +1035,11 @@
                     </div>
                     </div>
 
-                    </div>
 
+                    </div>{{-- .orcha-lengket --}}
                 </div>
             </div>
 
-                {{-- Kondisi unit: dibaca DAN disunting.
-
-                     Sebelumnya kondisi hanya bisa berubah saat penyewa
-                     mengembalikan unitnya. Setelah pemilik membawa mobilnya ke
-                     bengkel dan kacanya diganti, tidak ada tempat untuk
-                     menyatakan unit itu sudah baik lagi — ia terus terbaca
-                     "rusak" sampai ada penyewa berikutnya yang mengembalikannya.
-
-                     Disimpan lewat tombolnya sendiri, bukan ikut tombol simpan
-                     utama: yang ini mengubah keadaan fisik unit, yang itu
-                     mengubah tarif dan keterangannya. Menggabungkan keduanya
-                     berarti mengubah tarif sambil tanpa sengaja menyatakan
-                     unitnya sudah diperbaiki. --}}
-                @if ($ubah)
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-4">
-                            <h6 class="fw-bold mb-3 orcha-judul-ikon">
-                                <i class="bi bi-tools text-primary"></i> Kondisi Unit
-                            </h6>
-
-                            @if ($jadwal['sedang_disewa'] ?? false)
-                                <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start mb-3"
-                                    style="font-size:.82rem">
-                                    <i class="bi bi-arrow-up-right-circle" style="line-height:1.5"></i>
-                                    <span>
-                                        Unit ini <strong>sedang disewa</strong>
-                                        @if ($jadwal['kode_berjalan'] ?? null)
-                                            ({{ $jadwal['kode_berjalan'] }})
-                                        @endif
-                                        @if ($jadwal['kembali_pada'] ?? null)
-                                            dan dijadwalkan kembali
-                                            {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
-                                        @endif
-                                        Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
-                                        saat unitnya kembali.
-                                    </span>
-                                </div>
-                            @endif
-
-                            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                                <span class="orcha-label-kecil mb-0">
-                                    @if ($kondisi && $kondisi['diperiksa_pada'])
-                                        Terakhir diperiksa
-                                        {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
-                                    @else
-                                        Belum pernah diperiksa
-                                    @endif
-                                </span>
-                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                                    wire:click="semuaBaik">
-                                    <i class="bi bi-check2-all"></i> Semua baik
-                                </button>
-                            </div>
-
-                            {{-- Tiga kolom, bukan satu tumpukan. Dua belas bagian yang
-                                 berderet ke bawah membuat kartunya jauh lebih tinggi
-                                 daripada isi kolom di sebelahnya — dan separuh halaman
-                                 jadi bidang kosong. --}}
-                            <div class="orcha-kondisi-daftar">
-                                @foreach ($daftarBagian as $kunci => $label)
-                                    <div class="orcha-kondisi-baris">
-                                        <span>{{ $label }}</span>
-                                        <select class="form-select form-select-sm
-                                            {{ in_array($kondisiIsian[$kunci] ?? 'baik', ['rusak', 'hilang']) ? 'awas' : '' }}"
-                                            wire:model.live="kondisiIsian.{{ $kunci }}">
-                                            @foreach ($daftarKondisi as $nilai => $teks)
-                                                <option value="{{ $nilai }}">{{ $teks }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <label class="form-label small fw-semibold mt-3 mb-1">Catatan perbaikan</label>
-                            <input type="text" class="form-control" wire:model="kondisiCatatan"
-                                maxlength="500" placeholder="Mis. kaca diganti 17 Agu di bengkel Slamet.">
-                            <div class="form-text">
-                                Ditulis sekarang supaya enam bulan lagi masih ada yang bisa menjelaskan
-                                kenapa unit ini pernah ditandai rusak lalu kembali baik.
-                            </div>
-
-                            <button type="button" class="orcha-btn orcha-btn-utama mt-3"
-                                wire:click="simpanKondisi" wire:loading.attr="disabled"
-                                wire:target="simpanKondisi">
-                                <i class="bi bi-save"></i>
-                                <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
-                                <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
-                            </button>
-
-                            <div class="text-muted mt-2" style="font-size:.76rem">
-                                Menyimpan kondisi tidak menghapus catatan denda penyewaan sebelumnya —
-                                denda melekat pada penyewaannya, bukan pada unitnya.
-                            </div>
-                        </div>
-                    </div>
-                @endif
         </form>
     </div>
 
@@ -1226,22 +1240,43 @@
             background-color: #1a8a52;
             border-color: #1a8a52;
         }
-        /* Kolom kanan yang lengket diberi jarak bawah sendiri.
+        /* Kolom kanan setinggi barisnya, dan TIDAK lengket sendiri.
 
-           Tanpa ini tombol Batal berhenti persis menempel pada kartu Kondisi
-           Unit saat halaman digulung — keduanya terbaca seperti satu tumpukan,
-           dan tombol yang membatalkan pekerjaan tidak pantas tampak menyatu
-           dengan isian di bawahnya.
+           Isinya — foto, pratinjau, ringkasan, tombol — terukur ~1.000px,
+           lebih tinggi dari jendela 813px. Kolom lengket yang lebih tinggi dari
+           layar menyembunyikan bagian bawahnya untuk selamanya; menambahkan
+           gulungan sendiri di dalamnya memang membuatnya terjangkau, tetapi
+           lewat scrollbar kedua yang tidak akan ditemukan admin — tombol Simpan
+           tidak pantas bersembunyi di balik itu.
 
-           max-height menjaga kolom ini tetap muat di layar: bila isinya lebih
-           tinggi dari jendela, bagian bawahnya digulung sendiri alih-alih
-           menyeruduk keluar. */
+           Yang lengket cukup PALANG TOMBOLNYA (.orcha-aksi-paku, sticky bottom).
+           Supaya palang itu tetap menempel sepanjang halaman, pembungkusnya
+           harus setinggi kolomnya: selama pembungkus masih terlihat, palangnya
+           ikut terlihat. Kolom kiri yang jauh lebih panjang tidak lagi
+           meninggalkan kolom kanan tampak kosong tanpa tombol.
+
+           padding-bottom menjaga tombol Batal tidak menempel persis pada kartu
+           Kondisi Unit di bawahnya — keduanya akan terbaca seperti satu
+           tumpukan. */
         @media (min-width: 1200px) {
             .orcha-lengket-armada {
+                position: static;
+                height: 100%;
                 padding-bottom: 2rem;
-                max-height: calc(100vh - 2rem);
-                overflow-y: auto;
-                overscroll-behavior: contain;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Sisa ruang kolom diserap SEBELUM palang tombol, jadi posisi
+               alaminya di dasar kolom.
+
+               Tanpa ini palang berhenti tepat di bawah kartu terakhir — sekitar
+               700px di atas dasar kolom — dan sticky bottom hanya menahannya
+               sampai titik itu terlewat. Terukur di peramban: tombol lepas dari
+               pandangan pada gulungan ke-1.400px. Dengan penyerap ini, palangnya
+               tetap terlihat sampai dasar halaman. */
+            .orcha-lengket-armada .orcha-aksi-paku {
+                margin-top: auto;
             }
         }
 </style>
@@ -1769,7 +1804,6 @@
        berurutan mudah tertukar — admin mengira sedang menyunting yang satu
        padahal yang lain, dan kekeliruan itu baru terlihat di tagihan. */
     .orcha-pos-biaya.orcha-pos-luar {
-        margin-top: .75rem;
         background: #fffdf6;
         border-color: #efe3c4;
     }

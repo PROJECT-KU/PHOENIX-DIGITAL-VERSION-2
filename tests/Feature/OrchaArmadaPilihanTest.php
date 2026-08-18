@@ -1673,3 +1673,58 @@ test('daftar armada menandai unit yang aturan luar kotanya berbeda', function ()
         ->assertSee('Luar kota:')
         ->assertSee('BBM + sopir termasuk');
 });
+
+/* ---------- KOLOM KANAN TIDAK BOLEH KOSONG DITINGGAL ---------- */
+
+test('pembungkus lengket benar-benar memuat kartu kolom kanan', function () {
+    // Pembungkus ini pernah dibuka lalu langsung ditutup, sehingga semua kartu
+    // kanan jadi saudaranya — bukan isinya. position: sticky pun berlaku pada
+    // kotak kosong setinggi 32px, dan begitu kartu kiri memanjang, kolom kanan
+    // tampak kosong sepanjang sisa halaman sementara tombol Simpan ikut hilang
+    // tergulung ke atas.
+    $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/armada/form.blade.php'));
+
+    $mulai = strpos($berkas, '<div class="orcha-lengket orcha-lengket-armada">');
+    expect($mulai)->not->toBeFalse();
+
+    $sesudahnya = trim(substr($berkas, $mulai + strlen('<div class="orcha-lengket orcha-lengket-armada">'), 200));
+
+    expect($sesudahnya)->not->toStartWith('</div>');
+});
+
+test('palang tombol berada langsung di dalam pembungkus lengket', function () {
+    // Elemen sticky tidak bisa keluar dari kotak induknya. Saat palang tombol
+    // masih berada di dalam kartu "Ditawarkan di website" — terukur 197px —
+    // ia hanya bisa menempel sepanjang kartu itu, lalu ikut tergulung hilang.
+    $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/armada/form.blade.php'));
+
+    // Kartu penayangan harus sudah ditutup sebelum palang tombol dibuka.
+    $penutupKartu = strpos($berkas, '{{-- kartu "Ditawarkan di website" --}}');
+    $palang = strpos($berkas, '<div class="orcha-aksi-paku">');
+
+    expect($penutupKartu)->not->toBeFalse()
+        ->and($palang)->toBeGreaterThan($penutupKartu);
+
+    // Sisa ruang kolom diserap sebelum palang, jadi posisi alaminya di dasar
+    // kolom — tanpa itu sticky bottom hanya menahannya sampai kartu terakhir.
+    expect($berkas)->toContain('.orcha-lengket-armada .orcha-aksi-paku')
+        ->and($berkas)->toContain('margin-top: auto;');
+});
+
+test('kondisi unit ikut kolom kiri supaya rel kanan membentang penuh', function () {
+    fakeArmada();
+
+    // Kartu ini sebelumnya berada DI BAWAH kedua kolom, jadi rel kanan berhenti
+    // sebelum halaman habis dan tombol Simpan lepas dari pandangan tepat saat
+    // admin menyunting kondisi.
+    $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/armada/form.blade.php'));
+
+    $kolomKanan = strpos($berkas, '<div class="col-12 col-xl-4">');
+    $kondisi = strpos($berkas, '{{-- Kondisi unit: dibaca DAN disunting.');
+
+    expect($kondisi)->toBeLessThan($kolomKanan);
+
+    // Dan tetap tampil sebagaimana mestinya saat mengubah unit.
+    Livewire::actingAs(adminArmada())->test(OrchaArmadaForm::class, ['kendaraan' => 5])
+        ->assertSee('Kondisi Unit');
+});
