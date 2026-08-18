@@ -908,3 +908,71 @@ test('tombol pilih daftar menyambung dengan isian namanya', function () {
         ->and($gaya)->toContain('border-bottom-right-radius: 0 !important')
         ->and($gaya)->toContain('border-right: 0 !important');
 });
+
+test('ringkasan menjawab "sudah bisa disimpan atau belum"', function () {
+    fakeKatalog();
+
+    // Sebelumnya kartu ini hanya mengulang empat nilai yang sudah terbaca di
+    // pratinjau tepat di atasnya. Yang tidak dijawabnya justru pertanyaan yang
+    // selalu ada sebelum menekan simpan — dan jawabannya cuma bisa didapat
+    // dengan menekan simpan lalu membaca pesan merah.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', '')
+        ->set('nama', '')
+        ->assertSee('Belum bisa disimpan')
+        ->assertSee('nama destinasi dan wilayah masih kosong')
+        ->assertSee('0 dari 6');
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Banyuwangi')
+        ->assertSee('Sudah bisa disimpan')
+        // Yang belum diisi tetap disebut, tidak disembunyikan: "boleh
+        // dilengkapi kapan saja" hanya berarti kalau daftarnya terlihat.
+        ->assertSee('Belum ada')
+        ->assertSee('Gambar tambahan');
+});
+
+test('yang ditandai wajib mengikuti rules komponennya', function () {
+    fakeKatalog();
+
+    // Daftar wajib yang ditulis ulang di tampilan akan berbohong begitu
+    // aturannya berubah, dan bohongnya baru ketahuan saat admin menekan
+    // simpan. Diperiksa lewat perilakunya: hanya medan yang benar-benar
+    // required yang menghalangi penyimpanan.
+    $uji = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class);
+
+    $wajib = collect($uji->instance()->getRules())
+        ->filter(fn ($aturan) => str_contains($aturan, 'required'))
+        ->keys()
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($wajib)->toBe(['nama', 'wilayah']);
+
+    // Keduanya, dan HANYA keduanya, muncul sebagai penghalang di kartu.
+    $uji->set('nama', 'Kawah Ijen')->set('wilayah', '')
+        ->assertSee('wilayah masih kosong')
+        ->assertDontSee('nama destinasi dan');
+});
+
+test('kartu kesiapan tidak memakai nama kelas milik kartu angka bersama', function () {
+    fakeKatalog();
+
+    // .orcha-ringkas dipakai kartu angka di gaya.blade.php — penyewaan,
+    // pendaftaran, pembatalan, armada — dan berkas gaya itu ikut termuat di
+    // halaman ini. Mendefinisikan ulang namanya di sini berarti aturan lokal
+    // menimpa kartu bersama tersebut begitu ada satu dipasang di halaman ini.
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    // Diperiksa pada markah dan definisinya, bukan pada seluruh keluaran:
+    // gaya bersama itu sendiri ikut tercetak di halaman ini, dan memang
+    // seharusnya — yang dilarang MEMAKAI dan MENDEFINISIKAN ULANG namanya di
+    // sini.
+    expect($html)->not->toContain('class="orcha-ringkas');
+
+    $berkas = file_get_contents(resource_path('views/livewire/pages/admin/orcha/etalase/destinasi-form.blade.php'));
+
+    expect($berkas)->not->toContain('.orcha-ringkas {')
+        ->and($berkas)->not->toContain('class="orcha-ringkas');
+});

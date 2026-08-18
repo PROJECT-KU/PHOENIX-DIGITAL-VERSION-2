@@ -427,36 +427,121 @@
                         <div class="card border-0 shadow-sm rounded-4 mb-3">
                             <div class="card-body p-4">
                                 <h6 class="fw-bold mb-3 orcha-judul-ikon">
-                                    <i class="bi bi-clipboard-data text-primary"></i> Ringkasan
+                                    <i class="bi bi-clipboard-check text-primary"></i> Kesiapan
                                 </h6>
 
-                                <div class="orcha-ringkas">
-                                    <div>
-                                        <span class="label">Wilayah</span>
-                                        <span class="nilai">{{ $daftarWilayah[$wilayah] ?? '—' }}</span>
-                                    </div>
-                                    <div>
-                                        <span class="label">Lokasi</span>
-                                        <span class="nilai">
-                                            {{ collect([$daerah, $provinsi])->filter()->implode(', ') ?: '—' }}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span class="label">Gambar</span>
-                                        <span class="nilai">
-                                            {{ count($galeri) }} foto
-                                            @if ($this->sisaSubFoto() > 0)
-                                                <small class="text-muted">· sisa {{ $this->sisaSubFoto() }}</small>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <span class="label">Keterangan</span>
-                                        <span class="nilai">
-                                            {{ $deskripsi ? mb_strlen($deskripsi).' huruf' : 'Belum ditulis' }}
-                                        </span>
-                                    </div>
+                                @php
+                                    // Yang wajib DIAMBIL DARI rules() di komponennya, bukan
+                                    // ditulis ulang di sini: daftar yang dikarang di tampilan
+                                    // akan berbohong begitu aturannya berubah, dan bohongnya
+                                    // baru ketahuan saat admin menekan simpan.
+                                    $wajib = fn ($medan) => str_contains($this->getRules()[$medan] ?? '', 'required');
+
+                                    $adaSubFoto = count($subFotoTetap) + count($subFoto);
+                                    $adaUtama = (bool) ($gambar || $gambarLama);
+                                    $tempat = collect([$daerah, $provinsi])->filter()->implode(', ');
+
+                                    $butir = [
+                                        [
+                                            'label' => 'Nama destinasi',
+                                            'wajib' => $wajib('nama'),
+                                            'ada' => trim((string) $nama) !== '',
+                                            'nilai' => trim((string) $nama) !== '' ? $nama : 'Belum diisi',
+                                        ],
+                                        [
+                                            'label' => 'Wilayah',
+                                            'wajib' => $wajib('wilayah'),
+                                            'ada' => trim((string) $wilayah) !== '',
+                                            'nilai' => $daftarWilayah[$wilayah] ?? 'Belum dipilih',
+                                        ],
+                                        [
+                                            'label' => 'Provinsi & daerah',
+                                            'wajib' => false,
+                                            'ada' => $tempat !== '',
+                                            'nilai' => $tempat ?: 'Belum diisi',
+                                        ],
+                                        [
+                                            'label' => 'Foto utama',
+                                            'wajib' => false,
+                                            'ada' => $adaUtama,
+                                            'nilai' => $adaUtama ? 'Sudah ada' : 'Belum ada',
+                                        ],
+                                        [
+                                            'label' => 'Gambar tambahan',
+                                            'wajib' => false,
+                                            'ada' => $adaSubFoto > 0,
+                                            'nilai' => $adaSubFoto.' dari '.$batasSubFoto,
+                                        ],
+                                        [
+                                            'label' => 'Keterangan',
+                                            'wajib' => false,
+                                            'ada' => trim((string) $deskripsi) !== '',
+                                            'nilai' => trim((string) $deskripsi) !== ''
+                                                ? mb_strlen($deskripsi).'/1000 huruf'
+                                                : 'Belum ditulis',
+                                        ],
+                                    ];
+
+                                    $terisi = count(array_filter($butir, fn ($b) => $b['ada']));
+                                    $kurang = array_values(array_filter($butir, fn ($b) => $b['wajib'] && ! $b['ada']));
+
+                                    // Kalimatnya dirakit UTUH di sini, bukan disusun dari
+                                    // beberapa baris di dalam <span>. Blade menyisipkan baris
+                                    // baru di antara potongannya, dan kalimat yang di layar
+                                    // terbaca menyatu jadi terpisah-pisah di dalam HTML —
+                                    // ikut menyulitkan pembaca layar, bukan hanya pengujian.
+                                    $kalimatKurang = 'Belum bisa disimpan — '
+                                        .collect($kurang)->pluck('label')->map(fn ($l) => mb_strtolower($l))->implode(' dan ')
+                                        .' masih kosong.';
+                                @endphp
+
+                                <div class="orcha-siap-kepala">
+                                    <span>Terisi</span>
+                                    <strong>{{ $terisi }} dari {{ count($butir) }}</strong>
                                 </div>
+
+                                <div class="orcha-siap-bar" role="presentation">
+                                    <span style="width: {{ round($terisi / count($butir) * 100) }}%"></span>
+                                </div>
+
+                                <div class="orcha-siap-daftar">
+                                    @foreach ($butir as $b)
+                                        <div class="orcha-siap-baris">
+                                            @if ($b['ada'])
+                                                <i class="bi bi-check-circle-fill tanda ada"></i>
+                                            @elseif ($b['wajib'])
+                                                <i class="bi bi-exclamation-circle-fill tanda kurang"></i>
+                                            @else
+                                                <i class="bi bi-circle tanda kosong"></i>
+                                            @endif
+
+                                            <span class="label">
+                                                {{ $b['label'] }}
+                                                @if ($b['wajib'])
+                                                    <span class="wajib" title="Wajib diisi">*</span>
+                                                @endif
+                                            </span>
+
+                                            <span class="nilai @unless ($b['ada']) belum @endunless">{{ $b['nilai'] }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                {{-- Kalimat penutupnya menjawab satu pertanyaan yang selalu
+                                     ditanyakan admin sebelum menekan simpan: "ini sudah bisa
+                                     disimpan atau belum". Sebelumnya jawabannya hanya bisa
+                                     didapat dengan menekan simpan lalu membaca pesan merah. --}}
+                                @if ($kurang)
+                                    <p class="orcha-siap-nota kurang">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        <span>{{ $kalimatKurang }}</span>
+                                    </p>
+                                @else
+                                    <p class="orcha-siap-nota siap">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        <span>Sudah bisa disimpan. Sisanya boleh dilengkapi kapan saja.</span>
+                                    </p>
+                                @endif
                             </div>
                         </div>
 
@@ -1400,27 +1485,125 @@
 
         .orcha-usulan > i { line-height: 1.4; }
 
-        /* Ringkasan: label kiri, nilai kanan — angka dan keterangannya jatuh di
-           satu garis tegak, sama seperti daftar tarif di formulir armada. */
-        .orcha-ringkas {
-            display: grid;
-            gap: .4rem;
-            padding: .75rem .85rem;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #f8fbfd, #eef6fb);
-            border: 1px solid #e3ecf3;
-            font-size: .8rem;
-        }
+        /* Kesiapan: bukan .orcha-ringkas.
 
-        .orcha-ringkas > div {
+           Nama itu sudah dipakai kartu angka bersama di gaya.blade.php —
+           penyewaan, pendaftaran, pembatalan, dan armada memakainya — dan
+           berkas gaya itu ikut termuat di halaman ini. Mendefinisikan ulang
+           namanya di sini berarti aturan lokal ini menimpa kartu bersama
+           tersebut begitu ada satu saja dipasang di halaman ini. */
+        .orcha-siap-kepala {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
-            gap: .6rem;
+            font-size: .78rem;
+            color: #64748b;
         }
 
-        .orcha-ringkas .label { color: #64748b; }
+        .orcha-siap-kepala strong { color: #0f2d4a; }
 
-        .orcha-ringkas .nilai { font-weight: 600; color: #0f2d4a; }
+        .orcha-siap-bar {
+            height: 6px;
+            margin: .4rem 0 .75rem;
+            border-radius: 99px;
+            background: #e6eef5;
+            overflow: hidden;
+        }
+
+        .orcha-siap-bar > span {
+            display: block;
+            height: 100%;
+            border-radius: 99px;
+            background: linear-gradient(90deg, #1d6fa5, #0f2d4a);
+            transition: width .25s ease;
+        }
+
+        /* SATU grid untuk seluruh daftar, bukan satu grid per baris.
+
+           Dua sebabnya, keduanya terlihat begitu isinya panjang:
+
+           - kolom yang dibentuk per baris tidak pernah lurus antar baris,
+             karena tiap baris menghitung lebarnya sendiri;
+           - kolom keterangan yang lentur akan diremas habis oleh nilai yang
+             panjang. Dengan nama "Taman Nasional Bromo Tengger Semeru",
+             keterangannya sempat tersisa selebar SATU huruf dan menurun ke
+             bawah sehuruf demi sehuruf.
+
+           Kolom keterangan karena itu max-content: selebar keterangan
+           terpanjang, tidak pernah lebih sempit. Yang melar dan boleh
+           membungkus kolom nilainya. */
+        .orcha-siap-daftar {
+            display: grid;
+            grid-template-columns: auto max-content minmax(0, 1fr);
+            /* stretch, bukan baseline: garis putus di bawah tiap sel harus
+               jatuh di ketinggian yang sama. Dengan baseline, sel yang isinya
+               satu baris berhenti lebih tinggi daripada sel di sebelahnya yang
+               membungkus dua baris, dan garisnya patah bertingkat. */
+            align-items: stretch;
+            font-size: .78rem;
+            /* Tinggi baris sebagai PANJANG, bukan kelipatan. Kelipatan dikalikan
+               ke ukuran huruf masing-masing sel, sehingga kotak baris ikonnya
+               (yang hurufnya sedikit lebih besar) berbeda dari kotak baris
+               teksnya dan garis dasarnya bergeser. Panjang diwarisi apa adanya
+               oleh ketiganya. */
+            line-height: 1.2rem;
+        }
+
+        .orcha-siap-baris { display: contents; }
+
+        /* Jarak antar kolom lewat padding sel, bukan column-gap: garis putus
+           di bawahnya milik tiap sel, dan gap akan menyisakan lubang di
+           antaranya. */
+        .orcha-siap-baris > * {
+            padding: .42rem 0;
+            border-bottom: 1px dashed #e9f0f6;
+        }
+
+        .orcha-siap-baris > .tanda,
+        .orcha-siap-baris > .label { padding-right: .5rem; }
+
+        .orcha-siap-baris:last-child > * { border-bottom: 0; padding-bottom: 0; }
+
+        /* Tema lemon memasang .bi { width: 1rem; height: 1rem } untuk SEMUA
+           ikon. Tinggi yang dipatok membatalkan align-items: stretch —
+           merentang hanya berlaku pada tinggi auto — sehingga sel ikonnya
+           berhenti 16px sementara sel di sebelahnya 33,6px, dan garis putus di
+           bawahnya jatuh lebih tinggi daripada garis di sebelahnya. Terukur,
+           bukan dikira: selisih tepi bawahnya 17,6px. */
+        .orcha-siap-baris > .tanda {
+            width: auto;
+            height: auto;
+            font-size: .82rem;
+        }
+        .orcha-siap-baris .tanda.ada { color: #2f9e6e; }
+        .orcha-siap-baris .tanda.kurang { color: #d97706; }
+        .orcha-siap-baris .tanda.kosong { color: #cbd5e1; }
+
+        .orcha-siap-baris .label { color: #475569; }
+        .orcha-siap-baris .label .wajib { color: #dc2626; }
+
+        .orcha-siap-baris .nilai {
+            text-align: right;
+            font-weight: 600;
+            color: #0f2d4a;
+        }
+
+        .orcha-siap-baris .nilai.belum { font-weight: 500; color: #94a3b8; }
+
+        .orcha-siap-nota {
+            display: flex;
+            align-items: flex-start;
+            gap: .4rem;
+            margin: .8rem 0 0;
+            padding: .5rem .65rem;
+            border-radius: 10px;
+            font-size: .76rem;
+            line-height: 1.45;
+        }
+
+        .orcha-siap-nota > i { line-height: 1.45; }
+
+        .orcha-siap-nota.siap { background: #eef8f2; color: #1a6b43; }
+        .orcha-siap-nota.kurang { background: #fff7ed; color: #9a3412; }
     </style>
 </div>
