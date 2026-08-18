@@ -159,7 +159,24 @@
                                     @error('wilayah') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
                                 </div>
-                                <div class="orcha-rantai-panah d-none d-lg-flex"><i class="bi bi-chevron-right"></i></div>
+                                <div class="orcha-rantai-panah d-none d-lg-flex">
+                                    {{-- Pengganjal setinggi label di sebelahnya.
+
+                                         Tanpa ini panahnya harus dinaikkan dengan angka
+                                         tebakan, dan tebakannya meleset — terukur di peramban
+                                         7,6px di bawah pusat pemilihnya.
+
+                                         Labelnya dibungkus <div> dan BUKAN dijadikan anak
+                                         langsung kolom ini. Anak langsung sebuah flex ikut
+                                         di-blok-kan, sehingga label kehilangan kotak barisnya —
+                                         dan kotak baris itulah yang di kolom sebelah menyisakan
+                                         2px di atas label. Dengan pembungkus ini labelnya
+                                         kembali berada di aliran biasa, persis seperti
+                                         tetangganya, jadi tinggi pengganjalnya sama sampai ke
+                                         pecahan piksel tanpa satu angka pun dikarang. --}}
+                                    <div><label class="form-label small fw-semibold" aria-hidden="true">&nbsp;</label></div>
+                                    <span class="ikon"><i class="bi bi-chevron-right"></i></span>
+                                </div>
 
                                 <div class="orcha-rantai-isi">
                                     <label class="form-label small fw-semibold">Provinsi</label>
@@ -187,7 +204,24 @@
                                     @error('provinsi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
 
                                 </div>
-                                <div class="orcha-rantai-panah d-none d-lg-flex"><i class="bi bi-chevron-right"></i></div>
+                                <div class="orcha-rantai-panah d-none d-lg-flex">
+                                    {{-- Pengganjal setinggi label di sebelahnya.
+
+                                         Tanpa ini panahnya harus dinaikkan dengan angka
+                                         tebakan, dan tebakannya meleset — terukur di peramban
+                                         7,6px di bawah pusat pemilihnya.
+
+                                         Labelnya dibungkus <div> dan BUKAN dijadikan anak
+                                         langsung kolom ini. Anak langsung sebuah flex ikut
+                                         di-blok-kan, sehingga label kehilangan kotak barisnya —
+                                         dan kotak baris itulah yang di kolom sebelah menyisakan
+                                         2px di atas label. Dengan pembungkus ini labelnya
+                                         kembali berada di aliran biasa, persis seperti
+                                         tetangganya, jadi tinggi pengganjalnya sama sampai ke
+                                         pecahan piksel tanpa satu angka pun dikarang. --}}
+                                    <div><label class="form-label small fw-semibold" aria-hidden="true">&nbsp;</label></div>
+                                    <span class="ikon"><i class="bi bi-chevron-right"></i></span>
+                                </div>
 
                                 <div class="orcha-rantai-isi">
                                     <label class="form-label small fw-semibold">Daerah</label>
@@ -1285,10 +1319,22 @@
 
         .orcha-rantai-panah {
             flex: 0 0 auto;
+            flex-direction: column;
+            /* Setinggi baris, supaya sisa ruang di bawah pengganjal label persis
+               setinggi pemilih di sebelahnya. */
+            align-self: stretch;
+            color: #cbd5e1;
+        }
+
+        /* Ukuran panahnya diatur di ikonnya, bukan di kolomnya: mengecilkan
+           huruf kolom ikut mengecilkan pengganjal label di dalamnya — .small
+           dihitung dari induknya — dan pengganjal yang lebih pendek menaikkan
+           panahnya dari pusat pemilih. */
+        .orcha-rantai-panah .ikon {
+            flex: 1;
+            display: flex;
             align-items: center;
             justify-content: center;
-            padding-bottom: .55rem;
-            color: #cbd5e1;
             font-size: .9rem;
         }
 

@@ -859,3 +859,27 @@ test('tombol pilih destinasi mengundang, bukan disamarkan', function () {
         ->and($html)->toContain('Pilih dari daftar')
         ->and($html)->not->toContain('class="btn btn-light border" title="Pilih dari daftar destinasi"');
 });
+
+test('panah rantai lokasi terpusat pada pemilihnya, bukan pada tebakan', function () {
+    fakeKatalog();
+
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    // Panahnya dipusatkan dengan cara MENIRU tinggi label di sebelahnya, bukan
+    // dengan margin karangan. Dua hal yang membuat tiruannya meleset, keduanya
+    // pernah terjadi dan terukur di peramban:
+    //
+    // 1. label yang jadi anak langsung kolom flex ikut di-blok-kan, sehingga
+    //    kehilangan kotak baris — dan kotak baris itulah yang di kolom sebelah
+    //    menyisakan 2px di atas label;
+    // 2. font-size di kolomnya ikut mengecilkan label pengganjal, karena .small
+    //    dihitung dari induknya (12,6px, bukan 14px).
+    //
+    // Keduanya bersama menaikkan panah 2,06px dari pusat pemilihnya.
+    expect($html)->toContain('<div><label class="form-label small fw-semibold" aria-hidden="true">&nbsp;</label></div>');
+
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/orcha/etalase/destinasi-form.blade.php'));
+    $kolom = str($gaya)->after('.orcha-rantai-panah {')->before('}')->toString();
+
+    expect($kolom)->not->toContain('font-size');
+});
