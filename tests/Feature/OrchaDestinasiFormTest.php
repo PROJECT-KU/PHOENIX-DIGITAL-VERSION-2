@@ -883,3 +883,28 @@ test('panah rantai lokasi terpusat pada pemilihnya, bukan pada tebakan', functio
 
     expect($kolom)->not->toContain('font-size');
 });
+
+test('tombol pilih daftar menyambung dengan isian namanya', function () {
+    fakeKatalog();
+
+    $html = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)->html();
+
+    expect($html)->toContain('input-group orcha-gabung');
+
+    $gaya = str(file_get_contents(resource_path('views/livewire/pages/admin/orcha/etalase/destinasi-form.blade.php')))
+        ->after('.orcha-gabung .form-control {')->before('}')->toString();
+
+    // Ketiganya perlu, dan ketiganya terukur di peramban:
+    //
+    // - radius kanan dinolkan, karena layout lemon memasang
+    //   border-radius: 12px !important ke SETIAP .form-control sehingga aturan
+    //   input-group bawaan Bootstrap kalah dan isiannya tetap membulat;
+    // - border kanan DIHAPUS, bukan ditimpa margin negatif — Bootstrap memberi
+    //   .form-control position: relative, jadi isiannya tergambar di atas
+    //   tombol dan bordernya muncul lagi di atas tumpangan itu.
+    //
+    // !important-nya disengaja: yang dilawan juga !important.
+    expect($gaya)->toContain('border-top-right-radius: 0 !important')
+        ->and($gaya)->toContain('border-bottom-right-radius: 0 !important')
+        ->and($gaya)->toContain('border-right: 0 !important');
+});

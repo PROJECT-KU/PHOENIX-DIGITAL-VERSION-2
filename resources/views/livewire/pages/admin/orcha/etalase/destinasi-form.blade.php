@@ -61,7 +61,7 @@
                                          .live.debounce, bukan .blur: usulannya baru berguna bila
                                          muncul saat admin masih mengetik, bukan setelah ia
                                          pindah ke isian berikutnya dan mengisinya sendiri. --}}
-                                    <div class="input-group">
+                                    <div class="input-group orcha-gabung">
                                         <input type="text" class="form-control @error('nama') is-invalid @enderror"
                                             wire:model.live.debounce.900ms="nama"
                                             placeholder="Ketik, atau pilih dari daftar">
@@ -1275,15 +1275,19 @@
 
            Sewarna dengan tombol utama halaman ini, karena memang tindakan yang
            paling menghemat pekerjaan: satu ketukan mengisi nama, daerah,
-           provinsi, dan wilayah sekaligus. Radiusnya menyambung ke isian di
-           sebelahnya supaya keduanya terbaca sebagai satu isian. */
+           provinsi, dan wilayah sekaligus.
+
+           Radiusnya 12px, ANGKA YANG SAMA dengan .form-control di layout
+           lemon. Sebelumnya 10px, dan isian di sebelahnya tetap membulat penuh
+           di kanan — jadi tombolnya terbaca sebagai benda lain yang kebetulan
+           berdempetan, bukan bagian dari isian yang sama. */
         .orcha-tombol-daftar {
             display: inline-flex;
             align-items: center;
             gap: .4rem;
             padding: .5rem .9rem;
             border: 0;
-            border-radius: 0 10px 10px 0;
+            border-radius: 0 12px 12px 0;
             background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
             color: #fff;
             font-size: .82rem;
@@ -1299,6 +1303,32 @@
         }
 
         .orcha-tombol-daftar > i { font-size: .95rem; line-height: 1; }
+
+        /* Isian nama dan tombolnya dibaca sebagai SATU kendali.
+
+           Tiga hal harus dilawan sekaligus, ketiganya terukur di peramban:
+
+           1. layout lemon memasang border-radius: 12px !important ke SETIAP
+              .form-control, sehingga aturan input-group bawaan Bootstrap kalah
+              dan sisi kanan isian tetap membulat;
+           2. border kanan isian dihapus, bukan ditimpa. Menimpanya dengan
+              margin negatif tidak berhasil: Bootstrap memberi .form-control
+              position: relative, jadi isiannya tergambar DI ATAS tombol dan
+              bordernya muncul kembali di atas tumpangan itu;
+           3. geseran -1px bawaan input-group ikut dinolkan — tanpa border,
+              geseran itu justru menyelipkan latar putih isian di atas tepi
+              kiri tombol.
+
+           Hasilnya kedua tepinya bertemu persis, tanpa garis dan tanpa celah. */
+        .orcha-gabung .form-control {
+            border-top-right-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+            border-right: 0 !important;
+        }
+
+        .orcha-gabung .orcha-tombol-daftar {
+            margin-left: 0 !important;
+        }
 
         /* Rantai lokasi: tiga pemilih berurutan dengan panah di antaranya.
            Panahnya hanya di layar lebar — bertumpuk, arah "berikutnya" sudah
