@@ -8,6 +8,17 @@
     $tautanGambar = fn ($jalur) => $jalur
         ? (str_starts_with($jalur, 'http') ? $jalur : $asalGambar . $jalur)
         : null;
+
+    // "12,4k" — sama dengan yang dipakai formulir dan kartu publik. Angka
+    // pengunjung enam digit memaksa barisnya membungkus, dan baris meta yang
+    // membungkus membuat tinggi kartu berbeda-beda.
+    $ringkas = function ($angka) {
+        $angka = (int) $angka;
+
+        return $angka >= 1000
+            ? rtrim(rtrim(number_format($angka / 1000, 1, ',', '.'), '0'), ',') . 'k'
+            : (string) $angka;
+    };
 @endphp
 
 @section('title')
@@ -71,47 +82,103 @@
         <div class="row g-3">
             @forelse ($daftar as $baris)
                 <div class="col-12 col-md-6 col-xl-4" wire:key="{{ $jenis }}-{{ $baris['id'] }}">
-                    <div class="card orcha-kartu h-100">
+                    <div class="card orcha-kartu orcha-etalase h-100">
                         @php $foto = $tautanGambar($baris['foto'] ?? $baris['logo'] ?? null); @endphp
 
-                        @if ($foto)
-                            <img src="{{ $foto }}" alt="{{ $baris['nama'] }}"
-                                class="rounded-top-4" style="height: 150px; object-fit: cover">
-                        @endif
+                        {{-- Kotak gambarnya SELALU ada, juga ketika fotonya belum
+                             diunggah. Dulu gambarnya hanya dipasang bila ada,
+                             sehingga kartu tanpa foto dimulai langsung dari
+                             namanya — dan sebarisnya jadi tidak sejajar dengan
+                             tetangganya. --}}
+                        <div class="orcha-etalase-foto {{ $jenis === 'partner' ? 'logo' : '' }} {{ $foto ? '' : 'tanpa' }}">
+                            @if ($foto)
+                                <img src="{{ $foto }}" alt="{{ $baris['nama'] }}">
+                            @else
+                                <span class="kosong"><i class="bi bi-image"></i></span>
+                            @endif
 
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
-                                <h6 class="fw-bold mb-0">{{ $baris['nama'] }}</h6>
+                            @if ($jenis === 'destinasi' && ($baris['wilayah_label'] ?? ''))
+                                <span class="orcha-etalase-tanda">{{ $baris['wilayah_label'] }}</span>
+                            @elseif ($jenis === 'testimoni')
+                                <span class="orcha-etalase-tanda bintang">
+                                    {{ str_repeat('★', (int) $baris['rating']) }}
+                                </span>
+                            @endif
+                        </div>
 
-                                @if ($jenis === 'testimoni')
-                                    <span class="text-warning small text-nowrap">
-                                        {{ str_repeat('★', (int) $baris['rating']) }}
-                                    </span>
-                                @elseif ($jenis === 'destinasi')
-                                    <span class="badge bg-light text-dark">{{ $baris['wilayah_label'] ?? '' }}</span>
-                                @endif
-                            </div>
+                        <div class="card-body p-3 p-lg-4 d-flex flex-column">
+                            <h6 class="fw-bold mb-1 orcha-etalase-nama">{{ $baris['nama'] }}</h6>
 
                             @if ($jenis === 'destinasi')
-                                <div class="text-muted small mb-2">{{ $baris['provinsi'] ?: '—' }}</div>
-                                <p class="small text-muted mb-0">
-                                    {{ \Illuminate\Support\Str::limit($baris['deskripsi'] ?? '', 110) }}
-                                </p>
-                            @elseif ($jenis === 'testimoni')
-                                <p class="small text-muted mb-0">
-                                    {{ \Illuminate\Support\Str::limit($baris['isi'] ?? '', 140) }}
+                                {{-- Alamat lengkapnya, bukan provinsinya saja. Daerah
+                                     itu yang dicari pengunjung — "Karimunjawa", bukan
+                                     "Jawa Tengah" — dan tanpa ditampilkan di sini admin
+                                     tidak punya cara tahu destinasi mana yang daerahnya
+                                     masih kosong tanpa membuka satu per satu. --}}
+                                @php
+                                    // Dirakit sendiri bila Orcha belum mengirim
+                                    // alamat_singkat. Orcha dipasang terpisah dan boleh
+                                    // tertinggal sekian rilis dari lemon; halaman yang
+                                    // menganggap medan terbaru pasti ada akan galat di
+                                    // server yang belum diperbarui — bukan menampilkan
+                                    // lebih sedikit, melainkan tidak menampilkan
+                                    // apa-apa.
+                                    $alamat = trim((string) ($baris['alamat_singkat'] ?? '')) ?: collect([
+                                        $baris['daerah'] ?? null,
+                                        $baris['provinsi'] ?? null,
+                                    ])->filter()->implode(', ');
+                                @endphp
+
+                                <p class="orcha-etalase-alamat mb-2">
+                                    <i class="bi bi-geo-alt"></i>
+                                    <span>{{ $alamat ?: 'Lokasi belum diisi' }}</span>
                                 </p>
                             @endif
 
-                            <div class="d-flex gap-2 mt-3">
+                            @php
+                                $keterangan = $jenis === 'testimoni'
+                                    ? trim((string) ($baris['isi'] ?? ''))
+                                    : trim((string) ($baris['deskripsi'] ?? ''));
+                            @endphp
+
+                            {{-- Dipotong dengan CSS, bukan Str::limit: batas huruf
+                                 menghasilkan satu sampai tiga baris tergantung
+                                 kalimatnya, dan tinggi yang berbeda-beda itulah yang
+                                 membuat sebaris kartu terlihat berantakan. --}}
+                            <p class="orcha-etalase-ket mb-3 {{ $keterangan === '' ? 'kosong' : '' }}">
+                                {{ $keterangan !== '' ? $keterangan : 'Keterangan belum ditulis.' }}
+                            </p>
+
+                            @if ($jenis === 'destinasi')
+                                @php
+                                    $jumlahSub = count($baris['sub_foto'] ?? []);
+                                    $batasSub = $baris['batas_sub_foto'] ?? 3;
+                                @endphp
+
+                                <div class="orcha-etalase-meta mb-3">
+                                    <span>
+                                        <i class="bi bi-people-fill"></i>
+                                        {{ $ringkas($baris['total_pengunjung'] ?? 0) }} pengunjung
+                                    </span>
+                                    <span class="{{ $jumlahSub === 0 ? 'sepi' : '' }}">
+                                        <i class="bi bi-images"></i>
+                                        {{ $jumlahSub }}/{{ $batasSub }} gambar
+                                    </span>
+                                </div>
+                            @endif
+
+                            {{-- mt-auto: tombolnya rata di dasar semua kartu sebaris,
+                                 berapa pun panjang keterangannya. Tanpa itu tombolnya
+                                 mengambang di tengah kartu yang isinya pendek. --}}
+                            <div class="orcha-etalase-aksi mt-auto">
                                 @if ($jenis === 'destinasi')
                                     <a href="{{ route('admin.orcha.destinasi.ubah', $baris['id']) }}" wire:navigate
-                                        class="btn btn-sm btn-light border rounded-3 orcha-tombol">
+                                        class="orcha-etalase-ubah">
                                         <i class="bi bi-pencil"></i>
                                         <span>Ubah</span>
                                     </a>
                                 @else
-                                    <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                    <button type="button" class="orcha-etalase-ubah"
                                         wire:click='ubah(@json($baris))'>
                                         <i class="bi bi-pencil"></i>
                                         <span>Ubah</span>
@@ -245,6 +312,172 @@
     @include('livewire.pages.admin.orcha.partials.skrip')
 
     <style>
+        /* Kartu etalase: satu bentuk untuk destinasi, testimoni, dan partner.
+           Yang membedakan isinya, bukan susunannya — sebaris kartu yang
+           anatominya berbeda-beda terbaca berantakan walaupun tiap kartunya
+           sendiri rapi. */
+        .orcha-etalase-foto {
+            position: relative;
+            /* Nisbah, bukan tinggi tetap: tinggi tetap membuat gambar terpotong
+               berbeda-beda pada tiap lebar layar. */
+            aspect-ratio: 16 / 10;
+            border-radius: 1rem 1rem 0 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #eef4f9, #dce8f2);
+        }
 
+        /* Tanpa foto, kotaknya tidak ikut setinggi nisbah itu. Nisbah gambar
+           untuk kotak yang tidak bergambar hanya menyisakan bidang abu setinggi
+           dua ratus piksel lebih — persis "bagian yang kosong" yang mestinya
+           dihindari. Cukup sepotong pita, tetap ada supaya lencananya punya
+           tempat dan anatominya tidak berubah. */
+        .orcha-etalase-foto.tanpa {
+            aspect-ratio: auto;
+            height: 5.25rem;
+        }
+
+        .orcha-etalase-foto img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Logo partner dimuat UTUH, bukan dipotong penuh kotak. Dipotong seperti
+           foto, logo yang lebar kehilangan tulisannya dan yang tinggi kehilangan
+           lambangnya — dan logo yang terpotong tidak lagi mengenalkan siapa pun. */
+        .orcha-etalase-foto.logo {
+            background: #fff;
+            border-bottom: 1px solid #eef4f9;
+        }
+
+        .orcha-etalase-foto.logo img {
+            object-fit: contain;
+            padding: 1.1rem;
+        }
+
+        .orcha-etalase-foto .kosong {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a9c0d4;
+            font-size: 1.6rem;
+        }
+
+        /* Ditempel di atas gambar, bukan di sebelah nama: di sebelah nama ia
+           ikut mendorong nama yang panjang sampai membungkus, dan tinggi
+           kartunya jadi tidak sama lagi. */
+        .orcha-etalase-tanda {
+            position: absolute;
+            top: .6rem;
+            right: .6rem;
+            padding: .2rem .6rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .92);
+            color: #0f2d4a;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .01em;
+            box-shadow: 0 2px 6px rgba(15, 45, 74, .12);
+        }
+
+        .orcha-etalase-tanda.bintang { color: #d98a00; letter-spacing: .05em; }
+
+        .orcha-etalase-nama {
+            color: #0f2d4a;
+            /* Nama sepanjang apa pun berhenti di dua baris. */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .orcha-etalase-alamat {
+            display: flex;
+            align-items: baseline;
+            gap: .35rem;
+            margin: 0;
+            color: #5b7182;
+            font-size: .78rem;
+            line-height: 1.4;
+        }
+
+        .orcha-etalase-alamat > i { color: #1d6fa5; font-size: .78rem; }
+
+        .orcha-etalase-ket {
+            color: #64748b;
+            font-size: .8rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            /* Dipatok setinggi dua baris supaya kartu berketerangan pendek tetap
+               sejajar dengan tetangganya. */
+            min-height: 2.4rem;
+        }
+
+        .orcha-etalase-ket.kosong { color: #a3b2c2; font-style: italic; }
+
+        .orcha-etalase-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .35rem .8rem;
+            padding-top: .7rem;
+            border-top: 1px dashed #e6eef5;
+            color: #64748b;
+            font-size: .74rem;
+        }
+
+        .orcha-etalase-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        .orcha-etalase-meta i { color: #9db4c7; font-size: .8rem; }
+
+        /* Belum ada gambar tambahan sama sekali — bukan galat, tetapi memang
+           yang paling sering perlu dikerjakan berikutnya. */
+        .orcha-etalase-meta .sepi,
+        .orcha-etalase-meta .sepi i { color: #b8791f; }
+
+        .orcha-etalase-aksi {
+            display: flex;
+            gap: .5rem;
+        }
+
+        /* Keduanya sama lebar: dua tombol berbeda lebar di dasar tiap kartu
+           membuat sebaris kartu terlihat tidak sejajar padahal kartunya sejajar. */
+        .orcha-etalase-aksi > * {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .orcha-etalase-ubah {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            padding: .42rem .8rem;
+            border: 1px solid #d8e6f1;
+            border-radius: .7rem;
+            background: #f4f9fd;
+            color: #14588a;
+            font-size: .82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all .15s ease;
+        }
+
+        .orcha-etalase-ubah:hover {
+            background: #e6f2fb;
+            border-color: #9fc7e4;
+            color: #0f2d4a;
+        }
+
+        .orcha-etalase-ubah i { font-size: .85em; line-height: 1; }
     </style>
 </div>

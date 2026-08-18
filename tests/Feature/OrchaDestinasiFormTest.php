@@ -1036,3 +1036,40 @@ test('asal usulan disebut apa adanya, termasuk ensiklopedia', function () {
         ->assertSee('Wikipedia')
         ->assertDontSee('Terisi dari peta OpenStreetMap');
 });
+
+/* ---------- KARTU DI DAFTAR ---------- */
+
+test('kartu daftar menyebut daerah dan kelengkapan gambarnya', function () {
+    fakeDestinasiSatuan([
+        'alamat_singkat' => 'Karimunjawa, Jawa Tengah',
+        'sub_foto' => [],
+    ]);
+
+    // Daerah itu yang dicari pengunjung — "Karimunjawa", bukan "Jawa Tengah" —
+    // dan tanpa ditampilkan di daftar, admin tidak punya cara tahu destinasi
+    // mana yang daerahnya masih kosong tanpa membuka satu per satu. Sama
+    // halnya dengan gambar tambahan.
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->assertSee('Karimunjawa, Jawa Tengah')
+        ->assertSee('26,7k pengunjung')
+        ->assertSee('0/3 gambar');
+});
+
+test('kartu daftar tetap tampil bila Orcha belum mengirim alamat singkat', function () {
+    // Orcha dipasang terpisah dan boleh tertinggal sekian rilis dari lemon.
+    // Halaman yang menganggap medan terbaru pasti ada tidak menampilkan lebih
+    // sedikit — ia galat, dan seluruh daftarnya hilang.
+    fakeDestinasiSatuan(['daerah' => 'Karimunjawa', 'provinsi' => 'Jawa Tengah']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->assertOk()
+        ->assertSee('Karimunjawa, Jawa Tengah');
+});
+
+test('destinasi tanpa lokasi mengatakannya, bukan menampilkan baris kosong', function () {
+    fakeDestinasiSatuan(['alamat_singkat' => '', 'daerah' => null, 'provinsi' => null, 'deskripsi' => '']);
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->assertSee('Lokasi belum diisi')
+        ->assertSee('Keterangan belum ditulis.');
+});
