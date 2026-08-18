@@ -72,38 +72,31 @@
                                 <div class="col-6 col-md-7">
                                     <label class="form-label small fw-semibold">Provinsi</label>
 
-                                    {{-- Dipilih dari daftar yang sudah disaring wilayahnya —
-                                         merek menyaring nama unit, sama seperti di formulir
-                                         armada.
+                                    {{-- Dipilih lewat pemilih berdaftar, bukan diketik.
 
-                                         Provinsi yang diketik bebas menghasilkan ejaan berbeda
-                                         untuk tempat yang sama — "DIY", "Yogyakarta", "D.I.
-                                         Yogyakarta" — dan pencarian di halaman publik ikut
-                                         tidak dapat diandalkan. Daftarnya datang dari Orcha,
-                                         bukan disalin ke sini: satu daftar, satu kebenaran.
+                                         Bentuknya sama dengan pemilih merek & nama unit di
+                                         formulir armada — admin sudah mengenalnya, dan
+                                         dua pola berbeda untuk pekerjaan yang sama hanya
+                                         menambah yang harus diingat.
 
-                                         datalist, bukan select: admin bisa mengetik beberapa
-                                         huruf untuk melompat, dan provinsi yang belum terdaftar
-                                         tetap bisa ditulis apa adanya. --}}
-                                    <input type="text" list="daftar-provinsi"
-                                        class="form-control @error('provinsi') is-invalid @enderror"
-                                        wire:model.live="provinsi"
-                                        placeholder="Ketik atau pilih — contoh: {{ $daftarProvinsi[0] ?? 'Jawa Timur' }}">
+                                         Provinsi yang diketik bebas menghasilkan ejaan
+                                         berbeda untuk tempat yang sama — "DIY",
+                                         "Yogyakarta", "D.I. Yogyakarta" — dan penyaringan
+                                         di halaman publik ikut tidak dapat diandalkan. --}}
+                                    <button type="button" onclick="orchaPilihProvinsi(this)"
+                                        class="form-select text-start orcha-picker @error('provinsi') is-invalid @enderror">
+                                        @if (trim($provinsi) !== '')
+                                            <span class="text-dark fw-semibold">{{ $provinsi }}</span>
+                                        @else
+                                            <span class="text-muted">— Pilih provinsi —</span>
+                                        @endif
+                                    </button>
 
-                                    {{-- Kunci ikut wilayahnya: tanpa itu Livewire memakai ulang
-                                         simpul datalist yang lama, dan pilihannya tidak berganti
-                                         saat wilayah diubah. --}}
-                                    <datalist id="daftar-provinsi" wire:key="provinsi-{{ $wilayah }}">
-                                        @foreach ($daftarProvinsi as $nama)
-                                            <option value="{{ $nama }}"></option>
-                                        @endforeach
-                                    </datalist>
-
-                                    @error('provinsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    @error('provinsi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                     <div class="form-text">
                                         {{ count($daftarProvinsi) }} provinsi di
-                                        {{ $daftarWilayah[$wilayah] ?? 'wilayah ini' }} — memilihnya
-                                        menyesuaikan wilayah di sebelah bila berbeda.
+                                        {{ $daftarWilayah[$wilayah] ?? 'wilayah ini' }} — yang belum
+                                        terdaftar bisa ditambahkan dari pemilihnya.
                                     </div>
                                 </div>
 
@@ -340,6 +333,174 @@
     </div>
 
     @include('livewire.pages.admin.orcha.partials.skrip')
+
+    {{-- ============ PEMILIH PROVINSI ============
+
+         Data disegarkan tiap render DI LUAR penjaga, sedangkan pemasangan
+         fungsinya dijaga sekali saja. Kalau datanya ikut di dalam penjaga,
+         provinsi yang baru ditambahkan tidak akan pernah terbaca — Livewire
+         tidak menjalankan ulang <script> inline saat me-render ulang, jadi
+         nilainya membeku pada keadaan pemuatan pertama.
+
+         Pemilihnya ditulis tersendiri, tidak memakai ulang pemilih armada:
+         yang di sana mengenal tiga tingkat (merek → unit → tipe) beserta
+         aturannya masing-masing, dan menyeretnya ke sini demi satu daftar datar
+         akan membuat keduanya saling mengunci saat salah satunya berubah. --}}
+    <script>
+        window.__orchaPetaProvinsi = @json($petaProvinsi);
+        window.__orchaProvinsiKustom = @json($provinsiKustom);
+        window.__orchaWilayahDipilih = @json($wilayah);
+
+        if (!window.__orchaProvinsiTerpasang) {
+            window.__orchaProvinsiTerpasang = true;
+
+            const provEsc = (t) => String(t).replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+            }[m]));
+
+            // Hanya provinsi tambahan yang boleh dihapus dari daftar; yang
+            // bawaan ikut versi kode dan dipakai destinasi yang sudah ada.
+            const provIdKustom = (nama) => {
+                const cocok = (window.__orchaProvinsiKustom || []).find((e) => e.nama === nama);
+
+                return cocok ? cocok.id : null;
+            };
+
+            const provDaftar = () => Object.keys(window.__orchaPetaProvinsi || {})
+                .filter((n) => window.__orchaPetaProvinsi[n] === window.__orchaWilayahDipilih)
+                .sort((a, b) => a.localeCompare(b, 'id'));
+
+            const provBaris = (daftar) => daftar.length
+                ? daftar.map((n) => {
+                    const id = provIdKustom(n);
+
+                    return '<div class="orcha-pick-row">'
+                        + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
+                        + '" data-cari="' + provEsc(String(n).toLowerCase()) + '">'
+                        + '<i class="bi bi-geo-alt me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                        + '<\/button>'
+                        + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
+                            + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
+                        + '<\/div>';
+                }).join('')
+                : '<div class="orcha-pick-empty">Belum ada provinsi di wilayah ini. Pakai "Tulis sendiri" di bawah.<\/div>';
+
+            window.orchaPilihProvinsi = function (tombol) {
+                if (typeof Swal === 'undefined') return;
+
+                const wadah = tombol.closest('[wire\\:id]');
+                if (!wadah) return;
+
+                const cid = wadah.getAttribute('wire:id');
+                const komponen = () => window.Livewire && window.Livewire.find(cid);
+
+                const pasangPendengar = () => {
+                    const daftarEl = document.getElementById('orchaProvDaftar');
+                    if (!daftarEl) return;
+
+                    daftarEl.querySelectorAll('.orcha-pick-item').forEach((b) => {
+                        b.addEventListener('click', () => {
+                            komponen() && komponen().set('provinsi', b.dataset.nilai);
+                            Swal.close();
+                        });
+                    });
+
+                    daftarEl.querySelectorAll('.orcha-pick-del').forEach((b) => {
+                        b.addEventListener('click', (ev) => {
+                            // Jangan sampai menghapus berarti sekaligus memilih.
+                            ev.stopPropagation();
+                            b.disabled = true;
+                            komponen() && komponen().call('hapusProvinsi', Number(b.dataset.id));
+                        });
+                    });
+                };
+
+                // Daftarnya digambar ulang di tempat sesudah ada entri ditambah
+                // atau dihapus, tanpa menutup popupnya.
+                const gambarUlang = () => {
+                    const daftarEl = document.getElementById('orchaProvDaftar');
+                    if (!daftarEl) return;
+                    daftarEl.innerHTML = provBaris(provDaftar());
+                    pasangPendengar();
+                    const cari = document.getElementById('orchaProvCari');
+                    if (cari) cari.dispatchEvent(new Event('input'));
+                };
+                window.__orchaProvGambarUlang = gambarUlang;
+
+                Swal.fire({
+                    title: 'Pilih Provinsi',
+                    html: '<input id="orchaProvCari" class="form-control mb-2" placeholder="Ketik untuk mencari provinsi…">'
+                        + '<div id="orchaProvDaftar" class="orcha-pick-list">' + provBaris(provDaftar()) + '<\/div>'
+                        + '<div id="orchaProvKosong" class="orcha-pick-empty" style="display:none">Tidak ada yang cocok. Pakai "Tulis sendiri" di bawah.<\/div>'
+                        + '<button type="button" id="orchaProvManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
+                        + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
+                    buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
+                    width: 480, padding: '1.25rem',
+                    willClose: () => { window.__orchaProvGambarUlang = null; },
+                    didOpen: () => {
+                        const cari = document.getElementById('orchaProvCari');
+                        const daftarEl = document.getElementById('orchaProvDaftar');
+                        const kosong = document.getElementById('orchaProvKosong');
+
+                        if (cari) {
+                            cari.addEventListener('input', () => {
+                                const q = cari.value.toLowerCase().trim();
+                                let terlihat = 0;
+                                daftarEl.querySelectorAll('.orcha-pick-row').forEach((baris) => {
+                                    const b = baris.querySelector('.orcha-pick-item');
+                                    const cocok = b.dataset.cari.includes(q);
+                                    baris.style.display = cocok ? '' : 'none';
+                                    if (cocok) terlihat++;
+                                });
+                                // Daftar kosong tanpa keterangan terbaca seperti
+                                // halaman rusak, bukan seperti "tidak ada yang cocok".
+                                kosong.style.display = terlihat === 0 && provDaftar().length ? '' : 'none';
+                            });
+                            setTimeout(() => cari.focus(), 100);
+                        }
+
+                        pasangPendengar();
+
+                        const manual = document.getElementById('orchaProvManual');
+                        if (manual) manual.addEventListener('click', () => {
+                            Swal.fire({
+                                title: 'Tambah Provinsi',
+                                input: 'text',
+                                inputPlaceholder: 'mis. Papua Barat Laut',
+                                text: 'Ditambahkan ke wilayah yang sedang dipilih.',
+                                background: 'rgba(255, 255, 255, 0.92)',
+                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                customClass: {
+                                    popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
+                                    confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
+                                },
+                                buttonsStyling: false, showCancelButton: true,
+                                confirmButtonText: 'Tambahkan', cancelButtonText: 'Batal',
+                                inputValidator: (v) => (v && v.trim() !== '') ? undefined : 'Masih kosong.',
+                            }).then((h) => {
+                                if (!h.isConfirmed || !h.value) return;
+                                // Sekali ditulis langsung terdaftar — bukan hanya
+                                // mengisi isian lalu hilang saat halaman ditutup.
+                                komponen() && komponen().call('tambahProvinsi', h.value.trim());
+                            });
+                        });
+                    },
+                });
+            };
+
+            // Daftar terbaru dari server: dipasang ke global, lalu popup yang
+            // sedang terbuka digambar ulang di tempat.
+            window.addEventListener('orcha-provinsi-segar', function (e) {
+                const d = e.detail || {};
+                if (d.peta) window.__orchaPetaProvinsi = d.peta;
+                if (d.kustom) window.__orchaProvinsiKustom = d.kustom;
+                if (window.__orchaProvGambarUlang) window.__orchaProvGambarUlang();
+            });
+        }
+    </script>
 
     <style>
         .orcha-sub-foto {

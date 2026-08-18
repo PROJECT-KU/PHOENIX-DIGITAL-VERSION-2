@@ -231,22 +231,15 @@ test('memilih wilayah menyaring pilihan provinsinya', function () {
 
     expect($uji->instance()->provinsiTersedia())->toBe(['Jawa Timur']);
 
-    // Diperiksa juga pada HTML yang benar-benar dikirim ke peramban: daftar yang
-    // benar di sisi PHP tidak ada gunanya bila datalist-nya tidak ikut berganti.
-    $pilihan = fn (string $html) => preg_match('/<datalist[^>]*>(.*?)<\/datalist>/s', $html, $c)
-        ? preg_match_all('/value="([^"]+)"/', $c[1], $p) ? $p[1] : []
-        : [];
-
-    expect($pilihan($uji->html()))->toBe(['Jawa Timur']);
+    // Diperiksa juga pada HTML yang benar-benar dikirim: pemilihnya menyaring
+    // di sisi peramban memakai wilayah yang sedang dipilih, jadi nilai itu harus
+    // ikut terkirim dan ikut berubah.
+    expect($uji->html())->toContain('window.__orchaWilayahDipilih = "jawa"');
 
     $uji->set('wilayah', 'sumatera');
 
     expect($uji->instance()->provinsiTersedia())->toBe(['Aceh'])
-        ->and($pilihan($uji->html()))->toBe(['Aceh']);
-
-    // Kunci ikut wilayahnya — tanpa itu Livewire memakai ulang simpul datalist
-    // lama dan pilihannya tidak berganti di layar, walau datanya sudah benar.
-    expect($uji->html())->toContain('wire:key="provinsi-sumatera"');
+        ->and($uji->html())->toContain('window.__orchaWilayahDipilih = "sumatera"');
 });
 
 test('provinsi yang tidak cocok dikosongkan saat wilayah diganti', function () {
@@ -304,9 +297,53 @@ test('daftar provinsi datang dari orcha, bukan disalin', function () {
     // provinsi baru dimekarkan.
     Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
         ->assertSee('Jawa Timur')
-        ->assertSee('daftar-provinsi');
+        ->assertSee('orchaPilihProvinsi');
 
     $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/etalase/destinasi-form.blade.php'));
 
     expect($berkas)->not->toContain('Papua Pegunungan');
+});
+
+/* ---------- MENAMBAH PROVINSI SENDIRI ---------- */
+
+test('provinsi yang ditulis sendiri langsung terdaftar dan terpilih', function () {
+    fakeProvinsi();
+
+    // Sekali ditulis langsung terdaftar — bukan hanya mengisi isian lalu hilang
+    // saat halaman ditutup.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', 'jawa')
+        ->call('tambahProvinsi', 'Jawa Tenggara')
+        ->assertSet('provinsi', 'Jawa Tenggara')
+        ->assertDispatched('orcha-provinsi-segar');
+
+    // Wilayah yang sedang dipilih ikut terkirim: provinsi tanpa wilayah tidak
+    // masuk penyaring mana pun di halaman publik.
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && str_contains($p->url(), '/provinsi')
+        && ($p->data()['nama'] ?? null) === 'Jawa Tenggara'
+        && ($p->data()['wilayah'] ?? null) === 'jawa');
+});
+
+test('nama kosong tidak dikirim ke orcha', function () {
+    fakeProvinsi();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('tambahProvinsi', '   ');
+
+    Http::assertNotSent(fn ($p) => str_contains($p->url(), '/provinsi')
+        && ! str_contains($p->url(), 'rujukan'));
+});
+
+test('menghapus provinsi tambahan menyegarkan daftarnya', function () {
+    fakeProvinsi();
+
+    // Tanpa membuang simpanan rujukan, daftar yang baru saja diubah baru
+    // terlihat sepuluh menit kemudian — dan admin mengira perubahannya gagal.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('hapusProvinsi', 7)
+        ->assertDispatched('orcha-provinsi-segar');
+
+    Http::assertSent(fn ($p) => $p->method() === 'DELETE'
+        && str_contains($p->url(), '/provinsi/7'));
 });

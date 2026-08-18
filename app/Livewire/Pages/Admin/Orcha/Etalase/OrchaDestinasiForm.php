@@ -147,6 +147,72 @@ class OrchaDestinasiForm extends Component
         return $this->rujukan('provinsi_wilayah');
     }
 
+    /**
+     * Provinsi yang ditambahkan admin sendiri — hanya ini yang boleh dihapus
+     * dari daftar pilihan; yang bawaan ikut versi kode.
+     */
+    public function provinsiKustom(): array
+    {
+        return $this->rujukan('provinsi_kustom');
+    }
+
+    /**
+     * Menambahkan provinsi yang belum terdaftar, langsung ke daftar pilihan.
+     *
+     * Wilayahnya diambil dari yang sedang dipilih di formulir: provinsi tanpa
+     * wilayah tidak masuk penyaring mana pun di halaman publik, dan
+     * destinasinya menghilang dari daftar.
+     */
+    public function tambahProvinsi(string $nama): void
+    {
+        $nama = trim($nama);
+
+        if ($nama === '') {
+            return;
+        }
+
+        try {
+            $balasan = $this->orcha()->kirim('/provinsi', [
+                'nama' => $nama,
+                'wilayah' => $this->wilayah,
+            ]);
+
+            $this->provinsi = $nama;
+            $this->segarkanProvinsi($balasan['pesan'] ?? 'Provinsi ditambahkan.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function hapusProvinsi(int $id): void
+    {
+        try {
+            $balasan = $this->orcha()->hapus("/provinsi/{$id}");
+
+            $this->segarkanProvinsi($balasan['pesan'] ?? 'Provinsi dihapus.');
+        } catch (\App\Exceptions\OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Membuang simpanan rujukan lalu mengirim daftar terbaru ke layar.
+     *
+     * Tanpa membuang simpanannya, daftar yang baru saja diubah baru terlihat
+     * sepuluh menit kemudian — dan admin mengira penambahannya gagal.
+     */
+    private function segarkanProvinsi(string $pesan): void
+    {
+        cache()->forget('orcha.rujukan');
+
+        $this->dispatch('orcha-provinsi-segar',
+            peta: $this->petaProvinsi(),
+            kustom: $this->provinsiKustom(),
+        );
+
+        $this->dispatch('order-updated', message: $pesan);
+    }
+
     protected function rules(): array
     {
         return [
@@ -243,6 +309,8 @@ class OrchaDestinasiForm extends Component
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
             'daftarProvinsi' => $this->provinsiTersedia(),
+            'petaProvinsi' => $this->petaProvinsi(),
+            'provinsiKustom' => $this->provinsiKustom(),
         ])->layout('livewire.layout.templateindex');
     }
 }

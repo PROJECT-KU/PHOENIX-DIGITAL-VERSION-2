@@ -1439,26 +1439,6 @@
 <style>
     /* Tombol yang menyamar sebagai select: tingginya mengikuti .form-select
        dari layout, jadi barisnya tetap rata dengan isian di sebelahnya. */
-    .orcha-picker {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .orcha-picker:disabled {
-        cursor: not-allowed;
-        opacity: .65;
-    }
-
-    .orcha-pick-list {
-        max-height: 340px;
-        overflow-y: auto;
-        text-align: left;
-        display: flex;
-        flex-direction: column;
-        gap: .4rem;
-        padding: .2rem;
-    }
 
     /* Keterangan kecil di bawah isian kapasitas. Ikon dan tulisannya sejajar
        lewat flex, bukan ditambal geseran em. */
@@ -1813,70 +1793,8 @@
         line-height: 1;
     }
 
-    .orcha-pick-row {
-        display: flex;
-        align-items: stretch;
-        gap: .4rem;
-    }
-
-    .orcha-pick-row .orcha-pick-item {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
     /* Tombol hapus hanya muncul pada entri yang ditambahkan admin sendiri.
        Merahnya terlihat tanpa perlu disentuh dulu, karena yang dilakukannya
        memang membuang sesuatu. */
-    .orcha-pick-del {
-        flex: 0 0 auto;
-        width: 40px;
-        border: 1px solid #f3c9c9;
-        background: #fff5f5;
-        color: #c0392b;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        transition: all .15s ease;
-    }
-
-    .orcha-pick-del:hover {
-        background: #c0392b;
-        border-color: #c0392b;
-        color: #fff;
-    }
-
-    .orcha-pick-del:disabled {
-        opacity: .5;
-        cursor: wait;
-    }
-
-    .orcha-pick-item {
-        display: block;
-        width: 100%;
-        text-align: left;
-        border: 1px solid #e6e8f2;
-        background: #fff;
-        border-radius: 12px;
-        padding: .7rem .9rem;
-        font-weight: 600;
-        color: #1e293b;
-        font-size: .92rem;
-        transition: all .15s ease;
-    }
-
-    .orcha-pick-item:hover {
-        border-color: #1d6fa5;
-        background: linear-gradient(135deg, rgba(29, 111, 165, .10), rgba(15, 45, 74, .04));
-        transform: translateY(-1px);
-    }
-
-    .orcha-pick-empty {
-        text-align: center;
-        color: #94a3b8;
-        padding: 1.5rem;
-        font-size: .9rem;
-    }
 </style>
 </div>
