@@ -220,15 +220,57 @@ test('memilih provinsi mengisi wilayahnya sendiri', function () {
         ->assertSet('wilayah', 'bali_nusa');
 });
 
-test('wilayah yang diubah sendiri tidak ditimpa lagi', function () {
+test('memilih wilayah menyaring pilihan provinsinya', function () {
     fakeProvinsi();
 
-    // Ada destinasi yang memang dipasarkan di wilayah tetangganya, dan sistem
-    // tidak berhak membatalkan keputusan itu diam-diam.
+    // Merek menyaring nama unit di formulir armada; wilayah menyaring provinsi
+    // di sini. Menampilkan seluruh 38 provinsi setelah wilayahnya dipilih
+    // membuat admin menyaring sendiri di kepala.
+    $uji = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', 'jawa');
+
+    expect($uji->instance()->provinsiTersedia())->toBe(['Jawa Timur']);
+
+    // Diperiksa juga pada HTML yang benar-benar dikirim ke peramban: daftar yang
+    // benar di sisi PHP tidak ada gunanya bila datalist-nya tidak ikut berganti.
+    $pilihan = fn (string $html) => preg_match('/<datalist[^>]*>(.*?)<\/datalist>/s', $html, $c)
+        ? preg_match_all('/value="([^"]+)"/', $c[1], $p) ? $p[1] : []
+        : [];
+
+    expect($pilihan($uji->html()))->toBe(['Jawa Timur']);
+
+    $uji->set('wilayah', 'sumatera');
+
+    expect($uji->instance()->provinsiTersedia())->toBe(['Aceh'])
+        ->and($pilihan($uji->html()))->toBe(['Aceh']);
+
+    // Kunci ikut wilayahnya — tanpa itu Livewire memakai ulang simpul datalist
+    // lama dan pilihannya tidak berganti di layar, walau datanya sudah benar.
+    expect($uji->html())->toContain('wire:key="provinsi-sumatera"');
+});
+
+test('provinsi yang tidak cocok dikosongkan saat wilayah diganti', function () {
+    fakeProvinsi();
+
+    // Membiarkannya berarti kartu destinasi menyatakan dua hal yang
+    // bertentangan, dan yang salah baru ketahuan saat ada pengunjung menyaring
+    // dan tidak menemukannya.
     Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
-        ->set('wilayah', 'sumatera')
         ->set('provinsi', 'Jawa Timur')
-        ->assertSet('wilayah', 'sumatera');
+        ->assertSet('wilayah', 'jawa')
+        ->set('wilayah', 'sumatera')
+        ->assertSet('provinsi', '');
+});
+
+test('provinsi yang masih cocok tidak ikut dikosongkan', function () {
+    fakeProvinsi();
+
+    // Wilayah yang dipilih ulang ke nilai yang sama tidak boleh menghapus
+    // pekerjaan yang sudah benar.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Bali')
+        ->set('wilayah', 'bali_nusa')
+        ->assertSet('provinsi', 'Bali');
 });
 
 test('provinsi di luar daftar tidak mengubah wilayah', function () {
@@ -241,15 +283,18 @@ test('provinsi di luar daftar tidak mengubah wilayah', function () {
         ->assertSet('wilayah', 'jawa');
 });
 
-test('destinasi tersimpan membawa wilayahnya sendiri', function () {
+test('memuat destinasi tidak mengubah apa pun sampai admin menyunting', function () {
     fakeProvinsi();
 
-    // Menyalakan penyesuaian otomatis saat memuat akan menimpa penempatan yang
-    // mungkin sengaja dibedakan, begitu admin menyentuh provinsinya.
-    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class, ['destinasi' => 3])
+    // Data tersimpan boleh saja tidak cocok — itu justru yang mau diperbaiki.
+    // Yang tidak boleh: memperbaikinya diam-diam saat halaman dibuka, sehingga
+    // admin menyimpan perubahan yang tidak pernah ia buat.
+    $uji = Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class, ['destinasi' => 3])
         ->assertSet('wilayah', 'bali_nusa')
-        ->set('provinsi', 'Jawa Timur')
-        ->assertSet('wilayah', 'bali_nusa');
+        ->assertSet('provinsi', 'Jawa Timur');
+
+    // Begitu provinsinya disunting, wilayahnya ikut dibetulkan.
+    $uji->set('provinsi', 'Jawa Timur')->assertSet('wilayah', 'jawa');
 });
 
 test('daftar provinsi datang dari orcha, bukan disalin', function () {

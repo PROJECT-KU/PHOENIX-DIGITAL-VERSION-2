@@ -55,16 +55,6 @@ class OrchaDestinasiForm extends Component
     /** Batas dari Orcha; kartu publiknya hanya menampung sekian gambar. */
     public int $batasSubFoto = 3;
 
-    /**
-     * Wilayah pernah diubah sendiri oleh admin.
-     *
-     * Selama belum, wilayah mengikuti provinsi yang dipilih. Begitu admin
-     * mengubahnya sendiri, pilihannya tidak ditimpa lagi — ada destinasi yang
-     * memang dipasarkan di wilayah tetangganya, dan sistem tidak berhak
-     * membatalkan keputusan itu diam-diam.
-     */
-    public bool $wilayahDiubahManual = false;
-
     public function mount(?int $destinasi = null): void
     {
         if (! $destinasi) {
@@ -88,11 +78,6 @@ class OrchaDestinasiForm extends Component
         $this->gambarLama = $isi['foto'] ?? null;
         $this->subFotoTetap = array_values($isi['sub_foto'] ?? []);
         $this->batasSubFoto = (int) ($isi['batas_sub_foto'] ?? 3);
-
-        // Destinasi yang sudah tersimpan membawa wilayahnya sendiri. Menyalakan
-        // penyesuaian otomatis di sini akan menimpanya begitu admin menyentuh
-        // provinsi — menghapus penempatan yang mungkin sengaja dibedakan.
-        $this->wilayahDiubahManual = true;
     }
 
     /**
@@ -104,10 +89,6 @@ class OrchaDestinasiForm extends Component
      */
     public function updatedProvinsi(): void
     {
-        if ($this->wilayahDiubahManual) {
-            return;
-        }
-
         $wilayah = $this->petaProvinsi()[$this->provinsi] ?? null;
 
         if ($wilayah) {
@@ -115,9 +96,47 @@ class OrchaDestinasiForm extends Component
         }
     }
 
+    /**
+     * Wilayah menyaring pilihan provinsinya — merek menyaring nama unit, sama
+     * seperti di formulir armada.
+     *
+     * Provinsi yang tidak termasuk wilayah baru DIKOSONGKAN. Membiarkannya
+     * berarti kartu destinasi menyatakan dua hal yang bertentangan — "Jawa
+     * Timur" di wilayah "Bali & Nusa Tenggara" — dan yang salah baru ketahuan
+     * saat ada pengunjung menyaring dan tidak menemukannya.
+     */
     public function updatedWilayah(): void
     {
-        $this->wilayahDiubahManual = true;
+        if ($this->provinsi === '') {
+            return;
+        }
+
+        if (($this->petaProvinsi()[$this->provinsi] ?? null) !== $this->wilayah) {
+            $this->provinsi = '';
+        }
+    }
+
+    /**
+     * Provinsi yang termasuk wilayah terpilih.
+     *
+     * Menampilkan seluruh 38 provinsi setelah wilayahnya dipilih membuat admin
+     * menyaring sendiri di kepala, dan membuka pintu untuk memilih provinsi
+     * yang tidak mungkin ada di wilayah itu.
+     *
+     * @return list<string>
+     */
+    public function provinsiTersedia(): array
+    {
+        $peta = $this->petaProvinsi();
+
+        $cocok = array_keys(array_filter(
+            $peta,
+            fn (string $wilayah) => $wilayah === $this->wilayah,
+        ));
+
+        // Wilayah yang belum punya daftar provinsi tidak boleh mengunci isian:
+        // yang tampil kembali seluruhnya, bukan kosong.
+        return $cocok ?: array_keys($peta);
     }
 
     /**
@@ -223,7 +242,7 @@ class OrchaDestinasiForm extends Component
     {
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
-            'daftarProvinsi' => array_keys($this->petaProvinsi()),
+            'daftarProvinsi' => $this->provinsiTersedia(),
         ])->layout('livewire.layout.templateindex');
     }
 }

@@ -66,13 +66,15 @@
                                         @endforeach
                                     </select>
                                     @error('wilayah') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text">Dipakai penyaring wilayah di halaman publik.</div>
+                                    <div class="form-text">Menyaring pilihan provinsi di sebelah.</div>
                                 </div>
 
                                 <div class="col-6 col-md-7">
                                     <label class="form-label small fw-semibold">Provinsi</label>
 
-                                    {{-- Dipilih dari daftar, bukan diketik.
+                                    {{-- Dipilih dari daftar yang sudah disaring wilayahnya —
+                                         merek menyaring nama unit, sama seperti di formulir
+                                         armada.
 
                                          Provinsi yang diketik bebas menghasilkan ejaan berbeda
                                          untuk tempat yang sama — "DIY", "Yogyakarta", "D.I.
@@ -85,16 +87,24 @@
                                          tetap bisa ditulis apa adanya. --}}
                                     <input type="text" list="daftar-provinsi"
                                         class="form-control @error('provinsi') is-invalid @enderror"
-                                        wire:model.live="provinsi" placeholder="Ketik atau pilih — contoh: Jawa Timur">
+                                        wire:model.live="provinsi"
+                                        placeholder="Ketik atau pilih — contoh: {{ $daftarProvinsi[0] ?? 'Jawa Timur' }}">
 
-                                    <datalist id="daftar-provinsi">
+                                    {{-- Kunci ikut wilayahnya: tanpa itu Livewire memakai ulang
+                                         simpul datalist yang lama, dan pilihannya tidak berganti
+                                         saat wilayah diubah. --}}
+                                    <datalist id="daftar-provinsi" wire:key="provinsi-{{ $wilayah }}">
                                         @foreach ($daftarProvinsi as $nama)
                                             <option value="{{ $nama }}"></option>
                                         @endforeach
                                     </datalist>
 
                                     @error('provinsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text">Wilayah terisi sendiri dari provinsi yang dipilih.</div>
+                                    <div class="form-text">
+                                        {{ count($daftarProvinsi) }} provinsi di
+                                        {{ $daftarWilayah[$wilayah] ?? 'wilayah ini' }} — memilihnya
+                                        menyesuaikan wilayah di sebelah bila berbeda.
+                                    </div>
                                 </div>
 
                                 <div class="col-6 col-md-5">
