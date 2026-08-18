@@ -522,6 +522,8 @@ class OrchaDestinasiForm extends Component
         // sedang mengetik — dan galat sewaktu mengetik adalah yang paling
         // merusak kepercayaan pada isian yang mengisi dirinya sendiri.
         if (blank($usulan['provinsi'] ?? null) || blank($usulan['wilayah'] ?? null)) {
+            $this->lupakanLokasiSistem();
+
             return;
         }
 
@@ -530,6 +532,33 @@ class OrchaDestinasiForm extends Component
         $this->usulanLokasi = ($usulan['sumber'] ?? '') === 'destinasi'
             ? 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.'
             : 'Terisi dari peta OpenStreetMap — betulkan bila keliru.';
+    }
+
+    /**
+     * Membuang lokasi yang dulu diisi sistem ketika namanya tidak lagi dikenali.
+     *
+     * Inilah yang membuat tebakan meleset MENETAP. Nama panjang diketik
+     * sepotong demi sepotong, dan tiap jeda mengetik ikut ditanyakan: "Pula"
+     * dijawab Bali, lalu nama utuhnya — "Pulau Cemara Kecil & Besar" — tidak
+     * dijawab sama sekali. Yang sudah terisi tidak pernah dicabut, jadi
+     * pulau di Jawa Tengah tersimpan sebagai Bali, dan admin tidak punya satu
+     * pun tanda bahwa isian itu datang dari nama yang belum selesai diketik.
+     *
+     * Yang dicabut hanya yang dipasang sistem. Provinsi yang dipilih admin
+     * sendiri tidak pernah tersentuh — bolehDiisiSistem() sudah menjaganya di
+     * muka, dan penjagaan itu diulang di sini supaya tetap berlaku bila kelak
+     * dipanggil dari tempat lain.
+     */
+    private function lupakanLokasiSistem(): void
+    {
+        if (! $this->lokasiDiisiSistem) {
+            return;
+        }
+
+        $this->wilayah = '';
+        $this->provinsi = '';
+        $this->daerah = '';
+        $this->lokasiDiisiSistem = false;
     }
 
     /**

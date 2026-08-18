@@ -976,3 +976,49 @@ test('kartu kesiapan tidak memakai nama kelas milik kartu angka bersama', functi
     expect($berkas)->not->toContain('.orcha-ringkas {')
         ->and($berkas)->not->toContain('class="orcha-ringkas');
 });
+
+test('lokasi tebakan dicabut ketika nama utuhnya tidak dikenali', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    // Satu Http::fake untuk seluruh uji ini: memanggilnya dua kali hanya
+    // menggabungkan stub, dan yang terdaftar lebih dulu yang menang.
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa', 'bali_nusa' => 'Bali & Nusa Tenggara'],
+            'provinsi_wilayah' => ['Jawa Tengah' => 'jawa', 'Bali' => 'bali_nusa'],
+            'provinsi_kustom' => [],
+        ]]),
+        '*/cari-lokasi*' => Http::sequence()
+            ->push(['data' => ['provinsi' => 'Bali', 'wilayah' => 'bali_nusa',
+                'daerah' => 'Gerokgak', 'sumber' => 'peta']])
+            ->push(['data' => null]),
+        '*' => Http::response(['data' => []]),
+    ]);
+
+    // Persis kejadian yang dilaporkan. Nama panjang diketik sepotong demi
+    // sepotong dan tiap jeda ikut ditanyakan; "Pula" dijawab Bali, lalu nama
+    // utuhnya tidak dijawab sama sekali. Yang sudah terisi tidak pernah
+    // dicabut, jadi pulau di Jawa Tengah tersimpan sebagai Bali.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Pula')
+        ->assertSet('provinsi', 'Bali')
+        ->assertSet('daerah', 'Gerokgak')
+        ->set('nama', 'Pulau Cemara Kecil & Besar')
+        ->assertSet('provinsi', '')
+        ->assertSet('wilayah', '')
+        ->assertSet('daerah', '');
+});
+
+test('yang dicabut hanya tebakan sistem, bukan provinsi pilihan admin', function () {
+    fakeUsulan(null);
+
+    // Kalau pencabutan ikut berlaku pada isian yang dipilih admin sendiri,
+    // obatnya lebih buruk daripada penyakitnya: pekerjaan admin hilang setiap
+    // kali ia menyunting namanya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Aceh')
+        ->set('nama', 'Tempat Yang Tidak Ada Di Peta')
+        ->assertSet('provinsi', 'Aceh');
+});
