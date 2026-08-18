@@ -180,3 +180,88 @@ test('halaman destinasi memakai kolom lengket yang sama dengan armada', function
     expect($palang)->toBeGreaterThan($pembungkus)
         ->and($kartuTerakhir)->toBeLessThan($palang);
 });
+
+/* ---------- PROVINSI MENENTUKAN WILAYAH ---------- */
+
+function fakeProvinsi(array $baris = []): void
+{
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => [
+            'wilayah' => ['jawa' => 'Jawa', 'bali_nusa' => 'Bali & Nusa Tenggara', 'sumatera' => 'Sumatera'],
+            'provinsi_wilayah' => [
+                'Jawa Timur' => 'jawa',
+                'Bali' => 'bali_nusa',
+                'Aceh' => 'sumatera',
+            ],
+        ]]),
+        '*/destinasi/3' => Http::response(['data' => array_merge([
+            'id' => 3, 'nama' => 'Bromo', 'wilayah' => 'bali_nusa', 'provinsi' => 'Jawa Timur',
+            'deskripsi' => '', 'total_pengunjung' => 0, 'foto' => null,
+            'sub_foto' => [], 'batas_sub_foto' => 3,
+        ], $baris)]),
+        '*' => Http::response(['data' => []]),
+    ]);
+}
+
+test('memilih provinsi mengisi wilayahnya sendiri', function () {
+    fakeProvinsi();
+
+    // "Jawa Timur" yang tercatat di wilayah "Bali & Nusa Tenggara" tidak akan
+    // pernah ketahuan sampai ada pengunjung yang menyaring dan tidak
+    // menemukannya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'jawa')
+        ->set('provinsi', 'Bali')
+        ->assertSet('wilayah', 'bali_nusa');
+});
+
+test('wilayah yang diubah sendiri tidak ditimpa lagi', function () {
+    fakeProvinsi();
+
+    // Ada destinasi yang memang dipasarkan di wilayah tetangganya, dan sistem
+    // tidak berhak membatalkan keputusan itu diam-diam.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', 'sumatera')
+        ->set('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'sumatera');
+});
+
+test('provinsi di luar daftar tidak mengubah wilayah', function () {
+    fakeProvinsi();
+
+    // Daftarnya boleh dilampaui — yang tidak boleh, menebak wilayahnya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', 'jawa')
+        ->set('provinsi', 'Timor Leste')
+        ->assertSet('wilayah', 'jawa');
+});
+
+test('destinasi tersimpan membawa wilayahnya sendiri', function () {
+    fakeProvinsi();
+
+    // Menyalakan penyesuaian otomatis saat memuat akan menimpa penempatan yang
+    // mungkin sengaja dibedakan, begitu admin menyentuh provinsinya.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class, ['destinasi' => 3])
+        ->assertSet('wilayah', 'bali_nusa')
+        ->set('provinsi', 'Jawa Timur')
+        ->assertSet('wilayah', 'bali_nusa');
+});
+
+test('daftar provinsi datang dari orcha, bukan disalin', function () {
+    fakeProvinsi();
+
+    // Disalin ke sini berarti dua daftar yang bisa berbeda diam-diam saat ada
+    // provinsi baru dimekarkan.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->assertSee('Jawa Timur')
+        ->assertSee('daftar-provinsi');
+
+    $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/etalase/destinasi-form.blade.php'));
+
+    expect($berkas)->not->toContain('Papua Pegunungan');
+});

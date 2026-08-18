@@ -66,13 +66,35 @@
                                         @endforeach
                                     </select>
                                     @error('wilayah') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text">Dipakai penyaring wilayah di halaman publik.</div>
                                 </div>
 
                                 <div class="col-6 col-md-7">
                                     <label class="form-label small fw-semibold">Provinsi</label>
-                                    <input type="text" class="form-control @error('provinsi') is-invalid @enderror"
-                                        wire:model.live="provinsi" placeholder="Contoh: Jawa Timur">
+
+                                    {{-- Dipilih dari daftar, bukan diketik.
+
+                                         Provinsi yang diketik bebas menghasilkan ejaan berbeda
+                                         untuk tempat yang sama — "DIY", "Yogyakarta", "D.I.
+                                         Yogyakarta" — dan pencarian di halaman publik ikut
+                                         tidak dapat diandalkan. Daftarnya datang dari Orcha,
+                                         bukan disalin ke sini: satu daftar, satu kebenaran.
+
+                                         datalist, bukan select: admin bisa mengetik beberapa
+                                         huruf untuk melompat, dan provinsi yang belum terdaftar
+                                         tetap bisa ditulis apa adanya. --}}
+                                    <input type="text" list="daftar-provinsi"
+                                        class="form-control @error('provinsi') is-invalid @enderror"
+                                        wire:model.live="provinsi" placeholder="Ketik atau pilih — contoh: Jawa Timur">
+
+                                    <datalist id="daftar-provinsi">
+                                        @foreach ($daftarProvinsi as $nama)
+                                            <option value="{{ $nama }}"></option>
+                                        @endforeach
+                                    </datalist>
+
                                     @error('provinsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text">Wilayah terisi sendiri dari provinsi yang dipilih.</div>
                                 </div>
 
                                 <div class="col-6 col-md-5">

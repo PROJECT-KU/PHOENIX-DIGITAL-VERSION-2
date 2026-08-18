@@ -55,6 +55,16 @@ class OrchaDestinasiForm extends Component
     /** Batas dari Orcha; kartu publiknya hanya menampung sekian gambar. */
     public int $batasSubFoto = 3;
 
+    /**
+     * Wilayah pernah diubah sendiri oleh admin.
+     *
+     * Selama belum, wilayah mengikuti provinsi yang dipilih. Begitu admin
+     * mengubahnya sendiri, pilihannya tidak ditimpa lagi — ada destinasi yang
+     * memang dipasarkan di wilayah tetangganya, dan sistem tidak berhak
+     * membatalkan keputusan itu diam-diam.
+     */
+    public bool $wilayahDiubahManual = false;
+
     public function mount(?int $destinasi = null): void
     {
         if (! $destinasi) {
@@ -78,6 +88,44 @@ class OrchaDestinasiForm extends Component
         $this->gambarLama = $isi['foto'] ?? null;
         $this->subFotoTetap = array_values($isi['sub_foto'] ?? []);
         $this->batasSubFoto = (int) ($isi['batas_sub_foto'] ?? 3);
+
+        // Destinasi yang sudah tersimpan membawa wilayahnya sendiri. Menyalakan
+        // penyesuaian otomatis di sini akan menimpanya begitu admin menyentuh
+        // provinsi — menghapus penempatan yang mungkin sengaja dibedakan.
+        $this->wilayahDiubahManual = true;
+    }
+
+    /**
+     * Provinsi menentukan wilayahnya sendiri.
+     *
+     * Sebelumnya keduanya diketik/dipilih terpisah, dan "Jawa Timur" yang
+     * tercatat di wilayah "Bali & Nusa Tenggara" tidak akan pernah ketahuan
+     * sampai ada pengunjung yang menyaring dan tidak menemukannya.
+     */
+    public function updatedProvinsi(): void
+    {
+        if ($this->wilayahDiubahManual) {
+            return;
+        }
+
+        $wilayah = $this->petaProvinsi()[$this->provinsi] ?? null;
+
+        if ($wilayah) {
+            $this->wilayah = $wilayah;
+        }
+    }
+
+    public function updatedWilayah(): void
+    {
+        $this->wilayahDiubahManual = true;
+    }
+
+    /**
+     * @return array<string, string> nama provinsi => kunci wilayah
+     */
+    public function petaProvinsi(): array
+    {
+        return $this->rujukan('provinsi_wilayah');
     }
 
     protected function rules(): array
@@ -175,6 +223,7 @@ class OrchaDestinasiForm extends Component
     {
         return view('livewire.pages.admin.orcha.etalase.destinasi-form', [
             'daftarWilayah' => $this->rujukan('wilayah'),
+            'daftarProvinsi' => array_keys($this->petaProvinsi()),
         ])->layout('livewire.layout.templateindex');
     }
 }
