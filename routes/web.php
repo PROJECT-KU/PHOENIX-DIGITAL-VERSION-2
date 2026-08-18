@@ -43,6 +43,7 @@ use App\Livewire\Pages\Admin\Message\MessageList;
 use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList;
 use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
+use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaDestinasiForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 // Data Order
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
@@ -511,6 +512,10 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/armada/{kendaraan}/ubah', OrchaArmadaForm::class)->name('admin.orcha.armada.ubah');
 
     Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
+    // Tambah dan ubah destinasi punya halamannya sendiri: isiannya terlalu
+    // banyak untuk jendela yang isinya harus digulung sendiri.
+    Route::get('/admin/orcha/destinasi/tambah', OrchaDestinasiForm::class)->name('admin.orcha.destinasi.tambah');
+    Route::get('/admin/orcha/destinasi/{destinasi}/ubah', OrchaDestinasiForm::class)->name('admin.orcha.destinasi.ubah');
     Route::get('/admin/orcha/testimoni', OrchaEtalaseList::class)->defaults('jenis', 'testimoni')->name('admin.orcha.testimoni');
     Route::get('/admin/orcha/partner', OrchaEtalaseList::class)->defaults('jenis', 'partner')->name('admin.orcha.partner');
 });

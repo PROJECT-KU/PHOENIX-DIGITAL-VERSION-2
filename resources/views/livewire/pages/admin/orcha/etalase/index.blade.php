@@ -46,10 +46,23 @@
                     @endif
 
                     <div class="col-12 {{ $jenis === 'destinasi' ? 'col-lg-3' : 'col-lg-6' }} text-lg-end">
-                        <button type="button" class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah" wire:click="tambah">
-                            <i class="bi bi-plus-lg"></i>
-                            <span>Tambah {{ $judul }}</span>
-                        </button>
+                        {{-- Destinasi punya halaman formulir sendiri: isiannya —
+                             keterangan panjang, foto utama, dan tiga gambar tambahan
+                             beserta pratinjaunya — terlalu banyak untuk jendela yang
+                             isinya harus digulung sendiri. Testimoni dan partner
+                             isiannya sedikit, jadi tetap lewat jendela. --}}
+                        @if ($jenis === 'destinasi')
+                            <a href="{{ route('admin.orcha.destinasi.tambah') }}" wire:navigate
+                                class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>Tambah {{ $judul }}</span>
+                            </a>
+                        @else
+                            <button type="button" class="btn btn-primary rounded-3 orcha-tombol orcha-tombol-tambah" wire:click="tambah">
+                                <i class="bi bi-plus-lg"></i>
+                                <span>Tambah {{ $judul }}</span>
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -91,11 +104,19 @@
                             @endif
 
                             <div class="d-flex gap-2 mt-3">
-                                <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
-                                    wire:click='ubah(@json($baris))'>
-                                    <i class="bi bi-pencil"></i>
-                                    <span>Ubah</span>
-                                </button>
+                                @if ($jenis === 'destinasi')
+                                    <a href="{{ route('admin.orcha.destinasi.ubah', $baris['id']) }}" wire:navigate
+                                        class="btn btn-sm btn-light border rounded-3 orcha-tombol">
+                                        <i class="bi bi-pencil"></i>
+                                        <span>Ubah</span>
+                                    </a>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-light border rounded-3 orcha-tombol"
+                                        wire:click='ubah(@json($baris))'>
+                                        <i class="bi bi-pencil"></i>
+                                        <span>Ubah</span>
+                                    </button>
+                                @endif
 
                                 <button type="button" class="btn btn-sm orcha-bahaya pcek-konfirmasi"
                                     data-action="hapus" data-arg="{{ $baris['id'] }}"
@@ -203,82 +224,6 @@
                                 </div>
                             </div>
 
-                            {{-- Gambar tambahan — hanya destinasi yang punya.
-
-                                 Kartu destinasi di halaman publik menampilkannya di
-                                 bawah keterangan, tetapi jendela ini dulu hanya
-                                 mengenal satu foto: admin yang mengurus destinasi dari
-                                 sini tidak punya cara menambah maupun menghapusnya, dan
-                                 harus membuka admin bawaan Orcha — yang justru
-                                 dihindari dengan adanya halaman ini. --}}
-                            @if ($jenis === 'destinasi')
-                                <div class="orcha-sub-foto mt-3">
-                                    <div class="orcha-sub-kepala">
-                                        <span class="judul">
-                                            <i class="bi bi-images"></i>
-                                            Gambar tambahan
-                                        </span>
-                                        <span class="ket">
-                                            Tampil di kartu destinasi —
-                                            sisa {{ $this->sisaSubFoto() }} dari {{ $batasSubFoto }}
-                                        </span>
-                                    </div>
-
-                                    @if ($subFotoTetap || $subFoto)
-                                        <div class="orcha-sub-petak">
-                                            @foreach ($subFotoTetap as $jalur)
-                                                <div class="petak" wire:key="sub-tetap-{{ md5($jalur) }}">
-                                                    <img src="{{ $tautanGambar($jalur) }}" alt="">
-                                                    {{-- Berkasnya baru dibuang di Orcha saat
-                                                         perubahan disimpan, jadi menutup jendela
-                                                         tanpa menyimpan tidak menghilangkan apa
-                                                         pun. --}}
-                                                    <button type="button" class="buang"
-                                                        wire:click="hapusSubFoto('{{ $jalur }}')"
-                                                        title="Keluarkan gambar ini">
-                                                        <i class="bi bi-x-lg"></i>
-                                                    </button>
-                                                </div>
-                                            @endforeach
-
-                                            @foreach ($subFoto as $urutan => $berkas)
-                                                <div class="petak baru" wire:key="sub-baru-{{ $urutan }}">
-                                                    <img src="{{ $berkas->temporaryUrl() }}" alt="">
-                                                    <span class="tanda">Baru</span>
-                                                    <button type="button" class="buang"
-                                                        wire:click="batalkanSubFoto({{ $urutan }})"
-                                                        title="Batalkan gambar ini">
-                                                        <i class="bi bi-x-lg"></i>
-                                                    </button>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <p class="orcha-sub-kosong">
-                                            <i class="bi bi-image"></i>
-                                            Belum ada gambar tambahan.
-                                        </p>
-                                    @endif
-
-                                    @if ($this->sisaSubFoto() > 0)
-                                        <input type="file" multiple
-                                            class="form-control form-control-sm mt-2 @error('subFoto.0') is-invalid @enderror"
-                                            wire:model="subFoto" accept="image/*">
-                                        <div class="form-text">
-                                            Bisa pilih beberapa sekaligus — maksimal 2 MB per gambar.
-                                        </div>
-                                    @else
-                                        <p class="orcha-sub-penuh mt-2">
-                                            <i class="bi bi-check-circle"></i>
-                                            Sudah {{ $batasSubFoto }} gambar — hapus salah satu untuk menambah.
-                                        </p>
-                                    @endif
-
-                                    <div wire:loading wire:target="subFoto" class="text-muted small mt-1">Mengunggah…</div>
-                                    @error('subFoto') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                    @error('subFoto.*') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                </div>
-                            @endif
                         </div>
 
                         <div class="modal-footer border-0">
@@ -300,155 +245,6 @@
     @include('livewire.pages.admin.orcha.partials.skrip')
 
     <style>
-        /* Pratinjau dan pemilih berkas sebagai satu kotak: keduanya satu
-           keputusan, dan gambar yang melayang tanpa pembatas tidak terbaca
-           sebagai pasangan isiannya. */
-        .orcha-foto-kotak {
-            display: flex;
-            align-items: center;
-            gap: .85rem;
-            padding: .75rem;
-            border: 1px solid #e3e8ef;
-            border-radius: 14px;
-            background: #fbfdff;
-        }
 
-        .orcha-foto-kotak.galat {
-            border-color: #f6c9cd;
-            background: #fdf7f8;
-        }
-
-        .orcha-foto-rupa {
-            width: 5.5rem;
-            height: 4rem;
-            flex-shrink: 0;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #eef2f6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .orcha-foto-rupa img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* Ikon dibungkus kotak yang memusatkan sendiri isinya — ikon telanjang
-           tingginya ditentukan kotak barisnya, bukan oleh font-size-nya. */
-        .orcha-foto-kosong {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            color: #94a3b8;
-            font-size: 1.15rem;
-        }
-
-        .orcha-foto-isi { flex: 1; min-width: 0; }
-
-        .orcha-foto-isi .form-text { margin-bottom: 0; }
-
-        .orcha-sub-foto {
-            padding: .85rem;
-            border: 1px solid #e3e8ef;
-            border-radius: 14px;
-            background: #fbfdff;
-        }
-
-        .orcha-sub-kepala {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: baseline;
-            gap: .1rem .6rem;
-            margin-bottom: .6rem;
-        }
-
-        .orcha-sub-kepala .judul {
-            display: inline-flex;
-            align-items: center;
-            gap: .35rem;
-            font-size: .82rem;
-            font-weight: 700;
-            color: #0f2d4a;
-        }
-
-        .orcha-sub-kepala .ket { font-size: .74rem; color: #64748b; }
-
-        /* Petak seukuran sama supaya deretannya rapi berapa pun rasio
-           gambarnya — kartu di website pun memotongnya begitu. */
-        .orcha-sub-petak {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-            gap: .6rem;
-        }
-
-        .orcha-sub-petak .petak {
-            position: relative;
-            aspect-ratio: 4 / 3;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #e3e8ef;
-            background: #eef2f6;
-        }
-
-        .orcha-sub-petak .petak img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* Yang baru dipilih ditandai: sebelum disimpan, keduanya terlihat sama
-           padahal yang satu belum tersimpan di mana pun. */
-        .orcha-sub-petak .petak.baru { border-color: #9fd0b4; }
-
-        .orcha-sub-petak .tanda {
-            position: absolute;
-            left: .35rem;
-            bottom: .35rem;
-            padding: .05rem .35rem;
-            border-radius: 5px;
-            background: rgba(26, 138, 82, .92);
-            color: #fff;
-            font-size: .62rem;
-            font-weight: 700;
-        }
-
-        .orcha-sub-petak .buang {
-            position: absolute;
-            top: .3rem;
-            right: .3rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.4rem;
-            height: 1.4rem;
-            padding: 0;
-            border: 0;
-            border-radius: 50%;
-            background: rgba(15, 45, 74, .78);
-            color: #fff;
-            font-size: .62rem;
-            line-height: 1;
-        }
-
-        .orcha-sub-petak .buang:hover { background: #c2323c; }
-
-        .orcha-sub-kosong,
-        .orcha-sub-penuh {
-            display: flex;
-            align-items: center;
-            gap: .4rem;
-            margin: 0;
-            font-size: .78rem;
-            color: #64748b;
-        }
-
-        .orcha-sub-penuh { color: #1a6b43; }
     </style>
 </div>

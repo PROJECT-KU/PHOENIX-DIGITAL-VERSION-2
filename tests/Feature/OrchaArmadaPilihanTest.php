@@ -1702,10 +1702,10 @@ test('pembungkus lengket benar-benar memuat kartu kolom kanan', function () {
     // tergulung ke atas.
     $berkas = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/armada/form.blade.php'));
 
-    $mulai = strpos($berkas, '<div class="orcha-lengket orcha-lengket-armada">');
+    $mulai = strpos($berkas, '<div class="orcha-lengket orcha-lengket-panjang">');
     expect($mulai)->not->toBeFalse();
 
-    $sesudahnya = trim(substr($berkas, $mulai + strlen('<div class="orcha-lengket orcha-lengket-armada">'), 200));
+    $sesudahnya = trim(substr($berkas, $mulai + strlen('<div class="orcha-lengket orcha-lengket-panjang">'), 200));
 
     expect($sesudahnya)->not->toStartWith('</div>');
 });
@@ -1725,8 +1725,15 @@ test('palang tombol berada langsung di dalam pembungkus lengket', function () {
 
     // Sisa ruang kolom diserap sebelum palang, jadi posisi alaminya di dasar
     // kolom — tanpa itu sticky bottom hanya menahannya sampai kartu terakhir.
-    expect($berkas)->toContain('.orcha-lengket-armada .orcha-aksi-paku')
-        ->and($berkas)->toContain('margin-top: auto;');
+    //
+    // Aturannya ada di gaya BERSAMA, bukan di berkas ini: halaman destinasi
+    // memakai pola yang sama, dan aturan yang hanya ada di satu berkas membuat
+    // halaman lain mendapatkan nama kelasnya saja tanpa perilakunya.
+    $gaya = file_get_contents(base_path('resources/views/livewire/pages/admin/orcha/partials/gaya.blade.php'));
+
+    expect($gaya)->toContain('.orcha-lengket-panjang .orcha-aksi-paku')
+        ->and($gaya)->toContain('margin-top: auto;')
+        ->and($gaya)->toContain('position: sticky;');
 });
 
 test('kondisi unit ikut kolom kiri supaya rel kanan membentang penuh', function () {

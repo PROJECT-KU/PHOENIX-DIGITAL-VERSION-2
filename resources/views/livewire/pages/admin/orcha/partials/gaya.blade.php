@@ -1300,4 +1300,113 @@
         background: #1d6fa5;
         box-shadow: 0 0 0 3px #fff;
     }
+
+        /* Pratinjau dan pemilih berkas sebagai satu kotak: keduanya satu
+           keputusan, dan gambar yang melayang tanpa pembatas tidak terbaca
+           sebagai pasangan isiannya. */
+        .orcha-foto-kotak {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            padding: .75rem;
+            border: 1px solid #e3e8ef;
+            border-radius: 14px;
+            background: #fbfdff;
+        }
+
+        .orcha-foto-kotak.galat {
+            border-color: #f6c9cd;
+            background: #fdf7f8;
+        }
+
+        .orcha-foto-rupa {
+            width: 5.5rem;
+            height: 4rem;
+            flex-shrink: 0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #eef2f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .orcha-foto-rupa img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Ikon dibungkus kotak yang memusatkan sendiri isinya — ikon telanjang
+           tingginya ditentukan kotak barisnya, bukan oleh font-size-nya. */
+        .orcha-foto-kosong {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #94a3b8;
+            font-size: 1.15rem;
+        }
+
+        .orcha-foto-isi { flex: 1; min-width: 0; }
+
+        .orcha-foto-isi .form-text { margin-bottom: 0; }
+
+        /* Kolom kanan panjang: yang lengket PALANG TOMBOLNYA, bukan kolomnya.
+
+           Dipakai bersama formulir armada dan destinasi. Sebelumnya aturan ini
+           hanya ada di berkas armada, sehingga halaman lain yang memakai nama
+           kelas yang sama mendapatkan namanya saja tanpa perilakunya — terukur
+           di peramban: position-nya kembali static dan tombol Simpan ikut
+           tergulung hilang. */
+        .orcha-aksi-paku {
+            position: sticky;
+            bottom: 0;
+            z-index: 3;
+            margin: 0 -.25rem;
+            padding: .75rem .25rem .25rem;
+            background: linear-gradient(to bottom, rgba(246, 248, 251, 0), #f6f8fb 28%);
+        }
+
+        /* Kolom kanan setinggi barisnya, dan TIDAK lengket sendiri.
+
+           Isinya — foto, pratinjau, ringkasan, tombol — terukur ~1.000px,
+           lebih tinggi dari jendela 813px. Kolom lengket yang lebih tinggi dari
+           layar menyembunyikan bagian bawahnya untuk selamanya; menambahkan
+           gulungan sendiri di dalamnya memang membuatnya terjangkau, tetapi
+           lewat scrollbar kedua yang tidak akan ditemukan admin — tombol Simpan
+           tidak pantas bersembunyi di balik itu.
+
+           Yang lengket cukup PALANG TOMBOLNYA (.orcha-aksi-paku, sticky bottom).
+           Supaya palang itu tetap menempel sepanjang halaman, pembungkusnya
+           harus setinggi kolomnya: selama pembungkus masih terlihat, palangnya
+           ikut terlihat. Kolom kiri yang jauh lebih panjang tidak lagi
+           meninggalkan kolom kanan tampak kosong tanpa tombol.
+
+           padding-bottom menjaga tombol Batal tidak menempel persis pada kartu
+           Kondisi Unit di bawahnya — keduanya akan terbaca seperti satu
+           tumpukan. */
+        @media (min-width: 1200px) {
+            .orcha-lengket-panjang {
+                position: static;
+                height: 100%;
+                padding-bottom: 2rem;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* Sisa ruang kolom diserap SEBELUM palang tombol, jadi posisi
+               alaminya di dasar kolom.
+
+               Tanpa ini palang berhenti tepat di bawah kartu terakhir — sekitar
+               700px di atas dasar kolom — dan sticky bottom hanya menahannya
+               sampai titik itu terlewat. Terukur di peramban: tombol lepas dari
+               pandangan pada gulungan ke-1.400px. Dengan penyerap ini, palangnya
+               tetap terlihat sampai dasar halaman. */
+            .orcha-lengket-panjang .orcha-aksi-paku {
+                margin-top: auto;
+            }
+        }
 </style>

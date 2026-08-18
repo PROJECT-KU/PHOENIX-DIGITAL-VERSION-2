@@ -665,7 +665,7 @@
                          Akibatnya, begitu kartu kiri memanjang, kolom kanan
                          tampak kosong sepanjang sisa halaman dan tombol Simpan
                          ikut hilang tergulung ke atas. --}}
-                    <div class="orcha-lengket orcha-lengket-armada">
+                    <div class="orcha-lengket orcha-lengket-panjang">
 
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
                         <div class="card-body p-4">
@@ -1205,45 +1205,7 @@
             background-color: #1a8a52;
             border-color: #1a8a52;
         }
-        /* Kolom kanan setinggi barisnya, dan TIDAK lengket sendiri.
 
-           Isinya — foto, pratinjau, ringkasan, tombol — terukur ~1.000px,
-           lebih tinggi dari jendela 813px. Kolom lengket yang lebih tinggi dari
-           layar menyembunyikan bagian bawahnya untuk selamanya; menambahkan
-           gulungan sendiri di dalamnya memang membuatnya terjangkau, tetapi
-           lewat scrollbar kedua yang tidak akan ditemukan admin — tombol Simpan
-           tidak pantas bersembunyi di balik itu.
-
-           Yang lengket cukup PALANG TOMBOLNYA (.orcha-aksi-paku, sticky bottom).
-           Supaya palang itu tetap menempel sepanjang halaman, pembungkusnya
-           harus setinggi kolomnya: selama pembungkus masih terlihat, palangnya
-           ikut terlihat. Kolom kiri yang jauh lebih panjang tidak lagi
-           meninggalkan kolom kanan tampak kosong tanpa tombol.
-
-           padding-bottom menjaga tombol Batal tidak menempel persis pada kartu
-           Kondisi Unit di bawahnya — keduanya akan terbaca seperti satu
-           tumpukan. */
-        @media (min-width: 1200px) {
-            .orcha-lengket-armada {
-                position: static;
-                height: 100%;
-                padding-bottom: 2rem;
-                display: flex;
-                flex-direction: column;
-            }
-
-            /* Sisa ruang kolom diserap SEBELUM palang tombol, jadi posisi
-               alaminya di dasar kolom.
-
-               Tanpa ini palang berhenti tepat di bawah kartu terakhir — sekitar
-               700px di atas dasar kolom — dan sticky bottom hanya menahannya
-               sampai titik itu terlewat. Terukur di peramban: tombol lepas dari
-               pandangan pada gulungan ke-1.400px. Dengan penyerap ini, palangnya
-               tetap terlihat sampai dasar halaman. */
-            .orcha-lengket-armada .orcha-aksi-paku {
-                margin-top: auto;
-            }
-        }
 </style>
 
 {{-- ============ PICKER MEREK & NAMA UNIT ============
@@ -1590,14 +1552,7 @@
 
        Latarnya dibuat pekat, bukan tembus pandang: kartu yang lewat di bawahnya
        saat menggulung akan terbaca sebagai tulisan yang menembus tombol. */
-    .orcha-aksi-paku {
-        position: sticky;
-        bottom: 0;
-        z-index: 3;
-        margin: 0 -.25rem;
-        padding: .75rem .25rem .25rem;
-        background: linear-gradient(to bottom, rgba(246, 248, 251, 0), #f6f8fb 28%);
-    }
+
 
     .orcha-pratinjau {
         border: 1px solid #e3e8ef;
