@@ -46,7 +46,7 @@
                             <p class="text-muted small mb-3">Nama dan tempatnya — yang dicari pengunjung di daftar.</p>
 
                             <div class="row g-3">
-                                <div class="col-12 col-md-7">
+                                <div class="col-12 col-lg-8">
                                     <label class="form-label small fw-semibold">
                                         Nama destinasi <span class="text-danger">*</span>
                                     </label>
@@ -85,7 +85,47 @@
                                     @endif
                                 </div>
 
-                                <div class="col-6 col-md-5">
+                                <div class="col-12 col-lg-4">
+                                    <label class="form-label small fw-semibold">Perkiraan pengunjung</label>
+                                    <input type="number" min="0"
+                                        class="form-control @error('totalPengunjung') is-invalid @enderror"
+                                        wire:model.live="totalPengunjung" placeholder="0">
+                                    @error('totalPengunjung') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text">Tampil sebagai lencana di kartunya.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label small fw-semibold">Keterangan</label>
+                                    <textarea rows="3"
+                                        class="form-control @error('deskripsi') is-invalid @enderror"
+                                        wire:model.live.debounce.400ms="deskripsi"
+                                        placeholder="Apa yang membuat tempat ini layak didatangi, dan apa yang perlu disiapkan pengunjung."></textarea>
+                                    @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text">
+                                        {{ mb_strlen($deskripsi) }}/1000 — dibaca utuh di jendela detail destinasi.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    {{-- Lokasi dijadikan kartunya sendiri.
+
+                         Ketiganya satu keputusan berurutan — wilayah menyaring provinsi,
+                         provinsi menyaring daerah — tetapi sebelumnya tercecer di antara
+                         perkiraan pengunjung dan keterangan, sehingga urutannya tidak
+                         terbaca sama sekali. Ditata sebaris dengan tanda panah, rantainya
+                         terlihat sebelum satu pun isian disentuh. --}}
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-1 orcha-judul-ikon">
+                                <i class="bi bi-geo-alt text-primary"></i> Lokasi
+                            </h6>
+                            <p class="text-muted small mb-3">Dipilih berurutan — tiap pilihan menyaring pilihan berikutnya.</p>
+
+                            <div class="orcha-rantai">
+                                <div class="orcha-rantai-isi">
                                     <label class="form-label small fw-semibold">
                                         Wilayah <span class="text-danger">*</span>
                                     </label>
@@ -109,10 +149,11 @@
                                     </button>
 
                                     @error('wilayah') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                    <div class="form-text">Menyaring pilihan provinsi di sebelah.</div>
-                                </div>
 
-                                <div class="col-6 col-md-7">
+                                </div>
+                                <div class="orcha-rantai-panah d-none d-lg-flex"><i class="bi bi-chevron-right"></i></div>
+
+                                <div class="orcha-rantai-isi">
                                     <label class="form-label small fw-semibold">Provinsi</label>
 
                                     {{-- Dipilih lewat pemilih berdaftar, bukan diketik.
@@ -136,14 +177,11 @@
                                     </button>
 
                                     @error('provinsi') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                    <div class="form-text">
-                                        {{ count($daftarProvinsi) }} provinsi di
-                                        {{ $daftarWilayah[$wilayah] ?? 'wilayah ini' }} — yang belum
-                                        terdaftar bisa ditambahkan dari pemilihnya.
-                                    </div>
-                                </div>
 
-                                <div class="col-6 col-md-7">
+                                </div>
+                                <div class="orcha-rantai-panah d-none d-lg-flex"><i class="bi bi-chevron-right"></i></div>
+
+                                <div class="orcha-rantai-isi">
                                     <label class="form-label small fw-semibold">Daerah</label>
 
                                     {{-- Provinsi yang sedang dipilih ditempel di DOM: pemilih
@@ -161,32 +199,26 @@
                                     </button>
 
                                     @error('daerah') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                                    <div class="form-text">
-                                        Kabupaten, kota, atau kawasannya — tampil di kartu sebagai
-                                        "{{ $daerah ?: 'Banyuwangi' }}, {{ $provinsi ?: 'Jawa Timur' }}".
-                                    </div>
-                                </div>
 
-                                <div class="col-6 col-md-5">
-                                    <label class="form-label small fw-semibold">Perkiraan pengunjung</label>
-                                    <input type="number" min="0"
-                                        class="form-control @error('totalPengunjung') is-invalid @enderror"
-                                        wire:model.live="totalPengunjung" placeholder="0">
-                                    @error('totalPengunjung') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text">Tampil sebagai lencana "sekian pengunjung diantar".</div>
                                 </div>
+                            </div>
 
-                                <div class="col-12">
-                                    <label class="form-label small fw-semibold">Keterangan</label>
-                                    <textarea rows="3"
-                                        class="form-control @error('deskripsi') is-invalid @enderror"
-                                        wire:model.live.debounce.400ms="deskripsi"
-                                        placeholder="Apa yang membuat tempat ini layak didatangi, dan apa yang perlu disiapkan pengunjung."></textarea>
-                                    @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                                    <div class="form-text">
-                                        {{ mb_strlen($deskripsi) }}/1000 — dibaca utuh di jendela detail destinasi.
-                                    </div>
-                                </div>
+                                @php
+                                    $alamatSekarang = collect([$daerah, $provinsi, $daftarWilayah[$wilayah] ?? null])
+                                        ->filter(fn ($bagian) => trim((string) $bagian) !== '')
+                                        ->implode(' · ');
+                                @endphp
+                            {{-- Hasil akhirnya disebut apa adanya: tiga pilihan terpisah
+                                 tidak menunjukkan bunyi alamat yang akan dibaca pengunjung. --}}
+                            <div class="orcha-alamat-jadi mt-3">
+                                <i class="bi bi-signpost-split"></i>
+                                <span>
+                                    @if ($alamatSekarang)
+                                        Tampil sebagai <strong>{{ $alamatSekarang }}</strong>
+                                    @else
+                                        Belum ada lokasi — pilih wilayahnya dulu.
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -360,6 +392,12 @@
                                     <div>
                                         <span class="label">Wilayah</span>
                                         <span class="nilai">{{ $daftarWilayah[$wilayah] ?? '—' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="label">Lokasi</span>
+                                        <span class="nilai">
+                                            {{ collect([$daerah, $provinsi])->filter()->implode(', ') ?: '—' }}
+                                        </span>
                                     </div>
                                     <div>
                                         <span class="label">Gambar</span>
@@ -1190,6 +1228,47 @@
             border-radius: 8px;
             border: 1px solid #e3ecf3;
         }
+
+        /* Rantai lokasi: tiga pemilih berurutan dengan panah di antaranya.
+           Panahnya hanya di layar lebar — bertumpuk, arah "berikutnya" sudah
+           terbaca dari urutan atas-bawah. */
+        .orcha-rantai {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: .5rem;
+        }
+
+        /* Tiap isian berbagi sisa ruang rata; min-width menjaga nama provinsi
+           yang panjang tetap terbaca sebelum barisnya membungkus. */
+        .orcha-rantai-isi {
+            flex: 1 1 12rem;
+            min-width: 0;
+        }
+
+        .orcha-rantai-panah {
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: .55rem;
+            color: #cbd5e1;
+            font-size: .9rem;
+        }
+
+        /* Hasil akhirnya: bunyi alamat yang akan dibaca pengunjung. */
+        .orcha-alamat-jadi {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .55rem .8rem;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8fbfd, #eef6fb);
+            border: 1px solid #e3ecf3;
+            font-size: .8rem;
+            color: #475569;
+        }
+
+        .orcha-alamat-jadi strong { color: #0f2d4a; }
 
         /* Keterangan usulan lokasi: hijau lembut, bukan kuning peringatan —
            ini kabar baik yang menghemat pekerjaan, bukan sesuatu yang salah. */

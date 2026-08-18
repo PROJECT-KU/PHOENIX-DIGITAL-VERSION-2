@@ -821,3 +821,28 @@ test('simpanan yang terlanjur kosong dianggap belum ada', function () {
 
     expect(cache()->get('orcha.rujukan'))->toHaveKey('wilayah');
 });
+
+/* ---------- TATA LETAK FORMULIR ---------- */
+
+test('lokasi punya kartunya sendiri dengan alamat jadinya', function () {
+    fakeKatalog();
+
+    // Ketiganya satu keputusan berurutan — wilayah menyaring provinsi, provinsi
+    // menyaring daerah — tetapi sebelumnya tercecer di antara perkiraan
+    // pengunjung dan keterangan, sehingga urutannya tidak terbaca sama sekali.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->call('pilihDestinasi', 'Banyuwangi')
+        ->assertSee('Lokasi')
+        ->assertSee('Dipilih berurutan')
+        // Hasil akhirnya disebut apa adanya: tiga pilihan terpisah tidak
+        // menunjukkan bunyi alamat yang akan dibaca pengunjung.
+        ->assertSee('Banyuwangi · Jawa Timur · Jawa');
+});
+
+test('lokasi yang belum diisi mengatakan apa yang kurang', function () {
+    fakeKatalog();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('wilayah', '')
+        ->assertSee('Belum ada lokasi — pilih wilayahnya dulu.');
+});
