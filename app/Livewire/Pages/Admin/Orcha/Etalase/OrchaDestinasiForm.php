@@ -529,9 +529,14 @@ class OrchaDestinasiForm extends Component
 
         $this->pasangLokasi($usulan['provinsi'], $usulan['wilayah'], $usulan['daerah'] ?? null);
 
-        $this->usulanLokasi = ($usulan['sumber'] ?? '') === 'destinasi'
-            ? 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.'
-            : 'Terisi dari peta OpenStreetMap — betulkan bila keliru.';
+        // Asal usulannya disebut apa adanya. Menyebut "peta OpenStreetMap"
+        // untuk jawaban yang datang dari ensiklopedia membuat admin memeriksa
+        // sumber yang keliru ketika ia curiga.
+        $this->usulanLokasi = match ($usulan['sumber'] ?? '') {
+            'destinasi' => 'Terisi dari destinasi lain yang namanya mirip — betulkan bila keliru.',
+            'ensiklopedia' => 'Terisi dari Wikipedia — betulkan bila keliru.',
+            default => 'Terisi dari peta OpenStreetMap — betulkan bila keliru.',
+        };
     }
 
     /**

@@ -1022,3 +1022,17 @@ test('yang dicabut hanya tebakan sistem, bukan provinsi pilihan admin', function
         ->set('nama', 'Tempat Yang Tidak Ada Di Peta')
         ->assertSet('provinsi', 'Aceh');
 });
+
+test('asal usulan disebut apa adanya, termasuk ensiklopedia', function () {
+    fakeUsulan(['provinsi' => 'Jawa Timur', 'wilayah' => 'jawa',
+        'daerah' => 'Banyuwangi', 'sumber' => 'ensiklopedia']);
+
+    // Menyebut "peta OpenStreetMap" untuk jawaban yang datang dari
+    // ensiklopedia membuat admin memeriksa sumber yang keliru ketika ia
+    // curiga isiannya salah.
+    Livewire::actingAs(adminDestinasi())->test(OrchaDestinasiForm::class)
+        ->set('nama', 'Pulau Menjangan Kecil')
+        ->assertSet('daerah', 'Banyuwangi')
+        ->assertSee('Wikipedia')
+        ->assertDontSee('Terisi dari peta OpenStreetMap');
+});
