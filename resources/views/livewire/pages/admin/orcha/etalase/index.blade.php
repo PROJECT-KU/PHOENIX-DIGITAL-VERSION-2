@@ -210,6 +210,8 @@
                 </div>
             @endforelse
         </div>
+
+        @include('livewire.pages.admin.orcha.partials.paginasi', ['meta' => $meta ?? []])
     </div>
 
     {{-- Formulir tambah / ubah --}}
@@ -404,7 +406,15 @@
             line-height: 1.4;
         }
 
-        .orcha-etalase-alamat > i { color: #1d6fa5; font-size: .78rem; }
+        /* height: auto melawan .bi { height: 1rem } bawaan tema. Tinggi yang
+           dipatok membuat kotak ikon 16px pada baris yang disejajarkan menurut
+           garis dasar, dan tintanya jatuh 0,84px di atas tengah huruf di
+           sebelahnya; dibebaskan, selisihnya 0,11px. */
+        .orcha-etalase-alamat > i {
+            height: auto;
+            color: #1d6fa5;
+            font-size: .78rem;
+        }
 
         .orcha-etalase-ket {
             color: #64748b;
@@ -421,9 +431,14 @@
 
         .orcha-etalase-ket.kosong { color: #a3b2c2; font-style: italic; }
 
+        /* Yang kiri keterangan tentang pengunjung, yang kanan keterangan
+           tentang pekerjaan admin sendiri. Dipisahkan ke dua tepi, keduanya
+           terbaca sebagai dua hal berbeda tanpa perlu diberi judul — dan
+           kolom kanannya lurus dengan tombol Hapus di bawahnya. */
         .orcha-etalase-meta {
             display: flex;
             flex-wrap: wrap;
+            justify-content: space-between;
             gap: .35rem .8rem;
             padding-top: .7rem;
             border-top: 1px dashed #e6eef5;
@@ -437,7 +452,7 @@
             gap: .3rem;
         }
 
-        .orcha-etalase-meta i { color: #9db4c7; font-size: .8rem; }
+        .orcha-etalase-meta i { height: auto; color: #9db4c7; font-size: .8rem; }
 
         /* Belum ada gambar tambahan sama sekali — bukan galat, tetapi memang
            yang paling sering perlu dikerjakan berikutnya. */

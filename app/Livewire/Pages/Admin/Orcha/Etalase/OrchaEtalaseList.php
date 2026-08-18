@@ -157,17 +157,46 @@ class OrchaEtalaseList extends Component
         $this->resetValidation();
     }
 
+    /**
+     * Sembilan, bukan sepuluh.
+     *
+     * Daftarnya berbentuk kartu tiga kolom (col-xl-4), jadi sembilan mengisi
+     * tepat tiga baris penuh. Sepuluh menyisakan satu kartu sendirian di baris
+     * keempat — baris yang tampak seperti kesalahan tata letak, bukan akhir
+     * daftar. Angka yang sama dipakai daftar armada.
+     */
+    protected function perHalaman(): int
+    {
+        return 9;
+    }
+
     public function render()
     {
-        $hasil = $this->muat('/'.$this->jenis, $this->jenis === 'destinasi' && $this->filterStatus !== ''
-            ? ['wilayah' => $this->filterStatus]
-            : []);
+        // Hanya destinasi yang dipenggal per halaman. Testimoni dan partner
+        // masih dikirim Orcha sekaligus; menyodorkan nomor halaman untuk daftar
+        // yang tidak berhalaman hanya menjanjikan yang tidak ada.
+        $berhalaman = $this->jenis === 'destinasi';
+
+        $parameter = [];
+
+        if ($berhalaman) {
+            $parameter = $this->parameterDaftar();
+            unset($parameter['status']);
+
+            if ($this->filterStatus !== '') {
+                $parameter['wilayah'] = $this->filterStatus;
+            }
+        }
+
+        $hasil = $this->muat('/'.$this->jenis, $parameter);
 
         $daftar = collect($hasil['data'] ?? []);
 
-        // Ketiga jalur ini mengirim seluruh data sekaligus (jumlahnya sedikit),
-        // jadi pencariannya cukup dilakukan di sini.
-        if ($this->cari !== '') {
+        // Testimoni dan partner dikirim seluruhnya (jumlahnya sedikit), jadi
+        // pencariannya cukup di sini. Untuk destinasi TIDAK: penyaring di sini
+        // hanya melihat sembilan baris yang kebetulan sedang tampil, sehingga
+        // yang dicari admin akan "tidak ditemukan" padahal ada di halaman lain.
+        if (! $berhalaman && $this->cari !== '') {
             $kata = mb_strtolower($this->cari);
             $daftar = $daftar->filter(fn ($baris) => str_contains(mb_strtolower(
                 ($baris['nama'] ?? '').' '.($baris['provinsi'] ?? '').' '.($baris['isi'] ?? '')
@@ -176,6 +205,10 @@ class OrchaEtalaseList extends Component
 
         return view('livewire.pages.admin.orcha.etalase.index', [
             'daftar' => $daftar->all(),
+            // Orcha dipasang terpisah dan boleh tertinggal sekian rilis: yang
+            // belum mengirim meta menghasilkan daftar utuh tanpa nomor halaman,
+            // bukan halaman yang galat.
+            'meta' => $hasil['meta'] ?? [],
             'pilihanWilayah' => $this->rujukan('wilayah'),
         ])->layout('livewire.layout.templateindex');
     }

@@ -1073,3 +1073,74 @@ test('destinasi tanpa lokasi mengatakannya, bukan menampilkan baris kosong', fun
         ->assertSee('Lokasi belum diisi')
         ->assertSee('Keterangan belum ditulis.');
 });
+
+test('daftar destinasi meminta sembilan per halaman dan menampilkan nomornya', function () {
+    fakeDestinasiSatuan();
+
+    // Sembilan, sama dengan daftar armada: kartunya tiga kolom, jadi sembilan
+    // mengisi tepat tiga baris penuh.
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)->assertOk();
+
+    Http::assertSent(function ($permintaan) {
+        if (! str_contains($permintaan->url(), '/destinasi')) {
+            return false;
+        }
+
+        return str_contains($permintaan->url(), 'per_halaman=9')
+            && str_contains($permintaan->url(), 'page=1');
+    });
+});
+
+test('pencarian destinasi dikirim ke Orcha, tidak disaring di lemon', function () {
+    fakeDestinasiSatuan();
+
+    // Menyaring di lemon berarti menyaring sembilan baris yang kebetulan
+    // sedang tampil — destinasi yang dicari admin akan "tidak ditemukan"
+    // padahal ada di halaman lain.
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->set('cari', 'karimun')
+        ->assertOk();
+
+    Http::assertSent(fn ($permintaan) => str_contains($permintaan->url(), '/destinasi')
+        && str_contains(urldecode($permintaan->url()), 'cari=karimun'));
+});
+
+test('berpindah halaman meminta halaman itu ke Orcha', function () {
+    fakeDestinasiSatuan();
+
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->call('keHalaman', 3)
+        ->assertSet('halaman', 3);
+
+    Http::assertSent(fn ($permintaan) => str_contains($permintaan->url(), '/destinasi')
+        && str_contains($permintaan->url(), 'page=3'));
+
+    // Mengganti pencarian mengembalikan ke halaman satu: hasil baru yang
+    // langsung dibuka di halaman tiga hampir selalu kosong, dan kosongnya
+    // terbaca seperti "tidak ada yang cocok".
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class)
+        ->call('keHalaman', 3)
+        ->set('cari', 'bromo')
+        ->assertSet('halaman', 1);
+});
+
+test('testimoni tetap dikirim sekaligus dan disaring di lemon', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['wilayah' => []]]),
+        '*' => Http::response(['data' => [
+            ['id' => 1, 'nama' => 'Rina Kartika', 'rating' => 5, 'isi' => 'Sopirnya ramah.'],
+            ['id' => 2, 'nama' => 'Bagus Prakoso', 'rating' => 4, 'isi' => 'Armadanya bersih.'],
+        ]]),
+    ]);
+
+    // Orcha belum memenggal kedua jalur ini. Menyodorkan nomor halaman untuk
+    // daftar yang tidak berhalaman hanya menjanjikan yang tidak ada.
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class, ['jenis' => 'testimoni'])
+        ->set('cari', 'rina')
+        ->assertSee('Rina Kartika')
+        ->assertDontSee('Bagus Prakoso');
+});
