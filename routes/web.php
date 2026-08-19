@@ -104,6 +104,7 @@ use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Public\About\AboutPage;
 use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
+use App\Livewire\Pages\Public\Bundling\Detail as BundlingDetail;
 use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
 use App\Livewire\Pages\Public\Homepage\Index;
@@ -167,6 +168,8 @@ Route::view('/cekout', 'pages.cekout')->name('cekout');
 Route::view('/about', 'pages.about')->name('about');
 Route::get('/bundling', BundlingPageIndex::class)->name('bundling.index');
 Route::get('/bundling/product', ProductBundlings::class)->name('bundling.product-bundlings');
+// Detail satu paket, sejajar dengan detail produk satuan di shop.
+Route::get('/bundling/paket/{id}', BundlingDetail::class)->name('bundling.detail');
 Route::get('/order/history', OrderHistory::class)->name('order.history');
 Route::get('/contact', Contact::class)->name('contact');
 Route::get('/about', AboutPage::class)->name('about');

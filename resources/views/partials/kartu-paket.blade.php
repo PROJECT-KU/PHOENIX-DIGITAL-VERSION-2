@@ -7,7 +7,6 @@
 
      Variabel:
        $item        paket bundling
-       $detailKlik  isi wire:click untuk tombol "Lihat" (mis. "openDetail('id')").
                     Kosong = tombolnya jadi tautan ke halaman daftar paket,
                     dipakai halaman yang tidak punya jendela detail.
 --}}
@@ -54,7 +53,6 @@
     $isiPaket = collect([1, 2, 3, 4, 5])
         ->map(fn ($i) => $item->{'product'.$i})
         ->filter();
-    $detailKlik = $detailKlik ?? null;
 @endphp
 
 <div class="fs-card">
@@ -110,11 +108,7 @@
                         class="spinner-border spinner-border-sm"></span></span>
             </button>
 
-            @if ($detailKlik)
-                <button type="button" class="fs-btn-view" wire:click="{{ $detailKlik }}">Lihat</button>
-            @else
-                <a href="{{ route('bundling.product-bundlings') }}" class="fs-btn-view">Lihat</a>
-            @endif
+            <a href="{{ route('bundling.detail', $item->id) }}" class="fs-btn-view">Lihat</a>
         </div>
     </div>
 </div>

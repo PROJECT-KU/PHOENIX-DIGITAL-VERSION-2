@@ -163,7 +163,7 @@
                                             <span wire:loading.remove wire:target="tambahPaket('{{ $paket->id }}')"><i class="bi bi-cart-plus"></i> Keranjang</span>
                                             <span wire:loading wire:target="tambahPaket('{{ $paket->id }}')"><span class="spinner-border spinner-border-sm"></span></span>
                                         </button>
-                                        <button type="button" class="fs-btn-view" wire:click="openDetail('{{ $paket->id }}')">Lihat</button>
+                                        <a href="{{ route('bundling.detail', $paket->id) }}" class="fs-btn-view">Lihat</a>
                                     </div>
                                 </div>
                             </div>
@@ -270,7 +270,4 @@
         </div>
     @endif
 
-    {{-- Detail paket dibuka di tempat, sejajar dengan produk satuan yang
-         punya halaman detail sendiri. --}}
-    @include('partials.modal-paket', ['aksiKeranjang' => 'tambahPaket'])
 </div>

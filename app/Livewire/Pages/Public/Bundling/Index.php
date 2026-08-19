@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages\Public\Bundling;
 
-use App\Livewire\Concerns\DetailPaket;
 use App\Livewire\Concerns\MengirimPixel;
 use App\Models\ProductBundlings;
 use Livewire\Attributes\Layout;
@@ -11,7 +10,6 @@ use Livewire\WithPagination;
 
 class Index extends Component
 {
-    use DetailPaket;
     use MengirimPixel;
 
     /**
@@ -78,9 +76,6 @@ class Index extends Component
         // $this->dispatch('redirect-home');
 
         session()->put('cart', $cart);
-
-        // Bila ditambah dari popup detail → tutup popup (kembali ke homepage bundling)
-        $this->showBundleDetail = false;
 
         $this->dispatch('cart-updated', count: $this->getCartCount());
         $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));

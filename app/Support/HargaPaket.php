@@ -59,12 +59,19 @@ class HargaPaket
             return $polos;
         }
 
+        $bayar = max(0, $bundling - $potongan);
+
+        // Yang dicoret adalah harga AWAL, yaitu harga bila produknya dibeli
+        // satuan. Pelanggan membandingkan dengan angka itu, bukan dengan harga
+        // paket normal, sehingga penghematan terlihat utuh.
+        $coret = $awal > $bayar ? $awal : ($bundling > $bayar ? $bundling : 0);
+
         return [
-            'bayar' => max(0, $bundling - $potongan),
-            // Yang dicoret adalah harga paket normal, bukan harga awal: itulah
-            // angka yang benar-benar batal dibayar pelanggan karena promo ini.
-            'coret' => $bundling,
-            'potongan' => $potongan,
+            'bayar' => $bayar,
+            'coret' => $coret,
+            // "Hemat" selalu selisih terhadap angka yang dicoret, supaya
+            // keduanya tidak pernah saling bertentangan di layar.
+            'potongan' => $coret > 0 ? $coret - $bayar : $potongan,
             'promo' => $promo,
             'butuh_kode' => $promo->tipe_promo === 'kode_promo',
         ];

@@ -40,7 +40,7 @@
         <div class="row g-4 justify-content-center">
             @forelse ($bundlings as $item)
                 <div class="col-6 col-md-4 col-lg-3" wire:key="bundling-{{ $item->id }}">
-                    @include('partials.kartu-paket', ['item' => $item, 'detailKlik' => "openDetail('{$item->id}')"])
+                    @include('partials.kartu-paket', ['item' => $item])
                 </div>
             @empty
                 <div class="col-12">
@@ -69,6 +69,5 @@
         @endif
     </div>
 
-    @include('partials.modal-paket')
     @endif
 </section>
