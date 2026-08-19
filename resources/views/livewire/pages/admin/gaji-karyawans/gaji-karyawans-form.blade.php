@@ -62,6 +62,35 @@
             padding-left: 45px;
         }
 
+        /* Tombol pulihkan angka otomatis: DI DALAM kolom, supaya barisnya tetap
+           sejajar dengan kolom lain dan tidak menambah tinggi. Warnanya mengikuti
+           ungu khas admin, bukan abu sekunder. */
+        .btn-otomatis {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            z-index: 5;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            border: 0;
+            background: #ede9fe;
+            color: #6d28d9;
+            font-size: .72rem;
+            font-weight: 700;
+            line-height: 1;
+            padding: 5px 9px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background .15s ease, color .15s ease;
+        }
+
+        .btn-otomatis:hover { background: #ddd6fe; color: #5b21b6; }
+
+        /* Ruang untuk tombolnya, supaya angka yang diketik tidak tertimpa. */
+        .rp-wrap .form-control.ada-otomatis { padding-right: 118px; }
+
         /* Field readonly: lembut, bersih, menarik */
         .readonly-pretty {
             background-color: #f6f5ff !important;
@@ -342,25 +371,12 @@
                                 <i class="bi bi-info-circle text-muted" style="line-height:1;"
                                     title="Bawaannya dihitung otomatis dari pool di halaman Penyelesaian Task"></i>
                             </label>
-                            <div class="d-flex align-items-center gap-2">
-                                {{-- Tombol pulihkan diletakkan di sini, bukan sebagai baris
-                                     tersendiri di bawah kolom, supaya tidak memakan tinggi.
-                                     Hanya muncul saat mode manual menyala DAN angkanya beda. --}}
-                                <button type="button" x-show="manual && beda" x-cloak
-                                    class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center gap-1"
-                                    style="font-size:.75rem; line-height:1.6;"
-                                    x-on:click="pakaiOtomatis()"
-                                    x-bind:title="'Kembalikan ke hitungan otomatis: Rp ' + angka(otomatis)">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
-                                    <span x-text="'Rp ' + angka(otomatis)"></span>
-                                </button>
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" role="switch"
-                                        id="bonus_task_manual" x-model="manual"
-                                        x-on:change="if (manual) { $nextTick(() => $refs.nilai?.focus()) }
-                                                     else { nilai = otomatis }">
-                                    <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
-                                </div>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="bonus_task_manual" x-model="manual"
+                                    x-on:change="if (manual) { $nextTick(() => $refs.nilai?.focus()) }
+                                                 else { nilai = otomatis }">
+                                <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
                             </div>
                         </div>
                         <div class="rp-wrap">
@@ -371,8 +387,18 @@
                                 x-bind:readonly="!manual"
                                 x-on:input="bacaNilai()"
                                 class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror"
-                                x-bind:class="manual ? '' : 'readonly-pretty'"
+                                x-bind:class="{ 'readonly-pretty': !manual, 'ada-otomatis': manual && beda }"
                                 placeholder="0">
+
+                            {{-- Di DALAM kolom: barisnya tetap sejajar dengan kolom lain
+                                 dan tidak ada baris tambahan yang memakan tinggi. Hanya
+                                 muncul saat mode manual menyala DAN angkanya memang beda. --}}
+                            <button type="button" class="btn-otomatis" x-show="manual && beda" x-cloak
+                                x-on:click="pakaiOtomatis()"
+                                x-bind:title="'Kembalikan ke hitungan otomatis: Rp ' + angka(otomatis)">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                                <span x-text="angka(otomatis)"></span>
+                            </button>
                         </div>
                         @error('bonus_penyelesaian_task')
                         <div class="invalid-feedback d-block">{{ $message }}</div>

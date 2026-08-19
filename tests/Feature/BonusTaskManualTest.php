@@ -198,7 +198,7 @@ it('angka manual bertahan setelah pool dibagikan ulang', function () {
     expect((int) $gaji->fresh()->bonus_penyelesaian_task)->toBe(300000);
 });
 
-it('tombol pulihkan diletakkan di baris sakelar, bukan baris tersendiri', function () {
+it('tombol pulihkan berada di dalam kolom, bukan baris tersendiri', function () {
     $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
 
     $html = Livewire\Livewire::test(
@@ -206,13 +206,27 @@ it('tombol pulihkan diletakkan di baris sakelar, bukan baris tersendiri', functi
         ['gajikaryawan' => $gaji]
     )->html();
 
-    // Tombolnya berada di dalam pembungkus yang sama dengan sakelar.
-    $baris = preg_match('#<div class="d-flex align-items-center gap-2">(.*?)</div>\s*</div>#s', $html, $m)
-        ? $m[1]
-        : '';
+    // Disasar dari id kolomnya: kelas .rp-wrap dipakai belasan kolom lain di
+    // form yang sama, jadi mencari pembungkus pertama akan salah sasaran.
+    $mulai = strpos($html, 'id="bonus_penyelesaian_task"');
+    $tutup = strpos($html, '</div>', $mulai);
+    $didalam = substr($html, $mulai, $tutup - $mulai);
 
-    expect($baris)->toContain('pakaiOtomatis()')
-        ->and($baris)->toContain('bonus_task_manual');
+    // Tombol berada di dalam pembungkus kolom, sebelum pembungkus itu ditutup,
+    // sehingga barisnya tetap sejajar dengan kolom lain.
+    expect($didalam)->toContain('pakaiOtomatis()')
+        ->and($didalam)->toContain('btn-otomatis');
+});
+
+it('tombol pulihkan tidak memakai warna sekunder', function () {
+    $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
+
+    $html = Livewire\Livewire::test(
+        App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansForm::class,
+        ['gajikaryawan' => $gaji]
+    )->html();
+
+    expect($html)->not->toContain('btn-outline-secondary');
 });
 
 it('tombol pulihkan bekerja tanpa memanggil server', function () {
