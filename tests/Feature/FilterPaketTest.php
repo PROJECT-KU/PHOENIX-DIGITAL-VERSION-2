@@ -120,3 +120,22 @@ it('gambar paket memakai gaya yang sama dengan produk satuan', function () {
     expect($html)->toContain('.fs-card-media')
         ->and($html)->toContain('mediaGlow');
 });
+
+it('jarak dan grid halaman paket sama dengan halaman shop', function () {
+    $paket = file_get_contents(resource_path('views/livewire/pages/public/bundling/product-bundlings.blade.php'));
+    $shop = file_get_contents(resource_path('views/livewire/pages/public/shop-page/index.blade.php'));
+
+    // Gutter grid sama persis dengan shop.
+    expect($paket)->toContain('class="row g-3 g-lg-4"')
+        ->and($shop)->toContain('class="row g-3 g-lg-4"');
+
+    // Empat kolom mulai dari lg, sama seperti shop — bukan xl.
+    expect($paket)->toContain('col-6 col-md-4 col-lg-3')
+        ->and($paket)->not->toContain('col-6 col-md-4 col-xl-3');
+
+    // Tanpa perataan tengah, supaya kartunya tersusun dari kiri seperti shop.
+    expect($paket)->not->toContain('row g-4 justify-content-center');
+
+    // Section daftar tidak lagi memakai 60px bawaan .best-sellers di atas.
+    expect($paket)->toContain('style="padding-top: 0; padding-bottom: 60px;"');
+});

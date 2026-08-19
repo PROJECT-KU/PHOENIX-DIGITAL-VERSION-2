@@ -278,7 +278,10 @@
                 </div>
             </section>
 
-            <section id="best-sellers" class="best-sellers section">
+            {{-- Jarak disamakan dengan daftar produk di shop: .best-sellers bawaan tema
+     memberi 60px di atas dan 30px di bawah, sedangkan shop 0 di atas dan
+     60px di bawah. Ditulis inline supaya menimpa aturan tema. --}}
+            <section id="best-sellers" class="best-sellers section" style="padding-top: 0; padding-bottom: 60px;">
                 <div class="container" wire:ignore.self>
                     {{-- Filter & urutkan, kelas dan susunannya sama dengan shop. --}}
                     <div class="shop-filter">
@@ -305,12 +308,12 @@
                         <div class="shop-filter-count">{{ $bundlings->total() }} paket</div>
                     </div>
 
-                    <div class="row g-4 justify-content-center">
+                    <div class="row g-3 g-lg-4">
                         @forelse ($bundlings as $item)
                             {{-- Kartu bersama dengan beranda & etalase flash sale
                                  (partials/kartu-paket) supaya tampilan paket seragam
                                  dengan produk satuan di seluruh situs. --}}
-                            <div class="col-6 col-md-4 col-xl-3" wire:key="bundling-{{ $item->id }}">
+                            <div class="col-6 col-md-4 col-lg-3" wire:key="bundling-{{ $item->id }}">
                                 @include('partials.kartu-paket', ['item' => $item])
                             </div>
                         @empty
