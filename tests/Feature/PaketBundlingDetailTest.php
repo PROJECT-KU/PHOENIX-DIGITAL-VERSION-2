@@ -216,3 +216,69 @@ it('promo yang berakhir setelah paket masuk keranjang tidak menagih harga awal',
     // Kembali ke harga paket, bukan tertinggal di harga awal 125.000.
     expect((int) $hasil['final_total'])->toBe(99000);
 });
+
+it('halaman detail paket memakai bagian yang sama dengan detail produk shop', function () {
+    $paket = paketUji();
+
+    // Paket kedua supaya bagian "Paket Lainnya" ikut dirender, sama seperti
+    // halaman produk yang menyembunyikannya bila tidak ada rekomendasi.
+    ProductBundlings::create([
+        'nama_paket' => 'Paket Pembanding',
+        'harga_awal' => 200000,
+        'harga_bundling' => 150000,
+        'status' => 'active',
+    ]);
+
+    $html = Livewire::test(Detail::class, ['id' => $paket->id])->html();
+
+    // Empat kolom tata letak yang sama.
+    foreach (['pd-col-media', 'pd-col-trust', 'pd-col-desc', 'pd-col-info'] as $kolom) {
+        expect($html)->toContain($kolom);
+    }
+
+    // Bagian yang sama: remah roti, media, harga, jaminan, beli, wishlist.
+    foreach ([
+        'page-title ph-page-title',
+        'breadcrumbs',
+        'pd-section',
+        'pd-media',
+        'pd-badge',
+        'pd-title',
+        'pd-price',
+        'pd-features',
+        'pd-buy',
+        'pd-add',
+        'pd-wish',
+        'rel-section',
+        'rel-card',
+    ] as $bagian) {
+        expect($html)->toContain($bagian);
+    }
+});
+
+it('paket bisa disimpan ke wishlist dan muncul di halaman wishlist', function () {
+    $paket = paketUji();
+
+    // Tombol wishlist memakai id paket, sama seperti produk satuan.
+    $html = Livewire::test(Detail::class, ['id' => $paket->id])->html();
+    expect($html)->toContain("includes('{$paket->id}')");
+
+    // Halaman wishlist benar-benar menampilkannya, bukan hanya menghitungnya.
+    $wishlist = Livewire::test(App\Livewire\Pages\Public\ShopPage\WishlistPage::class)
+        ->call('load', [$paket->id])
+        ->html();
+
+    expect($wishlist)->toContain($paket->nama_paket)
+        ->and($wishlist)->toContain('/bundling/paket/'.$paket->id);
+});
+
+it('paket yang jadwalnya berakhir tidak ikut muncul di wishlist', function () {
+    $paket = paketUji();
+    $paket->update(['selesai_tayang' => now()->subHour()]);
+
+    $wishlist = Livewire::test(App\Livewire\Pages\Public\ShopPage\WishlistPage::class)
+        ->call('load', [$paket->id])
+        ->html();
+
+    expect($wishlist)->not->toContain($paket->nama_paket);
+});

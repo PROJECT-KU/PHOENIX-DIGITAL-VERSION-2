@@ -56,14 +56,23 @@ class Detail extends Component
         return $isi;
     }
 
-    /** Paket lain yang masih tayang, sebagai saran. */
+    /**
+     * Paket lain yang masih tayang, diurutkan dari yang harganya paling dekat
+     * — mengikuti "Mungkin Anda juga suka" di halaman produk satuan.
+     *
+     * Pengurutan dihitung di PHP, bukan lewat SQL: kolom harga bertipe varchar
+     * sehingga perbandingan angkanya di database tidak bisa diandalkan.
+     */
     public function paketLain()
     {
+        $harga = (int) preg_replace('/[^0-9]/', '', (string) $this->paket->harga_bundling);
+
         return ModelsProductBundlings::tayang()
             ->where('id', '!=', $this->paket->id)
-            ->latest()
-            ->take(4)
-            ->get();
+            ->get()
+            ->sortBy(fn ($p) => abs((int) preg_replace('/[^0-9]/', '', (string) $p->harga_bundling) - $harga))
+            ->take(10)
+            ->values();
     }
 
     public function addToCart()

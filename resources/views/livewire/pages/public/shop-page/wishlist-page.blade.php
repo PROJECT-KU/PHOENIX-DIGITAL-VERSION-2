@@ -11,7 +11,7 @@
 
     <section class="rel-section">
         <div class="container">
-            @if ($products->isEmpty())
+            @if ($products->isEmpty() && $pakets->isEmpty())
                 <div class="ph-empty my-4">
                     {{-- Ilustrasi beranimasi — pola & kelas animasi sama dengan
                          keranjang (pe-float / pe-glow / pe-spark), hanya gambarnya
@@ -83,6 +83,30 @@
                                     @if ($p->harga_perbulan)
                                         <div class="rel-price"><small>Mulai</small> Rp {{ number_format($p->harga_perbulan, 0, ',', '.') }}</div>
                                     @endif
+                                </div>
+                            </a>
+                        </div>
+                    @endforeach
+
+                    {{-- Paket bundling, kartu sama dengan produk satuan. --}}
+                    @foreach ($pakets as $pk)
+                        @php $hpw = \App\Support\HargaPaket::untuk($pk); @endphp
+                        <div class="rel-card" style="position:relative;">
+                            <button type="button" class="wish-remove" title="Hapus dari wishlist"
+                                @click="ids = ids.filter(i => i !== '{{ $pk->id }}'); localStorage.setItem('ph_wishlist', JSON.stringify(ids)); window.dispatchEvent(new Event('ph-wishlist-changed')); if (window.phToast) phToast('Dihapus dari wishlist', 'Wishlist', 'bi-heart'); $wire.load(ids)">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                            <a href="{{ route('bundling.detail', $pk->id) }}" style="text-decoration:none;color:inherit;">
+                                <div class="rel-thumb">
+                                    @if ($pk->gambar)
+                                        <img src="{{ asset('storage/img/ProductBundlings/'.basename($pk->gambar)) }}" alt="{{ $pk->nama_paket }}" loading="lazy">
+                                    @else
+                                        <span class="rel-noimg"><i class="bi bi-box2-heart"></i></span>
+                                    @endif
+                                </div>
+                                <div class="rel-body">
+                                    <h3 class="rel-name">{{ $pk->nama_paket }}</h3>
+                                    <div class="rel-price">Rp {{ number_format($hpw['bayar'], 0, ',', '.') }}</div>
                                 </div>
                             </a>
                         </div>
