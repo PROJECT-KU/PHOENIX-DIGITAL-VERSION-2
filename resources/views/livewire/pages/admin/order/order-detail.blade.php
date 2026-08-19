@@ -29,59 +29,6 @@ Detail Pesanan || lemon
     </div>
 
     <style>
-    /* ===== Popup ganti bukti pembayaran =====
-       Mengikuti halaman "Unggah Bukti Pembayaran" (ungu khas admin), bukan
-       tema hijau .pcek yang milik bagian pengecekan jasa. */
-    .bp-overlay { position: fixed; inset: 0; z-index: 1080; background: rgba(15, 23, 42, .58);
-        backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center;
-        padding: 18px; animation: bpFade .16s ease; }
-    @keyframes bpFade { from { opacity: 0 } to { opacity: 1 } }
-
-    .bp-modal { width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto;
-        border-radius: 20px; padding: 22px;
-        background: linear-gradient(135deg, #ffffff, #f8f9ff);
-        border: 1px solid rgba(108, 99, 255, .16);
-        box-shadow: 0 28px 70px rgba(15, 23, 42, .3);
-        animation: bpUp .2s cubic-bezier(.2, .9, .3, 1); }
-    @keyframes bpUp { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
-
-    .bp-modal i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-    .bp-modal i.bi::before { display: block; line-height: 1; }
-
-    .bp-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-    .bp-chip { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 13px; color: #fff;
-        display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem;
-        background: linear-gradient(135deg, #7c3aed, #4f46e5);
-        box-shadow: 0 8px 16px rgba(124, 58, 237, .26); }
-    .bp-head-t { font-weight: 700; font-size: .96rem; color: #1e293b; line-height: 1.25; margin: 0; }
-    .bp-head-s { font-size: .76rem; color: #8a90a2; line-height: 1.4; margin: 2px 0 0; }
-    .bp-x { flex: 0 0 auto; width: 32px; height: 32px; border: 0; border-radius: 10px;
-        background: transparent; color: #94a3b8; display: inline-flex; align-items: center;
-        justify-content: center; cursor: pointer; transition: background .16s, color .16s; }
-    .bp-x:hover { background: #eef0f7; color: #475569; }
-
-    .bp-drop { position: relative; display: block; padding: 26px 18px; text-align: center;
-        border: 2px dashed #d6d9e6; border-radius: 15px; background: #fbfcff; cursor: pointer;
-        transition: border-color .16s, background .16s; }
-    .bp-drop:hover { border-color: #7c3aed; background: #f7f5ff; }
-    .bp-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .bp-drop-ic { width: 50px; height: 50px; margin: 0 auto 10px; border-radius: 15px; color: #fff;
-        display: inline-flex; align-items: center; justify-content: center; font-size: 1.35rem;
-        background: linear-gradient(135deg, #7c3aed, #4f46e5);
-        box-shadow: 0 8px 16px rgba(124, 58, 237, .26); }
-    .bp-drop-nm { font-size: .88rem; font-weight: 600; color: #334155;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bp-drop-sub { font-size: .74rem; color: #8a90a2; margin-top: 3px; }
-
-    .bp-pratinjau { max-height: 190px; max-width: 100%; border-radius: 12px;
-        border: 1px solid #e6e8f2; box-shadow: 0 6px 16px rgba(15, 23, 42, .1); }
-
-    .bp-nota { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px;
-        padding: 11px 13px; border-radius: 12px; border: 1px solid #e5e7fb;
-        background: #f6f7ff; font-size: .78rem; line-height: 1.55; color: #4a4f6a; }
-    .bp-nota > i.bi { flex: 0 0 auto; margin-top: .12rem; color: #7c3aed; }
-
-    @media (max-width: 575.98px) { .bp-modal { padding: 18px; border-radius: 16px; } }
 
     /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine siap.
        Layout admin tidak memuat public-custom-styles.css, jadi ditulis di sini
@@ -462,11 +409,14 @@ Detail Pesanan || lemon
                              dikonfirmasi penyedia, jadi tidak ada yang diganti.
                              Formulirnya dibuka sebagai popup di bawah halaman. --}}
                         @if($this->bolehGantiBukti())
-                        <button type="button" wire:click="bukaGantiBukti" class="btn btn-sm btn-outline-primary mt-2"
+                        {{-- Mengarah ke halaman unggah bukti yang sama dengan alur draft,
+                             supaya satu pekerjaan tidak punya dua tampilan. --}}
+                        <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}"
+                            class="btn btn-sm btn-outline-primary mt-2"
                             style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;line-height:1.5;">
                             <i class="bi bi-arrow-repeat"></i>
                             <span>{{ $order->bukti_pembayaran ? 'Ganti Bukti' : 'Unggah Bukti' }}</span>
-                        </button>
+                        </a>
                         @endif
                     </span>
                 </div>
@@ -1479,73 +1429,6 @@ Detail Pesanan || lemon
 
         </div>
     </div>
-
-    {{-- ===== Popup ganti bukti pembayaran =====
-         Tampilannya mengikuti halaman Unggah Bukti Pembayaran supaya satu
-         fitur tidak punya dua wajah. --}}
-    @if ($modalBukti)
-    <div class="bp-overlay" wire:key="modal-bukti" wire:click.self="tutupGantiBukti">
-        <div class="bp-modal">
-            <div class="bp-head">
-                <span class="bp-chip"><i class="bi bi-receipt"></i></span>
-                <div class="flex-grow-1" style="min-width:0;">
-                    <p class="bp-head-t">{{ $order->bukti_pembayaran ? 'Ganti Bukti Pembayaran' : 'Unggah Bukti Pembayaran' }}</p>
-                    <p class="bp-head-s">{{ $order->order_number }}</p>
-                </div>
-                <button type="button" wire:click="tutupGantiBukti" class="bp-x" title="Tutup"><i class="bi bi-x-lg"></i></button>
-            </div>
-
-            <label class="bp-drop" wire:loading.class="opacity-50" wire:target="buktiBaru">
-                <input type="file" wire:model="buktiBaru" accept="image/*">
-                <span class="bp-drop-ic"><i class="bi bi-cloud-arrow-up"></i></span>
-
-                <div wire:loading wire:target="buktiBaru">
-                    <div class="bp-drop-nm">Mengunggah&hellip;</div>
-                </div>
-                <div wire:loading.remove wire:target="buktiBaru">
-                    @if ($buktiBaru && ! is_string($buktiBaru))
-                        <div class="bp-drop-nm">{{ $buktiBaru->getClientOriginalName() }}</div>
-                        <div class="bp-drop-sub">Klik untuk memilih gambar lain</div>
-                    @else
-                        <div class="bp-drop-nm">Klik untuk pilih gambar bukti</div>
-                        <div class="bp-drop-sub">JPG/PNG &middot; maks 4 MB</div>
-                    @endif
-                </div>
-            </label>
-
-            @error('buktiBaru')
-            <div class="text-danger mt-2 d-inline-flex align-items-start gap-1" style="font-size:.78rem;">
-                <i class="bi bi-exclamation-circle" style="margin-top:.15rem;"></i> <span>{{ $message }}</span>
-            </div>
-            @enderror
-
-            {{-- Pratinjau hanya untuk berkas yang memang bisa dipratinjau:
-                 temporaryUrl() melempar galat untuk berkas non-gambar. --}}
-            @if ($buktiBaru && ! is_string($buktiBaru) && $buktiBaru->isPreviewable())
-            <div class="mt-3 text-center">
-                <img src="{{ $buktiBaru->temporaryUrl() }}" alt="Pratinjau bukti baru" class="bp-pratinjau">
-            </div>
-            @endif
-
-            <div class="bp-nota">
-                <i class="bi bi-info-circle"></i>
-                <span>Status pesanan tidak berubah — yang diganti hanya berkas buktinya.</span>
-            </div>
-
-            <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-3">
-                <button type="button" wire:click="tutupGantiBukti"
-                    class="btn btn-light rounded-pill px-4">Batal</button>
-                <button type="button" wire:click="gantiBukti" wire:loading.attr="disabled"
-                    wire:target="gantiBukti,buktiBaru"
-                    class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-check2-circle"></i>
-                    <span wire:loading.remove wire:target="gantiBukti">Simpan Bukti</span>
-                    <span wire:loading wire:target="gantiBukti">Menyimpan&hellip;</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    @endif
 
     @include('livewire.layout.sweetalert')
 </div>

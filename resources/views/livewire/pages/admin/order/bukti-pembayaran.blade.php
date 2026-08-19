@@ -4,6 +4,10 @@ Unggah Bukti Pembayaran || lemon
 
 <div class="container-fluid">
     <style>
+        /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine
+           siap. Layout admin tidak memuat public-custom-styles.css. */
+        [x-cloak] { display: none !important; }
+
         /* ===== Perataan ikon =====
            Ikon Bootstrap (bi) memakai font-icon, jadi glyph-nya duduk mengikuti
            baseline huruf dan terlihat naik-turun terhadap teks di sebelahnya.
@@ -161,7 +165,7 @@ Unggah Bukti Pembayaran || lemon
         <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
             <div class="card-body p-4">
                 <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">Unggah Bukti Pembayaran</h3>
+                    <h3 class="gradient-text fw-bold mb-1">{{ $gantiSaja ? 'Ganti Bukti Pembayaran' : 'Unggah Bukti Pembayaran' }}</h3>
                     <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
                         {{-- Kuncinya 'name', bukan 'label' — itu yang dibaca
                              resources/views/components/breadcrumb.blade.php. --}}
@@ -169,7 +173,7 @@ Unggah Bukti Pembayaran || lemon
                             $breadcrumbs = [
                                 ['name' => 'Beranda', 'url' => route('admin.dashboard')],
                                 ['name' => 'Data Pemesanan', 'url' => route('admin.pesanantoko.index')],
-                                ['name' => 'Unggah Bukti'],
+                                ['name' => $gantiSaja ? 'Ganti Bukti' : 'Unggah Bukti'],
                             ];
                         @endphp
                         <x-breadcrumb :items="$breadcrumbs" />
@@ -251,17 +255,38 @@ Unggah Bukti Pembayaran || lemon
                         <div class="bp-nota mb-3">
                             <i class="bi bi-info-circle"></i>
                             <div>
-                                Pesanan ini masih <b>draft</b> dan belum masuk daftar pesanan aktif.
-                                Setelah bukti diunggah, statusnya berubah menjadi <b>pending</b> dan
-                                pesanan langsung bisa diproses dari halaman detail.
+                                @if ($gantiSaja)
+                                    <b>Status pesanan tidak berubah.</b> Yang diganti hanya berkas
+                                    buktinya — berkas lama akan digantikan setelah disimpan.
+                                @else
+                                    Pesanan ini masih <b>draft</b> dan belum masuk daftar pesanan aktif.
+                                    Setelah bukti diunggah, statusnya berubah menjadi <b>pending</b> dan
+                                    pesanan langsung bisa diproses dari halaman detail.
+                                @endif
                             </div>
                         </div>
 
-                        <div class="bp-drop" wire:loading.class="opacity-50" wire:target="bukti">
-                            <input type="file" wire:model="bukti" accept="image/*">
+                        {{-- Pratinjau dibaca langsung dari berkas yang dipilih di browser
+                             (URL.createObjectURL), BUKAN lewat temporaryUrl(). Alamat
+                             pratinjau bawaan Livewire berakhiran .jpg/.jpeg/.png, dan
+                             lapisan pengoptimal gambar hosting mencegat alamat semacam
+                             itu sebelum sampai ke aplikasi — pratinjaunya jadi rusak.
+                             Cara ini juga lebih cepat: tidak ada permintaan ke server. --}}
+                        <div class="bp-drop" wire:loading.class="opacity-50" wire:target="bukti"
+                            x-data="{ pratinjau: null, nama: null }"
+                            x-on:pratinjau-bersih.window="pratinjau = null; nama = null">
+                            <input type="file" wire:model="bukti" accept="image/*"
+                                x-on:change="const f = $event.target.files[0];
+                                             if (pratinjau) URL.revokeObjectURL(pratinjau);
+                                             pratinjau = f ? URL.createObjectURL(f) : null;
+                                             nama = f ? f.name : null">
                             <span class="bp-drop-ic bg-gradient-purple"><i class="bi bi-cloud-arrow-up"></i></span>
-                            <div class="fw-semibold text-dark">Klik untuk pilih gambar bukti</div>
-                            <div class="bp-head-sub mt-1">JPG/PNG · maks 4 MB</div>
+                            <div class="fw-semibold text-dark" x-text="nama || 'Klik untuk pilih gambar bukti'"></div>
+                            <div class="bp-head-sub mt-1" x-text="nama ? 'Klik untuk memilih gambar lain' : 'JPG/PNG · maks 4 MB'"></div>
+
+                            <div class="mt-3" x-show="pratinjau" x-cloak>
+                                <img :src="pratinjau" alt="Pratinjau bukti pembayaran" class="bp-pratinjau">
+                            </div>
                             <div wire:loading wire:target="bukti" class="text-primary small mt-2 d-inline-flex align-items-center gap-1">
                                 <span class="spinner-border spinner-border-sm"></span> Mengunggah...
                             </div>
@@ -273,14 +298,8 @@ Unggah Bukti Pembayaran || lemon
                             </div>
                         @enderror
 
-                        @if ($bukti && ! is_string($bukti) && $bukti->isPreviewable())
-                            <div class="mt-3 text-center">
-                                <img src="{{ $bukti->temporaryUrl() }}" alt="Pratinjau bukti pembayaran" class="bp-pratinjau">
-                            </div>
-                        @endif
-
                         <div class="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-auto pt-4">
-                            <a href="{{ route('admin.pesanantoko.index', ['activeTab' => 'draft']) }}"
+                            <a href="{{ $gantiSaja ? route('admin.pesanantoko.detail', $order) : route('admin.pesanantoko.index', ['activeTab' => 'draft']) }}"
                                 class="btn btn-secondary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-arrow-left"></i> <span>Kembali</span>
                             </a>
@@ -288,7 +307,7 @@ Unggah Bukti Pembayaran || lemon
                                 wire:target="simpan,bukti"
                                 class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-check2-circle"></i>
-                                <span wire:loading.remove wire:target="simpan">Simpan &amp; Aktifkan Pesanan</span>
+                                <span wire:loading.remove wire:target="simpan">{{ $gantiSaja ? 'Simpan Bukti' : 'Simpan &amp; Aktifkan Pesanan' }}</span>
                                 <span wire:loading wire:target="simpan">Memproses...</span>
                             </button>
                         </div>

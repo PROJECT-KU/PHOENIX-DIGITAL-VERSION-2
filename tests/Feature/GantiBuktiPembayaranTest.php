@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Pages\Admin\Order\BuktiPembayaran;
 use App\Livewire\Pages\Admin\Order\OrderDetail;
 use App\Models\Customer;
 use App\Models\Order;
@@ -45,37 +46,67 @@ it('qris dinamis tidak boleh mengganti bukti', function () {
     expect($t->instance()->bolehGantiBukti())->toBeFalse();
 });
 
-it('bukti lama diganti dan berkasnya dibersihkan', function () {
+it('detail order menautkan ke halaman unggah bukti, bukan popup', function () {
+    $order = orderBayar('transfer');
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order])->html();
+
+    // Satu pekerjaan, satu tampilan: memakai halaman yang sama dengan alur draft.
+    expect($html)->toContain('/unggah-bukti')
+        ->and($html)->not->toContain('bp-overlay');
+});
+
+it('halaman unggah bukti melayani pesanan yang sudah aktif, bukan hanya draft', function () {
+    $order = orderBayar('transfer', 'processing');
+
+    $t = Livewire::test(BuktiPembayaran::class, ['order' => $order]);
+
+    expect($t->get('gantiSaja'))->toBeTrue();
+});
+
+it('pesanan draft ditandai sebagai unggah pertama, bukan ganti', function () {
+    $order = orderBayar('transfer', 'draft');
+
+    $t = Livewire::test(BuktiPembayaran::class, ['order' => $order]);
+
+    expect($t->get('gantiSaja'))->toBeFalse();
+});
+
+it('mengganti bukti pesanan aktif TIDAK mengubah statusnya', function () {
     Storage::fake('local');
 
-    $order = orderBayar('transfer');
+    $order = orderBayar('transfer', 'processing');
     $lama = UploadedFile::fake()->image('lama.jpg')->store('bukti_pembayaran', 'local');
     $order->update(['bukti_pembayaran' => $lama]);
 
-    Livewire::test(OrderDetail::class, ['order' => $order])
-        ->set('buktiBaru', UploadedFile::fake()->image('baru.jpg'))
-        ->call('gantiBukti');
+    Livewire::test(BuktiPembayaran::class, ['order' => $order])
+        ->set('bukti', UploadedFile::fake()->image('baru.jpg'))
+        ->call('simpan');
 
-    $baru = $order->fresh()->bukti_pembayaran;
+    $segar = $order->fresh();
 
-    expect($baru)->not->toBe($lama)
-        ->and(Storage::disk('local')->exists($baru))->toBeTrue()
+    expect($segar->status)->toBe('processing')
+        ->and($segar->bukti_pembayaran)->not->toBe($lama)
         // Berkas lama tidak ditinggalkan menumpuk di disk.
         ->and(Storage::disk('local')->exists($lama))->toBeFalse();
 });
 
-it('mengganti bukti TIDAK mengubah status pesanan', function () {
+it('unggah bukti pesanan draft mengaktifkan pesanan', function () {
     Storage::fake('local');
 
-    $order = orderBayar('transfer', 'processing');
-    $order->update(['bukti_pembayaran' => UploadedFile::fake()->image('lama.jpg')->store('bukti_pembayaran', 'local')]);
+    $order = orderBayar('transfer', 'draft');
 
-    Livewire::test(OrderDetail::class, ['order' => $order])
-        ->set('buktiBaru', UploadedFile::fake()->image('baru.jpg'))
-        ->call('gantiBukti');
+    Livewire::test(BuktiPembayaran::class, ['order' => $order])
+        ->set('bukti', UploadedFile::fake()->image('bukti.jpg'))
+        ->call('simpan');
 
-    // Ini koreksi berkas, bukan perpindahan tahap pembayaran.
-    expect($order->fresh()->status)->toBe('processing');
+    expect($order->fresh()->status)->toBe('pending');
+});
+
+it('qris dinamis tidak bisa membuka halaman unggah bukti', function () {
+    $order = orderBayar('qris_dinamis');
+
+    Livewire::test(BuktiPembayaran::class, ['order' => $order])->assertStatus(404);
 });
 
 it('menolak berkas yang bukan gambar', function () {
@@ -83,81 +114,21 @@ it('menolak berkas yang bukan gambar', function () {
 
     $order = orderBayar('transfer');
 
-    Livewire::test(OrderDetail::class, ['order' => $order])
-        ->set('buktiBaru', UploadedFile::fake()->create('dokumen.pdf', 100))
-        ->call('gantiBukti')
-        ->assertHasErrors(['buktiBaru' => 'image']);
+    Livewire::test(BuktiPembayaran::class, ['order' => $order])
+        ->set('bukti', UploadedFile::fake()->create('dokumen.pdf', 100))
+        ->call('simpan')
+        ->assertHasErrors(['bukti' => 'image']);
 });
 
-it('menolak gambar lebih dari 4 MB', function () {
-    Storage::fake('local');
+it('pratinjau dibaca di browser, tidak meminta ke server', function () {
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/admin/order/bukti-pembayaran.blade.php')
+    );
 
-    $order = orderBayar('transfer');
-
-    Livewire::test(OrderDetail::class, ['order' => $order])
-        ->set('buktiBaru', UploadedFile::fake()->image('besar.jpg')->size(5000))
-        ->call('gantiBukti')
-        ->assertHasErrors(['buktiBaru' => 'max']);
-});
-
-it('popup ganti bukti tertutup sebelum dibuka', function () {
-    $order = orderBayar('transfer');
-
-    $t = Livewire::test(OrderDetail::class, ['order' => $order]);
-
-    // Disasar ke markup-nya, bukan sekadar kata "bp-overlay" — kata itu juga
-    // muncul di blok <style> walau popupnya tidak tampil.
-    expect($t->get('modalBukti'))->toBeFalse()
-        ->and($t->html())->not->toContain('<div class="bp-overlay"');
-});
-
-it('tombol membuka popup, bukan panel di dalam halaman', function () {
-    $order = orderBayar('transfer');
-
-    $html = Livewire::test(OrderDetail::class, ['order' => $order])
-        ->call('bukaGantiBukti')
-        ->html();
-
-    // Tampilannya mengikuti halaman Unggah Bukti Pembayaran (ungu khas admin),
-    // bukan tema hijau .pcek yang milik bagian pengecekan jasa.
-    expect($html)->toContain('class="bp-overlay"')
-        ->and($html)->toContain('bp-chip')
-        ->and($html)->toContain('bp-drop')
-        ->and($html)->not->toContain('pcek-form-head');
-});
-
-it('popup tertutup setelah bukti tersimpan', function () {
-    Storage::fake('local');
-
-    $order = orderBayar('transfer');
-
-    $t = Livewire::test(OrderDetail::class, ['order' => $order])
-        ->call('bukaGantiBukti')
-        ->set('buktiBaru', UploadedFile::fake()->image('baru.jpg'))
-        ->call('gantiBukti');
-
-    expect($t->get('modalBukti'))->toBeFalse()
-        ->and($order->fresh()->bukti_pembayaran)->not->toBeNull();
-});
-
-it('menutup popup membuang berkas yang belum disimpan', function () {
-    Storage::fake('local');
-
-    $order = orderBayar('transfer');
-
-    $t = Livewire::test(OrderDetail::class, ['order' => $order])
-        ->call('bukaGantiBukti')
-        ->set('buktiBaru', UploadedFile::fake()->image('batal.jpg'))
-        ->call('tutupGantiBukti');
-
-    expect($t->get('buktiBaru'))->toBeNull()
-        ->and($order->fresh()->bukti_pembayaran)->toBeNull();
-});
-
-it('qris dinamis tidak bisa membuka popup', function () {
-    $order = orderBayar('qris_dinamis');
-
-    Livewire::test(OrderDetail::class, ['order' => $order])
-        ->call('bukaGantiBukti')
-        ->assertStatus(403);
+    // temporaryUrl() menghasilkan alamat berakhiran .jpg/.jpeg/.png yang
+    // dicegat pengoptimal gambar hosting sebelum sampai ke aplikasi.
+    // Disasar ke PEMAKAIANNYA; kata "temporaryUrl" masih muncul di komentar
+    // yang menjelaskan kenapa cara itu ditinggalkan.
+    expect($blade)->toContain('URL.createObjectURL')
+        ->and($blade)->not->toContain('$bukti->temporaryUrl');
 });

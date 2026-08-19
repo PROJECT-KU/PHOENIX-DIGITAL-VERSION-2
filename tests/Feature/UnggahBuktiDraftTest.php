@@ -52,9 +52,22 @@ it('qris statis juga bisa membuka halaman unggah bukti', function () {
         ->assertStatus(200);
 });
 
-it('pesanan yang bukan draft ditolak', function () {
+it('pesanan yang bukan draft kini dilayani untuk mengganti bukti', function () {
     $order = orderDraft('transfer');
     $order->update(['status' => 'pending']);
+
+    // Dulu ditolak 404. Sejak halaman ini juga dipakai memperbaiki bukti yang
+    // salah unggah dari detail pesanan, pesanan aktif ikut dilayani — dengan
+    // penanda gantiSaja supaya statusnya tidak ikut bergeser saat disimpan.
+    $t = Livewire::test(BuktiPembayaran::class, ['order' => $order]);
+
+    $t->assertStatus(200);
+    expect($t->get('gantiSaja'))->toBeTrue();
+});
+
+it('metode pembayaran selain transfer/qris statis tetap ditolak', function () {
+    $order = orderDraft('transfer');
+    $order->update(['payment_method' => 'qris_dinamis']);
 
     Livewire::test(BuktiPembayaran::class, ['order' => $order])
         ->assertStatus(404);

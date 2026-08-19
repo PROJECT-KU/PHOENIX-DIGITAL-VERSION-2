@@ -27,18 +27,28 @@ class BuktiPembayaran extends Component
 
     public $bukti;
 
+    /**
+     * Sekadar MENGGANTI berkas, bukan mengaktifkan pesanan draft.
+     *
+     * Membedakan keduanya penting: yang pertama tidak boleh menyentuh status.
+     */
+    public bool $gantiSaja = false;
+
     public function mount(Order $order): void
     {
-        // Hanya draft pembayaran manual yang punya urusan di layar ini.
-        // QRIS dinamis punya layarnya sendiri (QrisPayment), dan pesanan yang
-        // sudah lewat draft tidak boleh diseret mundur ke sini.
+        // Layar ini melayani pembayaran yang buktinya diunggah MANUAL saja.
+        // QRIS dinamis punya layarnya sendiri (QrisPayment) karena dikonfirmasi
+        // penyedia, bukan lewat berkas.
         abort_unless(
-            $order->status === 'draft'
-            && in_array($order->payment_method, ['transfer', 'qris_statis'], true),
+            in_array($order->payment_method, ['transfer', 'qris_statis'], true),
             404
         );
 
         $this->order = $order;
+
+        // Draft → mengunggah bukti sekaligus mengaktifkan pesanan.
+        // Selain draft → admin sedang memperbaiki berkas yang salah unggah.
+        $this->gantiSaja = $order->status !== 'draft';
     }
 
     public function simpan()
@@ -57,14 +67,28 @@ class BuktiPembayaran extends Component
         // memuat data rekening pelanggan dan tidak boleh bisa dibuka lewat URL.
         $jalur = $this->bukti->store('bukti_pembayaran', 'local');
 
+        $lama = $this->order->bukti_pembayaran;
+
         // Lewat Eloquent, BUKAN query builder: OrderObserver yang mencatat modal
         // per item bergantung pada event `updated`.
-        $this->order->update([
+        //
+        // Status HANYA diubah bila pesanannya masih draft. Saat admin sekadar
+        // memperbaiki berkas yang salah unggah, tahap pembayarannya tidak boleh
+        // ikut bergeser.
+        $this->order->update(array_filter([
             'bukti_pembayaran' => $jalur,
-            'status' => 'pending',
-        ]);
+            'status' => $this->gantiSaja ? null : 'pending',
+        ], fn ($nilai) => $nilai !== null));
 
-        session()->flash('successCreated', 'Bukti pembayaran tersimpan. Pesanan kini aktif dan siap diproses.');
+        // Berkas lama dihapus SETELAH yang baru tersimpan, supaya kegagalan di
+        // tengah tidak meninggalkan pesanan tanpa bukti sama sekali.
+        if ($lama && $lama !== $jalur && \Illuminate\Support\Facades\Storage::disk('local')->exists($lama)) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($lama);
+        }
+
+        session()->flash('successCreated', $this->gantiSaja
+            ? 'Bukti pembayaran berhasil diganti.'
+            : 'Bukti pembayaran tersimpan. Pesanan kini aktif dan siap diproses.');
 
         return redirect()->route('admin.pesanantoko.detail', $this->order);
     }
