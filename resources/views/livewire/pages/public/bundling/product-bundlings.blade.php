@@ -286,7 +286,7 @@
                                  (partials/kartu-paket) supaya tampilan paket seragam
                                  dengan produk satuan di seluruh situs. --}}
                             <div class="col-6 col-md-4 col-xl-3" wire:key="bundling-{{ $item->id }}">
-                                @include('partials.kartu-paket', ['item' => $item, 'detailKlik' => null])
+                                @include('partials.kartu-paket', ['item' => $item, 'detailKlik' => "openDetail('{$item->id}')"])
                             </div>
                         @empty
                             <div class="col-12">
@@ -357,12 +357,18 @@
                             </div>
                         @endforelse
 
-                        {{-- Paginasi 6 per halaman; sisanya ada di halaman berikutnya. --}}
-                        <div class="col-12 mt-4">{{ $bundlings->links('pagination.ph') }}</div>
+                        {{-- Paginasi seragam dengan halaman shop. --}}
+                        @if ($bundlings->hasPages())
+                            <div class="col-12 mt-5 ph-pagination">
+                                {{ $bundlings->links('pagination.ph') }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </section><!-- /Best Sellers Section -->
         </div>
     </section>
     <!-- end list product -->
+
+    @include('partials.modal-paket')
 </main>

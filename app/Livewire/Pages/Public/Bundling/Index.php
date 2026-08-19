@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Public\Bundling;
 
+use App\Livewire\Concerns\DetailPaket;
 use App\Livewire\Concerns\MengirimPixel;
 use App\Models\ProductBundlings;
 use Livewire\Attributes\Layout;
@@ -10,6 +11,7 @@ use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use DetailPaket;
     use MengirimPixel;
 
     /**
@@ -30,9 +32,6 @@ class Index extends Component
     private const PER_HALAMAN = 8;
 
     // Modal detail bundling
-    public bool $showBundleDetail = false;
-
-    public ?array $detailBundle = null;
 
     use WithPagination;
 
@@ -86,47 +85,6 @@ class Index extends Component
         $this->dispatch('cart-updated', count: $this->getCartCount());
         $this->kirimPixel('AddToCart', $this->pixelDariBarisKeranjang($cart[$cartKey]));
         $this->dispatch('cart-success', message: 'Bundling berhasil ditambahkan ke keranjang!');
-    }
-
-    /** Buka modal detail bundling. */
-    public function openDetail($bundlingId)
-    {
-        $bundling = ProductBundlings::find($bundlingId);
-        if (! $bundling) {
-            $this->dispatch('cart-error', message: 'Bundling tidak ditemukan.');
-
-            return;
-        }
-
-        $durs = $bundling->durations ?? [];
-        $products = [];
-        foreach ([1, 2, 3, 4, 5] as $i) {
-            $p = $bundling->{'product'.$i};
-            if ($p) {
-                $dur = $durs['product_'.$i] ?? null;
-                $products[] = [
-                    'nama' => $p->nama_akun,
-                    'dur_value' => (int) ($dur['value'] ?? 1),
-                    'dur_type' => ucfirst($dur['type'] ?? 'bulan'),
-                ];
-            }
-        }
-
-        $this->detailBundle = [
-            'id' => $bundling->id,
-            'nama' => $bundling->nama_paket,
-            'gambar' => $bundling->gambar,
-            'deskripsi' => $bundling->deskripsi,
-            'produk' => $products,
-            'harga_awal' => $bundling->harga_awal,
-            'harga_bundling' => $bundling->harga_bundling,
-        ];
-        $this->showBundleDetail = true;
-    }
-
-    public function closeDetail()
-    {
-        $this->showBundleDetail = false;
     }
 
     private function getCartCount(): int

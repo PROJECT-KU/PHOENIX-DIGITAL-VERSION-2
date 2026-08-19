@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Public\Bundling;
 
+use App\Livewire\Concerns\DetailPaket;
 use App\Livewire\Concerns\MengirimPixel;
 use App\Models\ProductBundlings as ModelsProductBundlings;
 use Livewire\Attributes\Layout;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 
 class ProductBundlings extends Component
 {
+    use DetailPaket;
     use MengirimPixel;
     use WithPagination;
 

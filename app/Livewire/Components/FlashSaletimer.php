@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Components;
 
+use App\Livewire\Concerns\DetailPaket;
 use App\Models\Product;
 use App\Services\PromoService;
 use Livewire\Component;
 
 class FlashSaletimer extends Component
 {
+    use DetailPaket;
+
     public $flashSale = null;
 
     public $timeRemaining = [];
@@ -406,6 +409,10 @@ class FlashSaletimer extends Component
         ];
 
         session()->put('cart', $cart);
+
+        // Bila ditambah dari modal detail, modalnya ditutup supaya pengunjung
+        // langsung melihat kembali etalase.
+        $this->showBundleDetail = false;
 
         $this->dispatch('cart-updated', count: count($cart));
         $this->dispatch('cart-success', message: 'Paket berhasil ditambahkan ke keranjang!');

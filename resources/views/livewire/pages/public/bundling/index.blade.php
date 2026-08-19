@@ -58,70 +58,17 @@
                 </div>
             @endif
         @else
-            {{-- pagination.ph: tampilan paginasi Bootstrap milik proyek ini. links()
-                 polos memakai markup Tailwind bawaan Laravel, yang di situs ini
-                 nyaris tak terlihat sehingga halaman 2 seolah tidak ada. --}}
-            <div class="mt-4">{{ $bundlings->links('pagination.ph') }}</div>
+            {{-- Paginasi seragam dengan halaman shop: pembungkus .ph-pagination
+                 yang menengahkan, dan hanya tampil bila memang lebih dari
+                 satu halaman. --}}
+            @if ($bundlings->hasPages())
+                <div class="mt-5 ph-pagination">
+                    {{ $bundlings->links('pagination.ph') }}
+                </div>
+            @endif
         @endif
     </div>
 
-    {{-- ===== Modal Detail Bundling (isi sama seperti card /bundling/product) ===== --}}
-    @if ($showBundleDetail && $detailBundle)
-        @php
-            $dAwal = (int) preg_replace('/[^0-9]/', '', (string) $detailBundle['harga_awal']);
-            $dBundle = (int) preg_replace('/[^0-9]/', '', (string) $detailBundle['harga_bundling']);
-        @endphp
-        <div class="fs-modal-overlay" wire:key="bd-detail-modal" wire:click.self="closeDetail">
-            <div class="fs-modal bd-detail">
-                <button type="button" class="fs-modal-close" wire:click="closeDetail" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
-
-                <div class="bdl-card bdl-card--modal">
-                    {{-- Header otomatis dari data paket. --}}
-                    @include('partials.bundling-header', [
-                        'produk' => collect($detailBundle['produk'] ?? [])->pluck('nama')->all(),
-                        'nama' => $detailBundle['nama'],
-                    ])
-
-                    @include('partials.bundling-deskripsi', ['teks' => $detailBundle['deskripsi'] ?? ''])
-
-                    <div class="text-center mb-3">
-                        <span class="bdl-promo">PROMO HARI INI!</span>
-                    </div>
-
-                    <div class="text-center mb-3">
-                        @if ($dAwal > $dBundle && $dAwal > 0)
-                            <div class="bdl-price-old">Rp {{ number_format($dAwal, 0, ',', '.') }}</div>
-                        @endif
-                        <div>
-                            <span class="bdl-price-now">Rp {{ number_format($dBundle, 0, ',', '.') }}</span>
-                            <span class="bdl-price-unit">/ paket</span>
-                        </div>
-                    </div>
-
-                    @if (!empty($detailBundle['produk']))
-                        <div class="bdl-incl mb-3">
-                            <div class="bdl-incl-title"><i class="bi bi-box-seam"></i> Termasuk dalam paket</div>
-                            @foreach ($detailBundle['produk'] as $pr)
-                                <div class="bdl-incl-row">
-                                    <span class="bdl-incl-name">
-                                        <i class="bi bi-check-circle-fill"></i>{{ $pr['nama'] }}
-                                    </span>
-                                    <span class="bdl-dur-badge">{{ $pr['dur_value'] }} {{ $pr['dur_type'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-
-                    <button type="button" class="bdl-order-btn mt-auto" wire:click="addToCart('{{ $detailBundle['id'] }}')"
-                        wire:loading.attr="disabled" wire:target="addToCart('{{ $detailBundle['id'] }}')">
-                        <span wire:loading.remove wire:target="addToCart('{{ $detailBundle['id'] }}')">Pesan Sekarang!</span>
-                        <span wire:loading wire:target="addToCart('{{ $detailBundle['id'] }}')">Memproses...</span>
-                    </button>
-
-                    <p class="bdl-foot mt-3 mb-0">🎉 <b>Jangan lewatkan kesempatan terbatas ini!</b> Promo bisa berakhir kapan saja.</p>
-                </div>
-            </div>
-        </div>
-    @endif
+    @include('partials.modal-paket')
     @endif
 </section>
