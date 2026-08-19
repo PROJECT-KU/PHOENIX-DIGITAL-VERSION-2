@@ -213,7 +213,7 @@ class OrderItem extends Model
             return null;
         }
 
-        return asset('storage/order-bonus/' . $this->bonus_file);
+        return asset('storage/order-bonus/'.$this->bonus_file);
     }
 
     // Hitung end_date berdasarkan start_date + durasi beli + bonus durasi
@@ -293,7 +293,7 @@ class OrderItem extends Model
 
         $sisa = (int) ceil(now()->floatDiffInDays($this->end_date, false));
 
-        return $sisa . ' hari lagi';
+        return $sisa.' hari lagi';
     }
 
     // Check apakah akan expire dalam X hari

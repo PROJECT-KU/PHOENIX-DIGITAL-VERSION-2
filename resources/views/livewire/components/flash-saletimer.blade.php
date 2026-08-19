@@ -150,7 +150,13 @@
                                         @endif
                                     </div>
                                     <div class="fs-actions">
-                                        <a href="{{ route('bundling.index') }}" class="fs-btn-view w-100">Lihat Paket</a>
+                                        <button type="button" wire:click="tambahPaket('{{ $paket->id }}')"
+                                            wire:loading.attr="disabled" wire:target="tambahPaket('{{ $paket->id }}')"
+                                            class="fs-btn-cart">
+                                            <span wire:loading.remove wire:target="tambahPaket('{{ $paket->id }}')"><i class="bi bi-cart-plus"></i> Keranjang</span>
+                                            <span wire:loading wire:target="tambahPaket('{{ $paket->id }}')"><span class="spinner-border spinner-border-sm"></span></span>
+                                        </button>
+                                        <a href="{{ route('bundling.index') }}" class="fs-btn-view">Lihat</a>
                                     </div>
                                 </div>
                             </div>

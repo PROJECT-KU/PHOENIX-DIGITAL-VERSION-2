@@ -35,37 +35,37 @@ class RolePermissionEdit extends Component
      */
     public array $moduleMeta = [
         // Dashboard
-        'dashboard'        => ['Dashboard', 'bi-grid-fill', '#4f46e5,#6366f1'],
+        'dashboard' => ['Dashboard', 'bi-grid-fill', '#4f46e5,#6366f1'],
         // Pesanan
-        'pesananrsc'       => ['Pesanan RSC', 'bi-cart', '#2563eb,#0ea5e9'],
-        'pemesanantoko'    => ['Pesanan Toko', 'bi-cart-check', '#2563eb,#0ea5e9'],
+        'pesananrsc' => ['Pesanan RSC', 'bi-cart', '#2563eb,#0ea5e9'],
+        'pemesanantoko' => ['Pesanan Toko', 'bi-cart-check', '#2563eb,#0ea5e9'],
         // E-Commerce
-        'banners'          => ['Data Banner', 'bi-shop', '#0d9488,#14b8a6'],
-        'productreview'    => ['Moderasi Ulasan Produk', 'bi-star-half', '#0d9488,#14b8a6'],
-        'blog'             => ['Blog / Artikel', 'bi-journal-richtext', '#0d9488,#14b8a6'],
+        'banners' => ['Data Banner', 'bi-shop', '#0d9488,#14b8a6'],
+        'productreview' => ['Moderasi Ulasan Produk', 'bi-star-half', '#0d9488,#14b8a6'],
+        'blog' => ['Blog / Artikel', 'bi-journal-richtext', '#0d9488,#14b8a6'],
         'customer_message' => ['Pesan Masuk Pelanggan', 'bi-chat-dots', '#0d9488,#14b8a6'],
         // Promo
-        'promo'            => ['Promo', 'bi-tag', '#d97706,#f59e0b'],
+        'promo' => ['Promo', 'bi-tag', '#d97706,#f59e0b'],
         // Produk
-        'dataakun'         => ['Data Akun', 'bi-person-badge', '#7c3aed,#6d28d9'],
-        'product'          => ['Product', 'bi-box', '#7c3aed,#6d28d9'],
-        'bundlings'        => ['Product Bundling', 'bi-boxes', '#7c3aed,#6d28d9'],
+        'dataakun' => ['Data Akun', 'bi-person-badge', '#7c3aed,#6d28d9'],
+        'product' => ['Product', 'bi-box', '#7c3aed,#6d28d9'],
+        'bundlings' => ['Product Bundling', 'bi-boxes', '#7c3aed,#6d28d9'],
         // Pelanggan
-        'customer'         => ['Pelanggan', 'bi-people', '#0891b2,#06b6d4'],
+        'customer' => ['Pelanggan', 'bi-people', '#0891b2,#06b6d4'],
         // Keuangan
-        'cashflow'         => ['Cashflow', 'bi-cash-coin', '#059669,#10b981'],
-        'spending'         => ['Pengeluaran', 'bi-cash-stack', '#059669,#10b981'],
-        'loan'             => ['Peminjaman', 'bi-wallet2', '#059669,#10b981'],
-        'gajikaryawan'     => ['Gaji Karyawan', 'bi-coin', '#059669,#10b981'],
+        'cashflow' => ['Cashflow', 'bi-cash-coin', '#059669,#10b981'],
+        'spending' => ['Pengeluaran', 'bi-cash-stack', '#059669,#10b981'],
+        'loan' => ['Peminjaman', 'bi-wallet2', '#059669,#10b981'],
+        'gajikaryawan' => ['Gaji Karyawan', 'bi-coin', '#059669,#10b981'],
         // Akun
-        'roles'            => ['Pengaturan Role', 'bi-person-gear', '#e11d48,#f43f5e'],
-        'permission'       => ['Permission Akun', 'bi-shield-lock', '#e11d48,#f43f5e'],
-        'users'            => ['Data User', 'bi-person', '#e11d48,#f43f5e'],
+        'roles' => ['Pengaturan Role', 'bi-person-gear', '#e11d48,#f43f5e'],
+        'permission' => ['Permission Akun', 'bi-shield-lock', '#e11d48,#f43f5e'],
+        'users' => ['Data User', 'bi-person', '#e11d48,#f43f5e'],
         // Karyawan & Karir
-        'karyawan'         => ['Karyawan', 'bi-person-vcard', '#db2777,#ec4899'],
-        'lowongan'         => ['Lowongan Kerja', 'bi-briefcase', '#db2777,#ec4899'],
-        'pelamar'          => ['Pelamar', 'bi-file-earmark-person', '#db2777,#ec4899'],
-        'message'          => ['Pesan Masuk', 'bi-envelope', '#db2777,#ec4899'],
+        'karyawan' => ['Karyawan', 'bi-person-vcard', '#db2777,#ec4899'],
+        'lowongan' => ['Lowongan Kerja', 'bi-briefcase', '#db2777,#ec4899'],
+        'pelamar' => ['Pelamar', 'bi-file-earmark-person', '#db2777,#ec4899'],
+        'message' => ['Pesan Masuk', 'bi-envelope', '#db2777,#ec4899'],
     ];
 
     public function mount(Role $role)
@@ -132,11 +132,11 @@ class RolePermissionEdit extends Component
             // Sync permissions
             $this->role->permissions()->sync($this->selectedPermissions);
 
-            session()->flash('success', 'Permission berhasil diperbarui untuk role: ' . $this->role->name);
+            session()->flash('success', 'Permission berhasil diperbarui untuk role: '.$this->role->name);
 
             return redirect()->route('admin.account.role');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal memperbarui permission: ' . $e->getMessage());
+            session()->flash('error', 'Gagal memperbarui permission: '.$e->getMessage());
         }
     }
 

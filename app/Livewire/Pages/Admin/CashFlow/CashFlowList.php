@@ -608,7 +608,7 @@ class CashFlowList extends Component
      *
      * Akun tanpa tautan produk dilewati (tidak bisa diakui ke produk mana pun).
      *
-     * @return array<string,float>  product_id => total penjualan RSC
+     * @return array<string,float> product_id => total penjualan RSC
      */
     protected function penjualanRscPerProduk(): array
     {
@@ -649,7 +649,7 @@ class CashFlowList extends Component
      * fitur Modal tidak mungkin berbeda.
      *
      * @param  array<int,string>  $privateIds  id produk bertipe private
-     * @return array<string,float>  product_id => total modal
+     * @return array<string,float> product_id => total modal
      */
     protected function modalRscPrivatePerProduk(array $privateIds): array
     {

@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Payment;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 
 class PaymentService
 {
@@ -50,7 +50,7 @@ class PaymentService
                     'id' => $item->product_id,
                     'price' => (int) $item->price,
                     'quantity' => $item->quantity,
-                    'name' => $item->product_name . ' - ' . $item->getDurationLabel(),
+                    'name' => $item->product_name.' - '.$item->getDurationLabel(),
                 ];
             }
 
@@ -109,7 +109,7 @@ class PaymentService
                 'payment' => $payment,
             ];
         } catch (\Exception $e) {
-            Log::error('Payment creation failed: ' . $e->getMessage());
+            Log::error('Payment creation failed: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -154,7 +154,7 @@ class PaymentService
 
             return ['success' => true];
         } catch (\Exception $e) {
-            Log::error('Payment callback error: ' . $e->getMessage());
+            Log::error('Payment callback error: '.$e->getMessage());
 
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -250,7 +250,7 @@ class PaymentService
             ];
         } catch (\Exception $e) {
 
-            Log::error('QRIS Create Error: ' . $e->getMessage());
+            Log::error('QRIS Create Error: '.$e->getMessage());
 
             return [
                 'success' => false,
@@ -295,7 +295,7 @@ class PaymentService
             return false;
         } catch (\Exception $e) {
 
-            Log::error('QRIS Check Error: ' . $e->getMessage());
+            Log::error('QRIS Check Error: '.$e->getMessage());
 
             return false;
         }

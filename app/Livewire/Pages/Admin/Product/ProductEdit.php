@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Product;
 
 use App\Models\Product;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class ProductEdit extends Component

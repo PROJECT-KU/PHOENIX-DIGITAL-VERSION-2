@@ -8,15 +8,15 @@ use App\Models\Promo;
 use App\Observers\OrderObserver;
 use App\Services\PromoService;
 use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Notifications\Events\NotificationSent;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Notifications\Events\NotificationSent;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {

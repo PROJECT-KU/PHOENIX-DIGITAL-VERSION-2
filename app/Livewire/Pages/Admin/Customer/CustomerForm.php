@@ -54,7 +54,7 @@ class CustomerForm extends Component
 
         $this->validate([
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|unique:customers,email,' . ($this->customer->id ?? null),
+            'email' => 'nullable|email|unique:customers,email,'.($this->customer->id ?? null),
             'phone' => 'required|string|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|max:15',
             'statusMember' => 'required|string',
         ]);
@@ -80,7 +80,7 @@ class CustomerForm extends Component
             $this->resetForm();
             $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan customer: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menambahkan customer: '.$e->getMessage());
             $this->dispatch('failed-create-data-customer');
         }
     }
@@ -111,7 +111,7 @@ class CustomerForm extends Component
 
                 if ($oldStatus === 'non-active') {
                     if ($this->customer->point > 0) {
-                        session()->flash('success', 'Customer berhasil diupdate. Poin member telah dihitung: ' . number_format($this->customer->point, 0, ',', '.') . ' poin dari semua transaksi tahun ini');
+                        session()->flash('success', 'Customer berhasil diupdate. Poin member telah dihitung: '.number_format($this->customer->point, 0, ',', '.').' poin dari semua transaksi tahun ini');
                     } else {
                         session()->flash('success', 'Customer berhasil diupdate sebagai member aktif');
                     }
@@ -127,7 +127,7 @@ class CustomerForm extends Component
             // event customer-updated (app.js) dihapus agar tidak dobel & seragam.
             $this->redirectRoute('admin.customer.index', navigate: true);
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal mengupdate customer: ' . $e->getMessage());
+            session()->flash('error', 'Gagal mengupdate customer: '.$e->getMessage());
             $this->dispatch('failed-update-data-customer');
         }
     }

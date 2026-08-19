@@ -79,7 +79,7 @@ class SyncRscPrivateCostAction
      * Return kosong bila status bukan 'baru' atau tidak ada akun private.
      *
      * @param  PemesananRsc  $rep  baris representatif batch
-     * @return array<string,float>  product_id => total modal
+     * @return array<string,float> product_id => total modal
      */
     public function modalPerProduk(PemesananRsc $rep): array
     {

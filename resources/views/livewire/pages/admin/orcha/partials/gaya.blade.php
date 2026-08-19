@@ -1496,4 +1496,5 @@
         padding: 1.5rem;
         font-size: .9rem;
     }
+
 </style>

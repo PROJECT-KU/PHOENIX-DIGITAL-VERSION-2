@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Pages\Public\ShopPage;
 
+use App\Livewire\Concerns\MengirimPixel;
 use App\Models\JasaDraftUpload;
 use App\Models\Product;
 use App\Services\PromoService;
@@ -9,14 +10,12 @@ use App\Support\PdfPageCounter;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
-use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 class ProductDetail extends Component
 {
     use MengirimPixel;
-
     use WithFileUploads;
 
     public $product;

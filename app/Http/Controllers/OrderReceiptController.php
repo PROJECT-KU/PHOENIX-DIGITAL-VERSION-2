@@ -28,6 +28,6 @@ class OrderReceiptController extends Controller
         ]);
         $pdf->setPaper('a4', 'portrait');
 
-        return $pdf->stream('Struk-' . $order->order_number . '.pdf');
+        return $pdf->stream('Struk-'.$order->order_number.'.pdf');
     }
 }

@@ -124,9 +124,18 @@ class PromoService
                     return false;
                 }
 
-                // Check if promo applies to this product
-                // Jika products kosong = berlaku untuk semua produk
-                $appliesToProduct = $promo->products->isEmpty()
+                // Daftar produk kosong = berlaku untuk SEMUA produk — tapi hanya
+                // bila promo ini memang tidak menyasar apa pun secara khusus.
+                //
+                // Sejak paket bundling bisa dilampirkan ke promo, "kosong" tidak
+                // lagi otomatis berarti "semua": admin yang melampirkan HANYA
+                // paket meninggalkan daftar produk kosong, dan tanpa penjagaan
+                // ini promo tersebut mendiskon seluruh produk di toko — padahal
+                // yang dimaksud cuma satu paket.
+                $menyasarKhusus = $promo->products->isNotEmpty()
+                    || $promo->bundlings->isNotEmpty();
+
+                $appliesToProduct = ! $menyasarKhusus
                     || $promo->products->contains('id', $item['product_id']);
 
                 return $appliesToProduct && $promo->canBeUsedBy($customer);

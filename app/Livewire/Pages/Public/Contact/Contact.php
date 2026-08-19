@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Public\Contact;
 
-use App\Models\CustomerMessage;
 use App\Models\Banners;
+use App\Models\CustomerMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
@@ -30,7 +30,7 @@ class Contact extends Component
             return;
         }
 
-        $key = 'contact-form:' . $request->ip();
+        $key = 'contact-form:'.$request->ip();
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $seconds = RateLimiter::availableIn($key);
             $this->addError('rate_limit', "Terlalu banyak percobaan. Silakan tunggu $seconds detik lagi.");
@@ -65,6 +65,7 @@ class Contact extends Component
     public function render()
     {
         $banners = Banners::tayang()->get();
+
         return view('livewire.pages.public.contact.contact', [
             'banners' => $banners,
         ]);

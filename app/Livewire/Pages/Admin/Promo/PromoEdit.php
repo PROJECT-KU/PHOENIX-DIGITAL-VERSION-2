@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Promo;
 
 use App\Models\Promo;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class PromoEdit extends Component

@@ -51,7 +51,7 @@ class Ebook extends Model
     // URL viewer view-only (link pendek, tanpa expose file/uuid)
     public function getViewUrl(): ?string
     {
-        return $this->share_token ? url('/e/' . $this->share_token) : null;
+        return $this->share_token ? url('/e/'.$this->share_token) : null;
     }
 
     // URL unduh untuk ADMIN (terproteksi auth), bukan untuk pelanggan

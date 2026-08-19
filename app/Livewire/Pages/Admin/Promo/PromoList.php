@@ -3,11 +3,8 @@
 namespace App\Livewire\Pages\Admin\Promo;
 
 use App\Models\Promo;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Carbon;
 
 class PromoList extends Component
 {
@@ -38,6 +35,7 @@ class PromoList extends Component
             // Pengecekan status is_active
             if ($promo->is_active) {
                 $this->dispatch('promoDeleteError', message: 'Promo masih aktif! Nonaktifkan promo terlebih dahulu sebelum menghapus.');
+
                 return;
             }
 
@@ -47,7 +45,7 @@ class PromoList extends Component
             session()->flash('success', 'Promo berhasil dihapus');
             $this->dispatch('promoDeleted');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menghapus promo: ' . $e->getMessage());
+            session()->flash('error', 'Gagal menghapus promo: '.$e->getMessage());
             $this->dispatch('promoDeleteError', message: 'Terjadi kesalahan sistem saat menghapus data.');
         }
     }
@@ -69,16 +67,16 @@ class PromoList extends Component
 
         $promos = Promo::query()
             ->when($this->searchDataPromo, function ($query) {
-                $query->where('nama_promo', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('kode_promo', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('tipe_promo', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('kode_promo', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('diskon_member_persen', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('diskon_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('diskon_non_member_persen', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhere('diskon_non_member_nominal', 'like', '%' . $this->searchDataPromo . '%')
-                    ->orWhereRaw("CASE WHEN is_active = 1 THEN 'aktif' ELSE 'nonaktif' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%'])
-                    ->orWhereRaw("CASE WHEN show_on_homepage = 1 THEN 'homepage' ELSE 'biasa' END LIKE ?", ['%' . strtolower($this->searchDataPromo) . '%']);
+                $query->where('nama_promo', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('kode_promo', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('tipe_promo', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('kode_promo', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('diskon_member_persen', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('diskon_member_nominal', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('diskon_non_member_persen', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhere('diskon_non_member_nominal', 'like', '%'.$this->searchDataPromo.'%')
+                    ->orWhereRaw("CASE WHEN is_active = 1 THEN 'aktif' ELSE 'nonaktif' END LIKE ?", ['%'.strtolower($this->searchDataPromo).'%'])
+                    ->orWhereRaw("CASE WHEN show_on_homepage = 1 THEN 'homepage' ELSE 'biasa' END LIKE ?", ['%'.strtolower($this->searchDataPromo).'%']);
             })
             ->latest()
             ->paginate(10);

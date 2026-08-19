@@ -2,20 +2,22 @@
 
 namespace App\Livewire\Pages\Public\Bundling;
 
-use App\Models\ProductBundlings as ModelsProductBundlings;
 use App\Livewire\Concerns\MengirimPixel;
-use Livewire\Component;
+use App\Models\ProductBundlings as ModelsProductBundlings;
 use Livewire\Attributes\Layout;
-use Livewire\WithPagination;
 use Livewire\Attributes\On;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class ProductBundlings extends Component
 {
     use MengirimPixel;
-
     use WithPagination;
+
     public $perPage = 4;
+
     protected $paginationTheme = 'bootstrap';
+
     public $search = '';
 
     public function mount()
@@ -65,7 +67,7 @@ class ProductBundlings extends Component
                 'type' => 'bundling',
                 'price' => $price,
                 'quantity' => 1,
-                'subtotal' => $price
+                'subtotal' => $price,
             ];
         }
         // session()->put('cart', $cart);
@@ -84,6 +86,7 @@ class ProductBundlings extends Component
     private function getCartCount(): int
     {
         $cart = session()->get('cart', []);
+
         return count($cart);
     }
 

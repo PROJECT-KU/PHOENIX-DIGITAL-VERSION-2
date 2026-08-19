@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Loan;
 
 use App\Models\Loan;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class LoanEdit extends Component

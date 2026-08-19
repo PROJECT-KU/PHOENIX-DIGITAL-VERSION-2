@@ -34,8 +34,8 @@ class EbookList extends Component
             return;
         }
 
-        if ($ebook->file && Storage::disk('local')->exists('ebooks/' . $ebook->file)) {
-            Storage::disk('local')->delete('ebooks/' . $ebook->file);
+        if ($ebook->file && Storage::disk('local')->exists('ebooks/'.$ebook->file)) {
+            Storage::disk('local')->delete('ebooks/'.$ebook->file);
         }
 
         $ebook->delete();

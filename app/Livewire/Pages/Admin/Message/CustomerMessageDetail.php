@@ -8,7 +8,9 @@ use Livewire\Component;
 class CustomerMessageDetail extends Component
 {
     public CustomerMessage $message;
+
     public $status;
+
     public $priority;
 
     public function mount(CustomerMessage $message)

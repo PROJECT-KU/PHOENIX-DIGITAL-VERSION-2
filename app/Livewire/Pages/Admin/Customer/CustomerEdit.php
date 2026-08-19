@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Customer;
 
 use App\Models\Customer;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class CustomerEdit extends Component

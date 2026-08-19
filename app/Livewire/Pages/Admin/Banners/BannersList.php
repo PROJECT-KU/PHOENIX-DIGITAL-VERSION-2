@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Banners;
 
 use App\Models\Banners;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -38,7 +37,7 @@ class BannersList extends Component
 
         // Hapus file fisik jika ada
         if ($Banners->gambar) {
-            $filePath = storage_path('app/public/img/banners/' . $Banners->gambar);
+            $filePath = storage_path('app/public/img/banners/'.$Banners->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
@@ -49,7 +48,6 @@ class BannersList extends Component
 
         $this->dispatch('Banners-deleted', id: $id);
     }
-
 
     public function render()
     {

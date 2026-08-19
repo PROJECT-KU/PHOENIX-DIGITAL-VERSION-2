@@ -11,7 +11,7 @@ class CustomerMessage extends Model
     {
         static::creating(function ($message) {
             // Generate ticket unik: format TKT-XXXX-XXXX
-            $message->ticket = 'TKT-' . strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4));
+            $message->ticket = 'TKT-'.strtoupper(Str::random(4)).'-'.strtoupper(Str::random(4));
         });
     }
 

@@ -278,7 +278,7 @@ class ProcessOrder extends Component
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal memproses order: ' . $e->getMessage());
+            session()->flash('error', 'Gagal memproses order: '.$e->getMessage());
         }
     }
 

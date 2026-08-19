@@ -2,18 +2,17 @@
 
 namespace App\Livewire\Pages\Public\ShopPage;
 
+use App\Livewire\Concerns\MengirimPixel;
 use App\Models\Product;
 use App\Services\PromoService;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
-use App\Livewire\Concerns\MengirimPixel;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
     use MengirimPixel;
-
     use WithPagination;
 
     protected $paginationTheme = 'bootstrap';
@@ -87,7 +86,7 @@ class Index extends Component
         $this->search = $search;
 
         if (! empty(trim($search))) {
-            $this->redirect('/shop?search=' . urlencode($search));
+            $this->redirect('/shop?search='.urlencode($search));
         } else {
             $this->redirect('/shop', navigate: true);
         }
@@ -353,7 +352,6 @@ class Index extends Component
     {
         return $this->promoService->getBestProductDiscount($productId, null);
     }
-
 
     #[Layout('layouts.guest')]
     public function render()

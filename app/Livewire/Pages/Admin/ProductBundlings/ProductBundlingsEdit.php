@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\ProductBundlings;
 
 use App\Models\ProductBundlings;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class ProductBundlingsEdit extends Component

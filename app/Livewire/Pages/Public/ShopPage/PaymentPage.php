@@ -187,7 +187,7 @@ class PaymentPage extends Component
             return;
         }
 
-        $writer = new PngWriter();
+        $writer = new PngWriter;
 
         $qrCode = new QrCode(
             $this->qrisContent

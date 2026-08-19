@@ -16,7 +16,7 @@ return new class extends Migration
         // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
         // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE testimonis MODIFY status VARCHAR(20) NULL");
+            DB::statement('ALTER TABLE testimonis MODIFY status VARCHAR(20) NULL');
         }
 
         // Semua non-active dijadikan 'pending' untuk ditinjau ulang admin

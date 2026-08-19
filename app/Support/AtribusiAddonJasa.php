@@ -67,9 +67,9 @@ class AtribusiAddonJasa
      * @param  Closure  $filterOrder  Menerapkan status paid + periode ke query order.
      * @param  ?string  $hargaCutoff  Batas tanggal harga modal yang berlaku.
      * @return array{penjualan: array<string,float>, modal: array<string,float>, jumlah: array<string,int>}
-     *         Semuanya dikunci product_id. 'jumlah' = banyaknya PEMERIKSAAN
-     *         add-on, dipakai agar rincian modal bisa digabung ke baris
-     *         "1 kali" produk itu (bukan baris terpisah).
+     *                                                                                                      Semuanya dikunci product_id. 'jumlah' = banyaknya PEMERIKSAAN
+     *                                                                                                      add-on, dipakai agar rincian modal bisa digabung ke baris
+     *                                                                                                      "1 kali" produk itu (bukan baris terpisah).
      */
     public static function hitung(Closure $filterOrder, ?string $hargaCutoff): array
     {

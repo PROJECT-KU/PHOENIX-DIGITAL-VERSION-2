@@ -100,7 +100,7 @@ class TestimoniList extends Component
         }
 
         if ($testimoni->foto) {
-            $filePath = storage_path('app/public/img/testimoni/' . $testimoni->foto);
+            $filePath = storage_path('app/public/img/testimoni/'.$testimoni->foto);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }

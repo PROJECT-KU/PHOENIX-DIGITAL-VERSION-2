@@ -183,11 +183,11 @@ class SpendingList extends Component
      */
     protected function applySearch($query): void
     {
-        $term = '%' . $this->search . '%';
+        $term = '%'.$this->search.'%';
 
         // Untuk pencarian tanggal: ubah nama bulan Indonesia jadi angka
         // contoh: "Juni 2026" -> "06 2026", lalu cocokkan ke format tanggal.
-        $dateTerm = '%' . $this->normalizeDateSearch($this->search) . '%';
+        $dateTerm = '%'.$this->normalizeDateSearch($this->search).'%';
 
         $query->where(function ($q) use ($term, $dateTerm) {
             $q->where('deskripsi', 'like', $term)
@@ -319,9 +319,9 @@ class SpendingList extends Component
         })->toArray();
 
         if (! empty($this->search)) {
-            $konteks = 'Hasil Pencarian: "' . $this->search . '" (Semua Kategori)';
+            $konteks = 'Hasil Pencarian: "'.$this->search.'" (Semua Kategori)';
         } else {
-            $konteks = 'Semua Kategori — ' . $this->periodeLabel();
+            $konteks = 'Semua Kategori — '.$this->periodeLabel();
         }
 
         $pdf = Pdf::loadView('livewire.pages.admin.spending.spending-report-pdf', [
@@ -335,7 +335,7 @@ class SpendingList extends Component
             ],
         ])->setPaper('a4', 'landscape');
 
-        $filename = 'laporan-pengeluaran-' . now()->format('Ymd-His') . '.pdf';
+        $filename = 'laporan-pengeluaran-'.now()->format('Ymd-His').'.pdf';
 
         return response()->streamDownload(fn () => print ($pdf->output()), $filename);
     }
@@ -350,17 +350,17 @@ class SpendingList extends Component
             // locale('id') dipaksa karena APP_LOCALE=en — tanpa itu nama bulan
             // di judul PDF jadi bahasa Inggris.
             return $mulai->locale('id')->translatedFormat('d M Y')
-                . ' – ' . $akhir->copy()->subDay()->locale('id')->translatedFormat('d M Y');
+                .' – '.$akhir->copy()->subDay()->locale('id')->translatedFormat('d M Y');
         }
 
         if ($this->bulan && $this->tahun) {
-            return $namaBulan . ' ' . $this->tahun;
+            return $namaBulan.' '.$this->tahun;
         }
         if ($this->tahun) {
-            return 'Tahun ' . $this->tahun;
+            return 'Tahun '.$this->tahun;
         }
         if ($this->bulan) {
-            return 'Bulan ' . $namaBulan;
+            return 'Bulan '.$namaBulan;
         }
 
         return 'Semua Periode';

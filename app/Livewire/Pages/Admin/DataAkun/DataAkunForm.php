@@ -61,7 +61,7 @@ class DataAkunForm extends Component
      * tidak perlu ditebak dari teks nama (rapuh: spasi/typo/huruf besar).
      * Petanya dipakai mengisi product_id otomatis saat slot dipilih.
      *
-     * @return array<string,string>  "Grammarly 1" => <uuid produk Grammarly>
+     * @return array<string,string> "Grammarly 1" => <uuid produk Grammarly>
      */
     private function slotMap(): array
     {
@@ -244,7 +244,7 @@ class DataAkunForm extends Component
 
             return redirect()->route('admin.DataAkun.index');
         } catch (\Exception $e) {
-            session()->flash('errorCreated', 'Gagal menambahkan Data Akun: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menambahkan Data Akun: '.$e->getMessage());
             $this->dispatch('failed-create-data-DataAkun');
         }
     }
@@ -279,7 +279,7 @@ class DataAkunForm extends Component
 
             return redirect()->route('admin.DataAkun.index');
         } catch (\Exception $e) {
-            session()->flash('errorUpdated', 'Gagal mengupdate Data Akun: ' . $e->getMessage());
+            session()->flash('errorUpdated', 'Gagal mengupdate Data Akun: '.$e->getMessage());
             $this->dispatch('failed-update-data-DataAkun');
         }
     }

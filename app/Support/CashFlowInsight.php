@@ -366,7 +366,7 @@ class CashFlowInsight
      * Berguna sebagai pengingat produktivitas: task yang telat memangkas bonus
      * dan menandakan pekerjaan molor — perbaikannya bikin bulan depan lebih baik.
      *
-     * @return array<string,mixed>|null  null bila tidak ada task di periode itu
+     * @return array<string,mixed>|null null bila tidak ada task di periode itu
      */
     public function ringkasanTask(): ?array
     {

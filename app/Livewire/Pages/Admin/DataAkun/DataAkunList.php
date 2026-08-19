@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\DataAkun;
 
 use App\Models\DataAkun;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -31,12 +30,14 @@ class DataAkunList extends Component
         // Pastikan data ditemukan
         if (! $DataAkun) {
             $this->dispatch('DataAkunDeleteError', message: 'Data Akun tidak ditemukan!');
+
             return;
         }
 
         // Sesuaikan string 'active' dengan nilai yang ada di database Anda (misal: 'Aktif', 'Active', atau 1)
         if (strtolower($DataAkun->status) === 'active' || strtolower($DataAkun->status) === 'aktif') {
             $this->dispatch('DataAkunDeleteError', message: 'Data Akun masih aktif dan tidak bisa dihapus!');
+
             return;
         }
 

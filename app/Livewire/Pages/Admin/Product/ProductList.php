@@ -4,7 +4,6 @@ namespace App\Livewire\Pages\Admin\Product;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -30,8 +29,8 @@ class ProductList extends Component
         try {
             $product = Product::findOrFail($id);
 
-            if (! empty($product->image) && Storage::disk('public')->exists('img/Product/' . $product->image)) {
-                Storage::disk('public')->delete('img/Product/' . $product->image);
+            if (! empty($product->image) && Storage::disk('public')->exists('img/Product/'.$product->image)) {
+                Storage::disk('public')->delete('img/Product/'.$product->image);
             }
 
             $product->delete();

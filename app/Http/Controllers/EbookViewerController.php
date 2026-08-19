@@ -27,7 +27,7 @@ class EbookViewerController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
-        $path = storage_path('app/ebooks/' . $ebook->file);
+        $path = storage_path('app/ebooks/'.$ebook->file);
         abort_unless($ebook->file && is_file($path), 404);
 
         return response()->file($path, [

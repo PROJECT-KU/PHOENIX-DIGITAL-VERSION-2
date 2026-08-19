@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages\Admin\Promo;
 
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class PromoCreate extends Component

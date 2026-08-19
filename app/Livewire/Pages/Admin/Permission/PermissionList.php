@@ -48,7 +48,7 @@ class PermissionList extends Component
             $usedByRoles = $permission->roles()->count();
 
             if ($usedByRoles > 0) {
-                $this->dispatch('swal-error', message: 'Permission \'' . $permission->display_name . '\' masih digunakan oleh ' . $usedByRoles . ' role. Hapus dari role terlebih dahulu.');
+                $this->dispatch('swal-error', message: 'Permission \''.$permission->display_name.'\' masih digunakan oleh '.$usedByRoles.' role. Hapus dari role terlebih dahulu.');
 
                 return;
             }
@@ -79,7 +79,7 @@ class PermissionList extends Component
             ->distinct()
             ->orderBy('group')
             ->get()
-            ->map(fn($item) => [
+            ->map(fn ($item) => [
                 'value' => $item->group,
                 'label' => $item->group,
             ])

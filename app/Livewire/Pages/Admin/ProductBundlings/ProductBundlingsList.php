@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\ProductBundlings;
 
 use App\Models\ProductBundlings;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -37,7 +36,7 @@ class ProductBundlingsList extends Component
 
         // Hapus file fisik jika ada
         if ($ProductBundlings->gambar) {
-            $filePath = storage_path('app/public/img/ProductBundlings/' . $ProductBundlings->gambar);
+            $filePath = storage_path('app/public/img/ProductBundlings/'.$ProductBundlings->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }

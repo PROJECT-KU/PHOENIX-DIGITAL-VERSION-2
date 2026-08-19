@@ -67,29 +67,24 @@ class FlashSaletimer extends Component
 
         $products = $this->flashSale->products;
 
-        if ($products->isEmpty()) {
-            // Tidak ada produk khusus → tampilkan produk terbaru (stabil, tidak acak)
-            $this->featuredProducts = Product::latest()->take(4)->get();
-        } else {
+        // Paket dimuat lebih dulu karena ikut menentukan isi etalase produk.
+        // Disaring tayang(): paket yang jadwalnya lewat tidak muncul walau masih
+        // terlampir, jadi admin tidak perlu melepasnya satu per satu.
+        $this->featuredBundlings = $this->flashSale->bundlings()->tayang()->take(4)->get();
+
+        if ($products->isNotEmpty()) {
             // Pertahankan urutan yang diatur admin di flash sale (stabil, tidak berubah-ubah)
             $this->featuredProducts = $products->take(4)->values();
+        } elseif ($this->featuredBundlings->isEmpty()) {
+            // Promo tanpa sasaran apa pun → tampilkan produk terbaru, perilaku lama.
+            $this->featuredProducts = Product::latest()->take(4)->get();
+        } else {
+            // Admin HANYA memilih paket. Jangan tampilkan produk acak di sini:
+            // pembeli akan mengira produk itu ikut promo, padahal tidak — dan
+            // sebelum perbaikan ini memang benar-benar ikut terdiskon.
+            $this->featuredProducts = collect();
         }
 
-        /*
-         * Paket bundling yang dilampirkan admin ke promo ini — hanya untuk
-         * DITAMPILKAN, bukan didiskon. Harga paket sudah harga promo lewat
-         * `harga_bundling`, dan PromoService sengaja melewati item bundling saat
-         * menghitung potongan supaya tidak terjadi diskon dua kali.
-         *
-         * Disaring tayang(): paket yang jadwalnya sudah lewat tidak ikut muncul
-         * walaupun masih terlampir pada promo, sehingga admin tidak perlu
-         * melepasnya satu per satu setelah musimnya berakhir.
-         */
-        $this->featuredBundlings = $this->flashSale
-            ->bundlings()
-            ->tayang()
-            ->take(4)
-            ->get();
     }
 
     public function loadFlashSale()
@@ -355,6 +350,61 @@ class FlashSaletimer extends Component
 
         $this->dispatch('cart-updated', count: count($cart));
         $this->dispatch('cart-success', message: 'Produk berhasil ditambahkan ke keranjang!');
+    }
+
+    /**
+     * Masukkan PAKET BUNDLING ke keranjang langsung dari etalase promo.
+     *
+     * Strukturnya dibuat identik dengan Bundling\Index::addToCart() — kunci
+     * "bundling_<id>", `type` => 'bundling', harga dari `harga_bundling`.
+     * Kesamaan itu bukan kerapian belaka: checkout, pencatatan modal, dan
+     * pengecualian paket dari diskon otomatis semuanya mengenali item lewat
+     * `type`, jadi bentuk yang berbeda akan lolos dari ketiganya.
+     *
+     * Harga TIDAK didiskon di sini. Harga paket sudah harga promo, dan
+     * PromoService melewati item bertipe bundling saat menghitung potongan.
+     */
+    public function tambahPaket($bundlingId)
+    {
+        $paket = \App\Models\ProductBundlings::find($bundlingId);
+
+        // Jadwal diperiksa ULANG di sini, bukan hanya saat menampilkan kartu:
+        // halaman promo bisa dibuka lama, dan paket bisa keburu berakhir
+        // sebelum tombolnya ditekan.
+        if (! $paket || ! $paket->sedangTayang()) {
+            $this->dispatch('cart-error', message: 'Paket sudah tidak tersedia.');
+
+            return;
+        }
+
+        $harga = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
+
+        if ($harga <= 0) {
+            $this->dispatch('cart-error', message: 'Harga paket belum tersedia.');
+
+            return;
+        }
+
+        $cart = session()->get('cart', []);
+        $kunci = "bundling_{$paket->id}";
+
+        // Akun digital: satu baris = satu paket, tidak menumpuk jumlah.
+        $cart[$kunci] = [
+            'product_id' => $paket->id,
+            'product_name' => $paket->nama_paket,
+            'product_image' => $paket->gambar ? basename($paket->gambar) : null,
+            'duration_type' => null,
+            'duration_value' => null,
+            'type' => 'bundling',
+            'price' => $harga,
+            'quantity' => 1,
+            'subtotal' => $harga,
+        ];
+
+        session()->put('cart', $cart);
+
+        $this->dispatch('cart-updated', count: count($cart));
+        $this->dispatch('cart-success', message: 'Paket berhasil ditambahkan ke keranjang!');
     }
 
     /**

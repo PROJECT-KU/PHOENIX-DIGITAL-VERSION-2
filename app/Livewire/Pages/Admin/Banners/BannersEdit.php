@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Banners;
 
 use App\Models\Banners;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class BannersEdit extends Component

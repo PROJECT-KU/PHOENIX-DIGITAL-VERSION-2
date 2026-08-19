@@ -37,8 +37,8 @@ class PerbandinganHarian
 
     /**
      * @return array{hari_ini: float, kemarin: float, selisih: float, persen: ?float, arah: int}
-     *                                                                                          persen null = tidak bisa dihitung (kemarin nol, tak ada pembanding)
-     *                                                                                          arah: 1 naik, 0 sama, -1 turun
+     *                                                                                           persen null = tidak bisa dihitung (kemarin nol, tak ada pembanding)
+     *                                                                                           arah: 1 naik, 0 sama, -1 turun
      */
     private static function banding(string $kolom): array
     {

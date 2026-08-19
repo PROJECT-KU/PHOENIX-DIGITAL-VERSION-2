@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\DataAkun;
 
 use App\Models\DataAkun;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class DataAkunEdit extends Component

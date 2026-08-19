@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Pages\Admin\Loan;
 
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class LoanCreate extends Component

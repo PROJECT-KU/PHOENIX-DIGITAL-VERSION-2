@@ -2,27 +2,26 @@
 
 namespace App\Livewire\Pages\Admin;
 
-use App\Models\User;
-use App\Models\Order;
 use App\Models\CashFlow;
+use App\Models\Customer;
 use App\Models\GajiKaryawans;
 use App\Models\Loan;
+use App\Models\Order;
 use App\Models\Pengembalian;
-use App\Models\Customer;
+use App\Models\User;
 use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class Dashboard extends Component
 {
-
     public function logout()
     {
         Auth::logout();
         session()->invalidate();
         session()->regenerateToken();
+
         return redirect()->route('login');
     }
 
@@ -52,7 +51,7 @@ class Dashboard extends Component
 
         return response()->streamDownload(
             fn () => print ($pdf->output()),
-            'slip-gaji-' . $gaji->id_transaksi . '.pdf'
+            'slip-gaji-'.$gaji->id_transaksi.'.pdf'
         );
     }
 
@@ -146,6 +145,7 @@ class Dashboard extends Component
             ->get()
             ->map(function ($user) {
                 $user->online = $user->last_seen_at->gt(now()->subMinutes(1));
+
                 return $user;
             })
             ->sortByDesc(function ($user) {

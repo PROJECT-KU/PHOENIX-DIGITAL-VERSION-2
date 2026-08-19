@@ -43,7 +43,7 @@ class EbookForm extends Component
             'deskripsi' => 'nullable|string',
             'status' => 'required|in:active,non-active',
             // Hanya PDF (untuk proteksi viewer view-only), maks 2MB
-            'file' => ($this->mode === 'create' ? 'required' : 'nullable') . '|file|mimes:pdf|max:2048',
+            'file' => ($this->mode === 'create' ? 'required' : 'nullable').'|file|mimes:pdf|max:2048',
         ];
 
         $this->validate($rules, [
@@ -55,10 +55,10 @@ class EbookForm extends Component
 
             if ($this->file && is_object($this->file)) {
                 // Simpan di disk PRIVAT (storage/app/ebooks) — tidak bisa diakses langsung via URL
-                if ($this->existingFile && Storage::disk('local')->exists('ebooks/' . $this->existingFile)) {
-                    Storage::disk('local')->delete('ebooks/' . $this->existingFile);
+                if ($this->existingFile && Storage::disk('local')->exists('ebooks/'.$this->existingFile)) {
+                    Storage::disk('local')->delete('ebooks/'.$this->existingFile);
                 }
-                $filename = 'ebook_' . rand(10000, 99999) . '_' . time() . '.pdf';
+                $filename = 'ebook_'.rand(10000, 99999).'_'.time().'.pdf';
                 $this->file->storeAs('ebooks', $filename, 'local');
             }
 
@@ -82,7 +82,7 @@ class EbookForm extends Component
 
             return redirect()->route('admin.ebook.index');
         } catch (\Exception $e) {
-            session()->flash('errorCreated', 'Gagal menyimpan ebook: ' . $e->getMessage());
+            session()->flash('errorCreated', 'Gagal menyimpan ebook: '.$e->getMessage());
         }
     }
 

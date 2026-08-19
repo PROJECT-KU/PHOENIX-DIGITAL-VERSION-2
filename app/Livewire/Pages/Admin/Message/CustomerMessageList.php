@@ -3,8 +3,6 @@
 namespace App\Livewire\Pages\Admin\Message;
 
 use App\Models\CustomerMessage;
-use Livewire\Attributes\Layout;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -87,18 +85,20 @@ class CustomerMessageList extends Component
         // 1. Pastikan data ditemukan
         if (! $customerMessage) {
             $this->dispatch('CustomerMessage-deleteError', message: 'Data Pesan Pelanggan tidak ditemukan!');
+
             return;
         }
 
         // 2. Pengecekan read_at (Jika masih null, batalkan penghapusan)
         if (is_null($customerMessage->read_at)) {
             $this->dispatch('CustomerMessage-deleteError', message: 'Pesan belum dibaca dan tidak bisa dihapus!');
+
             return;
         }
 
         // 3. Hapus file fisik jika ada
         if ($customerMessage->gambar) {
-            $filePath = storage_path('app/public/img/customer-messages/' . $customerMessage->gambar);
+            $filePath = storage_path('app/public/img/customer-messages/'.$customerMessage->gambar);
             if (file_exists($filePath)) {
                 unlink($filePath);
             }

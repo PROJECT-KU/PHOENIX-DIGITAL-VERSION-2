@@ -3,7 +3,6 @@
 namespace App\Livewire\Pages\Admin\Spending;
 
 use App\Models\Spending;
-use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class SpendingEdit extends Component
