@@ -69,9 +69,10 @@ class HargaPaket
         return [
             'bayar' => $bayar,
             'coret' => $coret,
-            // "Hemat" selalu selisih terhadap angka yang dicoret, supaya
-            // keduanya tidak pernah saling bertentangan di layar.
-            'potongan' => $coret > 0 ? $coret - $bayar : $potongan,
+            // "Hemat" adalah potongan promonya sendiri (harga awal x persen),
+            // bukan selisih terhadap harga coret. Keduanya memang beda arti:
+            // coret = harga bila dibeli satuan, hemat = potongan dari promo.
+            'potongan' => $potongan,
             'promo' => $promo,
             'butuh_kode' => $promo->tipe_promo === 'kode_promo',
         ];

@@ -65,8 +65,8 @@ it('kena flash sale: potongan dihitung dari harga awal, yang dicoret harga awal'
     expect($hp['bayar'])->toBe(109000)
         // Yang dicoret harga awal, bukan harga paket.
         ->and($hp['coret'])->toBe(160000)
-        // "Hemat" selalu selisih terhadap angka yang dicoret.
-        ->and($hp['potongan'])->toBe(51000);
+        // "Hemat" adalah potongan promonya sendiri: 160.000 x 10%.
+        ->and($hp['potongan'])->toBe(16000);
 });
 
 it('halaman detail menampilkan harga coret dari harga awal', function () {
@@ -119,4 +119,38 @@ it('tombol Lihat di daftar paket menuju halaman detail, bukan halaman itu sendir
 
         expect($html)->toContain('/bundling/paket/'.$paket->id);
     }
+});
+
+it('angka yang ditampilkan sama dengan yang ditagih keranjang', function () {
+    // Contoh nyata: harga awal 125.000, harga paket 99.000, flash sale 10%.
+    $paket = ProductBundlings::create([
+        'nama_paket' => 'Paket Uji Tagihan',
+        'harga_awal' => 125000,
+        'harga_bundling' => 99000,
+        'status' => 'active',
+    ]);
+    flashSale(10)->bundlings()->attach($paket->id);
+    HargaPaket::lupakan();
+
+    $hp = HargaPaket::untuk($paket->fresh());
+
+    // 125.000 x 10% = 12.500 potongan.
+    expect($hp['potongan'])->toBe(12500)
+        ->and($hp['coret'])->toBe(125000)
+        ->and($hp['bayar'])->toBe(86500);
+
+    $cart = ["bundling_{$paket->id}" => [
+        'product_id' => $paket->id,
+        'product_name' => $paket->nama_paket,
+        'type' => 'bundling',
+        'harga_awal' => 125000,
+        'price' => 99000,
+        'quantity' => 1,
+        'subtotal' => 99000,
+    ]];
+
+    $hasil = app(App\Services\PromoService::class)->calculateDiscount($cart, null);
+
+    // Yang ditagih harus sama dengan yang tertulis di kartu dan halaman detail.
+    expect((int) $hasil['final_total'])->toBe($hp['bayar']);
 });
