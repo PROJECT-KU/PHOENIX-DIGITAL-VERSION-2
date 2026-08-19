@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductBundlings;
 use App\Models\Promo;
 use App\Services\PromoService;
+use App\Support\HargaPaket;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -126,7 +127,11 @@ class OrderForm extends Component
             return;
         }
 
-        $hargaBundling = (int) preg_replace('/[^0-9]/', '', (string) $b->harga_bundling);
+        // Sumber harga yang SAMA dengan sisi publik: harga awal bila paket
+        // sedang kena promo, harga paket bila tidak. Sebelumnya di sini dipakai
+        // harga_bundling mentah, sehingga angka di admin berbeda dengan yang
+        // dilihat pembeli.
+        $hargaBundling = HargaPaket::dasarKeranjang($b);
 
         // Durasi tiap produk sudah diset di paket → admin tinggal pilih nama paket
         $products = [];
@@ -159,6 +164,7 @@ class OrderForm extends Component
             'bundling_id' => $b->id,
             'bundling_name' => $b->nama_paket,
             'harga_bundling' => $hargaBundling,
+            'harga_awal' => (int) preg_replace('/[^0-9]/', '', (string) $b->harga_awal),
             'products' => $products,
             'subtotal' => $hargaBundling,
         ];
@@ -299,8 +305,15 @@ class OrderForm extends Component
     {
         foreach ($this->items as $i => $item) {
             if (($item['type'] ?? 'product') === 'bundle') {
+                // Disegarkan tiap kali dihitung: promo bisa mulai atau berakhir
+                // selagi form terbuka, dan angkanya harus tetap sama dengan publik.
+                $paket = ProductBundlings::find($item['bundling_id'] ?? null);
+                $harga = $paket
+                    ? HargaPaket::dasarKeranjang($paket)
+                    : (int) $item['harga_bundling'];
+                $this->items[$i]['harga_bundling'] = $harga;
+
                 // Distribusi harga paket proporsional terhadap harga normal tiap produk
-                $harga = (int) $item['harga_bundling'];
                 $normals = [];
                 foreach ($item['products'] as $j => $sub) {
                     $p = Product::find($sub['product_id']);
@@ -344,16 +357,28 @@ class OrderForm extends Component
             $this->items[$i]['subtotal'] = $price * (int) $item['quantity'];
         }
 
-        // Subtotal penuh (termasuk paket) untuk total akhir.
-        // Promo cart HANYA produk satuan — item di dalam paket bundling
-        // dikecualikan dari flash sale / promo (paket sudah punya harga diskon).
+        // Subtotal penuh untuk total akhir. Produk satuan MAUPUN paket ikut
+        // masuk promo cart, sama seperti keranjang publik, supaya angka yang
+        // dilihat admin sama dengan yang dibayar pembeli.
         $fullSubtotal = 0;
         $promoCart = [];
         foreach ($this->items as $item) {
             if (($item['type'] ?? 'product') === 'bundle') {
                 $fullSubtotal += (int) ($item['subtotal'] ?? 0);
 
-                continue; // tidak masuk promo cart
+                // Paket IKUT dihitung promo, sama seperti di publik. Dulu
+                // dikecualikan karena harga paket dianggap sudah diskon; aturan
+                // itu berubah — potongan promo dihitung dari harga awal.
+                $promoCart[] = [
+                    'product_id' => $item['bundling_id'],
+                    'type' => 'bundling',
+                    'harga_awal' => (int) ($item['harga_awal'] ?? 0),
+                    'price' => (int) ($item['subtotal'] ?? 0),
+                    'quantity' => 1,
+                    'subtotal' => (int) ($item['subtotal'] ?? 0),
+                ];
+
+                continue;
             }
             if (empty($item['product_id'])) {
                 continue;
@@ -375,7 +400,7 @@ class OrderForm extends Component
             return;
         }
 
-        // Flash sale / auto promo: HANYA produk satuan (harga paket sudah diskon).
+        // Flash sale / auto promo berlaku untuk produk satuan dan paket.
         // Kode promo manual yang diketik admin: berlaku atas subtotal PENUH,
         // termasuk item paket — kalau tidak, kode tervalidasi "valid" tapi tidak
         // memotong apa pun saat pesanan isinya cuma paket.
