@@ -280,6 +280,31 @@
 
             <section id="best-sellers" class="best-sellers section">
                 <div class="container" wire:ignore.self>
+                    {{-- Filter & urutkan, kelas dan susunannya sama dengan shop. --}}
+                    <div class="shop-filter">
+                        <div class="shop-filter-controls">
+                            @if ($pilihanIsi->count())
+                                <select wire:model.live="isi" class="shop-select">
+                                    <option value="">Semua Isi Paket</option>
+                                    @foreach ($pilihanIsi as $id => $nama)
+                                        <option value="{{ $id }}">{{ $nama }}</option>
+                                    @endforeach
+                                </select>
+                            @endif
+                            <select wire:model.live="sortBy" class="shop-select">
+                                <option value="">Urutkan: Terbaru</option>
+                                <option value="termurah">Harga: Termurah</option>
+                                <option value="termahal">Harga: Termahal</option>
+                                <option value="nama">Nama: A–Z</option>
+                                <option value="terlama">Terlama</option>
+                            </select>
+                            @if ($isi || $sortBy)
+                                <button type="button" wire:click="resetFilters" class="shop-reset"><i class="bi bi-x-circle"></i> Reset</button>
+                            @endif
+                        </div>
+                        <div class="shop-filter-count">{{ $bundlings->total() }} paket</div>
+                    </div>
+
                     <div class="row g-4 justify-content-center">
                         @forelse ($bundlings as $item)
                             {{-- Kartu bersama dengan beranda & etalase flash sale
@@ -344,6 +369,16 @@
                                             <b>"{{ $search }}"</b>. Coba kata kunci lain, ya.</p>
                                         <button type="button" class="bdl-empty-btn" wire:click="$set('search', '')">
                                             <i class="bi bi-arrow-counterclockwise"></i> Reset Pencarian
+                                        </button>
+                                    @elseif ($isi || $sortBy)
+                                        {{-- Filter aktif: pesannya tidak boleh bilang
+                                             "belum ada paket", karena paketnya ada. --}}
+                                        <h3 class="bdl-empty-title">Tidak ada yang cocok</h3>
+                                        <p class="bdl-empty-sub">Filter yang dipilih belum menemukan paket apa pun.
+                                            Coba longgarkan filternya, ya.</p>
+                                        <button type="button" class="bdl-empty-btn"
+                                            wire:click="$set('isi', ''); $set('sortBy', '')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
                                         </button>
                                     @else
                                         <h3 class="bdl-empty-title">Belum ada paket bundling</h3>

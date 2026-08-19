@@ -55,6 +55,13 @@
         ->filter();
 @endphp
 
+{{-- Latar & perlakuan gambar yang sama dengan kartu produk satuan di shop.
+     Disertakan dari kartu, bukan dari tiap halaman, supaya halaman baru yang
+     memakai kartu ini otomatis ikut seragam. --}}
+@once
+    @include('partials.media-produk-style')
+@endonce
+
 <div class="fs-card">
     <div class="fs-card-media">
         @if ($item->gambar)

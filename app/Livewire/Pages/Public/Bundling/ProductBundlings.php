@@ -21,6 +21,39 @@ class ProductBundlings extends Component
 
     public $search = '';
 
+    /**
+     * Filter & urutkan, meniru halaman shop. Bila keduanya kosong, daftar paket
+     * tampil persis seperti sebelumnya.
+     *
+     * $isi menyaring berdasarkan produk yang ADA DI DALAM paket — padanan
+     * "kategori" di shop, karena paket sendiri tidak punya tipe.
+     */
+    public $isi = '';
+
+    public $sortBy = '';
+
+    /** Harga tersimpan sebagai teks berformat ("Rp 160.000"), jadi angkanya
+     *  dibersihkan dulu sebelum diurutkan. Ditulis dengan REPLACE + 0 supaya
+     *  jalan di MySQL maupun SQLite (yang dipakai pengujian). */
+    private const ANGKA_HARGA = "REPLACE(REPLACE(REPLACE(harga_bundling,'Rp',''),'.',''),' ','') + 0";
+
+    public function updatedIsi()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSortBy()
+    {
+        $this->resetPage();
+    }
+
+    public function resetFilters()
+    {
+        $this->isi = '';
+        $this->sortBy = '';
+        $this->resetPage();
+    }
+
     public function mount()
     {
         $this->search = request('search', '');
@@ -97,6 +130,28 @@ class ProductBundlings extends Component
         return count($cart);
     }
 
+    /**
+     * Produk yang benar-benar dipakai oleh paket yang sedang tayang — dipakai
+     * sebagai isi dropdown, supaya tidak ada pilihan yang hasilnya kosong.
+     */
+    private function pilihanIsi()
+    {
+        $ids = ModelsProductBundlings::tayang()
+            ->get(['product_1', 'product_2', 'product_3', 'product_4', 'product_5'])
+            ->flatMap(fn ($p) => [$p->product_1, $p->product_2, $p->product_3, $p->product_4, $p->product_5])
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        return \App\Models\Product::whereIn('id', $ids)
+            ->orderBy('nama_akun')
+            ->pluck('nama_akun', 'id');
+    }
+
     #[Layout('layouts.guest')]
     public function render()
     {
@@ -117,11 +172,28 @@ class ProductBundlings extends Component
                         ->orWhere('deskripsi', 'like', "%{$this->search}%");
                 });
             })
-            ->latest()
+            ->when($this->isi, function ($q) {
+                // Paket menyimpan isinya di lima kolom terpisah.
+                $q->where(function ($cari) {
+                    foreach ([1, 2, 3, 4, 5] as $i) {
+                        $cari->orWhere('product_'.$i, $this->isi);
+                    }
+                });
+            })
+            ->when($this->sortBy, function ($q) {
+                match ($this->sortBy) {
+                    'termurah' => $q->orderByRaw(self::ANGKA_HARGA.' asc'),
+                    'termahal' => $q->orderByRaw(self::ANGKA_HARGA.' desc'),
+                    'nama' => $q->orderBy('nama_paket', 'asc'),
+                    'terlama' => $q->oldest(),
+                    default => $q->latest(),
+                };
+            }, fn ($q) => $q->latest())
             ->paginate($this->perPage);
 
         return view('livewire.pages.public.bundling.product-bundlings', [
             'bundlings' => $bundlings,
+            'pilihanIsi' => $this->pilihanIsi(),
         ]);
     }
 }
