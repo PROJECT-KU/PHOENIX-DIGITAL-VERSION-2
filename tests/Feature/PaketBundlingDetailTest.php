@@ -61,11 +61,10 @@ it('kena flash sale: potongan dihitung dari harga awal, yang dicoret harga awal'
 
     $hp = HargaPaket::untuk($paket->fresh());
 
-    // 160.000 x 10% = 16.000 -> 125.000 - 16.000 = 109.000
-    expect($hp['bayar'])->toBe(109000)
-        // Yang dicoret harga awal, bukan harga paket.
+    // Dasar hitungnya harga awal: 160.000 x 10% = 16.000,
+    // dibayar 160.000 - 16.000 = 144.000. Harga paket diabaikan.
+    expect($hp['bayar'])->toBe(144000)
         ->and($hp['coret'])->toBe(160000)
-        // "Hemat" adalah potongan promonya sendiri: 160.000 x 10%.
         ->and($hp['potongan'])->toBe(16000);
 });
 
@@ -76,7 +75,7 @@ it('halaman detail menampilkan harga coret dari harga awal', function () {
 
     $blok = blokHarga(Livewire::test(Detail::class, ['id' => $paket->id])->html());
 
-    expect($blok)->toContain('Rp 109.000')
+    expect($blok)->toContain('Rp 144.000')
         ->and($blok)->toContain('Rp 160.000')
         ->and($blok)->not->toContain('125.000');
 });
@@ -134,10 +133,42 @@ it('angka yang ditampilkan sama dengan yang ditagih keranjang', function () {
 
     $hp = HargaPaket::untuk($paket->fresh());
 
-    // 125.000 x 10% = 12.500 potongan.
+    // 125.000 x 10% = 12.500 potongan, dibayar 125.000 - 12.500 = 112.500.
     expect($hp['potongan'])->toBe(12500)
         ->and($hp['coret'])->toBe(125000)
-        ->and($hp['bayar'])->toBe(86500);
+        ->and($hp['bayar'])->toBe(112500);
+
+    $cart = ["bundling_{$paket->id}" => [
+        'product_id' => $paket->id,
+        'product_name' => $paket->nama_paket,
+        'type' => 'bundling',
+        'harga_awal' => 125000,
+        // Sengaja diisi harga paket seperti sesi lama: PromoService harus
+        // menyetelnya ulang sendiri mengikuti promo yang berlaku.
+        'price' => 99000,
+        'quantity' => 1,
+        'subtotal' => 99000,
+    ]];
+
+    $hasil = app(App\Services\PromoService::class)->calculateDiscount($cart, null);
+
+    // Yang ditagih harus sama dengan yang tertulis di kartu dan halaman detail.
+    expect((int) $hasil['final_total'])->toBe($hp['bayar']);
+});
+
+it('paket tanpa promo tetap ditagih harga paket, bukan harga awal', function () {
+    $paket = ProductBundlings::create([
+        'nama_paket' => 'Paket Tanpa Promo',
+        'harga_awal' => 125000,
+        'harga_bundling' => 99000,
+        'status' => 'active',
+    ]);
+
+    $hp = HargaPaket::untuk($paket);
+
+    expect($hp['bayar'])->toBe(99000)
+        ->and($hp['coret'])->toBe(125000)
+        ->and($hp['potongan'])->toBe(0);
 
     $cart = ["bundling_{$paket->id}" => [
         'product_id' => $paket->id,
@@ -151,6 +182,37 @@ it('angka yang ditampilkan sama dengan yang ditagih keranjang', function () {
 
     $hasil = app(App\Services\PromoService::class)->calculateDiscount($cart, null);
 
-    // Yang ditagih harus sama dengan yang tertulis di kartu dan halaman detail.
-    expect((int) $hasil['final_total'])->toBe($hp['bayar']);
+    expect((int) $hasil['final_total'])->toBe(99000);
+});
+
+it('promo yang berakhir setelah paket masuk keranjang tidak menagih harga awal', function () {
+    $paket = ProductBundlings::create([
+        'nama_paket' => 'Paket Promo Habis',
+        'harga_awal' => 125000,
+        'harga_bundling' => 99000,
+        'status' => 'active',
+    ]);
+    $promo = flashSale(10);
+    $promo->bundlings()->attach($paket->id);
+    HargaPaket::lupakan();
+
+    // Masuk keranjang saat promo masih jalan: dasarnya harga awal.
+    $cart = ["bundling_{$paket->id}" => [
+        'product_id' => $paket->id,
+        'product_name' => $paket->nama_paket,
+        'type' => 'bundling',
+        'harga_awal' => 125000,
+        'price' => 125000,
+        'quantity' => 1,
+        'subtotal' => 125000,
+    ]];
+
+    // Promo berakhir sebelum pelanggan membayar.
+    $promo->update(['is_active' => false]);
+    HargaPaket::lupakan();
+
+    $hasil = app(App\Services\PromoService::class)->calculateDiscount($cart, null);
+
+    // Kembali ke harga paket, bukan tertinggal di harga awal 125.000.
+    expect((int) $hasil['final_total'])->toBe(99000);
 });

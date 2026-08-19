@@ -105,6 +105,9 @@ class CheckoutPage extends Component
     {
         $cart = session()->get('cart', []);
 
+        // Baris paket disetel ulang mengikuti promo yang berlaku sekarang.
+        $cart = \App\Support\HargaPaket::selaraskanKeranjang($cart);
+
         // Akun digital: setiap baris selalu 1 item — samakan dengan keranjang
         // agar sesi lama yang sempat menumpuk jumlah tidak menggelembungkan subtotal.
         foreach ($cart as $key => $item) {

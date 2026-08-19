@@ -27,6 +27,11 @@ class PromoService
         bool $usePoints = false,
         ?float $kodePromoSubtotal = null
     ): array {
+        // Baris paket disetel ulang mengikuti promo yang berlaku sekarang,
+        // supaya yang ditagih sama dengan yang tampil di kartu dan halaman
+        // detail (lihat App\Support\HargaPaket::selaraskanKeranjang).
+        $cart = \App\Support\HargaPaket::selaraskanKeranjang($cart);
+
         $subtotal = array_sum(array_column($cart, 'subtotal'));
         $isMember = $customer && $customer->status_member === 'active';
         $isPembeliPertama = ! $customer || ! $customer->hasTransactions();

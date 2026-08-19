@@ -80,7 +80,9 @@ class Detail extends Component
 
         $cart = session()->get('cart', []);
         $kunci = "bundling_{$paket->id}";
-        $harga = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
+        // Harga dasar mengikuti keadaan promo: harga awal bila paket kena
+        // promo, harga paket bila tidak (lihat HargaPaket::dasarKeranjang).
+        $harga = HargaPaket::dasarKeranjang($paket);
 
         // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.
         $cart[$kunci] = [

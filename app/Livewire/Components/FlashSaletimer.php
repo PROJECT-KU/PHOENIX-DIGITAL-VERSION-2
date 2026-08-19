@@ -377,7 +377,9 @@ class FlashSaletimer extends Component
             return;
         }
 
-        $harga = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
+        // Harga dasar mengikuti keadaan promo: harga awal bila paket kena
+        // promo, harga paket bila tidak (lihat HargaPaket::dasarKeranjang).
+        $harga = \App\Support\HargaPaket::dasarKeranjang($paket);
 
         if ($harga <= 0) {
             $this->dispatch('cart-error', message: 'Harga paket belum tersedia.');

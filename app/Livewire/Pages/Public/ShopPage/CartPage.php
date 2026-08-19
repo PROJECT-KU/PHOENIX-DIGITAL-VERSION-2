@@ -35,6 +35,10 @@ class CartPage extends Component
      */
     private function normalizeCart(array $cart): array
     {
+        // Baris paket disetel ulang mengikuti promo yang berlaku sekarang:
+        // promo bisa mulai atau berakhir setelah paket masuk keranjang.
+        $cart = \App\Support\HargaPaket::selaraskanKeranjang($cart);
+
         foreach ($cart as $key => $item) {
             // Akun digital: setiap baris selalu 1 item.
             $cart[$key]['quantity'] = 1;

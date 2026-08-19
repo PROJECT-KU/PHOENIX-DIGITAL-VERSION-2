@@ -52,7 +52,9 @@ class ProductBundlings extends Component
         $cart = session()->get('cart', []);
         $cartKey = "bundling_{$bundling->id}";
         $imageName = $bundling->gambar ? basename($bundling->gambar) : null;
-        $price = (int) preg_replace('/[^0-9]/', '', $bundling->harga_bundling);
+        // Harga dasar mengikuti keadaan promo: harga awal bila paket kena
+        // promo, harga paket bila tidak (lihat HargaPaket::dasarKeranjang).
+        $price = \App\Support\HargaPaket::dasarKeranjang($bundling);
 
         if (isset($cart[$cartKey])) {
             // Akun digital: 1 baris = 1 item, tidak menumpuk jumlah.

@@ -59,19 +59,23 @@ class HargaPaket
             return $polos;
         }
 
-        $bayar = max(0, $bundling - $potongan);
-
-        // Yang dicoret adalah harga AWAL, yaitu harga bila produknya dibeli
-        // satuan. Pelanggan membandingkan dengan angka itu, bukan dengan harga
-        // paket normal, sehingga penghematan terlihat utuh.
-        $coret = $awal > $bayar ? $awal : ($bundling > $bayar ? $bundling : 0);
+        // Begitu paket kena promo, dasar hitungnya adalah HARGA AWAL, bukan
+        // harga paket: harga paket diabaikan dan potongan promo dikurangkan
+        // dari harga awal. Contoh: awal 125.000, paket 99.000, promo 10% ->
+        // potongan 12.500, dibayar 112.500.
+        //
+        // Konsekuensi yang disadari pemilik: bila persentase promo lebih kecil
+        // daripada potongan paket itu sendiri, harga promo bisa lebih mahal
+        // daripada harga paket biasa. Tidak ada pengaman otomatis; pemilihan
+        // persentase ada di tangan admin.
+        $dasar = $awal > 0 ? $awal : $bundling;
+        $bayar = max(0, $dasar - $potongan);
 
         return [
             'bayar' => $bayar,
-            'coret' => $coret,
-            // "Hemat" adalah potongan promonya sendiri (harga awal x persen),
-            // bukan selisih terhadap harga coret. Keduanya memang beda arti:
-            // coret = harga bila dibeli satuan, hemat = potongan dari promo.
+            // Yang dicoret adalah harga awal, yaitu harga bila produknya
+            // dibeli satuan.
+            'coret' => $dasar > $bayar ? $dasar : 0,
             'potongan' => $potongan,
             'promo' => $promo,
             'butuh_kode' => $promo->tipe_promo === 'kode_promo',
@@ -134,12 +138,58 @@ class HargaPaket
             ? (int) floor($basis * (float) $promo->getDiskonValue(false, 'persen') / 100)
             : (int) $promo->getDiskonValue(false, 'nominal');
 
-        return max(0, min($potongan, $bundling));
+        // Batasnya dasar hitung itu sendiri, bukan harga paket: yang
+        // dikurangkan memang harga awal (lihat untuk()).
+        return max(0, min($potongan, $basis));
     }
 
     private static function angka($nilai): int
     {
         return (int) preg_replace('/[^0-9]/', '', (string) $nilai);
+    }
+
+    /**
+     * Harga dasar paket di keranjang, SEBELUM potongan promo dikurangkan.
+     *
+     * Saat paket kena promo, dasarnya harga awal (karena potongan dikurangkan
+     * dari harga awal); bila tidak kena promo, dasarnya harga paket. Dengan
+     * begitu PromoService cukup mengurangkan potongan seperti biasa dan yang
+     * ditagih selalu sama dengan yang tertulis di layar.
+     */
+    public static function dasarKeranjang(ProductBundlings $paket): int
+    {
+        $h = self::untuk($paket);
+
+        return $h['bayar'] + $h['potongan'];
+    }
+
+    /**
+     * Menyetel ulang baris paket di keranjang mengikuti keadaan promo saat ini.
+     *
+     * Promo bisa mulai atau berakhir setelah paket masuk keranjang, jadi harga
+     * dasarnya dihitung ulang tiap kali keranjang dipakai, bukan dibekukan.
+     */
+    public static function selaraskanKeranjang(array $cart): array
+    {
+        foreach ($cart as $kunci => $baris) {
+            if (($baris['type'] ?? null) !== 'bundling') {
+                continue;
+            }
+
+            $paket = ProductBundlings::find($baris['product_id'] ?? null);
+
+            if (! $paket) {
+                continue;
+            }
+
+            $dasar = self::dasarKeranjang($paket);
+            $jumlah = max(1, (int) ($baris['quantity'] ?? 1));
+
+            $cart[$kunci]['price'] = $dasar;
+            $cart[$kunci]['subtotal'] = $dasar * $jumlah;
+        }
+
+        return $cart;
     }
 
     /** Dipakai pengujian agar peta tidak terbawa antar-skenario. */
