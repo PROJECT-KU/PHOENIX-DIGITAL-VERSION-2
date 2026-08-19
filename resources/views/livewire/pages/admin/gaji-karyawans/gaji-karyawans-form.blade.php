@@ -304,22 +304,49 @@
                         @enderror
                     </div>
 
-                    {{-- ================== BONUS PENYELESAIAN TASK (read-only) ================== --}}
+                    {{-- ============ BONUS PENYELESAIAN TASK (semi otomatis) ============
+                         Bawaannya hasil pembagian pool di halaman Penyelesaian Task.
+                         Bila "Atur manual" dinyalakan, admin menentukan angkanya dan
+                         pembagian pool tidak lagi menimpa baris ini. --}}
                     <div class="col-md-6 mb-3">
-                        <label class="form-label d-inline-flex align-items-center gap-1">
-                            <span>Bonus Penyelesaian Task</span>
-                            <i class="bi bi-info-circle text-muted" style="line-height:1;" title="Diatur di halaman Penyelesaian Task (pool bersama)"></i>
-                        </label>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                            <label for="bonus_penyelesaian_task" class="form-label mb-0 d-inline-flex align-items-center gap-1">
+                                <span>Bonus Penyelesaian Task</span>
+                                <i class="bi bi-info-circle text-muted" style="line-height:1;"
+                                    title="Bawaannya dihitung otomatis dari pool di halaman Penyelesaian Task"></i>
+                            </label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch"
+                                    id="bonus_task_manual" wire:model.live="bonus_task_manual">
+                                <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
+                            </div>
+                        </div>
                         <div class="rp-wrap">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
                                 style="pointer-events: none; z-index: 5;">Rp</span>
-                            <input type="text" id="bonus_penyelesaian_task_disp" readonly
-                                class="form-control readonly-pretty"
-                                value="{{ number_format((int) $bonus_penyelesaian_task, 0, ',', '.') }}">
+                            <input type="text" id="bonus_penyelesaian_task" wire:model="bonus_penyelesaian_task"
+                                @if (!$bonus_task_manual) readonly @endif
+                                class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror @if (!$bonus_task_manual) readonly-pretty @endif"
+                                placeholder="0">
                         </div>
-                        <small class="text-muted"><i class="bi bi-list-check me-1"></i>Diatur di halaman <b>Penyelesaian Task</b>.</small>
-                        {{-- Hidden field agar total (JS) ikut menghitung bonus task --}}
-                        <input type="hidden" id="bonus_penyelesaian_task" value="{{ (int) $bonus_penyelesaian_task }}">
+                        @error('bonus_penyelesaian_task')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+
+                        @if ($bonus_task_manual)
+                            <small class="text-warning-emphasis d-block mt-1">
+                                <i class="bi bi-pencil-square me-1"></i>Diisi manual — pembagian pool tidak akan menimpanya.
+                            </small>
+                            @if ((int) preg_replace('/[^0-9]/', '', (string) $bonus_penyelesaian_task) !== (int) $bonus_task_otomatis)
+                                <small class="text-muted d-block">
+                                    Hitungan otomatis: <b>Rp {{ number_format((int) $bonus_task_otomatis, 0, ',', '.') }}</b>
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                        wire:click="pulihkanBonusTaskOtomatis">Pakai angka ini</button>
+                                </small>
+                            @endif
+                        @else
+                            <small class="text-muted"><i class="bi bi-list-check me-1"></i>Dihitung otomatis dari halaman <b>Penyelesaian Task</b>.</small>
+                        @endif
                     </div>
 
                     <div class="col-md-6 mb-3">

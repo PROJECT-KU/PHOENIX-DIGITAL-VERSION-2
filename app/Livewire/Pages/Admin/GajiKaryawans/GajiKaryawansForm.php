@@ -37,9 +37,16 @@ class GajiKaryawansForm extends Component
 
     public $bonus_lainnya;
 
-    // Bonus penyelesaian task diatur di halaman "Penyelesaian Task" (pool bersama).
-    // Di form ini nilainya read-only (carried), tetap masuk perhitungan total.
+    // Bonus penyelesaian task berasal dari pembagian pool di halaman
+    // "Penyelesaian Task". Admin boleh mengambil alih angkanya di form ini
+    // dengan menyalakan $bonus_task_manual; selama menyala, pembagian pool
+    // tidak lagi menimpa baris ini (lihat BonusTaskPeriodeAction).
     public $bonus_penyelesaian_task = 0;
+
+    public bool $bonus_task_manual = false;
+
+    /** Angka otomatis, ditampilkan sebagai pembanding saat mode manual menyala. */
+    public int $bonus_task_otomatis = 0;
 
     public $jam_lembur;
 
@@ -117,7 +124,9 @@ class GajiKaryawansForm extends Component
             $this->gaji_pokok = $this->formatRupiah($this->gajikaryawan->gaji_pokok);
             $this->bonus_kinerja = $this->formatRupiah($this->gajikaryawan->bonus_kinerja);
             $this->bonus_lainnya = $this->formatRupiah($this->gajikaryawan->bonus_lainnya);
-            $this->bonus_penyelesaian_task = (int) $this->gajikaryawan->bonus_penyelesaian_task;
+            $this->bonus_penyelesaian_task = $this->formatAngka((int) $this->gajikaryawan->bonus_penyelesaian_task);
+            $this->bonus_task_manual = (bool) $this->gajikaryawan->bonus_task_manual;
+            $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
             $this->jam_lembur = $this->gajikaryawan->jam_lembur ?: null;
             // Tarif/jam diturunkan dari data historis bila ada, agar nilai lama tetap akurat
             $this->tarif_lembur = ($this->gajikaryawan->jam_lembur > 0)
@@ -179,7 +188,7 @@ class GajiKaryawansForm extends Component
                 (int) $this->periode_bulan,
                 (int) $this->periode_tahun
             )->format('Y-m-d');
-            $this->bonus_penyelesaian_task = 0;
+            $this->bonus_penyelesaian_task = $this->formatAngka(0);
             // Tarif diisi dari data karyawan saat karyawan dipilih; default 0.
             $this->jam_lembur = 0;
             $this->tarif_lembur = $this->formatAngka(0);
@@ -338,7 +347,7 @@ class GajiKaryawansForm extends Component
         }
 
         if (in_array($propertyName, [
-            'gaji_pokok', 'bonus_kinerja', 'bonus_lainnya', 'uang_lembur',
+            'gaji_pokok', 'bonus_kinerja', 'bonus_lainnya', 'bonus_penyelesaian_task', 'uang_lembur',
             'jam_lembur', 'tarif_lembur',
             'tarif_hadir_offline', 'tarif_hadir_online',
             'uang_hadir_offline', 'uang_hadir_online',
@@ -368,7 +377,7 @@ class GajiKaryawansForm extends Component
             $this->toNumber($this->gaji_pokok) +
             $this->toNumber($this->bonus_kinerja) +
             $this->toNumber($this->bonus_lainnya) +
-            (int) $this->bonus_penyelesaian_task +
+            (int) $this->toNumber($this->bonus_penyelesaian_task) +
             $this->toNumber($this->uang_lembur) +
             $this->toNumber($this->uang_hadir_offline) +
             $this->toNumber($this->uang_hadir_online) +
@@ -400,6 +409,56 @@ class GajiKaryawansForm extends Component
 
     // Format angka dengan pemisah ribuan TANPA prefix "Rp" (Rp ditaruh terpisah di UI).
     // Dipakai seragam oleh seluruh input nominal di form gaji.
+    /**
+     * Mematikan mode manual mengembalikan angka otomatis; menyalakannya
+     * membiarkan angka yang sedang tampil sebagai titik awal untuk diubah.
+     */
+    public function updatedBonusTaskManual($nilai): void
+    {
+        $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
+
+        if (! $nilai) {
+            $this->bonus_penyelesaian_task = $this->formatAngka($this->bonus_task_otomatis);
+        }
+
+        $this->calculateTotal();
+    }
+
+    /** Kembalikan angka ke hasil pembagian pool, tanpa mematikan mode manual. */
+    public function pulihkanBonusTaskOtomatis(): void
+    {
+        $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
+        $this->bonus_penyelesaian_task = $this->formatAngka($this->bonus_task_otomatis);
+        $this->calculateTotal();
+    }
+
+    /**
+     * Berapa bonus task karyawan ini SEANDAINYA dibagi otomatis dari pool.
+     *
+     * Penanda manual baris ini sengaja diabaikan, supaya yang tampil adalah
+     * hitungan otomatis yang sebenarnya — bukan angka manual yang tersimpan.
+     */
+    private function hitungBonusTaskOtomatis(): int
+    {
+        if (! $this->nama_karyawan || ! $this->periode_bulan || ! $this->periode_tahun) {
+            return 0;
+        }
+
+        $hasil = app(\App\Actions\Gaji\BonusTaskPeriodeAction::class)->distribusi(
+            (int) $this->periode_bulan,
+            (int) $this->periode_tahun,
+            (string) $this->nama_karyawan
+        );
+
+        foreach ($hasil['rows'] as $row) {
+            if ((string) $row['user_id'] === (string) $this->nama_karyawan) {
+                return (int) $row['bonus'];
+            }
+        }
+
+        return 0;
+    }
+
     private function formatRupiah($angka)
     {
         // Nilai 0 / kosong ditampilkan sebagai input kosong (placeholder "0"),
@@ -507,7 +566,8 @@ class GajiKaryawansForm extends Component
             'gaji_pokok' => $this->toNumber($this->gaji_pokok),
             'bonus_kinerja' => $this->toNumber($this->bonus_kinerja),
             'bonus_lainnya' => $this->toNumber($this->bonus_lainnya),
-            'bonus_penyelesaian_task' => (int) $this->bonus_penyelesaian_task,
+            'bonus_penyelesaian_task' => (int) $this->toNumber($this->bonus_penyelesaian_task),
+            'bonus_task_manual' => $this->bonus_task_manual,
             'uang_lembur' => $this->toNumber($this->uang_lembur),
             'jam_lembur' => (int) $this->toNumber($this->jam_lembur),
             'jumlah_hadir_offline' => (int) $this->jumlah_hadir_offline,

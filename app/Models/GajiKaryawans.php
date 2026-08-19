@@ -26,6 +26,7 @@ class GajiKaryawans extends Model
         'bonus_lainnya',
         'task_budget',
         'bonus_penyelesaian_task',
+        'bonus_task_manual',
         'tasks',
         'uang_lembur',
         'jam_lembur',
@@ -52,6 +53,7 @@ class GajiKaryawans extends Model
     protected $casts = [
         'tanggal_transaksi' => 'date',
         'tasks' => 'array',
+        'bonus_task_manual' => 'boolean',
     ];
 
     protected static function booted(): void

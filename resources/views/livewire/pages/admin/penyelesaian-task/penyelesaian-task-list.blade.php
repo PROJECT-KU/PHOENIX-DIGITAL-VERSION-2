@@ -411,7 +411,13 @@ Penyelesaian Task || lemon
                             @else
                             <span class="badge bg-light text-secondary border rounded-pill"><i class="bi bi-exclamation-circle me-1"></i>Belum ada gaji</span>
                             @endif
-                            @if($row['locked'])<span class="badge bg-secondary rounded-pill"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>@endif
+                            {{-- Dibedakan: terkunci karena gaji sudah final, atau
+                                 karena bonusnya diatur manual oleh admin di form gaji. --}}
+                            @if(!empty($row['manual']))
+                            <span class="badge bg-warning text-dark rounded-pill" title="Bonus diisi manual di form gaji — pembagian pool tidak menimpanya"><i class="bi bi-pencil-square me-1"></i>Manual</span>
+                            @elseif($row['locked'])
+                            <span class="badge bg-secondary rounded-pill"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -1147,7 +1153,7 @@ Penyelesaian Task || lemon
                     const c = t.closest('[wire\\:id]'); if (!c) return;
                     Swal.fire({
                         title: 'Terapkan bonus ke gaji?',
-                        text: 'Bonus penyelesaian task ditulis ke semua draft gaji (pending) periode ini. Gaji final (completed) tetap dikunci.',
+                        text: 'Bonus penyelesaian task ditulis ke semua draft gaji (pending) periode ini. Gaji final (completed) dan bonus yang diatur manual tetap dikunci.',
                         icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, terapkan', cancelButtonText: 'Batal', ...glossyConfig
                     }).then(r => { if (r.isConfirmed) Livewire.find(c.getAttribute('wire:id')).call('terapkan'); });
                     return;

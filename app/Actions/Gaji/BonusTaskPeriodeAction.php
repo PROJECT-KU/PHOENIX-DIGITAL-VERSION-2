@@ -65,8 +65,14 @@ class BonusTaskPeriodeAction
 
     /**
      * Hitung distribusi (read-only) untuk preview di halaman Penyelesaian Task.
+     *
+     * @param  string|null  $abaikanManual  user id yang penanda manualnya
+     *                                      diabaikan, sehingga bonusnya dihitung
+     *                                      otomatis seperti biasa. Dipakai form
+     *                                      gaji untuk menunjukkan berapa angka
+     *                                      otomatisnya bila mode manual dimatikan.
      */
-    public function distribusi(int $bulan, int $tahun): array
+    public function distribusi(int $bulan, int $tahun, ?string $abaikanManual = null): array
     {
         $pool = self::pool($bulan, $tahun);
 
@@ -83,14 +89,20 @@ class BonusTaskPeriodeAction
             ->get()
             ->groupBy('user_id');
 
-        $lockedBonus = (int) $gajis->where('status', 'completed')->sum('bonus_penyelesaian_task');
+        // Baris yang dibekukan: gaji completed (nilai historis) DAN gaji yang
+        // bonusnya diisi manual oleh admin. Keduanya tidak ikut dibagi ulang,
+        // dan porsinya keluar dari pool supaya sisanya tidak dibagi berlebih.
+        $manualAktif = fn ($g) => $g->bonus_task_manual && (string) $g->nama_karyawan !== (string) $abaikanManual;
+
+        $beku = $gajis->filter(fn ($g) => $g->status === 'completed' || $manualAktif($g));
+        $lockedBonus = (int) $beku->sum('bonus_penyelesaian_task');
         $sisaPool = max($pool - $lockedBonus, 0);
 
         // Total bobot = task milik user yg punya gaji PENDING & status bukan tidak_ada_info.
         $totalBobot = 0;
         foreach ($tasks as $userId => $list) {
             $gaji = $gajis->get($userId);
-            if (! $gaji || $gaji->status === 'completed') {
+            if (! $gaji || $gaji->status === 'completed' || $manualAktif($gaji)) {
                 continue;
             }
             foreach ($list as $t) {
@@ -110,8 +122,9 @@ class BonusTaskPeriodeAction
         foreach ($userIds as $userId) {
             $gaji = $gajis->get($userId);
             $list = $tasks->get($userId, collect());
-            $locked = $gaji && $gaji->status === 'completed';
-            $adaGajiPending = $gaji && $gaji->status !== 'completed';
+            $manual = $gaji ? $manualAktif($gaji) : false;
+            $locked = $gaji && ($gaji->status === 'completed' || $manual);
+            $adaGajiPending = $gaji && $gaji->status !== 'completed' && ! $manual;
 
             $rincian = [];
             $bonus = 0;
@@ -183,6 +196,9 @@ class BonusTaskPeriodeAction
                 'status_gaji' => $gaji?->status ?? 'none',
                 'ada_gaji' => (bool) $gaji,
                 'locked' => $locked,
+                // Dibedakan dari 'locked': manual berarti admin yang menentukan,
+                // bukan karena gajinya sudah completed.
+                'manual' => $manual,
                 'bonus' => $bonus,
                 'tasks' => $rincian,
             ];
