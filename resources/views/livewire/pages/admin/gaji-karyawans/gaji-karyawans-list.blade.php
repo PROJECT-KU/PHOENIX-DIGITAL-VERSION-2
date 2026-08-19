@@ -172,10 +172,17 @@ Data Gaji Karyawan || lemon
                                 </td>
                                 <td>{{ $item->created_at_formatted }}</td>
                                 <td class="text-center text-nowrap">
+                                    {{-- wire:target menyertakan ARGUMENNYA. Tanpa itu targetnya
+                                         hanya nama metode, sehingga satu klik menonaktifkan
+                                         tombol slip di SELURUH baris tabel. --}}
                                     <button type="button" wire:click="downloadSlip('{{ $item->id }}')"
-                                        wire:loading.attr="disabled" wire:target="downloadSlip"
+                                        wire:loading.attr="disabled" wire:target="downloadSlip('{{ $item->id }}')"
                                         class="btn btn-sm btn-success text-white p-2" title="Cetak Slip Gaji">
-                                        <i class="bi bi-receipt"></i>
+                                        <span wire:loading.remove wire:target="downloadSlip('{{ $item->id }}')">
+                                            <i class="bi bi-receipt"></i>
+                                        </span>
+                                        <span wire:loading wire:target="downloadSlip('{{ $item->id }}')"
+                                            class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                     </button>
                                     @if (auth()->user()->hasPermission('edit_gajikaryawan'))
                                     <a href="{{ route('admin.gajikaryawan.edit', $item->id) }}" wire:navigate
