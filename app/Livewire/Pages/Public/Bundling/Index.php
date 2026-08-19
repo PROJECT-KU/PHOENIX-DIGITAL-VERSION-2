@@ -27,7 +27,7 @@ class Index extends Component
     private const JUMLAH_BERANDA = 4;
 
     /** Halaman /bundling penuh. */
-    private const PER_HALAMAN = 6;
+    private const PER_HALAMAN = 8;
 
     // Modal detail bundling
     public bool $showBundleDetail = false;

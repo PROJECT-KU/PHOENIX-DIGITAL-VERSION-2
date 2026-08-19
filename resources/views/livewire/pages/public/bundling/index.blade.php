@@ -58,7 +58,10 @@
                 </div>
             @endif
         @else
-            <div class="mt-4">{{ $bundlings->links() }}</div>
+            {{-- pagination.ph: tampilan paginasi Bootstrap milik proyek ini. links()
+                 polos memakai markup Tailwind bawaan Laravel, yang di situs ini
+                 nyaris tak terlihat sehingga halaman 2 seolah tidak ada. --}}
+            <div class="mt-4">{{ $bundlings->links('pagination.ph') }}</div>
         @endif
     </div>
 

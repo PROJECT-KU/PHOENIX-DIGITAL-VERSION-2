@@ -14,8 +14,8 @@ class ProductBundlings extends Component
     use MengirimPixel;
     use WithPagination;
 
-    /** Halaman paket tersendiri: 6 per halaman. */
-    public $perPage = 6;
+    /** Halaman paket tersendiri: 8 per halaman. */
+    public $perPage = 8;
 
     protected $paginationTheme = 'bootstrap';
 

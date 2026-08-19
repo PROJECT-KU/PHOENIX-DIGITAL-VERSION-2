@@ -358,7 +358,7 @@
                         @endforelse
 
                         {{-- Paginasi 6 per halaman; sisanya ada di halaman berikutnya. --}}
-                        <div class="col-12 mt-4">{{ $bundlings->links() }}</div>
+                        <div class="col-12 mt-4">{{ $bundlings->links('pagination.ph') }}</div>
                     </div>
                 </div>
             </section><!-- /Best Sellers Section -->
