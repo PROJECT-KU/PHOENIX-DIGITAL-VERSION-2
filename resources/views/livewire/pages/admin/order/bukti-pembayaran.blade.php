@@ -272,7 +272,11 @@ Unggah Bukti Pembayaran || lemon
                              lapisan pengoptimal gambar hosting mencegat alamat semacam
                              itu sebelum sampai ke aplikasi — pratinjaunya jadi rusak.
                              Cara ini juga lebih cepat: tidak ada permintaan ke server. --}}
-                        <div class="bp-drop" wire:loading.class="opacity-50" wire:target="bukti"
+                        {{-- Tidak ada penanda "sedang mengunggah" di kotak ini.
+                             Penanda itu sempat terlihat sebelum admin memilih apa pun
+                             dan justru membingungkan. Umpan baliknya kini pratinjau
+                             gambar, yang muncul seketika begitu berkas dipilih. --}}
+                        <div class="bp-drop"
                             x-data="{ pratinjau: null, nama: null }"
                             x-on:pratinjau-bersih.window="pratinjau = null; nama = null">
                             <input type="file" wire:model="bukti" accept="image/*"
@@ -287,9 +291,6 @@ Unggah Bukti Pembayaran || lemon
                             <div class="mt-3" x-show="pratinjau" x-cloak>
                                 <img :src="pratinjau" alt="Pratinjau bukti pembayaran" class="bp-pratinjau">
                             </div>
-                            <div wire:loading wire:target="bukti" class="text-primary small mt-2 d-inline-flex align-items-center gap-1">
-                                <span class="spinner-border spinner-border-sm"></span> Mengunggah...
-                            </div>
                         </div>
 
                         @error('bukti')
@@ -303,8 +304,14 @@ Unggah Bukti Pembayaran || lemon
                                 class="btn btn-secondary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-arrow-left"></i> <span>Kembali</span>
                             </a>
+                            {{-- Sasarannya HANYA 'simpan'. Sebelumnya 'bukti' ikut, sehingga
+                                 tombol ini nonaktif selama unggahan dianggap berjalan —
+                                 dan keadaan itu terbukti bisa muncul tanpa sebab, membuat
+                                 tombolnya tidak bisa diklik sama sekali. Bila admin menekan
+                                 terlalu cepat, validasi menjawab dengan pesan yang jelas —
+                                 kegagalan yang bisa ditindaklanjuti, bukan tombol mati. --}}
                             <button type="button" wire:click="simpan" wire:loading.attr="disabled"
-                                wire:target="simpan,bukti"
+                                wire:target="simpan"
                                 class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-check2-circle"></i>
                                 <span wire:loading.remove wire:target="simpan">{{ $gantiSaja ? 'Simpan Bukti' : 'Simpan &amp; Aktifkan Pesanan' }}</span>

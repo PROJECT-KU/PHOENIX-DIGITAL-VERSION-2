@@ -95,3 +95,25 @@ it('memakai sistem desain admin, bukan gaya karangan sendiri', function () {
         expect($html)->toContain($kelas);
     }
 });
+
+it('kotak unggah tidak menampilkan penanda "sedang mengunggah"', function () {
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/admin/order/bukti-pembayaran.blade.php')
+    );
+
+    // Penanda itu sempat terlihat sebelum admin memilih berkas apa pun.
+    // Umpan baliknya cukup pratinjau gambar, yang muncul seketika.
+    expect($blade)->not->toContain('Mengunggah')
+        ->and($blade)->not->toContain('wire:loading.class="opacity-50"');
+});
+
+it('tombol simpan tidak bergantung pada keadaan unggahan', function () {
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/admin/order/bukti-pembayaran.blade.php')
+    );
+
+    // 'simpan,bukti' membuat tombol nonaktif selama unggahan dianggap berjalan —
+    // dan keadaan itu bisa muncul tanpa sebab, mengunci tombolnya.
+    expect($blade)->not->toContain('wire:target="simpan,bukti"')
+        ->and($blade)->toContain('wire:target="simpan"');
+});
