@@ -273,7 +273,7 @@ Unggah Bukti Pembayaran || lemon
                             </div>
                         @enderror
 
-                        @if ($bukti && ! is_string($bukti))
+                        @if ($bukti && ! is_string($bukti) && $bukti->isPreviewable())
                             <div class="mt-3 text-center">
                                 <img src="{{ $bukti->temporaryUrl() }}" alt="Pratinjau bukti pembayaran" class="bp-pratinjau">
                             </div>

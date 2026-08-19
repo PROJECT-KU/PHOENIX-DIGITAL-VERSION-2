@@ -24,6 +24,12 @@ class OrderDetail extends Component
 
     public ?OrderItem $orderItem = null;
 
+    /**
+     * Bukti pembayaran pengganti, untuk pesanan transfer / QRIS statis yang
+     * buktinya terlanjur salah unggah.
+     */
+    public $buktiBaru;
+
     // ==== Pengecekan jasa (upload hasil oleh admin) ====
     public ?string $uploadAktifId = null; // pengecekan yang sedang diisi hasilnya
 
@@ -87,6 +93,55 @@ class OrderDetail extends Component
             'customer',
             'items.product', 'items.ebooks', 'items.processedBy', 'uploads',
         ]);
+    }
+
+    /**
+     * Bukti hanya boleh diganti untuk pembayaran yang buktinya memang diunggah
+     * manual. QRIS dinamis dikonfirmasi penyedia, jadi tidak ada yang diganti.
+     */
+    public function bolehGantiBukti(): bool
+    {
+        return in_array($this->order->payment_method, ['transfer', 'qris_statis'], true);
+    }
+
+    /**
+     * Ganti bukti pembayaran. Status pesanan sengaja TIDAK diubah: ini koreksi
+     * berkas yang salah unggah, bukan perpindahan tahap pembayaran.
+     */
+    public function gantiBukti(): void
+    {
+        abort_unless($this->bolehGantiBukti(), 403);
+
+        $this->validate(
+            ['buktiBaru' => 'required|image|max:4096'],
+            [
+                'buktiBaru.required' => 'Pilih gambar bukti pembayaran.',
+                'buktiBaru.image' => 'Berkas harus berupa gambar.',
+                'buktiBaru.max' => 'Ukuran maksimal 4 MB.',
+            ],
+            ['buktiBaru' => 'bukti pembayaran']
+        );
+
+        $lama = $this->order->bukti_pembayaran;
+
+        // Disk PRIVAT, sama dengan jalur unggah pertama: bukti bayar memuat data
+        // rekening pelanggan dan tidak boleh bisa dibuka lewat URL.
+        $jalur = $this->buktiBaru->store('bukti_pembayaran', 'local');
+
+        // Lewat Eloquent, BUKAN query builder: OrderObserver bergantung pada
+        // event `updated`.
+        $this->order->update(['bukti_pembayaran' => $jalur]);
+
+        // Berkas lama dihapus SETELAH yang baru tersimpan, supaya kegagalan di
+        // tengah tidak meninggalkan pesanan tanpa bukti sama sekali.
+        if ($lama && $lama !== $jalur && Storage::disk('local')->exists($lama)) {
+            Storage::disk('local')->delete($lama);
+        }
+
+        $this->buktiBaru = null;
+        $this->order->refresh();
+
+        $this->dispatch('order-updated', message: 'Bukti pembayaran berhasil diganti.');
     }
 
     public function updateSubscriptionStatus(string $itemId, string $status): void

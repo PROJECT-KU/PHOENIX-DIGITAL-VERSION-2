@@ -29,6 +29,11 @@ Detail Pesanan || lemon
     </div>
 
     <style>
+    /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine siap.
+       Layout admin tidak memuat public-custom-styles.css, jadi ditulis di sini
+       — sama seperti spending-form. */
+    [x-cloak] { display: none !important; }
+
         .detail-info-card {
             border: 1px solid rgba(108, 99, 255, 0.12);
             border-radius: 1rem;
@@ -384,15 +389,61 @@ Detail Pesanan || lemon
                         @endif
                     </span>
                 </div>
-                @if($order->bukti_pembayaran)
+                @if($order->bukti_pembayaran || $this->bolehGantiBukti())
                 <div class="info-row">
                     <span class="info-label">Bukti Pembayaran</span>
                     <span class="info-value">
+                        @if($order->bukti_pembayaran)
                         <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
                             data-bukti-url="{{ route('admin.pesanantoko.bukti', $order) }}" title="Perbesar bukti pembayaran">
                             <img src="{{ route('admin.pesanantoko.bukti', $order) }}" alt="Bukti pembayaran"
                                 style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
                         </a>
+                        @else
+                        <span class="text-muted fw-normal">Belum ada</span>
+                        @endif
+
+                        {{-- Ganti bukti: hanya untuk pembayaran yang buktinya
+                             diunggah manual (transfer / QRIS statis). QRIS dinamis
+                             dikonfirmasi penyedia, jadi tidak ada yang diganti. --}}
+                        @if($this->bolehGantiBukti())
+                        <div class="mt-2" x-data="{ buka: false }">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;line-height:1.5;"
+                                x-on:click="buka = !buka">
+                                <i class="bi bi-arrow-repeat"></i>
+                                <span x-text="buka ? 'Batal' : '{{ $order->bukti_pembayaran ? 'Ganti Bukti' : 'Unggah Bukti' }}'"></span>
+                            </button>
+
+                            <div x-show="buka" x-cloak class="mt-2" style="max-width:320px;">
+                                <input type="file" wire:model="buktiBaru" accept="image/*"
+                                    class="form-control form-control-sm">
+                                @error('buktiBaru')
+                                <div class="text-danger" style="font-size:.72rem;">{{ $message }}</div>
+                                @enderror
+
+                                <div wire:loading wire:target="buktiBaru" class="text-primary mt-1" style="font-size:.72rem;">
+                                    <span class="spinner-border spinner-border-sm me-1"></span>Mengunggah...
+                                </div>
+
+                                @if($buktiBaru && ! is_string($buktiBaru) && $buktiBaru->isPreviewable())
+                                <div class="mt-2">
+                                    <img src="{{ $buktiBaru->temporaryUrl() }}" alt="Pratinjau bukti baru"
+                                        style="max-height:120px;border-radius:8px;border:1px solid #e6e8f2;">
+                                </div>
+                                <button type="button" wire:click="gantiBukti" wire:loading.attr="disabled"
+                                    wire:target="gantiBukti,buktiBaru"
+                                    class="btn btn-sm btn-primary mt-2"
+                                    style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:4px 12px;line-height:1.5;"
+                                    x-on:click="buka = false">
+                                    <i class="bi bi-check2-circle"></i>
+                                    <span wire:loading.remove wire:target="gantiBukti">Simpan Bukti</span>
+                                    <span wire:loading wire:target="gantiBukti">Menyimpan...</span>
+                                </button>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </span>
                 </div>
                 @endif
