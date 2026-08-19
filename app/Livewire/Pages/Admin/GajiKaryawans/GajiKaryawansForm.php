@@ -431,14 +431,6 @@ class GajiKaryawansForm extends Component
         $this->calculateTotal();
     }
 
-    /** Kembalikan angka ke hasil pembagian pool, tanpa mematikan mode manual. */
-    public function pulihkanBonusTaskOtomatis(): void
-    {
-        $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
-        $this->bonus_penyelesaian_task = $this->formatAngka($this->bonus_task_otomatis);
-        $this->calculateTotal();
-    }
-
     /**
      * Berapa bonus task karyawan ini SEANDAINYA dibagi otomatis dari pool.
      *

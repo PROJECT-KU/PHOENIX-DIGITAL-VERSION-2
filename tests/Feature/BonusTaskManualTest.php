@@ -197,3 +197,33 @@ it('angka manual bertahan setelah pool dibagikan ulang', function () {
 
     expect((int) $gaji->fresh()->bonus_penyelesaian_task)->toBe(300000);
 });
+
+it('tombol pulihkan diletakkan di baris sakelar, bukan baris tersendiri', function () {
+    $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
+
+    $html = Livewire\Livewire::test(
+        App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansForm::class,
+        ['gajikaryawan' => $gaji]
+    )->html();
+
+    // Tombolnya berada di dalam pembungkus yang sama dengan sakelar.
+    $baris = preg_match('#<div class="d-flex align-items-center gap-2">(.*?)</div>\s*</div>#s', $html, $m)
+        ? $m[1]
+        : '';
+
+    expect($baris)->toContain('pakaiOtomatis()')
+        ->and($baris)->toContain('bonus_task_manual');
+});
+
+it('tombol pulihkan bekerja tanpa memanggil server', function () {
+    $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
+
+    $html = Livewire\Livewire::test(
+        App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansForm::class,
+        ['gajikaryawan' => $gaji]
+    )->html();
+
+    // Dijalankan Alpine; tidak ada wire:click yang memicu perjalanan bolak-balik.
+    expect($html)->toContain('x-on:click="pakaiOtomatis()"')
+        ->and($html)->not->toContain('wire:click="pulihkanBonusTaskOtomatis"');
+});

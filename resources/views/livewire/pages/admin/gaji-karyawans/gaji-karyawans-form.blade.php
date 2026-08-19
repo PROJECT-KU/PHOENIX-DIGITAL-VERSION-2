@@ -312,23 +312,55 @@
                     {{-- ============ BONUS PENYELESAIAN TASK (semi otomatis) ============
                          Bawaannya hasil pembagian pool di halaman Penyelesaian Task.
                          Bila "Atur manual" dinyalakan, admin menentukan angkanya dan
-                         pembagian pool tidak lagi menimpa baris ini. --}}
-                    {{-- Keadaan sakelar disimpan juga di Alpine supaya input langsung
-                         terbuka saat diklik. Menunggu balasan Livewire terasa lambat:
-                         form ini besar, jadi satu perjalanan bolak-balik berarti jeda
-                         yang kentara sebelum kolomnya bisa diketik. --}}
-                    <div class="col-md-6 mb-3" x-data="{ manual: @entangle('bonus_task_manual').live }">
+                         pembagian pool tidak lagi menimpa baris ini.
+
+                         Semuanya dikerjakan Alpine di sisi klien: angka otomatisnya
+                         sudah ikut dirender, jadi membuka kunci input maupun memulihkan
+                         angka tidak perlu menunggu balasan server. Form ini besar, dan
+                         satu perjalanan bolak-balik Livewire terasa jelas jedanya. --}}
+                    <div class="col-md-6 mb-3" x-data="{
+                        manual: @entangle('bonus_task_manual').live,
+                        {{-- entangle, bukan angka tetap: nilainya berubah di server saat
+                             karyawan atau periode diganti. --}}
+                        otomatis: @entangle('bonus_task_otomatis'),
+                        nilai: {{ (int) preg_replace('/[^0-9]/', '', (string) $bonus_penyelesaian_task) }},
+                        get beda() { return this.nilai !== this.otomatis },
+                        angka(v) { return new Intl.NumberFormat('id-ID').format(v) },
+                        bacaNilai() { this.nilai = parseInt((this.$refs.nilai.value || '').replace(/[^0-9]/g, '')) || 0 },
+                        pakaiOtomatis() {
+                            this.$refs.nilai.value = this.angka(this.otomatis);
+                            this.nilai = this.otomatis;
+                            {{-- false = jangan picu permintaan; nilainya ikut terkirim saat disimpan,
+                                 dan save() menghitung ulang totalnya di server. --}}
+                            $wire.set('bonus_penyelesaian_task', this.$refs.nilai.value, false);
+                            if (typeof hitungTotal === 'function') hitungTotal();
+                        }
+                    }">
                         <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                             <label for="bonus_penyelesaian_task" class="form-label mb-0 d-inline-flex align-items-center gap-1">
                                 <span>Bonus Penyelesaian Task</span>
                                 <i class="bi bi-info-circle text-muted" style="line-height:1;"
                                     title="Bawaannya dihitung otomatis dari pool di halaman Penyelesaian Task"></i>
                             </label>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                    id="bonus_task_manual" x-model="manual"
-                                    x-on:change="if (manual) $nextTick(() => $refs.nilai?.focus())">
-                                <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {{-- Tombol pulihkan diletakkan di sini, bukan sebagai baris
+                                     tersendiri di bawah kolom, supaya tidak memakan tinggi.
+                                     Hanya muncul saat mode manual menyala DAN angkanya beda. --}}
+                                <button type="button" x-show="manual && beda" x-cloak
+                                    class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center gap-1"
+                                    style="font-size:.75rem; line-height:1.6;"
+                                    x-on:click="pakaiOtomatis()"
+                                    x-bind:title="'Kembalikan ke hitungan otomatis: Rp ' + angka(otomatis)">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    <span x-text="'Rp ' + angka(otomatis)"></span>
+                                </button>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                        id="bonus_task_manual" x-model="manual"
+                                        x-on:change="if (manual) { $nextTick(() => $refs.nilai?.focus()) }
+                                                     else { nilai = otomatis }">
+                                    <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
+                                </div>
                             </div>
                         </div>
                         <div class="rp-wrap">
@@ -337,6 +369,7 @@
                             <input type="text" id="bonus_penyelesaian_task" x-ref="nilai"
                                 wire:model.blur="bonus_penyelesaian_task"
                                 x-bind:readonly="!manual"
+                                x-on:input="bacaNilai()"
                                 class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror"
                                 x-bind:class="manual ? '' : 'readonly-pretty'"
                                 placeholder="0">
@@ -348,13 +381,6 @@
                         <small class="text-warning-emphasis d-block mt-1" x-show="manual" x-cloak>
                             <i class="bi bi-pencil-square me-1"></i>Diisi manual — pembagian pool tidak akan menimpanya.
                         </small>
-                        @if ((int) preg_replace('/[^0-9]/', '', (string) $bonus_penyelesaian_task) !== (int) $bonus_task_otomatis)
-                            <small class="text-muted d-block" x-show="manual" x-cloak>
-                                Hitungan otomatis: <b>Rp {{ number_format((int) $bonus_task_otomatis, 0, ',', '.') }}</b>
-                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                    wire:click="pulihkanBonusTaskOtomatis">Pakai angka ini</button>
-                            </small>
-                        @endif
                         <small class="text-muted" x-show="!manual" x-cloak><i class="bi bi-list-check me-1"></i>Dihitung otomatis dari halaman <b>Penyelesaian Task</b>.</small>
                     </div>
 
