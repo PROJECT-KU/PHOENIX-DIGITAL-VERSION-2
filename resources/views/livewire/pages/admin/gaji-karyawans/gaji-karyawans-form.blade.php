@@ -369,7 +369,7 @@
                             <label for="bonus_penyelesaian_task" class="form-label mb-0 d-inline-flex align-items-center gap-1">
                                 <span>Bonus Penyelesaian Task</span>
                                 <i class="bi bi-info-circle text-muted" style="line-height:1;"
-                                    title="Bawaannya dihitung otomatis dari pool di halaman Penyelesaian Task"></i>
+                                    title="Bawaannya dibagi otomatis dari pool di halaman Penyelesaian Task. Bila diatur manual, angka yang Anda isi tidak akan ditimpa pembagian pool."></i>
                             </label>
                             <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" role="switch"
@@ -404,10 +404,10 @@
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
 
-                        <small class="text-warning-emphasis d-block mt-1" x-show="manual" x-cloak>
-                            <i class="bi bi-pencil-square me-1"></i>Diisi manual — pembagian pool tidak akan menimpanya.
-                        </small>
-                        <small class="text-muted" x-show="!manual" x-cloak><i class="bi bi-list-check me-1"></i>Dihitung otomatis dari halaman <b>Penyelesaian Task</b>.</small>
+                        {{-- Keterangan sependek mungkin; penjelasan panjangnya ada di
+                             tooltip label, jadi tidak perlu memakan tempat di sini. --}}
+                        <small class="text-warning-emphasis" x-show="manual" x-cloak><i class="bi bi-pencil-square me-1"></i>Tidak ikut pembagian pool</small>
+                        <small class="text-muted" x-show="!manual" x-cloak><i class="bi bi-list-check me-1"></i>Dari Penyelesaian Task</small>
                     </div>
 
                     <div class="col-md-6 mb-3">
