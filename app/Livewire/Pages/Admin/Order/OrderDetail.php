@@ -30,6 +30,9 @@ class OrderDetail extends Component
      */
     public $buktiBaru;
 
+    /** Popup ganti bukti sedang terbuka. */
+    public bool $modalBukti = false;
+
     // ==== Pengecekan jasa (upload hasil oleh admin) ====
     public ?string $uploadAktifId = null; // pengecekan yang sedang diisi hasilnya
 
@@ -104,6 +107,22 @@ class OrderDetail extends Component
         return in_array($this->order->payment_method, ['transfer', 'qris_statis'], true);
     }
 
+    public function bukaGantiBukti(): void
+    {
+        abort_unless($this->bolehGantiBukti(), 403);
+
+        $this->buktiBaru = null;
+        $this->resetErrorBag('buktiBaru');
+        $this->modalBukti = true;
+    }
+
+    public function tutupGantiBukti(): void
+    {
+        $this->buktiBaru = null;
+        $this->resetErrorBag('buktiBaru');
+        $this->modalBukti = false;
+    }
+
     /**
      * Ganti bukti pembayaran. Status pesanan sengaja TIDAK diubah: ini koreksi
      * berkas yang salah unggah, bukan perpindahan tahap pembayaran.
@@ -139,6 +158,7 @@ class OrderDetail extends Component
         }
 
         $this->buktiBaru = null;
+        $this->modalBukti = false;
         $this->order->refresh();
 
         $this->dispatch('order-updated', message: 'Bukti pembayaran berhasil diganti.');

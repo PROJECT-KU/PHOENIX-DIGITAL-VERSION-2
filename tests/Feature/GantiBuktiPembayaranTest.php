@@ -99,3 +99,63 @@ it('menolak gambar lebih dari 4 MB', function () {
         ->call('gantiBukti')
         ->assertHasErrors(['buktiBaru' => 'max']);
 });
+
+it('popup ganti bukti tertutup sebelum dibuka', function () {
+    $order = orderBayar('transfer');
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order]);
+
+    // Disasar ke markup-nya, bukan sekadar kata "bp-overlay" — kata itu juga
+    // muncul di blok <style> walau popupnya tidak tampil.
+    expect($t->get('modalBukti'))->toBeFalse()
+        ->and($t->html())->not->toContain('class="bp-overlay pcek"');
+});
+
+it('tombol membuka popup, bukan panel di dalam halaman', function () {
+    $order = orderBayar('transfer');
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaGantiBukti')
+        ->html();
+
+    // Isinya memakai anatomi .pcek yang sama dengan unggah hasil jasa.
+    expect($html)->toContain('class="bp-overlay pcek"')
+        ->and($html)->toContain('pcek-form-head')
+        ->and($html)->toContain('pcek-drop');
+});
+
+it('popup tertutup setelah bukti tersimpan', function () {
+    Storage::fake('local');
+
+    $order = orderBayar('transfer');
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaGantiBukti')
+        ->set('buktiBaru', UploadedFile::fake()->image('baru.jpg'))
+        ->call('gantiBukti');
+
+    expect($t->get('modalBukti'))->toBeFalse()
+        ->and($order->fresh()->bukti_pembayaran)->not->toBeNull();
+});
+
+it('menutup popup membuang berkas yang belum disimpan', function () {
+    Storage::fake('local');
+
+    $order = orderBayar('transfer');
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaGantiBukti')
+        ->set('buktiBaru', UploadedFile::fake()->image('batal.jpg'))
+        ->call('tutupGantiBukti');
+
+    expect($t->get('buktiBaru'))->toBeNull()
+        ->and($order->fresh()->bukti_pembayaran)->toBeNull();
+});
+
+it('qris dinamis tidak bisa membuka popup', function () {
+    $order = orderBayar('qris_dinamis');
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaGantiBukti')
+        ->assertStatus(403);
+});

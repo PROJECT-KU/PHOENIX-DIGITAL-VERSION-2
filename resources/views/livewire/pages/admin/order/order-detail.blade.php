@@ -29,6 +29,16 @@ Detail Pesanan || lemon
     </div>
 
     <style>
+    /* ===== Cangkang popup ganti bukti =====
+       Hanya latar gelap dan kotak di tengah; isi kotaknya memakai anatomi
+       .pcek-form* dan .pcek-drop* yang sudah dipakai unggah hasil jasa,
+       supaya tampilannya seragam dan tidak ada gaya baru yang berdiri sendiri. */
+    .bp-overlay { position: fixed; inset: 0; z-index: 1080; background: rgba(15, 23, 42, .55);
+        display: flex; align-items: center; justify-content: center; padding: 18px; }
+    .bp-modal { width: 100%; max-width: 440px; background: #fff; border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, .28); padding: 16px; max-height: 90vh; overflow-y: auto; }
+    .bp-modal .pcek-form { margin-top: 0; }
+
     /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine siap.
        Layout admin tidak memuat public-custom-styles.css, jadi ditulis di sini
        — sama seperti spending-form. */
@@ -405,44 +415,14 @@ Detail Pesanan || lemon
 
                         {{-- Ganti bukti: hanya untuk pembayaran yang buktinya
                              diunggah manual (transfer / QRIS statis). QRIS dinamis
-                             dikonfirmasi penyedia, jadi tidak ada yang diganti. --}}
+                             dikonfirmasi penyedia, jadi tidak ada yang diganti.
+                             Formulirnya dibuka sebagai popup di bawah halaman. --}}
                         @if($this->bolehGantiBukti())
-                        <div class="mt-2" x-data="{ buka: false }">
-                            <button type="button" class="btn btn-sm btn-outline-primary"
-                                style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;line-height:1.5;"
-                                x-on:click="buka = !buka">
-                                <i class="bi bi-arrow-repeat"></i>
-                                <span x-text="buka ? 'Batal' : '{{ $order->bukti_pembayaran ? 'Ganti Bukti' : 'Unggah Bukti' }}'"></span>
-                            </button>
-
-                            <div x-show="buka" x-cloak class="mt-2" style="max-width:320px;">
-                                <input type="file" wire:model="buktiBaru" accept="image/*"
-                                    class="form-control form-control-sm">
-                                @error('buktiBaru')
-                                <div class="text-danger" style="font-size:.72rem;">{{ $message }}</div>
-                                @enderror
-
-                                <div wire:loading wire:target="buktiBaru" class="text-primary mt-1" style="font-size:.72rem;">
-                                    <span class="spinner-border spinner-border-sm me-1"></span>Mengunggah...
-                                </div>
-
-                                @if($buktiBaru && ! is_string($buktiBaru) && $buktiBaru->isPreviewable())
-                                <div class="mt-2">
-                                    <img src="{{ $buktiBaru->temporaryUrl() }}" alt="Pratinjau bukti baru"
-                                        style="max-height:120px;border-radius:8px;border:1px solid #e6e8f2;">
-                                </div>
-                                <button type="button" wire:click="gantiBukti" wire:loading.attr="disabled"
-                                    wire:target="gantiBukti,buktiBaru"
-                                    class="btn btn-sm btn-primary mt-2"
-                                    style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:4px 12px;line-height:1.5;"
-                                    x-on:click="buka = false">
-                                    <i class="bi bi-check2-circle"></i>
-                                    <span wire:loading.remove wire:target="gantiBukti">Simpan Bukti</span>
-                                    <span wire:loading wire:target="gantiBukti">Menyimpan...</span>
-                                </button>
-                                @endif
-                            </div>
-                        </div>
+                        <button type="button" wire:click="bukaGantiBukti" class="btn btn-sm btn-outline-primary mt-2"
+                            style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;line-height:1.5;">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span>{{ $order->bukti_pembayaran ? 'Ganti Bukti' : 'Unggah Bukti' }}</span>
+                        </button>
                         @endif
                     </span>
                 </div>
@@ -1455,6 +1435,69 @@ Detail Pesanan || lemon
 
         </div>
     </div>
+
+    {{-- ===== Popup ganti bukti pembayaran ===== --}}
+    @if ($modalBukti)
+    <div class="bp-overlay pcek" wire:key="modal-bukti" wire:click.self="tutupGantiBukti">
+        <div class="bp-modal">
+            <div class="pcek-form">
+                <div class="pcek-form-head">
+                    <span class="pcek-form-ic"><i class="bi bi-receipt"></i></span>
+                    <div class="flex-grow-1" style="min-width:0;">
+                        <b>{{ $order->bukti_pembayaran ? 'Ganti Bukti Pembayaran' : 'Unggah Bukti Pembayaran' }}</b>
+                        <small>Status pesanan tidak berubah — ini hanya mengganti berkasnya</small>
+                    </div>
+                    <button type="button" wire:click="tutupGantiBukti" class="pcek-form-x" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+
+                <label class="pcek-drop">
+                    <input type="file" wire:model="buktiBaru" accept="image/*" class="pcek-drop-input">
+                    <span wire:loading wire:target="buktiBaru" class="pcek-drop-state">
+                        <i class="bi bi-arrow-repeat pcek-spin"></i>
+                        <span class="nm">Mengunggah&hellip;</span>
+                    </span>
+                    <span wire:loading.remove wire:target="buktiBaru" class="pcek-drop-state">
+                        @if ($buktiBaru && ! is_string($buktiBaru))
+                        <i class="bi bi-file-earmark-check ok"></i>
+                        <span class="nm">{{ $buktiBaru->getClientOriginalName() }}</span>
+                        <span class="chg">Ganti</span>
+                        @else
+                        <i class="bi bi-cloud-arrow-up up"></i>
+                        <span class="nm">Pilih gambar atau seret ke sini</span>
+                        @endif
+                    </span>
+                </label>
+
+                @error('buktiBaru')
+                <div class="text-danger mt-2" style="font-size:.76rem;">
+                    <i class="bi bi-exclamation-circle"></i> {{ $message }}
+                </div>
+                @enderror
+
+                {{-- Pratinjau hanya untuk berkas yang memang bisa dipratinjau:
+                     temporaryUrl() melempar galat untuk berkas non-gambar. --}}
+                @if ($buktiBaru && ! is_string($buktiBaru) && $buktiBaru->isPreviewable())
+                <div class="mt-3 text-center">
+                    <img src="{{ $buktiBaru->temporaryUrl() }}" alt="Pratinjau bukti baru"
+                        style="max-height:200px;max-width:100%;border-radius:10px;border:1px solid #e6e8f2;">
+                </div>
+                @endif
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <button type="button" wire:click="tutupGantiBukti"
+                        class="btn btn-sm btn-light rounded-pill px-3">Batal</button>
+                    <button type="button" wire:click="gantiBukti" wire:loading.attr="disabled"
+                        wire:target="gantiBukti,buktiBaru"
+                        class="btn btn-sm btn-primary rounded-pill px-3 d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-check2-circle"></i>
+                        <span wire:loading.remove wire:target="gantiBukti">Simpan Bukti</span>
+                        <span wire:loading wire:target="gantiBukti">Menyimpan&hellip;</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     @include('livewire.layout.sweetalert')
 </div>
