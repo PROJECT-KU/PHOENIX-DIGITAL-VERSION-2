@@ -1,7 +1,6 @@
 <div>
     {{-- Sembunyikan garis background di halaman riwayat --}}
     <style>
-        #ph-page-lines { display: none !important; }
     </style>
     <!-- Page Title -->
     <div class="page-title ph-page-title">

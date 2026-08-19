@@ -1,6 +1,5 @@
 <div wire:poll.20s="refreshStatus">
     <style>
-        #ph-page-lines { display: none !important; }
         .cek-wrap { max-width: 640px; margin: 0 auto; }
         .cek-quota { background: linear-gradient(135deg,#fff7ed,#fffdf9); border:1px solid #fde68a; border-radius:16px; padding:18px 18px 16px; margin-bottom:16px; }
         .cek-quota-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:10px; }

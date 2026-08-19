@@ -384,18 +384,12 @@
 .card-link i, .btn-shop i { transition: transform .18s ease; }
 .card-link:hover i, .btn-shop:hover i { transform: translateX(4px); }
 
-/* ========================= GARIS ANIMASI LATAR (banner → footer) ========================= */
-#ph-page-lines {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;               /* di belakang seluruh konten */
-    pointer-events: none;
-}
+/* Garis animasi latar dihapus atas permintaan pemilik: canvas melayang
+   di belakang seluruh halaman yang terus menggambar ulang. */
 body.index-page { background: #ffffff; }   /* putih bersih; flash sale & bundling tetap ber-background sendiri */
-/* Section dibuat transparan agar garis tembus (kartu/kotak tetap solid).
-   Flash sale TIDAK ditransparankan → animasi background-nya sendiri tetap tampil. */
+/* Section dibiarkan transparan; latar putih body yang tampil. Dulu ini agar
+   garis animasi tembus — garisnya sudah dihapus, aturannya dipertahankan
+   supaya tampilan tidak bergeser. */
 .ph-hero.section,
 .promo-cards.section,
 .ph-featured.section { background: transparent; }

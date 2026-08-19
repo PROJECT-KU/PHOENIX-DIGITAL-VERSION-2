@@ -5,7 +5,6 @@
 <div class="ph-article">
     <style>
         /* Sembunyikan garis animasi latar khusus di halaman detail blog */
-        #ph-page-lines { display: none !important; }
         .ph-article { --o: var(--ph-orange, #f26522); --a: var(--ph-amber, #fba919); --ink: var(--ph-ink, #23272f);
             --muted: var(--ph-muted, #6b7280); --soft: var(--ph-soft, #fff8f1); --line: var(--ph-line, #f1e6d8);
             --grad: var(--ph-grad, linear-gradient(135deg, #fba919 0%, #f26522 100%)); }

@@ -1,6 +1,5 @@
 <div>
     <style>
-        #ph-page-lines { display: none !important; }
         .cke-wrap { max-width: 560px; margin: 0 auto; text-align: center; padding: 8px 0 4px; }
         .cke-ic { width: 78px; height: 78px; border-radius: 50%; margin: 0 auto 16px;
             display: grid; place-items: center; font-size: 2.1rem; color: #b45309;

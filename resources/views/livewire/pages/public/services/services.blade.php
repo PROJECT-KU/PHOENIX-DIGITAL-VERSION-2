@@ -122,7 +122,6 @@
 <main class="svc-page">
     <style>
         /* Sembunyikan garis animasi latar khusus di halaman layanan */
-        #ph-page-lines { display: none !important; }
     </style>
     <div class="svc-hero">
         <div class="container">

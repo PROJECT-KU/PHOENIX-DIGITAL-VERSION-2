@@ -1,6 +1,5 @@
 <div>
     <style>
-        #ph-page-lines { display: none !important; }
         .exp-hg { animation: expFloat 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         .exp-glow { animation: expGlow 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
         .exp-shadow { animation: expShadow 4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }

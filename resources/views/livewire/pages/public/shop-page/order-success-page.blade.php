@@ -1,6 +1,5 @@
 <div>
     <style>
-        #ph-page-lines { display: none !important; }
         .su-ring { transform-box: fill-box; transform-origin: center; animation: suRing 2.4s ease-out infinite; }
         .su-ring.r2 { animation-delay: 1.2s; }
         .su-check { stroke-dasharray: 90; stroke-dashoffset: 90; animation: suCheck .55s ease forwards .25s; }

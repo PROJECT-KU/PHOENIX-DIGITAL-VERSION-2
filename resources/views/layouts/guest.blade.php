@@ -64,9 +64,6 @@
 </head>
 
 <body class="index-page">
-    <!-- Garis animasi latar: membentang dari banner s/d footer, berjalan saat scroll -->
-    <canvas id="ph-page-lines" aria-hidden="true"></canvas>
-
     <header id="header" class="header sticky-top">
         <!-- Top Bar -->
         <div class="py-2 top-bar">
@@ -419,72 +416,6 @@
         })();
     </script>
 
-    <!-- Garis animasi latar (banner → footer): mengalir + "berjalan" saat scroll -->
-    <script>
-        (function () {
-            const canvas = document.getElementById('ph-page-lines');
-            if (!canvas || !canvas.getContext) return;
-            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-            const ctx = canvas.getContext('2d');
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            let w = 0, h = 0;
-
-            function resize() {
-                w = window.innerWidth; h = window.innerHeight;
-                canvas.width = w * dpr; canvas.height = h * dpr;
-                canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            }
-            resize();
-            window.addEventListener('resize', resize);
-
-            // Beberapa lengkung yang MEMUSAT & MEREKAH seperti bilah SAYAP (mirip logo),
-            // meliuk vertikal turun sepanjang dokumen (di-anchor docY - scrollY → "berjalan"
-            // saat scroll). Tiap bilah beda amplitudo & fase → merekah/menyatu seperti sayap.
-            const AMP_BASE = () => Math.min(w * 0.32, 420);
-            // amp = pengali ayunan, ph = geser fase, wd = tebal, col = warna
-            const blades = [
-                { amp: 0.78, ph: 0.00, wd: 5.5, col: 'rgba(251,169,25,0.55)' },  // amber (dalam, tebal)
-                { amp: 0.92, ph: 0.12, wd: 4.5, col: 'rgba(244,120,45,0.50)' },
-                { amp: 1.06, ph: 0.26, wd: 3.5, col: 'rgba(242,101,34,0.42)' },  // oranye
-                { amp: 1.22, ph: 0.42, wd: 2.5, col: 'rgba(132,204,22,0.36)' },  // lime (luar, tipis)
-            ];
-            let t = 0;
-            function draw() {
-                t += 0.004;
-                const sy = window.scrollY || window.pageYOffset || 0;
-                ctx.clearRect(0, 0, w, h);
-
-                const cx = w * 0.5;
-                const A = AMP_BASE();
-                const yStart = sy - 140, yEnd = sy + h + 140;
-
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowColor = 'rgba(242,101,34,0.16)';
-                ctx.shadowBlur = 8;
-
-                for (const b of blades) {
-                    ctx.beginPath();
-                    for (let docY = yStart; docY <= yEnd; docY += 6) {
-                        const x = cx
-                            + Math.sin(docY * 0.0042 + t + b.ph) * (A * b.amp)
-                            + Math.sin(docY * 0.011 + t * 0.6 + b.ph) * (A * b.amp * 0.22);
-                        const vy = docY - sy;
-                        docY === yStart ? ctx.moveTo(x, vy) : ctx.lineTo(x, vy);
-                    }
-                    ctx.strokeStyle = b.col;
-                    ctx.lineWidth = b.wd;
-                    ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-
-                requestAnimationFrame(draw);
-            }
-            draw();
-        })();
-    </script>
 
 
     <!-- Main JS File -->
