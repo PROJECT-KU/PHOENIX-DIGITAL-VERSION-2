@@ -14,7 +14,8 @@ class ProductBundlings extends Component
     use MengirimPixel;
     use WithPagination;
 
-    public $perPage = 4;
+    /** Halaman paket tersendiri: 6 per halaman. */
+    public $perPage = 6;
 
     protected $paginationTheme = 'bootstrap';
 
@@ -104,7 +105,10 @@ class ProductBundlings extends Component
             'product4',
             'product5',
         ])
-            ->where('status', 'active')
+            // tayang(): status aktif DAN di dalam rentang tanggalnya.
+            // Sebelumnya hanya memeriksa status, sehingga paket musiman yang
+            // sudah lewat jadwalnya tetap muncul dan bisa dibeli di sini.
+            ->tayang()
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nama_paket', 'like', "%{$this->search}%")

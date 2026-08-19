@@ -282,64 +282,11 @@
                 <div class="container" wire:ignore.self>
                     <div class="row g-4 justify-content-center">
                         @forelse ($bundlings as $item)
-                            @php
-                                $durs = $item->durations ?? [];
-                                $old = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_awal);
-                                $now = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_bundling);
-                            @endphp
-                            <div class="col-12 col-md-6 col-xl-4" wire:key="bundling-{{ $item->id }}">
-                                <div class="bdl-card">
-                                    {{-- Header otomatis dari data — nama & pills seragam. --}}
-                                    @php $__prod = collect([1, 2, 3, 4, 5])->map(fn ($i) => $item->{'product'.$i})->filter()->map->nama_akun->all(); @endphp
-                                    @include('partials.bundling-header', ['produk' => $__prod, 'nama' => $item->nama_paket, 'nomor' => $loop->iteration])
-
-                                    @include('partials.bundling-deskripsi', ['teks' => $item->deskripsi])
-
-                                    {{-- Box "Termasuk dalam paket" natural (seperti awal) — tepat di
-                                         bawah deskripsi, tidak dipaksa mengembang. Keseragaman tinggi
-                                         antar kartu ditangani di HEADER (.bh) via skrip di bawah;
-                                         blok beli ditambat ke dasar (mt-auto) agar tombol tetap sejajar. --}}
-                                    <div class="bdl-incl mb-3">
-                                        <div class="bdl-incl-title"><i class="bi bi-box-seam"></i> Termasuk dalam paket</div>
-                                        @foreach ([1, 2, 3, 4, 5] as $i)
-                                            @php $product = $item->{'product'.$i}; @endphp
-                                            @if ($product)
-                                                @php $dur = $durs['product_'.$i] ?? null; @endphp
-                                                <div class="bdl-incl-row">
-                                                    <span class="bdl-incl-name">
-                                                        <i class="bi bi-check-circle-fill"></i>{{ $product->nama_akun }}
-                                                    </span>
-                                                    <span class="bdl-dur-badge">
-                                                        {{ (int) ($dur['value'] ?? 1) }} {{ ucfirst($dur['type'] ?? 'bulan') }}
-                                                    </span>
-                                                </div>
-                                            @endif
-                                        @endforeach
-                                    </div>
-
-                                    <div class="text-center mb-3 mt-auto">
-                                        <span class="bdl-promo">PROMO HARI INI!</span>
-                                    </div>
-
-                                    <div class="text-center mb-3">
-                                        @if ($old > $now && $old > 0)
-                                            <div class="bdl-price-old">Rp {{ number_format($old, 0, ',', '.') }}</div>
-                                        @endif
-                                        <div>
-                                            <span class="bdl-price-now">Rp {{ number_format($now, 0, ',', '.') }}</span>
-                                            <span class="bdl-price-unit">/ paket</span>
-                                        </div>
-                                    </div>
-
-                                    <button type="button" class="bdl-order-btn"
-                                        wire:click="addToCart('{{ $item->id }}')"
-                                        wire:loading.attr="disabled" wire:target="addToCart('{{ $item->id }}')">
-                                        <span wire:loading.remove wire:target="addToCart('{{ $item->id }}')"><i class="bi bi-cart-plus"></i> Pesan Sekarang!</span>
-                                        <span wire:loading wire:target="addToCart('{{ $item->id }}')"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
-                                    </button>
-
-                                    <p class="bdl-foot mt-3 mb-0">🎉 <b>Jangan lewatkan kesempatan terbatas ini!</b> Promo bisa berakhir kapan saja.</p>
-                                </div>
+                            {{-- Kartu bersama dengan beranda & etalase flash sale
+                                 (partials/kartu-paket) supaya tampilan paket seragam
+                                 dengan produk satuan di seluruh situs. --}}
+                            <div class="col-6 col-md-4 col-xl-3" wire:key="bundling-{{ $item->id }}">
+                                @include('partials.kartu-paket', ['item' => $item, 'detailKlik' => null])
                             </div>
                         @empty
                             <div class="col-12">
@@ -409,6 +356,9 @@
                                 </div>
                             </div>
                         @endforelse
+
+                        {{-- Paginasi 6 per halaman; sisanya ada di halaman berikutnya. --}}
+                        <div class="col-12 mt-4">{{ $bundlings->links() }}</div>
                     </div>
                 </div>
             </section><!-- /Best Sellers Section -->

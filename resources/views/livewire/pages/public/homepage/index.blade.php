@@ -13,7 +13,10 @@
     {{-- end flash sale --}}
     {{-- produk-bundling --}}
     {{-- @include('livewire.pages.public.bundling.index') --}}
-    <livewire:pages.public.bundling.index />
+    {{-- Beranda hanya menampilkan 4 paket terbaru; selebihnya di halaman paket
+         tersendiri. Komponennya sama dengan /bundling supaya kartu dan alur
+         "tambah ke keranjang" tidak bercabang. --}}
+    <livewire:pages.public.bundling.index :di-beranda="true" />
     {{-- end produk-bundling --}}
     {{-- testimoni --}}
     <livewire:components.testimonials />

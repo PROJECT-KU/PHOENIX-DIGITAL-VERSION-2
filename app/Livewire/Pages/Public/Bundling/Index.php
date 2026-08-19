@@ -12,7 +12,22 @@ class Index extends Component
 {
     use MengirimPixel;
 
-    public $perPage = 8;
+    /**
+     * Komponen ini melayani DUA tempat: potongan di beranda dan halaman
+     * /bundling tersendiri. Beranda hanya menampilkan 4 paket terbaru sebagai
+     * cuplikan; halaman penuh membaginya 6 per halaman.
+     *
+     * Dibedakan lewat penanda, bukan dua komponen terpisah, supaya kartu dan
+     * alur "tambah ke keranjang" tetap satu — dua salinan pasti berbeda perilaku
+     * cepat atau lambat.
+     */
+    public bool $diBeranda = false;
+
+    /** Cuplikan beranda. */
+    private const JUMLAH_BERANDA = 4;
+
+    /** Halaman /bundling penuh. */
+    private const PER_HALAMAN = 6;
 
     // Modal detail bundling
     public bool $showBundleDetail = false;
@@ -121,17 +136,16 @@ class Index extends Component
         return count($cart);
     }
 
-    public function loadMore()
-    {
-        $this->perPage += 12;
-    }
-
     #[Layout('layouts.guest')]
     public function render()
     {
         // Tayang(): status aktif DAN berada di dalam rentang tanggalnya. Paket
         // musiman jadi hilang sendiri saat lewat, tanpa admin perlu mematikannya.
-        $bundlings = ProductBundlings::tayang()->latest()->paginate($this->perPage);
+        $dasar = ProductBundlings::tayang()->latest();
+
+        $bundlings = $this->diBeranda
+            ? $dasar->take(self::JUMLAH_BERANDA)->get()
+            : $dasar->paginate(self::PER_HALAMAN);
 
         return view('livewire.pages.public.bundling.index', [
             'bundlings' => $bundlings,

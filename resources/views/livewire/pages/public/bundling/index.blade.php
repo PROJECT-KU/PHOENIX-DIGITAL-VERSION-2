@@ -39,84 +39,8 @@
 
         <div class="row g-4 justify-content-center">
             @forelse ($bundlings as $item)
-                @php
-                    $hAwal = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_awal);
-                    $hBundle = (int) preg_replace('/[^0-9]/', '', (string) $item->harga_bundling);
-                @endphp
-                <div class="col-lg-4 col-md-6" wire:key="bundling-{{ $item->id }}">
-                    <div class="bd-card">
-                        {{-- Header otomatis dari data (bukan banner upload) → seragam. --}}
-                        @php $__prod = collect([1, 2, 3, 4, 5])->map(fn ($i) => $item->{'product'.$i})->filter()->map->nama_akun->all(); @endphp
-                        <button type="button" class="bd-card-head-btn" wire:click="openDetail('{{ $item->id }}')"
-                            aria-label="Lihat detail {{ $item->nama_paket }}">
-                            @include('partials.bundling-header', ['produk' => $__prod, 'nama' => $item->nama_paket, 'nomor' => $loop->iteration])
-                        </button>
-
-                        <div class="bd-card-body">
-                            <div class="bd-head">
-                                {{-- Nama ada di header; kartu cukup teaser singkat. --}}
-                                @php $__t = \App\Support\DeskripsiProduk::pisah($item->deskripsi); @endphp
-                                @php $__teaser = $__t['paragraf'][0] ?? ($__t['poin'][0] ?? ($__t['ekstra'][0]['teks'] ?? '')); @endphp
-                                @if ($__teaser !== '')
-                                    <p class="bd-card-desc bdesk-teaser">{{ $__teaser }}</p>
-                                @endif
-                            </div>
-
-                            {{-- Harga tayang diambil dari App\Support\HargaPaket, bukan
-                                 dihitung di sini: halaman ini, beranda, jendela detail, dan
-                                 etalase flash sale harus menampilkan angka yang sama dengan
-                                 yang ditagih keranjang. --}}
-                            @php $hp = \App\Support\HargaPaket::untuk($item); @endphp
-                            <div class="bd-price">
-                                @if ($hp['coret'] > $hp['bayar'])
-                                    <span class="bd-price-old">Rp{{ number_format($hp['coret'], 0, ',', '.') }}</span>
-                                @endif
-                                <span class="bd-price-now">Rp{{ number_format($hp['bayar'], 0, ',', '.') }}</span>
-                                <span class="bd-price-unit">/ paket</span>
-                            </div>
-                            @if ($hp['potongan'] > 0)
-                                <div class="bd-promo-note">
-                                    <i class="bi bi-tag-fill"></i>
-                                    Hemat Rp{{ number_format($hp['potongan'], 0, ',', '.') }}
-                                    @if ($hp['butuh_kode'])
-                                        {{-- Promo berkode tidak berlaku sendiri. Kodenya WAJIB
-                                             ditampilkan, kalau tidak pembeli mengira harga ini
-                                             otomatis lalu kecewa di checkout. --}}
-                                        <span class="bd-promo-kode">pakai kode <b>{{ $hp['promo']->kode_promo }}</b></span>
-                                    @endif
-                                </div>
-                            @endif
-
-                            @php $durs = $item->durations ?? []; @endphp
-                            <div class="bd-incl-box">
-                                <div class="bd-incl-title"><i class="bi bi-box-seam"></i> Termasuk dalam paket</div>
-                                <ul class="bd-includes">
-                                    @foreach ([1, 2, 3, 4, 5] as $i)
-                                        @php $product = $item->{'product' . $i}; $dur = $durs['product_' . $i] ?? null; @endphp
-                                        @if ($product)
-                                            <li>
-                                                <span class="bd-incl-name"><i class="bi bi-check-circle-fill"></i> {{ $product->nama_akun }}</span>
-                                                <span class="bd-dur">{{ (int) ($dur['value'] ?? 1) }} {{ ucfirst($dur['type'] ?? 'bulan') }}</span>
-                                            </li>
-                                        @endif
-                                    @endforeach
-                                </ul>
-                            </div>
-
-                            <div class="bd-card-bottom">
-                                <div class="bd-actions">
-                                    <button type="button" class="bd-add" wire:click="addToCart('{{ $item->id }}')"
-                                        wire:loading.attr="disabled" wire:target="addToCart('{{ $item->id }}')">
-                                        <span wire:loading.remove wire:target="addToCart('{{ $item->id }}')"><i class="bi bi-cart-plus"></i> Keranjang</span>
-                                        <span wire:loading wire:target="addToCart('{{ $item->id }}')"><span class="spinner-border spinner-border-sm"></span></span>
-                                    </button>
-                                    <button type="button" class="bd-view" wire:click="openDetail('{{ $item->id }}')">Lihat</button>
-                                </div>
-
-                                <p class="bd-card-note">🎉 <b>Jangan lewatkan kesempatan terbatas ini!</b> Promo bisa berakhir kapan saja.</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="col-6 col-md-4 col-lg-3" wire:key="bundling-{{ $item->id }}">
+                    @include('partials.kartu-paket', ['item' => $item, 'detailKlik' => "openDetail('{$item->id}')"])
                 </div>
             @empty
                 <div class="col-12">
@@ -125,10 +49,16 @@
             @endforelse
         </div>
 
-        @if ($bundlings->isNotEmpty())
-            <div class="text-center mt-4">
-                <a href="{{ route('bundling.product-bundlings') }}" class="ph-btn-ghost">Lihat Semua Paket <i class="bi bi-arrow-right"></i></a>
-            </div>
+        @if ($diBeranda)
+            {{-- Beranda hanya memuat 4 paket terbaru sebagai cuplikan; sisanya
+                 ada di halaman paket tersendiri. --}}
+            @if ($bundlings->isNotEmpty())
+                <div class="text-center mt-4">
+                    <a href="{{ route('bundling.product-bundlings') }}" class="ph-btn-ghost">Lihat Semua Paket <i class="bi bi-arrow-right"></i></a>
+                </div>
+            @endif
+        @else
+            <div class="mt-4">{{ $bundlings->links() }}</div>
         @endif
     </div>
 
