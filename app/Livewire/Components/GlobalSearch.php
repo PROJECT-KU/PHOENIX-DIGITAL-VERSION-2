@@ -43,7 +43,10 @@ class GlobalSearch extends Component
                 ->take(5)
                 ->get();
 
-            $bundlings = ProductBundlings::where('status', 'active')
+            // tayang(): status aktif DAN di dalam rentang jadwalnya. Sebelumnya
+            // hanya memeriksa status, sehingga paket musiman yang sudah lewat
+            // jadwalnya tetap muncul di pencarian dan bisa diklik.
+            $bundlings = ProductBundlings::tayang()
                 ->where(function ($query) use ($q) {
                     $query->where('nama_paket', 'like', "%{$q}%")
                         ->orWhere('deskripsi', 'like', "%{$q}%");

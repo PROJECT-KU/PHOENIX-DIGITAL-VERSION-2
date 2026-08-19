@@ -30,6 +30,17 @@
         @if ($results->isNotEmpty())
         <div class="ps-group-label">Produk</div>
         @foreach ($results as $item)
+        @php
+            // Produk JASA harga per bulannya 0 — harganya ada di paket
+            // pengecekan. Tanpa ini pencarian menampilkan "Rp 0/bln".
+            // Pola yang sama dipakai kartu produk di halaman shop.
+            $isJasa = (bool) $item->butuh_file;
+            $perHalaman = $isJasa && $item->jasaPerHalaman();
+            $satuanCari = $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln');
+            $hargaCari = $perHalaman
+                ? (int) $item->hargaPerHalaman()
+                : ($isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan);
+        @endphp
         <a href="{{ route('shop.detail-product', $item->id) }}" class="ps-item">
             <span class="ps-thumb">
                 @if ($item->image)
@@ -40,7 +51,7 @@
             </span>
             <span class="ps-info">
                 <span class="ps-name">{{ $item->nama_akun }}</span>
-                <span class="ps-price">Rp {{ number_format($item->harga_perbulan ?? $item->harga_awal ?? 0, 0, ',', '.') }}<small>/bln</small></span>
+                <span class="ps-price">Rp {{ number_format($hargaCari, 0, ',', '.') }}<small>{{ $satuanCari }}</small></span>
             </span>
             <i class="bi bi-arrow-right-short ps-go"></i>
         </a>
@@ -51,7 +62,8 @@
         @if ($bundlings->isNotEmpty())
         <div class="ps-group-label">Paket Bundling</div>
         @foreach ($bundlings as $b)
-        <a href="{{ route('bundling.product-bundlings') }}?search={{ urlencode($b->nama_paket) }}" class="ps-item">
+        @php $hpCari = \App\Support\HargaPaket::untuk($b); @endphp
+        <a href="{{ route('bundling.detail', $b->id) }}" class="ps-item">
             <span class="ps-thumb ps-thumb-bundle">
                 @if ($b->gambar)
                 <img src="{{ asset('storage/img/ProductBundlings/' . $b->gambar) }}" alt="{{ $b->nama_paket }}">
@@ -61,7 +73,9 @@
             </span>
             <span class="ps-info">
                 <span class="ps-name">{{ $b->nama_paket }}</span>
-                <span class="ps-price">{{ $b->harga_bundling }} <small>/paket</small></span>
+                {{-- HargaPaket: sumber harga yang sama dengan kartu, halaman detail,
+                     dan keranjang — supaya angkanya tidak berbeda antar layar. --}}
+                <span class="ps-price">Rp {{ number_format($hpCari['bayar'], 0, ',', '.') }} <small>/paket</small></span>
             </span>
             <i class="bi bi-arrow-right-short ps-go"></i>
         </a>

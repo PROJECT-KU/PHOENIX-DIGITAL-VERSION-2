@@ -101,9 +101,16 @@
                                 @php
                                     $bestDiscount = $this->getBestDiscount($item->id);
                                     $isFlash = $bestDiscount && ($bestDiscount['promo']->tipe_promo ?? null) === 'flash_sale';
-                                    // Produk JASA: harga per bulan = 0. Pakai harga paket terkecil (per pengecekan).
+                                    // Produk JASA harga per bulannya 0. Ada DUA cara tagihnya:
+                                    // per pengecekan (paket 'kali') dan per halaman. Sebelumnya
+                                    // hanya yang per pengecekan diambil, sehingga jasa per halaman
+                                    // tampil "Rp 0".
                                     $isJasa = (bool) $item->butuh_file;
-                                    $originalPrice = $isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan;
+                                    $perHalaman = $isJasa && $item->jasaPerHalaman();
+                                    $satuanHarga = $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln');
+                                    $originalPrice = $perHalaman
+                                        ? (int) $item->hargaPerHalaman()
+                                        : ($isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan);
                                     if ($bestDiscount) {
                                         if ($bestDiscount['type'] === 'persen') {
                                             $discountedPrice = (int) round(
@@ -165,7 +172,7 @@
                                                 @if ($discountedPrice < $originalPrice)
                                                     <span class="fs-price-orig">Rp{{ number_format($originalPrice, 0, ',', '.') }}</span>
                                                 @endif
-                                                <small>{{ $isJasa ? '/cek' : '/bln' }}</small>
+                                                <small>{{ $satuanHarga }}</small>
                                             </div>
 
                                             <div class="fs-actions">
