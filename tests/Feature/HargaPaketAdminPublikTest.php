@@ -114,3 +114,39 @@ it('paket ikut dihitung promo di admin, tidak lagi dikecualikan', function () {
 
     expect((int) $t->get('promoDiscount'))->toBeGreaterThan(0);
 });
+
+it('popup pemilih paket di admin menampilkan harga yang sama dengan publik', function () {
+    $paket = paketBanding();
+    flashSalePaket($paket, 10);
+
+    $html = Livewire::test(OrderForm::class)->html();
+
+    // Yang tampil di popup harus harga yang dibayar pembeli (112.500),
+    // bukan harga paket mentah (99.000).
+    expect($html)->toContain('Rp 112.500')
+        ->and($html)->toContain('hemat Rp 12.500');
+});
+
+it('popup tanpa promo menampilkan harga paket apa adanya', function () {
+    paketBanding();
+
+    $html = Livewire::test(OrderForm::class)->html();
+
+    expect($html)->toContain('Rp 99.000')
+        ->and($html)->not->toContain('hemat Rp');
+});
+
+it('baris paket terpilih memperlihatkan potongan dan harga akhir', function () {
+    $paket = paketBanding();
+    flashSalePaket($paket, 10);
+
+    $html = Livewire::test(OrderForm::class)
+        ->set('selectedBundleId', $paket->id)
+        ->call('addBundle')
+        ->html();
+
+    // Dasar 125.000, potongan 12.500, akhir 112.500 — ketiganya terlihat.
+    expect($html)->toContain('Rp 125.000')
+        ->and($html)->toContain('promo Rp 12.500')
+        ->and($html)->toContain('Rp 112.500');
+});

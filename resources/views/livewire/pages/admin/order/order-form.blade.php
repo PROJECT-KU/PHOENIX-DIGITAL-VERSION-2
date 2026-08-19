@@ -587,8 +587,19 @@
                             @if ($isBundle)
                             {{-- ===== PAKET BUNDLING: produk dipecah, durasi per produk ===== --}}
                             <div class="mb-2 d-flex justify-content-between align-items-center">
+                                @php
+                                    // Saat paket kena promo, harga_bundling berisi DASAR hitung
+                                    // (harga awal); potongannya dikurangkan di ringkasan total.
+                                    // Keduanya ditampilkan supaya angkanya tidak terasa
+                                    // berbeda dengan yang dilihat pembeli.
+                                    $pk = \App\Models\ProductBundlings::find($item['bundling_id'] ?? null);
+                                    $hp = $pk ? \App\Support\HargaPaket::untuk($pk) : null;
+                                @endphp
                                 <span class="badge bg-success-subtle text-success border border-success">
                                     <i class="bi bi-box-seam"></i> Harga paket: Rp {{ number_format($item['harga_bundling'], 0, ',', '.') }}
+                                    @if ($hp && $hp['potongan'] > 0)
+                                        <span class="ms-1 fw-normal">− promo Rp {{ number_format($hp['potongan'], 0, ',', '.') }} = <b>Rp {{ number_format($hp['bayar'], 0, ',', '.') }}</b></span>
+                                    @endif
                                 </span>
                                 <small class="text-muted">Harga dibagi proporsional ke tiap produk</small>
                             </div>
@@ -885,11 +896,19 @@
 
     @php
         $ofProductsData = $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->nama_akun])->values();
-        $ofBundlesData = $bundlings->map(fn ($b) => [
-            'id' => $b->id,
-            'name' => $b->nama_paket,
-            'price' => 'Rp ' . number_format((int) preg_replace('/[^0-9]/', '', (string) $b->harga_bundling), 0, ',', '.'),
-        ])->values();
+        // Harga di popup memakai HargaPaket, sumber yang sama dengan halaman
+        // publik — bukan harga_bundling mentah. Tanpa ini, paket yang sedang
+        // kena promo tampil beda antara admin dan pembeli.
+        $ofBundlesData = $bundlings->map(function ($b) {
+            $h = \App\Support\HargaPaket::untuk($b);
+            $teks = 'Rp ' . number_format($h['bayar'], 0, ',', '.');
+
+            if ($h['potongan'] > 0) {
+                $teks .= ' · hemat Rp ' . number_format($h['potongan'], 0, ',', '.');
+            }
+
+            return ['id' => $b->id, 'name' => $b->nama_paket, 'price' => $teks];
+        })->values();
     @endphp
 </div>
 
