@@ -84,7 +84,11 @@
         table.box tfoot td { background: #f8fafc; font-weight: bold; border-top: 1px solid #e5e7eb; }
         .muted { color: #9ca3af; font-style: italic; }
 
-        .takehome { margin-top: 6px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff;
+        /* Warna SOLID, bukan gradasi: dompdf tidak menggambar linear-gradient,
+           sehingga latarnya hilang dan tulisan putih jadi tak terlihat di atas
+           kertas putih — blok gaji bersih seolah tidak ada. Pola solid yang
+           sama dipakai .section-title dan terbukti tampil. */
+        .takehome { margin-top: 6px; background: {{ $accent }}; color: #fff;
             border-radius: 10px; padding: 14px 18px; }
         .takehome table { width: 100%; }
         .takehome .lbl { font-size: 11px; opacity: .9; }
