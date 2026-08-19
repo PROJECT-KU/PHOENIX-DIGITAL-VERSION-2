@@ -241,3 +241,44 @@ it('tombol pulihkan bekerja tanpa memanggil server', function () {
     expect($html)->toContain('x-on:click="pakaiOtomatis()"')
         ->and($html)->not->toContain('wire:click="pulihkanBonusTaskOtomatis"');
 });
+
+it('bonus manual bernilai nol tetap tersimpan', function () {
+    $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
+
+    Livewire\Livewire::test(
+        App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansForm::class,
+        ['gajikaryawan' => $gaji]
+    )
+        ->set('bonus_task_manual', true)
+        ->set('bonus_penyelesaian_task', '0')
+        ->call('save');
+
+    // Nol adalah nilai sah: admin memang bisa meniadakan bonusnya.
+    expect((int) $gaji->fresh()->bonus_penyelesaian_task)->toBe(0)
+        ->and($gaji->fresh()->bonus_task_manual)->toBeTrue();
+});
+
+it('bonus manual bernilai satu tetap tersimpan', function () {
+    $gaji = gajiUji(karyawanUji('Ani'), 250000, true);
+
+    Livewire\Livewire::test(
+        App\Livewire\Pages\Admin\GajiKaryawans\GajiKaryawansForm::class,
+        ['gajikaryawan' => $gaji]
+    )
+        ->set('bonus_task_manual', true)
+        ->set('bonus_penyelesaian_task', '1')
+        ->call('save');
+
+    expect((int) $gaji->fresh()->bonus_penyelesaian_task)->toBe(1);
+});
+
+it('kolom bonus task memakai modifier yang sama dengan kolom rupiah lain', function () {
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/admin/gaji-karyawans/gaji-karyawans-form.blade.php')
+    );
+
+    // .blur membuat permintaan blur berlomba dengan permintaan simpan, sehingga
+    // angka yang baru diketik bisa hilang.
+    expect($blade)->toContain('wire:model="bonus_penyelesaian_task"')
+        ->and($blade)->not->toContain('wire:model.blur="bonus_penyelesaian_task"');
+});

@@ -382,8 +382,16 @@
                         <div class="rp-wrap">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
                                 style="pointer-events: none; z-index: 5;">Rp</span>
+                            {{-- wire:model biasa (deferred), sama seperti kolom rupiah
+                                 lain di form ini. Dengan .blur, mengetik lalu langsung
+                                 menekan Simpan membuat permintaan blur dan permintaan
+                                 simpan berlomba: simpan bisa terkirim membawa nilai
+                                 LAMA, sehingga angka yang baru diketik hilang. Deferred
+                                 mengirim nilainya bersama aksi simpan, sekaligus
+                                 menghapus satu perjalanan bolak-balik tiap kali kolom
+                                 ditinggalkan. --}}
                             <input type="text" id="bonus_penyelesaian_task" x-ref="nilai"
-                                wire:model.blur="bonus_penyelesaian_task"
+                                wire:model="bonus_penyelesaian_task"
                                 x-bind:readonly="!manual"
                                 x-on:input="bacaNilai()"
                                 class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror"
