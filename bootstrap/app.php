@@ -28,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Middleware groups (web, api)
         $middleware->group('web', [
+            // Paling luar: melihat respons AKHIR, sehingga pengalihan dari
+            // middleware mana pun (termasuk `auth` bawaan) ikut tertangkap.
+            \App\Http\Middleware\CegahAlihPermintaanLivewire::class,
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
