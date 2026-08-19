@@ -129,10 +129,11 @@
                 <div class="row featured-products-row g-3 g-lg-4 mt-1">
                     @foreach ($featuredBundlings as $paket)
                         @php
-                            // Angka diambil dari komponen, bukan dihitung ulang di sini,
-                            // supaya harga di kartu tidak bisa berbeda dengan yang ditagih
+                            // Satu sumber perhitungan untuk SEMUA halaman (beranda, daftar
+                            // bundling, etalase ini) sekaligus cerminan PromoService —
+                            // supaya angka di kartu tidak pernah berbeda dari yang ditagih
                             // di keranjang.
-                            $hp = $this->hargaPaketPromo($paket);
+                            $hp = \App\Support\HargaPaket::untuk($paket);
                             $hargaPaket = $hp['bayar'];
                             $hargaAwal = $hp['coret'];
                         @endphp

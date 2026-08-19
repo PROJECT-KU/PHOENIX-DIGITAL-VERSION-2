@@ -353,37 +353,6 @@ class FlashSaletimer extends Component
     }
 
     /**
-     * Harga paket SETELAH potongan promo ini — untuk ditampilkan di kartu.
-     *
-     * Potongannya dihitung dari `harga_awal` (harga coret) lalu dikurangkan
-     * dari `harga_bundling`, sama persis dengan PromoService supaya angka di
-     * etalase tidak berbeda dengan yang ditagih di keranjang. Perbedaan
-     * sekecil apa pun di sini akan terbaca pembeli sebagai harga yang berubah
-     * diam-diam saat checkout.
-     */
-    public function hargaPaketPromo($paket): array
-    {
-        $awal = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_awal);
-        $paketRp = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
-
-        $terlampir = $this->flashSale
-            && $this->flashSale->bundlings->contains('id', $paket->id);
-
-        if (! $terlampir || $paketRp <= 0) {
-            return ['bayar' => $paketRp, 'coret' => $awal, 'potongan' => 0];
-        }
-
-        $basis = $awal > 0 ? $awal : $paketRp;
-        $potongan = min((int) ($basis - $this->getDiscountedPrice($basis)), $paketRp);
-
-        return [
-            'bayar' => max(0, $paketRp - $potongan),
-            'coret' => $awal > 0 ? $awal : $paketRp,
-            'potongan' => max(0, $potongan),
-        ];
-    }
-
-    /**
      * Masukkan PAKET BUNDLING ke keranjang langsung dari etalase promo.
      *
      * Strukturnya dibuat identik dengan Bundling\Index::addToCart() — kunci

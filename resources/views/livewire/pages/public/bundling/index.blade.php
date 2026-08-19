@@ -1,5 +1,34 @@
 <section id="best-sellers" @class(['bd-section section' => $bundlings->isNotEmpty()]) @if ($bundlings->isEmpty()) style="display:none" @endif>
     @include('partials.bundling-deskripsi-style')
+
+    {{-- Gaya ditulis INLINE, bukan di resources/css: berkas CSS dibangun Vite
+         dan public/build tidak ikut deploy, jadi gaya di sana tidak pernah
+         sampai ke server. --}}
+    <style>
+        .bd-promo-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(255, 138, 0, .1);
+            color: var(--ph-orange, #fb8c00);
+            font-size: .78rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .bd-promo-kode {
+            font-weight: 500;
+            opacity: .9;
+        }
+
+        .bd-promo-kode b {
+            letter-spacing: .3px;
+        }
+    </style>
     @if ($bundlings->isNotEmpty())
     <div class="container">
         <div class="ph-sec-head">
@@ -33,13 +62,30 @@
                                 @endif
                             </div>
 
+                            {{-- Harga tayang diambil dari App\Support\HargaPaket, bukan
+                                 dihitung di sini: halaman ini, beranda, jendela detail, dan
+                                 etalase flash sale harus menampilkan angka yang sama dengan
+                                 yang ditagih keranjang. --}}
+                            @php $hp = \App\Support\HargaPaket::untuk($item); @endphp
                             <div class="bd-price">
-                                @if ($hAwal > 0 && $hAwal > $hBundle)
-                                    <span class="bd-price-old">{{ $item->harga_awal }}</span>
+                                @if ($hp['coret'] > $hp['bayar'])
+                                    <span class="bd-price-old">Rp{{ number_format($hp['coret'], 0, ',', '.') }}</span>
                                 @endif
-                                <span class="bd-price-now">{{ $item->harga_bundling }}</span>
+                                <span class="bd-price-now">Rp{{ number_format($hp['bayar'], 0, ',', '.') }}</span>
                                 <span class="bd-price-unit">/ paket</span>
                             </div>
+                            @if ($hp['potongan'] > 0)
+                                <div class="bd-promo-note">
+                                    <i class="bi bi-tag-fill"></i>
+                                    Hemat Rp{{ number_format($hp['potongan'], 0, ',', '.') }}
+                                    @if ($hp['butuh_kode'])
+                                        {{-- Promo berkode tidak berlaku sendiri. Kodenya WAJIB
+                                             ditampilkan, kalau tidak pembeli mengira harga ini
+                                             otomatis lalu kecewa di checkout. --}}
+                                        <span class="bd-promo-kode">pakai kode <b>{{ $hp['promo']->kode_promo }}</b></span>
+                                    @endif
+                                </div>
+                            @endif
 
                             @php $durs = $item->durations ?? []; @endphp
                             <div class="bd-incl-box">
