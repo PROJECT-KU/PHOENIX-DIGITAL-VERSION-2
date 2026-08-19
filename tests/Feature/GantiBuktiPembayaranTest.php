@@ -108,7 +108,7 @@ it('popup ganti bukti tertutup sebelum dibuka', function () {
     // Disasar ke markup-nya, bukan sekadar kata "bp-overlay" — kata itu juga
     // muncul di blok <style> walau popupnya tidak tampil.
     expect($t->get('modalBukti'))->toBeFalse()
-        ->and($t->html())->not->toContain('class="bp-overlay pcek"');
+        ->and($t->html())->not->toContain('<div class="bp-overlay"');
 });
 
 it('tombol membuka popup, bukan panel di dalam halaman', function () {
@@ -118,10 +118,12 @@ it('tombol membuka popup, bukan panel di dalam halaman', function () {
         ->call('bukaGantiBukti')
         ->html();
 
-    // Isinya memakai anatomi .pcek yang sama dengan unggah hasil jasa.
-    expect($html)->toContain('class="bp-overlay pcek"')
-        ->and($html)->toContain('pcek-form-head')
-        ->and($html)->toContain('pcek-drop');
+    // Tampilannya mengikuti halaman Unggah Bukti Pembayaran (ungu khas admin),
+    // bukan tema hijau .pcek yang milik bagian pengecekan jasa.
+    expect($html)->toContain('class="bp-overlay"')
+        ->and($html)->toContain('bp-chip')
+        ->and($html)->toContain('bp-drop')
+        ->and($html)->not->toContain('pcek-form-head');
 });
 
 it('popup tertutup setelah bukti tersimpan', function () {
