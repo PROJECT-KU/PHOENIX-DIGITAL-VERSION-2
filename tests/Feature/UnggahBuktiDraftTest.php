@@ -59,3 +59,26 @@ it('pesanan yang bukan draft ditolak', function () {
     Livewire::test(BuktiPembayaran::class, ['order' => $order])
         ->assertStatus(404);
 });
+
+it('ikon disejajarkan dengan teks', function () {
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/admin/order/bukti-pembayaran.blade.php')
+    );
+
+    // Ikon Bootstrap duduk mengikuti baseline huruf; line-height dinolkan dan
+    // ::before dijadikan block supaya tingginya persis kotak ikonnya.
+    expect($blade)->toContain('i.bi::before')
+        ->and($blade)->toContain('line-height: 1;');
+});
+
+it('memakai sistem desain admin, bukan gaya karangan sendiri', function () {
+    $order = orderDraft('transfer');
+
+    $html = Livewire::test(BuktiPembayaran::class, ['order' => $order])->html();
+
+    // Kepala halaman mengikuti pola halaman Tambah Pesanan, dan keping ikon
+    // memakai gradasi milik layout admin.
+    foreach (['fixed-header-card', 'gradient-text', 'breadcrumb-custom', 'bg-gradient-purple', 'bg-gradient-blue'] as $kelas) {
+        expect($html)->toContain($kelas);
+    }
+});
