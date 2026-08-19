@@ -346,6 +346,11 @@ class GajiKaryawansForm extends Component
             $this->hitungUangPresensi();
         }
 
+        // Angka otomatis hanya bergantung pada karyawan + periode.
+        if (in_array($propertyName, ['nama_karyawan', 'periode_bulan', 'periode_tahun'])) {
+            $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
+        }
+
         if (in_array($propertyName, [
             'gaji_pokok', 'bonus_kinerja', 'bonus_lainnya', 'bonus_penyelesaian_task', 'uang_lembur',
             'jam_lembur', 'tarif_lembur',
@@ -415,8 +420,10 @@ class GajiKaryawansForm extends Component
      */
     public function updatedBonusTaskManual($nilai): void
     {
-        $this->bonus_task_otomatis = $this->hitungBonusTaskOtomatis();
-
+        // Angka otomatis TIDAK dihitung ulang di sini: karyawan dan periodenya
+        // tidak berubah saat sakelar ditekan, dan distribusi() menempuh delapan
+        // query. Nilai simpanan sudah disegarkan saat karyawan atau periode
+        // berganti (lihat updated()).
         if (! $nilai) {
             $this->bonus_penyelesaian_task = $this->formatAngka($this->bonus_task_otomatis);
         }

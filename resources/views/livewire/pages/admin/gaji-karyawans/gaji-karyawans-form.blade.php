@@ -1,5 +1,10 @@
 <div>
     <style>
+        /* Tanpa aturan ini, elemen ber-x-cloak sempat terlihat sebelum Alpine
+           siap. Layout admin tidak memuat public-custom-styles.css, jadi
+           ditulis di sini — sama seperti spending-form. */
+        [x-cloak] { display: none !important; }
+
         .stat-icon-wrapper {
             line-height: 1 !important;
         }
@@ -308,7 +313,11 @@
                          Bawaannya hasil pembagian pool di halaman Penyelesaian Task.
                          Bila "Atur manual" dinyalakan, admin menentukan angkanya dan
                          pembagian pool tidak lagi menimpa baris ini. --}}
-                    <div class="col-md-6 mb-3">
+                    {{-- Keadaan sakelar disimpan juga di Alpine supaya input langsung
+                         terbuka saat diklik. Menunggu balasan Livewire terasa lambat:
+                         form ini besar, jadi satu perjalanan bolak-balik berarti jeda
+                         yang kentara sebelum kolomnya bisa diketik. --}}
+                    <div class="col-md-6 mb-3" x-data="{ manual: @entangle('bonus_task_manual').live }">
                         <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
                             <label for="bonus_penyelesaian_task" class="form-label mb-0 d-inline-flex align-items-center gap-1">
                                 <span>Bonus Penyelesaian Task</span>
@@ -317,36 +326,36 @@
                             </label>
                             <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" role="switch"
-                                    id="bonus_task_manual" wire:model.live="bonus_task_manual">
+                                    id="bonus_task_manual" x-model="manual"
+                                    x-on:change="if (manual) $nextTick(() => $refs.nilai?.focus())">
                                 <label class="form-check-label small text-muted" for="bonus_task_manual">Atur manual</label>
                             </div>
                         </div>
                         <div class="rp-wrap">
                             <span class="position-absolute top-50 start-0 translate-middle-y text-secondary fw-bold ps-3"
                                 style="pointer-events: none; z-index: 5;">Rp</span>
-                            <input type="text" id="bonus_penyelesaian_task" wire:model="bonus_penyelesaian_task"
-                                @if (!$bonus_task_manual) readonly @endif
-                                class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror @if (!$bonus_task_manual) readonly-pretty @endif"
+                            <input type="text" id="bonus_penyelesaian_task" x-ref="nilai"
+                                wire:model.blur="bonus_penyelesaian_task"
+                                x-bind:readonly="!manual"
+                                class="form-control rupiah @error('bonus_penyelesaian_task') is-invalid @enderror"
+                                x-bind:class="manual ? '' : 'readonly-pretty'"
                                 placeholder="0">
                         </div>
                         @error('bonus_penyelesaian_task')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
 
-                        @if ($bonus_task_manual)
-                            <small class="text-warning-emphasis d-block mt-1">
-                                <i class="bi bi-pencil-square me-1"></i>Diisi manual — pembagian pool tidak akan menimpanya.
+                        <small class="text-warning-emphasis d-block mt-1" x-show="manual" x-cloak>
+                            <i class="bi bi-pencil-square me-1"></i>Diisi manual — pembagian pool tidak akan menimpanya.
+                        </small>
+                        @if ((int) preg_replace('/[^0-9]/', '', (string) $bonus_penyelesaian_task) !== (int) $bonus_task_otomatis)
+                            <small class="text-muted d-block" x-show="manual" x-cloak>
+                                Hitungan otomatis: <b>Rp {{ number_format((int) $bonus_task_otomatis, 0, ',', '.') }}</b>
+                                <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
+                                    wire:click="pulihkanBonusTaskOtomatis">Pakai angka ini</button>
                             </small>
-                            @if ((int) preg_replace('/[^0-9]/', '', (string) $bonus_penyelesaian_task) !== (int) $bonus_task_otomatis)
-                                <small class="text-muted d-block">
-                                    Hitungan otomatis: <b>Rp {{ number_format((int) $bonus_task_otomatis, 0, ',', '.') }}</b>
-                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline"
-                                        wire:click="pulihkanBonusTaskOtomatis">Pakai angka ini</button>
-                                </small>
-                            @endif
-                        @else
-                            <small class="text-muted"><i class="bi bi-list-check me-1"></i>Dihitung otomatis dari halaman <b>Penyelesaian Task</b>.</small>
                         @endif
+                        <small class="text-muted" x-show="!manual" x-cloak><i class="bi bi-list-check me-1"></i>Dihitung otomatis dari halaman <b>Penyelesaian Task</b>.</small>
                     </div>
 
                     <div class="col-md-6 mb-3">
