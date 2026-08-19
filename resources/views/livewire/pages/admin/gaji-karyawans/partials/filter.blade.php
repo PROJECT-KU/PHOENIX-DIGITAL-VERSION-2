@@ -22,12 +22,6 @@
             @if (auth()->user()->hasPermission('create_gajikaryawan'))
             <button type="button" class="btn btn-info text-white rounded-pill d-flex align-items-center justify-content-center gap-2 px-3 generate-gaji-btn"
                 wire:loading.attr="disabled" wire:target="generateGaji" title="Buat draft gaji semua karyawan dari periode bulan sebelumnya">
-                {-- Saat diproses tombolnya tidak dikosongkan: isinya diganti
-                     spinner + keterangan, supaya jelas sedang berjalan. --}
-                <span wire:loading wire:target="generateGaji" class="d-flex align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Membuat…</span>
-                </span>
                 <span wire:loading.remove wire:target="generateGaji" class="d-flex align-items-center gap-2">
                     <i class="bi bi-magic"></i>
                     <span>Generate Gaji</span>
@@ -36,12 +30,10 @@
             @endif
             <button wire:click="downloadPdf" wire:loading.attr="disabled" wire:target="downloadPdf"
                 class="btn btn-danger rounded-pill d-flex align-items-center justify-content-center gap-2 px-3">
-                {-- Saat diproses tombolnya tidak dikosongkan: isinya diganti
-                     spinner + keterangan, supaya jelas sedang berjalan. --}
-                <span wire:loading wire:target="downloadPdf" class="d-flex align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Menyiapkan…</span>
-                </span>
+                {{-- Selama berkas disiapkan & diunduh, isi tombol diganti spinner
+                     tanpa teks. --}}
+                <span wire:loading wire:target="downloadPdf" class="spinner-border spinner-border-sm"
+                    role="status" aria-hidden="true"></span>
                 <span wire:loading.remove wire:target="downloadPdf" class="d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-pdf"></i>
                     <span>Export PDF</span>

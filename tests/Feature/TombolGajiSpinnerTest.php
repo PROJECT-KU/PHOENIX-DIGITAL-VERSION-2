@@ -29,20 +29,41 @@ it('tombol slip menampilkan spinner di dalam tombolnya', function () {
     expect($blade)->toContain('spinner-border spinner-border-sm');
 });
 
-it('tombol export pdf berganti spinner, bukan menjadi kosong', function () {
+it('tombol export pdf berganti spinner tanpa teks', function () {
     $blade = bladeFilterGaji();
 
-    // Sebelumnya isinya hanya disembunyikan tanpa pengganti, sehingga tombolnya
-    // tampak kosong selama proses berjalan.
-    expect($blade)->toContain('<span wire:loading wire:target="downloadPdf"')
-        ->and($blade)->toContain('Menyiapkan');
+    expect($blade)->toContain('<span wire:loading wire:target="downloadPdf" class="spinner-border')
+        // Tanpa keterangan tambahan: yang diminta hanya spinner.
+        ->and($blade)->not->toContain('Menyiapkan');
 });
 
-it('tombol generate gaji juga berganti spinner', function () {
+it('tombol generate gaji dibiarkan seperti semula', function () {
     $blade = bladeFilterGaji();
 
-    expect($blade)->toContain('<span wire:loading wire:target="generateGaji"')
-        ->and($blade)->toContain('Membuat');
+    expect($blade)->not->toContain('<span wire:loading wire:target="generateGaji"');
+});
+
+it('tidak ada komentar Blade yang rusak di seluruh tampilan', function () {
+    // "{-- ... --}" (kurung tunggal) BUKAN komentar Blade — isinya ikut
+    // tercetak ke layar sebagai teks biasa. Pernah terjadi dan terlihat
+    // pengguna, jadi dijaga menyeluruh.
+    $bocor = [];
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(resource_path('views'))
+    );
+
+    foreach ($iterator as $berkas) {
+        if (! str_ends_with($berkas->getFilename(), '.blade.php')) {
+            continue;
+        }
+
+        if (preg_match('/^\s*\{--[^{]/m', file_get_contents($berkas->getPathname()))) {
+            $bocor[] = $berkas->getFilename();
+        }
+    }
+
+    expect($bocor)->toBe([]);
 });
 
 it('kedua blade tetap bisa dikompilasi', function () {
