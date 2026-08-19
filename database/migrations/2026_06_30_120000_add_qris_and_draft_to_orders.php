@@ -11,8 +11,9 @@ return new class extends Migration
     {
         // Tambah status 'draft' ke enum status order
         // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
-        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
-        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        // (phpunit.xml); di sana enum menjadi CHECK constraint yang TETAP
+        // ditegakkan, jadi kolomnya dilonggarkan oleh migrasi
+        // 2026_08_19_160000. Perilaku MySQL tak berubah.
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled','draft') NOT NULL DEFAULT 'pending'");
         }
@@ -32,8 +33,9 @@ return new class extends Migration
         });
 
         // ALTER ... MODIFY hanya dikenal MySQL. Uji otomatis memakai SQLite
-        // (phpunit.xml), yang tidak memaksakan ENUM sama sekali, jadi di sana
-        // baris ini memang tidak perlu dijalankan. Perilaku MySQL tak berubah.
+        // (phpunit.xml); di sana enum menjadi CHECK constraint yang TETAP
+        // ditegakkan, jadi kolomnya dilonggarkan oleh migrasi
+        // 2026_08_19_160000. Perilaku MySQL tak berubah.
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE orders MODIFY COLUMN status ENUM('pending','paid','processing','completed','cancelled') NOT NULL DEFAULT 'pending'");
         }

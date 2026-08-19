@@ -51,10 +51,16 @@ Unggah Bukti Pembayaran || lemon
     <div class="card bp-card mb-3">
         <div class="card-body p-4">
             <h4 class="gradient-text fw-bold mb-1">Unggah Bukti Pembayaran</h4>
-            <x-breadcrumb :items="[
-                ['label' => 'Pesanan Toko', 'url' => route('admin.pesanantoko.index')],
-                ['label' => 'Unggah Bukti'],
-            ]" />
+            {{-- Kuncinya 'name', bukan 'label' — itu yang dibaca
+                 resources/views/components/breadcrumb.blade.php. --}}
+            @php
+                $breadcrumbs = [
+                    ['name' => 'Beranda', 'url' => route('admin.dashboard')],
+                    ['name' => 'Data Pemesanan', 'url' => route('admin.pesanantoko.index')],
+                    ['name' => 'Unggah Bukti'],
+                ];
+            @endphp
+            <x-breadcrumb :items="$breadcrumbs" />
         </div>
     </div>
 
