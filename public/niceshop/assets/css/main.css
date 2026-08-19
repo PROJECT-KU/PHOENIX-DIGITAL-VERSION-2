@@ -3054,17 +3054,10 @@ section,
   overflow: hidden;
 }
 
-.call-to-action::before {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(from 0deg, transparent 0deg, color-mix(in srgb, var(--accent-color), transparent 98%) 90deg, transparent 180deg, color-mix(in srgb, var(--heading-color), transparent 98%) 270deg, transparent 360deg);
-  animation: rotate 20s linear infinite;
-  z-index: 1;
-}
+/* Sapuan garis berputar di latar dihapus atas permintaan pemilik.
+   Elemen ini hanya hiasan (pointer-events tidak relevan, z-index di bawah
+   konten) dan terus mengecat ulang layar sepanjang halaman terbuka. */
+
 
 .call-to-action::after {
   content: "";
