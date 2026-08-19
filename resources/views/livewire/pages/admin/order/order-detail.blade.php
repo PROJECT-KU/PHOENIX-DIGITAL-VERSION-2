@@ -1223,7 +1223,13 @@ Detail Pesanan || lemon
                             </td>
                             <td class="text-center">{{ $item->quantity }}</td>
                             <td class="text-center">
-                                {{ $item->duration_value }} {{ $item->duration_type }}
+                                {{-- Paket bundling tidak punya durasi tunggal:
+                                     durasinya melekat pada tiap produk di dalamnya. --}}
+                                @if ($item->duration_type)
+                                    {{ $item->duration_value }} {{ $item->duration_type }}
+                                @else
+                                    <span class="text-muted">Paket</span>
+                                @endif
                                 @if ($item->hasBonusDuration())
                                 <small class="d-block text-success fw-semibold">+ {{ $item->bonus_duration_value }} {{ $item->bonus_duration_type }} bonus</small>
                                 @endif

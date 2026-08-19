@@ -570,7 +570,7 @@ Proses Pesanan || lemon
                         <div class="ta-label"><i class="bi bi-gift-fill"></i> Total Masa Aktif</div>
                         @if ((int) $bonusDurationValue > 0)
                         <div class="ta-value">
-                            <span class="ta-base">{{ $orderItem->duration_value }} {{ $orderItem->duration_type }}</span>
+                            <span class="ta-base">{{ $orderItem->duration_type ? $orderItem->duration_value.' '.$orderItem->duration_type : 'Paket' }}</span>
                             <span class="ta-plus">+</span>
                             <span class="ta-bonus">{{ $bonusDurationValue }} {{ $bonusDurationType }}</span>
                         </div>
