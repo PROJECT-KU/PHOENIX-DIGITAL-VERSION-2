@@ -13,11 +13,19 @@ beforeEach(function () {
 /** Paket contoh: harga satuan 160.000, harga paket 125.000. */
 function paketUji(): ProductBundlings
 {
+    // Berisi satu produk supaya bagian "Termasuk dalam paket" ikut dirender.
+    $produk = App\Models\Product::create([
+        'nama_akun' => 'Produk Dalam Paket',
+        'harga_perbulan' => 60000,
+    ]);
+
     return ProductBundlings::create([
         'nama_paket' => 'Paket Uji Detail',
         'harga_awal' => 160000,
         'harga_bundling' => 125000,
         'status' => 'active',
+        'product_1' => $produk->id,
+        'durations' => ['product_1' => ['value' => 1, 'type' => 'bulan']],
     ]);
 }
 
@@ -238,6 +246,7 @@ it('halaman detail paket memakai bagian yang sama dengan detail produk shop', fu
 
     // Bagian yang sama: remah roti, media, harga, jaminan, beli, wishlist.
     foreach ([
+        'pd-pkg-grid',
         'page-title ph-page-title',
         'breadcrumbs',
         'pd-section',
@@ -281,4 +290,20 @@ it('paket yang jadwalnya berakhir tidak ikut muncul di wishlist', function () {
         ->html();
 
     expect($wishlist)->not->toContain($paket->nama_paket);
+});
+
+it('halaman detail paket tidak memakai kelas gaya buatan sendiri', function () {
+    $blade = file_get_contents(resource_path('views/livewire/pages/public/bundling/detail.blade.php'));
+
+    // Seluruh gayanya milik bersama dengan halaman produk (pd-*/rel-*), supaya
+    // ukuran dan jaraknya tidak bisa melenceng sendiri.
+    preg_match('#<style>(.*?)</style>#s', $blade, $m);
+    preg_match_all('#^\s*\.([a-z][a-z0-9-]*)#m', $m[1] ?? '', $kelas);
+
+    $bukanBersama = array_values(array_filter(
+        array_unique($kelas[1] ?? []),
+        fn ($k) => ! str_starts_with($k, 'pd-') && ! str_starts_with($k, 'rel-')
+    ));
+
+    expect($bukanBersama)->toBe([]);
 });

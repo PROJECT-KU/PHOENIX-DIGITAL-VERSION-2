@@ -76,16 +76,12 @@
             .pd-row > .pd-col-desc  { order:4; }
         }
 
-        /* ===== Isi paket: satu-satunya bagian yang tidak ada di produk satuan,
-           menggantikan pilihan durasi/paket harga. ===== */
-        .pkd-isi { list-style:none; margin:0 0 22px; padding:0; display:grid; gap:10px; }
-        .pkd-isi li { display:flex; align-items:center; justify-content:space-between; gap:12px;
-            padding:11px 14px; border:1px solid var(--ph-line); border-radius:12px;
-            background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
-        .pkd-isi-nama { display:flex; align-items:center; gap:9px; font-size:.94rem; min-width:0; }
-        .pkd-isi-nama i { color:#16a34a; flex:0 0 auto; }
-        .pkd-dur { flex:0 0 auto; font-size:.8rem; font-weight:700; padding:3px 10px;
-            border-radius:999px; color:var(--ph-orange); background:var(--ph-grad-soft); }
+        /* Isi paket memakai kartu .pd-pkg milik halaman produk supaya ukuran,
+           radius, dan jaraknya identik. Bedanya hanya ini tidak bisa dipilih:
+           kursor dan efek angkat saat disorot dimatikan agar tidak menjanjikan
+           interaksi yang tidak ada. */
+        .pd-pkg.is-statis { cursor: default; }
+        .pd-pkg.is-statis:hover { border-color: var(--ph-line); transform: none; }
     </style>
 
     <div class="page-title ph-page-title">
@@ -215,16 +211,18 @@
                          paket sudah tetap, durasinya ditentukan admin. --}}
                     @if ($isi)
                         <h4 class="pd-sub"><i class="bi bi-box-seam"></i> Termasuk dalam paket</h4>
-                        <ul class="pkd-isi">
+                        {{-- Anatomi sama dengan pilihan durasi di halaman produk:
+                             .pd-pkg-grid dua kolom, tiap isi satu kartu .pd-pkg. --}}
+                        <div class="pd-pkg-grid">
                             @foreach ($isi as $baris)
-                                <li>
-                                    <span class="pkd-isi-nama">
-                                        <i class="bi bi-check-circle-fill"></i><span>{{ $baris['nama'] }}</span>
+                                <div class="pd-pkg is-statis">
+                                    <span class="pd-pkg-dur">{{ $baris['nama'] }}</span>
+                                    <span class="pd-pkg-price">
+                                        <span class="pd-pkg-now">{{ $baris['dur_value'] }} {{ $baris['dur_type'] }}</span>
                                     </span>
-                                    <span class="pkd-dur">{{ $baris['dur_value'] }} {{ $baris['dur_type'] }}</span>
-                                </li>
+                                </div>
                             @endforeach
-                        </ul>
+                        </div>
                     @endif
 
                     {{-- Beli --}}
