@@ -501,6 +501,16 @@ class PromoService
         return Promo::active()
             ->flashSale()
             ->orderBy('prioritas', 'desc')
+            // Penyeimbang saat prioritasnya SAMA. Tanpa ini urutannya diserahkan
+            // ke database dan bisa berganti sendiri antar-permintaan, sehingga
+            // beranda menampilkan promo berbeda-beda tanpa ada yang diubah.
+            // Yang terbaru menang — paling masuk akal bagi admin yang baru saja
+            // membuat promo.
+            ->orderBy('created_at', 'desc')
+            // Pengunci terakhir untuk dua promo yang dibuat pada detik yang
+            // sama: created_at-nya identik, jadi tanpa ini urutannya kembali
+            // bergantung pada database.
+            ->orderBy('id', 'desc')
             ->get();
     }
 
