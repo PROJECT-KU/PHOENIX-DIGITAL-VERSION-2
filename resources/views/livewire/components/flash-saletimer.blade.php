@@ -129,8 +129,12 @@
                 <div class="row featured-products-row g-3 g-lg-4 mt-1">
                     @foreach ($featuredBundlings as $paket)
                         @php
-                            $hargaPaket = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_bundling);
-                            $hargaAwal = (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_awal);
+                            // Angka diambil dari komponen, bukan dihitung ulang di sini,
+                            // supaya harga di kartu tidak bisa berbeda dengan yang ditagih
+                            // di keranjang.
+                            $hp = $this->hargaPaketPromo($paket);
+                            $hargaPaket = $hp['bayar'];
+                            $hargaAwal = $hp['coret'];
                         @endphp
                         <div class="col-lg-3 col-md-6" wire:key="fs-bundling-{{ $paket->id }}">
                             <div class="fs-card">
@@ -139,7 +143,9 @@
                                         <img src="{{ asset('storage/img/ProductBundlings/' . $paket->gambar) }}"
                                             alt="{{ $paket->nama_paket }}" loading="lazy">
                                     @endif
-                                    <span class="fs-badge">Paket Spesial</span>
+                                    <span class="fs-badge">
+                                        {{ $hp['potongan'] > 0 ? 'Hemat Rp' . number_format($hp['potongan'], 0, ',', '.') : 'Paket Spesial' }}
+                                    </span>
                                 </div>
                                 <div class="fs-card-body">
                                     <a href="{{ route('bundling.index') }}" class="fs-name">{{ $paket->nama_paket }}</a>

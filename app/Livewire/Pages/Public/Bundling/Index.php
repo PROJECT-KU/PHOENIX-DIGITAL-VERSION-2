@@ -47,6 +47,10 @@ class Index extends Component
                 'product_image' => $imageName,
                 'duration_type' => null,
                 'duration_value' => null,
+                // Harga coret, dibawa serta supaya PromoService tidak perlu
+                // membaca database tiap kali menghitung. Inilah dasar hitung
+                // diskon paket (lihat PromoService::hargaAwalPaket).
+                'harga_awal' => (int) preg_replace('/[^0-9]/', '', (string) $bundling->harga_awal),
                 'type' => 'bundling',
                 'price' => $price,
                 'quantity' => 1,

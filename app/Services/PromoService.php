@@ -98,25 +98,10 @@ class PromoService
             ->get();
 
         foreach ($cart as $item) {
-            // Paket bundling TIDAK ikut promo otomatis.
-            //
-            // Harganya sudah harga promo (kolom `harga_bundling` yang ditentukan
-            // admin), jadi memotongnya lagi dengan flash sale berarti diskon dua
-            // kali di atas harga yang memang sudah dimurahkan.
-            //
-            // Form pesanan admin sudah lama mengecualikan bundling dari flash
-            // sale/auto promo, tetapi checkout PUBLIK belum — di sana flash sale
-            // "berlaku untuk semua produk" tetap memotong harga paket. Baris ini
-            // menyamakan keduanya.
-            //
-            // Paket tetap boleh TAMPIL di etalase flash sale lewat relasi
-            // Promo::bundlings(); yang ditolak di sini hanya potongan harganya.
-            if (($item['type'] ?? null) === 'bundling') {
-                continue;
-            }
+            $iniPaket = ($item['type'] ?? null) === 'bundling';
 
             // Find applicable promos for this product
-            $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer, $subtotal) {
+            $productPromos = $automaticPromos->filter(function ($promo) use ($item, $customer, $subtotal, $iniPaket) {
                 // Minimum pembelian: sebelumnya TIDAK pernah dicek untuk flash sale /
                 // auto promo — promo bersyarat "min belanja 100rb" tetap memberi
                 // diskon di keranjang 10rb. Hanya jalur kode promo yang menegakkannya.
@@ -135,10 +120,19 @@ class PromoService
                 $menyasarKhusus = $promo->products->isNotEmpty()
                     || $promo->bundlings->isNotEmpty();
 
-                $appliesToProduct = ! $menyasarKhusus
-                    || $promo->products->contains('id', $item['product_id']);
+                if ($iniPaket) {
+                    // Paket HANYA ikut promo yang benar-benar melampirkannya.
+                    //
+                    // Sengaja tidak ikut aturan "kosong = semua" seperti produk:
+                    // paket sudah berharga khusus, jadi ia harus dipilih admin
+                    // secara sadar, bukan kena promo umum tanpa disengaja.
+                    $berlaku = $promo->bundlings->contains('id', $item['product_id']);
+                } else {
+                    $berlaku = ! $menyasarKhusus
+                        || $promo->products->contains('id', $item['product_id']);
+                }
 
-                return $appliesToProduct && $promo->canBeUsedBy($customer);
+                return $berlaku && $promo->canBeUsedBy($customer);
             });
 
             foreach ($productPromos as $promo) {
@@ -164,11 +158,25 @@ class PromoService
 
                 $sudahDipakai = $sudahIndex !== null ? (float) $promos[$sudahIndex]['jumlah_diskon'] : 0.0;
 
-                $discount = $this->calculatePromoDiscount(
-                    $item['subtotal'],
-                    $promo,
-                    $isMember
-                );
+                // Basis hitung diskon.
+                //
+                // Untuk PAKET, dasarnya `harga_awal` (harga coret), BUKAN harga
+                // paket yang dibayar. Aturan pemilik: flash sale 10% pada paket
+                // dengan harga awal 160.000 dan harga paket 125.000 memberi
+                // potongan 16.000 — bukan 12.500 — dan potongan itu dikurangkan
+                // dari 125.000 sehingga pelanggan membayar 109.000.
+                $basis = $iniPaket
+                    ? $this->hargaAwalPaket($item)
+                    : $item['subtotal'];
+
+                $discount = $this->calculatePromoDiscount($basis, $promo, $isMember);
+
+                // Potongan tidak boleh melebihi harga paketnya sendiri — kalau
+                // harga awal jauh di atas harga paket, persentase besar bisa
+                // menghasilkan potongan yang lebih besar dari yang dibayar.
+                if ($iniPaket) {
+                    $discount = min($discount, (float) $item['subtotal']);
+                }
 
                 // Diskon NOMINAL ("potong Rp 50.000") adalah jatah untuk SATU
                 // keranjang, bukan per item — tanpa batas ini, memperbaiki bug di
@@ -211,6 +219,33 @@ class PromoService
             'total' => $totalDiscount,
             'promos' => $promos,
         ];
+    }
+
+    /**
+     * Harga AWAL (harga coret) sebuah paket bundling — dasar hitung diskonnya.
+     *
+     * Dibaca dari keranjang bila ada, dan kalau tidak ada baru diambil dari
+     * database. Keranjang lama yang tersimpan di sesi pengunjung dibuat sebelum
+     * kolom ini ikut disertakan, jadi tanpa cadangan itu paket lama akan
+     * kehilangan diskonnya tanpa sebab yang terlihat.
+     *
+     * Jatuh ke harga yang dibayar bila harga awal tidak diisi admin — dengan
+     * begitu perilakunya sama seperti produk biasa, bukan nol.
+     */
+    private function hargaAwalPaket(array $item): float
+    {
+        $dariKeranjang = (int) preg_replace('/[^0-9]/', '', (string) ($item['harga_awal'] ?? ''));
+
+        if ($dariKeranjang > 0) {
+            return (float) $dariKeranjang;
+        }
+
+        $paket = \App\Models\ProductBundlings::find($item['product_id'] ?? null);
+        $awal = $paket
+            ? (int) preg_replace('/[^0-9]/', '', (string) $paket->harga_awal)
+            : 0;
+
+        return $awal > 0 ? (float) $awal : (float) $item['subtotal'];
     }
 
     /**
