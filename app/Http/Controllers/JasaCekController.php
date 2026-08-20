@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrderUpload;
+use App\Support\RingkasDokumen;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -26,12 +28,35 @@ class JasaCekController extends Controller
         return Storage::disk('local')->download($upload->hasil_path, $upload->hasil_nama ?: 'hasil-pengecekan.pdf');
     }
 
-    /** Admin unduh file MASUK dari customer. */
-    public function unduhBerkasAdmin(OrderUpload $upload)
+    /**
+     * Admin unduh file MASUK dari customer.
+     *
+     * DOCX yang melewati batas unggah penyedia pengecekan diperkecil lebih
+     * dulu — gambar di dalamnya dimampatkan, teksnya tidak disentuh sama
+     * sekali, jadi hasil pemeriksaan kemiripan tetap sama. Tambahkan ?asli=1
+     * bila admin memang butuh berkas apa adanya.
+     */
+    public function unduhBerkasAdmin(OrderUpload $upload, Request $request)
     {
         abort_unless($upload->path && Storage::disk('local')->exists($upload->path), 404);
 
-        return Storage::disk('local')->download($upload->path, $upload->nama_asli ?: 'dokumen.pdf');
+        $nama = $upload->nama_asli ?: 'dokumen.pdf';
+
+        if (! $request->boolean('asli')) {
+            $ringkas = RingkasDokumen::kecilkanDocx(
+                Storage::disk('local')->path($upload->path),
+                RingkasDokumen::BATAS_PENYEDIA
+            );
+
+            // Gagal meringkas bukan alasan menggagalkan unduhan: jatuh ke asli.
+            if ($ringkas) {
+                return response()
+                    ->download($ringkas, RingkasDokumen::namaRingkas($nama))
+                    ->deleteFileAfterSend();
+            }
+        }
+
+        return Storage::disk('local')->download($upload->path, $nama);
     }
 
     /** Customer unduh hasil cek AI — token cocok & pengecekan selesai. */

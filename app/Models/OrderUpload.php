@@ -236,4 +236,19 @@ class OrderUpload extends Model
 
         return implode(', ', $bagian);
     }
+
+    /**
+     * Berkas DOCX pelanggan melebihi batas unggah penyedia pengecekan,
+     * sehingga unduhan admin akan disajikan dalam versi ringkas.
+     */
+    public function getPerluDiringkasAttribute(): bool
+    {
+        if (! $this->path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($this->path)) {
+            return false;
+        }
+
+        return \App\Support\RingkasDokumen::perluDiringkas(
+            \Illuminate\Support\Facades\Storage::disk('local')->path($this->path)
+        );
+    }
 }
