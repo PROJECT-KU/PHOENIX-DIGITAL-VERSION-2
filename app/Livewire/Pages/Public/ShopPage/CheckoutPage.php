@@ -587,6 +587,15 @@ class CheckoutPage extends Component
             ]);
 
             foreach ($finalCart as $item) {
+                // Paket bundling → satu baris pesanan PER produk penyusunnya.
+                // Tiap akun butuh slot kredensial sendiri; kalau paket disimpan
+                // sebagai satu baris, akunnya tidak bisa dikirim sama sekali.
+                if (($item['type'] ?? null) === 'bundling') {
+                    $this->pecahPaketJadiItem($order, $item);
+
+                    continue;
+                }
+
                 $orderItem = OrderItem::create([
                     'id' => Str::uuid(),
                     'order_id' => $order->id,
@@ -698,6 +707,79 @@ class CheckoutPage extends Component
      * OrderUpload milik pesanan — langsung berstatus 'menunggu' agar terpantau
      * admin lewat badge. Terisolasi: kegagalan di sini tak membatalkan checkout.
      */
+    /**
+     * Simpan paket bundling sebagai beberapa item pesanan — satu per produk.
+     *
+     * Sama persis dengan yang dilakukan form admin (OrderForm), lewat
+     * pembagian harga yang sama, supaya pesanan dari publik dan dari admin
+     * berbentuk identik dan bisa diproses dengan alur yang sama.
+     */
+    private function pecahPaketJadiItem(Order $order, array $item): void
+    {
+        $paket = \App\Models\ProductBundlings::find($item['product_id'] ?? null);
+
+        // Paket sudah dihapus di sela checkout: simpan apa adanya agar
+        // pesanan pelanggan tidak hilang, biar admin yang menindaklanjuti.
+        if (! $paket) {
+            OrderItem::create([
+                'id' => Str::uuid(),
+                'order_id' => $order->id,
+                // product_id wajib terisi, jadi id paket tetap dipakai —
+                // bentuk lama yang bisa dirapikan menyusul lewat
+                // `php artisan paket:pecah-item`.
+                'product_id' => $item['product_id'],
+                'product_name' => $item['product_name'],
+                'product_image' => $item['product_image'],
+                'duration_type' => null,
+                'duration_value' => null,
+                'price' => $item['price'],
+                'quantity' => $item['quantity'],
+                'subtotal' => $item['subtotal'],
+            ]);
+
+            return;
+        }
+
+        $baris = \App\Support\ItemPaket::pecah($paket, (int) $item['subtotal']);
+
+        // Paket tanpa produk penyusun yang masih hidup — jangan sampai
+        // pesanannya lenyap tanpa jejak.
+        if (empty($baris)) {
+            OrderItem::create([
+                'id' => Str::uuid(),
+                'order_id' => $order->id,
+                'product_id' => $paket->id,
+                'product_name' => $paket->nama_paket,
+                'product_image' => $item['product_image'],
+                'duration_type' => null,
+                'duration_value' => null,
+                'price' => $item['price'],
+                'quantity' => $item['quantity'],
+                'subtotal' => $item['subtotal'],
+            ]);
+
+            return;
+        }
+
+        foreach ($baris as $sub) {
+            $produk = \App\Models\Product::find($sub['product_id']);
+
+            OrderItem::create([
+                'id' => Str::uuid(),
+                'order_id' => $order->id,
+                'product_id' => $sub['product_id'],
+                'product_name' => \App\Support\ItemPaket::namaItem($paket->nama_paket, $sub['product_name']),
+                'product_description' => $produk->deskripsi ?? null,
+                'product_image' => $produk->image ?? null,
+                'duration_type' => $sub['duration_type'],
+                'duration_value' => $sub['duration_value'],
+                'price' => $sub['distributed'],
+                'quantity' => 1,
+                'subtotal' => $sub['distributed'],
+            ]);
+        }
+    }
+
     private function pindahkanDraftUpload(string $draftId, string $orderId, array $item = []): void
     {
         try {

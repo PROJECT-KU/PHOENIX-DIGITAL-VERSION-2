@@ -10,6 +10,7 @@ use App\Models\ProductBundlings;
 use App\Models\Promo;
 use App\Services\PromoService;
 use App\Support\HargaPaket;
+use App\Support\ItemPaket;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -285,19 +286,8 @@ class OrderForm extends Component
 
     private function getPrice(Product $product, string $durationType, int $durationValue): int
     {
-        $harga = $product->hargaUntuk($durationValue, $durationType);
-        if ($harga > 0) {
-            return $harga;
-        }
-
-        // Durasi non-katalog (mis. 2/3/4 bulan) tidak punya harga khusus →
-        // hitung dari harga per bulan × durasi. Sama seperti fallback di sisi
-        // publik (ProductDetail::addToCart). Tanpa ini durasi >1 berharga Rp 0.
-        if ($durationType === 'bulan' && (int) ($product->harga_perbulan ?? 0) > 0 && $durationValue > 0) {
-            return (int) $product->harga_perbulan * $durationValue;
-        }
-
-        return $harga;
+        // Satu rumus dipakai bersama checkout publik — lihat ItemPaket.
+        return ItemPaket::hargaNormal($product, $durationType, $durationValue);
     }
 
     // ===================== TOTAL / DISKON =====================
@@ -314,26 +304,15 @@ class OrderForm extends Component
                 $this->items[$i]['harga_bundling'] = $harga;
 
                 // Distribusi harga paket proporsional terhadap harga normal tiap produk
-                $normals = [];
                 foreach ($item['products'] as $j => $sub) {
                     $p = Product::find($sub['product_id']);
-                    $normal = $p ? $this->getPrice($p, $sub['duration_type'], (int) $sub['duration_value']) : 0;
-                    $this->items[$i]['products'][$j]['normal'] = $normal;
-                    $normals[$j] = $normal;
+                    $this->items[$i]['products'][$j]['normal'] = $p
+                        ? $this->getPrice($p, $sub['duration_type'], (int) $sub['duration_value'])
+                        : 0;
                 }
-                $sumNormal = array_sum($normals);
-                $count = count($item['products']);
-                $running = 0;
-                $lastKey = array_key_last($item['products']);
-                foreach ($item['products'] as $j => $sub) {
-                    if ($j === $lastKey) {
-                        $dist = $harga - $running; // sisa agar total pas
-                    } else {
-                        $weight = $sumNormal > 0 ? ($normals[$j] / $sumNormal) : (1 / max(1, $count));
-                        $dist = (int) round($harga * $weight);
-                        $running += $dist;
-                    }
-                    $this->items[$i]['products'][$j]['distributed'] = max(0, $dist);
+                $dibagi = ItemPaket::bagiHarga(array_values($this->items[$i]['products']), $harga);
+                foreach (array_keys($this->items[$i]['products']) as $urutan => $j) {
+                    $this->items[$i]['products'][$j]['distributed'] = $dibagi[$urutan]['distributed'];
                 }
                 $this->items[$i]['subtotal'] = $harga;
 
@@ -709,7 +688,7 @@ class OrderForm extends Component
                         OrderItem::create([
                             'order_id' => $order->id,
                             'product_id' => $product->id,
-                            'product_name' => '['.$item['bundling_name'].'] '.$product->nama_akun,
+                            'product_name' => ItemPaket::namaItem($item['bundling_name'], $product->nama_akun),
                             'product_description' => $product->deskripsi ?? null,
                             'product_image' => $product->image ?? null,
                             'duration_type' => $sub['duration_type'],

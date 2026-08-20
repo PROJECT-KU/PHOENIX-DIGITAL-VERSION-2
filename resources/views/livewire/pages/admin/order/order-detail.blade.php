@@ -937,9 +937,21 @@ Detail Pesanan || lemon
 
                 {{-- Aksi — satu aksi utama per status, sisanya netral; destruktif di kanan --}}
                 <div class="pcek-actions">
+                    @if ($up->perlu_diringkas)
+                    {{-- DOCX melewati batas unggah Groupy: gambar dimampatkan, teks utuh --}}
+                    <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost"
+                       title="Gambar dimampatkan agar muat batas Groupy. Teks tidak berubah.">
+                        <i class="bi bi-file-earmark-zip"></i> File Customer (ringkas)
+                    </a>
+                    <a href="{{ route('admin.jasa.berkas', ['upload' => $up, 'asli' => 1]) }}"
+                       class="pcek-btn ghost" title="Berkas apa adanya dari customer">
+                        <i class="bi bi-download"></i> Asli
+                    </a>
+                    @else
                     <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost">
                         <i class="bi bi-download"></i> File Customer
                     </a>
+                    @endif
                     @if ($up->pdf_path)
                     {{-- Parafrase: PDF acuan jumlah halaman (file utama = DOCX kerja) --}}
                     <a href="{{ route('admin.jasa.pdf', $up) }}" class="pcek-btn ghost" title="PDF acuan jumlah halaman">
@@ -1204,7 +1216,10 @@ Detail Pesanan || lemon
                         @forelse ($order->items as $item)
                         <tr>
                             <td class="fw-semibold">
-                                {{ $item->product->nama_akun ?? '-' }}
+                                {{-- Salinan nama saat dipesan lebih dipercaya daripada relasi:
+                                     item paket bundling menyimpan nama "[Paket] Produk", dan
+                                     baris lama tetap benar walau produknya kelak diganti nama. --}}
+                                {{ $item->product_name ?: ($item->product->nama_akun ?? '-') }}
                                 {{-- Add-on & jumlah halaman (khusus produk jasa) --}}
                                 @if (! empty($item->addons) || $item->jumlah_halaman)
                                 {{-- Rata kiri, seragam dengan badge ebook/bonus di kolom yang sama --}}
