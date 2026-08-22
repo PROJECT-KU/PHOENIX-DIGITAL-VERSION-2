@@ -25,6 +25,21 @@ class JasaCekPage extends Component
     /** Dokumen yang akan diunggah customer. */
     public $dokumen;
 
+    /**
+     * Nama berkas yang SEBENARNYA dipilih customer.
+     *
+     * Firewall hosting menolak unggahan yang nama berkasnya memuat apostrof
+     * atau tanda kutip — dikira percobaan SQL injection — dengan HTTP 403,
+     * sebelum permintaannya sempat menyentuh Laravel. Terbukti 22 Agu 2026:
+     * "ILMU al-jarh wa Ta'dil.docx" ditolak 403, sedangkan nama yang sama
+     * tanpa apostrof diterima.
+     *
+     * Karena itu peramban mengganti nama berkasnya dengan versi bersih
+     * sebelum mengunggah, dan nama aslinya dititipkan di sini supaya yang
+     * dilihat customer maupun admin tetap nama yang mereka kenal.
+     */
+    public string $namaAsliDokumen = '';
+
     // Setelan exclude Turnitin (default aman).
     public bool $exclude_bibliografi = true;
 
@@ -252,7 +267,7 @@ class JasaCekPage extends Component
                 'order_id' => $this->order->id,
                 'jenis' => $jenis,
                 'path' => $path,
-                'nama_asli' => $file->getClientOriginalName(),
+                'nama_asli' => $this->namaBerkas($file),
                 'ukuran' => $file->getSize(),
                 'mime' => $file->getMimeType(),
                 'status' => 'menunggu',
@@ -308,6 +323,34 @@ class JasaCekPage extends Component
      * add-on cek plagiasi, yang membuat exclude jadi relevan lagi.
      * Penandanya diatur admin per produk & per add-on (kolom pakai_exclude).
      */
+    /**
+     * Nama berkas untuk disimpan: nama asli pilihan customer bila peramban
+     * sempat menitipkannya, selain itu nama yang benar-benar terunggah.
+     *
+     * Ekstensinya diambil dari berkas yang terunggah, bukan dari titipan,
+     * supaya nama titipan tidak bisa dipakai memalsukan jenis berkas.
+     */
+    private function namaBerkas($file): string
+    {
+        $terunggah = $file->getClientOriginalName();
+        $asli = trim($this->namaAsliDokumen);
+
+        if ($asli === '') {
+            return $terunggah;
+        }
+
+        $ext = pathinfo($terunggah, PATHINFO_EXTENSION);
+
+        // Nama titipan datang dari peramban, jadi diperlakukan sebagai masukan
+        // yang tidak dipercaya. Backslash disamakan dulu dengan garis miring:
+        // di Linux pathinfo() tidak menganggapnya pemisah folder, sehingga
+        // jalur ala Windows akan lolos utuh bila tidak diubah lebih dulu.
+        $dasar = pathinfo(str_replace(['\\', "\0"], ['/', ''], $asli), PATHINFO_FILENAME);
+        $dasar = trim(mb_substr($dasar, 0, 150));
+
+        return $dasar === '' ? $terunggah : $dasar.($ext ? '.'.$ext : '');
+    }
+
     public function perluExclude(): bool
     {
         // Exclude hanya relevan untuk dokumen pengecekan KEMIRIPAN.

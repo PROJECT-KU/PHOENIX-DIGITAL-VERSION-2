@@ -191,7 +191,56 @@
                 <div class="pay-card">
                     <div class="pay-card-head" style="color:#b45309;"><i class="bi bi-cloud-arrow-up"></i> Unggah File untuk Diperiksa</div>
                     <div class="pay-card-body">
-                        <div wire:key="cek-form-{{ $terpakai }}" x-data="{ fileName: '' }"
+                        <div wire:key="cek-form-{{ $terpakai }}" x-data="{
+                            fileName: '',
+
+                            /*
+                             * Firewall hosting menolak unggahan yang nama berkasnya memuat
+                             * apostrof atau tanda kutip (dikira SQL injection) dengan HTTP 403,
+                             * sebelum permintaannya menyentuh Laravel — jadi tak ada pesan yang
+                             * bisa kita perbaiki dari sisi PHP. Terbukti 22 Agu 2026 pada
+                             * &quot;ILMU al-jarh wa Ta'dil.docx&quot;.
+                             *
+                             * Berkasnya diganti nama menjadi versi bersih sebelum diunggah, dan
+                             * nama aslinya dititipkan lewat kolom tersembunyi supaya yang dilihat
+                             * customer maupun admin tetap nama yang mereka kenal.
+                             */
+                            amankanNamaBerkas(e) {
+                                const input = e.target;
+                                if (!input || input.type !== 'file') return;
+
+                                if (!input.files || !input.files.length) {
+                                    this.fileName = '';
+
+                                    return;
+                                }
+
+                                const berkas = input.files[0];
+
+                                // Nama ASLI yang ditampilkan ke customer — bukan versi bersih,
+                                // supaya ia tetap mengenali berkas yang barusan dipilihnya.
+                                this.fileName = berkas.name;
+
+                                if (this.$refs.namaAsli) {
+                                    this.$refs.namaAsli.value = berkas.name;
+                                    this.$refs.namaAsli.dispatchEvent(new Event('input'));
+                                }
+
+                                const bersih = berkas.name.replace(/[^A-Za-z0-9 ._()\-]/g, '-');
+                                if (bersih === berkas.name) return;
+
+                                try {
+                                    const dt = new DataTransfer();
+                                    dt.items.add(new File([berkas], bersih, {
+                                        type: berkas.type,
+                                        lastModified: berkas.lastModified,
+                                    }));
+                                    input.files = dt.files;
+                                } catch (err) {
+                                    /* Peramban lawas tanpa DataTransfer: biarkan apa adanya. */
+                                }
+                            },
+                        }"
                             x-on:cek-file-ditolak.window="fileName = ''; $refs.dokumenInput && ($refs.dokumenInput.value = '')">
 
                             {{-- Pemilih jenis — hanya bila pesanan punya >1 jenis pemeriksaan.
@@ -216,10 +265,15 @@
                             </div>
                             @endif
 
-                            <label class="cek-drop">
+                            {{-- .capture: penyaring nama HARUS jalan sebelum Livewire membaca
+                                 berkasnya. Listener capture di elemen induk dijamin lebih dulu
+                                 daripada listener milik input di dalamnya. --}}
+                            <label class="cek-drop" x-on:change.capture="amankanNamaBerkas($event)">
                                 <input type="file" wire:model="dokumen" accept=".pdf,.docx" class="cek-drop-input"
-                                    x-ref="dokumenInput"
-                                    x-on:change="fileName = ($event.target.files[0] && $event.target.files[0].name) || ''">
+                                    x-ref="dokumenInput">
+
+                                {{-- Nama asli dititipkan ke server terpisah dari berkasnya. --}}
+                                <input type="hidden" wire:model="namaAsliDokumen" x-ref="namaAsli">
 
                                 {{-- Sedang mengunggah --}}
                                 <div wire:loading wire:target="dokumen" class="cek-drop-loading">
