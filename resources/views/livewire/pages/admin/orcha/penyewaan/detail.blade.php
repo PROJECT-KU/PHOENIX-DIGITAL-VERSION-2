@@ -186,12 +186,12 @@ Detail Sewa Kendaraan || lemon
                                     ['BBM, tol, parkir', $sewa['kendaraan']['operasional_label'] ?? '—'],
                                     ['Wilayah', ($sewa['luar_kota'] ?? false) ? 'Luar kota' : 'Dalam kota'],
                                     ['Mulai', ($sewa['tanggal_mulai'] ?? null)
-                                        ? \Carbon\Carbon::parse($sewa['tanggal_mulai'])->translatedFormat('l, d F Y') . ' · ' . $sewa['jam_mulai']
+                                        ? \Carbon\Carbon::parse($sewa['tanggal_mulai'])->locale('id')->translatedFormat('l, d F Y') . ' · ' . $sewa['jam_mulai']
                                         : '—'],
-                                    ['Ditunggu kembali', $tenggat ? $tenggat->translatedFormat('l, d F Y') . ' · ' . $tenggat->format('H:i') : '—'],
+                                    ['Ditunggu kembali', $tenggat ? $tenggat->locale('id')->translatedFormat('l, d F Y') . ' · ' . $tenggat->format('H:i') : '—'],
                                     ['Durasi', $sewa['durasi_label']],
                                     ['Kembali pada', ($sewa['dikembalikan_pada'] ?? null)
-                                        ? \Carbon\Carbon::parse($sewa['dikembalikan_pada'])->translatedFormat('d F Y, H:i')
+                                        ? \Carbon\Carbon::parse($sewa['dikembalikan_pada'])->locale('id')->translatedFormat('d F Y, H:i')
                                         : 'Belum kembali'],
                                     {{-- Sebutannya mengikuti moda sewanya. Pada sewa bersopir
                                          unitnya tidak diserahkan ke penyewa, jadi "lokasi
@@ -308,10 +308,10 @@ Detail Sewa Kendaraan || lemon
                             <div class="row g-3">
                                 @foreach ([
                                     ['Diserahkan', ($sewa['diserahkan_pada'] ?? null)
-                                        ? \Carbon\Carbon::parse($sewa['diserahkan_pada'])->translatedFormat('d M Y, H:i')
+                                        ? \Carbon\Carbon::parse($sewa['diserahkan_pada'])->locale('id')->translatedFormat('d M Y, H:i')
                                         : '—'],
                                     ['Kembali', ($sewa['dikembalikan_pada'] ?? null)
-                                        ? \Carbon\Carbon::parse($sewa['dikembalikan_pada'])->translatedFormat('d M Y, H:i')
+                                        ? \Carbon\Carbon::parse($sewa['dikembalikan_pada'])->locale('id')->translatedFormat('d M Y, H:i')
                                         : '—'],
                                     ['Kilometer awal', $sewa['kilometer_awal'] ?: '—'],
                                     ['Kilometer akhir', $sewa['kilometer_akhir'] ?: '—'],

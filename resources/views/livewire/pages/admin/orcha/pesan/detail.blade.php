@@ -40,12 +40,12 @@ Detail Pesan Kontak || lemon
                                 <span class="badge orcha-lencana-bayar-diterima">{{ $pesan['keperluan_label'] }}</span>
                                 <span class="text-muted" style="font-size:.82rem">
                                     masuk
-                                    {{ \Carbon\Carbon::parse($pesan['dibuat_pada'])->translatedFormat('j F Y, H:i') }}
+                                    {{ \Carbon\Carbon::parse($pesan['dibuat_pada'])->locale('id')->translatedFormat('j F Y, H:i') }}
                                 </span>
                                 @if ($pesan['sudah_dibaca'])
                                     <span class="text-muted orcha-ikon-teks" style="font-size:.78rem">
                                         <i class="bi bi-check2-all"></i> dibaca
-                                        {{ \Carbon\Carbon::parse($pesan['dibaca_pada'])->translatedFormat('j M, H:i') }}
+                                        {{ \Carbon\Carbon::parse($pesan['dibaca_pada'])->locale('id')->translatedFormat('j M, H:i') }}
                                     </span>
                                 @else
                                     <span class="badge orcha-lencana-bayar-menunggu">Belum dibaca</span>
@@ -124,7 +124,7 @@ Detail Pesan Kontak || lemon
                                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                                             <span class="orcha-label-kecil mb-0">{{ $satu['keperluan_label'] }}</span>
                                             <span class="text-muted" style="font-size:.76rem">
-                                                {{ \Carbon\Carbon::parse($satu['dibuat_pada'])->translatedFormat('j M Y, H:i') }}
+                                                {{ \Carbon\Carbon::parse($satu['dibuat_pada'])->locale('id')->translatedFormat('j M Y, H:i') }}
                                                 @unless ($satu['sudah_dibaca'])
                                                     · <strong class="text-danger">belum dibaca</strong>
                                                 @endunless
@@ -168,7 +168,7 @@ Detail Pesan Kontak || lemon
                                     <div class="text-muted" style="font-size:.78rem">
                                         {{ $satu['jenis_label'] }}
                                         @if ($satu['mulai'])
-                                            · mulai {{ \Carbon\Carbon::parse($satu['mulai'])->translatedFormat('j M Y') }}
+                                            · mulai {{ \Carbon\Carbon::parse($satu['mulai'])->locale('id')->translatedFormat('j M Y') }}
                                         @endif
                                     </div>
                                 </div>

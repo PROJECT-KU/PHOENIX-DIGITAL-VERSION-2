@@ -46,6 +46,7 @@ use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaDestinasiForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 // Data Order
+use App\Livewire\Pages\Admin\Orcha\Keuntungan\OrchaKeuntunganList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanDetail;
@@ -53,6 +54,8 @@ use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanList;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaRiwayatKesehatan;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPesertaForm;
 // Orcha Journey — data dari aplikasi tetangga lewat API
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
@@ -495,6 +498,15 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
     Route::get('/admin/orcha/pendaftaran-manifes', [OrchaEksporController::class, 'manifesDaftar'])->name('admin.orcha.pendaftaran.manifes');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}', OrchaPendaftaranDetail::class)->name('admin.orcha.pendaftaran.detail');
+    // Melengkapi nama peserta: halaman tersendiri, karena rombongan bisa berisi
+    // puluhan orang dan daftar sepanjang itu sesak di dalam jendela kecil.
+    Route::get('/admin/orcha/pendaftaran/{pendaftaran}/peserta', OrchaPesertaForm::class)->name('admin.orcha.pendaftaran.peserta');
+    Route::get('/admin/orcha/pendaftaran/{pendaftaran}/peserta/templat', [OrchaEksporController::class, 'templatPeserta'])->name('admin.orcha.pendaftaran.peserta.templat');
+    // Riwayat kesehatan: halaman tersendiri karena isinya panjang, dan
+    // pembukaannya dicatat di sisi Orcha.
+    Route::get('/admin/orcha/pendaftaran/{pendaftaran}/riwayat-kesehatan', OrchaRiwayatKesehatan::class)->name('admin.orcha.pendaftaran.kesehatan');
+    Route::get('/admin/orcha/galeri', \App\Livewire\Pages\Admin\Orcha\Galeri\OrchaGaleriList::class)->name('admin.orcha.galeri');
+    Route::get('/admin/orcha/pendaftaran/{pendaftaran}/surat-penggantian', [OrchaEksporController::class, 'suratPenggantian'])->name('admin.orcha.pendaftaran.surat-penggantian');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/excel', [OrchaEksporController::class, 'excel'])->name('admin.orcha.pendaftaran.excel');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/ekspor/pdf', [OrchaEksporController::class, 'pdf'])->name('admin.orcha.pendaftaran.pdf');
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/kwitansi', [OrchaEksporController::class, 'kwitansi'])->name('admin.orcha.pendaftaran.kwitansi');
@@ -509,6 +521,8 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
     Route::get('/admin/orcha/paket-wisata/{paket}/ubah', OrchaPaketForm::class)->name('admin.orcha.paket.ubah');
+
+    Route::get('/admin/orcha/keuntungan', OrchaKeuntunganList::class)->name('admin.orcha.keuntungan');
 
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');

@@ -12,7 +12,7 @@
     $sudahIsi = collect($riwayat)->keyBy(fn ($satu) => mb_strtolower(trim($satu['nama_peserta'] ?? '')));
 
     $tanggal = fn ($nilai, $bentuk = 'd/m/Y') => $nilai
-        ? \Carbon\Carbon::parse($nilai)->translatedFormat($bentuk)
+        ? \Carbon\Carbon::parse($nilai)->locale('id')->translatedFormat($bentuk)
         : '';
 @endphp
 
@@ -25,13 +25,12 @@
     $kepalaKolom = 'background-color:#EEF6FB;color:#0F2D4A;font-weight:bold;border:1px solid #CFE4F2;padding:5px;';
     $labelBaris = 'background-color:#F8FBFD;color:#64748B;font-weight:bold;border:1px solid #E9EFF5;padding:5px;';
     $isiBaris = 'border:1px solid #E9EFF5;padding:5px;';
-    $isiAngka = 'border:1px solid #E9EFF5;padding:5px;text-align:right;';
     $awas = 'background-color:#FFF5F5;color:#B91C1C;font-weight:bold;border:1px solid #E9EFF5;padding:5px;';
 @endphp
 
 <table>
     <tr><th colspan="8" style="{{ $judulUtama }}">DATA PENDAFTARAN OPEN TRIP — {{ $pendaftaran['kode'] }}</th></tr>
-    <tr><td colspan="8" style="color:#94A3B8;">Diunduh {{ now()->translatedFormat('d F Y, H:i') }} WIB oleh {{ auth()->user()->name ?? '-' }} · rahasia internal</td></tr>
+    <tr><td colspan="8" style="color:#94A3B8;">Diunduh {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB oleh {{ auth()->user()->name ?? '-' }} · rahasia internal</td></tr>
     <tr><td colspan="8"></td></tr>
 
     <tr><th colspan="8" style="{{ $judulBagian }}">PEMESAN</th></tr>

@@ -588,7 +588,7 @@
                                         @endif
                                         @if ($jadwal['kembali_pada'] ?? null)
                                             dan dijadwalkan kembali
-                                            {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M Y, H:i') }}.
+                                            {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->locale('id')->translatedFormat('j M Y, H:i') }}.
                                         @endif
                                         Kondisi yang dicatat di sini akan tertimpa oleh pemeriksaan
                                         saat unitnya kembali.
@@ -600,7 +600,7 @@
                                 <span class="orcha-label-kecil mb-0">
                                     @if ($kondisi && $kondisi['diperiksa_pada'])
                                         Terakhir diperiksa
-                                        {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                        {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->locale('id')->translatedFormat('j M Y') }}
                                     @else
                                         Belum pernah diperiksa
                                     @endif
@@ -915,13 +915,13 @@
                                     @foreach (array_filter([
                                         ['Sudah disewa', $jumlahPenyewaan . '×'],
                                         ($jadwal['kembali_pada'] ?? null)
-                                            ? ['Dijadwalkan kembali', \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M, H:i')]
+                                            ? ['Dijadwalkan kembali', \Carbon\Carbon::parse($jadwal['kembali_pada'])->locale('id')->translatedFormat('j M, H:i')]
                                             : null,
                                         ($jadwal['mulai_berikutnya'] ?? null)
-                                            ? ['Terpesan berikutnya', \Carbon\Carbon::parse($jadwal['mulai_berikutnya'])->translatedFormat('j M, H:i')]
+                                            ? ['Terpesan berikutnya', \Carbon\Carbon::parse($jadwal['mulai_berikutnya'])->locale('id')->translatedFormat('j M, H:i')]
                                             : null,
                                         ($kondisi['diperiksa_pada'] ?? null)
-                                            ? ['Diperiksa terakhir', \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y')]
+                                            ? ['Diperiksa terakhir', \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->locale('id')->translatedFormat('j M Y')]
                                             : ['Diperiksa terakhir', 'Belum pernah'],
                                     ]) as [$label, $nilai])
                                         <div class="col-6">

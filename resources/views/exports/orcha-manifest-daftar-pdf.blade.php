@@ -24,6 +24,19 @@
     $perTitik = [];
     $totalPeserta = 0;
 
+    /*
+     | Pendaftaran yang nama pesertanya belum didata satu per satu tidak muncul
+     | di lembaran ini sama sekali.
+     |
+     | Ini lembar panggil-nama per titik jemput: rombongan tanpa nama tidak bisa
+     | ditempatkan di titik mana pun, dan menyebutnya di catatan kaki pun hanya
+     | membingungkan tim lapangan — mereka membaca nama yang tidak ada di daftar
+     | mana pun, lalu mencarinya.
+     |
+     | Yang perlu tahu adalah admin, sebelum berangkat, di layar: daftar
+     | pendaftaran menandainya dengan cip "nama belum didata" yang langsung
+     | menuju halaman pengisian, dan halaman detailnya menyatakannya terang.
+     */
     foreach ($daftar as $satu) {
         foreach ($satu['peserta'] ?? [] as $orang) {
             $titik = trim($orang['titik_jemput'] ?? '') ?: 'Titik jemput belum dipilih';
@@ -67,6 +80,14 @@
         .rule { height: 2px; width: 30px; background-color: {{ $emas }}; font-size: 0; line-height: 0; margin-top: 4px; }
         .titik { background-color: {{ $navy }}; color: #fff; padding: 6px 12px; font-size: 11px; font-weight: bold; }
         .orang td { padding: 7px 12px; border-bottom: 1px solid #e9eff5; font-size: 11px; }
+        /* Kotak absen naik kendaraan. Digambar sebagai kotak kosong berukuran
+           cukup untuk dicentang pena di lapangan — bukan karakter ☑ yang
+           bergantung pada huruf yang belum tentu ada di berkas PDF. */
+        .kotak-absen { width: 13px; height: 13px; border: 1.4px solid {{ $navy }}; font-size: 0; line-height: 0; }
+        .tajuk-orang td { padding: 4px 12px; font-size: 7.5px; letter-spacing: 1px;
+            text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid #e9eff5; }
+        .hitung-naik { padding: 6px 12px 12px; font-size: 9.5px; color: #64748b; }
+        .garis-isi { display: inline-block; width: 46px; border-bottom: 1px solid #94a3b8; }
         .awas { background-color: #fff5f5; }
         .cap-awas { color: #b91c1c; font-weight: bold; font-size: 9px; }
         .kotak-awas { background-color: #fff5f5; border-left: 4px solid #dc2626; }
@@ -89,7 +110,7 @@
             </td>
             <td align="right" style="color:#7fb4d6;font-size:9px;">
                 Manifes Rombongan<br>
-                Dicetak {{ now()->translatedFormat('d M Y, H:i') }} WIB
+                Dicetak {{ now()->locale('id')->translatedFormat('d M Y, H:i') }} WIB
             </td>
         </tr>
     </table>
@@ -102,7 +123,7 @@
                     <div class="judul">{{ $paket->count() === 1 ? $paket->first() : 'Gabungan '.$paket->count().' paket' }}</div>
                     <div style="font-size:10px;color:#64748b;padding-top:3px;">
                         {{ $tanggal->count() === 1
-                            ? \Carbon\Carbon::parse($tanggal->first())->translatedFormat('l, d F Y')
+                            ? \Carbon\Carbon::parse($tanggal->first())->locale('id')->translatedFormat('l, d F Y')
                             : $tanggal->count().' tanggal keberangkatan' }}
                     </div>
                 </td>
@@ -133,8 +154,17 @@
         @endif
 
         <div style="margin-top:20px;">
-            <div class="bagian">Urutan Jemputan</div>
+            <div class="bagian">Urutan Jemputan &amp; Absen Naik</div>
             <div class="rule"></div>
+            {{-- Manifes ini dibawa ke lapangan dan dicoret pena, bukan dibuka di
+                 layar. Karena itu absennya berupa kotak kosong di kolom pertama:
+                 tim tinggal mencentang siapa yang sudah naik, dan yang belum
+                 tercentang saat kendaraan hendak berangkat adalah daftar yang
+                 harus ditelepon. --}}
+            <div style="font-size:9.5px;color:#64748b;padding-top:6px;">
+                Centang kotak di kolom kiri begitu peserta naik kendaraan.
+                Yang masih kosong saat hendak berangkat, hubungi nomornya di kolom kanan.
+            </div>
         </div>
 
         @foreach ($perTitik as $titik => $orang)
@@ -150,15 +180,29 @@
             </table>
 
             <table width="100%" cellpadding="0" cellspacing="0" class="orang">
+                <tr class="tajuk-orang">
+                    <td width="6%" align="center">Naik</td>
+                    <td width="4%">No</td>
+                    <td width="24%">Nama peserta</td>
+                    <td width="20%">Kesehatan</td>
+                    <td width="20%">Kontak darurat</td>
+                    <td width="18%">Kode &amp; WhatsApp</td>
+                    <td width="8%"></td>
+                </tr>
                 @foreach ($orang as $satu)
                     @php
                         $k = $cari($satu['nama']);
                         $awas = ($k['tingkat_perhatian'] ?? '') === 'tinggi';
                     @endphp
                     <tr class="{{ $awas ? 'awas' : '' }}">
+                        <td width="6%" align="center">
+                            <table cellpadding="0" cellspacing="0" align="center">
+                                <tr><td class="kotak-absen">&nbsp;</td></tr>
+                            </table>
+                        </td>
                         <td width="4%">{{ $loop->iteration }}.</td>
-                        <td width="26%"><strong style="color:{{ $navy }};">{{ $satu['nama'] }}</strong></td>
-                        <td width="22%" style="font-size:10px;">
+                        <td width="24%"><strong style="color:{{ $navy }};">{{ $satu['nama'] }}</strong></td>
+                        <td width="20%" style="font-size:10px;">
                             @if ($k)
                                 {{ collect([
                                     ($k['usia'] ?? null) ? $k['usia'].' th' : null,
@@ -169,7 +213,7 @@
                                 <span style="color:#94a3b8;">kesehatan belum diisi</span>
                             @endif
                         </td>
-                        <td width="22%" style="font-size:10px;">
+                        <td width="20%" style="font-size:10px;">
                             @if (data_get($k, 'kontak_darurat.hp'))
                                 {{ data_get($k, 'kontak_darurat.nama') }} {{ data_get($k, 'kontak_darurat.hp') }}
                             @else
@@ -189,7 +233,15 @@
                     </tr>
                 @endforeach
             </table>
+
+            {{-- Diisi tangan saat kendaraan hendak berangkat: dua angka yang
+                 harus cocok sebelum roda berputar. --}}
+            <div class="hitung-naik">
+                Sudah naik: <span class="garis-isi">&nbsp;</span> dari {{ count($orang) }} orang
+                &nbsp;&middot;&nbsp; Diperiksa oleh: <span class="garis-isi">&nbsp;</span>
+            </div>
         @endforeach
+
     </div>
 
     <div class="kaki-luar">

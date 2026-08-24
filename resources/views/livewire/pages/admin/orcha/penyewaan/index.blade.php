@@ -23,11 +23,7 @@ Sewa Kendaraan Masuk || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
                     <div class="col-12 col-lg-8">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari kode, nama, WhatsApp, atau unit...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode, nama, WhatsApp, atau unit...'])
                     </div>
                     <div class="col-12 col-lg-4">
                         <select wire:model.live="filterStatus" class="form-select">
@@ -63,7 +59,7 @@ Sewa Kendaraan Masuk || lemon
                                     <td>
                                         <span class="orcha-kode">{{ $baris['kode'] }}</span>
                                         <div class="text-muted" style="font-size:.75rem">
-                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y') }}
+                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
                                         </div>
                                     </td>
                                     <td>
@@ -78,7 +74,7 @@ Sewa Kendaraan Masuk || lemon
                                         </div>
                                     </td>
                                     <td class="small text-nowrap">
-                                        {{ $baris['tanggal_mulai'] ? \Carbon\Carbon::parse($baris['tanggal_mulai'])->translatedFormat('d M Y') : '—' }}
+                                        {{ $baris['tanggal_mulai'] ? \Carbon\Carbon::parse($baris['tanggal_mulai'])->locale('id')->translatedFormat('d M Y') : '—' }}
                                         <div class="text-muted" style="font-size:.78rem">{{ $baris['jam_mulai'] ?: '—' }}</div>
                                     </td>
                                     {{-- Tenggat pengembalian berdiri sendiri, bukan diselipkan
@@ -86,12 +82,12 @@ Sewa Kendaraan Masuk || lemon
                                          tahu unit mana yang seharusnya sudah kembali. --}}
                                     <td class="small text-nowrap">
                                         @if ($baris['tanggal_selesai'])
-                                            {{ \Carbon\Carbon::parse($baris['tanggal_selesai'])->translatedFormat('d M Y') }}
+                                            {{ \Carbon\Carbon::parse($baris['tanggal_selesai'])->locale('id')->translatedFormat('d M Y') }}
                                             <div class="text-muted" style="font-size:.78rem">{{ $baris['jam_selesai'] }}</div>
                                             @if ($baris['dikembalikan_pada'])
                                                 <span class="orcha-lencana-aman mt-1">
                                                     <i class="bi bi-check-circle-fill"></i>
-                                                    kembali {{ \Carbon\Carbon::parse($baris['dikembalikan_pada'])->translatedFormat('d M, H:i') }}
+                                                    kembali {{ \Carbon\Carbon::parse($baris['dikembalikan_pada'])->locale('id')->translatedFormat('d M, H:i') }}
                                                 </span>
                                             @elseif ($baris['terlambat'])
                                                 <span class="orcha-lencana-awas mt-1">
@@ -186,7 +182,7 @@ Sewa Kendaraan Masuk || lemon
                                 <div class="orcha-ringkas">
                                     <div class="orcha-label-kecil"><i class="bi bi-calendar-check"></i> Ditunggu kembali</div>
                                     <div class="angka" style="font-size:1.05rem">
-                                        {{ $tenggat ? $tenggat->translatedFormat('d M Y, H:i') : '—' }}
+                                        {{ $tenggat ? $tenggat->locale('id')->translatedFormat('d M Y, H:i') : '—' }}
                                     </div>
                                 </div>
                             </div>

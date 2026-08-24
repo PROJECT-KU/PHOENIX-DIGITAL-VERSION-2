@@ -50,7 +50,7 @@ Detail Pembatalan || lemon
                                 <span class="text-muted" style="font-size:.82rem">
                                     {{ $pembatalan['jenis_label'] }} ·
                                     diajukan
-                                    {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->translatedFormat('j F Y, H:i') }}
+                                    {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->locale('id')->translatedFormat('j F Y, H:i') }}
                                 </span>
                                 <span class="badge orcha-lencana-bayar-{{ $pembatalan['status'] === 'ditolak' ? 'ditolak' : ($pembatalan['status'] === 'diajukan' ? 'menunggu' : 'diterima') }}">
                                     {{ $pembatalan['status_label'] }}
@@ -197,7 +197,7 @@ Detail Pembatalan || lemon
                                             <div class="text-muted" style="font-size:.78rem">
                                                 {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }} ·
                                                 {{ $bayar['tanggal_transfer']
-                                                    ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->translatedFormat('j M Y')
+                                                    ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('j M Y')
                                                     : '—' }}
                                             </div>
                                         </div>
@@ -246,7 +246,7 @@ Detail Pembatalan || lemon
                                         [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Kendaraan' : 'Paket', $pesanan['keterangan'] ?: '—'],
                                         [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Mulai sewa' : 'Tanggal berangkat',
                                             $pesanan['mulai']
-                                                ? \Carbon\Carbon::parse($pesanan['mulai'])->translatedFormat($pesanan['jenis'] === 'sewa_kendaraan' ? 'j M Y, H:i' : 'j M Y')
+                                                ? \Carbon\Carbon::parse($pesanan['mulai'])->locale('id')->translatedFormat($pesanan['jenis'] === 'sewa_kendaraan' ? 'j M Y, H:i' : 'j M Y')
                                                 : 'Menyusul'],
                                         $pesanan['jenis'] === 'sewa_kendaraan'
                                             ? ['Lama sewa', $pesanan['durasi_label'] ?: '—']

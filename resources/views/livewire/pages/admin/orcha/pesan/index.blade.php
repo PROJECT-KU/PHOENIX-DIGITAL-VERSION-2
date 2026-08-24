@@ -15,11 +15,7 @@ Pesan Kontak Orcha || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-3 align-items-center">
                     <div class="col-12 col-lg-5">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari nama, WhatsApp, email, atau isi pesan...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari nama, WhatsApp, email, atau isi pesan...'])
                     </div>
                     <div class="col-12 col-sm-6 col-lg-3">
                         <select wire:model.live="filterStatus" class="form-select">
@@ -88,7 +84,7 @@ Pesan Kontak Orcha || lemon
 
                             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
                                 <span class="text-muted" style="font-size:.78rem">
-                                    {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y, H:i') }}
+                                    {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M Y, H:i') }}
                                 </span>
 
                                 <div class="d-flex gap-2 align-items-center">

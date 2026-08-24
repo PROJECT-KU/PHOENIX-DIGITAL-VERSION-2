@@ -8,6 +8,7 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 /**
  * Data lengkap satu pendaftaran untuk keperluan kantor.
@@ -58,9 +59,18 @@ class OrchaPendaftaranExport implements FromView, ShouldAutoSize, WithEvents, Wi
                 $lembar->freezePane('A4');
 
                 // Isi sel yang panjang dibungkus, bukan memanjang ke samping.
+                //
+                // Perataannya dipaksa rata kiri untuk SEMUA sel, termasuk yang
+                // berisi angka. Tanpa itu Excel memakai bawaannya — teks ke
+                // kiri, angka ke kanan — sehingga satu lembar yang sama memuat
+                // dua perataan yang berganti-ganti mengikuti isi selnya: "Jumlah
+                // peserta" dan "Nominal" melompat ke kanan sementara tetangganya
+                // tetap di kiri. Lembar begini dibaca menurun kolom demi kolom,
+                // dan tepi kiri yang lurus itulah yang menuntun mata.
                 $lembar->getStyle('A1:H'.$lembar->getHighestRow())
                     ->getAlignment()
                     ->setWrapText(true)
+                    ->setHorizontal(Alignment::HORIZONTAL_LEFT)
                     ->setVertical('top');
             },
         ];

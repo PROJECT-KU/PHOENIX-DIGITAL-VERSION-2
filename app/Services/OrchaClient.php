@@ -28,7 +28,19 @@ class OrchaClient
     {
         return Http::withHeaders([
             'X-Orcha-Key' => config('orcha.kunci'),
-            'X-Orcha-Admin' => auth()->user()?->email ?? '-',
+            /*
+             | Nama admin, bukan surelnya.
+             |
+             | Nilai ini berakhir di tempat yang dibaca manusia — jejak "dicatat
+             | oleh" pada riwayat penggantian peserta, dan catatan kegiatan
+             | Orcha. Surel panjang seperti pt.asthanaciptamandiri@gmail.com
+             | memenuhi baris tanpa memberi tahu siapa orangnya, sementara nama
+             | justru itu yang dicari saat menelusuri siapa yang mengubah apa.
+             | Surel dipakai kalau namanya kosong, supaya jejaknya tidak pernah
+             | menunjuk "tidak diketahui" selama masih ada yang bisa disebut.
+             */
+            'X-Orcha-Admin' => auth()->user()?->name
+                ?: (auth()->user()?->email ?? '-'),
             'Accept' => 'application/json',
         ])
             ->timeout(config('orcha.timeout'))
@@ -191,6 +203,62 @@ class OrchaClient
     /**
      * @throws OrchaTidakTerjangkau
      */
+    /**
+     * Mengunggah SATU berkas bernama, bukan gambar etalase dan bukan berkas jamak.
+     *
+     * kirim() menempelkan berkas jamaknya bergaya `nama[]` supaya sampai di
+     * Orcha sebagai larik. Untuk berkas tunggal yang divalidasi `file` di sana,
+     * kurung siku itu justru membuatnya tidak pernah cocok. Dipisahkan di sini
+     * daripada menambah cabang pada kirim() yang sudah dipakai banyak formulir.
+     *
+     * @param  \Illuminate\Http\UploadedFile|\Livewire\Features\SupportFileUploads\TemporaryUploadedFile  $berkas
+     *
+     * @throws OrchaTidakTerjangkau
+     */
+    public function unggah(string $jalur, string $nama, $berkas, array $data = []): array
+    {
+        if (! $this->siap()) {
+            throw new OrchaTidakTerjangkau('Sambungan ke Orcha belum disetel.');
+        }
+
+        /*
+         | Isinya dibaca lewat get(), bukan file_get_contents(getRealPath()).
+         |
+         | Berkas unggahan Livewire tinggal di cakram `livewire-tmp`, dan
+         | getRealPath()-nya tidak selalu menunjuk berkas yang benar-benar bisa
+         | dibaca — di uji ia gagal diam-diam. Dibaca DI LUAR try supaya
+         | kegagalan membaca berkas tidak ikut tersamar jadi "server tidak bisa
+         | dihubungi", pesan yang membuat admin menyalahkan jaringan padahal
+         | jaringannya baik-baik saja.
+         */
+        $isi = method_exists($berkas, 'get') ? $berkas->get() : null;
+
+        // Dua jalan karena keduanya bisa kosong sendiri-sendiri: get() milik
+        // berkas sementara Livewire membaca cakram `livewire-tmp`, dan jalur
+        // nyatanya tidak selalu ada. Yang mana pun berhasil, itu yang dipakai.
+        if (blank($isi)) {
+            $jalurNyata = $berkas->getRealPath();
+            $isi = $jalurNyata && is_readable($jalurNyata) ? file_get_contents($jalurNyata) : '';
+        }
+
+        // Berkas kosong ditolak di sini, bukan dibiarkan jadi galat multipart
+        // yang muncul sebagai "server tidak bisa dihubungi" — pesan yang
+        // membuat admin menyalahkan jaringan padahal berkasnyalah yang rusak.
+        if ($isi === '') {
+            throw new OrchaTidakTerjangkau('Berkasnya kosong atau tidak terbaca. Coba unggah ulang.');
+        }
+
+        try {
+            $balasan = $this->permintaan()
+                ->attach($nama, $isi, $berkas->getClientOriginalName())
+                ->post($jalur, $this->ratakan($data));
+        } catch (\Throwable $e) {
+            throw new OrchaTidakTerjangkau('Server Orcha tidak bisa dihubungi. Berkas belum terkirim.');
+        }
+
+        return $this->bacaBalasan($balasan);
+    }
+
     public function hapus(string $jalur): array
     {
         if (! $this->siap()) {

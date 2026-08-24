@@ -15,11 +15,7 @@ Pembatalan Orcha || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
                     <div class="col-12 col-lg-8">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari kode pendaftaran, nama, atau WhatsApp...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode pendaftaran, nama, atau WhatsApp...'])
                     </div>
                     <div class="col-12 col-lg-4">
                         <select wire:model.live="filterStatus" class="form-select">
@@ -57,7 +53,7 @@ Pembatalan Orcha || lemon
                                              disebut supaya admin tahu ke mana harus memeriksa. --}}
                                         <div class="text-muted" style="font-size:.75rem">
                                             {{ $baris['jenis_label'] ?? 'Open Trip' }} ·
-                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M Y') }}
+                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
                                         </div>
                                     </td>
                                     <td>

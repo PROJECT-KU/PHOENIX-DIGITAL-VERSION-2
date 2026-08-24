@@ -61,10 +61,22 @@ class OrchaPaketForm extends Component
 
     public $hargaAsli = 0;
 
+    /**
+     * Modal per orang: biaya internal yang sudah dihitung untuk satu peserta.
+     *
+     * Kosong berarti belum dihitung, dan itu keadaan yang sah — private trip
+     * sering dibuat paketnya dulu, modalnya menyusul setelah penawaran hotel
+     * masuk. Yang tidak boleh adalah menganggapnya nol: laporan keuntungan
+     * memisahkan keduanya, dan nol berarti paket ini tidak berbiaya.
+     */
+    public $hargaModal = null;
+
     /** Bentuk bertitik yang tampil di layar; angkanya di $harga/$hargaAsli. */
     public string $hargaTeks = '';
 
     public string $hargaAsliTeks = '';
+
+    public string $hargaModalTeks = '';
 
     public $diskonPersen = 0;
 
@@ -119,6 +131,7 @@ class OrchaPaketForm extends Component
             'catatanPromo' => 'nullable|string|max:191',
             'harga' => 'required|numeric|min:0',
             'hargaAsli' => 'nullable|numeric|min:0',
+            'hargaModal' => 'nullable|numeric|min:0',
             'diskonPersen' => 'nullable|numeric|min:0|max:100',
             'gambar' => 'nullable|image|max:4096',
         ];
@@ -132,6 +145,7 @@ class OrchaPaketForm extends Component
             'tanggalBerangkat' => 'tanggal berangkat',
             'tanggalPulang' => 'tanggal pulang',
             'hargaAsli' => 'harga asli',
+            'hargaModal' => 'modal per orang',
             'diskonPersen' => 'diskon',
             'tayangMulai' => 'mulai tayang',
             'tayangSampai' => 'berhenti tayang',
@@ -171,8 +185,10 @@ class OrchaPaketForm extends Component
         $this->catatanPromo = (string) ($isi['catatan_promo'] ?? '');
         $this->harga = $isi['harga'] ?? 0;
         $this->hargaAsli = $isi['harga_asli'] ?? 0;
+        $this->hargaModal = $isi['harga_modal'] ?? null;
         $this->hargaTeks = $this->keRupiah($this->harga);
         $this->hargaAsliTeks = $this->keRupiah($this->hargaAsli);
+        $this->hargaModalTeks = $this->hargaModal === null ? '' : $this->keRupiah($this->hargaModal);
         $this->diskonPersen = $isi['diskon_persen'] ?? 0;
         $this->diskonOtomatis = (int) $this->diskonPersen === $this->diskonTerhitung();
         $this->pilihanTerbaik = (bool) ($isi['pilihan_terbaik'] ?? false);
@@ -270,6 +286,48 @@ class OrchaPaketForm extends Component
         $this->hargaAsli = $this->angkaDari($this->hargaAsliTeks);
         $this->hargaAsliTeks = $this->keRupiah($this->hargaAsli);
         $this->hitungDiskonBila();
+    }
+
+    /**
+     * Modal dikosongkan tetap null, bukan nol.
+     *
+     * angkaDari() mengembalikan 0 untuk isian kosong, dan kalau nilai itu
+     * dikirim apa adanya, paket yang modalnya sengaja dibiarkan kosong
+     * berubah jadi "modal Rp 0" — laporan lalu mengaku untung sebesar seluruh
+     * harga jual, yang justru angka paling menyesatkan di halaman ini.
+     */
+    public function updatedHargaModalTeks(): void
+    {
+        if (trim($this->hargaModalTeks) === '') {
+            $this->hargaModal = null;
+            $this->hargaModalTeks = '';
+
+            return;
+        }
+
+        $this->hargaModal = $this->angkaDari($this->hargaModalTeks);
+        $this->hargaModalTeks = $this->keRupiah($this->hargaModal);
+    }
+
+    /**
+     * Untung per peserta yang langsung terlihat saat kedua angka diisi.
+     *
+     * null berarti modalnya belum diisi — bukan nol. Boleh negatif: paket yang
+     * dijual di bawah modal memang rugi, dan admin perlu melihatnya sebelum
+     * menyimpan, bukan saat menutup buku sebulan kemudian.
+     */
+    public function marginPerOrang(): ?int
+    {
+        return $this->hargaModal === null ? null : (int) $this->harga - (int) $this->hargaModal;
+    }
+
+    public function marginPersen(): ?float
+    {
+        $margin = $this->marginPerOrang();
+
+        return $margin === null || (int) $this->harga <= 0
+            ? null
+            : round($margin / (int) $this->harga * 100, 1);
     }
 
     public function updatedDiskonPersen(): void
@@ -476,6 +534,10 @@ class OrchaPaketForm extends Component
             'catatan_promo' => $this->catatanPromo,
             'harga' => $this->harga,
             'harga_asli' => $this->hargaAsli ?: $this->harga,
+            // Dikirim sebagai teks kosong, bukan dihilangkan: perataan
+            // multipart membuang nilai null, dan kunci yang tidak terkirim
+            // membuat Orcha mengira modalnya memang tidak disentuh.
+            'harga_modal' => $this->hargaModal === null ? '' : $this->hargaModal,
             'diskon_persen' => $this->diskonPersen ?: 0,
             'pilihan_terbaik' => $this->pilihanTerbaik,
             'destinasi' => array_values($this->destinasi),

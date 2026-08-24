@@ -6,6 +6,36 @@
     melihat dua gaya pemberitahuan yang berbeda.
 --}}
 <script>
+    /* Popup sederhana untuk halaman Orcha.
+
+       Ditulis sendiri karena Bootstrap JS tidak pernah dimuat di aplikasi ini
+       — resources/js/bootstrap.js berisi axios — dan aset Vite tidak ikut
+       ter-deploy. Modal ber-data-bs-toggle akan diam saja di server. */
+    window.orchaBukaLembar = window.orchaBukaLembar || function (id) {
+        const lembar = document.getElementById(id);
+        if (! lembar) return;
+
+        lembar.hidden = false;
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.orchaTutupLembar = window.orchaTutupLembar || function (id) {
+        const lembar = document.getElementById(id);
+        if (! lembar) return;
+
+        lembar.hidden = true;
+        document.body.style.overflow = '';
+    };
+
+    /* Esc menutup lembar mana pun yang sedang terbuka. Tanpa ini satu-satunya
+       jalan keluar adalah menemukan tombol silangnya. */
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+
+        document.querySelectorAll('.orcha-lembar:not([hidden])')
+            .forEach((l) => window.orchaTutupLembar(l.id));
+    });
+
     /* Satu pintu untuk semua pemberitahuan sukses di halaman Orcha — dari
        peristiwa Livewire (hapus, ubah status) maupun dari sesi (setelah
        menyimpan lalu berpindah halaman). Karena kodenya satu, tampilan dan

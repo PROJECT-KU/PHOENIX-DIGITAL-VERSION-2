@@ -23,11 +23,7 @@ Armada Orcha || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
                     <div class="col-12 col-lg-8">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari nama atau merek kendaraan...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari nama atau merek kendaraan...'])
                     </div>
 
                     <div class="col-8 col-lg-2">
@@ -255,7 +251,7 @@ Armada Orcha || lemon
                                         Kondisi terakhir
                                         @if ($kondisi['diperiksa_pada'])
                                             <span class="text-muted fw-normal">
-                                                · {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->translatedFormat('j M Y') }}
+                                                · {{ \Carbon\Carbon::parse($kondisi['diperiksa_pada'])->locale('id')->translatedFormat('j M Y') }}
                                             </span>
                                         @endif
                                     </div>
@@ -301,7 +297,7 @@ Armada Orcha || lemon
                                 <div class="orcha-unit-jadwal mt-2">
                                     <i class="bi bi-clock-history"></i>
                                     Kembali
-                                    {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->translatedFormat('j M, H:i') }}
+                                    {{ \Carbon\Carbon::parse($jadwal['kembali_pada'])->locale('id')->translatedFormat('j M, H:i') }}
                                     @if ($jadwal['kode_berjalan'])
                                         · <span class="orcha-kode">{{ $jadwal['kode_berjalan'] }}</span>
                                     @endif
@@ -310,7 +306,7 @@ Armada Orcha || lemon
                                 <div class="orcha-unit-jadwal mt-2">
                                     <i class="bi bi-calendar-event"></i>
                                     Terpesan mulai
-                                    {{ \Carbon\Carbon::parse($jadwal['mulai_berikutnya'])->translatedFormat('j M, H:i') }}
+                                    {{ \Carbon\Carbon::parse($jadwal['mulai_berikutnya'])->locale('id')->translatedFormat('j M, H:i') }}
                                     @if ($jadwal['kode_berikutnya'])
                                         · <span class="orcha-kode">{{ $jadwal['kode_berikutnya'] }}</span>
                                     @endif

@@ -21,6 +21,19 @@ Detail Pendaftaran || lemon
     $persenBayar = ($tagihan['total'] ?? 0) > 0
         ? min(100, round(($tagihan['sudah'] ?? 0) / $tagihan['total'] * 100))
         : 0;
+
+    // Jarak ke keberangkatan dan tenggat pelunasannya. Inilah yang menentukan
+    // tindakan admin hari ini — bukan tanggalnya sendiri — dan menghitungnya
+    // dari kalender adalah pekerjaan yang berulang setiap kali halaman dibuka.
+    $berangkat = ! empty($pendaftaran['tanggal_berangkat'])
+        ? \Carbon\Carbon::parse($pendaftaran['tanggal_berangkat'])->startOfDay()
+        : null;
+    $sisaHari = $berangkat ? now()->startOfDay()->diffInDays($berangkat, false) : null;
+
+    $hariPelunasan = (int) ($aturanBayar['pelunasan_hari_sebelum'] ?? 0);
+    $tenggat = $berangkat && $hariPelunasan > 0 ? $berangkat->copy()->subDays($hariPelunasan) : null;
+    $lunas = $tagihan['lunas'] ?? false;
+    $tenggatLewat = $tenggat && ! $lunas && $tenggat->isPast();
 @endphp
 
 <div>
@@ -44,35 +57,68 @@ Detail Pendaftaran || lemon
             </div>
         @else
 
-            {{-- ============ KEPALA ============
-                 Kode, nama, dan status berdiri paling depan: tiga hal itu yang
-                 disebut pelanggan saat menelepon. --}}
-            <div class="card border-0 shadow-sm rounded-4 mb-4">
+            {{-- ============ IDENTITAS ============
+                 Kode dan nama berdiri sendiri di kartu paling atas: dua hal itu
+                 yang disebut pelanggan saat menelepon, dan tidak ada apa pun di
+                 sekitarnya yang perlu bersaing dengan keduanya. --}}
+            <div class="card border-0 shadow-sm rounded-4 mb-3">
                 <div class="card-body p-3 p-lg-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                        <div>
-                            <a href="{{ route('admin.orcha.pendaftaran') }}"
-                                class="orcha-tautan-balik mb-2">
-                                <i class="bi bi-arrow-left"></i> Semua pendaftaran
-                            </a>
-                            <h1 class="gradient-text fw-bold mb-1" style="font-size:1.6rem">
-                                {{ $pendaftaran['nama'] }}
-                            </h1>
-                            <div class="d-flex flex-wrap align-items-center gap-2">
-                                <span class="orcha-kode">{{ $pendaftaran['kode'] }}</span>
-                                <span class="text-muted" style="font-size:.82rem">
-                                    Mendaftar
-                                    {{ \Carbon\Carbon::parse($pendaftaran['dibuat_pada'])->translatedFormat('d F Y, H:i') }}
-                                    WIB
-                                </span>
-                            </div>
-                        </div>
+                    <a href="{{ route('admin.orcha.pendaftaran') }}" class="orcha-tautan-balik mb-2">
+                        <i class="bi bi-arrow-left"></i> Semua pendaftaran
+                    </a>
+                    <h1 class="gradient-text fw-bold mb-1" style="font-size:1.6rem">
+                        {{ $pendaftaran['nama'] }}
+                    </h1>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="orcha-kode">{{ $pendaftaran['kode'] }}</span>
+                        @if ($berangkat)
+                            <span class="orcha-cip-hari {{ $sisaHari !== null && $sisaHari <= $hariPelunasan ? 'dekat' : '' }} {{ $sisaHari !== null && $sisaHari < 0 ? 'lewat' : '' }}">
+                                <i class="bi bi-calendar-event"></i>
+                                @if ($sisaHari > 0)
+                                    Berangkat {{ $berangkat->translatedFormat('d M Y') }} · H-{{ $sisaHari }}
+                                @elseif ($sisaHari === 0)
+                                    Berangkat hari ini
+                                @else
+                                    Sudah berangkat {{ $berangkat->translatedFormat('d M Y') }}
+                                @endif
+                            </span>
+                        @endif
+                        <span class="text-muted" style="font-size:.82rem">
+                            Mendaftar
+                            {{ \Carbon\Carbon::parse($pendaftaran['dibuat_pada'])->locale('id')->translatedFormat('d F Y, H:i') }}
+                            WIB
+                        </span>
+                    </div>
+                </div>
+            </div>
 
+            {{-- ============ TINDAKAN ============
+                 Kartunya sendiri, berisi hal-hal yang DIKERJAKAN admin: menghubungi,
+                 mengunduh berkas, dan mengubah status. Sebelumnya tombol-tombol ini
+                 berbagi baris dengan judul, sehingga letaknya ikut berubah mengikuti
+                 panjang nama pemesan — dan tombol yang sama tidak pernah berada di
+                 tempat yang sama dua kali. --}}
+            <div class="card border-0 shadow-sm rounded-4 mb-3 orcha-kartu-tindakan">
+                {{-- Satu baris, tanpa label di atasnya.
+
+                     Label "Tindakan" menyisakan pita kosong selebar kartu di atas
+                     tombol-tombolnya, dan kartu setinggi itu untuk empat tombol
+                     terbaca sebagai ruang yang belum selesai diisi. Tombolnya sendiri
+                     sudah menyebutkan namanya masing-masing. --}}
+                <div class="card-body p-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                         <div class="d-flex flex-wrap align-items-center gap-2">
-                            <a href="{{ $wa($pendaftaran['whatsapp']) }}" target="_blank" rel="noopener"
-                                class="orcha-btn orcha-btn-wa">
+            {{-- Membuka pilihan pesan, bukan percakapan kosong.
+
+                 Sebelumnya tombol ini langsung membuka WhatsApp tanpa isi, dan
+                 admin mengetik ulang kalimat yang sama berpuluh kali sehari —
+                 dengan nominal yang harus disalin sendiri dari layar sebelah.
+                 Satu angka salah ketik berarti pelanggan mentransfer jumlah
+                 yang keliru, dan itu baru ketahuan saat buktinya masuk. --}}
+                            <button type="button" class="orcha-btn orcha-btn-wa"
+                                onclick="orchaBukaLembar('pilihanWa')">
                                 <i class="bi bi-whatsapp"></i> Hubungi Pemesan
-                            </a>
+                            </button>
 
                             {{-- Jaring pengaman saat surat tidak sampai: admin bisa
                                  mengunduh kwitansi yang sama persis dengan yang dikirim
@@ -88,17 +134,25 @@ Detail Pendaftaran || lemon
                                  data kesehatan, jadi ikut dijaga izin yang sama. --}}
                             @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
                                 <a href="{{ route('admin.orcha.pendaftaran.pdf', $pendaftaranId) }}"
-                                    class="orcha-btn orcha-btn-utama" title="Manifes untuk tour leader di lapangan">
+                                    class="orcha-btn orcha-btn-lembut" title="Manifes untuk tour leader di lapangan">
                                     <i class="bi bi-filetype-pdf"></i> Manifes PDF
                                 </a>
                                 <a href="{{ route('admin.orcha.pendaftaran.excel', $pendaftaranId) }}"
-                                    class="orcha-btn orcha-btn-emas" title="Data lengkap untuk kantor">
+                                    class="orcha-btn orcha-btn-lembut" title="Data lengkap untuk kantor">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                                 </a>
                             @endif
+                        </div>
 
-                            <select class="form-select" style="width:auto"
-                                wire:change="ubahStatus($event.target.value)">
+                        {{-- Labelnya di samping, bukan di atas: sebaris supaya kartunya
+                             tetap setipis bilah perkakas. Warnanya mengikuti keadaan,
+                             sama seperti di daftar — satu kotak putih bertuliskan
+                             "DP Masuk" tidak memberi tahu apakah itu kabar baik atau
+                             pekerjaan yang menunggu. --}}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="orcha-label-kecil">Status</span>
+                            <select class="form-select orcha-pilih-status status-{{ $pendaftaran['status'] }}"
+                                style="width:auto" wire:change="ubahStatus($event.target.value)">
                                 @foreach ($pilihanStatus as $kunci => $label)
                                     <option value="{{ $kunci }}" @selected($pendaftaran['status'] === $kunci)>
                                         {{ $label }}
@@ -107,10 +161,14 @@ Detail Pendaftaran || lemon
                             </select>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    {{-- ============ RINGKASAN ANGKA ============ --}}
-                    @if ($tagihan)
-                        <div class="row g-3 mt-1">
+            {{-- ============ RINGKASAN BIAYA ============ --}}
+            @if ($tagihan)
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-3 p-lg-4">
+                        <div class="row g-3">
                             @foreach ([
                                 ['Total tagihan', $tagihan['total_teks'], '', 'bi-receipt'],
                                 ['Sudah dibayar', $tagihan['sudah_teks'], 'lunas', 'bi-cash-coin'],
@@ -133,13 +191,45 @@ Detail Pendaftaran || lemon
                                 <span class="text-muted">Kemajuan pembayaran</span>
                                 <span class="fw-bold text-dark">{{ $persenBayar }}%</span>
                             </div>
-                            <div class="orcha-palang mt-1 {{ ($tagihan['lunas'] ?? false) ? 'lunas' : '' }}">
+                            <div class="orcha-palang mt-1 {{ $lunas ? 'lunas' : '' }}">
                                 <span style="width: {{ $persenBayar }}%"></span>
                             </div>
-                        </div>
-                    @endif
+
+                            {{-- Persen saja belum menjawab pertanyaan berikutnya: kapan
+                                 sisanya harus masuk. Tenggatnya dihitung dari aturan Orcha
+                                 (H-{{ $hariPelunasan }}), bukan angka yang ditulis di sini. --}}
+                            <div class="mt-2" style="font-size:.8rem">
+                                @if ($lunas)
+                                    <span class="orcha-tenggat lunas">
+                                        <i class="bi bi-check-circle-fill"></i> Sudah lunas — tidak ada sisa yang perlu ditagih.
+                                    </span>
+                                @elseif ($tenggat)
+                                    <span class="orcha-tenggat {{ $tenggatLewat ? 'lewat' : '' }}">
+                                        <i class="bi bi-{{ $tenggatLewat ? 'exclamation-triangle-fill' : 'clock-history' }}"></i>
+                                        Sisa <strong>{{ $tagihan['sisa_teks'] }}</strong>
+                                        {{ $tenggatLewat ? 'sudah melewati batas pelunasan' : 'dilunasi paling lambat' }}
+                                        <strong>{{ $tenggat->translatedFormat('d M Y') }}</strong>
+                                        (H-{{ $hariPelunasan }} sebelum berangkat)
+                                    </span>
+                                @elseif (! $berangkat)
+                                    <span class="text-muted">
+                                        Sisa <strong>{{ $tagihan['sisa_teks'] }}</strong> — batas pelunasan
+                                        mengikuti tanggal berangkat, yang belum dijadwalkan.
+                                    </span>
+                                @else
+                                    {{-- Tanggalnya ada, tapi aturan pelunasan tidak terbaca
+                                         (rujukan dari Orcha gagal diambil). Kalimatnya berhenti
+                                         di yang memang diketahui: menuduh jadwalnya belum ada
+                                         padahal tanggalnya tertulis di layar yang sama membuat
+                                         admin meragukan seluruh halaman. --}}
+                                    <span class="text-muted">
+                                        Sisa yang perlu ditagih <strong>{{ $tagihan['sisa_teks'] }}</strong>.
+                                    </span>
+                                @endif
+                            </div>
+                        </div>                    </div>
                 </div>
-            </div>
+            @endif
 
             @if ($pembatalan)
                 <div class="alert alert-danger border-0 rounded-4 d-flex gap-3 align-items-start">
@@ -151,7 +241,7 @@ Detail Pendaftaran || lemon
                             {{ $pembatalan['jumlah_dibatalkan'] }} peserta ·
                             {{ $pembatalan['alasan_label'] }} ·
                             diajukan
-                            {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->translatedFormat('d M Y') }}
+                            {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
                             oleh {{ $pembatalan['nama_pemohon'] }}
                         </div>
                         @if ($pembatalan['penjelasan'])
@@ -203,6 +293,195 @@ Detail Pendaftaran || lemon
                         </div>
                     </div>
 
+                    {{-- ============ RIWAYAT PERUBAHAN NAMA ============
+                         Nama lama tidak hilang saat peserta diganti. Ia yang membayar,
+                         atau yang riwayat kesehatannya sudah masuk — dan pertanyaan
+                         "dulu siapa yang didaftarkan" hampir selalu muncul belakangan,
+                         saat tidak ada lagi yang mengingatnya. --}}
+                    @if (! empty($pendaftaran['riwayat_penggantian']))
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-body p-3 p-lg-4">
+                                @php
+                                    $riwayat = $pendaftaran['riwayat_penggantian'];
+                                    $jumlahGanti = count($riwayat);
+                                @endphp
+
+                                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-1">
+                                    <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
+                                        <i class="bi bi-arrow-left-right text-primary"></i>
+                                        Riwayat Perubahan Nama Peserta
+                                    </h2>
+                                    {{-- Jumlahnya disebut di judul: kartu ini kadang berisi satu
+                                         baris, kadang tujuh, dan yang membacanya biasanya ingin tahu
+                                         "sudah berapa kali" sebelum membaca satu per satu. --}}
+                                    <span class="orcha-ganti-baru">
+                                        {{ $jumlahGanti }} penggantian
+                                    </span>
+                                </div>
+
+                                <p class="text-muted small mb-3">
+                                    Penggantian peserta tidak dikenakan biaya sepanjang jumlahnya tetap.
+                                    Surat pernyataannya berbentuk PDF resmi bermaterai — tinggal
+                                    dicetak, ditandatangani para pihak, lalu diarsipkan.
+                                </p>
+
+                                {{-- Terbaru di atas, dan nomornya dihitung dari yang terlama:
+                                     baris teratas menyandang nomor terbesar. Urutan bacanya
+                                     mengikuti yang dicari admin, penomorannya mengikuti urutan
+                                     kejadian — dua hal berbeda yang keduanya perlu benar. --}}
+                                <div class="orcha-ganti-runtun">
+                                @foreach (array_reverse($riwayat) as $urutanBalik => $ganti)
+                                    <div class="orcha-ganti-baris">
+                                        <span class="orcha-ganti-nomor">{{ $jumlahGanti - $urutanBalik }}</span>
+
+                                        <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <span class="orcha-ganti-lama">{{ $ganti['dari'] ?: '—' }}</span>
+                                            <i class="bi bi-arrow-right" style="color:#14a06a"></i>
+                                            <span class="orcha-ganti-baru">{{ $ganti['ke'] ?: 'tanpa pengganti' }}</span>
+
+                                        </div>
+
+                                        {{-- Titik jemputnya disebut di barisnya sendiri, bukan
+                                             ditumpuk di baris nama: yang membacanya sedang mencari
+                                             satu hal — di mana orang ini naik. --}}
+                                        @if (! empty($ganti['dari_titik']) || ! empty($ganti['ke_titik']))
+                                            @php
+                                                $titikTetap = ! empty($ganti['dari_titik'])
+                                                    && mb_strtolower(trim($ganti['dari_titik']))
+                                                        === mb_strtolower(trim($ganti['ke_titik'] ?? ''));
+                                            @endphp
+
+                                            <div class="orcha-ganti-titik">
+                                                <span><i class="bi bi-geo-alt"></i> Titik jemput</span>
+
+                                                {{-- Titik yang tidak berpindah tidak dicoret. Coretan
+                                                     berarti "sudah tidak berlaku", dan titik yang justru
+                                                     masih dipakai pengganti tidak boleh terbaca begitu —
+                                                     sopir membaca kartu ini untuk tahu di mana berhenti. --}}
+                                                @if ($titikTetap)
+                                                    <span class="orcha-ganti-baru">{{ $ganti['ke_titik'] }}</span>
+                                                    <span>tetap, tidak berpindah</span>
+                                                @else
+                                                    <span class="orcha-ganti-lama">{{ $ganti['dari_titik'] ?: '—' }}</span>
+                                                    <i class="bi bi-arrow-right" style="color:#14a06a"></i>
+                                                    <span class="orcha-ganti-baru">{{ $ganti['ke_titik'] ?: 'belum dipilih' }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        <div class="orcha-ganti-jejak">
+                                            <i class="bi bi-clock-history"></i>
+                                            {{ ! empty($ganti['pada'])
+                                                ? \Carbon\Carbon::parse($ganti['pada'])->locale('id')->translatedFormat('d F Y, H:i').' WIB'
+                                                : 'waktu tidak tercatat' }}
+                                            @if (! empty($ganti['oleh']))
+                                                &middot; dicatat oleh {{ $ganti['oleh'] }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                                </div>
+
+                                {{-- Satu surat untuk seluruh pendaftaran, bukan satu per baris.
+
+                                     Pihak yang menyatakan sama, pendaftaran yang dirujuk sama,
+                                     kebijakan yang mendasarinya sama — yang berbeda cuma barisnya.
+                                     Tombol di tiap baris membuat pemesan menandatangani dua berkas
+                                     bermaterai untuk satu pemesanan yang sama. --}}
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-3"
+                                    style="border-top:1px dashed #eef2f7">
+                                    <span class="text-muted" style="font-size:.78rem">
+                                        <i class="bi bi-info-circle"></i>
+                                        Satu surat memuat seluruh
+                                        {{ $jumlahGanti }} penggantian di atas — cukup ditandatangani sekali.
+                                    </span>
+
+                                    <a class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                        href="{{ route('admin.orcha.pendaftaran.surat-penggantian', $pendaftaranId) }}">
+                                        <i class="bi bi-file-earmark-pdf"></i> Unduh surat pernyataan
+                                    </a>
+                                </div>
+
+                                {{-- ===== SURAT YANG SUDAH DITANDATANGANI =====
+
+                                     Surat yang sudah dicetak dan ditandatangani perlu jalan pulang
+                                     ke sistem. Tanpa ini ia cuma ada di percakapan WhatsApp satu
+                                     admin, dan hilang begitu ponselnya berganti — padahal justru
+                                     berkas inilah buktinya, bukan PDF kosong yang diunduh tadi. --}}
+                                @if (! empty($pendaftaran['surat_penggantian']))
+                                    <div class="orcha-surat-ttd orcha-surat-ttd-ada mt-3">
+                                        <i class="bi bi-patch-check-fill"></i>
+
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold" style="font-size:.84rem;color:#0b7a4b">
+                                                Surat bertanda tangan sudah diarsipkan
+                                            </div>
+                                            <div class="text-muted" style="font-size:.75rem">
+                                                @if (! empty($pendaftaran['surat_penggantian_pada']))
+                                                    Diunggah
+                                                    {{ \Carbon\Carbon::parse($pendaftaran['surat_penggantian_pada'])
+                                                        ->locale('id')->translatedFormat('d F Y, H:i') }} WIB
+                                                @else
+                                                    Waktu unggahnya tidak tercatat
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        <a class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                            href="{{ $pendaftaran['surat_penggantian'] }}" target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i> Lihat
+                                        </a>
+
+                                        {{-- Mengganti berkas memakai isian yang sama dengan mengunggah
+                                             pertama kali: yang lama otomatis tergantikan, jadi admin
+                                             tidak perlu menghapus dulu baru mengunggah. --}}
+                                        <label class="orcha-btn orcha-btn-lembut orcha-btn-kecil mb-0"
+                                            style="cursor:pointer">
+                                            <i class="bi bi-arrow-repeat"></i> Ganti
+                                            <input type="file" wire:model="suratTtd" class="d-none"
+                                                accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                        </label>
+
+                                        <button type="button" class="orcha-btn orcha-btn-kecil orcha-btn-bahaya"
+                                            wire:click="hapusSuratTtd"
+                                            wire:confirm="Hapus surat bertanda tangan ini dari arsip?">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                @else
+                                    <div class="orcha-surat-ttd mt-3">
+                                        <i class="bi bi-cloud-arrow-up"></i>
+
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold" style="font-size:.84rem;color:#0f2d4a">
+                                                Sudah ditandatangani? Unggah ke sini
+                                            </div>
+                                            <div class="text-muted" style="font-size:.75rem">
+                                                Hasil pindaian atau foto dari WhatsApp sama-sama diterima
+                                                — PDF, JPG, atau PNG, maksimal 8 MB.
+                                            </div>
+                                        </div>
+
+                                        <label class="orcha-btn orcha-btn-lembut orcha-btn-kecil mb-0"
+                                            style="cursor:pointer">
+                                            <i class="bi bi-upload"></i> Pilih berkas
+                                            <input type="file" wire:model="suratTtd" class="d-none"
+                                                accept=".pdf,.jpg,.jpeg,.png,.webp">
+                                        </label>
+                                    </div>
+                                @endif
+
+                                <div wire:loading wire:target="suratTtd" class="text-muted mt-2"
+                                    style="font-size:.78rem">
+                                    <i class="bi bi-arrow-repeat"></i> Mengunggah berkas…
+                                </div>
+
+                                @error('suratTtd')
+                                    <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- ============ PESERTA ============
                          Rombongan sering berangkat dari kota berbeda, dan tiap
                          peserta mengisi riwayat kesehatannya sendiri. Kedua hal
@@ -243,27 +522,67 @@ Detail Pendaftaran || lemon
                                     @endif
                                 </div>
                             @empty
-                                <p class="text-muted mb-0" style="font-size:.9rem">
-                                    Pendaftaran ini belum mencatat nama peserta satu per satu.
-                                </p>
+                                {{-- Keadaan ini yang dulu membuat rombongannya hilang dari
+                                     manifes panggil-nama. Sekarang disebutkan apa adanya,
+                                     lengkap dengan jalan keluarnya di tombol bawah. --}}
+                                <div class="orcha-kosong-peserta">
+                                    <i class="bi bi-person-dash"></i>
+                                    <div>
+                                        <strong>Nama peserta belum didata.</strong>
+                                        Pendaftaran ini tercatat {{ $pendaftaran['jumlah_peserta'] }} orang,
+                                        tetapi namanya belum ada satu pun — sehingga rombongan ini tidak
+                                        bisa masuk manifes panggil-nama.
+                                    </div>
+                                </div>
                             @endforelse
 
-                            <div class="mt-3">
-                                @if (! auth()->user()->hasPermission('view_orcha_kesehatan'))
-                                    <span class="text-muted" style="font-size:.85rem">
-                                        <i class="bi bi-lock"></i> Riwayat kesehatan hanya bisa dibuka akun berizin.
-                                    </span>
-                                @elseif (($pendaftaran['jumlah_riwayat_kesehatan'] ?? 0) > 0)
-                                    <button type="button" class="orcha-btn orcha-btn-kesehatan"
-                                        wire:click="bukaRiwayat" wire:loading.attr="disabled">
-                                        <i class="bi bi-heart-pulse"></i>
-                                        Lihat Riwayat Kesehatan ({{ $pendaftaran['jumlah_riwayat_kesehatan'] }})
-                                    </button>
-                                @else
-                                    <span class="text-muted" style="font-size:.85rem">
-                                        <i class="bi bi-info-circle"></i> Belum ada peserta yang mengisi riwayat kesehatan.
-                                    </span>
-                                @endif
+                            {{-- Dua tombol, dua kolom sama lebar. Sebelumnya keduanya
+                                 mengapung di kiri dengan sisa ruang menganggur di kanan;
+                                 pada kartu selebar ini, dua tombol sekecil itu terlihat
+                                 seperti baris yang belum selesai diisi. --}}
+                            {{-- Papan penunjuk untuk yang mencari "ganti peserta": tindakannya
+                                 ada di halaman daftar peserta, bukan di tombol tersendiri. --}}
+                            <div class="text-muted mt-3" style="font-size:.82rem">
+                                <i class="bi bi-arrow-left-right"></i>
+                                Peserta berhalangan dan digantikan orang lain? Ubah namanya lewat
+                                <strong>{{ $peserta === [] ? 'Lengkapi daftar peserta' : 'Ubah daftar peserta' }}</strong> —
+                                nama lamanya tetap tercatat, dan surat pernyataannya muncul di halaman ini.
+                            </div>
+
+                            <div class="row g-2 mt-3">
+                                {{-- Nama peserta bukan data kesehatan, jadi tidak dijaga izin
+                                     khusus itu: siapa pun yang boleh mengurus pendaftaran boleh
+                                     melengkapinya. --}}
+                                <div class="col-6">
+                                    <a href="{{ route('admin.orcha.pendaftaran.peserta', $pendaftaranId) }}"
+                                        wire:navigate class="orcha-btn orcha-btn-lembut w-100">
+                                        <i class="bi bi-pencil-square"></i>
+                                        {{ $peserta === [] ? 'Lengkapi daftar peserta' : 'Ubah daftar peserta' }}
+                                    </a>
+                                </div>
+
+                                <div class="col-6">
+                                    @if (! auth()->user()->hasPermission('view_orcha_kesehatan'))
+                                        <span class="orcha-btn orcha-btn-lembut w-100 disabled text-muted"
+                                            title="Butuh izin data kesehatan">
+                                            <i class="bi bi-lock"></i> Riwayat kesehatan terkunci
+                                        </span>
+                                    @elseif (($pendaftaran['jumlah_riwayat_kesehatan'] ?? 0) > 0)
+                                        {{-- Halaman tersendiri, bukan popup: isinya panjang, dan
+                                             rombongan dua belas orang tidak muat di jendela yang
+                                             separuhnya sudah terpakai bingkai. --}}
+                                        <a href="{{ route('admin.orcha.pendaftaran.kesehatan', $pendaftaranId) }}"
+                                            wire:navigate class="orcha-btn orcha-btn-kesehatan w-100">
+                                            <i class="bi bi-heart-pulse"></i>
+                                            Lihat Riwayat Kesehatan ({{ $pendaftaran['jumlah_riwayat_kesehatan'] }})
+                                        </a>
+                                    @else
+                                        <span class="orcha-btn orcha-btn-lembut w-100 disabled text-muted"
+                                            title="Peserta mengisinya sendiri lewat website Orcha">
+                                            <i class="bi bi-info-circle"></i> Belum ada riwayat kesehatan
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -281,7 +600,10 @@ Detail Pendaftaran || lemon
                             <div class="d-flex flex-column gap-3">
                                 @foreach ([
                                     ['Paket', $pendaftaran['paket']['nama'] ?: '—', 'bi-map'],
-                                    ['Tanggal berangkat', $pendaftaran['tanggal_berangkat'] ? \Carbon\Carbon::parse($pendaftaran['tanggal_berangkat'])->translatedFormat('l, d F Y') : 'Menyusul', 'bi-calendar-event'],
+                                    ['Tanggal berangkat', $berangkat
+                                        ? $berangkat->locale('id')->translatedFormat('l, d F Y')
+                                            . ($sisaHari > 0 ? ' · ' . $sisaHari . ' hari lagi' : ($sisaHari === 0 ? ' · hari ini' : ''))
+                                        : 'Menyusul', 'bi-calendar-event'],
                                     ['Titik jemput rombongan', $pendaftaran['titik_jemput'] ?: 'Dikonfirmasi tim', 'bi-geo-alt'],
                                 ] as [$label, $nilai, $ikon])
                                     <div class="d-flex gap-3">
@@ -297,11 +619,19 @@ Detail Pendaftaran || lemon
 
                                 @if (! empty($pendaftaran['jemput_per_titik']))
                                     <div>
-                                        <div class="orcha-label-kecil mb-1">Pengelompokan jemputan</div>
+                                        <div class="orcha-label-kecil mb-2">Pengelompokan jemputan</div>
+                                        {{-- Inilah yang dibaca sopir: satu blok per titik, nama
+                                             penumpangnya di bawahnya. Sebelumnya semuanya
+                                             ditulis dalam satu baris mengalir, dan pada rombongan
+                                             dua belas orang batas antar titiknya hilang. --}}
                                         @foreach ($pendaftaran['jemput_per_titik'] as $titik => $orang)
-                                            <div style="font-size:.85rem">
-                                                <span class="fw-semibold text-dark">{{ $titik }}:</span>
-                                                <span class="text-muted">{{ implode(', ', $orang) }}</span>
+                                            <div class="orcha-jemput-blok">
+                                                <div class="orcha-jemput-judul">
+                                                    <i class="bi bi-geo-alt-fill"></i>
+                                                    {{ $titik }}
+                                                    <span class="orcha-jemput-jumlah">{{ count($orang) }} orang</span>
+                                                </div>
+                                                <div class="orcha-jemput-nama">{{ implode(' · ', $orang) }}</div>
                                             </div>
                                         @endforeach
                                     </div>
@@ -333,8 +663,12 @@ Detail Pendaftaran || lemon
                                             data-bukti-keterangan="{{ $bayar['nominal_formatted'] }} · {{ $bayar['jenis_label'] }} · {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }}"
                                             title="Klik untuk memperbesar">
                                     @else
-                                        <div class="orcha-bukti d-flex align-items-center justify-content-center text-muted">
+                                        {{-- Kotak abu kosong menimbulkan pertanyaan sendiri
+                                             ("gambarnya gagal dimuat?"), jadi keadaannya
+                                             disebutkan apa adanya. --}}
+                                        <div class="orcha-bukti orcha-bukti-kosong">
                                             <i class="bi bi-image"></i>
+                                            <span>Tanpa bukti</span>
                                         </div>
                                     @endif
 
@@ -347,7 +681,7 @@ Detail Pendaftaran || lemon
                                         </div>
                                         <div class="text-muted" style="font-size:.78rem">
                                             {{ $bayar['jenis_label'] }} ·
-                                            {{ $bayar['tanggal_transfer'] ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->translatedFormat('d M Y') : '—' }}
+                                            {{ $bayar['tanggal_transfer'] ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('d M Y') : '—' }}
                                         </div>
                                         <div class="text-muted" style="font-size:.78rem">
                                             {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }}
@@ -375,48 +709,102 @@ Detail Pendaftaran || lemon
         @endif
     </div>
 
-    {{-- ============ RIWAYAT KESEHATAN ============
-         Data sensitif: hanya dimuat saat dibuka, dan pembukaannya tercatat di
-         sisi Orcha beserta akun yang membukanya. --}}
-    @if ($riwayatTerbuka)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(15,45,74,.35)">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
-                <div class="modal-content border-0 rounded-4">
-                    <div class="modal-header border-0 pb-2">
-                        <div>
-                            <h5 class="modal-title fw-bold mb-0">Riwayat Kesehatan Peserta</h5>
-                            <span class="text-muted small">
-                                {{ $pendaftaran['nama'] ?? '' }} · {{ $pendaftaran['kode'] ?? '' }}
-                            </span>
-                        </div>
-                        <button type="button" class="btn-close" wire:click="tutupRiwayat"></button>
+    @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
+    {{-- ============ PILIHAN PESAN WHATSAPP ============
+
+         Pesannya disusun di komponen, bukan di sini: nominal dan tenggatnya
+         berasal dari aturan Orcha yang sama dengan yang dipakai kwitansi, jadi
+         angka di percakapan tidak pernah berbeda dari angka di berkas. --}}
+    {{-- ============ PILIHAN PESAN WHATSAPP ============
+
+         Popup berdiri sendiri, bukan modal Bootstrap.
+
+         Kelasnya memang terpasang, tetapi JS-nya tidak pernah dimuat —
+         resources/js/bootstrap.js di repo ini berisi axios, bukan Bootstrap —
+         dan aset Vite pun tidak ikut ter-deploy. Tombol ber-data-bs-toggle
+         karenanya diam saja di server, dan itu baru ketahuan setelah dipakai.
+
+         Pesannya disusun di komponen, bukan di sini: nominal dan tenggatnya
+         berasal dari aturan Orcha yang sama dengan yang dipakai kwitansi, jadi
+         angka di percakapan tidak pernah berbeda dari angka di berkas. --}}
+    <div class="orcha-lembar" id="pilihanWa" hidden>
+        <div class="orcha-lembar-tirai" onclick="orchaTutupLembar('pilihanWa')"></div>
+
+        <div class="orcha-lembar-isi" role="dialog" aria-modal="true" aria-label="Kirim pesan WhatsApp">
+            <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                <div>
+                    <div class="fw-bold orcha-judul-ikon" style="font-size:1.05rem">
+                        <i class="bi bi-whatsapp" style="color:#25d366"></i>
+                        Kirim pesan ke {{ $pendaftaran['nama'] ?? 'pemesan' }}
                     </div>
-
-                    <div class="modal-body pt-2">
-                        <div class="alert alert-info border-0 rounded-3 d-flex gap-2 align-items-start"
-                            style="font-size:.82rem">
-                            <i class="bi bi-shield-lock"></i>
-                            <span>Data kesehatan bersifat pribadi. Pembukaannya tercatat di server Orcha
-                                beserta akun yang membukanya.</span>
-                        </div>
-
-                        @forelse ($riwayat as $peserta)
-                            @include('livewire.pages.admin.orcha.partials.kartu-kesehatan', ['peserta' => $peserta])
-                        @empty
-                            <p class="text-muted mb-0">Belum ada riwayat kesehatan yang diisi.</p>
-                        @endforelse
-                    </div>
-
-                    <div class="modal-footer border-0">
-                        <button type="button" class="orcha-btn orcha-btn-lembut" wire:click="tutupRiwayat">
-                            Tutup
-                        </button>
+                    <div class="text-muted" style="font-size:.8rem">
+                        Pesannya sudah terisi lengkap dengan angka dan tautannya — tinggal periksa lalu kirim.
                     </div>
                 </div>
-            </div>
-        </div>
-    @endif
 
-    @include('livewire.pages.admin.orcha.partials.pratinjau-bukti')
+                <button type="button" class="orcha-hapus-baris" aria-label="Tutup"
+                    onclick="orchaTutupLembar('pilihanWa')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            @forelse ($pilihanPesan as $pilihan)
+                {{-- href memuat versi POLOS; data-wa-pesan memuat yang berpenanda.
+
+                     Skrip di partial salin-wa merakit emojinya di peramban lalu
+                     menyusun ulang tautannya saat diklik — emoji tidak pernah ikut
+                     melewati respons server, dan justru di perjalanan itulah ia
+                     berubah jadi tanda tanya. Bila skripnya tidak sempat jalan,
+                     yang terkirim tetap kalimat utuh tanpa emoji. --}}
+                <a class="orcha-pilihan-wa"
+                    href="{{ $this->tautanWa($pilihan['polos']) }}"
+                    data-wa-pesan="{{ $pilihan['pesan'] }}"
+                    target="_blank" rel="noopener">
+                    <span class="orcha-ikon {{ $pilihan['rupa'] }}">
+                        <i class="bi {{ $pilihan['ikon'] }}"></i>
+                    </span>
+
+                    <span class="flex-grow-1">
+                        <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                            {{ $pilihan['judul'] }}
+                        </span>
+                        <span class="d-block text-muted" style="font-size:.78rem">
+                            {{ $pilihan['ringkas'] }}
+                        </span>
+                    </span>
+
+                    <i class="bi bi-box-arrow-up-right text-muted"></i>
+                </a>
+            @empty
+                <p class="text-muted text-center mb-0 py-2" style="font-size:.88rem">
+                    Tidak ada yang perlu ditagih atau dikirimkan untuk pendaftaran ini —
+                    pembayarannya lunas dan riwayat kesehatannya sudah lengkap.
+                </p>
+            @endforelse
+
+            {{-- Selalu ada, di bawah pilihan yang sudah terisi: kadang yang perlu
+                 disampaikan memang tidak ada di daftar mana pun. --}}
+            <a class="orcha-pilihan-wa orcha-pilihan-wa-polos"
+                href="{{ $this->tautanWa('') ?: $wa($pendaftaran['whatsapp']) }}"
+                target="_blank" rel="noopener">
+                <span class="orcha-ikon orcha-ikon-netral">
+                    <i class="bi bi-chat-dots"></i>
+                </span>
+
+                <span class="flex-grow-1">
+                    <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                        Buka percakapan kosong
+                    </span>
+                    <span class="d-block text-muted" style="font-size:.78rem">
+                        Menulis sendiri, tanpa pesan siap pakai
+                    </span>
+                </span>
+
+                <i class="bi bi-box-arrow-up-right text-muted"></i>
+            </a>
+        </div>
+    </div>
+
+    @include('livewire.pages.admin.orcha.partials.salin-wa')
     @include('livewire.pages.admin.orcha.partials.skrip')
 </div>

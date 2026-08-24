@@ -398,8 +398,13 @@ new class extends Component
                             ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
                             ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
                             ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
+                            ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
                             ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
                             ['admin.orcha.destinasi', 'bi-geo-alt', 'Destinasi Populer'],
+                            // Bertetangga dengan Destinasi karena keduanya mengisi
+                            // beranda — tetapi maksudnya berbeda: destinasi menjual
+                            // TEMPAT, galeri menunjukkan ORANG yang sudah berangkat.
+                            ['admin.orcha.galeri', 'bi-images', 'Galeri Perjalanan'],
                             ['admin.orcha.testimoni', 'bi-chat-quote', 'Testimoni'],
                             ['admin.orcha.partner', 'bi-people', 'Partner'],
                         ];

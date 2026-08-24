@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Exports\OrchaPendaftaranExport;
+use App\Exports\OrchaTemplatPesertaExport;
 use App\Http\Controllers\Controller;
 use App\Services\OrchaClient;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -56,6 +57,34 @@ class OrchaEksporController extends Controller
      * Yang diekspor mengikuti saringan yang sedang dilihat admin di layar,
      * supaya tidak ada dua pengertian tentang "daftar mana".
      */
+    /**
+     * Templat kosong untuk panitia mengisi daftar peserta.
+     *
+     * Tidak menuntut izin data kesehatan: isinya cuma nama kolom dan pilihan
+     * titik jemput — tidak ada satu pun data peserta di dalamnya.
+     */
+    public function templatPeserta(Request $request, int $pendaftaran)
+    {
+        try {
+            $data = $this->orcha->ambil("/pendaftaran/{$pendaftaran}")['data'] ?? [];
+        } catch (OrchaTidakTerjangkau $e) {
+            abort(503, $e->getMessage());
+        }
+
+        abort_if($data === [], 404, 'Pendaftaran tidak ditemukan.');
+
+        $kode = $data['kode'] ?? 'PESERTA';
+
+        return Excel::download(
+            new OrchaTemplatPesertaExport(
+                $kode,
+                (int) ($data['jumlah_peserta'] ?? 1),
+                array_values(array_filter((array) data_get($data, 'paket.titik_jemput', []))),
+            ),
+            'TEMPLAT-PESERTA-'.$kode.'.xlsx',
+        );
+    }
+
     public function manifesDaftar(Request $request)
     {
         abort_unless($request->user()?->hasPermission('view_orcha_kesehatan'), 403);
@@ -63,6 +92,9 @@ class OrchaEksporController extends Controller
         $saringan = array_filter([
             'cari' => $request->string('cari')->toString(),
             'status' => $request->string('status')->toString(),
+            // Saringan paket ikut diteruskan: inilah yang dipakai admin untuk
+            // memastikan manifesnya berisi satu keberangkatan saja.
+            'paket_id' => $request->string('paket_id')->toString(),
             'per_halaman' => 100,
         ], fn ($nilai) => $nilai !== '' && $nilai !== null);
 
@@ -102,6 +134,25 @@ class OrchaEksporController extends Controller
      * medis — dan justru inilah yang perlu cepat dikirim ulang lewat WhatsApp
      * saat pelanggan mengeluh suratnya tidak masuk.
      */
+    /**
+     * Surat pernyataan penggantian peserta.
+     *
+     * SATU surat untuk seluruh pendaftaran, memuat semua penggantiannya.
+     *
+     * Berbentuk PDF, sebentuk dengan kwitansi yang sudah dipegang pemesan.
+     * Sempat DOCX supaya bisa disunting, tetapi surat yang bisa diubah
+     * penerimanya bukan bukti yang baik atas apa yang disepakati — dan sejak
+     * penggantian dicatat lewat tombol di admin, ejaannya memang sudah dikunci
+     * sistem.
+     */
+    public function suratPenggantian(int $pendaftaran)
+    {
+        // Tanpa parameter: isinya dibaca Orcha dari riwayat pendaftaran itu
+        // sendiri. Yang tercetak di surat bermaterai harus persis yang tercatat
+        // sistem, bukan yang bisa disetir lewat URL.
+        return $this->teruskanBerkas("/pendaftaran/{$pendaftaran}/surat-penggantian");
+    }
+
     public function kwitansi(int $pendaftaran)
     {
         return $this->teruskanBerkas("/pendaftaran/{$pendaftaran}/kwitansi");
@@ -117,16 +168,20 @@ class OrchaEksporController extends Controller
     }
 
     /** Berkas dibuat di Orcha lalu diteruskan apa adanya, tanpa digambar ulang. */
-    private function teruskanBerkas(string $jalur)
+    /**
+     * @param  array<string, mixed>  $parameter
+     * @param  string  $jenis  jenis MIME berkasnya; semua berkas Orcha kini PDF
+     */
+    private function teruskanBerkas(string $jalur, array $parameter = [], string $jenis = 'application/pdf')
     {
         try {
-            $berkas = $this->orcha->berkas($jalur);
+            $berkas = $this->orcha->berkas($jalur, $parameter);
         } catch (OrchaTidakTerjangkau $e) {
             abort(503, $e->getMessage());
         }
 
         return response($berkas['isi'], 200, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $jenis,
             'Content-Disposition' => 'attachment; filename="'.$berkas['nama'].'"',
         ]);
     }

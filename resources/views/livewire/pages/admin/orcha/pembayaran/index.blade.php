@@ -22,11 +22,7 @@ Bukti Pembayaran Orcha || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
                     <div class="col-12 col-lg-8">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari kode pesanan, nama pengirim, atau bank...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode pesanan, nama pengirim, atau bank...'])
                     </div>
                     <div class="col-12 col-lg-4">
                         <select wire:model.live="filterStatus" class="form-select">
@@ -137,10 +133,10 @@ Bukti Pembayaran Orcha || lemon
                                     <td class="small">{{ $baris['jenis_label'] }}</td>
                                     <td class="text-end fw-semibold text-nowrap">{{ $baris['nominal_formatted'] }}</td>
                                     <td class="small text-nowrap">
-                                        {{ $baris['tanggal_transfer'] ? \Carbon\Carbon::parse($baris['tanggal_transfer'])->translatedFormat('d M Y') : '—' }}
+                                        {{ $baris['tanggal_transfer'] ? \Carbon\Carbon::parse($baris['tanggal_transfer'])->locale('id')->translatedFormat('d M Y') : '—' }}
                                         <div class="text-muted" style="font-size:.74rem">
                                             dikirim
-                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->translatedFormat('d M, H:i') }}
+                                            {{ \Carbon\Carbon::parse($baris['dibuat_pada'])->locale('id')->translatedFormat('d M, H:i') }}
                                         </div>
                                     </td>
                                     <td>
@@ -246,7 +242,7 @@ Bukti Pembayaran Orcha || lemon
                                         <div class="orcha-cek-tanggal">
                                             <i class="bi bi-calendar-event"></i>
                                             {{ $terpilih['tanggal_transfer']
-                                                ? \Carbon\Carbon::parse($terpilih['tanggal_transfer'])->translatedFormat('j F Y')
+                                                ? \Carbon\Carbon::parse($terpilih['tanggal_transfer'])->locale('id')->translatedFormat('j F Y')
                                                 : 'tanggal transfer tidak diisi' }}
                                         </div>
                                     </div>

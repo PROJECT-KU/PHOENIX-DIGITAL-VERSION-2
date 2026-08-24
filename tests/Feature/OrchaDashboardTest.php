@@ -6,7 +6,6 @@ use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanDetail;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
-use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Models\EmployeeDetail;
@@ -107,16 +106,30 @@ test('tamu diarahkan ke login, bukan melihat data Orcha', function () {
 
 /* ------------------------- KUNCI & HEADER ------------------------- */
 
-test('panggilan membawa kunci dan email admin sebagai jejak audit', function () {
+test('panggilan membawa kunci dan nama admin sebagai jejak audit', function () {
     Http::fake(['*/dashboard' => Http::response(balasanDashboard())]);
 
     $admin = adminOrcha();
     $this->actingAs($admin)->get('/admin/orcha/dashboard')->assertOk();
 
+    // Nama, bukan surel: jejaknya berakhir di tempat yang dibaca manusia —
+    // "dicatat oleh" pada riwayat penggantian peserta — dan surel panjang
+    // memenuhi baris tanpa memberi tahu siapa orangnya.
     Http::assertSent(function ($request) use ($admin) {
         return $request->hasHeader('X-Orcha-Key', 'kunci-uji')
-            && $request->hasHeader('X-Orcha-Admin', $admin->email);
+            && $request->hasHeader('X-Orcha-Admin', $admin->name);
     });
+});
+
+test('admin tanpa nama tetap meninggalkan jejak, bukan tanda hubung', function () {
+    Http::fake(['*/dashboard' => Http::response(balasanDashboard())]);
+
+    $admin = adminOrcha();
+    $admin->forceFill(['name' => ''])->save();
+
+    $this->actingAs($admin)->get('/admin/orcha/dashboard')->assertOk();
+
+    Http::assertSent(fn ($request) => $request->hasHeader('X-Orcha-Admin', $admin->email));
 });
 
 /* --------------------------- ORCHA MATI --------------------------- */
@@ -181,11 +194,11 @@ test('orcha yang mati tidak ikut mematikan sidebar lemon', function () {
 /* ------------------------ RIWAYAT KESEHATAN ------------------------ */
 
 test('riwayat kesehatan tertutup tanpa permission khususnya', function () {
-    Http::fake(['*/pendaftaran*' => Http::response(['data' => [], 'meta' => []])]);
+    Http::fake(['*' => Http::response(['data' => [], 'meta' => []])]);
 
-    Livewire::actingAs(adminOrcha())
-        ->test(OrchaPendaftaranList::class)
-        ->call('bukaRiwayat', 1, 'Budi')
+    // Penjagaannya di halamannya, bukan di tombol yang disembunyikan.
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/1/riwayat-kesehatan')
         ->assertForbidden();
 });
 
@@ -200,11 +213,13 @@ test('riwayat kesehatan terbuka bagi yang punya permission', function () {
         '*' => Http::response(['data' => [], 'meta' => []]),
     ]);
 
-    Livewire::actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
-        ->test(OrchaPendaftaranList::class)
-        ->call('bukaRiwayat', 1, 'Budi Santoso')
-        ->assertSet('riwayatUntuk', 1)
-        ->assertSee('Asma ringan');
+    $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->get('/admin/orcha/pendaftaran/1/riwayat-kesehatan')
+        ->assertOk()
+        ->assertSee('Riwayat Kesehatan Peserta')
+        ->assertSee('Asma ringan')
+        // Peringatan kerahasiaan berdiri di atas, bukan jadi catatan kaki.
+        ->assertSee('Data pribadi peserta');
 });
 
 /* --------------------------- UBAH STATUS --------------------------- */
@@ -1036,11 +1051,15 @@ test('daftar pendaftaran mengelompokkan peserta per titik jemput', function () {
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran')
         ->assertOk()
-        ->assertSee('Surakarta:')
-        ->assertSee('Siti Aminah, Rina Wijaya')
-        ->assertSee('Jogja:')
+        // Di daftar yang tampil cukup JUMLAH titiknya. Nama per titik dulu
+        // dicetak seluruhnya di sel paket, dan satu pesanan bisa memenuhi
+        // setengah layar; sekarang ia ada di tooltip baris, halaman detail, dan
+        // manifes tour leader — tempat yang memang dibaca sopir.
+        ->assertSee('2 titik jemput')
+        ->assertSee('Surakarta: Siti Aminah, Rina Wijaya', false)
+        ->assertSee('Jogja: Budi Santoso', false)
         // Kelengkapan kesehatan ikut terlihat tanpa membuka apa pun
-        ->assertSee('1/3 riwayat kesehatan');
+        ->assertSee('1/3');
 });
 
 /* --------------------- DETAIL PELANGGAN --------------------- */
@@ -1552,16 +1571,15 @@ test('riwayat kesehatan di detail hanya untuk akun berizin', function () {
         '*/riwayat-kesehatan' => Http::response(['data' => []]),
     ]);
 
-    // Tanpa izin: tombolnya tidak ada, dan pemanggilannya ditolak di server
+    // Tanpa izin: tautannya tidak ada, dan halamannya ditolak di server.
     $this->actingAs(adminOrcha())
         ->get('/admin/orcha/pendaftaran/7')
         ->assertOk()
-        ->assertSee('hanya bisa dibuka akun berizin')
+        ->assertSee('Riwayat kesehatan terkunci')
         ->assertDontSee('Lihat Riwayat Kesehatan');
 
-    Livewire::actingAs(adminOrcha())
-        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->call('bukaRiwayat')
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/pendaftaran/7/riwayat-kesehatan')
         ->assertForbidden();
 });
 
@@ -1580,10 +1598,18 @@ test('akun berizin bisa membuka riwayat kesehatan dari halaman detail', function
         '*/pendaftaran/7' => Http::response(balasanDetail()),
     ]);
 
-    Livewire::actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
-        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->call('bukaRiwayat')
-        ->assertSet('riwayatTerbuka', true)
+    $admin = adminOrcha(['akses_orcha', 'view_orcha_kesehatan']);
+
+    // Tautan menuju halamannya, bukan popup yang dibuka di tempat.
+    $this->actingAs($admin)
+        ->get('/admin/orcha/pendaftaran/7')
+        ->assertOk()
+        ->assertSee('Lihat Riwayat Kesehatan')
+        ->assertSee(route('admin.orcha.pendaftaran.kesehatan', 7), false);
+
+    $this->actingAs($admin)
+        ->get('/admin/orcha/pendaftaran/7/riwayat-kesehatan')
+        ->assertOk()
         ->assertSee('Asma ringan')
         ->assertSee('Perlu perhatian')
         ->assertSee('Kontak darurat');
@@ -1716,14 +1742,17 @@ test('tiga tingkat perhatian tampil beda, bukan merah semua', function () {
         '*/pendaftaran/7' => Http::response(balasanDetail()),
     ]);
 
-    Livewire::actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
-        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->call('bukaRiwayat')
+    $this->actingAs(adminOrcha(['akses_orcha', 'view_orcha_kesehatan']))
+        ->get('/admin/orcha/pendaftaran/7/riwayat-kesehatan')
+        ->assertOk()
         ->assertSee('Perlu perhatian')
         ->assertSee('Menuntut kesiapan sebelum berangkat')
         ->assertSee('Ada catatan')
         ->assertSee('Cukup diingat di lapangan')
-        ->assertSee('Tanpa catatan');
+        ->assertSee('Tanpa catatan')
+        // Yang menuntut kesiapan dikumpulkan di depan, sebelum kartunya sendiri.
+        ->assertSee('Perlu disiapkan sebelum berangkat')
+        ->assertSee('Gangguan jantung');
 });
 
 /* ---------------- SEWA KENDARAAN: SERAH TERIMA & DENDA ---------------- */

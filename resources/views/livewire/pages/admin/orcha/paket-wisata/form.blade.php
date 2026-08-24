@@ -273,7 +273,7 @@
                                 <div class="form-text">
                                     @if ($tanggalBerangkat)
                                         Berhenti tampil
-                                        <strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->translatedFormat('j M Y') }}</strong>.
+                                        <strong>{{ \Carbon\Carbon::parse($tanggalBerangkat)->locale('id')->translatedFormat('j M Y') }}</strong>.
                                     @else
                                         Berhenti tampil pada tanggal berangkat.
                                     @endif
@@ -294,6 +294,45 @@
                                     wire:model.blur="hargaTeks" value="{{ $hargaTeks }}" placeholder="1.430.000">
                             </div>
                             @error('harga') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+
+                            <label class="form-label small fw-semibold">Modal per orang</label>
+                            <div class="orcha-rupiah mb-1">
+                                <input type="text" inputmode="numeric"
+                                    class="orcha-uang form-control @error('hargaModal') is-invalid @enderror"
+                                    wire:model.blur="hargaModalTeks" value="{{ $hargaModalTeks }}"
+                                    placeholder="1.400.000">
+                            </div>
+                            @error('hargaModal') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            <div class="form-text">
+                                Biaya internal untuk satu peserta: transport, penginapan, tiket, tim.
+                                Kosongkan bila belum dihitung — bukan diisi nol.
+                            </div>
+
+                            {{-- Untung per peserta langsung terlihat di sini, bukan setelah
+                                 tutup buku. Paket yang ternyata dijual di bawah modal
+                                 ketahuan saat masih bisa diperbaiki. --}}
+                            @php $margin = $this->marginPerOrang(); @endphp
+                            <div class="orcha-margin {{ $margin === null ? 'kosong' : ($margin < 0 ? 'rugi' : '') }} mb-3">
+                                @if ($margin === null)
+                                    <i class="bi bi-question-circle"></i>
+                                    <span>Untung per peserta belum bisa dihitung — modalnya belum diisi.</span>
+                                @elseif ($margin < 0)
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <span>
+                                        <strong>Rugi Rp {{ number_format(abs($margin), 0, ',', '.') }}</strong>
+                                        per peserta. Harga jualnya di bawah modal.
+                                    </span>
+                                @else
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                    <span>
+                                        Untung <strong>Rp {{ number_format($margin, 0, ',', '.') }}</strong>
+                                        per peserta
+                                        @if ($this->marginPersen() !== null)
+                                            <span class="text-muted">({{ $this->marginPersen() }}% dari harga jual)</span>
+                                        @endif
+                                    </span>
+                                @endif
+                            </div>
 
                             <label class="form-label small fw-semibold">Harga sebelum diskon</label>
                             <div class="orcha-rupiah mb-1">

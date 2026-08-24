@@ -33,6 +33,39 @@ trait MemanggilOrcha
         $this->halaman = 1;
     }
 
+    /**
+     * Mengosongkan kotak cari.
+     *
+     * Ada karena mengosongkannya sendiri butuh menyeleksi seluruh teks lalu
+     * menghapusnya — pekerjaan sepele yang dikerjakan berkali-kali sehari, dan
+     * pada kata pencarian yang panjang cukup sering menyisakan satu huruf yang
+     * membuat daftarnya tetap kosong tanpa admin sadar kenapa.
+     */
+    public function bersihkanCari(): void
+    {
+        $this->cari = '';
+        $this->halaman = 1;
+    }
+
+    /**
+     * Mengembalikan seluruh saringan ke keadaan semula.
+     *
+     * Halaman yang punya saringan tambahan menimpanya untuk ikut mengosongkan
+     * miliknya sendiri — lihat OrchaPendaftaranList::bersihkanSaringan().
+     */
+    public function bersihkanSaringan(): void
+    {
+        $this->cari = '';
+        $this->filterStatus = '';
+        $this->halaman = 1;
+    }
+
+    /** Ada saringan yang sedang aktif? Penentu munculnya tombol bersihkan. */
+    public function adaSaringan(): bool
+    {
+        return $this->cari !== '' || $this->filterStatus !== '';
+    }
+
     public function keHalaman(int $nomor): void
     {
         $this->halaman = max(1, $nomor);

@@ -52,6 +52,11 @@
         .rule { height: 2px; width: 30px; background-color: {{ $emas }}; font-size: 0; line-height: 0; margin-top: 4px; }
         .titik { background-color: {{ $navy }}; color: #fff; padding: 6px 12px; font-size: 11px; font-weight: bold; }
         .orang td { padding: 7px 12px; border-bottom: 1px solid #e9eff5; font-size: 11px; }
+        .kotak-absen { width: 13px; height: 13px; border: 1.4px solid {{ $navy }}; font-size: 0; line-height: 0; }
+        .tajuk-orang td { padding: 4px 12px; font-size: 7.5px; letter-spacing: 1px;
+            text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid #e9eff5; }
+        .hitung-naik { padding: 6px 12px 12px; font-size: 9.5px; color: #64748b; }
+        .garis-isi { display: inline-block; width: 46px; border-bottom: 1px solid #94a3b8; }
         .awas { background-color: #fff5f5; }
         .cap-awas { color: #b91c1c; font-weight: bold; font-size: 9px; }
         .kotak-awas { background-color: #fff5f5; border-left: 4px solid #dc2626; }
@@ -85,7 +90,7 @@
             </td>
             <td align="right" style="color:#7fb4d6;font-size:9px;">
                 Manifes Tour Leader<br>
-                Dicetak {{ now()->translatedFormat('d M Y, H:i') }} WIB
+                Dicetak {{ now()->locale('id')->translatedFormat('d M Y, H:i') }} WIB
             </td>
         </tr>
     </table>
@@ -98,7 +103,7 @@
                     <div class="judul">{{ data_get($pendaftaran, 'paket.nama') ?: 'Open Trip' }}</div>
                     <div style="font-size:10px;color:#64748b;padding-top:3px;">
                         {{ $pendaftaran['tanggal_berangkat']
-                            ? \Carbon\Carbon::parse($pendaftaran['tanggal_berangkat'])->translatedFormat('l, d F Y')
+                            ? \Carbon\Carbon::parse($pendaftaran['tanggal_berangkat'])->locale('id')->translatedFormat('l, d F Y')
                             : 'Tanggal menyusul' }}
                     </div>
                 </td>
@@ -161,15 +166,48 @@
              Dikelompokkan per titik, bukan menurut abjad: yang dikerjakan tour
              leader adalah berhenti di satu titik lalu memanggil nama. --}}
         <div style="margin-top:20px;">
-            <div class="bagian">Urutan Jemputan</div>
+            <div class="bagian">Urutan Jemputan &amp; Absen Naik</div>
             <div class="rule"></div>
+            <div style="font-size:9.5px;color:#64748b;padding-top:6px;">
+                Centang kotak di kolom kiri begitu peserta naik kendaraan.
+            </div>
         </div>
 
         @php
+            $namaPeserta = collect($peserta)->pluck('nama')->filter()->all();
+
             $kelompok = ! empty($perTitik)
                 ? $perTitik
-                : ['Titik jemput menyusul' => collect($peserta)->pluck('nama')->all()];
+                : ($namaPeserta !== [] ? ['Titik jemput menyusul' => $namaPeserta] : []);
         @endphp
+
+        {{-- Nama pesertanya belum didata satu per satu.
+
+             Dulu keadaan ini menghasilkan satu kotak titik jemput bertuliskan
+             "0 orang" dan tidak ada baris apa pun di bawahnya — lembaran yang
+             tampak seperti rombongan kosong, padahal jumlahnya tertulis jelas
+             di kepala halaman yang sama. Sekarang disebutkan apa adanya, dengan
+             ruang untuk mencatat namanya di lapangan. --}}
+        @if ($kelompok === [])
+            <table width="100%" cellpadding="0" cellspacing="0" class="kotak-kuning" style="margin-top:12px;">
+                <tr>
+                    <td style="font-size:10px;color:#8a6410;">
+                        <strong>Nama peserta belum didata satu per satu.</strong>
+                        Pendaftaran ini mencatat {{ $pendaftaran['jumlah_peserta'] ?? '—' }} orang
+                        dengan titik jemput
+                        &ldquo;{{ $pendaftaran['titik_jemput'] ?: 'belum dipilih' }}&rdquo;.
+                        Catat namanya saat rombongan berkumpul, lalu minta pemesan melengkapinya
+                        lewat website agar manifes berikutnya utuh.
+                    </td>
+                </tr>
+            </table>
+
+            <div class="hitung-naik" style="padding-top:10px;">
+                Sudah naik: <span class="garis-isi">&nbsp;</span>
+                dari {{ $pendaftaran['jumlah_peserta'] ?? '—' }} orang
+                &nbsp;&middot;&nbsp; Diperiksa oleh: <span class="garis-isi">&nbsp;</span>
+            </div>
+        @endif
 
         @foreach ($kelompok as $titik => $orang)
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">
@@ -184,15 +222,28 @@
             </table>
 
             <table width="100%" cellpadding="0" cellspacing="0" class="orang">
+                <tr class="tajuk-orang">
+                    <td width="6%" align="center">Naik</td>
+                    <td width="4%">No</td>
+                    <td width="28%">Nama peserta</td>
+                    <td width="24%">Kesehatan</td>
+                    <td width="24%">Kontak darurat</td>
+                    <td width="14%"></td>
+                </tr>
                 @foreach ($orang as $nama)
                     @php
                         $k = $cari($nama);
                         $awas = ($k['tingkat_perhatian'] ?? '') === 'tinggi';
                     @endphp
                     <tr class="{{ $awas ? 'awas' : '' }}">
+                        <td width="6%" align="center">
+                            <table cellpadding="0" cellspacing="0" align="center">
+                                <tr><td class="kotak-absen">&nbsp;</td></tr>
+                            </table>
+                        </td>
                         <td width="4%">{{ $loop->iteration }}.</td>
-                        <td width="30%"><strong style="color:{{ $navy }};">{{ $nama }}</strong></td>
-                        <td width="26%" style="font-size:10px;">
+                        <td width="28%"><strong style="color:{{ $navy }};">{{ $nama }}</strong></td>
+                        <td width="24%" style="font-size:10px;">
                             @if ($k)
                                 {{ collect([
                                     ($k['usia'] ?? null) ? $k['usia'] . ' th' : null,
@@ -211,7 +262,7 @@
                                 <span style="color:#94a3b8;">—</span>
                             @endif
                         </td>
-                        <td width="16%" align="right">
+                        <td width="14%" align="right">
                             @if ($awas)
                                 <span class="cap-awas">PERHATIAN</span>
                             @elseif (($k['tingkat_perhatian'] ?? '') === 'sedang')
@@ -221,6 +272,11 @@
                     </tr>
                 @endforeach
             </table>
+
+            <div class="hitung-naik">
+                Sudah naik: <span class="garis-isi">&nbsp;</span> dari {{ count($orang) }} orang
+                &nbsp;&middot;&nbsp; Diperiksa oleh: <span class="garis-isi">&nbsp;</span>
+            </div>
         @endforeach
 
         {{-- Catatan ringan dikumpulkan di bawah supaya daftar jemputannya tetap

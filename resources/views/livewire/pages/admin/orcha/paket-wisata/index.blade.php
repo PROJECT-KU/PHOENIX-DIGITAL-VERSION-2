@@ -15,11 +15,7 @@ Paket Wisata Orcha || lemon
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
                     <div class="col-12 col-lg-8">
-                        <div class="form-group position-relative mb-0">
-                            <div class="form-control-icon"><i class="bi bi-search"></i></div>
-                            <input wire:model.live.debounce.400ms="cari" type="text" class="form-control ps-5"
-                                placeholder="Cari nama paket...">
-                        </div>
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari nama paket...'])
                     </div>
 
                     <div class="col-8 col-lg-2">
@@ -73,7 +69,7 @@ Paket Wisata Orcha || lemon
                                             @if (($baris['status_tayang'] ?? '') === 'terjadwal' && $baris['tayang_mulai'])
                                                 <div class="text-muted" style="font-size:.74rem">
                                                     mulai
-                                                    {{ \Carbon\Carbon::parse($baris['tayang_mulai'])->translatedFormat('d M Y, H:i') }}
+                                                    {{ \Carbon\Carbon::parse($baris['tayang_mulai'])->locale('id')->translatedFormat('d M Y, H:i') }}
                                                 </div>
                                             @endif
                                         </td>
@@ -82,7 +78,7 @@ Paket Wisata Orcha || lemon
                                             @if ($baris['batas_pelunasan'])
                                                 <div class="text-muted" style="font-size:.78rem">
                                                     Pelunasan sd
-                                                    {{ \Carbon\Carbon::parse($baris['batas_pelunasan'])->translatedFormat('d M Y') }}
+                                                    {{ \Carbon\Carbon::parse($baris['batas_pelunasan'])->locale('id')->translatedFormat('d M Y') }}
                                                 </div>
                                             @endif
                                         </td>
@@ -94,6 +90,20 @@ Paket Wisata Orcha || lemon
                                                     Rp {{ number_format((float) $baris['harga_asli'], 0, ',', '.') }}
                                                 </div>
                                             @endif
+
+                                            {{-- Untung per peserta ikut di kolom harga, bukan kolom
+                                                 sendiri: yang ditanya admin selalu "dijual segini,
+                                                 untungnya berapa" — dua angka yang sebaiknya
+                                                 terbaca dalam satu tarikan mata. --}}
+                                            @php $marginPaket = $baris['margin_per_orang'] ?? null; @endphp
+                                            <div class="orcha-untung-nilai {{ $marginPaket === null ? 'kosong' : ((int) $marginPaket < 0 ? 'rugi' : '') }}"
+                                                style="font-size:.75rem">
+                                                @if ($marginPaket === null)
+                                                    modal belum diisi
+                                                @else
+                                                    untung {{ $baris['margin_per_orang_teks'] }}/orang
+                                                @endif
+                                            </div>
                                         </td>
                                         <td class="text-center">{{ $baris['minimal_peserta'] }}</td>
                                         <td class="text-center fw-semibold">{{ $baris['jumlah_pendaftar'] ?? 0 }}</td>
