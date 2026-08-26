@@ -19,9 +19,9 @@
     // Galeri pratinjau: foto utama lebih dulu, lalu gambar tambahan — urutan
     // yang sama dengan jendela detail di website.
     $galeri = array_values(array_filter(array_merge(
-        [$gambar ? $gambar->temporaryUrl() : $tautanGambar($gambarLama)],
+        [$gambar ? \App\Support\PratinjauUnggahan::url($gambar) : $tautanGambar($gambarLama)],
         array_map($tautanGambar, $subFotoTetap),
-        array_map(fn ($berkas) => $berkas->temporaryUrl(), $subFoto),
+        array_map(fn ($berkas) => \App\Support\PratinjauUnggahan::url($berkas), $subFoto),
     )));
 @endphp
 
@@ -281,7 +281,7 @@
                             <div class="orcha-foto-kotak @error('gambar') galat @enderror mb-3">
                                 <div class="orcha-foto-rupa">
                                     @if ($gambar)
-                                        <img src="{{ $gambar->temporaryUrl() }}" alt="">
+                                        <img src="{{ \App\Support\PratinjauUnggahan::url($gambar) }}" alt="">
                                     @elseif ($tautanGambar($gambarLama))
                                         <img src="{{ $tautanGambar($gambarLama) }}" alt="">
                                     @else
@@ -328,7 +328,7 @@
 
                                         @foreach ($subFoto as $urutan => $berkas)
                                             <div class="petak baru" wire:key="sub-baru-{{ $urutan }}">
-                                                <img src="{{ $berkas->temporaryUrl() }}" alt="">
+                                                <img src="{{ \App\Support\PratinjauUnggahan::url($berkas) }}" alt="">
                                                 <span class="tanda">Baru</span>
                                                 <button type="button" class="buang"
                                                     wire:click="batalkanSubFoto({{ $urutan }})"

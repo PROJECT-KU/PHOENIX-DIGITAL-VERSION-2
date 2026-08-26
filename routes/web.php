@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\OrchaEksporController;
 use App\Http\Controllers\PaymentCallbackController;
 use App\Http\Controllers\PemesananrscController;
+use App\Http\Controllers\PratinjauUnggahanController;
 // Data Banners
 use App\Http\Controllers\PushSubscriptionController;
 use App\Livewire\Pages\Admin\ActivityLog\ActivityLogList;
@@ -496,6 +497,25 @@ Route::middleware('permission:view_message')->group(function () {
 | bukan pengaman; penjagaan sebenarnya ada di sini.
 |
 */
+/*
+| Pratinjau berkas yang BARU diunggah dan belum disimpan.
+|
+| Menggantikan pratinjau bawaan Livewire, yang alamatnya berakhiran nama
+| berkas asli (.../xxxx.jpg?expires=...&signature=...). Lapisan pengoptimal
+| gambar di hosting membuang query string dari setiap alamat berakhiran
+| ekstensi gambar, padahal izin akses Livewire dititipkan di sana — akibatnya
+| SELURUH pratinjau unggahan di panel admin tampil sebagai gambar rusak.
+|
+| Nama berkasnya disandikan base64url, jadi jalur ini tidak pernah berakhiran
+| ekstensi gambar dan tidak ada yang perlu dititipkan di query.
+|
+| Wajib login: folder unggahan sementara menampung berkas milik SEMUA admin
+| yang sedang mengisi formulir, termasuk bukti pembayaran.
+*/
+Route::middleware('auth')
+    ->get('/admin/pratinjau-unggahan/{sandi}', PratinjauUnggahanController::class)
+    ->name('pratinjau.unggahan');
+
 Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/dashboard', OrchaDashboard::class)->name('admin.orcha.dashboard');
     Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
