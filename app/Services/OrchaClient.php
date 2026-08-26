@@ -43,6 +43,10 @@ class OrchaClient
                 ?: (auth()->user()?->email ?? '-'),
             'Accept' => 'application/json',
         ])
+            ->when(
+                config('orcha.paksa_ipv4'),
+                fn (PendingRequest $p) => $p->withOptions(['force_ip_resolve' => 'v4'])
+            )
             ->timeout(config('orcha.timeout'))
             ->baseUrl(config('orcha.url'));
     }
