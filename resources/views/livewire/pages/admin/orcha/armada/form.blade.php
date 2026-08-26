@@ -638,12 +638,18 @@
                                 kenapa unit ini pernah ditandai rusak lalu kembali baik.
                             </div>
 
+                            {{-- Menyasar simpanKondisi secara khusus: tanpa itu tombol ini
+                                 ikut memintal saat unit sedang disimpan lewat tombol utama. --}}
                             <button type="button" class="orcha-btn orcha-btn-utama mt-3"
                                 wire:click="simpanKondisi" wire:loading.attr="disabled"
                                 wire:target="simpanKondisi">
-                                <i class="bi bi-save"></i>
-                                <span wire:loading.remove wire:target="simpanKondisi">Simpan Kondisi</span>
-                                <span wire:loading wire:target="simpanKondisi">Menyimpan…</span>
+                                <span wire:loading.remove wire:target="simpanKondisi">
+                                    <i class="bi bi-save"></i> Simpan Kondisi
+                                </span>
+                                <span wire:loading wire:target="simpanKondisi">
+                                    <span class="spinner-border spinner-border-sm me-2"
+                                        role="status" aria-hidden="true"></span>Menyimpan…
+                                </span>
                             </button>
 
                             <div class="text-muted mt-2" style="font-size:.76rem">
@@ -985,16 +991,41 @@
                          tetap di tempat yang diharapkan, dan tetap terlihat berapa pun
                          panjang kartu di atasnya. --}}
                     <div class="orcha-aksi-paku">
-<div class="d-grid gap-2">
-                        <button type="submit" class="orcha-btn orcha-btn-utama" wire:loading.attr="disabled"
-                            wire:target="simpan">
-                            <i class="bi bi-save"></i>
+                    {{-- Seukuran tombol simpan di formulir paket wisata — 38px,
+                         huruf 1rem — lewat .orcha-btn-besar. Keduanya formulir
+                         tambah data yang sering dikerjakan berurutan, dan
+                         tombol yang mengecil sendiri di salah satunya membuat
+                         keduanya terasa dari dua aplikasi berbeda. --}}
+                    <div class="d-grid gap-2">
+                        {{-- Pemintal, bukan sekadar tulisan yang berganti.
+
+                             Menyimpan unit menembak Orcha dengan seluruh isinya —
+                             identitas, tarif tiap satuan, aturan biaya dalam dan luar
+                             kota, sampai fotonya — jadi jedanya terasa. Tombol yang
+                             hanya berganti kalimat masih terlihat diam: yang menekannya
+                             cenderung menekan lagi, dan unit yang terkirim dua kali
+                             bukan perkara tampilan.
+
+                             Ikon simpannya ikut masuk ke dalam bungkus yang disembunyikan,
+                             supaya ia berganti MENJADI pemintal — bukan berdiri di
+                             sebelahnya sementara pemintalnya berputar.
+
+                             Pemintalnya disembunyikan lewat aturan gaya di partial gaya,
+                             bukan hanya oleh skrip Livewire, supaya ia tidak tergambar
+                             sebelum tombolnya ditekan. --}}
+                        <button type="submit" class="orcha-btn orcha-btn-utama orcha-btn-besar"
+                            wire:loading.attr="disabled" wire:target="simpan">
                             <span wire:loading.remove wire:target="simpan">
+                                <i class="bi bi-save"></i>
                                 {{ $ubah ? 'Simpan Perubahan' : 'Tambah Kendaraan' }}
                             </span>
-                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
+                            <span wire:loading wire:target="simpan">
+                                <span class="spinner-border spinner-border-sm me-2"
+                                    role="status" aria-hidden="true"></span>Menyimpan ke Orcha…
+                            </span>
                         </button>
-                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate class="orcha-btn orcha-btn-lembut">
+                        <a href="{{ route('admin.orcha.armada') }}" wire:navigate
+                            class="orcha-btn orcha-btn-lembut orcha-btn-besar">
                             Batal
                         </a>
                     </div>
@@ -1032,179 +1063,11 @@
             color: #9b2530;
             font-weight: 600;
         }
-            /* Kartu pilihan (transmisi): sasaran kliknya seluruh kartu, dan yang
-           terpilih ditandai warna SEKALIGUS tanda centang — warna saja tidak
-           cukup bagi yang sulit membedakannya. */
-        .orcha-pilih-kartu {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-            gap: .6rem;
-        }
+        {{-- Gaya kartu pilihan pindah ke lembar gaya bersama: halaman Bagian
+             Pemeriksaan memakai bentuk yang sama untuk memilih jenis unit. --}}
 
-        .orcha-kartu-pilihan {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: .7rem;
-            padding: .75rem .9rem;
-            border: 1.5px solid #dbe7f0;
-            border-radius: .8rem;
-            background: #fff;
-            cursor: pointer;
-            transition: all .15s ease;
-        }
-
-        .orcha-kartu-pilihan input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .orcha-kartu-pilihan:hover { border-color: #b9d0e2; }
-
-        .orcha-kartu-pilihan.aktif {
-            border-color: #1d6fa5;
-            background: #f2f8fc;
-        }
-
-        .orcha-kartu-pilihan .rupa {
-            font-size: 1.15rem;
-            line-height: 1;
-            color: #94a3b8;
-        }
-
-        .orcha-kartu-pilihan.aktif .rupa { color: #1d6fa5; }
-
-        .orcha-kartu-pilihan .judul {
-            display: block;
-            font-weight: 700;
-            font-size: .9rem;
-            color: #0f2d4a;
-        }
-
-        .orcha-kartu-pilihan .ket {
-            display: block;
-            font-size: .76rem;
-            color: #94a3b8;
-        }
-
-        .orcha-kartu-pilihan .tanda {
-            position: absolute;
-            top: .5rem;
-            right: .6rem;
-            width: 1.1rem;
-            height: 1.1rem;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            background: #1d6fa5;
-            color: #fff;
-            font-size: .62rem;
-            opacity: 0;
-            transform: scale(.6);
-            transition: all .15s ease;
-        }
-
-        /* Cakramnya sudah memakai flex, tapi yang ditengahkan adalah KOTAK BARIS
-           ikonnya, bukan glifnya: kotak itu setinggi line-height halaman dan
-           bootstrap-icons masih menggeser glifnya turun (vertical-align: sub).
-           Lebar kotaknya pun lebih besar daripada lebar glifnya, sehingga
-           centangnya duduk di kiri-bawah dan menyisakan tempat kosong di
-           kanan-atas — terukur 3px ke kiri dan 1,4px ke bawah pada cakram 18px.
-
-           Ikonnya sendiri dijadikan wadah flex, mengikuti pola yang sudah
-           dipakai .stat-icon-wrapper: kotaknya menyusut sepas glifnya dan
-           vertical-align jadi tidak berlaku lagi. */
-        .orcha-kartu-pilihan .tanda i {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            vertical-align: middle;
-        }
-
-        .orcha-kartu-pilihan.aktif .tanda { opacity: 1; transform: scale(1); }
-
-        /* Sakelar penayangan: kartunya sendiri ikut berubah warna, karena yang
-           diputuskan di sini adalah unitnya terlihat pelanggan atau tidak. */
-        .orcha-sakelar-kartu {
-            display: flex;
-            align-items: center;
-            gap: .85rem;
-            width: 100%;
-            margin: 0;
-            padding: .85rem 1rem;
-            border: 1.5px solid #dbe7f0;
-            border-radius: .8rem;
-            background: #f8fafc;
-            cursor: pointer;
-            transition: all .15s ease;
-        }
-
-        .orcha-sakelar-kartu.nyala {
-            border-color: #1a8a52;
-            background: #f0faf5;
-        }
-
-        .orcha-sakelar-kartu .rupa {
-            flex: 0 0 2.4rem;
-            width: 2.4rem;
-            height: 2.4rem;
-            border-radius: .7rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: #e8edf2;
-            color: #64748b;
-            font-size: 1.05rem;
-            line-height: 1;
-        }
-
-        /* Ikonnya sendiri dijadikan wadah flex.
-
-           Kotaknya sudah ditengahkan, tapi yang ditengahkan adalah KOTAK BARIS
-           ikonnya — bukan glifnya. Terukur dari tintanya di dalam cakram 38px:
-           meleset sampai 4,9px ke bawah dan 2,8px ke samping. Pola yang sama
-           sudah dipakai .stat-icon-wrapper dan centang transmisi. */
-        .orcha-sakelar-kartu .rupa i {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            vertical-align: middle;
-        }
-
-        .orcha-sakelar-kartu .rupa > i { line-height: 1; }
-
-        .orcha-sakelar-kartu.nyala .rupa { background: #d7f0e2; color: #126b40; }
-
-        .orcha-sakelar-kartu .isi { flex: 1 1 auto; }
-
-        .orcha-sakelar-kartu .judul {
-            display: block;
-            font-weight: 700;
-            font-size: .9rem;
-            color: #0f2d4a;
-        }
-
-        .orcha-sakelar-kartu .ket {
-            display: block;
-            font-size: .78rem;
-            color: #64748b;
-        }
-
-        .orcha-sakelar-kartu .form-check-input {
-            width: 2.4rem;
-            height: 1.3rem;
-            cursor: pointer;
-        }
-
-        .orcha-sakelar-kartu.nyala .form-check-input:checked {
-            background-color: #1a8a52;
-            border-color: #1a8a52;
-        }
+        {{-- Gaya sakelar-kartu pindah ke lembar gaya bersama: halaman Bagian
+             Pemeriksaan memakainya untuk mengaktifkan / menonaktifkan bagian. --}}
 
 </style>
 

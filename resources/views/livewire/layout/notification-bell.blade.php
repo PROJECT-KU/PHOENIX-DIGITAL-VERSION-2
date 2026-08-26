@@ -18,6 +18,17 @@
         .nb-title { font-weight: 700; font-size: .85rem; color: #1e293b; }
         .nb-body { font-size: .8rem; color: #64748b; line-height: 1.35; }
         .nb-time { font-size: .7rem; color: #94a3b8; margin-top: 2px; }
+
+        /* ===== Bagian Orcha =====
+           Warnanya sengaja beda dari lemon: navy-emas, sama dengan pita mode
+           Orcha di bilah samping. Yang dilihat admin sekilas harus langsung
+           menjawab "ini aplikasi yang mana", tanpa membaca judulnya. */
+        .nb-orcha-badge { position: absolute; top: -6px; left: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #ffd772; color: #5b3d00; font-size: .68rem; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(15,45,74,.28); }
+        .nb-orcha-judul { padding: 8px 16px 6px; font-size: .66rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: #1d6fa5; background: #f4f9fd; border-bottom: 1px solid #e6eef5; display: flex; align-items: center; gap: .35rem; }
+        .nb-orcha-judul i.bi { display: flex; align-items: center; line-height: 1; }
+        .nb-item.nb-orcha { background: #fbfdff; text-decoration: none; }
+        .nb-item.nb-orcha:hover { background: #f2f8fd; }
+        .nb-orcha .nb-ico { background: linear-gradient(135deg, #0f2d4a, #1d6fa5); }
         .nb-empty { padding: 28px 16px; text-align: center; color: #94a3b8; font-size: .85rem; }
         .nb-foot { padding: 10px 16px; border-top: 1px solid #f1f5f9; text-align: center; }
         .nb-push-btn { border: 0; background: transparent; color: #4d7c0f; font-size: .78rem; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 8px; transition: .12s; }
@@ -29,6 +40,16 @@
         @if($unread > 0)
         <span class="nb-badge">{{ $unread > 99 ? '99+' : $unread }}</span>
         @endif
+
+        {{-- Lencana kedua, di sisi berlawanan dan berwarna emas: pekerjaan
+             Orcha. Dipisah dari lencana merah lemon karena keduanya berbeda
+             sifatnya — yang merah hilang begitu dibaca, yang emas hilang hanya
+             kalau dikerjakan. --}}
+        @if($orchaJumlah > 0)
+        <span class="nb-orcha-badge" title="{{ $orchaJumlah }} hal di Orcha menunggu ditindak">
+            {{ $orchaJumlah > 99 ? '99+' : $orchaJumlah }}
+        </span>
+        @endif
     </button>
 
     <div x-show="open" x-transition @click.outside="open = false" class="nb-panel" style="display:none;">
@@ -39,6 +60,31 @@
             @endif
         </div>
         <div class="nb-list">
+            @if($orcha->isNotEmpty())
+                <div class="nb-orcha-judul">
+                    <i class="bi bi-water"></i> Orcha Journey
+                </div>
+
+                {{-- Tautan biasa, bukan tombol: tidak ada yang perlu ditandai
+                     dibaca — yang perlu dilakukan adalah membuka halamannya. --}}
+                @foreach($orcha as $o)
+                    <a href="{{ $o['tautan'] }}" wire:navigate class="nb-item nb-orcha">
+                        <span class="nb-ico"><i class="bi {{ $o['ikon'] }}"></i></span>
+                        <div class="flex-grow-1">
+                            <div class="nb-title">{{ $o['judul'] }}</div>
+                            <div class="nb-body">{{ $o['isi'] }}</div>
+                            <div class="nb-time">
+                                <i class="bi bi-arrow-right-circle me-1"></i>{{ $o['aksi'] }}
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+
+                <div class="nb-orcha-judul" style="color:#4f46e5;background:#f7f8ff;border-color:#eef0f7">
+                    <i class="bi bi-lemon"></i> lemon
+                </div>
+            @endif
+
             @forelse($items as $n)
             @php $d = $n->data; @endphp
             <button type="button" wire:click="markAsRead('{{ $n->id }}')"

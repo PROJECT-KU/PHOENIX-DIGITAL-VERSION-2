@@ -57,6 +57,41 @@
         box-shadow: 0 8px 15px rgba(245, 158, 11, .25);
     }
 
+    /* Ikon kartu tindakan: warna mengikuti MAKNANYA, bukan satu warna untuk
+       semua.
+
+       Lima kartu bernavy sama membuat mata tidak punya alasan berhenti di
+       salah satunya — padahal justru itu gunanya: menemukan mana yang perlu
+       dikerjakan lebih dulu. */
+    .orcha-ikon-daftar { background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                         box-shadow: 0 8px 15px rgba(59, 130, 246, .25); }
+    .orcha-ikon-sewa   { background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+                         box-shadow: 0 8px 15px rgba(139, 92, 246, .25); }
+    .orcha-ikon-bayar  { background: linear-gradient(135deg, #10b981, #047857);
+                         box-shadow: 0 8px 15px rgba(16, 185, 129, .25); }
+    .orcha-ikon-batal  { background: linear-gradient(135deg, #ef4444, #b91c1c);
+                         box-shadow: 0 8px 15px rgba(239, 68, 68, .25); }
+    .orcha-ikon-pesan  { background: linear-gradient(135deg, #f59e0b, #d97706);
+                         box-shadow: 0 8px 15px rgba(245, 158, 11, .25); }
+
+    /* Yang nol diredupkan, bukan disembunyikan: tempatnya tetap sama setiap
+       hari, jadi admin belajar letaknya dan berhenti membaca satu per satu. */
+    .orcha-kartu-tindakan.kosong .orcha-ikon {
+        background: #eef1f7;
+        color: #94a3b8;
+        box-shadow: none;
+    }
+
+    .orcha-kartu-tindakan.kosong .orcha-angka {
+        color: #cbd5e1;
+    }
+
+    /* Yang berisi diberi pita di tepi kiri — terbaca bahkan saat kartunya
+       tersaput di ujung mata. */
+    .orcha-kartu-tindakan.ada {
+        border-left: 4px solid #f59e0b !important;
+    }
+
     .orcha-angka {
         font-size: 1.6rem;
         font-weight: 800;
@@ -132,14 +167,16 @@
        di dalam kotak. */
     .orcha-cek-ikon > i,
     .orcha-ikon-kotak > i,
-    .orcha-cek-tutup > i {
+    .orcha-cek-tutup > i,
+    .orcha-bagian-nomor > i {
         display: block;
         line-height: 1;
     }
 
     .orcha-cek-ikon > i::before,
     .orcha-ikon-kotak > i::before,
-    .orcha-cek-tutup > i::before {
+    .orcha-cek-tutup > i::before,
+    .orcha-bagian-nomor > i::before {
         display: block;
     }
 
@@ -160,7 +197,10 @@
        terlihat mata benar-benar di tengah. Ukuran 16 px-nya sengaja tidak
        diutak-atik — yang salah bukan kotaknya, melainkan letak luberannya. */
     .orcha-ikon > i,
-    .orcha-hero-ikon > i {
+    .orcha-jatuhkan-ikon > i,
+    .orcha-hero-ikon > i,
+    .orcha-foto-kosong > i,
+    .orcha-etalase-foto .kosong > i {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -168,7 +208,10 @@
     }
 
     .orcha-ikon > i::before,
-    .orcha-hero-ikon > i::before {
+    .orcha-jatuhkan-ikon > i::before,
+    .orcha-hero-ikon > i::before,
+    .orcha-foto-kosong > i::before,
+    .orcha-etalase-foto .kosong > i::before {
         display: block;
         line-height: 1;
     }
@@ -949,6 +992,201 @@
     .orcha-alasan-tinggi { background: #fff5f5; border-left: 3px solid #dc2626; color: #7f1d1d; }
     .orcha-alasan-sedang { background: #fffaf0; border-left: 3px solid #f59e0b; color: #78350f; }
     .orcha-alasan ul { font-size: .84rem; }
+    .orcha-alasan-tenang { background: #f4f9fd; border-left: 3px solid #2b7fb8; color: #0f2d4a; }
+
+    /* Perincian biaya sewa: bacaan, bukan isian — jadi ditulis rapat dan tanpa
+       garis tabel, supaya tidak menyaingi kotak denda yang memang disunting. */
+    .orcha-rincian-sewa { width: 100%; font-size: .82rem; }
+    .orcha-rincian-sewa td { padding: .18rem 0; border: 0; vertical-align: top; }
+    .orcha-rincian-sewa td:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .orcha-rincian-sewa .catatan { display: block; font-size: .74rem; opacity: .72; }
+    .orcha-rincian-sewa .jumlah td { padding-top: .4rem; border-top: 1px solid rgba(43, 127, 184, .28); font-weight: 700; }
+
+    /* Sisa yang masih harus dibayar: angka yang dibacakan saat menagih, jadi
+       ia yang paling menonjol di antara semua baris. */
+    .orcha-rincian-sewa .jumlah td.sisa { color: #b45309; }
+
+    /* ===== Lembar serah terima =====
+       Lembarnya panjang dan isinya bermacam-macam — waktu, angka, pemeriksaan
+       bodi, uang. Sebagai satu kartu datar, semuanya terbaca sederajat dan
+       admin kehilangan tempat saat menggulung. Tiap urusan dapat kartunya
+       sendiri dengan kepala bernomor, jadi urutan kerjanya terlihat. */
+    .orcha-bagian-kepala { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+
+    .orcha-bagian-nomor {
+        width: 36px; height: 36px; flex: none;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 12px; color: #fff; font-size: 1rem;
+        background: linear-gradient(135deg, #3d9bd4, #1d6fa5);
+        box-shadow: 0 5px 14px rgba(43, 127, 184, .3);
+    }
+
+    .orcha-bagian-judul { font-weight: 700; color: #0f2d4a; line-height: 1.25; }
+    .orcha-bagian-sub { font-size: .79rem; color: #64748b; line-height: 1.45; }
+
+    /* Dua kolom berdampingan: keadaan saat diserahkan, dan saat kembali.
+       Bentuknya sengaja kembar supaya yang dibandingkan bagian yang sama —
+       itulah seluruh guna lembar ini saat penyewa membantah adanya kerusakan. */
+    .orcha-keadaan {
+        border: 1px solid #dceaf4; border-radius: 16px;
+        padding: .95rem 1rem 1rem; height: 100%; background: #fafdff;
+    }
+
+    .orcha-keadaan.kembali { border-color: #d5e9dc; background: #fafdfb; }
+
+    .orcha-keadaan-kepala {
+        display: flex; align-items: center; gap: .45rem;
+        font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase; color: #1d6fa5; margin-bottom: .85rem;
+    }
+
+    .orcha-keadaan.kembali .orcha-keadaan-kepala { color: #1f7a44; }
+
+    .orcha-keadaan-kepala i {
+        display: flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border-radius: 7px;
+        background: #e7f2fa; font-size: .8rem;
+        /* Kotaknya sudah ditengahkan flex terhadap KOTAK BARIS tulisan.
+           Tulisannya huruf besar semua, jadi tintanya tidak mengisi kotak baris
+           itu sampai bawah — pusat tintanya lebih tinggi daripada pusat kotak.
+           Terukur 1,3px; digeser turun 1px, sisanya di bawah satu piksel. */
+        position: relative;
+        top: 1px;
+    }
+
+    .orcha-keadaan.kembali .orcha-keadaan-kepala i { background: #e6f4ea; }
+
+    /* ============ ISI wire:loading DISEMBUNYIKAN SEJAK AWAL ============
+
+       Livewire menyembunyikannya dengan menulis style="display:none" saat
+       halaman dipasang, lalu membukanya saat ada permintaan berjalan. Artinya
+       sebelum skripnya sempat jalan — atau bila ia tidak jalan sama sekali —
+       pemintal dan tulisan "Menyimpan…" tergambar dari awal, berdampingan
+       dengan tulisan tombol yang sebenarnya. Yang terbaca admin: tombol yang
+       sedang bekerja padahal belum ditekan.
+
+       Maka disembunyikan lewat gaya, bukan hanya lewat skrip. Livewire menulis
+       display-nya sebagai gaya sebaris, dan gaya sebaris menang atas aturan di
+       sini — jadi begitu permintaannya berjalan, ia tetap muncul.
+
+       Hanya [wire:loading] polos. [wire:loading.attr] adalah atribut lain
+       (yang menonaktifkan tombol) dan tidak ikut tersembunyi. */
+    [wire\:loading] { display: none; }
+
+    /* Tombol penutup lembar serah terima.
+
+       Ukurannya sengaja lebih besar daripada tombol lain di halaman ini:
+       inilah satu-satunya penekanan yang membuat pekerjaan sepanjang lembar
+       tadi benar-benar tercatat. Sebagai tombol seukuran tombol "Sekarang" di
+       tengah lembar, ia terbaca sederajat dengan perkakas kecil — padahal
+       menutup lembar tanpa menekannya berarti dendanya tidak pernah ditagihkan.
+
+       Tingginya 52px, sedikit di atas isian yang 48px, supaya jelas ia penutup
+       dan bukan medan isian berikutnya. */
+    .orcha-tombol-lembar {
+        width: 100%;
+        min-height: 52px;
+        font-size: .95rem;
+        border-radius: .85rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .orcha-tombol-lembar i { font-size: 1.05em; }
+
+    /* Di layar sempit teksnya boleh turun baris daripada terpotong. */
+    @media (max-width: 400px) {
+        .orcha-tombol-lembar { white-space: normal; }
+    }
+
+    /* Apa saja yang tercakup harga sewanya.
+
+       Keterangannya sudah ada sejak dulu berupa kalimat — "BBM dan tol termasuk
+       (+Rp 300.000/hari), parkir ditanggung penyewa" — tapi harus dibaca sampai
+       habis. Yang ditanya di loket cuma satu pos: BBM ditanggung siapa. Bentuk
+       lencana bisa dijawab dengan melirik.
+
+       Yang ditanggung penyewa TIDAK disembunyikan. Menyebut yang termasuk saja
+       membuat penyewa mengira sisanya juga ditanggung — dan itu baru ketahuan
+       saat menagih. */
+    .orcha-termasuk { display: flex; flex-wrap: wrap; gap: .4rem; }
+
+    .orcha-cip-termasuk {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .76rem;
+        font-weight: 600;
+        border-radius: 99px;
+        padding: .26rem .68rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-cip-termasuk.ya { background: #e6f4ea; border-color: #cbe8d4; color: #1f7a44; }
+    .orcha-cip-termasuk.tidak { background: #f4f6f9; border-color: #e2e8f0; color: #64748b; }
+
+    /* Catatan nominalnya menyusul di dalam lencana yang sama, bukan lencana
+       kedua: "BBM" dan "Rp 300.000/hari" adalah satu keterangan. */
+    .orcha-cip-termasuk .catatan { font-weight: 500; opacity: .8; }
+
+    /* Lencananya sudah inline-flex, tapi yang ditengahkan flex adalah KOTAK
+       BARIS ikonnya — bukan glifnya. Tinggi kotak baris itu mengikuti
+       line-height lencana, sedangkan glifnya digambar di garis dasar, dekat
+       sisi bawah. Terukur turun 2,23px dari tengah hurufnya. */
+    .orcha-cip-termasuk i {
+        display: block;
+        line-height: 1;
+        font-size: .95em;
+        /* line-height 1 saja mengangkatnya terlalu jauh — terukur 2,14px di atas
+           tengah huruf. Tintanya memang tidak duduk di tengah kotak em-nya.
+           Digeser turun 2px; sisanya di bawah seperlima piksel. */
+        position: relative;
+        top: 2px;
+    }
+
+    .orcha-cip-termasuk i::before { display: block; }
+
+    /* Medan bacaan pada halaman detail.
+
+       Sebelumnya label dan nilainya ditumpuk polos, dua belas pasang berderet
+       tanpa batas apa pun — mata tidak punya pegangan mana pasangan yang mana,
+       dan admin yang awam membaca halaman itu seperti membaca daftar kata.
+
+       Bentuknya sengaja menyerupai kotak isian di lembar serah terima, supaya
+       kedua halaman terbaca sebagai satu keluarga. Bedanya hanya ini tidak bisa
+       diketik — dan itu terlihat dari latarnya yang rata, bukan putih. */
+    .orcha-medan {
+        height: 100%;
+        padding: .58rem .8rem .62rem;
+        border: 1px solid #eaf1f7;
+        border-radius: 12px;
+        background: #fafdff;
+    }
+
+    .orcha-medan .orcha-label-kecil { margin-bottom: .1rem; }
+
+    .orcha-medan .isi {
+        font-weight: 700;
+        font-size: .92rem;
+        line-height: 1.4;
+        color: #0f2d4a;
+        word-break: break-word;
+    }
+
+    /* Yang belum terisi ditulis lebih redup: "—" setebal nilai sungguhan
+       membuat halaman terlihat penuh padahal separuhnya kosong. */
+    .orcha-medan .isi.kosong { color: #9aa8b8; font-weight: 600; }
+
+    .orcha-medan .isi a { color: inherit; text-decoration: none; }
+    .orcha-medan .isi a:hover { text-decoration: underline; }
+
+    /* Selisih kilometer: hitungan yang selama ini dikerjakan admin di kepala. */
+    .orcha-selisih {
+        display: inline-flex; align-items: center; gap: .35rem;
+        font-size: .76rem; font-weight: 600; color: #1f7a44;
+        background: #e6f4ea; border-radius: 99px; padding: .18rem .6rem;
+    }
 
     .orcha-cip-kondisi {
         font-size: .72rem;
@@ -958,6 +1196,66 @@
         border: 1px solid #cfe4f2;
         border-radius: 99px;
         padding: .2rem .58rem;
+    }
+
+    /* ===== Daftar kerusakan baru =====
+       Sebelumnya tiga kalimat berderet — "Bodi samping kiri : baik → lecet /
+       minor" — yang harus dibaca satu per satu sampai habis untuk tahu bagian
+       mana saja yang rusak. Nama bagian, kondisi awal, dan kondisi akhir
+       bercampur dalam satu baris tanpa kolom, jadi mata tidak bisa menyusurinya
+       ke bawah.
+
+       Sekarang tiap bagian jadi barisnya sendiri: namanya di kiri, perubahan
+       kondisinya di kanan sebagai dua lencana. Yang dicari admin — bagian mana
+       yang memburuk dan jadi apa — terbaca dengan melirik. */
+    .orcha-rusak { display: flex; flex-direction: column; gap: .35rem; margin-top: .6rem; }
+
+    .orcha-rusak-baris {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        padding: .45rem .7rem;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, .72);
+        border: 1px solid rgba(185, 28, 28, .12);
+    }
+
+    .orcha-rusak-bagian { font-weight: 700; font-size: .86rem; color: #7f1d1d; }
+
+    .orcha-rusak-ubah { display: inline-flex; align-items: center; gap: .4rem; }
+
+    /* Panahnya dijadikan kotak lentur supaya tintanya duduk setinggi kedua
+       lencana; sebagai huruf biasa ia jatuh ke garis dasar. */
+    .orcha-rusak-ubah .panah {
+        display: flex;
+        align-items: center;
+        color: #b91c1c;
+        opacity: .7;
+        font-size: .8rem;
+    }
+
+    /* line-height 1 memaskan kotak barisnya ke glif — tanpa itu panahnya turun
+       3px dari tinta tulisan di lencana sebelahnya. Sisanya 1px, digeser. */
+    .orcha-rusak-ubah .panah i {
+        display: block;
+        line-height: 1;
+        position: relative;
+        top: 1px;
+    }
+
+    .orcha-cip-kondisi.awal { background: #f4f6f9; border-color: #e2e8f0; color: #64748b; }
+    .orcha-cip-kondisi.akhir { background: #fee2e2; border-color: #f6c9cd; color: #9b2530; }
+
+    /* Lencana jumlah pada kepala kotaknya. */
+    .orcha-rusak-jumlah {
+        font-size: .7rem;
+        font-weight: 700;
+        color: #9b2530;
+        background: #fee2e2;
+        border-radius: 99px;
+        padding: .1rem .5rem;
     }
 
     .orcha-kotak-medis {
@@ -1030,7 +1328,17 @@
     .orcha-kotak-medis i,
     .orcha-kesehatan i,
     .alert i {
-        vertical-align: -.115em;
+        /* Nilainya diukur ulang dengan membandingkan TINTA ikon terhadap TINTA
+           tulisan di sebelahnya, bukan kotak elemennya. Pada -.115em ikonnya
+           masih turun 1,94px dari tengah hurufnya — cukup untuk terlihat pada
+           label sekecil ini, dan alat ukur yang membandingkan kotak tidak
+           melihatnya sama sekali.
+
+           Satuannya em, bukan piksel, supaya nilainya tetap benar di label
+           11px maupun di kalimat peringatan yang hurufnya lebih besar.
+
+           Tandanya positif: vertical-align negatif justru MENURUNKAN ikon. */
+        vertical-align: .058em;
     }
 
     /* Judul kartu memakai cara yang sama dengan tombol dan lencana: flex,
@@ -1357,6 +1665,7 @@
         }
 
         .orcha-foto-rupa {
+            position: relative;
             width: 5.5rem;
             height: 4rem;
             flex-shrink: 0;
@@ -2061,13 +2370,7 @@
        yang belum tentu ada di halaman ini. Yang ditambahkan cuma warnanya,
        supaya sebaris pesanan bisa dinilai sebelum tulisannya dibaca. */
     .orcha-pilih-status {
-        border-radius: 999px !important;
         border: 1px solid transparent !important;
-        font-weight: 700;
-        font-size: .76rem !important;
-        padding: .25rem 1.6rem .25rem .7rem !important;
-        min-width: 9.6rem;
-        background-position: right .6rem center;
     }
 
     .orcha-pilih-status.status-baru {
@@ -2858,7 +3161,354 @@
         box-shadow: 0 0 0 1px #1d6fa5;
     }
 
+    /* ============ SEWA KENDARAAN ============ */
+
+    /* Pemilih status yang ringkas.
+
+       Layout memaksa tinggi 48px pada SETIAP .form-select — masuk akal untuk
+       isian formulir, terlalu besar untuk satu sel tabel yang berdampingan
+       dengan teks sebaris. Satu baris tabel jadi setinggi dua, dan daftar
+       sepuluh sewa memakan layar yang seharusnya cukup untuk dua puluh. */
+    /* Ukuran pemilih status dipakai BERSAMA daftar sewa kendaraan dan daftar
+       pendaftaran open trip.
+
+       Sebelumnya yang di pendaftaran berbentuk pil 999px setinggi bawaan
+       <select>, sementara yang di sewa kendaraan kotak membulat 34px — dua
+       layar yang dikerjakan berurutan dengan kendali yang sama gunanya, tetapi
+       terlihat dari dua aplikasi berbeda.
+
+       WARNANYA tetap terpisah: status pendaftaran (baru, dihubungi, dp masuk,
+       lunas, batal) dan status penyewaan (baru, dikonfirmasi, dp masuk,
+       berjalan, selesai, batal) bukan daftar yang sama, dan menyatukan
+       warnanya berarti satu status kehilangan warnanya diam-diam begitu daftar
+       yang lain berubah. */
+    .orcha-status-ringkas,
+    .orcha-pilih-status {
+        height: 34px !important;
+        min-height: 34px;
+        padding: 0 1.9rem 0 .6rem !important;
+        border-width: 1px !important;
+        border-radius: 9px !important;
+        font-size: .78rem;
+        font-weight: 600;
+        background-position: right .5rem center;
+        background-size: 12px 9px;
+        width: auto;
+        min-width: 8.5rem;
+    }
+
+    /* Warnanya mengikuti status, bukan abu seragam: dalam daftar sepuluh baris,
+       yang dicari admin adalah yang belum ditangani — dan itu harus terbaca
+       tanpa membaca tulisannya satu per satu. */
+    .orcha-status-ringkas[data-status="baru"] {
+        border-color: #c7e2f2 !important;
+        background-color: #eef6fb;
+        color: #14618f;
+    }
+
+    .orcha-status-ringkas[data-status="berjalan"],
+    .orcha-status-ringkas[data-status="diproses"] {
+        border-color: #f3ddb0 !important;
+        background-color: #fff4e0;
+        color: #8a5a09;
+    }
+
+    .orcha-status-ringkas[data-status="selesai"] {
+        border-color: #b7e4cd !important;
+        background-color: #eafaf1;
+        color: #0b7a4b;
+    }
+
+    .orcha-status-ringkas[data-status="dibatalkan"] {
+        border-color: #f6c9cd !important;
+        background-color: #fdecee;
+        color: #9b2530;
+    }
+
+    /* Dua tombol di kolom aksi disamakan tingginya.
+
+       Terukur sebelumnya: ikon detail 58x38 dan tombol serah terima 127x29 —
+       dua benda bersebelahan dengan tinggi berbeda sembilan piksel, dan
+       garis bawahnya tidak pernah sejajar. Keduanya kini 34px, tinggi yang
+       sama dengan pemilih status di sebelahnya. */
+    .orcha-aksi-sewa {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .35rem;
+        height: 34px;
+        padding: 0 .7rem;
+        border-radius: 9px;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    /* Yang hanya berisi ikon dibuat sepersegi, supaya tidak melebar sia-sia. */
+    .orcha-aksi-sewa.ikon-saja {
+        width: 34px;
+        padding: 0;
+    }
+
+    /* Judul kolom daftar sewa ditengahkan.
+
+       Hanya judulnya. Isinya tetap rata kiri — nama penyewa dan nama unit
+       panjangnya berbeda-beda, dan deretan teks yang ditengahkan membuat tepi
+       kirinya bergerigi sehingga mata kehilangan garis untuk menyusuri kolom.
+
+       Berlaku untuk SEMUA kolom, termasuk yang isinya rata kanan — karena itu
+       .text-end bawaan Bootstrap pada dua judul itu perlu ditimpa; kalau tidak,
+       barisnya setengah tengah setengah kanan dan justru terlihat lebih tidak
+       rapi daripada sebelum diubah. */
+    .orcha-tabel-sewa thead th,
+    .orcha-tabel-sewa thead th.text-end,
+    .orcha-tabel-bayar thead th,
+    .orcha-tabel-bayar thead th.text-end,
+    .orcha-tabel-batal thead th,
+    .orcha-tabel-batal thead th.text-end { text-align: center !important; }
+
+    /* ===== Status pengajuan pembatalan =====
+       Sebelumnya semuanya lencana abu-abu yang sama: "Diajukan", "Disetujui",
+       dan "Ditolak" terlihat serupa, padahal ketiganya menuntut perbuatan yang
+       sama sekali berbeda. Warnanya mengikuti maknanya, bukan selera —
+       kuning menunggu dikerjakan, biru sedang jalan, hijau uangnya sudah
+       berangkat, merah ditutup tanpa pengembalian. */
+    .orcha-status-batal {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: .22rem .6rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-status-batal i { display: flex; align-items: center; line-height: 1; font-size: .9em; }
+
+    .orcha-status-batal[data-status="diajukan"]    { background: #fff4e0; border-color: #f3ddb0; color: #8a5a09; }
+    .orcha-status-batal[data-status="diproses"]    { background: #eef6fb; border-color: #c7e2f2; color: #14618f; }
+    .orcha-status-batal[data-status="disetujui"]   { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+    .orcha-status-batal[data-status="dana_dikirim"]{ background: #e6f4ea; border-color: #cbe8d4; color: #1f7a44; }
+    .orcha-status-batal[data-status="ditolak"]     { background: #fee2e2; border-color: #f6c9cd; color: #9b2530; }
+
+    /* Baris tabel sewa lebih rapat: selnya tidak lagi menampung isian setinggi
+       48px, jadi ruang kosongnya bisa dikembalikan. */
+    .orcha-tabel-sewa td {
+        padding-top: .5rem !important;
+        padding-bottom: .5rem !important;
+        vertical-align: middle !important;
+    }
+
     /* ============ GALERI PERJALANAN ============ */
+
+    .orcha-unggah-galeri {
+        border-radius: 14px;
+    }
+
+    /* Sasaran pilih-berkas yang lebar, bukan tombol "Choose files" bawaan.
+
+       Tombol bawaan peramban selebar teksnya sendiri dan tampilannya berbeda di
+       tiap sistem — di layar yang seluruhnya sudah bergaya, ia satu-satunya
+       yang terlihat asing. Yang diketuk admin sekarang seluruh kotaknya. */
+    .orcha-jatuhkan {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .3rem;
+        width: 100%;
+        padding: 1.6rem 1rem;
+        border: 2px dashed #cfe4f2;
+        border-radius: 14px;
+        background: #f8fbfd;
+        cursor: pointer;
+        text-align: center;
+        transition: all .15s ease;
+    }
+
+    .orcha-jatuhkan:hover {
+        border-color: #1d6fa5;
+        background: #f2f8fc;
+    }
+
+    .orcha-jatuhkan-ikon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: #fff;
+        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        box-shadow: 0 8px 15px rgba(29, 111, 165, .25);
+        margin-bottom: .35rem;
+    }
+
+    /* Saat memproses, ikonnya BERPUTAR — bukan diam sambil menyisakan tebakan.
+
+       Unggahan foto besar memakan beberapa detik, dan selama itu layar tidak
+       berubah sama sekali. Yang dilakukan admin berikutnya bisa ditebak:
+       mengetuk lagi, lalu bertanya kenapa fotonya masuk dua kali. */
+    .orcha-jatuhkan.sibuk {
+        border-color: #1d6fa5;
+        background: #f2f8fc;
+        cursor: progress;
+    }
+
+    .orcha-jatuhkan.sibuk .orcha-jatuhkan-ikon > i::before {
+        content: "\f130";                 /* bi-arrow-repeat */
+        animation: orcha-putar 900ms linear infinite;
+    }
+
+    @keyframes orcha-putar {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Kartu pratayang: gambar di atas, isian keterangannya sendiri di bawah.
+
+       Sebelumnya satu keterangan untuk seluruh unggahan. Itu benar untuk foto
+       serombongan dari acara yang sama, tetapi salah begitu admin memilih foto
+       dari beberapa trip sekaligus — dan yang terjadi bukan admin mengeluh,
+       melainkan keterangannya diisi asal-asalan lalu tidak pernah dibetulkan. */
+    .orcha-pratayang-kartu {
+        border: 1px solid #eef2f7;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .orcha-pratayang-kartu .orcha-galeri-kotak {
+        border-radius: 0;
+    }
+
+    .orcha-pratayang-isi {
+        padding: .5rem .55rem;
+    }
+
+    .orcha-pratayang-isi .form-control {
+        height: 34px !important;
+        font-size: .78rem;
+        border-width: 1px !important;
+        border-radius: 9px !important;
+        padding: 0 .6rem !important;
+    }
+
+    /* Saklar "langsung tampil": bentuknya sendiri, bukan form-switch bawaan
+       yang di layar ini tampak kecil dan tidak berpasangan dengan apa pun. */
+    .orcha-saklar {
+        display: inline-flex;
+        align-items: center;
+        gap: .55rem;
+        padding: .45rem .8rem;
+        border: 1px solid #eef2f7;
+        border-radius: 999px;
+        background: #fff;
+        cursor: pointer;
+        user-select: none;
+        transition: all .15s ease;
+    }
+
+    .orcha-saklar:hover { border-color: #cfe4f2; }
+
+    .orcha-saklar input { display: none; }
+
+    .orcha-saklar .alur {
+        position: relative;
+        width: 38px;
+        height: 21px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        transition: background .15s ease;
+        flex: 0 0 38px;
+    }
+
+    .orcha-saklar .alur::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform .15s ease;
+    }
+
+    .orcha-saklar input:checked + .alur { background: #14a06a; }
+    .orcha-saklar input:checked + .alur::after { transform: translateX(17px); }
+
+    .orcha-saklar .tulisan {
+        font-size: .82rem;
+        font-weight: 600;
+        color: #0f2d4a;
+        white-space: nowrap;
+    }
+
+    /* Baris kaki unggahan: isian samakan, saklar, tombol — sejajar dan tidak
+       saling berdesakan di layar sempit. */
+    /* Semua yang berjajar di baris ini setinggi 48px.
+
+       Layout memaksa tinggi itu pada SETIAP .form-control, sementara tombol dan
+       saklar memakai tingginya masing-masing — hasilnya tiga benda sebaris
+       dengan tiga tinggi berbeda, dan barisnya terbaca seperti belum selesai
+       disusun. Angkanya mengikuti isian, bukan sebaliknya: isiannya yang tidak
+       bisa diubah tanpa melawan !important milik layout. */
+    .orcha-baris-unggah {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .orcha-baris-unggah .orcha-saklar,
+    .orcha-baris-unggah .orcha-btn {
+        height: 48px;
+        border-radius: 12px;
+    }
+
+    .orcha-baris-unggah .orcha-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        padding: 0 1.1rem;
+        white-space: nowrap;
+    }
+
+    .orcha-baris-unggah .orcha-saklar {
+        padding: 0 1rem;
+    }
+
+    .orcha-samakan {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        flex: 1 1 22rem;
+        min-width: 0;
+    }
+
+    .orcha-samakan .form-control {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .orcha-baris-unggah .orcha-btn-utama {
+        margin-left: auto;
+    }
+
+    .orcha-jatuhkan-judul {
+        font-weight: 700;
+        font-size: .92rem;
+        color: #0f2d4a;
+    }
+
+    .orcha-jatuhkan-catatan {
+        font-size: .78rem;
+        color: #94a3b8;
+    }
+
 
     /* Petak foto, bukan baris tabel: isinya gambar, dan yang dinilai admin saat
        menyusun galeri adalah fotonya sendiri — nama berkas tidak memberi tahu
@@ -2968,17 +3618,141 @@
         display: flex;
         flex-wrap: wrap;
         align-items: flex-start;
-        gap: .9rem;
-        padding: .85rem;
+        gap: 1rem;
+        padding: 1rem;
         border: 1px solid #cfe4f2;
         border-radius: 14px;
         background: #f8fbfd;
+        box-shadow: 0 8px 22px rgba(29, 111, 165, .07);
     }
 
     .orcha-galeri-sunting .orcha-galeri-kotak {
-        width: 150px;
-        flex: 0 0 150px;
-        border-radius: 10px;
+        width: 170px;
+        flex: 0 0 170px;
+        border-radius: 12px;
+    }
+
+    /* Baris tindakan formulir sunting: tiga kolom sama lebar.
+
+       Bentuk flex yang saling mendorong (saklar ke kiri, dua tombol ke kanan)
+       menyisakan jurang di antaranya, dan lebar jurangnya berubah-ubah
+       mengikuti lebar layar — di kartu selebar ini jaraknya jadi mencolok.
+       Dibagi rata, ketiganya punya tempat tetap berapa pun lebar layarnya. */
+    .orcha-baris-aksi {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: .6rem;
+        align-items: stretch;
+    }
+
+    .orcha-baris-aksi > * {
+        height: 48px;
+        border-radius: 12px;
+        width: 100%;
+    }
+
+    .orcha-baris-aksi .orcha-btn,
+    .orcha-baris-aksi .orcha-saklar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: .45rem;
+        padding: 0 .9rem;
+        white-space: nowrap;
+    }
+
+    /* Di layar sempit ketiganya bertumpuk: tiga kolom selebar 100px membuat
+       tulisannya terpotong, dan tombol yang labelnya terpotong berhenti
+       menjelaskan apa yang akan terjadi. */
+    @media (max-width: 34rem) {
+        .orcha-baris-aksi {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Ikon di dalam kotak peringatan Bootstrap.
+
+       bootstrap-icons menggambar glifnya di garis dasar dengan vertical-align
+       bawaannya sendiri, jadi di dalam baris flex ia duduk lebih rendah
+       daripada teks di sebelahnya — cukup untuk terbaca sebagai ceklis yang
+       melorot. Ditangani seperti ikon lain di berkas ini. */
+    .alert i.bi {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: 0;
+        flex: 0 0 auto;
+    }
+
+    /* ============ GRAFIK DASHBOARD ============
+
+       Digambar dengan SVG dan CSS, tanpa pustaka grafik: aset Vite tidak ikut
+       ter-deploy untuk halaman admin ini, jadi pustaka yang menuntut bundel
+       hanya akan menghasilkan kotak kosong di server. */
+    .orcha-grafik {
+        width: 100%;
+        height: 190px;
+        overflow: visible;
+    }
+
+    .orcha-grafik-batang {
+        transition: opacity .15s ease;
+    }
+
+    .orcha-grafik-batang:hover {
+        opacity: .78;
+    }
+
+    .orcha-grafik-sumbu { font-size: .68rem; fill: #94a3b8; }
+    .orcha-grafik-nilai { font-size: .68rem; font-weight: 700; fill: #0f2d4a; }
+
+    .orcha-grafik-kunci {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .9rem;
+        font-size: .76rem;
+        color: #64748b;
+    }
+
+    .orcha-grafik-kunci .tanda {
+        display: inline-block;
+        width: .7rem;
+        height: .7rem;
+        border-radius: 3px;
+        margin-right: .35rem;
+        vertical-align: -1px;
+    }
+
+    /* Batang mendatar untuk perbandingan kategori — bentuk yang sudah dipakai
+       halaman Keuntungan, dipakai ulang supaya admin tidak belajar dua bahasa
+       untuk hal yang sama. */
+    .orcha-baris-batang {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .45rem 0;
+    }
+
+    .orcha-baris-batang .nama { flex: 0 0 38%; font-size: .82rem; color: #475569; }
+
+    .orcha-baris-batang .jalur {
+        flex: 1 1 auto;
+        height: 8px;
+        border-radius: 999px;
+        background: #eef1f7;
+        overflow: hidden;
+    }
+
+    .orcha-baris-batang .isi { display: block; height: 100%; border-radius: 999px; }
+
+    .orcha-baris-batang .angka {
+        flex: 0 0 auto;
+        min-width: 3.4rem;
+        text-align: right;
+        font-size: .82rem;
+        font-weight: 700;
+        color: #0f2d4a;
     }
 
     /* Kotak unggah surat bertanda tangan.
@@ -3194,4 +3968,502 @@
             font-size: 1.8rem;
         }
     }
+
+    /* ============ PESAN KONTAK: LENCANA KEPERLUAN & KEADAAN BACA ============
+       Dipakai di kotak masuk DAN di halaman detailnya, jadi tinggal di sini
+       supaya pesan yang sama dikenali lewat warna yang sama di kedua halaman —
+       bukan dua salinan yang lambat laun berbeda sendiri.
+
+       Satu warna untuk tiap keperluan. Enam jenis pertanyaan yang dijawab
+       dengan cara berbeda-beda — study tour disusun per rombongan, sewa
+       kendaraan dicek ketersediaan unitnya, kerja sama diteruskan ke orang
+       lain — dan admin memilah kotak masuknya persis menurut itu. Warnanya
+       sekadar mempercepat pemilahan; namanya tetap tertulis dan ikonnya tetap
+       berbeda, jadi tidak ada yang hilang bila warnanya tidak tertangkap.
+
+       Sengaja dijauhkan dari biru penanda "belum dibaca": biru di layar ini
+       sudah dipakai untuk keadaan baca, bukan untuk kategori. */
+    .orcha-lencana-keperluan,
+    .orcha-status-pesan {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: .22rem .6rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-lencana-keperluan i,
+    .orcha-status-pesan i { display: flex; align-items: center; line-height: 1; font-size: .95em; }
+
+    .orcha-lencana-keperluan { background: #f4f8fb; border-color: #dbe7f0; color: #46617c; }
+
+    .orcha-lencana-keperluan[data-keperluan="open_trip"]      { background: #e6f6f4; border-color: #bfe3dd; color: #0f6b60; }
+    .orcha-lencana-keperluan[data-keperluan="private_trip"]   { background: #f2edfd; border-color: #ddd0fa; color: #5b3fc4; }
+    .orcha-lencana-keperluan[data-keperluan="study_tour"]     { background: #fff2e2; border-color: #f5d9b2; color: #8a5209; }
+    .orcha-lencana-keperluan[data-keperluan="sewa_kendaraan"] { background: #eaeffb; border-color: #ccd8f5; color: #2a3f8f; }
+    .orcha-lencana-keperluan[data-keperluan="kerja_sama"]     { background: #fdecef; border-color: #f7ccd4; color: #9b2547; }
+    .orcha-lencana-keperluan[data-keperluan="lainnya"]        { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
+
+    /* Yang belum dibaca dibuat PEKAT, satu-satunya lencana berlatar penuh di
+       barisnya. Lencana keperluan di sebelahnya semuanya pucat, jadi mata
+       menemukan keadaan bacanya lebih dulu — bukan tenggelam di antara enam
+       warna kategori. */
+    .orcha-status-pesan[data-baca="belum"] { background: #1d6fa5; border-color: #1d6fa5; color: #fff; }
+    .orcha-status-pesan[data-baca="sudah"] { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
+
+
+    /* ============ TOMBOL UTAMA FORMULIR ============
+       Setinggi tombol simpan di formulir paket wisata: 38px dengan huruf 1rem.
+
+       Sebelumnya tombol simpan/batal di formulir armada memakai ukuran
+       .orcha-btn apa adanya — 34,5px dengan huruf 13,76px — sehingga dua
+       formulir yang dikerjakan berurutan terasa dari dua aplikasi berbeda.
+       Ukurannya diikat ke min-height, bukan ke jarak dalam saja: jarak dalam
+       yang dihitung mundur dari tinggi akan meleset sendiri begitu ukuran
+       hurufnya berubah. */
+    .orcha-btn-besar {
+        min-height: 38px;
+        padding: .5rem 1rem;
+        font-size: 1rem;
+    }
+
+    /* Bungkus isi tombol dipatok kotak barisnya.
+       Ikon di dalamnya adalah wadah flex setinggi glifnya sendiri, dan tanpa
+       patokan ini isinya bisa sedikit lebih tinggi daripada kotak baris —
+       tombolnya melar 0,6px melewati 38px dan tidak lagi sama persis dengan
+       tombol di sebelahnya. Terukur di peramban, bukan ditebak. */
+    .orcha-btn-besar > span {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1.2;
+    }
+
+    /* ...TETAPI bungkus pemintalnya tetap tersembunyi sampai ditekan.
+
+       Aturan di atas menyebut kelas DAN elemen, jadi ia lebih kuat daripada
+       penyembunyi [wire:loading] di lembar ini — akibatnya tiap tombol
+       .orcha-btn-besar menggambar "Simpan Menyimpan…" berjajar sebelum
+       tombolnya disentuh. Terbaca sebagai halaman yang sedang bekerja padahal
+       diam.
+
+       Dikembalikan dengan pemilih yang lebih kuat lagi, bukan dengan
+       !important: Livewire menampilkannya lewat gaya sebaris, dan gaya sebaris
+       kalah oleh !important — pemintalnya justru tidak akan pernah muncul. */
+    .orcha-btn-besar > span[wire\:loading] {
+        display: none;
+    }
+
+
+    /* ============ KARTU PILIHAN ============
+       Dipakai memilih transmisi di formulir armada DAN memilih jenis unit
+       di halaman Bagian Pemeriksaan. Tinggal di sini karena dua halaman
+       memakainya; dua salinan sejajar lambat laun berbeda sendiri. */
+        /* Kartu pilihan (transmisi): sasaran kliknya seluruh kartu, dan yang
+       terpilih ditandai warna SEKALIGUS tanda centang — warna saja tidak
+       cukup bagi yang sulit membedakannya. */
+    .orcha-pilih-kartu {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: .6rem;
+    }
+
+    .orcha-kartu-pilihan {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .75rem .9rem;
+        border: 1.5px solid #dbe7f0;
+        border-radius: .8rem;
+        background: #fff;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+
+    .orcha-kartu-pilihan input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .orcha-kartu-pilihan:hover { border-color: #b9d0e2; }
+
+    .orcha-kartu-pilihan.aktif {
+        border-color: #1d6fa5;
+        background: #f2f8fc;
+    }
+
+    .orcha-kartu-pilihan .rupa {
+        font-size: 1.15rem;
+        line-height: 1;
+        color: #94a3b8;
+    }
+
+    .orcha-kartu-pilihan.aktif .rupa { color: #1d6fa5; }
+
+    .orcha-kartu-pilihan .judul {
+        display: block;
+        font-weight: 700;
+        font-size: .9rem;
+        color: #0f2d4a;
+    }
+
+    .orcha-kartu-pilihan .ket {
+        display: block;
+        font-size: .76rem;
+        color: #94a3b8;
+    }
+
+    .orcha-kartu-pilihan .tanda {
+        position: absolute;
+        top: .5rem;
+        right: .6rem;
+        width: 1.1rem;
+        height: 1.1rem;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        background: #1d6fa5;
+        color: #fff;
+        font-size: .62rem;
+        opacity: 0;
+        transform: scale(.6);
+        transition: all .15s ease;
+    }
+
+    /* Cakramnya sudah memakai flex, tapi yang ditengahkan adalah KOTAK BARIS
+       ikonnya, bukan glifnya: kotak itu setinggi line-height halaman dan
+       bootstrap-icons masih menggeser glifnya turun (vertical-align: sub).
+       Lebar kotaknya pun lebih besar daripada lebar glifnya, sehingga
+       centangnya duduk di kiri-bawah dan menyisakan tempat kosong di
+       kanan-atas — terukur 3px ke kiri dan 1,4px ke bawah pada cakram 18px.
+
+       Ikonnya sendiri dijadikan wadah flex, mengikuti pola yang sudah
+       dipakai .stat-icon-wrapper: kotaknya menyusut sepas glifnya dan
+       vertical-align jadi tidak berlaku lagi. */
+    .orcha-kartu-pilihan .tanda i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: middle;
+    }
+
+    .orcha-kartu-pilihan.aktif .tanda { opacity: 1; transform: scale(1); }
+
+
+    /* ============ SAKELAR-KARTU ============
+       Dipakai formulir armada (lepas kunci, tayang di website) DAN halaman
+       Bagian Pemeriksaan (ikut diperiksa / tidak). Tinggal di sini karena dua
+       halaman memakainya. */
+    /* Sakelar penayangan: kartunya sendiri ikut berubah warna, karena yang
+       diputuskan di sini adalah unitnya terlihat pelanggan atau tidak. */
+    .orcha-sakelar-kartu {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        width: 100%;
+        margin: 0;
+        padding: .85rem 1rem;
+        border: 1.5px solid #dbe7f0;
+        border-radius: .8rem;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all .15s ease;
+    }
+
+    .orcha-sakelar-kartu.nyala {
+        border-color: #1a8a52;
+        background: #f0faf5;
+    }
+
+    .orcha-sakelar-kartu .rupa {
+        flex: 0 0 2.4rem;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: .7rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #e8edf2;
+        color: #64748b;
+        font-size: 1.05rem;
+        line-height: 1;
+    }
+
+    /* Ikonnya sendiri dijadikan wadah flex.
+
+       Kotaknya sudah ditengahkan, tapi yang ditengahkan adalah KOTAK BARIS
+       ikonnya — bukan glifnya. Terukur dari tintanya di dalam cakram 38px:
+       meleset sampai 4,9px ke bawah dan 2,8px ke samping. Pola yang sama
+       sudah dipakai .stat-icon-wrapper dan centang transmisi. */
+    .orcha-sakelar-kartu .rupa i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: middle;
+    }
+
+    .orcha-sakelar-kartu .rupa > i { line-height: 1; }
+
+    .orcha-sakelar-kartu.nyala .rupa { background: #d7f0e2; color: #126b40; }
+
+    .orcha-sakelar-kartu .isi { flex: 1 1 auto; }
+
+    .orcha-sakelar-kartu .judul {
+        display: block;
+        font-weight: 700;
+        font-size: .9rem;
+        color: #0f2d4a;
+    }
+
+    .orcha-sakelar-kartu .ket {
+        display: block;
+        font-size: .78rem;
+        color: #64748b;
+    }
+
+    .orcha-sakelar-kartu .form-check-input {
+        width: 2.4rem;
+        height: 1.3rem;
+        cursor: pointer;
+    }
+
+    .orcha-sakelar-kartu.nyala .form-check-input:checked {
+        background-color: #1a8a52;
+        border-color: #1a8a52;
+    }
+
+
+    /* ============ LENCANA JENIS UNIT ============
+       Mobil, HiAce, dan Bus dibedakan warnanya, bukan tiga lencana biru yang
+       sama. Yang dibaca admin di kolom ini bukan "unit apa saja" melainkan
+       "bagian ini berlaku untuk yang mana" — dan tiga lencana serupa memaksa
+       tiap katanya dieja ulang baris demi baris.
+
+       Ikonnya ikut berbeda, jadi pemilahannya tetap terbaca oleh yang sulit
+       membedakan warna. */
+    .orcha-cip-jenis {
+        display: inline-flex;
+        align-items: center;
+        gap: .28rem;
+        font-size: .72rem;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: .2rem .58rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-cip-jenis i { display: flex; align-items: center; line-height: 1; font-size: .95em; }
+
+    .orcha-cip-jenis[data-jenis="mobil"] { background: #e6f6f4; border-color: #bfe3dd; color: #0f6b60; }
+    .orcha-cip-jenis[data-jenis="hiace"] { background: #fff2e2; border-color: #f5d9b2; color: #8a5209; }
+    .orcha-cip-jenis[data-jenis="bus"]   { background: #eaeffb; border-color: #ccd8f5; color: #2a3f8f; }
+
+
+    /* ============ KEADAAN BAGIAN PEMERIKSAAN ============
+       Warnanya mengikuti MAKNANYA, bukan sekadar dibedakan.
+
+       Sebelumnya lencananya dipinjam dari layar lain: yang aktif memakai
+       lencana "sudah dibaca" milik pesan kontak — abu-abu pudar, yang justru
+       terbaca seperti sesuatu yang dimatikan — dan yang nonaktif memakai
+       lencana "ditolak" milik pembatalan, merah, seolah ada yang salah.
+       Padahal menonaktifkan bagian adalah tindakan yang benar dan disengaja,
+       bukan kegagalan.
+
+       Sekarang: hijau untuk yang sedang berlaku, abu netral untuk yang
+       sengaja dimatikan. Merah disimpan untuk hal yang memang keliru. */
+    .orcha-cip-keadaan {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        font-size: .72rem;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: .22rem .6rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-cip-keadaan i { display: flex; align-items: center; line-height: 1; font-size: .95em; }
+
+    .orcha-cip-keadaan[data-keadaan="aktif"]    { background: #e6f4ea; border-color: #cbe8d4; color: #1f7a44; }
+    .orcha-cip-keadaan[data-keadaan="nonaktif"] { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
+
+
+    /* Penutup pemintal selama berkas gambar naik.
+
+       TIDAK menyentuh display sama sekali. Aturan display pada elemen
+       ber-wire:loading akan mengalahkan penyembunyi [wire:loading] di atas —
+       keduanya sama kuat, dan yang ditulis belakangan menang — sehingga
+       pemintalnya tergambar sebelum unggahan dimulai.
+
+       Ditengahkan lewat text-align dan line-height, bukan flex: elemen yang
+       position-nya absolute diperlakukan sebagai blok apa pun display yang
+       dikembalikan Livewire saat menampilkannya. */
+    .orcha-foto-naik {
+        position: absolute;
+        inset: 0;
+        background: rgba(238, 242, 246, .88);
+        text-align: center;
+        line-height: 4rem;
+        color: #1d6fa5;
+    }
+
+
+    /* Status yang hanya bisa DIBACA, karena daftar pilihannya belum sampai
+       dari Orcha. Bentuknya sama dengan pemilihnya supaya barisnya tidak
+       berubah tinggi, tetapi jelas tidak bisa ditekan. */
+    .orcha-status-diam {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        height: 34px;
+        min-width: 8.5rem;
+        padding: 0 .7rem;
+        border: 1px dashed #cbd5e1;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: .78rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .orcha-status-diam i { display: flex; align-items: center; line-height: 1; font-size: .95em; }
+
+
+    /* Kartu pengajuan pembatalan di detail pendaftaran: pita merah di tepi
+       kiri, bukan seluruh kartunya merah menyala. Yang merah seluruhnya
+       menuntut perhatian terus-menerus padahal isinya bacaan. */
+    .orcha-kartu-batal { border-left: 4px solid #dc3545 !important; }
+
+    .orcha-bagian-nomor.batal {
+        background: linear-gradient(135deg, #e8636f, #c2323c);
+        box-shadow: 0 5px 14px rgba(194, 50, 60, .3);
+    }
+
+
+    /* Tombol yang sengaja mati: terlihat sebagai tombol supaya sebaris tombol
+       tetap sejajar, tetapi jelas tidak bisa ditekan.
+
+       Dipakai daftar Bagian Pemeriksaan (bagian yang tidak boleh dihapus) dan
+       daftar Pendaftaran Open Trip (riwayat kesehatan yang belum ada isinya).
+       Sebaris tombol yang salah satu selnya berisi teks polos membuat kolom
+       Aksi terlihat bolong. */
+    .orcha-aksi-mati {
+        background: #f1f4f7;
+        border: 1px solid #dde4ea;
+        color: #9aa8b8;
+        cursor: not-allowed;
+    }
+
+
+    /* Kedua tombol riwayat kesehatan selebar sama.
+
+       "Belum ada riwayat" 147px sedangkan "Riwayat (2)" 106px — terukur di
+       peramban. Karena keduanya berdampingan dengan tombol Detail dan
+       dirapatkan ke kanan, selisih 41px itu MENGGESER seluruh pasangannya:
+       barisnya tidak lagi sejajar dengan baris di atas dan di bawahnya.
+
+       Lebarnya dipatok sekali di sini, bukan diperbaiki dengan memendekkan
+       tulisannya: "Belum ada riwayat" memang kalimat yang perlu dibaca utuh
+       oleh admin yang sedang menyiapkan manifes. */
+    .orcha-aksi-riwayat {
+        min-width: 9.25rem;
+        justify-content: center;
+    }
+
+
+    /* ============ DASHBOARD ORCHA ============ */
+
+    /* Kartu etalase: ikon kecil di atas angkanya, bukan angka telanjang di
+       tengah kotak putih. Enam kotak beridentik tidak membedakan yang menuntut
+       perbuatan dari yang cuma keterangan isi etalase. */
+    .orcha-ikon-kecil {
+        width: 34px;
+        height: 34px;
+        font-size: .95rem;
+        border-radius: 10px;
+    }
+
+    .orcha-kartu-etalase-tautan { display: block; color: inherit; }
+
+    .orcha-kartu-etalase { transition: transform .14s ease, box-shadow .14s ease; }
+
+    .orcha-kartu-etalase-tautan[href]:hover .orcha-kartu-etalase {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(15, 45, 74, .1) !important;
+    }
+
+    /* Kartu uang: pita berwarna di tepi kiri sesuai artinya — masuk, keluar,
+       sisa, dan yang belum tentu jadi. */
+    .orcha-kartu-uang { border-left: 4px solid #cbd5e1 !important; }
+    .orcha-kartu-uang[data-rupa="omzet"] { border-left-color: #2b7fb8 !important; }
+    .orcha-kartu-uang[data-rupa="modal"] { border-left-color: #f59e0b !important; }
+    .orcha-kartu-uang[data-rupa="untung"] { border-left-color: #1a8a52 !important; }
+    .orcha-kartu-uang[data-rupa="potensi"] { border-left-color: #94a3b8 !important; }
+
+    .orcha-angka-uang {
+        font-size: 1.32rem;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #0f2d4a;
+        word-break: break-word;
+    }
+
+    .orcha-kartu-uang[data-rupa="untung"] .orcha-angka-uang { color: #1a8a52; }
+    .orcha-kartu-uang[data-rupa="potensi"] .orcha-angka-uang { color: #64748b; }
+
+    /* Grafik omzet & keuntungan digambar ApexCharts, jadi gaya batang buatan
+       tangan yang dulu ada di sini DIHAPUS — bukan ditinggalkan menganggur.
+       Gaya yang tidak lagi menempel pada apa pun akan dipakai ulang keliru
+       oleh orang berikutnya yang mencarinya. */
+
+    /* Lencana status di dua daftar terbaru. Dua peta TERPISAH: status
+       pendaftaran dan status penyewaan punya kata yang sama ("baru", "batal")
+       tetapi daftar keadaannya berbeda, dan menyatukannya membuat satu status
+       kehilangan warnanya diam-diam begitu daftar yang lain berubah. */
+    .orcha-cip-status-daftar,
+    .orcha-cip-status-sewa {
+        display: inline-flex;
+        align-items: center;
+        font-size: .7rem;
+        font-weight: 700;
+        border-radius: 99px;
+        padding: .18rem .55rem;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .orcha-cip-status-daftar { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
+    .orcha-cip-status-daftar.status-baru      { background: #fff4e0; border-color: #f3ddb0; color: #8a5a09; }
+    .orcha-cip-status-daftar.status-dihubungi { background: #eef6fb; border-color: #c7e2f2; color: #14618f; }
+    .orcha-cip-status-daftar.status-dp_masuk  { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+    .orcha-cip-status-daftar.status-lunas     { background: #e6f4ea; border-color: #cbe8d4; color: #1f7a44; }
+    .orcha-cip-status-daftar.status-batal     { background: #fee2e2; border-color: #f6c9cd; color: #9b2530; }
+
+    .orcha-cip-status-sewa { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
+    .orcha-cip-status-sewa[data-status="baru"]        { background: #eef6fb; border-color: #c7e2f2; color: #14618f; }
+    .orcha-cip-status-sewa[data-status="dikonfirmasi"]{ background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+    .orcha-cip-status-sewa[data-status="dp_masuk"]    { background: #fff4e0; border-color: #f3ddb0; color: #8a5a09; }
+    .orcha-cip-status-sewa[data-status="berjalan"]    { background: #e6f6f4; border-color: #bfe3dd; color: #0f6b60; }
+    .orcha-cip-status-sewa[data-status="selesai"]     { background: #e6f4ea; border-color: #cbe8d4; color: #1f7a44; }
+    .orcha-cip-status-sewa[data-status="batal"]       { background: #fee2e2; border-color: #f6c9cd; color: #9b2530; }
+
+    /* Layar kecil: angka besar dikecilkan supaya tidak membungkus jadi dua
+       baris di dalam kartu selebar setengah layar. */
+    @media (max-width: 575.98px) {
+        .orcha-angka-uang { font-size: 1.05rem; }
+        .orcha-angka { font-size: 1.3rem; }
+    }
+
 </style>

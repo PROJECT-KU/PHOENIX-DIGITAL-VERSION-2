@@ -1124,7 +1124,7 @@ test('berpindah halaman meminta halaman itu ke Orcha', function () {
         ->assertSet('halaman', 1);
 });
 
-test('testimoni tetap dikirim sekaligus dan disaring di lemon', function () {
+test('pencarian testimoni dititipkan ke orcha, bukan disaring di lemon', function () {
     config()->set('orcha.url', 'https://orcha.test/api/v1');
     config()->set('orcha.kunci', 'kunci-uji');
     cache()->forget('orcha.rujukan');
@@ -1134,13 +1134,58 @@ test('testimoni tetap dikirim sekaligus dan disaring di lemon', function () {
         '*' => Http::response(['data' => [
             ['id' => 1, 'nama' => 'Rina Kartika', 'rating' => 5, 'isi' => 'Sopirnya ramah.'],
             ['id' => 2, 'nama' => 'Bagus Prakoso', 'rating' => 4, 'isi' => 'Armadanya bersih.'],
-        ]]),
+        ], 'meta' => ['halaman' => 1, 'per_halaman' => 9, 'total' => 2, 'halaman_terakhir' => 1]]),
     ]);
 
-    // Orcha belum memenggal kedua jalur ini. Menyodorkan nomor halaman untuk
-    // daftar yang tidak berhalaman hanya menjanjikan yang tidak ada.
+    /*
+     | Testimoni kini dipenggal per halaman oleh Orcha, jadi pencariannya HARUS
+     | ikut dikerjakan di sana.
+     |
+     | Penyaring di sisi lemon hanya melihat baris yang kebetulan sedang
+     | tampil: yang dicari admin akan "tidak ditemukan" padahal ada di halaman
+     | lain. Karena itu di sini kedua baris tetap tampil — lemon menampilkan
+     | apa adanya yang dikirim Orcha, dan Orcha yang memutuskan mana yang cocok.
+     */
     Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class, ['jenis' => 'testimoni'])
         ->set('cari', 'rina')
         ->assertSee('Rina Kartika')
-        ->assertDontSee('Bagus Prakoso');
+        ->assertSee('Bagus Prakoso');
+
+    // Dituntut cocok, bukan "tidak ada yang salah": bentuk "kalau URL-nya
+    // /testimoni maka harus cari=rina" dipenuhi begitu saja oleh permintaan
+    // rujukan di siklus yang sama.
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/testimoni?')
+        && str_contains($p->url(), 'cari=rina'));
+});
+
+test('pencarian partner dititipkan ke orcha, bukan disaring di lemon', function () {
+    config()->set('orcha.url', 'https://orcha.test/api/v1');
+    config()->set('orcha.kunci', 'kunci-uji');
+    cache()->forget('orcha.rujukan');
+
+    Http::fake([
+        '*/rujukan' => Http::response(['data' => ['wilayah' => []]]),
+        '*' => Http::response(['data' => [
+            ['id' => 1, 'nama' => 'Homestay Ijen', 'logo' => null],
+            ['id' => 2, 'nama' => 'Rental Bagus', 'logo' => null],
+        ], 'meta' => ['halaman' => 1, 'per_halaman' => 9, 'total' => 2, 'halaman_terakhir' => 1]]),
+    ]);
+
+    /*
+     | Partner kini ikut dipenggal per halaman oleh Orcha, jadi pencariannya
+     | HARUS ikut dikerjakan di sana.
+     |
+     | Penyaring di sisi lemon hanya melihat baris yang kebetulan sedang
+     | tampil: partner yang dicari akan "tidak ditemukan" padahal ada di
+     | halaman lain. Karena itu di sini kedua baris tetap tampil — lemon
+     | menampilkan apa adanya yang dikirim Orcha.
+     */
+    Livewire::actingAs(adminDestinasi())->test(OrchaEtalaseList::class, ['jenis' => 'partner'])
+        ->set('cari', 'ijen')
+        ->assertSee('Homestay Ijen')
+        ->assertSee('Rental Bagus');
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/partner?')
+        && str_contains($p->url(), 'cari=ijen')
+        && str_contains($p->url(), 'per_halaman=9'));
 });

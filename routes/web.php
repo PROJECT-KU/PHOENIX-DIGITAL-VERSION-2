@@ -42,6 +42,7 @@ use App\Livewire\Pages\Admin\Message\MessageDetail;
 use App\Livewire\Pages\Admin\Message\MessageList;
 use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaForm;
 use App\Livewire\Pages\Admin\Orcha\Armada\OrchaArmadaList;
+use App\Livewire\Pages\Admin\Orcha\BagianPemeriksaan\OrchaBagianList;
 use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaDestinasiForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
@@ -51,14 +52,16 @@ use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
 use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanDetail;
 use App\Livewire\Pages\Admin\Orcha\Pembatalan\OrchaPembatalanList;
+use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranCek;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
-use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaRiwayatKesehatan;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPesertaForm;
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaRiwayatKesehatan;
 // Orcha Journey — data dari aplikasi tetangga lewat API
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
+use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaSerahTerimaForm;
 use App\Livewire\Pages\Admin\Orcha\Pesan\OrchaPesanDetail;
 use App\Livewire\Pages\Admin\Orcha\Pesan\OrchaPesanList;
 use App\Livewire\Pages\Admin\Order\OrderCreate;
@@ -106,8 +109,8 @@ use App\Livewire\Pages\Admin\Testimoni\TestimoniEdit;
 use App\Livewire\Pages\Admin\Testimoni\TestimoniList;
 // Data Pemesanan RSC
 use App\Livewire\Pages\Public\About\AboutPage;
-use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use App\Livewire\Pages\Public\Bundling\Detail as BundlingDetail;
+use App\Livewire\Pages\Public\Bundling\Index as BundlingPageIndex;
 use App\Livewire\Pages\Public\Bundling\ProductBundlings;
 use App\Livewire\Pages\Public\Contact\Contact;
 use App\Livewire\Pages\Public\Homepage\Index;
@@ -512,8 +515,10 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}/kwitansi', [OrchaEksporController::class, 'kwitansi'])->name('admin.orcha.pendaftaran.kwitansi');
     Route::get('/admin/orcha/penyewaan', OrchaPenyewaanList::class)->name('admin.orcha.penyewaan');
     Route::get('/admin/orcha/penyewaan/{penyewaan}', OrchaPenyewaanDetail::class)->name('admin.orcha.penyewaan.detail');
+    Route::get('/admin/orcha/penyewaan/{penyewaan}/serah-terima', OrchaSerahTerimaForm::class)->name('admin.orcha.penyewaan.serah-terima');
     Route::get('/admin/orcha/penyewaan/{penyewaan}/kwitansi', [OrchaEksporController::class, 'kwitansiSewa'])->name('admin.orcha.penyewaan.kwitansi');
     Route::get('/admin/orcha/pembayaran', OrchaPembayaranList::class)->name('admin.orcha.pembayaran');
+    Route::get('/admin/orcha/pembayaran/{pembayaran}/cek', OrchaPembayaranCek::class)->name('admin.orcha.pembayaran.cek');
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
     Route::get('/admin/orcha/pembatalan/{id}', OrchaPembatalanDetail::class)->name('admin.orcha.pembatalan.detail');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
@@ -527,6 +532,10 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');
     Route::get('/admin/orcha/armada/{kendaraan}/ubah', OrchaArmadaForm::class)->name('admin.orcha.armada.ubah');
+
+    // Bagian kendaraan yang diperiksa saat serah terima. Bertetangga dengan
+    // Armada karena keduanya mengurus unitnya, bukan penyewaannya.
+    Route::get('/admin/orcha/bagian-pemeriksaan', OrchaBagianList::class)->name('admin.orcha.bagian');
 
     Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
     // Tambah dan ubah destinasi punya halamannya sendiri: isiannya terlalu

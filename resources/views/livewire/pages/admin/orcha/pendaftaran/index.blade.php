@@ -209,14 +209,38 @@ Pendaftaran Open Trip || lemon
                                              mengikuti keadaan: lima kotak putih berjajar tidak
                                              memberi tahu apa pun sampai tulisannya dibaca satu per
                                              satu. --}}
-                                        <select class="form-select form-select-sm orcha-pilih-status status-{{ $baris['status'] }}"
-                                            wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)">
-                                            @foreach ($pilihanStatus as $kunci => $label)
-                                                <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>
-                                                    {{ $label }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        {{-- Bila daftar statusnya TIDAK sampai, yang digambar
+                                             tulisannya — bukan kotak pilih kosong.
+
+                                             Daftar itu datang dari /rujukan milik Orcha, dan
+                                             saat Orcha sedang tidak bisa dihubungi
+                                             rujukan() mengembalikan senarai kosong. Kotak
+                                             pilih tanpa satu pun pilihan tergambar sebagai
+                                             pil berwarna yang benar-benar kosong: statusnya
+                                             lenyap dari layar tanpa satu pun kalimat yang
+                                             menjelaskan sebabnya, dan admin membacanya
+                                             sebagai data yang hilang.
+
+                                             Statusnya sendiri selalu ada — ia datang bersama
+                                             barisnya, bukan dari rujukan. Jadi yang benar:
+                                             tetap tunjukkan statusnya, dan katakan bahwa yang
+                                             belum bisa dilakukan hanya mengubahnya. --}}
+                                        @if ($pilihanStatus === [])
+                                            <span class="orcha-status-diam status-{{ $baris['status'] }}"
+                                                title="Daftar status belum bisa diambil dari Orcha, jadi statusnya belum bisa diubah dari sini.">
+                                                <i class="bi bi-wifi-off"></i>
+                                                {{ $baris['status_label'] ?? $baris['status'] }}
+                                            </span>
+                                        @else
+                                            <select class="form-select form-select-sm orcha-pilih-status status-{{ $baris['status'] }}"
+                                                wire:change="ubahStatus({{ $baris['id'] }}, $event.target.value)">
+                                                @foreach ($pilihanStatus as $kunci => $label)
+                                                    <option value="{{ $kunci }}" @selected($baris['status'] === $kunci)>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        @endif
                                     </td>
 
                                     <td class="text-center text-nowrap">
@@ -238,13 +262,26 @@ Pendaftaran Open Trip || lemon
                                                  rugi, dan membuka riwayat kesehatan bukan keduanya. --}}
                                             <a href="{{ route('admin.orcha.pendaftaran.kesehatan', $baris['id']) }}"
                                                 wire:navigate
-                                                class="btn btn-sm orcha-aksi orcha-aksi-sehat orcha-aksi-berlabel"
+                                                class="btn btn-sm orcha-aksi orcha-aksi-sehat orcha-aksi-berlabel orcha-aksi-riwayat"
                                                 title="Lihat riwayat kesehatan peserta">
                                                 <i class="bi bi-heart-pulse"></i>
                                                 <span>Riwayat ({{ $baris['jumlah_riwayat_kesehatan'] }})</span>
                                             </a>
                                         @else
-                                            <span class="text-muted" style="font-size:.76rem">Belum ada riwayat</span>
+                                            {{-- Berbentuk tombol yang sengaja mati, bukan tulisan
+                                                 telanjang: sebaris tombol yang salah satu selnya
+                                                 berisi teks polos membuat kolom Aksi terlihat
+                                                 bolong dan barisnya tidak lagi sejajar.
+
+                                                 Sengaja tidak dibuat bisa ditekan — halamannya
+                                                 memang tidak punya apa-apa untuk ditampilkan, dan
+                                                 tombol yang membuka halaman kosong lebih
+                                                 mengecewakan daripada tombol yang jelas mati. --}}
+                                            <span class="btn btn-sm orcha-aksi orcha-aksi-mati orcha-aksi-berlabel orcha-aksi-riwayat"
+                                                title="Belum ada peserta yang mengisi riwayat kesehatannya">
+                                                <i class="bi bi-heart-pulse"></i>
+                                                <span>Belum ada riwayat</span>
+                                            </span>
                                         @endif
                                     </td>
                                 </tr>

@@ -2,6 +2,20 @@
 Galeri Perjalanan || lemon
 @stop
 
+@php
+    /* Foto disimpan di Orcha, bukan di lemon.
+
+       Yang dikirim API berupa jalur relatif "/storage/galeri/x.webp", dan
+       memasangnya apa adanya membuat peramban mencarinya di alamat lemon —
+       hasilnya kotak gambar rusak, persis yang terlihat waktu dicoba. Pola ini
+       sudah dipakai halaman etalase; dipakai ulang supaya keduanya tidak
+       lama-lama berbeda. */
+    $asalGambar = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
+    $tautanGambar = fn ($jalur) => $jalur
+        ? (str_starts_with($jalur, 'http') ? $jalur : $asalGambar . $jalur)
+        : null;
+@endphp
+
 <div>
     @include('livewire.pages.admin.orcha.partials.gaya')
 
@@ -46,54 +60,101 @@ Galeri Perjalanan || lemon
                     saat memilih. Format JPG atau PNG, maksimal 4 MB per foto.
                 </p>
 
-                <div class="orcha-surat-ttd">
-                    <i class="bi bi-images"></i>
+                <div class="orcha-unggah-galeri">
+                    {{-- Ikonnya berputar selama berkas diproses.
 
-                    <div class="flex-grow-1">
-                        <input type="file" class="form-control" wire:model="fotoBaru" multiple
-                            accept="image/*">
+                         Unggahan foto besar memakan beberapa detik, dan selama itu
+                         layar tidak berubah sama sekali. Yang dilakukan admin
+                         berikutnya bisa ditebak: mengetuk lagi, lalu bertanya kenapa
+                         fotonya masuk dua kali. --}}
+                    <label class="orcha-jatuhkan" wire:loading.class="sibuk" wire:target="fotoBaru,unggah">
+                        <input type="file" wire:model="fotoBaru" multiple accept="image/*" hidden>
 
-                        @error('fotoBaru')
-                            <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
-                        @enderror
-                        @error('fotoBaru.*')
-                            <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
-                        @enderror
-                    </div>
+                        <span class="orcha-jatuhkan-ikon"><i class="bi bi-images"></i></span>
+
+                        <span class="orcha-jatuhkan-judul">
+                            <span wire:loading.remove wire:target="fotoBaru,unggah">Pilih foto dari komputer</span>
+                            <span wire:loading wire:target="fotoBaru">Membaca foto…</span>
+                            <span wire:loading wire:target="unggah">Mengunggah ke Orcha…</span>
+                        </span>
+
+                        <span class="orcha-jatuhkan-catatan">
+                            <span wire:loading.remove wire:target="fotoBaru,unggah">
+                                JPG atau PNG, maksimal 4 MB per foto — boleh banyak sekaligus
+                            </span>
+                            <span wire:loading wire:target="fotoBaru,unggah">Mohon tunggu, jangan menutup halaman</span>
+                        </span>
+                    </label>
+
+                    @error('fotoBaru')
+                        <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
+                    @enderror
+                    @error('fotoBaru.*')
+                        <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
+                    @enderror
 
                     @if ($fotoBaru)
-                        <button type="button" class="orcha-btn orcha-btn-utama" wire:click="unggah"
-                            wire:loading.attr="disabled" wire:target="unggah">
-                            <i class="bi bi-upload"></i>
-                            Unggah {{ count($fotoBaru) }} foto
-                        </button>
+                        {{-- Tiap foto punya isian keterangannya sendiri.
+
+                             Satu keterangan untuk seluruh unggahan benar selama
+                             fotonya serombongan dari acara yang sama — dan salah
+                             begitu admin memilih foto dari beberapa trip sekaligus.
+                             Yang serombongan tetap terlayani: satu isian di bawah
+                             menyamakan semuanya sekali tekan. --}}
+                        <div class="orcha-galeri-petak mt-3">
+                            @foreach ($fotoBaru as $urutan => $satu)
+                                @if ($satu->isPreviewable())
+                                    <div class="orcha-pratayang-kartu">
+                                        <div class="orcha-galeri-kotak">
+                                            <img src="{{ $satu->temporaryUrl() }}" alt="">
+                                            <span class="orcha-galeri-nomor">{{ $urutan + 1 }}</span>
+                                        </div>
+
+                                        <div class="orcha-pratayang-isi">
+                                            <input type="text" class="form-control"
+                                                wire:model="keteranganPer.{{ $urutan }}"
+                                                value="{{ $keteranganPer[$urutan] ?? '' }}"
+                                                placeholder="Keterangan foto ini">
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+
+                        @error('keteranganPer.*')
+                            <div class="text-danger mt-2" style="font-size:.78rem">{{ $message }}</div>
+                        @enderror
+
+                        <div class="orcha-baris-unggah mt-3">
+                            <div class="orcha-samakan">
+                                <input type="text" class="form-control form-control-sm"
+                                    wire:model="keteranganBaru" value="{{ $keteranganBaru }}"
+                                    placeholder="Keterangan yang sama untuk semua foto">
+                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                                    wire:click="samakanKeterangan" title="Isikan ke seluruh foto di atas">
+                                    <i class="bi bi-arrow-down-up"></i> Terapkan ke semua
+                                </button>
+                            </div>
+
+                            <label class="orcha-saklar">
+                                <input type="checkbox" wire:model="tampilBaru">
+                                <span class="alur"></span>
+                                <span class="tulisan">Langsung tampil di beranda</span>
+                            </label>
+
+                            <button type="button" class="orcha-btn orcha-btn-utama"
+                                wire:click="unggah" wire:loading.attr="disabled" wire:target="unggah">
+                                <i class="bi bi-upload"></i>
+                                Unggah {{ count($fotoBaru) }} foto
+                            </button>
+                        </div>
+
+                        <p class="text-muted mb-0 mt-2" style="font-size:.76rem">
+                            Urutan tampilnya diberikan otomatis di belakang foto yang sudah ada —
+                            bisa diubah nanti lewat tombol pensil.
+                        </p>
                     @endif
                 </div>
-
-                <div wire:loading wire:target="fotoBaru,unggah" class="text-muted mt-2" style="font-size:.8rem">
-                    <i class="bi bi-arrow-repeat"></i> Sedang memproses foto…
-                </div>
-
-                {{-- Pratayang sebelum dikirim: admin yang salah pilih berkas tahu
-                     sebelum menunggu unggahannya selesai, bukan sesudah. --}}
-                @if ($fotoBaru)
-                    <div class="orcha-galeri-petak mt-3">
-                        @foreach ($fotoBaru as $satu)
-                            {{-- isPreviewable() dulu, baru temporaryUrl().
-
-                                 Berkas yang bukan gambar membuat temporaryUrl()
-                                 melempar galat, dan yang dilihat admin bukan pesan
-                                 "harus berupa gambar" melainkan halaman error —
-                                 padahal kesalahannya sepele dan pesannya sudah
-                                 disiapkan tepat di atas. --}}
-                            @if ($satu->isPreviewable())
-                                <div class="orcha-galeri-kotak orcha-galeri-pratayang">
-                                    <img src="{{ $satu->temporaryUrl() }}" alt="">
-                                </div>
-                            @endif
-                        @endforeach
-                    </div>
-                @endif
             </div>
         </div>
 
@@ -117,42 +178,61 @@ Galeri Perjalanan || lemon
                              diketuk. --}}
                         <div class="orcha-galeri-sunting mb-3">
                             <div class="orcha-galeri-kotak">
-                                <img src="{{ $foto['foto'] }}" alt="">
+                                <img src="{{ $tautanGambar($foto['foto']) }}" alt="">
+                                <span class="orcha-galeri-nomor">{{ $foto['urutan'] ?? 0 }}</span>
                             </div>
 
-                            <div class="flex-grow-1">
-                                <div class="mb-2">
-                                    <label class="orcha-label-kecil">Keterangan (boleh dikosongkan)</label>
-                                    <input type="text" class="form-control form-control-sm"
-                                        wire:model="keterangan" value="{{ $keterangan }}"
-                                        placeholder="Misal: Rombongan SMA 1 di Kawah Ijen">
-                                    @error('keterangan')
-                                        <div class="text-danger mt-1" style="font-size:.76rem">{{ $message }}</div>
-                                    @enderror
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="fw-bold mb-2 orcha-judul-ikon" style="font-size:.92rem">
+                                    <i class="bi bi-pencil-square text-primary"></i> Ubah foto ini
                                 </div>
 
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-6 col-md-4">
+                                {{-- Susunannya menyalin baris unggah di atas: isian,
+                                     saklar, dan tombol sama tinggi dan sesudut, jadi
+                                     admin membaca dua tempat dengan satu kebiasaan. --}}
+                                <div class="row g-2">
+                                    <div class="col-12 col-lg-8">
+                                        <label class="orcha-label-kecil">Keterangan (boleh dikosongkan)</label>
+                                        <input type="text" class="form-control"
+                                            wire:model="keterangan" value="{{ $keterangan }}"
+                                            placeholder="Misal: Rombongan SMA 1 di Kawah Ijen">
+                                        @error('keterangan')
+                                            <div class="text-danger mt-1" style="font-size:.76rem">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="col-12 col-lg-4">
                                         <label class="orcha-label-kecil">Urutan tampil</label>
-                                        <input type="number" min="0" class="form-control form-control-sm"
+                                        <input type="number" min="0" class="form-control"
                                             wire:model="urutan" value="{{ $urutan }}">
+                                        @error('urutan')
+                                            <div class="text-danger mt-1" style="font-size:.76rem">{{ $message }}</div>
+                                        @enderror
                                     </div>
+                                </div>
 
-                                    <div class="col-6 col-md-4">
-                                        <label class="orcha-label-kecil d-block">Tampil di beranda</label>
-                                        <div class="form-check form-switch mt-1">
-                                            <input class="form-check-input" type="checkbox" wire:model="tampil">
-                                        </div>
-                                    </div>
+                                {{-- Tiga kolom sama lebar, bukan flex yang saling mendorong.
 
-                                    <div class="col-12 col-md-4 d-flex gap-2 justify-content-md-end">
-                                        <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                                            wire:click="batal">Batal</button>
-                                        <button type="button" class="orcha-btn orcha-btn-utama orcha-btn-kecil"
-                                            wire:click="simpan">
-                                            <i class="bi bi-check-lg"></i> Simpan
-                                        </button>
-                                    </div>
+                                     Sebelumnya saklar didorong ke kiri, Batal ke kanan, dan
+                                     Simpan ke kanan lagi — tiga benda dengan jurang di
+                                     antaranya, dan lebar jurangnya berubah-ubah mengikuti
+                                     lebar layar. Dibagi rata, ketiganya punya tempat tetap. --}}
+                                <div class="orcha-baris-aksi mt-3">
+                                    <label class="orcha-saklar">
+                                        <input type="checkbox" wire:model="tampil">
+                                        <span class="alur"></span>
+                                        <span class="tulisan">Tampil di beranda</span>
+                                    </label>
+
+                                    <button type="button" class="orcha-btn orcha-btn-lembut"
+                                        wire:click="batal">
+                                        <i class="bi bi-x-lg"></i> Batal
+                                    </button>
+
+                                    <button type="button" class="orcha-btn orcha-btn-utama"
+                                        wire:click="simpan" wire:loading.attr="disabled" wire:target="simpan">
+                                        <i class="bi bi-check-lg"></i> Simpan
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -165,7 +245,7 @@ Galeri Perjalanan || lemon
                         @foreach ($daftar as $foto)
                             <div class="orcha-galeri-kartu {{ ($foto['tampil'] ?? true) ? '' : 'orcha-galeri-sembunyi' }}">
                                 <div class="orcha-galeri-kotak">
-                                    <img src="{{ $foto['foto'] }}" alt="{{ $foto['keterangan'] ?? '' }}">
+                                    <img src="{{ $tautanGambar($foto['foto']) }}" alt="{{ $foto['keterangan'] ?? '' }}">
 
                                     <span class="orcha-galeri-nomor">{{ $foto['urutan'] ?? 0 }}</span>
 
@@ -194,9 +274,19 @@ Galeri Perjalanan || lemon
                                             <i class="bi {{ ($foto['tampil'] ?? true) ? 'bi-eye-slash' : 'bi-eye' }}"></i>
                                         </button>
 
-                                        <button type="button" class="orcha-hapus-baris"
-                                            wire:click="hapus({{ $foto['id'] }})"
-                                            wire:confirm="Hapus foto ini dari galeri? Berkasnya ikut terhapus."
+                                        {{-- Konfirmasinya lewat SweetAlert, bukan wire:confirm.
+
+                                             Dialog bawaan peramban menampilkan "127.0.0.1:8001
+                                             says" di atas kalimatnya — terbaca seperti peringatan
+                                             sistem yang bocor, bukan bagian dari aplikasi. Pola
+                                             .pcek-konfirmasi sudah dipakai halaman Orcha lain;
+                                             dipakai ulang supaya admin tidak melihat dua bentuk
+                                             konfirmasi untuk tindakan yang sama berbahayanya. --}}
+                                        <button type="button" class="orcha-hapus-baris pcek-konfirmasi"
+                                            data-action="hapus" data-arg="{{ $foto['id'] }}"
+                                            data-title="Hapus foto ini?"
+                                            data-text="{{ addslashes($foto['keterangan'] ?: 'Foto tanpa keterangan') }} akan dihapus dari galeri, dan berkasnya ikut terhapus dari server."
+                                            data-confirm="Ya, hapus" data-icon="warning"
                                             title="Hapus foto">
                                             <i class="bi bi-trash"></i>
                                         </button>

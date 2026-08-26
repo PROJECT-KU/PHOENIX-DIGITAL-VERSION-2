@@ -349,6 +349,31 @@ new class extends Component
             filter: brightness(1.08);
         }
 
+        /* Hitungan bukti yang menunggu dicek.
+
+           Kuning-jingga, bukan merah: ini pekerjaan yang menunggu, bukan
+           kesalahan. Merah di bilah samping yang tidak pernah bisa dinolkan
+           lama-lama berhenti dibaca. */
+        #sidebar .orcha-hitung-menu {
+            margin-left: auto;
+            min-width: 1.45rem;
+            padding: .08rem .4rem;
+            border-radius: 99px;
+            background: #ffd772;
+            color: #5b3d00;
+            font-size: .7rem;
+            font-weight: 800;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Tautannya perlu jadi baris lentur supaya lencananya bisa didorong ke
+           tepi kanan tanpa menabrak tulisannya. */
+        #sidebar .sidebar-link:has(> .orcha-hitung-menu) {
+            display: flex;
+            align-items: center;
+        }
+
         #sidebar .orcha-lencana-menu {
             display: block;
             margin: .25rem .35rem .5rem;
@@ -400,6 +425,10 @@ new class extends Component
                             ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
                             ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
                             ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
+                            // Bertetangga dengan Armada karena keduanya mengurus
+                            // unitnya, bukan penyewaannya: yang satu daftar unit,
+                            // yang satu daftar apa yang diperiksa pada unit itu.
+                            ['admin.orcha.bagian', 'bi-list-check', 'Bagian Pemeriksaan'],
                             ['admin.orcha.destinasi', 'bi-geo-alt', 'Destinasi Populer'],
                             // Bertetangga dengan Destinasi karena keduanya mengisi
                             // beranda — tetapi maksudnya berbeda: destinasi menjual
@@ -410,11 +439,92 @@ new class extends Component
                         ];
                     @endphp
 
+                    {{-- Bukti yang menunggu dicek ditandai di menunya.
+
+                         Sebelumnya tidak ada tanda apa pun: bukti yang masuk hanya
+                         ketahuan kalau admin kebetulan membuka halamannya, dan
+                         pelanggan yang sudah mentransfer menunggu tanpa tahu bahwa
+                         buktinya belum dibuka siapa pun.
+
+                         Angkanya disimpan sebentar dan gagalnya diam — bilah ini
+                         tergambar di TIAP halaman admin, jadi ia tidak boleh
+                         menembak Orcha berkali-kali maupun merobohkan halaman
+                         ketika Orcha sedang tidak bisa dihubungi. --}}
+                    @php
+                        $menungguDicek = \App\Support\OrchaMenungguDicek::jumlah();
+                        $sewaPerhatian = \App\Support\OrchaSewaPerhatian::ambil();
+
+                        // Satu menu, satu angka. Pemecahannya dijelaskan di
+                        // judul tempel dan dirinci di lonceng, yang punya ruang
+                        // untuk kalimat.
+                        $sewaJumlah = $sewaPerhatian['baru'] + $sewaPerhatian['telat'] + $sewaPerhatian['denda'];
+
+                        $judulSewa = collect([
+                            $sewaPerhatian['baru'] > 0 ? $sewaPerhatian['baru'].' pemesanan baru' : null,
+                            $sewaPerhatian['telat'] > 0 ? $sewaPerhatian['telat'].' unit belum kembali, lewat tenggat' : null,
+                            $sewaPerhatian['denda'] > 0 ? $sewaPerhatian['denda'].' denda belum ditetapkan' : null,
+                        ])->filter()->implode(' · ');
+
+                        $batal = \App\Support\OrchaPembatalanPerhatian::ambil();
+                        $batalJumlah = $batal['diajukan'] + $batal['diproses'] + $batal['disetujui'];
+
+                        // Judul tempelnya menyebut tiap status apa adanya, bukan
+                        // dua kelompok gabungan: yang dikerjakan admin memang
+                        // berbeda untuk tiap status.
+                        $judulBatal = collect([
+                            $batal['diajukan'] > 0 ? $batal['diajukan'].' diajukan' : null,
+                            $batal['diproses'] > 0 ? $batal['diproses'].' sedang diproses' : null,
+                            $batal['disetujui'] > 0 ? $batal['disetujui'].' disetujui, dana belum dikirim' : null,
+                        ])->filter()->implode(' · ');
+
+                        // Pesan kontak dihitung dari yang BELUM DIBACA, bukan
+                        // yang belum dibalas: balasannya dikirim lewat WhatsApp,
+                        // di luar sistem, jadi Orcha tidak pernah tahu sebuah
+                        // pesan sudah dijawab atau belum. Labelnya menyebutnya
+                        // apa adanya supaya angkanya tidak dibaca sebagai janji
+                        // yang tidak bisa ditepati.
+                        $pesan = \App\Support\OrchaPesanPerhatian::ambil();
+
+                        $judulPesan = collect([
+                            $pesan['baru'] > 0 ? $pesan['baru'].' baru masuk' : null,
+                            $pesan['lama'] > 0 ? $pesan['lama'].' belum dibaca lewat sehari' : null,
+                        ])->filter()->implode(' · ');
+
+                        // Pendaftaran open trip: yang belum disentuh, yang sudah
+                        // dihubungi tetapi belum bayar, dan yang tenggat
+                        // pelunasannya sudah lewat.
+                        $daftarTrip = \App\Support\OrchaPendaftaranPerhatian::ambil();
+                        $tripJumlah = $daftarTrip['baru'] + $daftarTrip['dihubungi'] + $daftarTrip['telat_lunas'];
+
+                        $judulTrip = collect([
+                            $daftarTrip['baru'] > 0 ? $daftarTrip['baru'].' pendaftaran baru' : null,
+                            $daftarTrip['dihubungi'] > 0 ? $daftarTrip['dihubungi'].' sudah dihubungi, belum bayar' : null,
+                            $daftarTrip['telat_lunas'] > 0 ? $daftarTrip['telat_lunas'].' lewat tenggat pelunasan' : null,
+                        ])->filter()->implode(' · ');
+
+                        $penanda = [
+                            'admin.orcha.pendaftaran' => [$tripJumlah, $judulTrip],
+                            'admin.orcha.pembayaran' => [
+                                $menungguDicek,
+                                $menungguDicek.' bukti transfer menunggu dicek',
+                            ],
+                            'admin.orcha.penyewaan' => [$sewaJumlah, $judulSewa],
+                            'admin.orcha.pembatalan' => [$batalJumlah, $judulBatal],
+                            'admin.orcha.pesan' => [$pesan['belum_dibaca'], $judulPesan],
+                        ];
+                    @endphp
+
                     @foreach ($menuOrcha as [$rute, $ikon, $label])
                         <li class="sidebar-item {{ request()->routeIs($rute) || request()->routeIs($rute . '.*') ? 'active' : '' }}">
                             <a href="{{ route($rute) }}" class="sidebar-link" wire:navigate>
                                 <i class="bi {{ $ikon }}"></i>
                                 <span>{{ $label }}</span>
+
+                                @if (($penanda[$rute][0] ?? 0) > 0)
+                                    <span class="orcha-hitung-menu" title="{{ $penanda[$rute][1] }}">
+                                        {{ $penanda[$rute][0] > 99 ? '99+' : $penanda[$rute][0] }}
+                                    </span>
+                                @endif
                             </a>
                         </li>
                     @endforeach

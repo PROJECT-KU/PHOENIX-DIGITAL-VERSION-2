@@ -19,8 +19,29 @@ trait MemanggilOrcha
 
     public string $cari = '';
 
+    /*
+     | Saringan status ikut ke alamat, sama seperti nomor halaman.
+     |
+     | Dengan begitu lonceng bisa menautkan langsung ke pekerjaan yang
+     | dikabarkannya — "3 pembatalan baru diajukan" membuka daftar yang sudah
+     | tersaring, bukan seluruh daftar yang harus disaring ulang admin.
+     | Alamatnya juga bisa disalin dan dibagikan ke admin lain.
+     */
+    #[\Livewire\Attributes\Url(as: 'filterStatus', except: '')]
     public string $filterStatus = '';
 
+    /*
+     | Nomor halaman ikut ke alamat, supaya penomorannya bisa berupa TAUTAN.
+     |
+     | Sebagai tombol Livewire, berpindah halaman menuntut JavaScript hidup
+     | lebih dulu — dan admin yang tombolnya diam tidak punya cara lain sama
+     | sekali untuk melihat data di halaman kedua. Sebagai tautan, alamatnya
+     | sudah ada di HTML: peramban tahu cara membukanya, dan halamannya bisa
+     | disalin atau dibuka di tab baru.
+     |
+     | except: 1 supaya "?halaman=1" tidak menempel di alamat halaman pertama.
+     */
+    #[\Livewire\Attributes\Url(as: 'halaman', except: 1)]
     public int $halaman = 1;
 
     public function updatedCari(): void
@@ -164,6 +185,21 @@ trait MemanggilOrcha
         try {
             $this->orcha()->ubah($jalur, $data);
             cache()->forget('orcha.perlu-ditindak');
+
+            /*
+             | Penanda di bilah samping dan lonceng ikut dilupakan.
+             |
+             | Angkanya disimpan semenit supaya tiap perpindahan halaman tidak
+             | menembak Orcha lagi — tetapi begitu admin sendiri yang mengubah
+             | sesuatu, simpanan itu berubah dari penghemat jadi pembohong:
+             | dana yang baru saja ditandai terkirim tetap terhitung "belum
+             | dikirim", dan admin mengira tekanannya tidak tersimpan.
+             |
+             | Dilupakan SEMUANYA, bukan yang kelihatan berhubungan saja: satu
+             | perubahan status bisa menggeser lebih dari satu hitungan —
+             | menyetujui pembatalan ikut membatalkan pesanannya.
+             */
+            \App\Support\HitunganOrcha::lupakanSemua();
             $this->dispatch('order-updated', message: $pesanSukses);
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());

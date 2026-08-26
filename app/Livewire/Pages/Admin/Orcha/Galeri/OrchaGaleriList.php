@@ -36,6 +36,24 @@ class OrchaGaleriList extends Component
      */
     public $fotoBaru = [];
 
+    /**
+     * Keterangan TIAP foto yang sedang diunggah, sejajar dengan $fotoBaru.
+     *
+     * Satu keterangan untuk seluruh unggahan benar selama fotonya serombongan
+     * dari acara yang sama — dan salah begitu admin memilih foto dari beberapa
+     * trip sekaligus. Yang terjadi kalau dipaksa satu bukan admin mengeluh,
+     * melainkan keterangannya diisi asal-asalan lalu tidak pernah dibetulkan.
+     *
+     * @var array<int, string>
+     */
+    public array $keteranganPer = [];
+
+    /** Isian untuk menyamakan keterangan seluruh foto sekali tekan. */
+    public string $keteranganBaru = '';
+
+    /** Foto baru langsung tampil di beranda, kecuali admin memang menahannya. */
+    public bool $tampilBaru = true;
+
     /** Baris yang keterangannya sedang disunting; null berarti tidak ada. */
     public ?int $sedangDiubah = null;
 
@@ -50,6 +68,17 @@ class OrchaGaleriList extends Component
         $this->validate([
             'fotoBaru.*' => 'image|max:4096',
         ], [], ['fotoBaru.*' => 'foto']);
+
+        // Disiapkan sepanjang jumlah fotonya, supaya isian tiap kartu punya
+        // tempatnya sendiri sejak awal — larik yang tumbuh sambil diketik
+        // membuat Livewire kehilangan jejak baris mana milik foto mana.
+        $this->keteranganPer = array_pad([], count($this->fotoBaru ?? []), '');
+    }
+
+    /** Menyamakan keterangan seluruh foto — untuk unggahan serombongan. */
+    public function samakanKeterangan(): void
+    {
+        $this->keteranganPer = array_fill(0, count($this->fotoBaru ?? []), trim($this->keteranganBaru));
     }
 
     /**
@@ -65,21 +94,29 @@ class OrchaGaleriList extends Component
         $this->validate([
             'fotoBaru' => 'required|array|min:1',
             'fotoBaru.*' => 'image|max:4096',
-        ], [], ['fotoBaru' => 'foto', 'fotoBaru.*' => 'foto']);
+            'keteranganPer.*' => 'nullable|string|max:191',
+        ], [], ['fotoBaru' => 'foto', 'fotoBaru.*' => 'foto', 'keteranganPer.*' => 'keterangan']);
 
         $berhasil = 0;
         $gagal = 0;
 
-        foreach ($this->fotoBaru as $foto) {
+        foreach ($this->fotoBaru as $urutan => $foto) {
             try {
-                $this->orcha()->kirim('/galeri', [], $foto);
+                $this->orcha()->kirim('/galeri', [
+                    'keterangan' => trim($this->keteranganPer[$urutan] ?? ''),
+                    // Dikirim sebagai teks: multipart hanya mengenal pasangan
+                    // nama-nilai berupa teks, dan boolean PHP jadi "1"/"" yang
+                    // tidak lolos aturan boolean di sisi Orcha.
+                    'tampil' => $this->tampilBaru ? '1' : '0',
+                ], $foto);
                 $berhasil++;
             } catch (OrchaTidakTerjangkau) {
                 $gagal++;
             }
         }
 
-        $this->fotoBaru = [];
+        $this->reset(['fotoBaru', 'keteranganBaru', 'keteranganPer']);
+        $this->tampilBaru = true;
 
         if ($berhasil === 0) {
             $this->dispatch('toast-error', message: 'Tidak ada foto yang berhasil diunggah. Coba lagi.');

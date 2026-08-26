@@ -49,30 +49,20 @@ class OrchaPesanDetail extends Component
      * Pelanggan menulis berhari-hari lalu; balasan yang dibuka dengan "Halo,
      * ada yang bisa dibantu?" memaksanya mengingat sendiri apa yang ia
      * tanyakan. Kutipan singkat pertanyaannya menghemat satu putaran
-     * percakapan.
+     * percakapan — dan daftar isian yang mengikuti keperluannya menghemat satu
+     * putaran lagi.
+     *
+     * Kalimatnya disusun di App\Support\BalasanPesanKontak supaya tombol WA
+     * di daftar dan di halaman ini benar-benar mengirim pesan yang sama.
      */
     public function pesanWa(): string
     {
-        $nama = $this->data['nama'] ?? 'Kak';
-        $keperluan = $this->data['keperluan_label'] ?? null;
-        $isi = trim((string) ($this->data['pesan'] ?? ''));
-        $kutipan = mb_strlen($isi) > 120 ? mb_substr($isi, 0, 117).'…' : $isi;
-
-        return "Halo {$nama} [[E:1F44B]]\n\n"
-            .'Terima kasih sudah menghubungi *Orcha Journey*'
-            .($keperluan ? " soal {$keperluan}" : '').".\n\n"
-            .($kutipan ? "Menanggapi pesan Anda:\n_\"{$kutipan}\"_\n\n" : '')
-            .'Ada yang bisa kami bantu jelaskan lebih dulu?';
+        return \App\Support\BalasanPesanKontak::untuk($this->data);
     }
 
     public function tautanWa(): ?string
     {
-        $tautan = \App\Support\TautanWa::kirim(
-            $this->data['whatsapp'] ?? null,
-            preg_replace('/\[\[E:[0-9A-F]+\]\] ?/', '', $this->pesanWa()),
-        );
-
-        return $tautan ?: null;
+        return \App\Support\BalasanPesanKontak::tautan($this->data) ?: null;
     }
 
     public function render()

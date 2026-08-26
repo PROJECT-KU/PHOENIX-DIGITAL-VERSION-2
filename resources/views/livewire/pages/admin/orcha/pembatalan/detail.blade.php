@@ -52,28 +52,45 @@ Detail Pembatalan || lemon
                                     diajukan
                                     {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->locale('id')->translatedFormat('j F Y, H:i') }}
                                 </span>
-                                <span class="badge orcha-lencana-bayar-{{ $pembatalan['status'] === 'ditolak' ? 'ditolak' : ($pembatalan['status'] === 'diajukan' ? 'menunggu' : 'diterima') }}">
+                                {{-- Warnanya mengikuti statusnya sendiri, bukan dipetakan
+                                     paksa ke tiga warna milik bukti pembayaran. Lima status
+                                     pembatalan yang diperas jadi tiga membuat "Sedang
+                                     Diproses" dan "Dana Dikirim" tampil dengan warna yang
+                                     sama, padahal yang satu masih menunggu dikerjakan dan
+                                     yang satu lagi sudah selesai. --}}
+                                <span class="orcha-status-batal" data-status="{{ $pembatalan['status'] }}">
+                                    <i class="bi {{ [
+                                        'diajukan' => 'bi-hourglass-split',
+                                        'diproses' => 'bi-arrow-repeat',
+                                        'disetujui' => 'bi-check2-circle',
+                                        'dana_dikirim' => 'bi-send-check',
+                                        'ditolak' => 'bi-x-circle',
+                                    ][$pembatalan['status']] ?? 'bi-circle' }}"></i>
                                     {{ $pembatalan['status_label'] }}
                                 </span>
                             </div>
                         </div>
 
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            {{-- Kalimat perhitungan pengembalian yang selama ini diketik
-                                 ulang tiap kali. Angkanya diambil dari perkiraan yang sama
-                                 dengan yang tampil di layar. --}}
-                            @if ($this->tautanWa())
-                                <button type="button" class="orcha-btn orcha-btn-lembut"
-                                    data-wa-pesan="{{ $this->pesanWa() }}"
-                                    title="Salin teks perhitungannya untuk ditempel di WhatsApp">
-                                    <i class="bi bi-clipboard"></i> Salin Perhitungan
-                                </button>
+                    </div>
+                </div>
+            </div>
 
-                                <a href="{{ $this->tautanWa() }}" target="_blank" rel="noopener"
-                                    class="orcha-btn orcha-btn-wa" data-wa-pesan="{{ $this->pesanWa() }}">
-                                    <i class="bi bi-whatsapp"></i> Kirim Perhitungan
-                                </a>
-                            @endif
+            {{-- ============ PERHITUNGAN PENGEMBALIAN ============
+                 Kartu tersendiri, bukan menumpang di bawah nama pemohon.
+
+                 Inilah yang dibuka admin: berapa yang harus dikirim balik.
+                 Berbagi kartu dengan identitas pengajuan membuat empat angka
+                 terpenting di halaman ini terbaca sebagai keterangan tambahan
+                 di bawah judul. --}}
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="orcha-bagian-kepala">
+                        <div class="orcha-bagian-nomor"><i class="bi bi-calculator"></i></div>
+                        <div>
+                            <div class="orcha-bagian-judul">Perhitungan Pengembalian</div>
+                            <div class="orcha-bagian-sub">
+                                Berapa yang harus dikirim balik, dan atas dasar apa.
+                            </div>
                         </div>
                     </div>
 
@@ -129,190 +146,252 @@ Detail Pembatalan || lemon
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-12 col-lg-7">
+            {{-- ============ TINDAKAN ============
+                 Berdiri sendiri, tidak menumpang di kepala.
 
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                <i class="bi bi-person-lines-fill text-primary"></i> Pemohon
-                            </h2>
-
-                            <div class="row g-3">
-                                @foreach ([
-                                    ['Nama pemohon', $pembatalan['nama_pemohon']],
-                                    ['WhatsApp', $pembatalan['whatsapp']],
-                                    ['Email', $pembatalan['email'] ?: '—'],
-                                    ['Alasan', $pembatalan['alasan_label']],
-                                ] as [$label, $nilai])
-                                    <div class="col-6">
-                                        <div class="orcha-label-kecil">{{ $label }}</div>
-                                        <div class="fw-bold" style="font-size:.9rem">{{ $nilai }}</div>
-                                    </div>
-                                @endforeach
+                 Keduanya bukan keterangan melainkan perbuatan — satu menyalin
+                 teks, satu membuka WhatsApp — dan berdesakan di pojok kanan
+                 nama pemohon membuat keduanya terbaca sebagai hiasan judul.
+                 Bentuknya disamakan dengan kartu Tindakan di detail sewa. --}}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 orcha-kartu-tindakan">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div>
+                            <div class="orcha-label-kecil">
+                                <i class="bi bi-lightning-charge"></i> Tindakan
                             </div>
-
-                            @if ($pembatalan['penjelasan'])
-                                <div class="mt-3">
-                                    <div class="orcha-label-kecil mb-1">Penjelasan pemohon</div>
-                                    <div class="orcha-alasan" style="font-size:.86rem">{{ $pembatalan['penjelasan'] }}</div>
-                                </div>
-                            @endif
-
-                            {{-- Nama pemohon dan nama pemesan tidak selalu sama, dan
-                                 perbedaannya perlu diperiksa sebelum dana dikirim. --}}
-                            @if ($pesanan && $pesanan['nama'] !== $pembatalan['nama_pemohon'])
-                                <div class="orcha-alasan orcha-alasan-tinggi mt-3">
-                                    <span class="orcha-label-kecil orcha-ikon-teks" style="color:#b91c1c">
-                                        <i class="bi bi-exclamation-triangle-fill"></i> Nama pemohon berbeda dari pemesan
-                                    </span>
-                                    <div class="mt-1" style="font-size:.84rem">
-                                        Pemesannya <strong>{{ $pesanan['nama'] }}</strong>, sedangkan yang mengajukan
-                                        <strong>{{ $pembatalan['nama_pemohon'] }}</strong>. Pastikan pengajuan ini
-                                        memang dari pihak yang berhak sebelum dana dikirim.
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Riwayat pembayaran = dasar angka yang dikirim balik. Bukti yang
-                         masih menunggu ditandai, karena memutuskannya akan mengubah
-                         perhitungan di atas. --}}
-                    <div class="card border-0 shadow-sm rounded-4">
-                        <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                <i class="bi bi-cash-coin text-primary"></i> Bukti Pembayaran
-                            </h2>
-
-                            @forelse ($pembatalan['pembayaran'] ?? [] as $bayar)
-                                <div class="orcha-alasan {{ $bayar['status'] === 'menunggu' ? 'orcha-alasan-tinggi' : '' }} mb-2">
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                                        <div>
-                                            <div class="fw-bold">{{ $bayar['nominal_formatted'] }}
-                                                <span class="text-muted fw-normal" style="font-size:.8rem">
-                                                    · {{ $bayar['jenis_label'] }}
-                                                </span>
-                                            </div>
-                                            <div class="text-muted" style="font-size:.78rem">
-                                                {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }} ·
-                                                {{ $bayar['tanggal_transfer']
-                                                    ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('j M Y')
-                                                    : '—' }}
-                                            </div>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <span class="badge orcha-lencana-bayar-{{ $bayar['status'] }}">
-                                                {{ $bayar['status_label'] }}
-                                            </span>
-                                            @if ($bayar['bukti'])
-                                                <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat"
-                                                    title="Lihat bukti transfer"
-                                                    data-bukti="{{ $tautanBukti($bayar['bukti']) }}"
-                                                    data-bukti-keterangan="{{ $pembatalan['kode_pendaftaran'] }} · {{ $bayar['nominal_formatted'] }} · {{ $bayar['bank_pengirim'] }}">
-                                                    <i class="bi bi-receipt"></i>
-                                                </button>
-                                            @endif
-                                        </div>
-                                    </div>
-
-                                    @if ($bayar['catatan_admin'])
-                                        <div class="mt-2" style="font-size:.8rem">{{ $bayar['catatan_admin'] }}</div>
-                                    @endif
-                                </div>
-                            @empty
-                                <p class="text-muted mb-0" style="font-size:.86rem">
-                                    Belum ada bukti pembayaran untuk kode ini. Tanpa uang yang masuk,
-                                    tidak ada yang perlu dikembalikan.
-                                </p>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-lg-5">
-
-                    @if ($pesanan)
-                        <div class="card border-0 shadow-sm rounded-4 mb-4">
-                            <div class="card-body p-3 p-lg-4">
-                                <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                    <i class="bi {{ $pesanan['jenis'] === 'sewa_kendaraan' ? 'bi-truck' : 'bi-signpost-split' }} text-primary"></i>
-                                    Pesanan yang Dibatalkan
-                                </h2>
-
-                                <div class="row g-3">
-                                    @foreach (array_filter([
-                                        ['Pemesan', $pesanan['nama']],
-                                        [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Kendaraan' : 'Paket', $pesanan['keterangan'] ?: '—'],
-                                        [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Mulai sewa' : 'Tanggal berangkat',
-                                            $pesanan['mulai']
-                                                ? \Carbon\Carbon::parse($pesanan['mulai'])->locale('id')->translatedFormat($pesanan['jenis'] === 'sewa_kendaraan' ? 'j M Y, H:i' : 'j M Y')
-                                                : 'Menyusul'],
-                                        $pesanan['jenis'] === 'sewa_kendaraan'
-                                            ? ['Lama sewa', $pesanan['durasi_label'] ?: '—']
-                                            : ['Jumlah peserta', $pesanan['jumlah_peserta'] . ' orang'],
-                                    ]) as [$label, $nilai])
-                                        <div class="col-6">
-                                            <div class="orcha-label-kecil">{{ $label }}</div>
-                                            <div class="fw-bold" style="font-size:.9rem">{{ $nilai }}</div>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <div class="mt-3 d-flex align-items-center gap-2">
-                                    <span class="orcha-label-kecil mb-0">Status pesanan</span>
-                                    <span class="badge orcha-lencana-bayar-{{ $pesanan['status'] === 'batal' ? 'ditolak' : 'diterima' }}">
-                                        {{ $pesanan['status_label'] }}
-                                    </span>
-                                </div>
-
-                                {{-- Status pesanan berubah sendiri hanya ketika pembatalannya
-                                     disetujui. Selama masih diajukan, pesanannya sengaja
-                                     dibiarkan berjalan — tim masih boleh menolak. --}}
-                                @if ($pesanan['status'] !== 'batal' && in_array($pembatalan['status'], ['disetujui', 'dana_dikirim']))
-                                    <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0" style="font-size:.82rem">
-                                        Pembatalan sudah disetujui tetapi pesanannya belum tercatat batal.
-                                        Simpan ulang statusnya untuk menyelaraskan.
-                                    </div>
-                                @endif
+                            <div class="text-muted" style="font-size:.8rem">
+                                Kirimkan perhitungan pengembaliannya ke pemohon lewat WhatsApp.
                             </div>
                         </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    {{-- Kalimat perhitungan pengembalian yang selama ini diketik
+                         ulang tiap kali. Angkanya diambil dari perkiraan yang sama
+                         dengan yang tampil di layar. --}}
+                    @if ($this->tautanWa())
+                        {{-- Tingginya disamakan dengan kartu Tindakan di detail sewa —
+                             34px lewat .orcha-aksi-sewa — supaya kedua halaman terbaca
+                             sebagai satu keluarga. --}}
+                        <button type="button" class="orcha-btn orcha-btn-lembut orcha-aksi-sewa"
+                            data-wa-pesan="{{ $this->pesanWa() }}"
+                            title="Salin teks perhitungannya untuk ditempel di WhatsApp">
+                            <i class="bi bi-clipboard"></i> Salin Perhitungan
+                        </button>
+
+                        <a href="{{ $this->tautanWa() }}" target="_blank" rel="noopener"
+                            class="orcha-btn orcha-btn-wa orcha-aksi-sewa"
+                            data-wa-pesan="{{ $this->pesanWa() }}">
+                            <i class="bi bi-whatsapp"></i> Kirim Perhitungan
+                        </a>
                     @endif
-
-                    <div class="card border-0 shadow-sm rounded-4 mb-4">
-                        <div class="card-body p-3 p-lg-4">
-                            <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                                <i class="bi bi-bank text-primary"></i> Rekening Pengembalian
-                            </h2>
-
-                            <div class="row g-3">
-                                @foreach ([
-                                    ['Bank', $rekening['bank'] ?? '—'],
-                                    ['Nomor rekening', $rekening['nomor'] ?? '—'],
-                                    ['Atas nama', $rekening['atas_nama'] ?? '—'],
-                                ] as [$label, $nilai])
-                                    <div class="col-6 col-md-4">
-                                        <div class="orcha-label-kecil">{{ $label }}</div>
-                                        <div class="fw-bold" style="font-size:.9rem">{{ $nilai }}</div>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="mt-3 text-muted d-flex gap-2 align-items-start" style="font-size:.8rem">
-                                <i class="bi bi-shield-check" style="line-height:1.5"></i>
-                                Dana hanya dikirim ke rekening atas nama pemesan yang melakukan pembayaran.
-                            </div>
-                        </div>
+                </div>
                     </div>
-
                 </div>
             </div>
 
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-3 p-lg-4">
+                        <div class="orcha-bagian-kepala">
+                            <div class="orcha-bagian-nomor"><i class="bi bi-person-lines-fill"></i></div>
+                            <div>
+                                <div class="orcha-bagian-judul">Pemohon</div>
+                                <div class="orcha-bagian-sub">Siapa yang mengajukan, dan alasannya.</div>
+                            </div>
+                        </div>
+
+                        {{-- Medan berkotak, sama dengan halaman detail sewa: label
+                             dan nilai yang ditumpuk polos tidak punya batas apa pun,
+                             jadi mata kehilangan pasangannya begitu jumlahnya lebih
+                             dari dua. --}}
+                        <div class="row g-2">
+                            @foreach ([
+                                ['Nama pemohon', $pembatalan['nama_pemohon'], null],
+                                ['WhatsApp', $pembatalan['whatsapp'], null],
+                                ['Email', $pembatalan['email'] ?: null, null],
+                                ['Alasan', $pembatalan['alasan_label'], null],
+                            ] as [$label, $nilai, $tautan])
+                                <div class="col-6 col-lg-3">
+                                    @include('livewire.pages.admin.orcha.partials.medan', [
+                                        'label' => $label, 'nilai' => $nilai, 'tautan' => $tautan,
+                                    ])
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if ($pembatalan['penjelasan'])
+                            <div class="mt-3">
+                                <div class="orcha-label-kecil mb-1">Penjelasan pemohon</div>
+                                <div class="orcha-alasan" style="font-size:.86rem">{{ $pembatalan['penjelasan'] }}</div>
+                            </div>
+                        @endif
+
+                        {{-- Nama pemohon dan nama pemesan tidak selalu sama, dan
+                             perbedaannya perlu diperiksa sebelum dana dikirim. --}}
+                        @if ($pesanan && $pesanan['nama'] !== $pembatalan['nama_pemohon'])
+                            <div class="orcha-alasan orcha-alasan-tinggi mt-3">
+                                <span class="orcha-label-kecil orcha-ikon-teks" style="color:#b91c1c">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Nama pemohon berbeda dari pemesan
+                                </span>
+                                <div class="mt-1" style="font-size:.84rem">
+                                    Pemesannya <strong>{{ $pesanan['nama'] }}</strong>, sedangkan yang mengajukan
+                                    <strong>{{ $pembatalan['nama_pemohon'] }}</strong>. Pastikan pengajuan ini
+                                    memang dari pihak yang berhak sebelum dana dikirim.
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Riwayat pembayaran = dasar angka yang dikirim balik. Bukti yang
+                     masih menunggu ditandai, karena memutuskannya akan mengubah
+                     perhitungan di atas. --}}
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-3 p-lg-4">
-                        <h2 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:1.05rem">
-                            <i class="bi bi-check2-square text-primary"></i> Tindak Lanjut
-                        </h2>
+                        <div class="orcha-bagian-kepala">
+                            <div class="orcha-bagian-nomor"><i class="bi bi-cash-coin"></i></div>
+                            <div>
+                                <div class="orcha-bagian-judul">Bukti Pembayaran</div>
+                                <div class="orcha-bagian-sub">Uang yang sudah masuk — dasar besarnya pengembalian.</div>
+                            </div>
+                        </div>
+
+                        @forelse ($pembatalan['pembayaran'] ?? [] as $bayar)
+                            <div class="orcha-alasan {{ $bayar['status'] === 'menunggu' ? 'orcha-alasan-tinggi' : '' }} mb-2">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <div class="fw-bold">{{ $bayar['nominal_formatted'] }}
+                                            <span class="text-muted fw-normal" style="font-size:.8rem">
+                                                · {{ $bayar['jenis_label'] }}
+                                            </span>
+                                        </div>
+                                        <div class="text-muted" style="font-size:.78rem">
+                                            {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }} ·
+                                            {{ $bayar['tanggal_transfer']
+                                                ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('j M Y')
+                                                : '—' }}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge orcha-lencana-bayar-{{ $bayar['status'] }}">
+                                            {{ $bayar['status_label'] }}
+                                        </span>
+                                        @if ($bayar['bukti'])
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat"
+                                                title="Lihat bukti transfer"
+                                                data-bukti="{{ $tautanBukti($bayar['bukti']) }}"
+                                                data-bukti-keterangan="{{ $pembatalan['kode_pendaftaran'] }} · {{ $bayar['nominal_formatted'] }} · {{ $bayar['bank_pengirim'] }}">
+                                                <i class="bi bi-receipt"></i>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if ($bayar['catatan_admin'])
+                                    <div class="mt-2" style="font-size:.8rem">{{ $bayar['catatan_admin'] }}</div>
+                                @endif
+                            </div>
+                        @empty
+                            <p class="text-muted mb-0" style="font-size:.86rem">
+                                Belum ada bukti pembayaran untuk kode ini. Tanpa uang yang masuk,
+                                tidak ada yang perlu dikembalikan.
+                            </p>
+                        @endforelse
+                    </div>
+                </div>
+
+                @if ($pesanan)
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-body p-3 p-lg-4">
+                            <div class="orcha-bagian-kepala">
+                                <div class="orcha-bagian-nomor"><i class="bi {{ $pesanan['jenis'] === 'sewa_kendaraan' ? 'bi-truck' : 'bi-signpost-split' }}"></i></div>
+                                <div>
+                                    <div class="orcha-bagian-judul">Pesanan yang Dibatalkan</div>
+                                    <div class="orcha-bagian-sub">Yang ikut ditandai batal bila pengajuan ini disetujui.</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                @foreach (array_filter([
+                                    ['Pemesan', $pesanan['nama']],
+                                    [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Kendaraan' : 'Paket', $pesanan['keterangan'] ?: '—'],
+                                    [$pesanan['jenis'] === 'sewa_kendaraan' ? 'Mulai sewa' : 'Tanggal berangkat',
+                                        $pesanan['mulai']
+                                            ? \Carbon\Carbon::parse($pesanan['mulai'])->locale('id')->translatedFormat($pesanan['jenis'] === 'sewa_kendaraan' ? 'j M Y, H:i' : 'j M Y')
+                                            : 'Menyusul'],
+                                    $pesanan['jenis'] === 'sewa_kendaraan'
+                                        ? ['Lama sewa', $pesanan['durasi_label'] ?: '—']
+                                        : ['Jumlah peserta', $pesanan['jumlah_peserta'] . ' orang'],
+                                ]) as [$label, $nilai])
+                                    <div class="col-6 col-lg-3">
+                                        @include('livewire.pages.admin.orcha.partials.medan', [
+                                            'label' => $label, 'nilai' => $nilai, 'tautan' => null,
+                                        ])
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <div class="mt-3 d-flex align-items-center gap-2">
+                                <span class="orcha-label-kecil mb-0">Status pesanan</span>
+                                <span class="badge orcha-lencana-bayar-{{ $pesanan['status'] === 'batal' ? 'ditolak' : 'diterima' }}">
+                                    {{ $pesanan['status_label'] }}
+                                </span>
+                            </div>
+
+                            {{-- Status pesanan berubah sendiri hanya ketika pembatalannya
+                                 disetujui. Selama masih diajukan, pesanannya sengaja
+                                 dibiarkan berjalan — tim masih boleh menolak. --}}
+                            @if ($pesanan['status'] !== 'batal' && in_array($pembatalan['status'], ['disetujui', 'dana_dikirim']))
+                                <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0" style="font-size:.82rem">
+                                    Pembatalan sudah disetujui tetapi pesanannya belum tercatat batal.
+                                    Simpan ulang statusnya untuk menyelaraskan.
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-3 p-lg-4">
+                        <div class="orcha-bagian-kepala">
+                            <div class="orcha-bagian-nomor"><i class="bi bi-bank"></i></div>
+                            <div>
+                                <div class="orcha-bagian-judul">Rekening Pengembalian</div>
+                                <div class="orcha-bagian-sub">Ke mana dananya dikirim balik.</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-2">
+                            @foreach ([
+                                ['Bank', $rekening['bank'] ?? null],
+                                ['Nomor rekening', $rekening['nomor'] ?? null],
+                                ['Atas nama', $rekening['atas_nama'] ?? null],
+                            ] as [$label, $nilai])
+                                <div class="col-6 col-lg-4">
+                                    @include('livewire.pages.admin.orcha.partials.medan', [
+                                        'label' => $label, 'nilai' => $nilai, 'tautan' => null,
+                                    ])
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <div class="mt-3 text-muted d-flex gap-2 align-items-start" style="font-size:.8rem">
+                            <i class="bi bi-shield-check" style="line-height:1.5"></i>
+                            Dana hanya dikirim ke rekening atas nama pemesan yang melakukan pembayaran.
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-3 p-lg-4">
+                        <div class="orcha-bagian-kepala">
+                            <div class="orcha-bagian-nomor"><i class="bi bi-check2-square"></i></div>
+                            <div>
+                                <div class="orcha-bagian-judul">Tindak Lanjut</div>
+                                <div class="orcha-bagian-sub">Tetapkan potongannya, lalu putuskan pengajuannya.</div>
+                            </div>
+                        </div>
 
                         {{-- Dua kolom: kiri menghitung, kanan memutuskan.
                              Sebelumnya seluruh panel ini menumpuk di kolom kanan yang
@@ -423,8 +502,11 @@ Detail Pembatalan || lemon
                              Sempat memakai .orcha-ikon-teks di sini, dan itu keliru:
                              inline-flex membuat SETIAP anak jadi item flex, sehingga tiap
                              <strong> terlempar ke kolomnya sendiri dan kalimatnya berantakan. --}}
-                        <div class="alert alert-info border-0 rounded-3 mt-3 d-flex gap-2 align-items-start"
-                            style="font-size:.8rem">
+                        {{-- Nadanya diturunkan menyamai kotak keterangan lain di
+                             halaman Orcha. Pita biru pekat setinggi kartu berteriak
+                             lebih keras daripada angka pengembalian di atasnya,
+                             padahal isinya keterangan, bukan peringatan. --}}
+                        <div class="orcha-alasan orcha-alasan-tenang mt-3 d-flex gap-2 align-items-start">
                             <i class="bi bi-info-circle" style="line-height:1.5"></i>
                             <span>
                                 Status <strong>Disetujui</strong> atau <strong>Dana dikirim</strong> ikut
@@ -436,9 +518,24 @@ Detail Pembatalan || lemon
                             </div>
                         </div>
 
-                        <button type="button" class="orcha-btn orcha-btn-utama w-100 mt-3"
-                            wire:click="simpan" wire:loading.attr="disabled">
-                            <i class="bi bi-save"></i> Simpan Tindak Lanjut
+                        {{-- Ikonnya berganti pemintal selama disimpan: menyimpan di sini
+                             menembak Orcha dan ikut menandai pesanannya batal, jadi jedanya
+                             terasa. Tombol yang diam selama itu membuat admin menekannya
+                             lagi — dan pembatalan yang terkirim dua kali bukan perkara
+                             tampilan.
+
+                             Pemintalnya disembunyikan lewat gaya di partial gaya, bukan
+                             hanya oleh skrip Livewire, supaya ia tidak tergambar sebelum
+                             tombolnya ditekan. --}}
+                        <button type="button" class="orcha-btn orcha-btn-utama orcha-tombol-lembar mt-3"
+                            wire:click="simpan" wire:target="simpan" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="simpan">
+                                <i class="bi bi-save"></i> Simpan Tindak Lanjut
+                            </span>
+                            <span wire:loading wire:target="simpan">
+                                <span class="spinner-border spinner-border-sm me-2"
+                                    role="status" aria-hidden="true"></span>Menyimpan...
+                            </span>
                         </button>
                     </div>
                 </div>

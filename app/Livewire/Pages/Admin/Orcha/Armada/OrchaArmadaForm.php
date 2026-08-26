@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Orcha\Armada;
 
 use App\Exceptions\OrchaTidakTerjangkau;
+use App\Livewire\Pages\Admin\Orcha\Concerns\BagianUnit;
 use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
@@ -16,7 +17,7 @@ use Livewire\WithFileUploads;
  */
 class OrchaArmadaForm extends Component
 {
-    use IsianRupiah, MemanggilOrcha, WithFileUploads;
+    use BagianUnit, IsianRupiah, MemanggilOrcha, WithFileUploads;
 
     public ?int $kendaraanId = null;
 
@@ -1004,9 +1005,28 @@ class OrchaArmadaForm extends Component
             return;
         }
 
+        /*
+         | Bagian yang BELUM punya nilai pada unit ini ikut dikirim sebagai
+         | "baik".
+         |
+         | kondisiIsian diisi dari kondisi_terkini unit, jadi bagian yang baru
+         | ditambahkan admin setelah unit ini terakhir disimpan tidak ada di
+         | dalamnya. Di layar ia tetap tergambar — bladenya memakai
+         | `?? 'baik'` — tetapi tidak pernah ikut terkirim selama admin tidak
+         | menyentuhnya. Akibatnya catatan kondisi unit berlubang tepat pada
+         | bagian yang baru saja dianggap penting untuk diperiksa.
+         |
+         | Yang dikirim harus sama dengan yang dilihat.
+         */
+        $kondisi = $this->kondisiIsian;
+
+        foreach (array_keys($this->bagianUntukJenis()) as $bagian) {
+            $kondisi[$bagian] ??= 'baik';
+        }
+
         $berhasil = $this->kirimData(
             "/kendaraan/{$this->kendaraanId}/kondisi",
-            ['kondisi' => $this->kondisiIsian, 'catatan' => $this->kondisiCatatan ?: null],
+            ['kondisi' => $kondisi, 'catatan' => $this->kondisiCatatan ?: null],
             'Kondisi unit tersimpan di Orcha.',
         );
 
@@ -1028,6 +1048,9 @@ class OrchaArmadaForm extends Component
      */
     public function bagianBermasalah(): array
     {
+        // Daftar BACA, bukan daftar isi: unit yang sudah tersimpan bisa memuat
+        // bagian yang belakangan dicabut dari jenis ini, dan kerusakannya tetap
+        // harus disebut namanya.
         $label = $this->rujukan('pemeriksaan_kendaraan');
 
         return collect($this->kondisiIsian)
@@ -1037,10 +1060,16 @@ class OrchaArmadaForm extends Component
             ->all();
     }
 
+    /** Bagian yang diperiksa untuk unit ini — aturannya di trait BagianUnit. */
+    public function bagianUntukJenis(): array
+    {
+        return $this->bagianUntukUnit($this->jenis, $this->kondisiIsian);
+    }
+
     /** Semua bagian ditandai baik — jalan pintas sesudah perbaikan menyeluruh. */
     public function semuaBaik(): void
     {
-        foreach (array_keys($this->rujukan('pemeriksaan_kendaraan')) as $bagian) {
+        foreach (array_keys($this->bagianUntukJenis()) as $bagian) {
             $this->kondisiIsian[$bagian] = 'baik';
         }
     }
@@ -1048,7 +1077,7 @@ class OrchaArmadaForm extends Component
     public function render()
     {
         return view('livewire.pages.admin.orcha.armada.form', [
-            'daftarBagian' => $this->rujukan('pemeriksaan_kendaraan'),
+            'daftarBagian' => $this->bagianUntukJenis(),
             'daftarKondisi' => $this->rujukan('kondisi_pemeriksaan'),
             'pilihanJenis' => $this->rujukan('jenis_kendaraan'),
             'katalog' => $this->katalog(),

@@ -107,9 +107,34 @@ class OrchaPembatalanDetail extends Component
         $nama = $this->data['nama_pemohon'] ?? 'Kak';
         $kode = $this->data['kode_pendaftaran'] ?? '-';
         $rek = $this->data['rekening'] ?? [];
+        $status = $this->data['status'] ?? 'diajukan';
+        $catatan = trim((string) ($this->data['catatan_admin'] ?? ''));
 
-        $pesan = "Halo {$nama} [[E:1F44B]]\n\n"
-            ."Pengajuan pembatalan Anda untuk pesanan *{$kode}* sudah kami periksa.\n\n";
+        /*
+         | Angkanya diambil dari perkiraan yang TERSIMPAN, bukan dari isian yang
+         | sedang diketik admin. Pelanggan tidak boleh menerima angka yang belum
+         | tercatat di mana pun; lencana "belum tersimpan" di layar sudah
+         | mengingatkan admin untuk menyimpannya lebih dulu.
+         */
+        $kembali = (int) ($p['kembali'] ?? 0);
+
+        $pesan = "Halo {$nama} [[E:1F44B]]\n\n";
+
+        // Pengajuan yang ditolak tidak pernah menyebut angka pengembalian.
+        // Menyebutnya berarti menjanjikan yang tidak akan datang.
+        if ($status === 'ditolak') {
+            $pesan .= "Mohon maaf, pengajuan pembatalan Anda untuk pesanan *{$kode}* "
+                ."belum dapat kami setujui.\n\n";
+
+            if ($catatan !== '') {
+                $pesan .= "[[E:1F4DD]] Keterangan: {$catatan}\n\n";
+            }
+
+            return $pesan.'Bila ada yang ingin ditanyakan, silakan balas pesan ini. '
+                .'Terima kasih [[E:1F64F]]';
+        }
+
+        $pesan .= "Pengajuan pembatalan Anda untuk pesanan *{$kode}* sudah kami periksa.\n\n";
 
         if ($p) {
             $pesan .= "[[E:1F4C4]] Sudah dibayar: *{$p['dibayar_teks']}*\n"
@@ -118,9 +143,28 @@ class OrchaPembatalanDetail extends Component
                 ."Dasarnya: {$p['batas']}, sesuai Kebijakan Pembatalan & Pengembalian Dana.\n\n";
         }
 
-        if (($rek['bank'] ?? null) && ($rek['nomor'] ?? null)) {
-            $pesan .= "Dana dikirim ke {$rek['bank']} {$rek['nomor']} a.n. {$rek['atas_nama']}.\n"
-                ."Mohon dikonfirmasi bila rekeningnya sudah benar.\n\n";
+        /*
+         | Rekening hanya disebut bila memang ada yang dikirim.
+         |
+         | Sebelumnya kalimat "Dana dikirim ke BCA ... mohon dikonfirmasi bila
+         | rekeningnya sudah benar" ikut terkirim walau pengembaliannya Rp 0 —
+         | pelanggan yang potongannya sebesar seluruh pembayarannya membaca
+         | dirinya akan menerima transfer, lalu menunggu uang yang tidak pernah
+         | berangkat. Yang datang berikutnya bukan uang, melainkan telepon.
+         */
+        if ($kembali > 0) {
+            if (($rek['bank'] ?? null) && ($rek['nomor'] ?? null)) {
+                $pesan .= "Dana dikirim ke {$rek['bank']} {$rek['nomor']} a.n. {$rek['atas_nama']}.\n"
+                    ."Mohon dikonfirmasi bila rekeningnya sudah benar.\n\n";
+            }
+        } elseif ($p) {
+            $pesan .= '[[E:2139]] Dengan perhitungan di atas, *tidak ada dana yang dikembalikan* '
+                ."untuk pembatalan ini.\n\n";
+        }
+
+        // Catatan admin ikut: di situlah alasan yang tidak tertampung angka.
+        if ($catatan !== '') {
+            $pesan .= "[[E:1F4DD]] Keterangan: {$catatan}\n\n";
         }
 
         return $pesan.'Terima kasih [[E:1F64F]]';

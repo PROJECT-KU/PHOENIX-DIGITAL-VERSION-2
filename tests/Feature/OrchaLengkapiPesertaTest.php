@@ -596,6 +596,23 @@ test('berkas kosong ditolak dengan sebab yang benar, bukan disalahkan ke jaringa
     Http::assertNotSent(fn ($permintaan) => $permintaan->method() === 'POST');
 });
 
+test('hapus surat bertanda tangan juga memakai konfirmasi SweetAlert', function () {
+    palsukanDetail([
+        'riwayat_penggantian' => [['dari' => 'haha', 'ke' => 'wiam']],
+        'surat_penggantian' => 'https://orcha.test/storage/surat-penggantian/abc.pdf',
+    ]);
+
+    // Satu bentuk konfirmasi untuk seluruh tindakan yang sama berbahayanya —
+    // admin tidak perlu belajar dua bahasa untuk "ini tidak bisa dibatalkan".
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/pendaftaran/9')->assertOk()->getContent();
+
+    expect($isi)
+        ->toContain('data-action="hapusSuratTtd"')
+        ->toContain('pcek-konfirmasi')
+        ->not->toContain('wire:confirm');
+});
+
 test('surat yang salah unggah bisa dicabut dari arsip', function () {
     palsukanDetail([
         'riwayat_penggantian' => [['dari' => 'Haha', 'ke' => 'Wiam']],

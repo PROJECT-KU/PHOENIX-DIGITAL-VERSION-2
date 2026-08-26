@@ -426,7 +426,22 @@
                             <span wire:loading.remove wire:target="simpan">
                                 {{ $ubah ? 'Simpan Perubahan' : 'Tambah Paket' }}
                             </span>
-                            <span wire:loading wire:target="simpan">Menyimpan ke Orcha…</span>
+                            {{-- Pemintal, bukan sekadar tulisan yang berganti.
+
+                                 Menyimpan di sini menembak Orcha, jadi jedanya
+                                 terasa — dan tombol yang hanya berganti kalimat
+                                 masih terlihat diam. Yang menekannya cenderung
+                                 menekan lagi, dan paket yang terkirim dua kali
+                                 bukan perkara tampilan.
+
+                                 Pemintalnya disembunyikan lewat aturan gaya di
+                                 partial gaya, bukan hanya oleh skrip Livewire,
+                                 supaya ia tidak tergambar sebelum tombolnya
+                                 ditekan. --}}
+                            <span wire:loading wire:target="simpan">
+                                <span class="spinner-border spinner-border-sm me-2"
+                                    role="status" aria-hidden="true"></span>Menyimpan ke Orcha…
+                            </span>
                         </button>
                         <a href="{{ route('admin.orcha.paket') }}" wire:navigate class="btn orcha-bahaya">
                             <i class="bi bi-x-lg"></i> Batal

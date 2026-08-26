@@ -50,6 +50,29 @@ test('foto tampil sebagai petak, lengkap dengan nomor urutnya', function () {
         ->assertSee('2 dari 2 foto tampil');
 });
 
+test('hapus foto memakai konfirmasi SweetAlert, bukan dialog bawaan peramban', function () {
+    palsukanGaleri([fotoGaleri(1, ['keterangan' => 'Kawah Ijen'])]);
+
+    /*
+     | Dialog bawaan peramban menampilkan "127.0.0.1:8001 says" di atas
+     | kalimatnya — terbaca seperti peringatan sistem yang bocor, bukan bagian
+     | dari aplikasi. Pola .pcek-konfirmasi sudah dipakai halaman Orcha lain.
+     |
+     | Konfirmasinya sendiri BUKAN pengaman: penghapusan tetap diperiksa server,
+     | dan skrip yang tidak sempat jalan hanya membuat tombolnya langsung
+     | bekerja — bukan membuka pintu bagi yang tidak berhak.
+     */
+    $isi = $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/galeri')->assertOk()->getContent();
+
+    expect($isi)
+        ->toContain('pcek-konfirmasi')
+        ->toContain('data-action="hapus"')
+        ->toContain('berkasnya ikut terhapus dari server')
+        // Dialog bawaan tidak boleh tersisa di halaman ini.
+        ->not->toContain('wire:confirm');
+});
+
 test('foto yang disembunyikan ditandai, bukan dihilangkan dari layar admin', function () {
     palsukanGaleri([
         fotoGaleri(1),
@@ -63,6 +86,97 @@ test('foto yang disembunyikan ditandai, bukan dihilangkan dari layar admin', fun
         ->assertOk()
         ->assertSee('Disembunyikan')
         ->assertSee('1 dari 2 foto tampil');
+});
+
+test('foto ditampilkan lewat alamat Orcha, bukan alamat lemon', function () {
+    palsukanGaleri([fotoGaleri(1)]);
+
+    /*
+     | Foto disimpan di Orcha, dan API mengirim jalur relatif
+     | "/storage/galeri/x.webp". Memasangnya apa adanya membuat peramban
+     | mencarinya di alamat lemon — hasilnya kotak gambar rusak, dan admin tidak
+     | punya petunjuk apa pun tentang sebabnya.
+     */
+    $this->actingAs(adminPeserta())
+        ->get('/admin/orcha/galeri')
+        ->assertOk()
+        ->assertSee('src="https://orcha.test/storage/galeri/1.webp"', false);
+});
+
+test('tiap foto boleh punya keterangan sendiri dalam satu unggahan', function () {
+    palsukanGaleri();
+
+    /*
+     | Satu keterangan untuk seluruh unggahan benar selama fotonya serombongan
+     | dari acara yang sama — dan salah begitu admin memilih foto dari beberapa
+     | trip sekaligus. Yang terjadi kalau dipaksa satu bukan admin mengeluh,
+     | melainkan keterangannya diisi asal-asalan lalu tidak pernah dibetulkan.
+     */
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->set('fotoBaru', [
+            UploadedFile::fake()->image('a.jpg'),
+            UploadedFile::fake()->image('b.jpg'),
+        ])
+        ->set('keteranganPer.0', 'Kawah Ijen')
+        ->set('keteranganPer.1', 'Pantai Pulau Merah')
+        ->set('tampilBaru', false)
+        ->call('unggah')
+        ->assertDispatched('order-updated')
+        // Isiannya dikosongkan setelah terkirim, supaya unggahan berikutnya
+        // tidak diam-diam mewarisi keterangan rombongan sebelumnya.
+        ->assertSet('keteranganPer', [])
+        ->assertSet('tampilBaru', true);
+
+    $terkirim = [];
+    Http::assertSent(function ($p) use (&$terkirim) {
+        if ($p->method() === 'POST' && str_contains($p->url(), '/galeri')) {
+            $isi = collect($p->data());
+            $terkirim[] = [
+                $isi->firstWhere('name', 'keterangan')['contents'] ?? null,
+                $isi->firstWhere('name', 'tampil')['contents'] ?? null,
+            ];
+        }
+
+        return true;
+    });
+
+    expect($terkirim)->toBe([['Kawah Ijen', '0'], ['Pantai Pulau Merah', '0']]);
+});
+
+test('satu isian bisa menyamakan keterangan seluruh foto', function () {
+    palsukanGaleri();
+
+    // Foto serombongan dari acara yang sama tetap terlayani: mengetik dua belas
+    // kali kalimat yang sama adalah pekerjaan yang tidak menghasilkan apa pun.
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->set('fotoBaru', [
+            UploadedFile::fake()->image('a.jpg'),
+            UploadedFile::fake()->image('b.jpg'),
+            UploadedFile::fake()->image('c.jpg'),
+        ])
+        ->set('keteranganBaru', 'Rombongan SMA 1 di Kawah Ijen')
+        ->call('samakanKeterangan')
+        ->assertSet('keteranganPer', [
+            'Rombongan SMA 1 di Kawah Ijen',
+            'Rombongan SMA 1 di Kawah Ijen',
+            'Rombongan SMA 1 di Kawah Ijen',
+        ]);
+});
+
+test('memilih foto menyiapkan tempat keterangan sebanyak fotonya', function () {
+    palsukanGaleri();
+
+    // Larik yang tumbuh sambil diketik membuat Livewire kehilangan jejak baris
+    // mana milik foto mana.
+    Livewire::actingAs(adminPeserta())
+        ->test(OrchaGaleriList::class)
+        ->set('fotoBaru', [
+            UploadedFile::fake()->image('a.jpg'),
+            UploadedFile::fake()->image('b.jpg'),
+        ])
+        ->assertCount('keteranganPer', 2);
 });
 
 test('banyak foto bisa diunggah sekaligus', function () {

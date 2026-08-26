@@ -115,7 +115,12 @@ Detail Pendaftaran || lemon
                  dengan nominal yang harus disalin sendiri dari layar sebelah.
                  Satu angka salah ketik berarti pelanggan mentransfer jumlah
                  yang keliru, dan itu baru ketahuan saat buktinya masuk. --}}
-                            <button type="button" class="orcha-btn orcha-btn-wa"
+                            {{-- Keempatnya seukuran pemilih status di sebelahnya — 34px lewat
+                                 .orcha-aksi-sewa, ukuran yang sama dipakai kartu Tindakan di
+                                 detail sewa dan detail pembatalan. Satu bilah perkakas yang
+                                 tombolnya berbeda-beda tinggi terbaca seperti kumpulan
+                                 tombol yang kebetulan bersebelahan. --}}
+                            <button type="button" class="orcha-btn orcha-btn-wa orcha-aksi-sewa"
                                 onclick="orchaBukaLembar('pilihanWa')">
                                 <i class="bi bi-whatsapp"></i> Hubungi Pemesan
                             </button>
@@ -125,7 +130,7 @@ Detail Pendaftaran || lemon
                                  ke pelanggan, lalu meneruskannya lewat WhatsApp.
                                  Tidak menuntut izin data kesehatan — isinya biaya. --}}
                             <a href="{{ route('admin.orcha.pendaftaran.kwitansi', $pendaftaranId) }}"
-                                class="orcha-btn orcha-btn-lembut" title="Kwitansi yang sama dengan yang dikirim ke pelanggan">
+                                class="orcha-btn orcha-btn-lembut orcha-aksi-sewa" title="Kwitansi yang sama dengan yang dikirim ke pelanggan">
                                 <i class="bi bi-receipt"></i> Kwitansi
                             </a>
 
@@ -134,11 +139,11 @@ Detail Pendaftaran || lemon
                                  data kesehatan, jadi ikut dijaga izin yang sama. --}}
                             @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
                                 <a href="{{ route('admin.orcha.pendaftaran.pdf', $pendaftaranId) }}"
-                                    class="orcha-btn orcha-btn-lembut" title="Manifes untuk tour leader di lapangan">
+                                    class="orcha-btn orcha-btn-lembut orcha-aksi-sewa" title="Manifes untuk tour leader di lapangan">
                                     <i class="bi bi-filetype-pdf"></i> Manifes PDF
                                 </a>
                                 <a href="{{ route('admin.orcha.pendaftaran.excel', $pendaftaranId) }}"
-                                    class="orcha-btn orcha-btn-lembut" title="Data lengkap untuk kantor">
+                                    class="orcha-btn orcha-btn-lembut orcha-aksi-sewa" title="Data lengkap untuk kantor">
                                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                                 </a>
                             @endif
@@ -151,14 +156,22 @@ Detail Pendaftaran || lemon
                              pekerjaan yang menunggu. --}}
                         <div class="d-flex align-items-center gap-2">
                             <span class="orcha-label-kecil">Status</span>
-                            <select class="form-select orcha-pilih-status status-{{ $pendaftaran['status'] }}"
-                                style="width:auto" wire:change="ubahStatus($event.target.value)">
-                                @foreach ($pilihanStatus as $kunci => $label)
-                                    <option value="{{ $kunci }}" @selected($pendaftaran['status'] === $kunci)>
-                                        {{ $label }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @if ($pilihanStatus === [])
+                                <span class="orcha-status-diam status-{{ $pendaftaran['status'] }}"
+                                    title="Daftar status belum bisa diambil dari Orcha, jadi statusnya belum bisa diubah dari sini.">
+                                    <i class="bi bi-wifi-off"></i>
+                                    {{ $pendaftaran['status_label'] ?? $pendaftaran['status'] }}
+                                </span>
+                            @else
+                                <select class="form-select form-select-sm orcha-pilih-status status-{{ $pendaftaran['status'] }}"
+                                    wire:change="ubahStatus($event.target.value)">
+                                    @foreach ($pilihanStatus as $kunci => $label)
+                                        <option value="{{ $kunci }}" @selected($pendaftaran['status'] === $kunci)>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -232,24 +245,112 @@ Detail Pendaftaran || lemon
             @endif
 
             @if ($pembatalan)
-                <div class="alert alert-danger border-0 rounded-4 d-flex gap-3 align-items-start">
-                    <i class="bi bi-exclamation-octagon-fill fs-4"></i>
-                    <div>
-                        <strong>Ada pengajuan pembatalan</strong>
-                        <span class="badge bg-danger ms-1">{{ $pembatalan['status'] }}</span>
-                        <div style="font-size:.88rem" class="mt-1">
-                            {{ $pembatalan['jumlah_dibatalkan'] }} peserta ·
-                            {{ $pembatalan['alasan_label'] }} ·
-                            diajukan
-                            {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->locale('id')->translatedFormat('d M Y') }}
-                            oleh {{ $pembatalan['nama_pemohon'] }}
+                @php
+                    /*
+                     | Rekeningnya HANYA ditunjukkan bila memang ada yang dikirim.
+                     |
+                     | Dulu ia selalu tampil sebagai "Rekening pengembalian: ...".
+                     | Pada pengajuan yang potongannya sebesar seluruh pembayaran —
+                     | kembali Rp 0 — kalimat itu terbaca sebagai perintah
+                     | mentransfer ke sana, padahal di fitur Pembatalan memang tidak
+                     | ada yang dikembalikan. Admin yang awam mengerjakannya.
+                     |
+                     | Yang menentukan ANGKANYA, bukan ada tidaknya rekening.
+                     */
+                    $perkiraan = $pembatalan['perkiraan'] ?? null;
+                    $adaKembali = ($perkiraan['kembali'] ?? 0) > 0;
+                    $sudahDikirim = ($pembatalan['status'] ?? '') === 'dana_dikirim';
+                @endphp
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4 orcha-kartu-batal">
+                    <div class="card-body p-3 p-lg-4">
+                        <div class="orcha-bagian-kepala mb-3">
+                            <div class="orcha-bagian-nomor batal"><i class="bi bi-x-octagon"></i></div>
+                            <div class="flex-grow-1">
+                                <div class="orcha-bagian-judul d-flex flex-wrap align-items-center gap-2">
+                                    Ada pengajuan pembatalan
+                                    <span class="orcha-status-batal" data-status="{{ $pembatalan['status'] }}">
+                                        {{ $pembatalan['status_label'] ?? $pembatalan['status'] }}
+                                    </span>
+                                </div>
+                                <div class="orcha-bagian-sub">
+                                    {{ $pembatalan['jumlah_dibatalkan'] }} peserta ·
+                                    {{ $pembatalan['alasan_label'] }} · diajukan
+                                    {{ \Carbon\Carbon::parse($pembatalan['dibuat_pada'])->locale('id')->translatedFormat('j M Y') }}
+                                    oleh {{ $pembatalan['nama_pemohon'] }}
+                                </div>
+                            </div>
                         </div>
+
                         @if ($pembatalan['penjelasan'])
-                            <div style="font-size:.85rem" class="mt-1 fst-italic">"{{ $pembatalan['penjelasan'] }}"</div>
+                            <div class="orcha-alasan orcha-alasan-tenang mb-3">
+                                <span class="orcha-label-kecil mb-0">
+                                    <i class="bi bi-chat-quote"></i> Penjelasan pemohon
+                                </span>
+                                <div class="mt-1">"{{ $pembatalan['penjelasan'] }}"</div>
+                            </div>
                         @endif
-                        <div style="font-size:.82rem" class="mt-1">
-                            Rekening pengembalian: <strong>{{ $pembatalan['rekening'] }}</strong>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                @include('livewire.pages.admin.orcha.partials.medan', [
+                                    'label' => 'Sudah dibayar',
+                                    'nilai' => $perkiraan['dibayar_teks'] ?? null,
+                                ])
+                            </div>
+                            <div class="col-12 col-md-4">
+                                @include('livewire.pages.admin.orcha.partials.medan', [
+                                    'label' => 'Potongan' . (isset($perkiraan['persen']) ? ' (' . $perkiraan['persen'] . '%)' : ''),
+                                    'nilai' => $perkiraan['potongan_teks'] ?? null,
+                                ])
+                            </div>
+                            <div class="col-12 col-md-4">
+                                @include('livewire.pages.admin.orcha.partials.medan', [
+                                    'label' => 'Dikembalikan',
+                                    'nilai' => $perkiraan['kembali_teks'] ?? null,
+                                ])
+                            </div>
                         </div>
+
+                        {{-- Kalimatnya menyebut PERBUATANNYA, bukan sekadar angka:
+                             yang membaca kartu ini sedang memutuskan mau berbuat apa. --}}
+                        @if (! $adaKembali)
+                            <div class="orcha-alasan orcha-alasan-tenang mt-3">
+                                <span class="orcha-label-kecil mb-0">
+                                    <i class="bi bi-slash-circle"></i> Tidak ada dana yang dikembalikan
+                                </span>
+                                <div class="mt-1">
+                                    Potongannya sebesar seluruh pembayaran yang sudah masuk, jadi
+                                    <strong>tidak ada yang perlu ditransfer</strong>. Rekening pemohon
+                                    sengaja tidak ditampilkan supaya tidak terlanjur dikirimi.
+                                </div>
+                            </div>
+                        @elseif ($sudahDikirim)
+                            <div class="orcha-alasan orcha-alasan-tenang mt-3">
+                                <span class="orcha-label-kecil mb-0">
+                                    <i class="bi bi-check2-circle"></i> Dana sudah ditandai terkirim
+                                </span>
+                                <div class="mt-1">
+                                    Dikirim ke <strong>{{ $pembatalan['rekening'] }}</strong>.
+                                    Tidak perlu ditransfer lagi.
+                                </div>
+                            </div>
+                        @else
+                            <div class="orcha-alasan orcha-alasan-sedang mt-3">
+                                <span class="orcha-label-kecil mb-0">
+                                    <i class="bi bi-send-exclamation"></i> Perlu ditransfer ke pemohon
+                                </span>
+                                <div class="mt-1">
+                                    <strong>{{ $perkiraan['kembali_teks'] }}</strong> ke
+                                    <strong>{{ $pembatalan['rekening'] }}</strong>.
+                                </div>
+                            </div>
+                        @endif
+
+                        <a href="{{ route('admin.orcha.pembatalan.detail', $pembatalan['id']) }}" wire:navigate
+                            class="orcha-btn orcha-btn-lembut orcha-aksi-sewa mt-3">
+                            <i class="bi bi-box-arrow-up-right"></i> Buka pengajuannya
+                        </a>
                     </div>
                 </div>
             @endif
@@ -441,9 +542,14 @@ Detail Pendaftaran || lemon
                                                 accept=".pdf,.jpg,.jpeg,.png,.webp">
                                         </label>
 
-                                        <button type="button" class="orcha-btn orcha-btn-kecil orcha-btn-bahaya"
-                                            wire:click="hapusSuratTtd"
-                                            wire:confirm="Hapus surat bertanda tangan ini dari arsip?">
+                                        {{-- Sama seperti galeri: SweetAlert, bukan dialog bawaan
+                                             peramban yang menampilkan nama host di atas
+                                             kalimatnya. --}}
+                                        <button type="button" class="orcha-btn orcha-btn-kecil orcha-btn-bahaya pcek-konfirmasi"
+                                            data-action="hapusSuratTtd"
+                                            data-title="Hapus surat bertanda tangan?"
+                                            data-text="Berkasnya ikut terhapus dari server. Surat kosongnya tetap bisa diunduh ulang untuk ditandatangani lagi."
+                                            data-confirm="Ya, hapus" data-icon="warning">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>

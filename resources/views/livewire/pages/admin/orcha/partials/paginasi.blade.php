@@ -8,6 +8,12 @@
 --}}
 @php
     $halamanKini = (int) ($meta['halaman'] ?? 1);
+
+    // Alamat satu halaman, membawa saringan yang sedang aktif supaya berpindah
+    // halaman tidak diam-diam menghapus pencarian admin.
+    $tautanHalaman = fn (int $nomor) => request()->fullUrlWithQuery([
+        'halaman' => $nomor > 1 ? $nomor : null,
+    ]);
     $halamanAkhir = (int) ($meta['halaman_terakhir'] ?? 1);
     $total = (int) ($meta['total'] ?? 0);
     $perHalaman = (int) ($meta['per_halaman'] ?? 0);
@@ -42,14 +48,14 @@
         <nav class="orcha-halaman">
             <ul class="pagination pagination-sm mb-0">
                 <li class="page-item {{ $halamanKini <= 1 ? 'disabled' : '' }}">
-                    <button type="button" class="page-link" wire:click="keHalaman({{ $halamanKini - 1 }})">
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini - 1) }}" wire:navigate>
                         <i class="bi bi-chevron-left"></i>
-                    </button>
+                    </a>
                 </li>
 
                 @if ($mulai > 1)
                     <li class="page-item">
-                        <button type="button" class="page-link" wire:click="keHalaman(1)">1</button>
+                        <a class="page-link" href="{{ $tautanHalaman(1) }}" wire:navigate>1</a>
                     </li>
                     @if ($mulai > 2)
                         <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -58,7 +64,7 @@
 
                 @for ($nomor = $mulai; $nomor <= $selesai; $nomor++)
                     <li class="page-item {{ $nomor === $halamanKini ? 'active' : '' }}">
-                        <button type="button" class="page-link" wire:click="keHalaman({{ $nomor }})">{{ $nomor }}</button>
+                        <a class="page-link" href="{{ $tautanHalaman($nomor) }}" wire:navigate>{{ $nomor }}</a>
                     </li>
                 @endfor
 
@@ -67,14 +73,14 @@
                         <li class="page-item disabled"><span class="page-link">…</span></li>
                     @endif
                     <li class="page-item">
-                        <button type="button" class="page-link" wire:click="keHalaman({{ $halamanAkhir }})">{{ $halamanAkhir }}</button>
+                        <a class="page-link" href="{{ $tautanHalaman($halamanAkhir) }}" wire:navigate>{{ $halamanAkhir }}</a>
                     </li>
                 @endif
 
                 <li class="page-item {{ $halamanKini >= $halamanAkhir ? 'disabled' : '' }}">
-                    <button type="button" class="page-link" wire:click="keHalaman({{ $halamanKini + 1 }})">
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini + 1) }}" wire:navigate>
                         <i class="bi bi-chevron-right"></i>
-                    </button>
+                    </a>
                 </li>
             </ul>
         </nav>

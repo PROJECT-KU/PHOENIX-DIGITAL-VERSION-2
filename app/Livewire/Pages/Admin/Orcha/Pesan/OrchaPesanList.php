@@ -9,6 +9,12 @@ class OrchaPesanList extends Component
 {
     use MemanggilOrcha;
 
+    /**
+     * Ikut di alamat, supaya tautan dari lonceng dan bilah samping mendarat di
+     * kotak masuk yang SUDAH tersaring — bukan di seluruh daftar, yang memaksa
+     * admin menekan penyaringnya sendiri setelah sampai.
+     */
+    #[\Livewire\Attributes\Url(as: 'belumDibaca', except: false)]
     public bool $hanyaBelumDibaca = false;
 
     public function updatedHanyaBelumDibaca(): void

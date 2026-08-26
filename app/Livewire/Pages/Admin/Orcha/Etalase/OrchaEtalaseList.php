@@ -172,10 +172,16 @@ class OrchaEtalaseList extends Component
 
     public function render()
     {
-        // Hanya destinasi yang dipenggal per halaman. Testimoni dan partner
-        // masih dikirim Orcha sekaligus; menyodorkan nomor halaman untuk daftar
-        // yang tidak berhalaman hanya menjanjikan yang tidak ada.
-        $berhalaman = $this->jenis === 'destinasi';
+        /*
+         | Ketiga jenisnya kini dipenggal per halaman oleh Orcha, berikut
+         | pencariannya.
+         |
+         | Dibiarkan sebagai daftar, bukan disederhanakan jadi "selalu": jenis
+         | baru yang ditambahkan kelak belum tentu ikut dipenggal di sisi
+         | Orcha, dan menyodorkan nomor halaman untuk daftar yang tidak
+         | berhalaman hanya menjanjikan yang tidak ada.
+         */
+        $berhalaman = in_array($this->jenis, ['destinasi', 'testimoni', 'partner'], true);
 
         $parameter = [];
 
@@ -192,10 +198,15 @@ class OrchaEtalaseList extends Component
 
         $daftar = collect($hasil['data'] ?? []);
 
-        // Testimoni dan partner dikirim seluruhnya (jumlahnya sedikit), jadi
-        // pencariannya cukup di sini. Untuk destinasi TIDAK: penyaring di sini
-        // hanya melihat sembilan baris yang kebetulan sedang tampil, sehingga
-        // yang dicari admin akan "tidak ditemukan" padahal ada di halaman lain.
+        /*
+         | Jaring pengaman untuk jenis yang BELUM dipenggal di sisi Orcha —
+         | untuk saat ini tidak ada satu pun.
+         |
+         | Yang sudah dipenggal TIDAK boleh disaring di sini: penyaring ini
+         | hanya melihat baris yang kebetulan sedang tampil, sehingga yang
+         | dicari admin akan "tidak ditemukan" padahal ada di halaman lain.
+         | Pencariannya sudah dikerjakan Orcha lewat parameter `cari`.
+         */
         if (! $berhalaman && $this->cari !== '') {
             $kata = mb_strtolower($this->cari);
             $daftar = $daftar->filter(fn ($baris) => str_contains(mb_strtolower(

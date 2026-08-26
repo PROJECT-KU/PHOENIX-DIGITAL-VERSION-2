@@ -21,3 +21,8 @@ yarn-error.log
 # Salinan kembar buatan OneDrive/iCloud ("Berkas 2.php") — jangan pernah ikut komit,
 # nama kelasnya sama sehingga membingungkan autoload dan pencarian kode.
 *\ 2.*
+# OneDrive tidak berhenti di angka 2: begitu ada salinan ketiga ia menamainya
+# "Berkas 3.php", dan aturan yang hanya menutup " 2." meloloskannya. Enam belas
+# berkas seperti itu sempat ikut ter-stage menjelang deploy.
+*\ 3.*
+*\ 4.*
