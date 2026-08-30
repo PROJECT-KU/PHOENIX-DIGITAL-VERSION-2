@@ -338,7 +338,7 @@ Detail Pesan Kontak || lemon
             color: #24384a;
             background: #f7f9fb;
             border: 1px solid #e3ecf3;
-            border-left: 4px solid #1d6fa5;
+            border-left: 4px solid var(--orc-primer);
             border-radius: .8rem;
             padding: 1rem 1.15rem;
         }
@@ -357,7 +357,7 @@ Detail Pesan Kontak || lemon
         /* Yang belum dibaca diberi tepi kiri, penanda yang sama dengan barisnya
            di kotak masuk. */
         .orcha-pesanan-kartu.belum {
-            border-left: 4px solid #1d6fa5;
+            border-left: 4px solid var(--orc-primer);
         }
 
     </style>

@@ -10,7 +10,7 @@
             justify-content: space-between;
             gap: 1rem;
             padding: 1.1rem 1.35rem;
-            background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+            background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
             color: #fff;
             border-radius: 1rem 1rem 0 0;
         }
@@ -61,13 +61,13 @@
             padding: .9rem 1.1rem;
             border-radius: .9rem;
             background: linear-gradient(135deg, #f4f8fb, #e8f1f8);
-            border-left: 4px solid #1d6fa5;
+            border-left: 4px solid var(--orc-primer);
         }
 
         .orcha-cek-nominal .angka {
             font-size: 1.75rem;
             font-weight: 800;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             line-height: 1.15;
             letter-spacing: -.01em;
         }
@@ -102,7 +102,7 @@
             align-items: center;
             justify-content: center;
             background: #eef5fa;
-            color: #1d6fa5;
+            color: var(--orc-primer);
             font-size: .9rem;
         }
 
@@ -147,7 +147,7 @@
             gap: .35rem;
             padding: .3rem .7rem;
             border-radius: 2rem;
-            background: rgba(15, 45, 74, .78);
+            background: rgba(31, 45, 61, .78);
             color: #fff;
             font-size: .74rem;
             white-space: nowrap;
@@ -173,7 +173,7 @@
             gap: .4rem;
             font-size: .82rem;
             font-weight: 600;
-            color: #1d6fa5;
+            color: var(--orc-primer);
             cursor: pointer;
         }
 
@@ -252,7 +252,7 @@
         }
 
         .orcha-cek-status input:focus-visible+span {
-            outline: 2px solid #1d6fa5;
+            outline: 2px solid var(--orc-primer);
             outline-offset: 2px;
         }
 

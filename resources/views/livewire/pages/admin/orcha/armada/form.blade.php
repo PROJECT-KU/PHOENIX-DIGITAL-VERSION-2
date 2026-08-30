@@ -1120,7 +1120,7 @@
                 return '<div class="orcha-pick-row">'
                     + '<button type="button" class="orcha-pick-item" data-nilai="' + orchaEsc(n)
                     + '" data-cari="' + orchaEsc(String(n).toLowerCase()) + '">'
-                    + '<i class="bi ' + opsi.ikon + ' me-2" style="color:#1d6fa5;"><\/i>' + orchaEsc(n)
+                    + '<i class="bi ' + opsi.ikon + ' me-2" style="color:var(--orc-primer);"><\/i>' + orchaEsc(n)
                     + '<\/button>'
                     + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
                         + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
@@ -1183,7 +1183,7 @@
                     + '<button type="button" id="orchaPickManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
                     + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                 background: 'rgba(255, 255, 255, 0.92)',
-                backdrop: 'rgba(29, 111, 165, 0.15)',
+                backdrop: 'rgba(124, 58, 237, 0.15)',
                 customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                 buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                 width: 480, padding: '1.25rem',
@@ -1219,7 +1219,7 @@
                             input: 'text',
                             inputPlaceholder: opsi.contohManual,
                             background: 'rgba(255, 255, 255, 0.92)',
-                            backdrop: 'rgba(29, 111, 165, 0.15)',
+                            backdrop: 'rgba(124, 58, 237, 0.15)',
                             customClass: {
                                 popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
                                 confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
@@ -1409,14 +1409,14 @@
         flex-wrap: wrap;
         gap: .3rem;
         padding: .6rem .8rem;
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
     }
 
     .orcha-pratinjau .lencana {
         padding: .12rem .5rem;
         border-radius: 999px;
         background: rgba(255, 255, 255, .92);
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-size: .66rem;
         font-weight: 800;
         letter-spacing: .02em;
@@ -1430,12 +1430,12 @@
     .orcha-pratinjau .nama {
         font-size: .95rem;
         font-weight: 800;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         line-height: 1.25;
     }
 
     .orcha-pratinjau .varian {
-        color: #1d6fa5;
+        color: var(--orc-primer);
     }
 
     .orcha-pratinjau .rinci {
@@ -1458,7 +1458,7 @@
         align-items: center;
         justify-content: center;
         line-height: 1;
-        color: #1d6fa5;
+        color: var(--orc-primer);
         flex: 0 0 auto;
     }
 
@@ -1479,7 +1479,7 @@
     }
 
     .orcha-pratinjau .tarif strong {
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-size: .86rem;
     }
 
@@ -1597,7 +1597,7 @@
         align-items: center;
         justify-content: center;
         line-height: 1;
-        color: #1d6fa5;
+        color: var(--orc-primer);
     }
 
     .orcha-pos-kepala .ket {

@@ -558,7 +558,7 @@ Detail Pendaftaran || lemon
                                         <i class="bi bi-cloud-arrow-up"></i>
 
                                         <div class="flex-grow-1">
-                                            <div class="fw-bold" style="font-size:.84rem;color:#0f2d4a">
+                                            <div class="fw-bold" style="font-size:.84rem;color: var(--orc-tinta)">
                                                 Sudah ditandatangani? Unggah ke sini
                                             </div>
                                             <div class="text-muted" style="font-size:.75rem">
@@ -871,7 +871,7 @@ Detail Pendaftaran || lemon
                     </span>
 
                     <span class="flex-grow-1">
-                        <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                        <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
                             {{ $pilihan['judul'] }}
                         </span>
                         <span class="d-block text-muted" style="font-size:.78rem">
@@ -898,7 +898,7 @@ Detail Pendaftaran || lemon
                 </span>
 
                 <span class="flex-grow-1">
-                    <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                    <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
                         Buka percakapan kosong
                     </span>
                     <span class="d-block text-muted" style="font-size:.78rem">

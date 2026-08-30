@@ -645,7 +645,7 @@
                     return '<div class="orcha-pick-row">'
                         + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
                         + '" data-cari="' + provEsc(String(n).toLowerCase()) + '">'
-                        + '<i class="bi bi-geo-alt me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                        + '<i class="bi bi-geo-alt me-2" style="color:var(--orc-primer);"><\/i>' + provEsc(n)
                         + '<\/button>'
                         + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
                             + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
@@ -703,7 +703,7 @@
                         + '<button type="button" id="orchaProvManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
                         + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                     background: 'rgba(255, 255, 255, 0.92)',
-                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    backdrop: 'rgba(124, 58, 237, 0.15)',
                     customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                     buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                     width: 480, padding: '1.25rem',
@@ -740,7 +740,7 @@
                                 inputPlaceholder: 'mis. Papua Barat Laut',
                                 text: 'Ditambahkan ke wilayah yang sedang dipilih.',
                                 background: 'rgba(255, 255, 255, 0.92)',
-                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                backdrop: 'rgba(124, 58, 237, 0.15)',
                                 customClass: {
                                     popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
                                     confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
@@ -794,7 +794,7 @@
                             + '<button type="button" class="orcha-pick-item' + (kunci === sekarang ? ' terpilih' : '')
                             + '" data-nilai="' + provEsc(kunci)
                             + '" data-cari="' + provEsc(String(label).toLowerCase()) + '">'
-                            + '<i class="bi bi-compass me-2" style="color:#1d6fa5;"><\/i>' + provEsc(label)
+                            + '<i class="bi bi-compass me-2" style="color:var(--orc-primer);"><\/i>' + provEsc(label)
                             + '<\/button>'
                             + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
                                 + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
@@ -808,7 +808,7 @@
                         + '<button type="button" id="orchaWilManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
                         + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                     background: 'rgba(255, 255, 255, 0.92)',
-                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    backdrop: 'rgba(124, 58, 237, 0.15)',
                     customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                     buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                     width: 460, padding: '1.25rem',
@@ -856,7 +856,7 @@
                                 inputPlaceholder: 'mis. Jalur Rempah',
                                 text: 'Langsung jadi tab penyaring di halaman Destinasi.',
                                 background: 'rgba(255, 255, 255, 0.92)',
-                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                backdrop: 'rgba(124, 58, 237, 0.15)',
                                 customClass: {
                                     popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
                                     confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
@@ -922,7 +922,7 @@
                         return '<div class="orcha-pick-row">'
                             + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
                             + '" data-cari="' + provEsc(String(n).toLowerCase()) + '">'
-                            + '<i class="bi bi-pin-map me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                            + '<i class="bi bi-pin-map me-2" style="color:var(--orc-primer);"><\/i>' + provEsc(n)
                             + '<\/button>'
                             + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
                                 + '" title="Hapus dari daftar"><i class="bi bi-trash3"><\/i><\/button>' : '')
@@ -957,7 +957,7 @@
                         + '<button type="button" id="orchaDaerahManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
                         + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                     background: 'rgba(255, 255, 255, 0.92)',
-                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    backdrop: 'rgba(124, 58, 237, 0.15)',
                     customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                     buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                     width: 480, padding: '1.25rem',
@@ -1005,7 +1005,7 @@
                                 inputPlaceholder: 'mis. Situbondo',
                                 text: 'Ditambahkan ke provinsi ' + provSekarang() + '.',
                                 background: 'rgba(255, 255, 255, 0.92)',
-                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                backdrop: 'rgba(124, 58, 237, 0.15)',
                                 customClass: {
                                     popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
                                     confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
@@ -1069,7 +1069,7 @@
                         return '<div class="orcha-pick-row">'
                             + '<button type="button" class="orcha-pick-item" data-nilai="' + provEsc(n)
                             + '" data-cari="' + provEsc((n + ' ' + alamat).toLowerCase()) + '">'
-                            + '<i class="bi bi-geo me-2" style="color:#1d6fa5;"><\/i>' + provEsc(n)
+                            + '<i class="bi bi-geo me-2" style="color:var(--orc-primer);"><\/i>' + provEsc(n)
                             + (alamat ? '<small class="text-muted ms-2">' + provEsc(alamat) + '<\/small>' : '')
                             + '<\/button>'
                             + (id ? '<button type="button" class="orcha-pick-del" data-id="' + id
@@ -1106,7 +1106,7 @@
                         + '<button type="button" id="orchaDestManual" class="orcha-pick-item mt-2" style="border-style:dashed;">'
                         + '<i class="bi bi-plus-circle me-2" style="color:#64748b;"><\/i>Tulis sendiri &amp; tambahkan ke daftar…<\/button>',
                     background: 'rgba(255, 255, 255, 0.92)',
-                    backdrop: 'rgba(29, 111, 165, 0.15)',
+                    backdrop: 'rgba(124, 58, 237, 0.15)',
                     customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold' },
                     buttonsStyling: false, showConfirmButton: false, showCloseButton: true,
                     width: 520, padding: '1.25rem',
@@ -1144,7 +1144,7 @@
                                 inputPlaceholder: 'mis. Pantai Pulau Merah',
                                 text: 'Provinsinya dicari otomatis bila dikenali.',
                                 background: 'rgba(255, 255, 255, 0.92)',
-                                backdrop: 'rgba(29, 111, 165, 0.15)',
+                                backdrop: 'rgba(124, 58, 237, 0.15)',
                                 customClass: {
                                     popup: 'swal-glossy-popup rounded-4 shadow-lg border-0', title: 'fw-bold',
                                     confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel',
@@ -1209,7 +1209,7 @@
             gap: .35rem;
             font-size: .82rem;
             font-weight: 700;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
         }
 
         .orcha-sub-kepala .ket { font-size: .74rem; color: #64748b; }
@@ -1266,7 +1266,7 @@
             padding: 0;
             border: 0;
             border-radius: 50%;
-            background: rgba(15, 45, 74, .78);
+            background: rgba(31, 45, 61, .78);
             color: #fff;
             font-size: .62rem;
             line-height: 1;
@@ -1309,7 +1309,7 @@
             position: absolute;
             inset: auto 0 0 0;
             height: 60%;
-            background: linear-gradient(to top, rgba(15, 45, 74, .88), transparent);
+            background: linear-gradient(to top, rgba(31, 45, 61, .88), transparent);
         }
 
         .orcha-dest-lencana {
@@ -1323,7 +1323,7 @@
             padding: .2rem .55rem;
             border-radius: 2rem;
             background: #ffc74e;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             font-size: .68rem;
             font-weight: 700;
         }
@@ -1390,7 +1390,7 @@
             padding: .5rem .9rem;
             border: 0;
             border-radius: 0 12px 12px 0;
-            background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+            background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
             color: #fff;
             font-size: .82rem;
             font-weight: 600;
@@ -1401,7 +1401,7 @@
         .orcha-tombol-daftar:hover {
             color: #fff;
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(29, 111, 165, .34);
+            box-shadow: 0 6px 16px rgba(124, 58, 237, .34);
         }
 
         .orcha-tombol-daftar > i { font-size: .95rem; line-height: 1; }
@@ -1483,7 +1483,7 @@
             color: #475569;
         }
 
-        .orcha-alamat-jadi strong { color: #0f2d4a; }
+        .orcha-alamat-jadi strong { color: var(--orc-tinta); }
 
         /* Keterangan usulan lokasi: hijau lembut, bukan kuning peringatan —
            ini kabar baik yang menghemat pekerjaan, bukan sesuatu yang salah. */
@@ -1517,7 +1517,7 @@
             color: #64748b;
         }
 
-        .orcha-siap-kepala strong { color: #0f2d4a; }
+        .orcha-siap-kepala strong { color: var(--orc-tinta); }
 
         .orcha-siap-bar {
             height: 6px;
@@ -1531,7 +1531,7 @@
             display: block;
             height: 100%;
             border-radius: 99px;
-            background: linear-gradient(90deg, #1d6fa5, #0f2d4a);
+            background: linear-gradient(90deg, var(--orc-primer), var(--orc-primer-2));
             transition: width .25s ease;
         }
 
@@ -1602,7 +1602,7 @@
         .orcha-siap-baris .nilai {
             text-align: right;
             font-weight: 600;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
         }
 
         .orcha-siap-baris .nilai.belum { font-weight: 500; color: #94a3b8; }

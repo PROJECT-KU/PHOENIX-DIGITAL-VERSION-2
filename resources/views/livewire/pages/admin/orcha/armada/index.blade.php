@@ -365,7 +365,7 @@ Armada Orcha || lemon
 
         .orcha-unit:hover {
             transform: translateY(-2px);
-            box-shadow: 0 .6rem 1.4rem rgba(15, 45, 74, .12) !important;
+            box-shadow: 0 .6rem 1.4rem rgba(31, 45, 61, .12) !important;
         }
 
         /* Unit yang ada bagian rusak atau hilang diberi garis merah di kiri —
@@ -439,7 +439,7 @@ Armada Orcha || lemon
 
         .orcha-unit-status.siap { background: rgba(26, 138, 82, .92); }
 
-        .orcha-unit-status.keluar { background: rgba(29, 111, 165, .92); }
+        .orcha-unit-status.keluar { background: rgba(124, 58, 237, .92); }
 
         .orcha-unit-status.nonaktif { background: rgba(100, 116, 139, .92); }
 
@@ -451,7 +451,7 @@ Armada Orcha || lemon
             padding: .2rem .5rem;
             border: 1px solid #cbd5e1;
             border-radius: .4rem;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             background: #f8fafc;
             white-space: nowrap;
         }
@@ -478,7 +478,7 @@ Armada Orcha || lemon
         .orcha-unit-tarif .angka {
             font-size: 1.15rem;
             font-weight: 800;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             line-height: 1.2;
         }
 
@@ -569,7 +569,7 @@ Armada Orcha || lemon
             align-items: center;
             gap: .4rem;
             font-size: .78rem;
-            color: #1d6fa5;
+            color: var(--orc-primer);
         }
 
         .orcha-unit-jadwal > i { line-height: 1; }

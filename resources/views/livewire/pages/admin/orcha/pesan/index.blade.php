@@ -208,11 +208,11 @@ Pesan Kontak Orcha || lemon
         }
 
         .orcha-baris-pesan.belum > td:first-child {
-            border-left-color: #1d6fa5;
+            border-left-color: var(--orc-primer);
         }
 
         .orcha-nama-pengirim {
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             font-weight: 600;
         }
 
@@ -228,7 +228,7 @@ Pesan Kontak Orcha || lemon
 
         /* Isi pesan yang belum dibaca dibuat sepekat teks biasa; yang sudah
            dibaca dibiarkan redup. */
-        .orcha-baris-pesan.belum .orcha-pesan-cuplik { color: #0f2d4a; }
+        .orcha-baris-pesan.belum .orcha-pesan-cuplik { color: var(--orc-tinta); }
 
         /* Dua baris, sisanya di halaman detail. */
         .orcha-pesan-cuplik {
@@ -287,14 +287,14 @@ Pesan Kontak Orcha || lemon
 
         .orcha-saring-baca > button > i { line-height: 1; }
 
-        .orcha-saring-baca > button:hover { color: #1d6fa5; }
+        .orcha-saring-baca > button:hover { color: var(--orc-primer); }
 
         /* Yang aktif diangkat dengan latar putih dan bayangan tipis; warnanya
            saja tidak cukup untuk yang sulit membedakan warna. */
         .orcha-saring-baca > button.aktif {
             background: #fff;
-            color: #0f2d4a;
-            box-shadow: 0 1px 3px rgba(15, 45, 74, .12);
+            color: var(--orc-tinta);
+            box-shadow: 0 1px 3px rgba(31, 45, 61, .12);
         }
 
         .orcha-saring-baca .jumlah {
@@ -305,7 +305,7 @@ Pesan Kontak Orcha || lemon
             height: 1.35rem;
             padding: 0 .35rem;
             border-radius: 1rem;
-            background: #1d6fa5;
+            background: var(--orc-primer);
             color: #fff;
             font-size: .72rem;
             font-weight: 700;

@@ -33,7 +33,7 @@
             align-items: center;
             justify-content: center;
             padding: 3.5rem 1.25rem 1.5rem;
-            background: rgba(15, 45, 74, .82);
+            background: rgba(31, 45, 61, .82);
             backdrop-filter: blur(2px);
         }
 

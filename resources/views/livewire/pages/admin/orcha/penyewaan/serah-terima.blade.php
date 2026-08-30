@@ -649,7 +649,7 @@ Serah Terima Kendaraan || lemon
                                          penyewa memesan dan tidak diubah dari sini. Yang
                                          boleh disunting di lembar ini hanya dendanya. --}}
                                     <div class="orcha-alasan orcha-alasan-tenang mt-2">
-                                        <span class="orcha-label-kecil" style="color:#0f2d4a">
+                                        <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
                                             <i class="bi bi-receipt"></i> Rincian tagihan
                                         </span>
 

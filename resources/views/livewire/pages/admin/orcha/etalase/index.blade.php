@@ -245,7 +245,7 @@
 
     {{-- Formulir tambah / ubah --}}
     @if ($formTerbuka)
-        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(15,45,74,.35)">
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(31, 45, 61,.35)">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content border-0 rounded-4">
                     <div class="modal-header border-0">
@@ -453,17 +453,17 @@
             padding: .2rem .6rem;
             border-radius: 999px;
             background: rgba(255, 255, 255, .92);
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             font-size: .68rem;
             font-weight: 700;
             letter-spacing: .01em;
-            box-shadow: 0 2px 6px rgba(15, 45, 74, .12);
+            box-shadow: 0 2px 6px rgba(31, 45, 61, .12);
         }
 
         .orcha-etalase-tanda.bintang { color: #d98a00; letter-spacing: .05em; }
 
         .orcha-etalase-nama {
-            color: #0f2d4a;
+            color: var(--orc-tinta);
             /* Nama sepanjang apa pun berhenti di dua baris. */
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -487,7 +487,7 @@
            sebelahnya; dibebaskan, selisihnya 0,11px. */
         .orcha-etalase-alamat > i {
             height: auto;
-            color: #1d6fa5;
+            color: var(--orc-primer);
             font-size: .78rem;
         }
 
@@ -565,7 +565,7 @@
         .orcha-etalase-ubah:hover {
             background: #e6f2fb;
             border-color: #9fc7e4;
-            color: #0f2d4a;
+            color: var(--orc-tinta);
         }
 
         .orcha-etalase-ubah i { font-size: .85em; line-height: 1; }

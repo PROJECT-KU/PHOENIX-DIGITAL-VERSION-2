@@ -8,8 +8,48 @@
     sedang melihat data Orcha, bukan lemon.
 --}}
 <style>
+    /*
+     | Token tampilan halaman Orcha.
+     |
+     | Nilainya SENGAJA menyalin lemon (templateindex.blade.php) supaya admin
+     | tidak merasa berpindah aplikasi saat menekan "Ganti ke Orcha". Sebelum
+     | ini warnanya ditulis tersebar — 78 kali untuk dua biru saja — sehingga
+     | menyeragamkannya berarti menyunting ratusan tempat satu per satu.
+     |
+     | Sekarang cukup mengubah nilai di sini. Itu juga yang membuat perubahan
+     | ini bisa dibatalkan: kembalikan --orc-primer ke var(--orc-primer) dan
+     | --orc-primer-2 ke var(--orc-primer-2), seluruh halaman kembali biru.
+     |
+     | CATATAN: --orc-tinta BUKAN warna merek. Ia warna TULISAN. Dulu kebetulan
+     | memakai biru tua yang sama dengan warna merek, dan itu jebakan — mengganti
+     | warna merek secara buta ikut mengubah seluruh teks jadi ungu.
+     */
+    :root {
+        /* Merek — menyalin .btn-primary dan .gradient-text milik lemon. */
+        --orc-primer: #7c3aed;
+        --orc-primer-2: #4f46e5;
+        --orc-primer-lembut: #8b5cf6;
+        --orc-gradien: linear-gradient(135deg, #7c3aed, #4f46e5);
+
+        /* Tulisan — skala slate yang sama dengan halaman lemon lain. */
+        --orc-tinta: #1f2d3d;
+
+        /* Geometri — menyalin .btn, .form-control, .form-select, .card lemon. */
+        --orc-radius-tombol: 12px;
+        --orc-radius-isian: 12px;
+        /* Panel DALAM, menyalin .bf-panel milik lemon (18px). Kartu terluar
+           halaman Orcha sudah memakai .card lemon, jadi tidak perlu diatur di
+           sini — dan memaksanya 28px justru membuat radius bertumpuk. */
+        --orc-radius-kartu: 18px;
+        --orc-panel-latar: #f8fafc;
+        --orc-panel-garis: 1px solid #eef0f7;
+        --orc-padding-tombol: 10px 20px;
+        --orc-garis-isian: 2px solid #e2e8f0;
+        --orc-tinggi-isian: 48px;
+    }
+
     .orcha-lencana {
-        background: linear-gradient(135deg, #0f2d4a, #1d6fa5);
+        background: linear-gradient(135deg, var(--orc-primer-2), var(--orc-primer));
         color: #ffd772;
         font-size: .72rem;
         font-weight: 700;
@@ -28,14 +68,14 @@
 
     .orcha-kartu {
         border: 0;
-        border-radius: 1rem;
-        box-shadow: 0 4px 20px rgba(15, 45, 74, .06);
+        border-radius: var(--orc-radius-kartu);
+        box-shadow: 0 4px 20px rgba(31, 45, 61, .06);
         transition: transform .2s ease, box-shadow .2s ease;
     }
 
     .orcha-kartu:hover {
         transform: translateY(-4px);
-        box-shadow: 0 14px 30px rgba(15, 45, 74, .12);
+        box-shadow: 0 14px 30px rgba(31, 45, 61, .12);
     }
 
     .orcha-ikon {
@@ -48,8 +88,8 @@
         font-size: 1.35rem;
         color: #fff;
         line-height: 1;
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
-        box-shadow: 0 8px 15px rgba(29, 111, 165, .25);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
+        box-shadow: 0 8px 15px rgba(124, 58, 237, .25);
     }
 
     .orcha-ikon.perlu {
@@ -96,12 +136,12 @@
         font-size: 1.6rem;
         font-weight: 800;
         line-height: 1.1;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-tabel thead th {
         background: #f4f8fb;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-size: .74rem;
         letter-spacing: .05em;
         text-transform: uppercase;
@@ -115,7 +155,7 @@
     .orcha-kode {
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-weight: 700;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         white-space: nowrap;
     }
 
@@ -260,7 +300,7 @@
        batas antar pesanan tanpa harus membaca kodenya baris demi baris. */
     .orcha-tabel tr.orcha-grup > td {
         background: #eef5fa;
-        border-left: 3px solid #1d6fa5;
+        border-left: 3px solid var(--orc-primer);
         padding-top: .55rem;
         padding-bottom: .55rem;
     }
@@ -277,12 +317,12 @@
         border: 0;
         border-radius: .6rem;
         margin: 0 .15rem;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-weight: 600;
     }
 
     .orcha-halaman .active .page-link {
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
         color: #fff;
     }
 
@@ -303,12 +343,12 @@
 
     .orcha-form .form-control:focus,
     .orcha-form .form-select:focus {
-        border-color: #1d6fa5;
-        box-shadow: 0 0 0 .2rem rgba(29, 111, 165, .12);
+        border-color: var(--orc-primer);
+        box-shadow: 0 0 0 .2rem rgba(124, 58, 237, .12);
     }
 
     .orcha-form .form-label {
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         margin-bottom: .35rem;
     }
 
@@ -369,8 +409,8 @@
     }
 
     .orcha-cip:hover {
-        border-color: #1d6fa5;
-        box-shadow: 0 2px 8px rgba(29, 111, 165, .12);
+        border-color: var(--orc-primer);
+        box-shadow: 0 2px 8px rgba(124, 58, 237, .12);
     }
 
     .orcha-cip button {
@@ -399,7 +439,7 @@
 
     .orcha-cip-pilih:hover {
         background: #eef6fb;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-cip-pilih i {
@@ -458,7 +498,7 @@
     /* Cip terpilih di baris atas: tetap gelap saat disorot, silangnya kontras. */
     .orcha-cip-aktif {
         border-color: transparent;
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
         align-items: center;
         padding-left: .85rem;
         color: #fff;
@@ -469,7 +509,7 @@
 
     .orcha-cip-aktif:hover {
         border-color: transparent;
-        box-shadow: 0 3px 10px rgba(15, 45, 74, .28);
+        box-shadow: 0 3px 10px rgba(31, 45, 61, .28);
     }
 
     .orcha-cip-buang {
@@ -498,7 +538,7 @@
         aspect-ratio: 16 / 10;
         border-radius: .8rem;
         overflow: hidden;
-        background: #0f2d4a;
+        background: var(--orc-primer-2);
     }
 
     .orcha-pratinjau-kartu img {
@@ -515,7 +555,7 @@
         bottom: .5rem;
         padding: .2rem .55rem;
         border-radius: 999px;
-        background: rgba(15, 45, 74, .78);
+        background: rgba(31, 45, 61, .78);
         color: #ffd772;
         font-size: .64rem;
         font-weight: 700;
@@ -612,14 +652,14 @@
         border: 0;
         background: transparent;
         padding: 0;
-        color: #1d6fa5;
+        color: var(--orc-primer);
         font-size: .72rem;
         font-weight: 700;
         text-decoration: underline;
     }
 
     .orcha-hitung-ulang:hover {
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-hitung-ulang i {
@@ -630,7 +670,7 @@
 
     .orcha-hitung {
         background: #eef6fb;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-weight: 700;
         flex: 0 0 auto;
     }
@@ -686,7 +726,7 @@
         justify-content: center;
         font-weight: 800;
         color: #fff;
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
     }
 
     /* Kolom jam: cukup lebar supaya "07.00" tidak terpotong, dan padding
@@ -725,8 +765,8 @@
 
     .orcha-tambah-baris:hover {
         background: #dcedf8;
-        border-color: #1d6fa5;
-        color: #0f2d4a;
+        border-color: var(--orc-primer);
+        color: var(--orc-tinta);
     }
 
     .orcha-tambah-hari {
@@ -763,8 +803,8 @@
 
     .orcha-aksi-lihat:hover {
         background: #d8ecf8;
-        border-color: #1d6fa5;
-        color: #0f2d4a;
+        border-color: var(--orc-primer);
+        color: var(--orc-tinta);
     }
 
     /* Hapus — merah, dan merahnya terlihat tanpa perlu disentuh dulu.
@@ -889,7 +929,7 @@
     .orcha-ringkas .angka {
         font-size: 1.28rem;
         font-weight: 800;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         line-height: 1.25;
     }
 
@@ -908,7 +948,7 @@
         display: block;
         height: 100%;
         border-radius: 99px;
-        background: linear-gradient(90deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(90deg, var(--orc-primer), var(--orc-primer-2));
     }
 
     .orcha-palang.lunas span { background: linear-gradient(90deg, #10b981, #047857); }
@@ -937,7 +977,7 @@
         font-weight: 800;
         font-size: .82rem;
         letter-spacing: .02em;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         background: linear-gradient(135deg, #dbeafe, #cfe4f2);
     }
 
@@ -992,7 +1032,7 @@
     .orcha-alasan-tinggi { background: #fff5f5; border-left: 3px solid #dc2626; color: #7f1d1d; }
     .orcha-alasan-sedang { background: #fffaf0; border-left: 3px solid #f59e0b; color: #78350f; }
     .orcha-alasan ul { font-size: .84rem; }
-    .orcha-alasan-tenang { background: #f4f9fd; border-left: 3px solid #2b7fb8; color: #0f2d4a; }
+    .orcha-alasan-tenang { background: #f4f9fd; border-left: 3px solid #2b7fb8; color: var(--orc-tinta); }
 
     /* Perincian biaya sewa: bacaan, bukan isian — jadi ditulis rapat dan tanpa
        garis tabel, supaya tidak menyaingi kotak denda yang memang disunting. */
@@ -1017,11 +1057,11 @@
         width: 36px; height: 36px; flex: none;
         display: flex; align-items: center; justify-content: center;
         border-radius: 12px; color: #fff; font-size: 1rem;
-        background: linear-gradient(135deg, #3d9bd4, #1d6fa5);
+        background: linear-gradient(135deg, #3d9bd4, var(--orc-primer));
         box-shadow: 0 5px 14px rgba(43, 127, 184, .3);
     }
 
-    .orcha-bagian-judul { font-weight: 700; color: #0f2d4a; line-height: 1.25; }
+    .orcha-bagian-judul { font-weight: 700; color: var(--orc-tinta); line-height: 1.25; }
     .orcha-bagian-sub { font-size: .79rem; color: #64748b; line-height: 1.45; }
 
     /* Dua kolom berdampingan: keadaan saat diserahkan, dan saat kembali.
@@ -1037,7 +1077,7 @@
     .orcha-keadaan-kepala {
         display: flex; align-items: center; gap: .45rem;
         font-size: .72rem; font-weight: 700; letter-spacing: .06em;
-        text-transform: uppercase; color: #1d6fa5; margin-bottom: .85rem;
+        text-transform: uppercase; color: var(--orc-primer); margin-bottom: .85rem;
     }
 
     .orcha-keadaan.kembali .orcha-keadaan-kepala { color: #1f7a44; }
@@ -1159,9 +1199,10 @@
     .orcha-medan {
         height: 100%;
         padding: .58rem .8rem .62rem;
-        border: 1px solid #eaf1f7;
-        border-radius: 12px;
-        background: #fafdff;
+        /* Menyalin .form-control lemon: garis 2px #e2e8f0, radius 12px. */
+        border: var(--orc-garis-isian);
+        border-radius: var(--orc-radius-isian);
+        background: #fff;
     }
 
     .orcha-medan .orcha-label-kecil { margin-bottom: .1rem; }
@@ -1170,7 +1211,7 @@
         font-weight: 700;
         font-size: .92rem;
         line-height: 1.4;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         word-break: break-word;
     }
 
@@ -1191,7 +1232,7 @@
     .orcha-cip-kondisi {
         font-size: .72rem;
         font-weight: 600;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         background: #eef6fb;
         border: 1px solid #cfe4f2;
         border-radius: 99px;
@@ -1278,7 +1319,7 @@
         border-radius: .75rem;
         padding: .55rem .8rem;
         font-size: .86rem;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-tautan-wa {
@@ -1443,8 +1484,9 @@
         justify-content: center;
         gap: .45rem;
         border: 1px solid transparent;
-        border-radius: .7rem;
-        padding: .5rem .95rem;
+        /* Menyalin .btn lemon: radius 12px, padding 10px 20px. */
+        border-radius: var(--orc-radius-tombol);
+        padding: var(--orc-padding-tombol);
         font-size: .86rem;
         font-weight: 700;
         line-height: 1.2;
@@ -1527,7 +1569,7 @@
 
     .orcha-rupiah .form-control:focus + span,
     .orcha-rupiah:focus-within::before {
-        color: #1d6fa5;
+        color: var(--orc-primer);
     }
 
     .orcha-btn-kecil {
@@ -1563,13 +1605,13 @@
 
     /* Biru laut merek — tindakan utama halaman */
     .orcha-btn-utama {
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
         color: #fff;
     }
 
     .orcha-btn-utama:hover {
         color: #fff;
-        box-shadow: 0 6px 16px rgba(29, 111, 165, .34);
+        box-shadow: 0 6px 16px rgba(124, 58, 237, .34);
     }
 
     /* Merah muda — khusus data kesehatan, sewarna dengan ikon denyut nadinya */
@@ -1605,14 +1647,14 @@
     .orcha-btn-lembut {
         background: #fff;
         border-color: #dbe7f0;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-btn-lembut:hover {
         background: #f4f8fb;
-        border-color: #1d6fa5;
-        color: #0f2d4a;
-        box-shadow: 0 4px 12px rgba(15, 45, 74, .08);
+        border-color: var(--orc-primer);
+        color: var(--orc-tinta);
+        box-shadow: 0 4px 12px rgba(31, 45, 61, .08);
     }
 
     /* Tautan kembali: bukan tombol penuh, tapi tetap punya wilayah sentuh */
@@ -1630,7 +1672,7 @@
     }
 
     .orcha-tautan-balik:hover {
-        color: #1d6fa5;
+        color: var(--orc-primer);
         background: #eef6fb;
     }
 
@@ -1642,7 +1684,7 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: #1d6fa5;
+        background: var(--orc-primer);
         box-shadow: 0 0 0 3px #fff;
     }
 
@@ -1831,8 +1873,8 @@
     }
 
     .orcha-pick-item:hover {
-        border-color: #1d6fa5;
-        background: linear-gradient(135deg, rgba(29, 111, 165, .10), rgba(15, 45, 74, .04));
+        border-color: var(--orc-primer);
+        background: linear-gradient(135deg, rgba(124, 58, 237, .10), rgba(31, 45, 61, .04));
         transform: translateY(-1px);
     }
 
@@ -2063,7 +2105,7 @@
     .orcha-untung-kartu .nilai {
         font-size: clamp(1.05rem, 1.5vw, 1.3rem);
         font-weight: 800;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         line-height: 1.25;
         white-space: nowrap;
     }
@@ -2151,7 +2193,7 @@
         justify-content: center;
         font-size: .76rem;
         font-weight: 800;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         background: #eef4f9;
         flex: 0 0 auto;
     }
@@ -2220,7 +2262,7 @@
     }
 
     .orcha-halaman-info strong {
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         font-weight: 700;
     }
 
@@ -2475,12 +2517,12 @@
         gap: .35rem;
         font-size: .82rem;
         font-weight: 700;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-jemput-judul > i {
         line-height: 1;
-        color: #1d6fa5;
+        color: var(--orc-primer);
     }
 
     .orcha-jemput-jumlah {
@@ -2565,7 +2607,7 @@
 
     .orcha-cari-bersih:hover {
         background: #dde4ee;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-cari-bersih > i {
@@ -2673,7 +2715,7 @@
     .orcha-lembar-tirai {
         position: absolute;
         inset: 0;
-        background: rgba(15, 45, 74, .35);
+        background: rgba(31, 45, 61, .35);
         backdrop-filter: blur(2px);
     }
 
@@ -2686,7 +2728,7 @@
         padding: 1.15rem 1.25rem;
         border-radius: 1rem;
         background: #fff;
-        box-shadow: 0 24px 60px rgba(15, 45, 74, .22);
+        box-shadow: 0 24px 60px rgba(31, 45, 61, .22);
     }
 
     /* Satu pilihan pesan: satu baris yang bisa diketuk seluruhnya.
@@ -2990,8 +3032,8 @@
 
     .orcha-tombol-ganti:hover {
         background: #d8ecf8;
-        border-color: #1d6fa5;
-        color: #0f2d4a;
+        border-color: var(--orc-primer);
+        color: var(--orc-tinta);
     }
 
     /* Membatalkan penggantian: kuning, warna yang sama dengan "sedang menunggu"
@@ -3157,8 +3199,8 @@
        paling mungkin dicari tidak perlu dihitung sendiri dari tanggalnya. */
     .orcha-ganti-baris:first-child .orcha-ganti-nomor {
         color: #fff;
-        background: #1d6fa5;
-        box-shadow: 0 0 0 1px #1d6fa5;
+        background: var(--orc-primer);
+        box-shadow: 0 0 0 1px var(--orc-primer);
     }
 
     /* ============ SEWA KENDARAAN ============ */
@@ -3328,7 +3370,7 @@
     }
 
     .orcha-jatuhkan:hover {
-        border-color: #1d6fa5;
+        border-color: var(--orc-primer);
         background: #f2f8fc;
     }
 
@@ -3341,8 +3383,8 @@
         justify-content: center;
         font-size: 1.3rem;
         color: #fff;
-        background: linear-gradient(135deg, #1d6fa5, #0f2d4a);
-        box-shadow: 0 8px 15px rgba(29, 111, 165, .25);
+        background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
+        box-shadow: 0 8px 15px rgba(124, 58, 237, .25);
         margin-bottom: .35rem;
     }
 
@@ -3352,7 +3394,7 @@
        berubah sama sekali. Yang dilakukan admin berikutnya bisa ditebak:
        mengetuk lagi, lalu bertanya kenapa fotonya masuk dua kali. */
     .orcha-jatuhkan.sibuk {
-        border-color: #1d6fa5;
+        border-color: var(--orc-primer);
         background: #f2f8fc;
         cursor: progress;
     }
@@ -3442,7 +3484,7 @@
     .orcha-saklar .tulisan {
         font-size: .82rem;
         font-weight: 600;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         white-space: nowrap;
     }
 
@@ -3501,7 +3543,7 @@
     .orcha-jatuhkan-judul {
         font-weight: 700;
         font-size: .92rem;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-jatuhkan-catatan {
@@ -3529,7 +3571,7 @@
 
     .orcha-galeri-kartu:hover {
         border-color: #cfe4f2;
-        box-shadow: 0 10px 24px rgba(15, 45, 74, .08);
+        box-shadow: 0 10px 24px rgba(31, 45, 61, .08);
     }
 
     /* Foto yang disembunyikan diredupkan, bukan dihilangkan: admin tetap perlu
@@ -3570,7 +3612,7 @@
         min-width: 1.6rem;
         padding: .1rem .45rem;
         border-radius: 999px;
-        background: rgba(15, 45, 74, .82);
+        background: rgba(31, 45, 61, .82);
         color: #fff;
         font-size: .72rem;
         font-weight: 700;
@@ -3623,7 +3665,7 @@
         border: 1px solid #cfe4f2;
         border-radius: 14px;
         background: #f8fbfd;
-        box-shadow: 0 8px 22px rgba(29, 111, 165, .07);
+        box-shadow: 0 8px 22px rgba(124, 58, 237, .07);
     }
 
     .orcha-galeri-sunting .orcha-galeri-kotak {
@@ -3705,7 +3747,7 @@
     }
 
     .orcha-grafik-sumbu { font-size: .68rem; fill: #94a3b8; }
-    .orcha-grafik-nilai { font-size: .68rem; font-weight: 700; fill: #0f2d4a; }
+    .orcha-grafik-nilai { font-size: .68rem; font-weight: 700; fill: var(--orc-primer-2); }
 
     .orcha-grafik-kunci {
         display: flex;
@@ -3752,7 +3794,7 @@
         text-align: right;
         font-size: .82rem;
         font-weight: 700;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     /* Kotak unggah surat bertanda tangan.
@@ -3774,7 +3816,7 @@
 
     .orcha-surat-ttd > i {
         font-size: 1.15rem;
-        color: #1d6fa5;
+        color: var(--orc-primer);
         line-height: 1;
     }
 
@@ -3949,13 +3991,13 @@
 
     .orcha-rentang button:hover {
         background: #e2e8f0;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-rentang button.aktif {
-        background: linear-gradient(135deg, #0f2d4a, #1d6fa5);
+        background: linear-gradient(135deg, var(--orc-primer-2), var(--orc-primer));
         color: #fff;
-        box-shadow: 0 6px 14px rgba(29, 111, 165, .25);
+        box-shadow: 0 6px 14px rgba(124, 58, 237, .25);
     }
 
     @media (max-width: 575.98px) {
@@ -4012,7 +4054,7 @@
        barisnya. Lencana keperluan di sebelahnya semuanya pucat, jadi mata
        menemukan keadaan bacanya lebih dulu — bukan tenggelam di antara enam
        warna kategori. */
-    .orcha-status-pesan[data-baca="belum"] { background: #1d6fa5; border-color: #1d6fa5; color: #fff; }
+    .orcha-status-pesan[data-baca="belum"] { background: var(--orc-primer); border-color: var(--orc-primer); color: #fff; }
     .orcha-status-pesan[data-baca="sudah"] { background: #f1f4f7; border-color: #dde4ea; color: #5b7186; }
 
 
@@ -4093,7 +4135,7 @@
     .orcha-kartu-pilihan:hover { border-color: #b9d0e2; }
 
     .orcha-kartu-pilihan.aktif {
-        border-color: #1d6fa5;
+        border-color: var(--orc-primer);
         background: #f2f8fc;
     }
 
@@ -4103,13 +4145,13 @@
         color: #94a3b8;
     }
 
-    .orcha-kartu-pilihan.aktif .rupa { color: #1d6fa5; }
+    .orcha-kartu-pilihan.aktif .rupa { color: var(--orc-primer); }
 
     .orcha-kartu-pilihan .judul {
         display: block;
         font-weight: 700;
         font-size: .9rem;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-kartu-pilihan .ket {
@@ -4129,7 +4171,7 @@
         align-items: center;
         justify-content: center;
         line-height: 1;
-        background: #1d6fa5;
+        background: var(--orc-primer);
         color: #fff;
         font-size: .62rem;
         opacity: 0;
@@ -4221,7 +4263,7 @@
         display: block;
         font-weight: 700;
         font-size: .9rem;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
     }
 
     .orcha-sakelar-kartu .ket {
@@ -4315,7 +4357,7 @@
         background: rgba(238, 242, 246, .88);
         text-align: center;
         line-height: 4rem;
-        color: #1d6fa5;
+        color: var(--orc-primer);
     }
 
 
@@ -4401,7 +4443,7 @@
 
     .orcha-kartu-etalase-tautan[href]:hover .orcha-kartu-etalase {
         transform: translateY(-2px);
-        box-shadow: 0 10px 24px rgba(15, 45, 74, .1) !important;
+        box-shadow: 0 10px 24px rgba(31, 45, 61, .1) !important;
     }
 
     /* Kartu uang: pita berwarna di tepi kiri sesuai artinya — masuk, keluar,
@@ -4416,7 +4458,7 @@
         font-size: 1.32rem;
         font-weight: 800;
         line-height: 1.2;
-        color: #0f2d4a;
+        color: var(--orc-tinta);
         word-break: break-word;
     }
 

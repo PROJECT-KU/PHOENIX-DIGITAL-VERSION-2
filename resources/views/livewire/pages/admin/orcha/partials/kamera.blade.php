@@ -49,7 +49,7 @@
             align-items: center;
             justify-content: center;
             padding: 1.25rem;
-            background: rgba(15, 45, 74, .82);
+            background: rgba(31, 45, 61, .82);
         }
 
         .orcha-kamera[hidden] { display: none; }
@@ -67,7 +67,7 @@
             align-items: center;
             justify-content: space-between;
             padding: .8rem 1.1rem;
-            background: #0f2d4a;
+            background: var(--orc-primer-2);
             color: #fff;
             font-weight: 700;
             font-size: .9rem;
@@ -86,7 +86,7 @@
             display: block;
             width: 100%;
             max-height: 62vh;
-            background: #0f2d4a;
+            background: var(--orc-primer-2);
             object-fit: contain;
         }
 

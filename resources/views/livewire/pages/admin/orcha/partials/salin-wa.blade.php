@@ -33,10 +33,10 @@
             max-width: min(520px, 92vw);
             padding: .7rem 1.1rem;
             border-radius: .8rem;
-            background: #0f2d4a;
+            background: var(--orc-primer-2);
             color: #fff;
             font-size: .85rem;
-            box-shadow: 0 12px 30px rgba(15, 45, 74, .35);
+            box-shadow: 0 12px 30px rgba(31, 45, 61, .35);
         }
 
         .orcha-salin-kabar[hidden] { display: none; }

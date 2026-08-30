@@ -317,7 +317,7 @@ Detail Sewa Kendaraan || lemon
 
                     @if ($sewa['catatan'])
                         <div class="orcha-alasan orcha-alasan-tenang mt-3">
-                            <span class="orcha-label-kecil" style="color:#0f2d4a">
+                            <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
                                 <i class="bi bi-chat-left-text"></i> Catatan dari penyewa
                             </span>
                             <div class="mt-1">{{ $sewa['catatan'] }}</div>
@@ -443,7 +443,7 @@ Detail Sewa Kendaraan || lemon
                     @endphp
 
                     <div class="orcha-alasan orcha-alasan-tenang mt-3">
-                        <span class="orcha-label-kecil" style="color:#0f2d4a">
+                        <span class="orcha-label-kecil" style="color: var(--orc-tinta)">
                             <i class="bi bi-receipt"></i> Rincian tagihan
                         </span>
 
@@ -645,7 +645,7 @@ Detail Sewa Kendaraan || lemon
                         </span>
 
                         <span class="flex-grow-1">
-                            <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                            <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
                                 {{ $pilihan['judul'] }}
                             </span>
                             <span class="d-block text-muted" style="font-size:.78rem">
@@ -667,7 +667,7 @@ Detail Sewa Kendaraan || lemon
                     </span>
 
                     <span class="flex-grow-1">
-                        <span class="d-block fw-bold" style="font-size:.92rem;color:#0f2d4a">
+                        <span class="d-block fw-bold" style="font-size:.92rem;color: var(--orc-tinta)">
                             Buka percakapan kosong
                         </span>
                         <span class="d-block text-muted" style="font-size:.78rem">

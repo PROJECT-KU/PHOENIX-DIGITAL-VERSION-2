@@ -84,7 +84,7 @@ Pembatalan Orcha || lemon
                                 <tr class="orcha-grup" wire:key="jenis-{{ $jenis }}">
                                     <td colspan="7">
                                         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                                            <span class="orcha-label-kecil mb-0" style="color:#1d6fa5">
+                                            <span class="orcha-label-kecil mb-0" style="color:var(--orc-primer)">
                                                 <i class="bi {{ $ikonJenis[$jenis] ?? 'bi-signpost-split' }}"></i>
                                                 {{ $barisJenis->first()['jenis_label'] ?? 'Open Trip' }}
                                             </span>
