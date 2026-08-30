@@ -294,14 +294,25 @@
                 <button type="submit" wire:loading.attr="disabled" wire:target="simpan"
                     class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
                     style="height: 52px;">
-                    <span wire:loading.remove wire:target="simpan" class="d-inline-flex align-items-center">
-                        <i class="bi bi-check2-circle me-2 fs-5"></i>
-                        <span>{{ $artikelId ? 'Update Artikel' : 'Simpan Artikel' }}</span>
+                    {{-- JANGAN beri kelas d-* (d-flex, d-inline-flex, d-block) pada
+                         kedua span ini.
+
+                         wire:loading.remove menyembunyikan dengan menulis
+                         style="display: none" sebaris, sedangkan utilitas d-*
+                         Bootstrap ditulis `display: ... !important` — jadi
+                         !important menang dan tulisan lamanya TIDAK pernah
+                         hilang. Yang terlihat admin: "Update Artikel" dan
+                         pemintal muncul bersamaan dalam satu tombol.
+
+                         Formulir destinasi tidak kena karena span-nya memang
+                         polos; ini menyalin bentuknya. --}}
+                    <span wire:loading.remove wire:target="simpan">
+                        <i class="bi bi-check2-circle me-2"></i>
+                        {{ $artikelId ? 'Update Artikel' : 'Simpan Artikel' }}
                     </span>
-                    <span wire:loading wire:target="simpan" class="d-inline-flex align-items-center">
+                    <span wire:loading wire:target="simpan">
                         <span class="spinner-border spinner-border-sm me-2" role="status"
-                            aria-hidden="true"></span>
-                        <span>Menyimpan ke Orcha…</span>
+                            aria-hidden="true"></span>Menyimpan ke Orcha…
                     </span>
                 </button>
             </div>

@@ -390,7 +390,7 @@
                             @php
                                 $asalOrcha = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
                                 $pratinjau = $gambar
-                                    ? $gambar->temporaryUrl()
+                                    ? \App\Support\PratinjauUnggahan::url($gambar)
                                     : ($gambarLama
                                         ? (str_starts_with($gambarLama, 'http') ? $gambarLama : $asalOrcha . $gambarLama)
                                         : null);

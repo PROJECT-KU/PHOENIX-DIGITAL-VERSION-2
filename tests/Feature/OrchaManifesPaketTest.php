@@ -231,4 +231,3 @@ test('manifes satu pendaftaran mengakui nama peserta yang belum didata', functio
         // Tetap ada tempat menghitung yang naik.
         ->toContain('Sudah naik:');
 });
-

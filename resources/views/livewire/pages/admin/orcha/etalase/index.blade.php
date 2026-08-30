@@ -316,7 +316,7 @@
                                      ikut memintal saat testimoninya sedang disimpan. --}}
                                 <div class="orcha-foto-rupa">
                                     @if ($gambar)
-                                        <img src="{{ $gambar->temporaryUrl() }}" alt="">
+                                        <img src="{{ \App\Support\PratinjauUnggahan::url($gambar) }}" alt="">
                                     @elseif ($gambarLama && $tautanGambar($gambarLama))
                                         <img src="{{ $tautanGambar($gambarLama) }}" alt="">
                                     @else

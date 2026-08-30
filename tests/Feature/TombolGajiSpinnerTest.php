@@ -1,6 +1,5 @@
 <?php
 
-
 function bladeDaftarGaji(): string
 {
     return file_get_contents(

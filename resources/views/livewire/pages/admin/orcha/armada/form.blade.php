@@ -678,7 +678,7 @@
                             <h6 class="fw-bold mb-3">Foto Unit</h6>
 
                             @if ($gambar)
-                                <img src="{{ $gambar->temporaryUrl() }}" alt=""
+                                <img src="{{ \App\Support\PratinjauUnggahan::url($gambar) }}" alt=""
                                     class="img-fluid rounded-3 mb-3" style="max-height: 180px">
                             @elseif ($gambarLama)
                                 <img src="{{ str_starts_with($gambarLama, 'http') ? $gambarLama : rtrim(str_replace('/api/v1', '', config('orcha.url')), '/') . $gambarLama }}"

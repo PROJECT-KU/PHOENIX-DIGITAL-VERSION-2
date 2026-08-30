@@ -117,4 +117,58 @@ class OrchaTampilanSeragamTest extends TestCase
             );
         }
     }
+
+    /**
+     * wire:loading tidak boleh dipasangi utilitas tampilan Bootstrap.
+     *
+     * Livewire menyembunyikan dengan menulis style="display: none" sebaris,
+     * sedangkan utilitas d-* Bootstrap ditulis `display: ... !important`.
+     * !important menang, jadi span yang seharusnya hilang tetap terlihat:
+     * tombol simpan menampilkan "Update Artikel" DAN pemintal sekaligus,
+     * berjejer dalam satu baris, tanpa satu pun galat yang menandainya.
+     *
+     * Dicari lewat berkas dan bukan lewat halaman yang dirender karena
+     * gejalanya murni CSS — HTML yang dihasilkan Livewire sendiri sudah benar.
+     */
+    public function test_wire_loading_tidak_dipasangi_utilitas_tampilan(): void
+    {
+        $pelanggar = [];
+
+        foreach ($this->berkasOrcha() as $satu) {
+            $isi = file_get_contents($satu);
+
+            // Tag pembukanya diambil utuh, sebab wire:loading dan class-nya
+            // sering terpisah baris setelah dirapikan pemformat.
+            preg_match_all('/<[a-z]+\s[^>]*>/i', $isi, $cocok);
+
+            foreach ($cocok[0] as $tag) {
+                if (! preg_match('/wire:loading([.\w-]*)/', $tag, $modifier)) {
+                    continue;
+                }
+
+                /*
+                 | Yang diperiksa hanya wire:loading yang MENYEMBUNYIKAN.
+                 |
+                 | wire:loading.attr dan wire:loading.class tidak menyentuh
+                 | display sama sekali, dan keduanya justru sering dipasang
+                 | pada tombol yang memang butuh d-inline-flex untuk
+                 | menengahkan isinya. Menyapu keduanya sekalian berarti
+                 | menyalahkan tombol yang sudah benar — dan penjaga yang
+                 | menuduh terlalu banyak akan dimatikan orang, bukan dipatuhi.
+                 */
+                if (str_contains($modifier[1], '.attr') || str_contains($modifier[1], '.class')) {
+                    continue;
+                }
+
+                if (preg_match('/class="[^"]*\bd-(?:inline-)?(?:flex|block|inline|grid|table)\b/', $tag)) {
+                    $pelanggar[] = basename($satu);
+                    break;
+                }
+            }
+        }
+
+        $this->assertSame([], $pelanggar,
+            'Kelas d-* mengalahkan display:none milik Livewire, jadi kedua keadaan tombol tampil bersamaan: '
+            .implode(', ', $pelanggar));
+    }
 }

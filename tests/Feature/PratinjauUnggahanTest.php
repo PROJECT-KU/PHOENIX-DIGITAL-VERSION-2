@@ -97,3 +97,71 @@ it('menolak berkas yang bukan gambar', function () {
         ->get(route('pratinjau.unggahan', ['sandi' => PratinjauUnggahan::sandi('rahasia.pdf')]))
         ->assertNotFound();
 });
+
+/*
+ | Perbaikannya baru berlaku di tampilan yang benar-benar memanggilnya.
+ |
+ | Rutenya sudah ada sejak lama, tetapi empat halaman Orcha — etalase,
+ | paket wisata, armada, galeri — masih memanggil ->temporaryUrl() langsung.
+ | Keempatnya lolos seluruh tes dan tampil normal di lokal; yang patah hanya
+ | di produksi, tempat pengoptimal gambar hosting membuang tanda tangannya.
+ |
+ | Karena itu penjaganya harus membaca berkas tampilan, bukan menjalankan
+ | halamannya: gejalanya memang tidak muncul di lingkungan tes.
+ */
+it('tidak ada satu pun tampilan admin yang memanggil temporaryUrl langsung', function () {
+    $berkas = array_merge(
+        glob(resource_path('views/livewire/pages/admin/*.blade.php')) ?: [],
+        glob(resource_path('views/livewire/pages/admin/*/*.blade.php')) ?: [],
+        glob(resource_path('views/livewire/pages/admin/*/*/*.blade.php')) ?: [],
+        glob(resource_path('views/livewire/pages/admin/*/*/*/*.blade.php')) ?: [],
+    );
+
+    $pelanggar = [];
+
+    foreach ($berkas as $satu) {
+        // Salinan kembar buatan OneDrive ("form.blade 2.php") tidak pernah
+        // dirender Blade — melaporkannya hanya kebisingan.
+        if (preg_match('/ \d+\.php$/', $satu)) {
+            continue;
+        }
+
+        if (str_contains(file_get_contents($satu), '->temporaryUrl(')) {
+            $pelanggar[] = str_replace(resource_path('views/livewire/pages/admin/'), '', $satu);
+        }
+    }
+
+    /*
+     | Yang di bawah ini BELUM diperbaiki, bukan dikecualikan.
+     |
+     | Semuanya masih menampilkan pratinjau rusak di produksi persis seperti
+     | halaman Orcha sebelum diperbaiki. Didaftarkan apa adanya supaya utangnya
+     | terlihat dan bisa dicoret satu per satu; penjaganya tetap menutup pintu
+     | untuk pemanggilan BARU di mana pun di panel admin.
+     |
+     | Daftarnya hanya boleh menyusut. Menambah nama ke sini berarti sengaja
+     | mengirim pratinjau yang tidak akan tampil ke pengguna.
+     */
+    $belumDibereskan = [
+        'Banners/Banners-form.blade.php',
+        'ProductBundlings/ProductBundlings-form.blade.php',
+        'blog/blog-form.blade.php',
+        'modal/modal-list.blade.php',
+        'order/order-form.blade.php',
+        'pemasukan/pemasukan-list.blade.php',
+        'penyelesaian-task/penyelesaian-task-list.blade.php',
+        'product/product-form.blade.php',
+        'profile/profile-setting.blade.php',
+        'spending/spending-form.blade.php',
+        'task/task-saya-list.blade.php',
+        'testimoni/testimoni-form.blade.php',
+    ];
+
+    expect(array_values(array_diff($pelanggar, $belumDibereskan)))
+        ->toBe([], 'Pakai PratinjauUnggahan::url() — ->temporaryUrl() tidak tampil di produksi.');
+
+    // Nama yang sudah dibereskan harus dicoret dari daftar di atas, kalau
+    // tidak daftarnya pelan-pelan jadi dusta yang tidak ada yang membacanya.
+    expect(array_values(array_diff($belumDibereskan, $pelanggar)))
+        ->toBe([], 'Sudah tidak memanggil temporaryUrl — coret dari $belumDibereskan.');
+});

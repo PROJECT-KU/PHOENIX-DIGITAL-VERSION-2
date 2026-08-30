@@ -106,7 +106,7 @@ Galeri Perjalanan || lemon
                                 @if ($satu->isPreviewable())
                                     <div class="orcha-pratayang-kartu">
                                         <div class="orcha-galeri-kotak">
-                                            <img src="{{ $satu->temporaryUrl() }}" alt="">
+                                            <img src="{{ \App\Support\PratinjauUnggahan::url($satu) }}" alt="">
                                             <span class="orcha-galeri-nomor">{{ $urutan + 1 }}</span>
                                         </div>
 
