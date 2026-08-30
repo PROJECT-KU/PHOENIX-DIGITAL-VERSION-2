@@ -415,31 +415,61 @@ new class extends Component
                     </li>
 
                     @php
+                        /*
+                         | Menu Orcha dikelompokkan seperti bilah lemon: satu
+                         | judul kecil di atas tiap kelompok.
+                         |
+                         | Sebelumnya lima belas menu berderet rata tanpa jeda,
+                         | sehingga mencari satu halaman berarti membaca seluruh
+                         | daftar dari atas — dan "Bagian Pemeriksaan" yang duduk
+                         | di antara Armada dan Destinasi terbaca seperti salah
+                         | tempat padahal tidak.
+                         |
+                         | URUTANNYA SENGAJA TIDAK DIUBAH, hanya disisipi judul.
+                         | Dua ketetanggaan di bawah ini dipilih dengan alasan
+                         | yang sudah dicatat, dan mengurutkan ulang demi
+                         | kerapian akan menghapus alasannya tanpa jejak.
+                         */
                         $menuOrcha = [
-                            ['admin.orcha.dashboard', 'bi-grid-fill', 'Dashboard'],
-                            ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Open Trip'],
-                            ['admin.orcha.penyewaan', 'bi-truck', 'Sewa Kendaraan'],
-                            ['admin.orcha.pembayaran', 'bi-cash-coin', 'Bukti Pembayaran'],
-                            ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
-                            ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
-                            ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
-                            ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
-                            ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
-                            // Bertetangga dengan Armada karena keduanya mengurus
-                            // unitnya, bukan penyewaannya: yang satu daftar unit,
-                            // yang satu daftar apa yang diperiksa pada unit itu.
-                            ['admin.orcha.bagian', 'bi-list-check', 'Bagian Pemeriksaan'],
-                            ['admin.orcha.destinasi', 'bi-geo-alt', 'Destinasi Populer'],
-                            // Bertetangga dengan Destinasi karena keduanya mengisi
-                            // beranda — tetapi maksudnya berbeda: destinasi menjual
-                            // TEMPAT, galeri menunjukkan ORANG yang sudah berangkat.
-                            ['admin.orcha.galeri', 'bi-images', 'Galeri Perjalanan'],
-                            ['admin.orcha.testimoni', 'bi-chat-quote', 'Testimoni'],
-                            ['admin.orcha.partner', 'bi-people', 'Partner'],
-                            // Blog Orcha, bukan blog Phoenix di /admin/blog.
-                            // Keduanya tidak pernah tampil bersamaan: menu ini
-                            // hanya ada di dalam mode Orcha.
-                            ['admin.orcha.blog', 'bi-journal-text', 'Blog'],
+                            'Menu' => [
+                                ['admin.orcha.dashboard', 'bi-grid-fill', 'Dashboard'],
+                            ],
+
+                            // Semua yang datang dari pelanggan, dan karena itu
+                            // semuanya berpenanda angka: semakin ke bawah,
+                            // semakin jauh dari uang yang sudah masuk.
+                            'Pemesanan' => [
+                                ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Open Trip'],
+                                ['admin.orcha.penyewaan', 'bi-truck', 'Sewa Kendaraan'],
+                                ['admin.orcha.pembayaran', 'bi-cash-coin', 'Bukti Pembayaran'],
+                                ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
+                                ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
+                            ],
+
+                            'Layanan & Armada' => [
+                                ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
+                                ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
+                                ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
+                                // Bertetangga dengan Armada karena keduanya mengurus
+                                // unitnya, bukan penyewaannya: yang satu daftar unit,
+                                // yang satu daftar apa yang diperiksa pada unit itu.
+                                ['admin.orcha.bagian', 'bi-list-check', 'Bagian Pemeriksaan'],
+                            ],
+
+                            // Yang mengisi halaman publik orchajourney.com.
+                            'Isi Situs' => [
+                                ['admin.orcha.destinasi', 'bi-geo-alt', 'Destinasi Populer'],
+                                // Bertetangga dengan Destinasi karena keduanya mengisi
+                                // beranda — tetapi maksudnya berbeda: destinasi menjual
+                                // TEMPAT, galeri menunjukkan ORANG yang sudah berangkat.
+                                ['admin.orcha.galeri', 'bi-images', 'Galeri Perjalanan'],
+                                ['admin.orcha.testimoni', 'bi-chat-quote', 'Testimoni'],
+                                ['admin.orcha.partner', 'bi-people', 'Partner'],
+                                // Blog Orcha, bukan blog Phoenix di /admin/blog.
+                                // Keduanya tidak pernah tampil bersamaan: menu ini
+                                // hanya ada di dalam mode Orcha.
+                                ['admin.orcha.blog', 'bi-journal-text', 'Blog'],
+                            ],
                         ];
                     @endphp
 
@@ -518,19 +548,27 @@ new class extends Component
                         ];
                     @endphp
 
-                    @foreach ($menuOrcha as [$rute, $ikon, $label])
-                        <li class="sidebar-item {{ request()->routeIs($rute) || request()->routeIs($rute . '.*') ? 'active' : '' }}">
-                            <a href="{{ route($rute) }}" class="sidebar-link" wire:navigate>
-                                <i class="bi {{ $ikon }}"></i>
-                                <span>{{ $label }}</span>
+                    @foreach ($menuOrcha as $judulGrup => $isiGrup)
+                        {{-- Judul pertama tanpa mt-4: di atasnya sudah ada
+                             lencana "Orcha Journey", jadi jeda tambahan justru
+                             memisahkannya dari bagian yang ia tandai. Sama
+                             seperti judul "Menu" di bilah lemon. --}}
+                        <li class="{{ $loop->first ? '' : 'mt-4 ' }}sidebar-title">{{ $judulGrup }}</li>
 
-                                @if (($penanda[$rute][0] ?? 0) > 0)
-                                    <span class="orcha-hitung-menu" title="{{ $penanda[$rute][1] }}">
-                                        {{ $penanda[$rute][0] > 99 ? '99+' : $penanda[$rute][0] }}
-                                    </span>
-                                @endif
-                            </a>
-                        </li>
+                        @foreach ($isiGrup as [$rute, $ikon, $label])
+                            <li class="sidebar-item {{ request()->routeIs($rute) || request()->routeIs($rute . '.*') ? 'active' : '' }}">
+                                <a href="{{ route($rute) }}" class="sidebar-link" wire:navigate>
+                                    <i class="bi {{ $ikon }}"></i>
+                                    <span>{{ $label }}</span>
+
+                                    @if (($penanda[$rute][0] ?? 0) > 0)
+                                        <span class="orcha-hitung-menu" title="{{ $penanda[$rute][1] }}">
+                                            {{ $penanda[$rute][0] > 99 ? '99+' : $penanda[$rute][0] }}
+                                        </span>
+                                    @endif
+                                </a>
+                            </li>
+                        @endforeach
                     @endforeach
 
                     <li class="mt-4 sidebar-title">Aplikasi</li>
