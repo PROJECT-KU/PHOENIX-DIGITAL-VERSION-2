@@ -641,16 +641,27 @@ test('mengubah paket juga menampilkan pemberitahuan sebelum berpindah', function
         ->assertDispatched('orcha-sukses-pindah', message: 'Paket wisata diperbarui.');
 });
 
-test('popup menutup dulu, baru halaman berpindah', function () {
+test('kabar sukses selamat menyeberangi perpindahan halaman', function () {
+    /*
+     | Yang dijaga di sini TETAP sama seperti sebelumnya: pesan sukses harus
+     | benar-benar sempat terbaca, tidak ikut terbuang saat isi halaman ditukar.
+     |
+     | Yang berubah cuma caranya. Dulu popup ditampilkan di halaman ASAL dan
+     | perpindahan menempel pada .then() miliknya, sehingga admin menunggu 2,6
+     | detik dan kabarnya muncul di halaman yang justru sedang ia tinggalkan.
+     | Sekarang pesannya dititipkan lewat sessionStorage dan ditampilkan sebagai
+     | toast di halaman TUJUAN — tanpa menunggu, dan di tempat yang memang ingin
+     | dilihat admin: daftarnya sudah bertambah.
+     */
     $skrip = file_get_contents(base_path(
         'resources/views/livewire/pages/admin/orcha/partials/skrip.blade.php'
     ));
 
-    // Perpindahan menempel pada .then(...) milik Swal, bukan dijalankan
-    // langsung — itulah yang menjamin popupnya sempat terbaca.
     expect($skrip)->toContain("Livewire.on('orcha-sukses-pindah'")
-        ->and($skrip)->toContain('}).then(pindah);')
-        ->and($skrip)->toContain('allowOutsideClick: false');
+        // Dititipkan sebelum berpindah...
+        ->and($skrip)->toContain("sessionStorage.setItem('orcha-toast'")
+        // ...dan diambil lagi saat halaman berikutnya terbuka.
+        ->and($skrip)->toContain("sessionStorage.getItem('orcha-toast')");
 
     // Tidak ada lagi jalur titip-sesi yang dulu ikut ditampilkan penampil
     // bawaan layout sampai popupnya tertutup dua kali.
