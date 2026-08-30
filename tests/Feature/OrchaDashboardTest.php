@@ -5759,3 +5759,34 @@ test('orcha tanpa tren tidak merobohkan dashboard', function () {
         ->assertOk()
         ->assertDontSee('Tren enam bulan terakhir');
 });
+
+/*
+ | Dasbor pernah menampilkan lima belas kartu berwarna di satu layar, dan
+ | "bukti bayar menunggu" termasuk DUA kali di antaranya: sekali di baris
+ | "Perlu ditindak" dan sekali lagi di baris angka etalase.
+ |
+ | Duplikat semacam ini tidak pernah meledak. Yang terjadi admin membaca dua
+ | tumpukan bukti yang berbeda padahal tumpukannya satu — dan itu baru
+ | ketahuan kalau ada yang menghitungnya.
+ */
+it('tidak menampilkan bukti bayar menunggu dua kali di dasbor', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/dashboard/index.blade.php')
+    );
+
+    // Sekali di daftar tindakan; daftar isi etalase tidak boleh memuatnya lagi.
+    expect(substr_count($sumber, "'pembayaran_menunggu'"))->toBe(1);
+});
+
+it('memberi judul pada tiap bagian dasbor', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/dashboard/index.blade.php')
+    );
+
+    // Tanpa judul, tiga baris kartu berdiri tanpa satu kata pun yang
+    // menerangkan kenapa mereka dipisah — yang membaca harus menyimpulkan
+    // sendiri mana pekerjaan dan mana keterangan.
+    foreach (['Perlu ditindak', 'Uang', 'Isi etalase'] as $judul) {
+        expect($sumber)->toContain(">$judul</h2>");
+    }
+});

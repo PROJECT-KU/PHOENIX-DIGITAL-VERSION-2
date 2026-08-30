@@ -5,6 +5,113 @@ Dashboard Orcha Journey || lemon
 <div>
     @include('livewire.pages.admin.orcha.partials.gaya')
 
+{{-- Gaya khusus halaman dasbor.
+
+     Ditulis di sini, bukan di partials/gaya.blade.php, karena
+     .orcha-kartu-tindakan dan .orcha-ikon-* juga dipakai empat halaman detail
+     (pendaftaran, penyewaan, pembatalan, pesan). Menyunting aturan bersamanya
+     akan mengubah keempatnya sekaligus, padahal yang kepenuhan warna cuma
+     dasbor — di halaman detail kartunya cuma satu, dan warnanya justru
+     membantu. --}}
+<style>
+    /* ---------- Judul bagian ----------
+
+       Sebelumnya tiga baris kartu berdiri tanpa satu kata pun yang menerangkan
+       kenapa mereka dipisah. Yang membaca harus menyimpulkan sendiri bahwa
+       lima kartu teratas adalah pekerjaan dan empat di bawahnya uang. */
+    .orc-das-judul {
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #94a3b8;
+        margin: 0 0 .7rem;
+    }
+
+    /* ---------- Kartu tindakan ----------
+
+       Ikonnya tidak lagi kotak bergradien pekat berhuruf putih.
+
+       Lima gradien jenuh berjajar membuat mata tidak punya alasan berhenti di
+       salah satunya — persis kebalikan dari maksudnya. Sekarang latarnya tipis
+       dan warnanya pindah ke glifnya: kelima kartu tetap bisa dibedakan sekilas
+       tanpa satu pun yang berteriak. */
+    .orc-das-tindakan .orcha-ikon {
+        box-shadow: none;
+        border-radius: 12px;
+    }
+
+    .orc-das-tindakan .orcha-ikon-daftar { background: #eef2ff; color: #4f46e5; }
+    .orc-das-tindakan .orcha-ikon-sewa   { background: #f3f0ff; color: #7c3aed; }
+    .orc-das-tindakan .orcha-ikon-bayar  { background: #e8f7f0; color: #047857; }
+    .orc-das-tindakan .orcha-ikon-batal  { background: #fdeeee; color: #b91c1c; }
+    .orc-das-tindakan .orcha-ikon-pesan  { background: #fef4e6; color: #b45309; }
+
+    /* Pita oranye di tepi kiri dibuang.
+
+       Maksudnya menandai kartu yang ada isinya — tetapi pada hari sibuk
+       KELIMA kartu ada isinya, sehingga kelimanya berpita dan tandanya tidak
+       lagi menandai apa pun. Yang membedakan sudah cukup: angkanya bukan nol
+       dan ikonnya berwarna, sedangkan yang kosong meredup sendiri. */
+    .orc-das-tindakan .orcha-kartu-tindakan.ada { border-left: 0 !important; }
+
+    /* Latar bergradien milik kartu tindakan di halaman detail tidak dipakai di
+       sini: di dasbor ia berdampingan dengan kartu putih lain, dan dua putih
+       yang beda tipis terbaca sebagai cacat cetak, bukan sebagai kelompok. */
+    .orc-das-tindakan .orcha-kartu-tindakan {
+        background: #fff !important;
+        border: 1px solid #e9eef5 !important;
+    }
+
+    /* ---------- Kartu uang ----------
+
+       Empat pita berlainan warna dibuang. Keempat angka ini dibaca berurutan
+       sebagai satu hitungan — omzet dikurangi modal jadi keuntungan — jadi
+       memberi tiap kartu warna sendiri memutus bacaan yang justru berurutan.
+       Yang tetap berwarna hanya keuntungannya, karena itu jawaban akhirnya. */
+    .orc-das-uang .orcha-kartu-uang { border-left: 0 !important; }
+
+    /* ---------- Bilah isi etalase ---------- */
+    .orc-das-bilah {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem 2rem;
+    }
+
+    .orc-das-bilah-item {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .3rem .1rem;
+        color: var(--orc-tinta);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: color .14s ease;
+    }
+
+    .orc-das-bilah-item[href]:hover { color: var(--orc-primer); }
+
+    .orc-das-bilah-item > i {
+        display: flex;
+        align-items: center;
+        line-height: 1;
+        font-size: .95rem;
+        color: #94a3b8;
+    }
+
+    .orc-das-bilah-item[href]:hover > i { color: var(--orc-primer); }
+
+    .orc-das-bilah-angka { font-weight: 800; font-size: 1.05rem; line-height: 1; }
+    .orc-das-bilah-label { font-size: .82rem; color: #64748b; }
+
+    @media (max-width: 575.98px) {
+        /* Di layar sempit bilahnya jadi dua lajur, bukan satu deret panjang
+           yang memaksa menggulir ke samping. */
+        .orc-das-bilah { gap: .75rem 1rem; }
+        .orc-das-bilah-item { flex: 0 0 calc(50% - .5rem); }
+    }
+</style>
+
     <div class="container-fluid">
         @include('livewire.pages.admin.orcha.partials.kepala', [
             'judul' => 'Dashboard Orcha Journey',
@@ -27,7 +134,9 @@ Dashboard Orcha Journey || lemon
             $adaPekerjaan = collect($perlu)->sum(fn ($baris) => (int) ($perluDitindak[$baris[0]] ?? 0)) > 0;
         @endphp
 
-        <div class="row g-3 mb-4">
+        <h2 class="orc-das-judul">Perlu ditindak</h2>
+
+        <div class="row g-3 mb-4 orc-das-tindakan">
             @foreach ($perlu as [$kunci, $label, $ikon, $rute, $rupa])
                 @php $nilai = (int) ($perluDitindak[$kunci] ?? 0); @endphp
                 <div class="col-6 col-lg-3 col-xl">
@@ -139,7 +248,9 @@ Dashboard Orcha Journey || lemon
              tidak ikut ter-deploy untuk halaman admin ini, jadi pustaka yang
              menuntut bundel hanya menghasilkan kotak kosong di server. --}}
         @if ($uang !== [])
-            <div class="row g-3 mb-4">
+            <h2 class="orc-das-judul">Uang</h2>
+
+            <div class="row g-3 mb-4 orc-das-uang">
                 @foreach ([
                     ['omzet_teks', 'Omzet masuk', 'bi-graph-up-arrow', 'omzet'],
                     ['modal_teks', 'Modal keluar', 'bi-box-seam', 'modal'],
@@ -264,50 +375,56 @@ Dashboard Orcha Journey || lemon
             </script>
         @endif
 
-        {{-- ============ ANGKA ETALASE ============
+        {{-- ============ ISI ETALASE ============
 
-             Dulu enam kotak putih beridentik dengan angka di tengahnya: tidak
-             ada yang membedakan "bukti bayar menunggu" — yang menuntut
-             perbuatan — dari "22 destinasi populer" yang cuma keterangan isi
-             etalase. Sekarang tiap kartu punya ikon, warna, dan tautan ke
-             halamannya sendiri. --}}
+             Dulu enam kartu sebesar kartu tindakan, masing-masing dengan kotak
+             ikon bergradien sendiri. Bentuk itu menyamakan derajat dua hal yang
+             berbeda: "22 destinasi populer" adalah KETERANGAN tentang isi
+             etalase, bukan sesuatu yang menuntut dikerjakan hari ini — tetapi
+             ia berteriak sama kerasnya dengan bukti bayar yang menunggu dicek.
+             Ditambah baris tindakan dan baris uang, ada lima belas kartu
+             berwarna di satu layar dan tidak ada satu pun yang menonjol.
+
+             Sekarang satu bilah: angka tetap bisa dibaca sekilas dan tetap bisa
+             diklik ke halamannya, tetapi tidak lagi menuntut giliran membaca
+             lebih dulu daripada pekerjaan yang sebenarnya. --}}
         @php
             $rupaEtalase = [
-                'pembayaran_menunggu' => ['bi-cash-coin', 'bayar', 'admin.orcha.pembayaran'],
-                'paket' => ['bi-map', 'daftar', 'admin.orcha.paket'],
-                'kendaraan' => ['bi-bus-front', 'sewa', 'admin.orcha.armada'],
-                'destinasi' => ['bi-geo-alt', 'batal', 'admin.orcha.destinasi'],
-                'testimoni' => ['bi-chat-quote', 'pesan', 'admin.orcha.testimoni'],
-                'partner' => ['bi-people', 'daftar', 'admin.orcha.partner'],
+                // Kunci bukti bayar SENGAJA tidak ada di daftar ini.
+                //
+                // Angka itu sudah tampil di baris "Perlu ditindak" paling atas,
+                // dan menampilkannya dua kali di satu layar membuat admin
+                // mengira ada dua tumpukan bukti yang berbeda.
+                'paket' => ['bi-map', 'admin.orcha.paket'],
+                'kendaraan' => ['bi-bus-front', 'admin.orcha.armada'],
+                'destinasi' => ['bi-geo-alt', 'admin.orcha.destinasi'],
+                'testimoni' => ['bi-chat-quote', 'admin.orcha.testimoni'],
+                'partner' => ['bi-people', 'admin.orcha.partner'],
             ];
+
+            $isiEtalase = collect($kartu)->filter(fn ($item) => isset($rupaEtalase[$item['kunci']]));
         @endphp
 
-        <div class="row g-3 mb-4">
-            @foreach ($kartu as $item)
-                @if (! str_contains($item['kunci'], 'baru') && $item['kunci'] !== 'pembatalan_diajukan' && $item['kunci'] !== 'pesan_belum_dibaca')
-                    @php
-                        [$ikon, $rupa, $rute] = $rupaEtalase[$item['kunci']] ?? ['bi-dot', 'daftar', null];
-                    @endphp
-                    <div class="col-6 col-md-4 col-xl-2">
-                        {{-- Dibungkus tautan bila halamannya memang ada. Angka yang
-                             menarik perhatian tetapi tidak bisa diikuti ke mana pun
-                             hanya memaksa admin mencarinya sendiri di bilah samping. --}}
-                        <a @if ($rute && \Illuminate\Support\Facades\Route::has($rute)) href="{{ route($rute) }}" wire:navigate @endif
-                            class="text-decoration-none orcha-kartu-etalase-tautan">
-                            <div class="card orcha-kartu orcha-kartu-etalase h-100">
-                                <div class="card-body p-3">
-                                    <span class="orcha-ikon orcha-ikon-{{ $rupa }} orcha-ikon-kecil">
-                                        <i class="bi {{ $ikon }}"></i>
-                                    </span>
-                                    <div class="orcha-angka mt-2">{{ $item['nilai'] }}</div>
-                                    <div class="text-muted small">{{ $item['label'] }}</div>
-                                </div>
-                            </div>
-                        </a>
+        @if ($isiEtalase->isNotEmpty())
+            <h2 class="orc-das-judul">Isi etalase</h2>
+
+            <div class="card orcha-kartu mb-4">
+                <div class="card-body p-3 p-lg-4">
+                    <div class="orc-das-bilah">
+                        @foreach ($isiEtalase as $item)
+                            @php [$ikon, $rute] = $rupaEtalase[$item['kunci']]; @endphp
+
+                            <a @if (\Illuminate\Support\Facades\Route::has($rute)) href="{{ route($rute) }}" wire:navigate @endif
+                                class="orc-das-bilah-item">
+                                <i class="bi {{ $ikon }}"></i>
+                                <span class="orc-das-bilah-angka">{{ $item['nilai'] }}</span>
+                                <span class="orc-das-bilah-label">{{ $item['label'] }}</span>
+                            </a>
+                        @endforeach
                     </div>
-                @endif
-            @endforeach
-        </div>
+                </div>
+            </div>
+        @endif
 
         <div class="row g-4">
             {{-- Rincian paket & armada --}}
