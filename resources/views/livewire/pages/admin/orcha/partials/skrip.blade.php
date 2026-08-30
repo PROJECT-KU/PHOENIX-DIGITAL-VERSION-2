@@ -22,6 +22,12 @@
         z-index: 100050;
         display: flex;
         flex-direction: column;
+        /* Tanpa ini setiap toast diregangkan selebar wadah (380px), sehingga
+           pesan pendek seperti "Artikel diperbarui." menyisakan ruang kosong
+           selebar separuh kartu dan tombol tutupnya terlempar jauh dari
+           tulisannya. flex-end membuat lebarnya mengikuti isi, tetap rata
+           kanan. */
+        align-items: flex-end;
         gap: 10px;
         pointer-events: none;
         max-width: min(380px, calc(100vw - 36px));
@@ -32,71 +38,114 @@
         position: relative;
         display: flex;
         align-items: flex-start;
-        gap: .75rem;
-        padding: .85rem 2.2rem .85rem .9rem;
-        border-radius: 14px;
-        background: #fff;
-        border: 1px solid #e6eef5;
-        box-shadow: 0 14px 34px rgba(31, 45, 61, .16);
+        gap: .8rem;
+        padding: .9rem 2.4rem .95rem 1.05rem;
+        border-radius: 16px;
+        /* Putih yang menghangat ke ungu merek di sudut jauh. Putih rata terasa
+           seperti kotak sistem; gradien setipis ini membuatnya sekeluarga
+           dengan kartu di belakangnya tanpa ikut berteriak. */
+        background: linear-gradient(148deg, #fff 0%, #fcfbff 55%, #f4f1fe 100%);
+        border: 1px solid rgba(124, 58, 237, .16);
+        /* Dua bayangan: satu berwarna merek supaya toast terasa menyala di
+           atas halaman, satu netral supaya tepinya tetap jelas di latar putih. */
+        box-shadow: 0 18px 40px -14px rgba(79, 70, 229, .38),
+                    0 3px 12px rgba(31, 45, 61, .10);
         overflow: hidden;
         cursor: pointer;
-        animation: orchaToastMasuk .32s cubic-bezier(.22, .9, .24, 1);
+        animation: orchaToastMasuk .42s cubic-bezier(.18, .95, .28, 1);
     }
 
-    /* Pita warna di tepi kiri: penanda yang terbaca sebelum satu kata pun
-       dibaca, dan tetap terlihat oleh yang sulit membedakan warna karena
-       ikonnya ikut membedakan. */
-    .orcha-toast::before {
+    .orcha-toast:hover {
+        box-shadow: 0 22px 46px -14px rgba(79, 70, 229, .46),
+                    0 4px 14px rgba(31, 45, 61, .12);
+    }
+
+    /* Cahaya lembut di belakang ikon. Murni hiasan, jadi tidak boleh menangkap
+       tetikus — tanpa pointer-events:none ia menutupi separuh toast dan
+       menelan klik yang seharusnya menutupnya. */
+    .orcha-toast::after {
         content: "";
         position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 5px;
-        background: linear-gradient(180deg, var(--orc-primer), var(--orc-primer-2));
+        left: -34px;
+        top: -46px;
+        width: 132px;
+        height: 132px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(124, 58, 237, .18), transparent 68%);
+        pointer-events: none;
     }
 
     .orcha-toast .ikon {
+        position: relative;
         flex-shrink: 0;
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
-        font-size: .95rem;
+        font-size: .9rem;
         background: linear-gradient(135deg, var(--orc-primer), var(--orc-primer-2));
-        box-shadow: 0 4px 10px rgba(124, 58, 237, .3);
+        /* Garis putih tipis di dalam tepi atas: memberi kesan cembung, sama
+           seperti tombol utama di halaman ini. */
+        box-shadow: 0 6px 14px -3px rgba(124, 58, 237, .5),
+                    inset 0 1px 0 rgba(255, 255, 255, .45);
     }
 
-    .orcha-toast .isi { min-width: 0; }
-    .orcha-toast .judul { font-weight: 800; font-size: .84rem; color: var(--orc-tinta); line-height: 1.25; }
-    .orcha-toast .pesan { font-size: .82rem; color: #51606f; line-height: 1.45; margin-top: 1px; word-break: break-word; }
+    /* Centangnya sendiri dijadikan wadah flex.
+
+       Cakramnya sudah menengahkan isinya, tapi yang ditengahkan adalah KOTAK
+       BARIS ikonnya — bukan glifnya. Tinggi kotak baris itu mengikuti
+       line-height halaman, sedangkan bootstrap-icons menggambar glifnya di
+       garis dasar dengan vertical-align bawaannya sendiri. Hasilnya centang
+       duduk di bawah-kanan dan menyisakan tempat kosong di atas-kiri.
+
+       Pola yang sama sudah dipakai .stat-icon-wrapper dan centang transmisi
+       di gaya.blade.php; tanpa aturan ini cakramnya rata tapi isinya tidak. */
+    .orcha-toast .ikon > i {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        vertical-align: 0;
+    }
+    .orcha-toast .ikon > i::before { display: block; line-height: 1; }
+
+    .orcha-toast .isi { min-width: 0; padding-top: 1px; }
+    .orcha-toast .judul { font-weight: 800; font-size: .85rem; color: var(--orc-tinta); line-height: 1.25; letter-spacing: -.01em; }
+    .orcha-toast .pesan { font-size: .82rem; color: #5b6a79; line-height: 1.45; margin-top: 2px; word-break: break-word; }
 
     .orcha-toast .tutup {
         position: absolute;
-        top: 6px;
-        right: 8px;
+        top: 7px;
+        right: 7px;
+        width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         border: 0;
+        border-radius: 50%;
         background: transparent;
         color: #a9b6c4;
-        font-size: 1rem;
+        font-size: 1.05rem;
         line-height: 1;
-        padding: 4px;
+        padding: 0;
         cursor: pointer;
+        transition: background .15s ease, color .15s ease;
     }
-    .orcha-toast .tutup:hover { color: #51606f; }
+    .orcha-toast .tutup:hover { background: rgba(124, 58, 237, .1); color: var(--orc-primer); }
 
     /* Batang waktu: admin bisa melihat toast-nya akan pergi, jadi tidak
        menunggu-nunggu apakah masih ada yang perlu ditekan. */
     .orcha-toast .waktu {
         position: absolute;
-        left: 5px;
+        left: 0;
         right: 0;
         bottom: 0;
         height: 3px;
-        background: linear-gradient(90deg, var(--orc-primer), #7fd4f3);
+        background: linear-gradient(90deg, var(--orc-primer), var(--orc-primer-2), #8ab6f9);
         transform-origin: left center;
         animation: orchaToastWaktu linear forwards;
     }
@@ -104,11 +153,11 @@
     .orcha-toast.pergi { animation: orchaToastKeluar .26s ease forwards; }
 
     @keyframes orchaToastMasuk {
-        from { opacity: 0; transform: translateX(22px) scale(.97); }
+        from { opacity: 0; transform: translateX(26px) scale(.96); }
         to   { opacity: 1; transform: none; }
     }
     @keyframes orchaToastKeluar {
-        to { opacity: 0; transform: translateX(22px) scale(.97); }
+        to { opacity: 0; transform: translateX(26px) scale(.96); }
     }
     @keyframes orchaToastWaktu {
         from { transform: scaleX(1); }
