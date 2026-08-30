@@ -564,6 +564,20 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/destinasi/{destinasi}/ubah', OrchaDestinasiForm::class)->name('admin.orcha.destinasi.ubah');
     Route::get('/admin/orcha/testimoni', OrchaEtalaseList::class)->defaults('jenis', 'testimoni')->name('admin.orcha.testimoni');
     Route::get('/admin/orcha/partner', OrchaEtalaseList::class)->defaults('jenis', 'partner')->name('admin.orcha.partner');
+
+    /*
+     | Blog Orcha — TERPISAH dari blog Phoenix di /admin/blog.
+     |
+     | Dua blog berbeda di dua basis data berbeda, dan sengaja tidak pernah
+     | dicampur. Menu ini hanya muncul di mode Orcha pada sidebar, jadi admin
+     | tidak pernah melihat dua daftar blog sekaligus.
+     |
+     | Rute create didaftarkan SEBELUM {artikel} supaya "create" tidak terbaca
+     | sebagai nomor artikel.
+     */
+    Route::get('/admin/orcha/blog', \App\Livewire\Pages\Admin\Orcha\Blog\OrchaBlogList::class)->name('admin.orcha.blog');
+    Route::get('/admin/orcha/blog/create', \App\Livewire\Pages\Admin\Orcha\Blog\OrchaBlogForm::class)->name('admin.orcha.blog.create');
+    Route::get('/admin/orcha/blog/{artikel}/edit', \App\Livewire\Pages\Admin\Orcha\Blog\OrchaBlogForm::class)->name('admin.orcha.blog.edit');
 });
 
 require __DIR__.'/auth.php';

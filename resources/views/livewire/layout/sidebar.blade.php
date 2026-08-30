@@ -436,6 +436,10 @@ new class extends Component
                             ['admin.orcha.galeri', 'bi-images', 'Galeri Perjalanan'],
                             ['admin.orcha.testimoni', 'bi-chat-quote', 'Testimoni'],
                             ['admin.orcha.partner', 'bi-people', 'Partner'],
+                            // Blog Orcha, bukan blog Phoenix di /admin/blog.
+                            // Keduanya tidak pernah tampil bersamaan: menu ini
+                            // hanya ada di dalam mode Orcha.
+                            ['admin.orcha.blog', 'bi-journal-text', 'Blog'],
                         ];
                     @endphp
 
