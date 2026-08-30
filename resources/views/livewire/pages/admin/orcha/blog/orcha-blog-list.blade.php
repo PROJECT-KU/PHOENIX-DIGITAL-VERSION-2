@@ -2,6 +2,27 @@
 Blog Orcha || lemon
 @stop
 
+@php
+    /*
+     | Sampul artikel berada di server ORCHA, bukan di lemon.
+     |
+     | API mengirim jalur relatif ("/storage/artikel/x.webp"). Dipakai apa
+     | adanya, peramban mencarinya di alamat lemon dan mendapat 404 — yang
+     | terlihat admin cuma kotak gambar rusak, tanpa galat apa pun.
+     |
+     | Gejalanya menyesatkan karena SEBAGIAN baris tampak benar: artikel yang
+     | belum bersampul memakai gambar cadangan yang alamatnya sudah lengkap,
+     | jadi ia muncul seperti biasa. Yang rusak justru artikel yang sampulnya
+     | sudah diunggah.
+     |
+     | Pola ini disalin dari daftar destinasi, yang sudah teruji di server.
+     */
+    $asalGambar = rtrim(str_replace('/api/v1', '', config('orcha.url')), '/');
+    $tautanGambar = fn ($jalur) => $jalur
+        ? (str_starts_with($jalur, 'http') ? $jalur : $asalGambar . $jalur)
+        : null;
+@endphp
+
 <div>
     @include('livewire.pages.admin.orcha.partials.gaya')
 
@@ -92,9 +113,21 @@ Blog Orcha || lemon
                                 @foreach ($artikel as $a)
                                     <tr wire:key="artikel-{{ $a['id'] }}">
                                         <td>
-                                            <img src="{{ $a['sampul_tampil'] }}" alt=""
-                                                class="rounded-3"
-                                                style="width:76px;height:48px;object-fit:cover;">
+                                            @php $sampul = $tautanGambar($a['sampul_tampil'] ?? null); @endphp
+
+                                            @if ($sampul)
+                                                <img src="{{ $sampul }}" alt="{{ $a['judul'] }}" loading="lazy"
+                                                    decoding="async" class="rounded-3"
+                                                    style="width:76px;height:48px;object-fit:cover;">
+                                            @else
+                                                {{-- Kotak berikon, bukan <img> yang gagal: gambar rusak
+                                                     terbaca sebagai kesalahan, sedangkan ini terbaca
+                                                     sebagai "memang belum ada sampulnya". --}}
+                                                <span class="d-inline-flex align-items-center justify-content-center rounded-3 text-muted"
+                                                    style="width:76px;height:48px;background:#f1f5f9;">
+                                                    <i class="bi bi-image"></i>
+                                                </span>
+                                            @endif
                                         </td>
 
                                         <td>

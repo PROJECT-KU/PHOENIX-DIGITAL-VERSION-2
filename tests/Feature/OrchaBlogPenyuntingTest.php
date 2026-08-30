@@ -156,6 +156,33 @@ class OrchaBlogPenyuntingTest extends TestCase
             'Tombol harus dimatikan saat menyimpan supaya tidak terkirim dua kali.');
     }
 
+    /**
+     * Sampul di DAFTAR juga harus menunjuk server Orcha.
+     *
+     * Bug yang sama pernah terjadi di formulir, lalu terulang di daftar.
+     * Gejalanya menyesatkan karena SEBAGIAN baris tampak benar: artikel yang
+     * belum bersampul memakai gambar cadangan yang alamatnya sudah lengkap,
+     * jadi ia muncul seperti biasa. Yang rusak justru artikel yang sampulnya
+     * sudah diunggah — dan itu terbaca sebagai "gambarnya hilang", bukan
+     * sebagai "alamatnya salah".
+     */
+    public function test_sampul_di_daftar_memakai_alamat_orcha(): void
+    {
+        $daftar = file_get_contents(
+            resource_path('views/livewire/pages/admin/orcha/blog/orcha-blog-list.blade.php')
+        );
+
+        $this->assertStringContainsString("config('orcha.url')", $daftar,
+            'Sampul di daftar tidak dirakit dari alamat Orcha.');
+        $this->assertStringContainsString('$tautanGambar', $daftar);
+
+        // Artikel tanpa sampul menampilkan kotak berikon, bukan <img> yang
+        // gagal: gambar rusak terbaca sebagai kesalahan, kotak terbaca sebagai
+        // "memang belum ada".
+        $this->assertStringContainsString('bi-image', $daftar,
+            'Baris tanpa sampul harus punya kotak pengganti, bukan gambar rusak.');
+    }
+
     /** Isi awal dibaca dari isian tersembunyi, yang karena itu wajib membawa nilainya. */
     public function test_isian_tersembunyi_membawa_isi_awal_artikel(): void
     {
