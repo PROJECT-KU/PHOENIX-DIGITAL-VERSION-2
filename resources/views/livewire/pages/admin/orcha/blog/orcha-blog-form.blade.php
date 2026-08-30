@@ -276,9 +276,9 @@
 
             <div class="mt-4 pt-3 border-top d-flex gap-2">
                 <a href="{{ route('admin.orcha.blog') }}" wire:navigate
-                    class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center px-4"
-                    style="height: 52px;">
-                    <i class="bi bi-arrow-left me-1"></i> <span>Kembali</span>
+                    class="orcha-btn orcha-btn-lembut bf-aksi px-4">
+                    <i class="bi bi-arrow-left"></i>
+                    <span>Kembali</span>
                 </a>
                 {{-- Isi tombol DIGANTI pemintal, bukan pemintal ditaruh di
                      sebelah tulisannya.
@@ -292,8 +292,7 @@
 
                      Pola dan tulisannya sama dengan formulir destinasi. --}}
                 <button type="submit" wire:loading.attr="disabled" wire:target="simpan"
-                    class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-                    style="height: 52px;">
+                    class="orcha-btn orcha-btn-utama bf-aksi px-5 flex-grow-1">
                     {{-- JANGAN beri kelas d-* (d-flex, d-inline-flex, d-block) pada
                          kedua span ini.
 
@@ -307,7 +306,7 @@
                          Formulir destinasi tidak kena karena span-nya memang
                          polos; ini menyalin bentuknya. --}}
                     <span wire:loading.remove wire:target="simpan">
-                        <i class="bi bi-check2-circle me-2"></i>
+                        <i class="bi bi-check2-circle"></i>
                         {{ $artikelId ? 'Update Artikel' : 'Simpan Artikel' }}
                     </span>
                     <span wire:loading wire:target="simpan">
@@ -502,6 +501,26 @@
     .quill-container .ql-toolbar button.ql-active,
     .quill-container .ql-toolbar .ql-picker-label:hover,
     .quill-container .ql-toolbar .ql-picker-label.ql-active { color: var(--orc-primer) !important; }
+/* Kedua tombol kaki memakai keluarga .orcha-btn yang sama dengan formulir
+   destinasi, bukan .btn Bootstrap yang dirakit sendiri.
+
+   Sebelumnya ikon centang di tombol simpan duduk lebih rendah daripada
+   tulisannya. Sebabnya .orcha-btn i — aturan yang meratakan ikon terhadap
+   tulisan di seluruh halaman Orcha — memang tidak pernah mengenainya, karena
+   tombolnya berkelas .btn btn-primary. Tombol Kembali di sebelahnya kebetulan
+   tidak terlihat salah, tapi karena alasan lain: ia flex sendiri, sehingga
+   ikonnya tertengahkan tanpa aturan itu.
+
+   Jarak ikon ke tulisan kini datang dari gap milik .orcha-btn, jadi me-1/me-2
+   dilepas — kalau dibiarkan, jaraknya jadi dua kali.
+
+   Tingginya sengaja tetap 52px, bukan 38px bawaan .orcha-btn-besar: tombol
+   simpan artikel adalah tindakan utama halaman ini dan ukurannya sudah
+   dipakai. Diikat ke min-height supaya tidak meleset saat hurufnya berubah. */
+.bf-aksi {
+    min-height: 52px;
+    font-size: 1rem;
+}
 </style>
 @endpush
 
