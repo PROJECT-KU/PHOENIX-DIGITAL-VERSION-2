@@ -224,7 +224,26 @@
             document.body.appendChild(wadah);
         }
 
-        const LAMA = 3600;
+        /*
+         | Lamanya toast bertahan sebelum pergi sendiri.
+         |
+         | Dulu 3,6 detik dan admin kerap tidak sempat menyadarinya. Sebabnya
+         | letak: toast terbit di pojok kanan ATAS, sedangkan yang barusan
+         | ditekan admin — tombol simpan — ada di kaki formulir. Pandangannya
+         | perlu berpindah dulu melintasi layar, dan sisa waktu setelah itu
+         | tidak cukup untuk membaca judul beserta pesannya.
+         |
+         | Angkanya untuk kasus terburuk itu, bukan untuk yang kebetulan sudah
+         | menatap pojok kanan atas. Tidak dibuat lebih panjang lagi karena
+         | toast yang menetap terlalu lama mulai terbaca sebagai sesuatu yang
+         | menunggu ditutup — padahal justru itu yang dihindari saat memilih
+         | toast alih-alih SweetAlert.
+         |
+         | Yang membaca pelan tidak bergantung pada angka ini: menyentuhnya
+         | menahan hitungan mundur, dan batang waktu di kaki toast
+         | memperlihatkan sisa waktunya.
+         */
+        const LAMA = 7000;
 
         const toast = document.createElement('div');
         toast.className = 'orcha-toast';

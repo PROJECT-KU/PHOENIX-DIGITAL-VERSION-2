@@ -115,4 +115,32 @@ class OrchaToastSuksesTest extends TestCase
         $this->assertStringContainsString("sessionStorage.setItem('orcha-toast'", $isi);
         $this->assertStringContainsString("sessionStorage.getItem('orcha-toast')", $isi);
     }
+
+    /**
+     * Toast harus bertahan cukup lama untuk benar-benar terbaca.
+     *
+     * Toast terbit di pojok kanan atas, sedangkan tombol yang barusan ditekan
+     * admin ada di kaki formulir. Pandangannya perlu melintasi layar dulu,
+     * jadi durasi yang terasa cukup saat menguji — dengan mata sudah tertuju
+     * ke pojok itu — ternyata terlalu pendek saat dipakai sungguhan.
+     *
+     * Diikat dengan angka supaya tidak diam-diam dikembalikan ke nilai yang
+     * sudah terbukti kependekan; gejalanya cuma "kok tidak ada kabarnya",
+     * bukan galat yang bisa ditelusuri.
+     */
+    public function test_toast_bertahan_cukup_lama_untuk_terbaca(): void
+    {
+        preg_match('/const LAMA = (\d+);/', $this->partial(), $cocok);
+
+        $this->assertNotEmpty($cocok, 'Durasi toast (const LAMA) tidak ditemukan.');
+
+        $this->assertGreaterThanOrEqual(6000, (int) $cocok[1],
+            'Toast terlalu cepat pergi — admin tidak sempat menyadarinya.');
+
+        // Batas atas ikut dijaga: toast yang menetap terlalu lama mulai
+        // terbaca sebagai sesuatu yang menunggu ditutup, dan itu justru yang
+        // dihindari saat memilih toast alih-alih SweetAlert.
+        $this->assertLessThanOrEqual(10000, (int) $cocok[1],
+            'Toast terlalu lama menetap — ia jadi terasa seperti popup.');
+    }
 }
