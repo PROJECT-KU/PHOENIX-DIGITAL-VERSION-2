@@ -5830,3 +5830,41 @@ test('orcha yang tidak bisa dihubungi tidak merobohkan halaman jejak', function 
         ->get('/admin/orcha/jejak-audit')
         ->assertOk();
 });
+
+/* ------------------------ PERSETUJUAN TESTIMONI ------------------------ */
+
+test('testimoni yang menunggu ditandai dan bisa ditayangkan admin', function () {
+    /*
+     | Testimoni dari formulir publik masuk sebagai "menunggu" dan belum
+     | terlihat pengunjung. Tanpa penanda dan tombol di sini ia menumpuk tanpa
+     | ada yang tahu ia menunggu — dan pelanggan yang sudah menulis ceritanya
+     | tidak pernah melihatnya muncul.
+     */
+    Http::fake([
+        '*/testimoni*' => Http::response([
+            'data' => [[
+                'id' => 7,
+                'nama' => 'Budi Santoso',
+                'isi' => 'Sopirnya sabar dan armadanya bersih.',
+                'rating' => 5,
+                'foto' => null,
+                'status' => 'menunggu',
+                'kode_pesanan' => 'OT-3108-K7QMXV',
+                'terverifikasi' => true,
+            ]],
+            'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1],
+        ]),
+        '*' => Http::response(['data' => []]),
+    ]);
+
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/testimoni')
+        ->assertOk()
+        ->getContent();
+
+    expect($isi)->toContain('Menunggu ditinjau')
+        // Bukti bahwa penulisnya memang pernah memesan ikut ditampilkan: itu
+        // yang dibaca admin saat memutuskan.
+        ->toContain('Pesanan terbukti')
+        ->toContain('Tayangkan');
+});

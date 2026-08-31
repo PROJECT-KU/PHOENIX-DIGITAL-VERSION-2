@@ -142,6 +142,23 @@ class OrchaEtalaseList extends Component
         $this->hapusData("/{$this->jenis}/{$id}", 'Data dihapus di Orcha.');
     }
 
+    /**
+     * Menayangkan atau menolak testimoni yang dikirim pelanggan.
+     *
+     * Testimoni dari formulir publik masuk sebagai "menunggu" dan tidak
+     * langsung terlihat pengunjung. Tanpa tombol ini ia menumpuk tanpa ada
+     * yang bisa menayangkannya — dan pelanggan yang sudah menulis ceritanya
+     * tidak pernah melihatnya muncul.
+     */
+    public function putuskanTestimoni(int $id, string $status): void
+    {
+        $pesan = $status === 'tayang'
+            ? 'Testimoni ditayangkan di website Orcha.'
+            : 'Testimoni tidak ditayangkan.';
+
+        $this->kirimPerubahan("/testimoni/{$id}/status", ['status' => $status], $pesan);
+    }
+
     public function tutup(): void
     {
         $this->formTerbuka = false;

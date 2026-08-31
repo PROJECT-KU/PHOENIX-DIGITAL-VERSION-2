@@ -196,10 +196,42 @@
                                 </div>
                             @endif
 
+                            {{-- Testimoni yang dikirim pelanggan lewat formulir publik
+                                 masuk sebagai "menunggu" dan BELUM terlihat pengunjung.
+
+                                 Tanpa penanda ini ia menumpuk tanpa ada yang tahu ia
+                                 menunggu, dan pelanggan yang sudah menulis ceritanya
+                                 tidak pernah melihatnya muncul. --}}
+                            @if ($jenis === 'testimoni' && ($baris['status'] ?? 'tayang') !== 'tayang')
+                                <div class="orcha-testi-keadaan mb-3" data-keadaan="{{ $baris['status'] }}">
+                                    <i class="bi {{ $baris['status'] === 'menunggu' ? 'bi-hourglass-split' : 'bi-x-circle' }}"></i>
+                                    {{ $baris['status'] === 'menunggu' ? 'Menunggu ditinjau' : 'Tidak ditayangkan' }}
+
+                                    @if ($baris['terverifikasi'] ?? false)
+                                        <span class="terverifikasi" title="Pesanan {{ $baris['kode_pesanan'] }}">
+                                            <i class="bi bi-patch-check-fill"></i> Pesanan terbukti
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
+
                             {{-- mt-auto: tombolnya rata di dasar semua kartu sebaris,
                                  berapa pun panjang keterangannya. Tanpa itu tombolnya
                                  mengambang di tengah kartu yang isinya pendek. --}}
                             <div class="orcha-etalase-aksi mt-auto">
+                                @if ($jenis === 'testimoni' && ($baris['status'] ?? 'tayang') === 'menunggu')
+                                    <button type="button" class="orcha-etalase-ubah"
+                                        wire:click="putuskanTestimoni({{ $baris['id'] }}, 'tayang')"
+                                        wire:loading.attr="disabled">
+                                        <i class="bi bi-check2-circle"></i> Tayangkan
+                                    </button>
+                                    <button type="button" class="orcha-etalase-hapus"
+                                        wire:click="putuskanTestimoni({{ $baris['id'] }}, 'ditolak')"
+                                        wire:loading.attr="disabled">
+                                        <i class="bi bi-slash-circle"></i> Tolak
+                                    </button>
+                                @endif
+
                                 @if ($jenis === 'destinasi')
                                     <a href="{{ route('admin.orcha.destinasi.ubah', $baris['id']) }}" wire:navigate
                                         class="orcha-etalase-ubah">
@@ -394,6 +426,42 @@
     @include('livewire.pages.admin.orcha.partials.skrip')
 
     <style>
+        .orcha-testi-keadaan {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .25rem .6rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            background: #fef4e6;
+            color: #b45309;
+        }
+
+        .orcha-testi-keadaan[data-keadaan="ditolak"] {
+            background: #fdeeee;
+            color: #b91c1c;
+        }
+
+        .orcha-testi-keadaan > i {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        /* Dua penanda berbeda dalam satu baris: yang satu keadaan tinjauannya,
+           yang satu bukti bahwa penulisnya memang pernah memesan. Keduanya
+           dibaca bersama saat admin memutuskan. */
+        .orcha-testi-keadaan .terverifikasi {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding-left: .5rem;
+            margin-left: .2rem;
+            border-left: 1px solid rgba(0, 0, 0, .12);
+            color: #14a06a;
+        }
+
         /* Kartu etalase: satu bentuk untuk destinasi, testimoni, dan partner.
            Yang membedakan isinya, bukan susunannya — sebaris kartu yang
            anatominya berbeda-beda terbaca berantakan walaupun tiap kartunya
