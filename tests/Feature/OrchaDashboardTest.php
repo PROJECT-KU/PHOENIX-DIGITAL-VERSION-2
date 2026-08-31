@@ -5762,3 +5762,71 @@ it('menggambar grafik uang sekali saja meski penggambarnya dipasang tiga kali', 
      */
     expect($sumber)->not->toContain('let sudahDigambar');
 });
+
+/* ---------------------------- JEJAK AUDIT ---------------------------- */
+
+/*
+ | Jejaknya sudah lama dicatat di sisi Orcha, tetapi hanya ke berkas log:
+ | tidak terbaca siapa pun tanpa SSH ke server. Yang bertanya "siapa yang
+ | mengubah nominal pengembalian ini?" adalah orang keuangan, bukan pemegang
+ | kunci server — jadi halaman ini yang membuat catatan itu ada gunanya.
+ */
+test('halaman jejak audit menampilkan siapa mengubah apa', function () {
+    Http::fake([
+        '*/jejak-audit/admin' => Http::response(['data' => ['Rina Admin']]),
+        '*/jejak-audit*' => Http::response(['data' => [[
+            'id' => 1,
+            'admin' => 'Rina Admin',
+            'aksi' => 'ubah status pembayaran',
+            'ringkasan' => 'ubah status pembayaran (menunggu → diterima)',
+            'kode' => 'OT-3108-K7QMXV',
+            'sebelum' => 'menunggu',
+            'sesudah' => 'diterima',
+            'ip' => '103.10.20.30',
+            'waktu' => now()->toIso8601String(),
+            'waktu_teks' => '31 Agustus 2026, 09:15',
+        ]], 'meta' => ['halaman' => 1, 'total' => 1, 'halaman_terakhir' => 1]]),
+    ]);
+
+    $isi = $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')
+        ->assertOk()
+        ->getContent();
+
+    expect($isi)->toContain('Rina Admin')
+        ->toContain('OT-3108-K7QMXV')
+        // Perpindahannya ditampilkan "dari → ke", bukan hanya nilai akhirnya:
+        // nilai akhir saja tidak menjawab pertanyaan yang sebenarnya diajukan.
+        ->toContain('menunggu')
+        ->toContain('diterima');
+});
+
+test('halaman jejak audit tidak menawarkan cara menghapus jejaknya', function () {
+    /*
+     | Catatan audit yang bisa dihapus dari layar bukan catatan audit — ia cuma
+     | daftar yang kebetulan berisi kejadian, dan baris yang pertama dihapus
+     | justru yang paling perlu dibaca.
+     */
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/jejak-audit/index.blade.php')
+    );
+
+    /*
+     | Yang diperiksa TINDAKANNYA, bukan katanya. Keterangan di kepala halaman
+     | memang memuat kata "menghapusnya" — justru untuk menyatakan bahwa
+     | jejaknya tidak bisa dihapus — dan pencarian kata polos akan menyalahkan
+     | kalimat yang isinya benar.
+     */
+    expect($sumber)
+        ->not->toMatch('/wire:click="[^"]*hapus/i')
+        ->not->toContain('bi-trash');
+});
+
+test('orcha yang tidak bisa dihubungi tidak merobohkan halaman jejak', function () {
+    // Penyaring admin diambil lewat panggilan terpisah; gagalnya harus diam.
+    Http::fake(['*' => Http::response([], 500)]);
+
+    $this->actingAs(adminOrcha())
+        ->get('/admin/orcha/jejak-audit')
+        ->assertOk();
+});

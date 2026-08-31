@@ -433,6 +433,10 @@ new class extends Component
                         $menuOrcha = [
                             'Menu' => [
                                 ['admin.orcha.dashboard', 'bi-grid-fill', 'Dashboard'],
+                                // Bertetangga dengan Dashboard karena keduanya
+                                // menjawab "apa yang terjadi", bukan mengelola
+                                // satu jenis data — bedanya jangkauan waktu.
+                                ['admin.orcha.jejak-audit', 'bi-clock-history', 'Jejak Audit'],
                             ],
 
                             // Semua yang datang dari pelanggan, dan karena itu

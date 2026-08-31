@@ -48,6 +48,7 @@ use App\Livewire\Pages\Admin\Orcha\Dashboard\OrchaDashboard;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaDestinasiForm;
 use App\Livewire\Pages\Admin\Orcha\Etalase\OrchaEtalaseList;
 // Data Order
+use App\Livewire\Pages\Admin\Orcha\JejakAudit\OrchaJejakAuditList;
 use App\Livewire\Pages\Admin\Orcha\Keuntungan\OrchaKeuntunganList;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketForm;
 use App\Livewire\Pages\Admin\Orcha\PaketWisata\OrchaPaketList;
@@ -58,8 +59,8 @@ use App\Livewire\Pages\Admin\Orcha\Pembayaran\OrchaPembayaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranDetail;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPendaftaranList;
 use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaPesertaForm;
-use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaRiwayatKesehatan;
 // Orcha Journey — data dari aplikasi tetangga lewat API
+use App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaRiwayatKesehatan;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanDetail;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaPenyewaanList;
 use App\Livewire\Pages\Admin\Orcha\Penyewaan\OrchaSerahTerimaForm;
@@ -542,6 +543,14 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/pembatalan', OrchaPembatalanList::class)->name('admin.orcha.pembatalan');
     Route::get('/admin/orcha/pembatalan/{id}', OrchaPembatalanDetail::class)->name('admin.orcha.pembatalan.detail');
     Route::get('/admin/orcha/pesan', OrchaPesanList::class)->name('admin.orcha.pesan');
+
+    /*
+     | Jejak audit: siapa mengubah apa, kapan.
+     |
+     | Hanya membaca. Tidak ada rute hapus, dan itu disengaja — catatan audit
+     | yang bisa dihapus dari layar bukan catatan audit.
+     */
+    Route::get('/admin/orcha/jejak-audit', OrchaJejakAuditList::class)->name('admin.orcha.jejak-audit');
     Route::get('/admin/orcha/pesan/{id}', OrchaPesanDetail::class)->name('admin.orcha.pesan.detail');
     Route::get('/admin/orcha/paket-wisata', OrchaPaketList::class)->name('admin.orcha.paket');
     Route::get('/admin/orcha/paket-wisata/tambah', OrchaPaketForm::class)->name('admin.orcha.paket.tambah');
