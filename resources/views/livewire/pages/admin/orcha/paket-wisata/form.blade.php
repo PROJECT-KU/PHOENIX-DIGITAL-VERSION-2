@@ -83,6 +83,25 @@
                                     <input type="number" class="form-control @error('minimalPeserta') is-invalid @enderror"
                                         wire:model="minimalPeserta" value="{{ $minimalPeserta }}" min="1">
                                     @error('minimalPeserta') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text small">Jumlah minimum supaya tripnya jadi berangkat.</div>
+                                </div>
+
+                                {{-- Batas ATAS, berbeda dari minimal peserta di sebelahnya.
+
+                                     Sebelumnya tidak ada di mana pun, sehingga yang menahan
+                                     pendaftaran melewati daya angkut armada cuma ingatan admin —
+                                     dan ingatan itu bekerja paling buruk justru saat pendaftaran
+                                     ramai. --}}
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-semibold">Kuota kursi</label>
+                                    <input type="number" class="form-control @error('kuota') is-invalid @enderror"
+                                        wire:model="kuota" min="1" placeholder="Kosongkan bila tanpa batas">
+                                    @error('kuota') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="form-text small">
+                                        Dikosongkan berarti <strong>belum ditetapkan</strong> — pendaftaran tidak
+                                        pernah ditutup sistem. Diisi berarti pendaftaran berhenti sendiri saat penuh,
+                                        dan pengunjung melihat sisa kursinya.
+                                    </div>
                                 </div>
 
                                 <div class="col-12">

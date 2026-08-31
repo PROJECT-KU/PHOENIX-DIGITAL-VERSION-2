@@ -55,6 +55,15 @@ class OrchaPaketForm extends Component
 
     public int $minimalPeserta = 6;
 
+    /**
+     * Berapa kursi yang dijual. Kosong berarti BELUM DITETAPKAN, bukan nol.
+     *
+     * Bedanya penting: paket yang kuotanya kosong berperilaku persis seperti
+     * sebelum kolom ini ada — pendaftarannya tidak pernah ditutup sistem.
+     * Kalau kosong diperlakukan nol, seluruh paket lama langsung penuh.
+     */
+    public $kuota = null;
+
     public string $catatanPromo = '';
 
     public $harga = 0;
@@ -128,6 +137,10 @@ class OrchaPaketForm extends Component
             'tanggalPulang' => 'nullable|date|after_or_equal:tanggalBerangkat',
             'titikJemput' => 'nullable|string|max:191',
             'minimalPeserta' => 'required|integer|min:1|max:200',
+            // Batas bawahnya minimal peserta: kuota yang lebih kecil daripada
+            // jumlah minimum keberangkatan berarti tripnya tidak akan pernah
+            // bisa berangkat, dan itu pasti salah ketik.
+            'kuota' => 'nullable|integer|min:1|max:500|gte:minimalPeserta',
             'catatanPromo' => 'nullable|string|max:191',
             'harga' => 'required|numeric|min:0',
             'hargaAsli' => 'nullable|numeric|min:0',
@@ -142,6 +155,7 @@ class OrchaPaketForm extends Component
         return [
             'nama' => 'nama paket',
             'minimalPeserta' => 'minimal peserta',
+            'kuota' => 'kuota kursi',
             'tanggalBerangkat' => 'tanggal berangkat',
             'tanggalPulang' => 'tanggal pulang',
             'hargaAsli' => 'harga asli',
@@ -182,6 +196,7 @@ class OrchaPaketForm extends Component
         $this->tanggalPulang = (string) ($isi['tanggal_pulang'] ?? '');
         $this->titikJemput = (string) ($isi['titik_jemput'] ?? '');
         $this->minimalPeserta = (int) ($isi['minimal_peserta'] ?? 6);
+        $this->kuota = $isi['kuota'] ?? null;
         $this->catatanPromo = (string) ($isi['catatan_promo'] ?? '');
         $this->harga = $isi['harga'] ?? 0;
         $this->hargaAsli = $isi['harga_asli'] ?? 0;
@@ -531,6 +546,7 @@ class OrchaPaketForm extends Component
             'tanggal_pulang' => $this->tanggalPulang,
             'titik_jemput' => $this->titikJemput,
             'minimal_peserta' => $this->minimalPeserta,
+            'kuota' => $this->kuota === '' ? null : $this->kuota,
             'catatan_promo' => $this->catatanPromo,
             'harga' => $this->harga,
             'harga_asli' => $this->hargaAsli ?: $this->harga,
