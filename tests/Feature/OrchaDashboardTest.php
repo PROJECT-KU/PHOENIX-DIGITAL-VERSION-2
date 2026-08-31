@@ -4322,33 +4322,6 @@ test('grafik uang tetap tergambar walau baru satu bulan yang ada isinya', functi
         ->and(collect($komponen->viewData('uangPerBulan'))->first()['omzet'])->toBe(0);
 });
 
-test('grafik tren memakai apexcharts, bukan svg buatan tangan', function () {
-    Http::fake([
-        '*/keuntungan' => Http::response(['data' => []]),
-        '*' => Http::response(['data' => [
-            'kartu' => [], 'perlu_ditindak' => [],
-            'tren_bulanan' => [
-                ['label' => 'Jul', 'label_panjang' => 'Juli 2026', 'pendaftaran' => 3, 'penyewaan' => 1],
-                ['label' => 'Agt', 'label_panjang' => 'Agustus 2026', 'pendaftaran' => 6, 'penyewaan' => 3],
-            ],
-        ]]),
-    ]);
-
-    /*
-     | Dulu digambar SVG sendiri, dengan alasan pustaka grafik tidak bisa
-     | dipakai karena aset Vite tidak ikut ter-deploy. Alasannya keliru:
-     | ApexCharts bukan hasil bundel Vite — berkasnya ada di public/mazer,
-     | terlacak git, dan ikut terkirim ke server.
-     */
-    $isi = tanpaGaya($this->actingAs(adminOrcha())
-        ->get('/admin/orcha/dashboard')->assertOk()->getContent());
-
-    expect($isi)->toContain('orcha-grafik-tren')
-        ->toContain('apexcharts/apexcharts.min.js')
-        // SVG buatan tangannya benar-benar ditinggalkan
-        ->not->toContain('aria-label="Grafik tren enam bulan"');
-});
-
 test('orcha yang belum mengirim laporan keuntungan tidak merobohkan dashboard', function () {
     // Hanya /keuntungan yang gagal; sisanya sehat.
     Http::fake([
@@ -4366,7 +4339,9 @@ test('orcha yang belum mengirim laporan keuntungan tidak merobohkan dashboard', 
     $isi = tanpaGaya($this->actingAs(adminOrcha())
         ->get('/admin/orcha/dashboard')->assertOk()->getContent());
 
-    expect($isi)->toContain('Paket wisata')
+    // Buktinya bagian yang TIDAK bergantung pada /keuntungan: halamannya
+    // tetap tergambar utuh, hanya bagian uangnya yang absen.
+    expect($isi)->toContain('Perlu ditindak')
         ->not->toContain('Omzet masuk')
         ->not->toContain('orcha-grafik-uang');
 });
@@ -5714,60 +5689,15 @@ test('denda yang sudah ditetapkan tidak lagi ditandai belum tersimpan', function
         ->assertSee('Rp 2.150.000');
 });
 
-test('dashboard menggambar tren bulanan, bukan hanya angka', function () {
-    Http::fake(['*/dashboard' => Http::response(balasanDashboard([
-        'tren_bulanan' => [
-            ['bulan' => '2026-07', 'label' => 'Jul', 'label_panjang' => 'Juli 2026',
-                'pendaftaran' => 4, 'penyewaan' => 1],
-            ['bulan' => '2026-08', 'label' => 'Agu', 'label_panjang' => 'Agustus 2026',
-                'pendaftaran' => 9, 'penyewaan' => 3],
-        ],
-    ]))]);
-
-    /*
-     | Angka tunggal menjawab "berapa hari ini"; yang tidak dijawabnya adalah
-     | "sedang naik atau turun" — dan itu pertanyaan yang membuat orang membuka
-     | dashboard dua kali sehari.
-     |
-     | Dulu digambar SVG sendiri, dan uji ini memeriksa <title> tiap batangnya.
-     | Alasan memilih SVG ternyata keliru: ApexCharts BUKAN hasil bundel Vite —
-     | berkasnya ada di public/mazer, terlacak git, dan ikut ter-deploy. Yang
-     | tidak ikut adalah public/build.
-     |
-     | Sekarang angkanya berangkat sebagai data seri, jadi itulah yang diuji.
-     */
-    $isi = tanpaGaya($this->actingAs(adminOrcha())
-        ->get('/admin/orcha/dashboard')->assertOk()->getContent());
-
-    expect($isi)->toContain('Tren enam bulan terakhir')
-        ->toContain('orcha-grafik-tren')
-        ->toContain('apexcharts/apexcharts.min.js')
-        ->toContain("name: 'Pendaftaran'")
-        ->toContain("name: 'Sewa kendaraan'")
-        // Angkanya benar-benar berangkat ke grafiknya
-        ->toContain('[4,9]')
-        ->toContain('[1,3]');
-});
-
-test('orcha tanpa tren tidak merobohkan dashboard', function () {
-    // Orcha dipasang terpisah dan boleh tertinggal sekian rilis: yang belum
-    // mengirim tren menghasilkan dashboard tanpa grafik, bukan halaman galat.
-    Http::fake(['*/dashboard' => Http::response(balasanDashboard())]);
-
-    $this->actingAs(adminOrcha())
-        ->get('/admin/orcha/dashboard')
-        ->assertOk()
-        ->assertDontSee('Tren enam bulan terakhir');
-});
-
 /*
- | Dasbor pernah menampilkan lima belas kartu berwarna di satu layar, dan
- | "bukti bayar menunggu" termasuk DUA kali di antaranya: sekali di baris
- | "Perlu ditindak" dan sekali lagi di baris angka etalase.
+ | "Bukti bayar menunggu" pernah tampil DUA kali di satu layar: sekali di
+ | baris "Perlu ditindak" dan sekali lagi di baris angka etalase yang kini
+ | sudah tidak ada.
  |
- | Duplikat semacam ini tidak pernah meledak. Yang terjadi admin membaca dua
- | tumpukan bukti yang berbeda padahal tumpukannya satu — dan itu baru
- | ketahuan kalau ada yang menghitungnya.
+ | Penjaganya tetap dipasang karena angka yang sama gampang masuk lagi lewat
+ | bagian baru mana pun. Duplikat semacam ini tidak pernah meledak — yang
+ | terjadi admin membaca dua tumpukan bukti yang berbeda padahal tumpukannya
+ | satu, dan itu cuma ketahuan kalau ada yang menghitungnya.
  */
 it('tidak menampilkan bukti bayar menunggu dua kali di dasbor', function () {
     $sumber = file_get_contents(
@@ -5786,7 +5716,7 @@ it('memberi judul pada tiap bagian dasbor', function () {
     // Tanpa judul, tiga baris kartu berdiri tanpa satu kata pun yang
     // menerangkan kenapa mereka dipisah — yang membaca harus menyimpulkan
     // sendiri mana pekerjaan dan mana keterangan.
-    foreach (['Perlu ditindak', 'Uang', 'Isi etalase'] as $judul) {
+    foreach (['Perlu ditindak', 'Uang'] as $judul) {
         expect($sumber)->toContain(">$judul</h2>");
     }
 });

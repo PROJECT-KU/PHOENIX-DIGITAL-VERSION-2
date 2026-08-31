@@ -90,17 +90,25 @@ class OrchaDashboard extends Component
             $untung = [];
         }
 
+        /*
+         | Yang dikirim ke tampilan hanya yang benar-benar digambar.
+         |
+         | Dashboard sempat memuat delapan blok sekaligus — dua grafik enam
+         | bulan, rincian paket per kategori, rincian armada per jenis, dan
+         | bilah isi etalase — sehingga membacanya menuntut memutuskan sendiri
+         | mana yang penting. Yang tersisa menjawab tiga pertanyaan saja: apa
+         | yang harus dikerjakan sekarang, bagaimana uangnya, dan apa yang baru
+         | masuk.
+         |
+         | 'kartu', 'paket_per_kategori', 'kendaraan_per_jenis', dan
+         | 'tren_bulanan' sengaja tidak diteruskan lagi. Isinya tetap dikirim
+         | Orcha di jawaban /dashboard yang sama, jadi menghidupkannya kembali
+         | cukup menambahkan barisnya di sini.
+         */
         return view('livewire.pages.admin.orcha.dashboard.index', [
-            'kartu' => $isi['kartu'] ?? [],
-            'paketPerKategori' => $isi['paket_per_kategori'] ?? [],
-            'kendaraanPerJenis' => $isi['kendaraan_per_jenis'] ?? [],
+            'perluDitindak' => $isi['perlu_ditindak'] ?? [],
             'pendaftaranTerbaru' => $isi['pendaftaran_terbaru'] ?? [],
             'penyewaanTerbaru' => $isi['penyewaan_terbaru'] ?? [],
-            'perluDitindak' => $isi['perlu_ditindak'] ?? [],
-            // Orcha dipasang terpisah dan boleh tertinggal sekian rilis: yang
-            // belum mengirim tren menghasilkan dashboard tanpa grafik, bukan
-            // halaman yang galat.
-            'tren' => $isi['tren_bulanan'] ?? [],
             'uang' => $untung['ringkasan'] ?? [],
             'uangPerBulan' => $this->enamBulan($untung['per_bulan'] ?? []),
         ])->layout('livewire.layout.templateindex');

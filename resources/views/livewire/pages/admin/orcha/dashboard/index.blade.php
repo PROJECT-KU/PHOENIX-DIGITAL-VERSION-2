@@ -164,79 +164,6 @@ Dashboard Orcha Journey || lemon
             </div>
         @endif
 
-        {{-- ============ TREN ENAM BULAN ============
-
-             Angka tunggal menjawab "berapa hari ini"; yang tidak dijawabnya
-             adalah "sedang naik atau turun" — dan itu justru pertanyaan yang
-             membuat orang membuka dashboard dua kali sehari.
-
-             Dulu digambar SVG sendiri, dengan alasan pustaka grafik tidak bisa
-             dipakai karena aset Vite tidak ikut ter-deploy. Alasannya keliru:
-             ApexCharts bukan hasil bundel Vite — berkasnya ada di public/mazer,
-             terlacak git, dan ikut terkirim ke server. Yang tidak ikut adalah
-             public/build. --}}
-        @if ($tren !== [])
-            <div class="card orcha-kartu mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <h6 class="fw-bold mb-1 orcha-judul-ikon" style="font-size:.95rem">
-                        <i class="bi bi-bar-chart-line text-primary"></i> Tren enam bulan terakhir
-                    </h6>
-                    <div class="text-muted mb-2" style="font-size:.8rem">
-                        Jumlah pendaftaran open trip dan pemesanan sewa kendaraan tiap bulan.
-                    </div>
-
-                    <div id="orcha-grafik-tren" wire:ignore></div>
-                </div>
-            </div>
-
-            <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
-
-            <script>
-                (function () {
-                    const bulan = @json(collect($tren)->pluck('label')->all());
-                    const daftar = @json(collect($tren)->map(fn ($b) => (int) ($b['pendaftaran'] ?? 0))->all());
-                    const sewa = @json(collect($tren)->map(fn ($b) => (int) ($b['penyewaan'] ?? 0))->all());
-
-                    function gambarGrafikTrenOrcha() {
-                        const kotak = document.querySelector('#orcha-grafik-tren');
-
-                        if (!kotak || typeof ApexCharts === 'undefined') return;
-
-                        // Sisa kanvas sebelumnya dibuang: halaman ini dibuka lewat
-                        // wire:navigate, dan tanpa ini tiap kunjungan menumpuk satu
-                        // grafik lagi di kotak yang sama.
-                        kotak.innerHTML = '';
-
-                        new ApexCharts(kotak, {
-                            series: [
-                                { name: 'Pendaftaran', data: daftar },
-                                { name: 'Sewa kendaraan', data: sewa },
-                            ],
-                            chart: { type: 'bar', height: 300, toolbar: { show: false }, fontFamily: 'inherit' },
-                            colors: ['#3b82f6', '#8b5cf6'],
-                            plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
-                            dataLabels: { enabled: false },
-                            legend: { position: 'top', horizontalAlign: 'right' },
-                            xaxis: {
-                                categories: bulan,
-                                labels: { style: { fontWeight: 600, colors: '#64748b' } },
-                                axisBorder: { show: false },
-                                axisTicks: { show: false },
-                            },
-                            // Jumlah orang selalu bulat: sumbu bertitik desimal pada
-                            // data sekecil ini membuatnya terbaca seperti pecahan.
-                            yaxis: { labels: { formatter: (v) => Math.round(v), style: { colors: '#94a3b8' } } },
-                            grid: { borderColor: '#eef2f6', strokeDashArray: 4 },
-                        }).render();
-                    }
-
-                    document.addEventListener('DOMContentLoaded', gambarGrafikTrenOrcha);
-                    document.addEventListener('livewire:navigated', gambarGrafikTrenOrcha);
-                    gambarGrafikTrenOrcha();
-                })();
-            </script>
-        @endif
-
         {{-- ============ UANG ============
 
              Omzet, modal, dan keuntungan — dibaca dari laporan yang SAMA dengan
@@ -375,115 +302,9 @@ Dashboard Orcha Journey || lemon
             </script>
         @endif
 
-        {{-- ============ ISI ETALASE ============
-
-             Dulu enam kartu sebesar kartu tindakan, masing-masing dengan kotak
-             ikon bergradien sendiri. Bentuk itu menyamakan derajat dua hal yang
-             berbeda: "22 destinasi populer" adalah KETERANGAN tentang isi
-             etalase, bukan sesuatu yang menuntut dikerjakan hari ini — tetapi
-             ia berteriak sama kerasnya dengan bukti bayar yang menunggu dicek.
-             Ditambah baris tindakan dan baris uang, ada lima belas kartu
-             berwarna di satu layar dan tidak ada satu pun yang menonjol.
-
-             Sekarang satu bilah: angka tetap bisa dibaca sekilas dan tetap bisa
-             diklik ke halamannya, tetapi tidak lagi menuntut giliran membaca
-             lebih dulu daripada pekerjaan yang sebenarnya. --}}
-        @php
-            $rupaEtalase = [
-                // Kunci bukti bayar SENGAJA tidak ada di daftar ini.
-                //
-                // Angka itu sudah tampil di baris "Perlu ditindak" paling atas,
-                // dan menampilkannya dua kali di satu layar membuat admin
-                // mengira ada dua tumpukan bukti yang berbeda.
-                'paket' => ['bi-map', 'admin.orcha.paket'],
-                'kendaraan' => ['bi-bus-front', 'admin.orcha.armada'],
-                'destinasi' => ['bi-geo-alt', 'admin.orcha.destinasi'],
-                'testimoni' => ['bi-chat-quote', 'admin.orcha.testimoni'],
-                'partner' => ['bi-people', 'admin.orcha.partner'],
-            ];
-
-            $isiEtalase = collect($kartu)->filter(fn ($item) => isset($rupaEtalase[$item['kunci']]));
-        @endphp
-
-        @if ($isiEtalase->isNotEmpty())
-            <h2 class="orc-das-judul">Isi etalase</h2>
-
-            <div class="card orcha-kartu mb-4">
-                <div class="card-body p-3 p-lg-4">
-                    <div class="orc-das-bilah">
-                        @foreach ($isiEtalase as $item)
-                            @php [$ikon, $rute] = $rupaEtalase[$item['kunci']]; @endphp
-
-                            <a @if (\Illuminate\Support\Facades\Route::has($rute)) href="{{ route($rute) }}" wire:navigate @endif
-                                class="orc-das-bilah-item">
-                                <i class="bi {{ $ikon }}"></i>
-                                <span class="orc-das-bilah-angka">{{ $item['nilai'] }}</span>
-                                <span class="orc-das-bilah-label">{{ $item['label'] }}</span>
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        @endif
-
         <div class="row g-4">
-            {{-- Rincian paket & armada --}}
-            <div class="col-12 col-xl-4">
-                <div class="card orcha-kartu h-100">
-                    <div class="card-body p-4">
-                        {{-- Batang, bukan deret angka.
-
-                             Tiga angka bersusun menuntut pembacanya membandingkan
-                             sendiri; panjang batang sudah menjawabnya sebelum
-                             angkanya sempat dibaca. --}}
-                        <h6 class="fw-bold mb-3 orcha-judul-ikon" style="font-size:.95rem">
-                            <i class="bi bi-map text-primary"></i> Paket per kategori
-                        </h6>
-                        @php $puncakPaket = max(1, collect($paketPerKategori)->max('jumlah') ?? 1); @endphp
-                        @forelse ($paketPerKategori as $baris)
-                            <div class="orcha-baris-batang">
-                                <span class="nama">{{ $baris['label'] }}</span>
-                                <span class="jalur">
-                                    <span class="isi" style="width:{{ round($baris['jumlah'] / $puncakPaket * 100) }}%;
-                                        background:linear-gradient(90deg,#3b82f6,#1d4ed8)"></span>
-                                </span>
-                                <span class="angka">{{ $baris['jumlah'] }}</span>
-                            </div>
-                        @empty
-                            <p class="text-muted small mb-0">Belum ada data.</p>
-                        @endforelse
-
-                        <h6 class="fw-bold mt-4 mb-3 orcha-judul-ikon" style="font-size:.95rem">
-                            <i class="bi bi-bus-front text-primary"></i> Armada per jenis
-                        </h6>
-                        @forelse ($kendaraanPerJenis as $baris)
-                            @php
-                                // Yang diukur PORSI SIAP-nya, bukan jumlah unitnya:
-                                // pertanyaan admin bukan "punya berapa bus", melainkan
-                                // "berapa yang bisa dipakai besok".
-                                $porsi = ($baris['jumlah'] ?? 0) > 0
-                                    ? round($baris['tersedia'] / $baris['jumlah'] * 100)
-                                    : 0;
-                                $warna = $porsi >= 60 ? '#10b981' : ($porsi > 0 ? '#f59e0b' : '#cbd5e1');
-                            @endphp
-                            <div class="orcha-baris-batang">
-                                <span class="nama">{{ $baris['label'] }}</span>
-                                <span class="jalur">
-                                    <span class="isi" style="width:{{ $porsi }}%;background:{{ $warna }}"></span>
-                                </span>
-                                <span class="angka" style="font-size:.76rem">
-                                    {{ $baris['tersedia'] }}/{{ $baris['jumlah'] }}
-                                </span>
-                            </div>
-                        @empty
-                            <p class="text-muted small mb-0">Belum ada data.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
             {{-- Pendaftaran terbaru --}}
-            <div class="col-12 col-xl-4">
+            <div class="col-12 col-xl-6">
                 <div class="card orcha-kartu h-100">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -516,7 +337,7 @@ Dashboard Orcha Journey || lemon
             </div>
 
             {{-- Sewa terbaru --}}
-            <div class="col-12 col-xl-4">
+            <div class="col-12 col-xl-6">
                 <div class="card orcha-kartu h-100">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
