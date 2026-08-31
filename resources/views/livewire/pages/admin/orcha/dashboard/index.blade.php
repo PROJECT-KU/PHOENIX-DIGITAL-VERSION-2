@@ -261,12 +261,28 @@ Dashboard Orcha Journey || lemon
                         if (!kotak || typeof ApexCharts === 'undefined') return;
 
                         /*
-                         | Sisa grafik sebelumnya dibersihkan lebih dulu.
+                         | Satu kotak digambar SEKALI saja.
                          |
-                         | Halaman ini dibuka lewat wire:navigate, dan tanpa ini tiap
-                         | kunjungan berikutnya menumpuk satu kanvas lagi di kotak yang
-                         | sama — tingginya berlipat dan yang terlihat grafik ganda.
+                         | Fungsi ini sengaja dipasang di tiga tempat — dipanggil
+                         | langsung, lalu DOMContentLoaded, lalu livewire:navigated —
+                         | karena tidak satu pun dari ketiganya bisa diandalkan
+                         | sendirian: skripnya inline sehingga DOMContentLoaded belum
+                         | tentu sudah lewat, sedangkan halaman yang dibuka lewat
+                         | wire:navigate tidak menembakkan DOMContentLoaded sama sekali.
+                         |
+                         | Tanpa penjaga ini ketiganya benar-benar berjalan pada muat
+                         | pertama: kotaknya dikosongkan lalu digambar ulang dua kali,
+                         | dan yang terlihat garisnya naik, jatuh ke nol, naik lagi,
+                         | jatuh lagi. Animasinya yang berulang, bukan datanya yang
+                         | berubah — jadi tidak ada satu pun galat yang menandainya.
+                         |
+                         | Penandanya menempel pada ELEMEN, bukan variabel di closure:
+                         | kunjungan berikutnya lewat wire:navigate membawa elemen baru
+                         | yang belum bertanda, jadi grafiknya tetap tergambar lagi.
                          */
+                        if (kotak.dataset.orchaTergambar === '1') return;
+
+                        // Sisa kanvas dari kunjungan sebelumnya, kalau ada.
                         kotak.innerHTML = '';
 
                         new ApexCharts(kotak, {
@@ -293,6 +309,8 @@ Dashboard Orcha Journey || lemon
                             tooltip: { y: { formatter: rupiah } },
                             grid: { borderColor: '#eef2f6', strokeDashArray: 4 },
                         }).render();
+
+                        kotak.dataset.orchaTergambar = '1';
                     }
 
                     document.addEventListener('DOMContentLoaded', gambarGrafikUangOrcha);

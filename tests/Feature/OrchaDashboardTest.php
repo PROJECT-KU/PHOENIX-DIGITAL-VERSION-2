@@ -5720,3 +5720,45 @@ it('memberi judul pada tiap bagian dasbor', function () {
         expect($sumber)->toContain(">$judul</h2>");
     }
 });
+
+/*
+ | Grafik uang sempat tergambar TIGA kali pada satu muat halaman.
+ |
+ | Penggambarnya sengaja dipasang di tiga tempat — dipanggil langsung, lalu
+ | DOMContentLoaded, lalu livewire:navigated — karena tidak satu pun bisa
+ | diandalkan sendirian: skripnya inline sehingga DOMContentLoaded belum tentu
+ | sudah lewat, sedangkan halaman yang dibuka lewat wire:navigate tidak
+ | menembakkan DOMContentLoaded sama sekali.
+ |
+ | Yang terlupa: pada muat pertama ketiganya benar-benar berjalan. Kotaknya
+ | dikosongkan lalu digambar ulang dua kali, dan yang terlihat garisnya naik,
+ | jatuh ke nol, naik lagi. Animasinya yang berulang, bukan datanya yang
+ | berubah — jadi tidak ada galat apa pun yang menandainya, dan yang
+ | menyadarinya cuma mata yang menatap layar saat halamannya dimuat ulang.
+ */
+it('menggambar grafik uang sekali saja meski penggambarnya dipasang tiga kali', function () {
+    $sumber = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/dashboard/index.blade.php')
+    );
+
+    // Ketiga pemasangannya memang tetap ada — yang salah bukan itu.
+    expect($sumber)
+        ->toContain("document.addEventListener('DOMContentLoaded', gambarGrafikUangOrcha)")
+        ->toContain("document.addEventListener('livewire:navigated', gambarGrafikUangOrcha)");
+
+    // Penjaganya: keluar lebih awal bila kotaknya sudah tergambar, dan
+    // menandainya setelah selesai. Tanpa salah satu dari keduanya, animasinya
+    // berulang lagi.
+    expect($sumber)
+        ->toContain("if (kotak.dataset.orchaTergambar === '1') return;")
+        ->toContain("kotak.dataset.orchaTergambar = '1';");
+
+    /*
+     | Penandanya harus menempel pada ELEMEN, bukan pada variabel di dalam
+     | closure. Kunjungan berikutnya lewat wire:navigate membawa elemen baru
+     | yang belum bertanda, sehingga grafiknya tetap tergambar lagi — sedangkan
+     | variabel closure akan ikut hidup dan membuat halaman itu kosong
+     | selamanya.
+     */
+    expect($sumber)->not->toContain('let sudahDigambar');
+});
