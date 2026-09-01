@@ -42,7 +42,7 @@ class OrchaMenuKelompokTest extends TestCase
         // Angkanya ditulis apa adanya: kalau sebuah menu memang sengaja
         // ditambah atau dibuang, angkanya ikut disunting — dan suntingan itu
         // yang membuat perubahannya terlihat di ulasan, bukan lewat begitu saja.
-        $this->assertCount(17, $rute, 'Jumlah menu Orcha berubah: '.implode(', ', $rute));
+        $this->assertCount(18, $rute, 'Jumlah menu Orcha berubah: '.implode(', ', $rute));
         $this->assertSame(array_unique($rute), $rute, 'Ada menu Orcha yang tercantum dua kali.');
     }
 

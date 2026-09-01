@@ -574,6 +574,17 @@ Route::middleware('permission:akses_orcha')->group(function () {
      | menaikkannya ke server — padahal justru angka inilah yang paling sering
      | diutak-atik mengikuti musim liburan dan tawaran pesaing.
      */
+    /*
+     | Peminat yang menunggu kursi terbuka.
+     |
+     | Sistem mengabari mereka sendiri saat kursi dilepas; layar ini untuk dua
+     | hal yang tidak bisa dikerjakan sistem — menghubungi yang tidak
+     | mencantumkan surel, dan memutuskan apakah antrean yang panjang layak
+     | dibukakan keberangkatan tambahan.
+     */
+    Route::get('/admin/orcha/daftar-tunggu', \App\Livewire\Pages\Admin\Orcha\DaftarTunggu\OrchaDaftarTungguList::class)
+        ->name('admin.orcha.daftar-tunggu');
+
     Route::get('/admin/orcha/promo-rombongan', \App\Livewire\Pages\Admin\Orcha\Promo\OrchaPromoList::class)
         ->name('admin.orcha.promo');
 

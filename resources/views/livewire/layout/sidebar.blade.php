@@ -448,6 +448,9 @@ new class extends Component
                                 ['admin.orcha.pembayaran', 'bi-cash-coin', 'Bukti Pembayaran'],
                                 ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
                                 ['admin.orcha.pesan', 'bi-inbox', 'Pesan Kontak'],
+                                // Bertetangga dengan Pesan Kontak: keduanya orang yang
+                                // MENUNGGU jawaban kita, bukan pesanan yang sudah berjalan.
+                                ['admin.orcha.daftar-tunggu', 'bi-hourglass-split', 'Daftar Tunggu'],
                             ],
 
                             'Layanan & Armada' => [
