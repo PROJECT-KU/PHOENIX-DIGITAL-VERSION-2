@@ -283,6 +283,26 @@
                             @error('tayangSampai') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             <div class="form-text mb-3">Kosong berarti tidak dibatasi waktu.</div>
 
+                            {{-- Ikut promo rombongan?
+
+                                 Ditaruh berdampingan dengan penayangan, bukan di dekat
+                                 harga: keduanya keputusan tentang BAGAIMANA paket ini
+                                 dijual, bukan berapa harganya. Yang mengubah harga per
+                                 orang ada di kotak harga; yang ini menentukan apakah
+                                 potongan rombongan boleh menumpang di atasnya. --}}
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="promo-rombongan"
+                                    wire:model.live="promoRombongan">
+                                <label class="form-check-label small" for="promo-rombongan">
+                                    Ikut promo rombongan
+                                </label>
+                                <div class="form-text">
+                                    Potongan menurut jumlah peserta — diatur di
+                                    <a href="{{ route('admin.orcha.promo') }}" wire:navigate>Promo Rombongan</a>.
+                                    Matikan bila margin paket ini sudah tipis.
+                                </div>
+                            </div>
+
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="berakhir-otomatis"
                                     wire:model.live="berakhirOtomatis">

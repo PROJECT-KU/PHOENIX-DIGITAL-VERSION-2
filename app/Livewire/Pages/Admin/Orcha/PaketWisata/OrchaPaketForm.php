@@ -38,6 +38,18 @@ class OrchaPaketForm extends Component
 
     public bool $berakhirOtomatis = true;
 
+    /**
+     * Ikut promo rombongan?
+     *
+     * Tingkat promonya seragam untuk seluruh perusahaan, tetapi tidak setiap
+     * trip ikut: sebagian sudah tipis marginnya, sebagian sedang musim ramai
+     * dan tidak perlu didorong.
+     *
+     * Bawaannya MATI. Paket baru tidak boleh diam-diam memberi potongan hanya
+     * karena yang membuatnya tidak memperhatikan satu centang.
+     */
+    public bool $promoRombongan = false;
+
     public string $durasi = '';
 
     /**
@@ -191,6 +203,7 @@ class OrchaPaketForm extends Component
         $this->tayangMulai = (string) ($isi['tayang_mulai'] ?? '');
         $this->tayangSampai = (string) ($isi['tayang_sampai'] ?? '');
         $this->berakhirOtomatis = (bool) ($isi['berakhir_otomatis'] ?? true);
+        $this->promoRombongan = (bool) ($isi['promo_rombongan'] ?? false);
         $this->durasi = (string) ($isi['durasi'] ?? '');
         $this->tanggalBerangkat = (string) ($isi['tanggal_berangkat'] ?? '');
         $this->tanggalPulang = (string) ($isi['tanggal_pulang'] ?? '');
@@ -541,6 +554,7 @@ class OrchaPaketForm extends Component
             'tayang_mulai' => $this->tayangMulai,
             'tayang_sampai' => $this->tayangSampai,
             'berakhir_otomatis' => $this->berakhirOtomatis,
+            'promo_rombongan' => $this->promoRombongan,
             'durasi' => $this->durasi,
             'tanggal_berangkat' => $this->tanggalBerangkat,
             'tanggal_pulang' => $this->tanggalPulang,
