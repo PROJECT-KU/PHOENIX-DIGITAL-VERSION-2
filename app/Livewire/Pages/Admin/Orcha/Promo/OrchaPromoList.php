@@ -2,8 +2,8 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\Promo;
 
+use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
-use App\Services\OrchaTidakTerjangkau;
 use Livewire\Component;
 
 /**
@@ -126,6 +126,29 @@ class OrchaPromoList extends Component
         $this->validate($aturan, [], $nama);
 
         /*
+         | Minimal peserta yang sudah dipakai ditahan DI SINI, sebelum ke Orcha.
+         |
+         | Orcha memang menolaknya — kolomnya unik — tetapi penolakan yang
+         | datang dari server lain sampai ke admin sebagai pesan merah tanpa
+         | menunjuk kotak mana yang salah. Ditahan di sini, pesannya menempel
+         | pada kotak yang memang perlu diubahnya.
+         |
+         | Orcha tetap jadi penjaga sesungguhnya: dua admin yang menyimpan
+         | angka sama pada detik yang sama tetap dihentikan di sana.
+         */
+        $terpakai = collect($this->muat('/promo-rombongan')['data'] ?? [])
+            ->reject(fn ($t) => (int) $t['id'] === (int) $this->sunting)
+            ->pluck('min_peserta')
+            ->map(fn ($n) => (int) $n);
+
+        if ($terpakai->contains((int) $this->isian['min_peserta'])) {
+            $this->addError('isian.min_peserta',
+                'Sudah ada tingkat dengan minimal peserta ini. Ubah angkanya, atau sunting tingkat yang sudah ada.');
+
+            return;
+        }
+
+        /*
          | Isian jenis yang TIDAK dipilih dikirim nol, bukan dibiarkan apa
          | adanya.
          |
@@ -151,6 +174,23 @@ class OrchaPromoList extends Component
             $this->tutup();
             $this->dispatch('order-updated', message: 'Tingkat promo disimpan.');
         } catch (OrchaTidakTerjangkau $e) {
+            /*
+             | Penolakan isian ditempelkan ke kotaknya; kegagalan sambungan
+             | tetap jadi toast.
+             |
+             | Keduanya datang sebagai kelas galat yang SAMA dari OrchaClient —
+             | 422 dan server tak terjangkau tidak dibedakan di sana. Yang
+             | membedakannya di sini cuma isinya, dan itu memang rapuh; tetapi
+             | menampilkan "Kolom min peserta sudah terdaftar" sebagai toast
+             | melayang membuat admin mencari-cari kotak mana yang harus
+             | diperbaikinya.
+             */
+            if (str_contains(strtolower($e->getMessage()), 'min peserta')) {
+                $this->addError('isian.min_peserta', $e->getMessage());
+
+                return;
+            }
+
             $this->dispatch('toast-error', message: $e->getMessage());
         }
     }

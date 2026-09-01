@@ -2,9 +2,9 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\BagianPemeriksaan;
 
+use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
-use App\Services\OrchaTidakTerjangkau;
 use Livewire\Component;
 
 /**
