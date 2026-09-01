@@ -41,15 +41,27 @@ class OrchaPromoList extends Component
      */
     public bool $aktif = true;
 
+    /**
+     * Bentuk keuntungan yang dipilih: 'persen' atau 'gratis'.
+     *
+     * Dipilih LEBIH DULU, sebelum angkanya. Dulu kedua kotak angka tampil
+     * berdampingan dan admin harus menyimpulkan sendiri bahwa hanya salah satu
+     * yang perlu diisi — sebagian mengisi keduanya, sebagian tidak mengisi
+     * satu pun lalu ditolak setelah menekan simpan.
+     *
+     * Dengan memilih dulu, isian yang tidak relevan tidak pernah muncul, dan
+     * pertanyaan "ini diisi berapa" hanya datang sekali.
+     */
+    public string $jenis = 'persen';
+
     private function kosongkan(): void
     {
         $this->isian = [
             'min_peserta' => '',
             'potongan_persen' => '',
             'gratis_orang' => '',
-            'label' => '',
-            'ajakan' => '',
         ];
+        $this->jenis = 'persen';
         $this->aktif = true;
     }
 
@@ -72,13 +84,14 @@ class OrchaPromoList extends Component
         $this->sunting = $id;
         $this->resetValidation();
 
+        // Jenisnya disimpulkan dari isi barisnya: yang punya orang gratis
+        // adalah tingkat gratis, sisanya tingkat potongan.
+        $this->jenis = ($baris['gratis_orang'] ?? 0) > 0 ? 'gratis' : 'persen';
+
         $this->isian = [
             'min_peserta' => (string) $baris['min_peserta'],
-            // (string) supaya nol tersimpan tetap tergambar "0", bukan kosong.
-            'potongan_persen' => (string) ($baris['potongan_persen'] ?? 0),
-            'gratis_orang' => (string) ($baris['gratis_orang'] ?? 0),
-            'label' => (string) $baris['label'],
-            'ajakan' => (string) ($baris['ajakan'] ?? ''),
+            'potongan_persen' => (string) ($baris['potongan_persen'] ?? ''),
+            'gratis_orang' => (string) ($baris['gratis_orang'] ?? ''),
         ];
 
         $this->aktif = (bool) $baris['aktif'];
@@ -93,42 +106,38 @@ class OrchaPromoList extends Component
 
     public function simpan(): void
     {
-        $this->validate([
-            'isian.min_peserta' => 'required|integer|min:2|max:100',
-            'isian.potongan_persen' => 'nullable|integer|min:0|max:100',
-            'isian.gratis_orang' => 'nullable|integer|min:0|max:20',
-            'isian.label' => 'required|string|max:120',
-            'isian.ajakan' => 'nullable|string|max:160',
-        ], [], [
-            'isian.min_peserta' => 'minimal peserta',
-            'isian.potongan_persen' => 'potongan persen',
-            'isian.gratis_orang' => 'orang gratis',
-            'isian.label' => 'tulisan promo',
-            'isian.ajakan' => 'kalimat ajakan',
-        ]);
-
         /*
-         | Tingkat tanpa keuntungan apa pun ditahan DI SINI juga, bukan hanya
-         | di Orcha.
+         | Yang divalidasi hanya isian yang RELEVAN dengan jenis terpilih.
          |
-         | Orcha memang menolaknya, tetapi penolakan yang datang dari server
-         | lain muncul sebagai pesan galat merah tanpa menunjuk isian mana yang
-         | salah. Ditahan di sini, admin melihatnya menempel pada kotak yang
-         | memang perlu diisinya.
+         | Menuntut keduanya membuat tingkat potongan ditolak karena "orang
+         | gratis kosong" — padahal kotaknya memang tidak ditampilkan.
          */
-        if ((int) $this->isian['potongan_persen'] === 0 && (int) $this->isian['gratis_orang'] === 0) {
-            $this->addError('isian.potongan_persen',
-                'Isi potongan persen atau jumlah orang gratis — tingkat tanpa keduanya tidak mengubah harga apa pun.');
+        $aturan = ['isian.min_peserta' => 'required|integer|min:2|max:100'];
+        $nama = ['isian.min_peserta' => 'minimal peserta'];
 
-            return;
+        if ($this->jenis === 'gratis') {
+            $aturan['isian.gratis_orang'] = 'required|integer|min:1|max:20';
+            $nama['isian.gratis_orang'] = 'jumlah orang gratis';
+        } else {
+            $aturan['isian.potongan_persen'] = 'required|integer|min:1|max:100';
+            $nama['isian.potongan_persen'] = 'potongan persen';
         }
 
+        $this->validate($aturan, [], $nama);
+
+        /*
+         | Isian jenis yang TIDAK dipilih dikirim nol, bukan dibiarkan apa
+         | adanya.
+         |
+         | Admin yang mengubah tingkat dari "gratis 1 orang" jadi "potongan 5%"
+         | meninggalkan angka 1 di kotak yang sudah tersembunyi. Tanpa dinolkan,
+         | tingkat itu tersimpan dengan KEDUANYA — dan Orcha memilih yang gratis
+         | lebih dulu, sehingga perubahannya seolah tidak berpengaruh.
+         */
         $data = [
             'min_peserta' => (int) $this->isian['min_peserta'],
-            'potongan_persen' => (int) $this->isian['potongan_persen'],
-            'gratis_orang' => (int) $this->isian['gratis_orang'],
-            'label' => $this->isian['label'],
-            'ajakan' => $this->isian['ajakan'] ?: null,
+            'potongan_persen' => $this->jenis === 'persen' ? (int) $this->isian['potongan_persen'] : 0,
+            'gratis_orang' => $this->jenis === 'gratis' ? (int) $this->isian['gratis_orang'] : 0,
             'aktif' => $this->aktif,
         ];
 

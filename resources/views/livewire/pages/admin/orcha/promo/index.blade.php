@@ -58,76 +58,118 @@ Promo Rombongan || lemon
                         {{ $sunting ? 'Ubah Tingkat' : 'Tingkat Baru' }}
                     </h6>
 
+                    {{-- Jenis keuntungannya dipilih LEBIH DULU.
+
+                         Dulu kedua kotak angka tampil berdampingan dan admin harus
+                         menyimpulkan sendiri bahwa hanya salah satu yang perlu diisi —
+                         sebagian mengisi keduanya, sebagian tidak mengisi satu pun lalu
+                         ditolak setelah menekan simpan. Dengan memilih dulu, isian yang
+                         tidak relevan tidak pernah muncul. --}}
+                    <label class="form-label small fw-semibold">Bentuk keuntungannya <span class="text-danger">*</span></label>
+
+                    <div class="orcha-pilih-kartu mb-4" wire:key="jenis-promo">
+                        <label class="orcha-kartu-pilihan {{ $jenis === 'persen' ? 'aktif' : '' }}">
+                            <input type="radio" value="persen" wire:model.live="jenis">
+                            <span class="tanda"><i class="bi bi-check-lg"></i></span>
+                            <i class="bi bi-percent rupa"></i>
+                            <span>
+                                <span class="judul">Potongan persen</span>
+                                <span class="ket">Harga per orang turun sekian persen</span>
+                            </span>
+                        </label>
+
+                        <label class="orcha-kartu-pilihan {{ $jenis === 'gratis' ? 'aktif' : '' }}">
+                            <input type="radio" value="gratis" wire:model.live="jenis">
+                            <span class="tanda"><i class="bi bi-check-lg"></i></span>
+                            <i class="bi bi-person-check rupa"></i>
+                            <span>
+                                <span class="judul">Gratis orang</span>
+                                <span class="ket">Sejumlah orang tidak dibayar</span>
+                            </span>
+                        </label>
+                    </div>
+
                     <div class="row g-3">
-                        <div class="col-12 col-md-3">
+                        <div class="col-12 col-md-4">
                             <label class="form-label small fw-semibold">Minimal peserta <span class="text-danger">*</span></label>
                             <input type="number" min="2" max="100" wire:model="isian.min_peserta"
                                 class="form-control @error('isian.min_peserta') is-invalid @enderror"
-                                placeholder="5">
+                                placeholder="10">
+                            <div class="form-text">Rombongan sebanyak ini atau lebih.</div>
                             @error('isian.min_peserta')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        {{-- Dua bentuk keuntungan, disandingkan supaya bedanya terlihat.
-
-                             "Gratis 1 dari 10" secara hitungan sama dengan potongan 10%,
-                             tetapi DISEBUT sebagai gratis satu orang — dan kalimat itulah
-                             yang diceritakan ulang pelanggan ke temannya. Karena itu
-                             keduanya isian terpisah, bukan satu kotak yang diberi satuan. --}}
-                        <div class="col-6 col-md-3">
-                            <label class="form-label small fw-semibold">Potongan (%)</label>
-                            <input type="number" min="0" max="100" wire:model="isian.potongan_persen"
-                                class="form-control @error('isian.potongan_persen') is-invalid @enderror"
-                                placeholder="5">
-                            @error('isian.potongan_persen')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
+                        <div class="col-12 col-md-4">
+                            @if ($jenis === 'gratis')
+                                <label class="form-label small fw-semibold">Berapa orang gratis <span class="text-danger">*</span></label>
+                                <input type="number" min="1" max="20" wire:model="isian.gratis_orang"
+                                    class="form-control @error('isian.gratis_orang') is-invalid @enderror"
+                                    placeholder="1">
+                                <div class="form-text">Sisanya tetap dibayar penuh.</div>
+                                @error('isian.gratis_orang')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            @else
+                                <label class="form-label small fw-semibold">Potongan (%) <span class="text-danger">*</span></label>
+                                <input type="number" min="1" max="100" wire:model="isian.potongan_persen"
+                                    class="form-control @error('isian.potongan_persen') is-invalid @enderror"
+                                    placeholder="5">
+                                <div class="form-text">Dari harga yang sedang berlaku.</div>
+                                @error('isian.potongan_persen')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                            @endif
                         </div>
 
-                        <div class="col-6 col-md-3">
-                            <label class="form-label small fw-semibold">Orang gratis</label>
-                            <input type="number" min="0" max="20" wire:model="isian.gratis_orang"
-                                class="form-control @error('isian.gratis_orang') is-invalid @enderror"
-                                placeholder="1">
-                            @error('isian.gratis_orang')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12 col-md-3 d-flex align-items-end">
-                            <div class="form-check form-switch">
+                        <div class="col-12 col-md-4 d-flex align-items-center">
+                            <div class="form-check form-switch mt-3">
                                 <input class="form-check-input" type="checkbox" id="promo-aktif"
                                     wire:model="aktif">
                                 <label class="form-check-label small" for="promo-aktif">Aktif</label>
                             </div>
                         </div>
-
-                        <div class="col-12 col-lg-6">
-                            <label class="form-label small fw-semibold">Tulisan promo <span class="text-danger">*</span></label>
-                            <input type="text" maxlength="120" wire:model="isian.label"
-                                class="form-control @error('isian.label') is-invalid @enderror"
-                                placeholder="Ajak 10 orang — gratis 1 orang">
-                            <div class="form-text">Dibaca pelanggan yang sudah mencapai tingkat ini.</div>
-                            @error('isian.label')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-12 col-lg-6">
-                            <label class="form-label small fw-semibold">Kalimat ajakan</label>
-                            <input type="text" maxlength="160" wire:model="isian.ajakan"
-                                class="form-control @error('isian.ajakan') is-invalid @enderror"
-                                placeholder="Ajak 10 orang, satu orang gratis.">
-                            {{-- Inilah yang mengubah promo dari keterangan jadi dorongan:
-                                 dibaca orang yang BELUM mencapai tingkat ini, lengkap dengan
-                                 berapa orang lagi yang kurang. --}}
-                            <div class="form-text">Dibaca yang belum mencapainya — "2 orang lagi: …".</div>
-                            @error('isian.ajakan')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
                     </div>
+
+                    {{-- Pratinjau kalimatnya, dirakit dari angka yang sedang diketik.
+
+                         Tulisannya tidak lagi diketik admin — dulu ia bisa berbeda dari
+                         potongan yang benar-benar berlaku: mengubah 5% jadi 7% lalu lupa
+                         menyunting kalimat "hemat 5%" di sebelahnya. Yang dibaca
+                         pelanggan angka yang salah, yang ditagih angka yang benar.
+
+                         Ditampilkan sebagai pratinjau, bukan disembunyikan, supaya admin
+                         tetap melihat apa yang akan dibaca pelanggannya. --}}
+                    @php
+                        $min = (int) ($isian['min_peserta'] ?: 0);
+                        $nilai = (int) (($jenis === 'gratis' ? $isian['gratis_orang'] : $isian['potongan_persen']) ?: 0);
+                    @endphp
+
+                    @if ($min > 0 && $nilai > 0)
+                        <div class="alert alert-light border mt-4 mb-0">
+                            <div class="orcha-label-kecil mb-2">
+                                <i class="bi bi-eye"></i> Yang dibaca pelanggan
+                            </div>
+
+                            <div class="fw-bold text-dark">
+                                @if ($jenis === 'gratis')
+                                    Ajak {{ $min }} orang — gratis {{ $nilai }} orang
+                                @else
+                                    Ajak {{ $min }} orang — hemat {{ $nilai }}%
+                                @endif
+                            </div>
+
+                            <div class="text-muted small mt-1">
+                                Yang belum mencapainya membaca:
+                                @if ($jenis === 'gratis')
+                                    "Ajak {{ $min }} orang, {{ $nilai }} orang gratis."
+                                @else
+                                    "Ajak {{ $min }} orang, hemat {{ $nilai }}% untuk seluruh rombongan."
+                                @endif
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="d-flex gap-2 mt-4">
                         <button type="button" wire:click="simpan" wire:loading.attr="disabled"
