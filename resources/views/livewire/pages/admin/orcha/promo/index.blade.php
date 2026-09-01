@@ -130,7 +130,13 @@ Promo Rombongan || lemon
                                         <input type="number" min="1" max="100" wire:model.live.debounce.400ms="isian.potongan_persen"
                                             class="form-control @error('isian.potongan_persen') is-invalid @enderror"
                                             placeholder="5">
-                                        <div class="form-text">Dari harga yang sedang berlaku.</div>
+                                        {{-- Cakupannya disebut di sini, bukan cuma di pratinjau.
+
+                                             Admin yang mengetik "10" perlu tahu itu 10% dari SATU
+                                             kursi, bukan dari seluruh tagihan rombongan — kalau
+                                             tidak, angka yang dikiranya kecil ternyata besar, atau
+                                             sebaliknya. --}}
+                                        <div class="form-text">Dari harga satu kursi, untuk pemesan saja.</div>
                                         @error('isian.potongan_persen')
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
@@ -179,7 +185,7 @@ Promo Rombongan || lemon
                                         @if ($jenis === 'gratis')
                                             Ajak {{ $min }} orang — gratis {{ $nilai }} orang
                                         @else
-                                            Ajak {{ $min }} orang — hemat {{ $nilai }}%
+                                            Ajak {{ $min }} orang — potongan {{ $nilai }}% untuk pemesan
                                         @endif
                                     </div>
 
@@ -189,7 +195,7 @@ Promo Rombongan || lemon
                                             @if ($jenis === 'gratis')
                                                 "Ajak {{ $min }} orang, {{ $nilai }} orang gratis."
                                             @else
-                                                "Ajak {{ $min }} orang, hemat {{ $nilai }}% untuk seluruh rombongan."
+                                                "Ajak {{ $min }} orang, Anda dapat potongan {{ $nilai }}%."
                                             @endif
                                         </em>
                                     </div>
