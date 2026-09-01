@@ -4508,4 +4508,45 @@
         .orcha-angka { font-size: 1.3rem; }
     }
 
+    /* ============ PRATINJAU PROMO ============
+
+       Kotak yang memperlihatkan kalimat yang akan dibaca pelanggan. Tulisannya
+       dirakit sistem, bukan diketik admin — jadi kotak ini satu-satunya tempat
+       admin bisa memastikan yang tersimpan memang yang ia maksud.
+
+       Sengaja TIDAK memakai .card: ia berada DI DALAM kartu formulir, dan
+       kartu di dalam kartu membuat kedalamannya tidak lagi terbaca. Yang
+       dipakai latar dan garis tipis. */
+    .orcha-pratinjau-promo {
+        border: 1px dashed var(--orc-primer);
+        border-radius: var(--orc-radius-kartu, 14px);
+        background: linear-gradient(150deg, #fbfaff, #f4f1fe);
+        padding: 1.1rem 1.2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Belum ada yang bisa ditunjukkan: garisnya diredupkan supaya kotak ini
+       terbaca sebagai tempat yang MENUNGGU diisi, bukan sebagai peringatan. */
+    .orcha-pratinjau-promo.kosong {
+        border-color: #d7dce6;
+        background: #fbfcfe;
+    }
+
+    .orcha-pratinjau-judul {
+        font-weight: 800;
+        font-size: 1.02rem;
+        line-height: 1.35;
+        color: var(--orc-tinta);
+    }
+
+    .orcha-pratinjau-ket {
+        font-size: .84rem;
+        line-height: 1.55;
+        color: #5b6a79;
+        margin-top: .45rem;
+    }
+
+    .orcha-pratinjau-ket em { color: var(--orc-primer-2); font-style: normal; }
 </style>
