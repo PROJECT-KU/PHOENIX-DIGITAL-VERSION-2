@@ -566,6 +566,17 @@ Route::middleware('permission:akses_orcha')->group(function () {
     // Armada karena keduanya mengurus unitnya, bukan penyewaannya.
     Route::get('/admin/orcha/bagian-pemeriksaan', OrchaBagianList::class)->name('admin.orcha.bagian');
 
+    /*
+     | Tingkat potongan menurut jumlah peserta.
+     |
+     | Angkanya dulu tetap di berkas config Orcha, sehingga mengubah "ajak 5
+     | dapat 5%" jadi 7% berarti menunggu ada yang menyunting kode dan
+     | menaikkannya ke server — padahal justru angka inilah yang paling sering
+     | diutak-atik mengikuti musim liburan dan tawaran pesaing.
+     */
+    Route::get('/admin/orcha/promo-rombongan', \App\Livewire\Pages\Admin\Orcha\Promo\OrchaPromoList::class)
+        ->name('admin.orcha.promo');
+
     Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
     // Tambah dan ubah destinasi punya halamannya sendiri: isiannya terlalu
     // banyak untuk jendela yang isinya harus digulung sendiri.

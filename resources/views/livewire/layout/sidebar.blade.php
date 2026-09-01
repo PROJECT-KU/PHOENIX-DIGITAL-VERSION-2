@@ -453,6 +453,9 @@ new class extends Component
                             'Layanan & Armada' => [
                                 ['admin.orcha.paket', 'bi-map', 'Paket Wisata'],
                                 ['admin.orcha.keuntungan', 'bi-graph-up-arrow', 'Keuntungan Paket'],
+                                // Bertetangga dengan Keuntungan Paket: keduanya
+                                // mengurus ANGKA jualannya, bukan isi paketnya.
+                                ['admin.orcha.promo', 'bi-gift', 'Promo Rombongan'],
                                 ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
                                 // Bertetangga dengan Armada karena keduanya mengurus
                                 // unitnya, bukan penyewaannya: yang satu daftar unit,
