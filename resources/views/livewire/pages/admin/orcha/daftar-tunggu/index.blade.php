@@ -124,17 +124,32 @@ Daftar Tunggu || lemon
                                     </td>
 
                                     <td class="text-end pe-4">
-                                        <a href="{{ $wa }}" target="_blank" rel="noopener"
-                                            class="orcha-aksi" title="Hubungi lewat WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
+                                        {{-- Varian tombolnya dipakai apa adanya dari partial gaya.
 
-                                        <button type="button" class="orcha-aksi orcha-bahaya"
-                                            wire:click="keluarkan({{ $baris['id'] }})"
-                                            wire:confirm="Keluarkan {{ $baris['nama'] }} dari daftar tunggu? Ia tidak akan dikabari lagi saat ada kursi terbuka."
-                                            title="Keluarkan dari antrean">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
+                                             Sebelumnya keduanya cuma berkelas .orcha-aksi — yang
+                                             latarnya bening dan batasnya bening — sehingga tombol
+                                             WhatsApp tergambar sebagai ikon telanjang tanpa kotak,
+                                             sementara tombol hapus di sebelahnya berkotak. Dua
+                                             tombol berdampingan yang bentuknya berbeda terbaca
+                                             seperti salah satunya rusak.
+
+                                             orcha-aksi-wa dan orcha-aksi-hapus sudah ada dan sudah
+                                             dipakai halaman Pesan Kontak; bentuk pembungkusnya pun
+                                             disalin dari sana supaya jaraknya sama. --}}
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <a href="{{ $wa }}" target="_blank" rel="noopener"
+                                                class="btn btn-sm orcha-aksi orcha-aksi-wa"
+                                                title="Hubungi lewat WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>
+                                            </a>
+
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
+                                                wire:click="keluarkan({{ $baris['id'] }})"
+                                                wire:confirm="Keluarkan {{ $baris['nama'] }} dari daftar tunggu? Ia tidak akan dikabari lagi saat ada kursi terbuka."
+                                                title="Keluarkan dari antrean">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty

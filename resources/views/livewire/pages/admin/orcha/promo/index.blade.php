@@ -273,18 +273,26 @@ Promo Rombongan || lemon
                                     </td>
 
                                     <td class="text-end pe-4">
-                                        <button type="button" class="orcha-aksi"
-                                            wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
-                                            title="Ubah tingkat ini">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
+                                        {{-- Varian tombolnya dari partial gaya, bukan .orcha-aksi polos.
 
-                                        <button type="button" class="orcha-aksi orcha-bahaya"
-                                            wire:click="hapus({{ $baris['id'] }})"
-                                            wire:confirm="Hapus tingkat {{ $baris['min_peserta'] }} orang? Rombongan sebesar itu akan turun ke tingkat di bawahnya."
-                                            title="Hapus tingkat ini">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                             Polos, latar dan batasnya bening — tombolnya tergambar
+                                             sebagai ikon telanjang, tidak terbaca sebagai sesuatu
+                                             yang bisa ditekan. Bentuk pembungkusnya disalin dari
+                                             halaman Pesan Kontak supaya jaraknya sama. --}}
+                                        <div class="d-flex gap-2 justify-content-end">
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-ubah"
+                                                wire:click="bukaSunting({{ $baris['id'] }}, {{ json_encode($baris) }})"
+                                                title="Ubah tingkat ini">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
+                                                wire:click="hapus({{ $baris['id'] }})"
+                                                wire:confirm="Hapus tingkat {{ $baris['min_peserta'] }} orang? Rombongan sebesar itu akan turun ke tingkat di bawahnya."
+                                                title="Hapus tingkat ini">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
