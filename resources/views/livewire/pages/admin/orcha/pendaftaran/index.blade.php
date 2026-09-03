@@ -14,8 +14,20 @@ Pendaftaran Open Trip || lemon
         {{-- Pencarian & saringan --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-lg-4">
-                <div class="row g-2">
-                    <div class="col-12 col-lg-2">
+                {{-- Bilah saringan memakai FLEX, bukan grid dua belas kolom.
+
+                     Grid-nya sudah dua kali menjatuhkan tombol terakhir ke baris
+                     kedua, dan dua kali sebabnya berbeda: sekali karena jumlah
+                     kolomnya lewat, sekali karena ms-auto menyerap sisa ruang jadi
+                     margin. Keduanya lolos dari penjaga yang menghitung kolom, dan
+                     keduanya baru ketahuan lewat potret layar.
+
+                     Dengan flex, tiap benda menyebut lebar dasarnya sendiri dan
+                     boleh menyusut — tidak ada jatah dua belas yang harus dijaga
+                     tiap kali satu tombol ditambahkan. Pola ini sudah dipakai kartu
+                     sakelar di bawahnya. --}}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div style="flex:1 1 170px">
                         @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode, nama...'])
                     </div>
 
@@ -24,7 +36,7 @@ Pendaftaran Open Trip || lemon
                          dan mengetik "Banyuwangi" bisa ikut menyeret paket lain yang
                          namanya mirip — kelebihan satu rombongan di manifes baru
                          ketahuan saat rombongannya sudah berkumpul. --}}
-                    <div class="col-12 col-lg-4">
+                    <div style="flex:2 1 220px">
                         <select wire:model.live="filterPaket" class="form-select">
                             <option value="">Semua paket</option>
                             {{-- @selected ditulis meski nilainya diikat wire:model.
@@ -43,7 +55,7 @@ Pendaftaran Open Trip || lemon
                         </select>
                     </div>
 
-                    <div class="col-12 col-lg-2">
+                    <div style="flex:1 1 160px">
                         <select wire:model.live="filterStatus" class="form-select">
                             <option value="">Semua status</option>
                             @foreach ($pilihanStatus as $kunci => $label)
@@ -52,37 +64,49 @@ Pendaftaran Open Trip || lemon
                         </select>
                     </div>
 
-                    {{-- Manifes gabungan: open trip dibentuk dari banyak pendaftaran
-                         terpisah yang berangkat di hari yang sama, dan tour leader
-                         membawa satu lembar — bukan dua belas. Yang diekspor
-                         mengikuti saringan yang sedang dilihat di layar.
+                    {{-- Pengosong saringan DUDUK DI BARIS YANG SAMA dengan yang
+                         dibersihkannya.
 
-                         Tombolnya diberi tulisan, bukan ikon sendirian: yang jarang
-                         dipakai justru yang paling perlu menyebut namanya. --}}
-                    {{-- Daftarkan rombongan: private trip dan study tour.
+                         Sebelumnya ia berbaris sendiri di bawah, terpisah dari tiga
+                         kotak yang justru jadi urusannya — dan tombol yang jauh dari
+                         benda yang diubahnya menuntut mata berpindah dua kali untuk
+                         mengerti hubungannya.
 
-                         Ditaruh di baris saringan bersama Manifes, bukan di kepala
-                         halaman: keduanya sama-sama tindakan yang berdiri sendiri,
-                         bukan cara melihat daftarnya. --}}
-                    <div class="col-12 col-lg-2 d-grid">
+                         Lebarnya mengikuti isi: ia cuma muncul kadang-kadang, dan
+                         jatah tetap yang kosong separuh waktu menggeser tombol lain
+                         bolak-balik setiap kali saringannya dinyalakan. --}}
+                    @if ($this->adaSaringan())
+                        <button type="button" wire:click="bersihkanSaringan"
+                            class="orcha-btn orcha-btn-lembut"
+                            title="Kosongkan pencarian, paket, status, dan saringan tagihan sekaligus">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                            <span>Bersihkan</span>
+                        </button>
+                    @endif
+
+                    {{-- Tindakan didorong ke kanan, terpisah dari saringan.
+
+                         Daftarkan dan Manifes bukan cara MELIHAT daftar melainkan
+                         hal yang dikerjakan terhadapnya. Pada layar sempit ms-auto
+                         tidak berlaku dan keduanya turun mengikuti yang lain —
+                         itu memang yang diinginkan. --}}
+                    <div class="d-flex gap-2 ms-lg-auto" style="flex:0 1 auto">
                         <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
-                            class="orcha-btn orcha-btn-lembut justify-content-center"
+                            class="orcha-btn orcha-btn-lembut"
                             title="Masukkan rombongan yang disepakati lewat WhatsApp">
                             <i class="bi bi-person-plus"></i>
                             <span>Daftarkan</span>
                         </a>
-                    </div>
 
-                    @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
-                        <div class="col-12 col-lg-2 d-grid">
+                        @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
                             <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
-                                class="orcha-btn orcha-btn-utama justify-content-center"
+                                class="orcha-btn orcha-btn-utama"
                                 title="Manifes tour leader untuk daftar yang sedang tampil">
                                 <i class="bi bi-filetype-pdf"></i>
                                 <span>Manifes</span>
                             </a>
-                        </div>
-                    @endif
+                        @endif
+                    </div>
                 </div>
 
                 {{-- Saringan tagihan berdiri sendiri di barisnya, bukan jadi
@@ -118,18 +142,17 @@ Pendaftaran Open Trip || lemon
                     </label>
                 </div>
 
-                {{-- Muncul hanya saat ada saringan yang hidup. Tiga saringan yang
-                     dipasang berurutan mudah membuat daftarnya kosong tanpa
-                     ketahuan mana penyebabnya; satu tombol mengembalikannya. --}}
+                {{-- Keterangannya tinggal di bawah; tombolnya sudah naik ke baris
+                     saringan.
+
+                     Yang disebut di sini akibat yang tidak terlihat dari layar:
+                     manifes yang diunduh mengikuti saringan yang sedang hidup.
+                     Tour leader yang membawa manifes hasil saringan lupa akan
+                     berdiri di parkiran dengan daftar yang kurang satu rombongan. --}}
                 @if ($this->adaSaringan())
-                    <div class="d-flex align-items-center gap-2 mt-3">
-                        <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                            wire:click="bersihkanSaringan">
-                            <i class="bi bi-arrow-counterclockwise"></i> Bersihkan saringan
-                        </button>
-                        <span class="text-muted" style="font-size:.78rem">
-                            Daftar sedang disaring — manifes yang diunduh mengikuti saringan ini.
-                        </span>
+                    <div class="text-muted mt-3" style="font-size:.78rem">
+                        <i class="bi bi-funnel"></i>
+                        Daftar sedang disaring — manifes yang diunduh mengikuti saringan ini.
                     </div>
                 @endif
             </div>

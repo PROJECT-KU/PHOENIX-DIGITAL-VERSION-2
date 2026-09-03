@@ -100,7 +100,7 @@ test('bersihkan saringan ikut mematikannya', function () {
     Livewire::actingAs(adminTagihan())
         ->test(OrchaPendaftaranList::class)
         ->set('perluDitagih', true)
-        ->assertSee('Bersihkan saringan')
+        ->assertSee('Bersihkan')
         ->call('bersihkanSaringan')
         ->assertSet('perluDitagih', false);
 });

@@ -73,14 +73,16 @@ test('bersihkan saringan mengosongkan ketiganya sekaligus', function () {
         ->set('cari', 'budi')
         ->set('filterStatus', 'lunas')
         ->set('filterPaket', '1')
-        ->assertSee('Bersihkan saringan')
+        // Tombolnya duduk di baris saringan, bukan di bawahnya — judulnya
+        // pendek supaya muat di sebelah kotak status.
+        ->assertSee('Bersihkan')
         ->call('bersihkanSaringan')
         ->assertSet('cari', '')
         ->assertSet('filterStatus', '')
         // Saringan ketiga milik halaman ini ikut — tombol yang menyisakan satu
         // saringan hidup justru membingungkan.
         ->assertSet('filterPaket', '')
-        ->assertDontSee('Bersihkan saringan');
+        ->assertDontSee('Bersihkan');
 });
 
 test('kotak cari yang sama tersedia di daftar orcha lainnya', function () {
@@ -107,4 +109,67 @@ test('pemilih saringan menandai pilihannya di markup, bukan hanya di ingatan kom
         ->call('bersihkanSaringan')
         ->assertDontSeeHtml('value="1" selected')
         ->assertDontSeeHtml('value="lunas" selected');
+});
+
+test('pengosong duduk di baris saringan, bukan di bawahnya', function () {
+    /*
+     | Tombol yang jauh dari benda yang diubahnya menuntut mata berpindah dua
+     | kali untuk mengerti hubungannya. Sebelumnya ia berbaris sendiri di
+     | bawah, terpisah dari tiga kotak yang justru jadi urusannya.
+     |
+     | Diperiksa lewat URUTAN: pengosongnya harus muncul sesudah kotak status
+     | dan SEBELUM tombol Daftarkan — di dalam baris saringan, bukan sesudah
+     | seluruh barisnya selesai.
+     */
+    Livewire::actingAs(adminCari())
+        ->test(OrchaPendaftaranList::class)
+        ->set('filterStatus', 'lunas')
+        ->assertSeeInOrder(['Semua status', 'Bersihkan', 'Daftarkan']);
+});
+
+test('keterangan saringan tetap disebut walau tombolnya sudah naik', function () {
+    /*
+     | Akibat yang tidak terlihat dari layar: manifes yang diunduh mengikuti
+     | saringan yang sedang hidup. Tour leader yang membawa manifes hasil
+     | saringan lupa akan berdiri di parkiran dengan daftar yang kurang satu
+     | rombongan.
+     */
+    Livewire::actingAs(adminCari())
+        ->test(OrchaPendaftaranList::class)
+        ->set('filterStatus', 'lunas')
+        ->assertSee('manifes yang diunduh mengikuti saringan ini');
+});
+
+test('bilah saringan tidak kembali ke grid dua belas kolom', function () {
+    /*
+     | Grid-nya sudah DUA KALI menjatuhkan tombol terakhir ke baris kedua, dan
+     | dua kali sebabnya berbeda: sekali karena jumlah kolomnya lewat dua
+     | belas, sekali karena ms-auto menyerap sisa ruang jadi margin sementara
+     | kolomnya sendiri baru sebelas.
+     |
+     | Keduanya lolos dari penjaga yang menghitung kolom — penjaga itu sempat
+     | hijau sambil tata letaknya patah — dan keduanya baru ketahuan lewat
+     | potret layar. Yang dijaga sekarang KEPUTUSANNYA: bilah ini memakai flex,
+     | di mana tiap benda menyebut lebar dasarnya sendiri dan boleh menyusut,
+     | sehingga tidak ada jatah dua belas yang harus dihitung ulang tiap kali
+     | satu tombol ditambahkan.
+     |
+     | Ini pun tidak membuktikan tata letaknya benar. Yang membuktikannya
+     | melihat layarnya.
+     */
+    $isi = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/pendaftaran/index.blade.php')
+    );
+
+    // Hanya bilah saringan — berhenti sebelum kartu tabelnya.
+    $bilah = substr($isi, 0, strpos($isi, 'orcha-gulung'));
+
+    $this->assertStringNotContainsString('col-lg-', $bilah, implode("\n", [
+        'Bilah saringan kembali memakai grid dua belas kolom.',
+        '',
+        'Grid-nya sudah dua kali menjatuhkan tombol terakhir ke baris kedua,',
+        'dengan dua sebab berbeda yang sama-sama lolos dari uji.',
+        '',
+        'Pakai flex: <div style="flex:1 1 170px"> dan seterusnya.',
+    ]));
 });
