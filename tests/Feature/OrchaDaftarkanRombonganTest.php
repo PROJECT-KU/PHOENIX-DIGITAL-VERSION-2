@@ -322,11 +322,13 @@ test('SELURUH isian menulis nilainya ke markup, bukan cuma baris peserta', funct
         ->set('titikJemput', 'Halaman sekolah')
         ->set('hargaJual', '750000')
         ->set('catatan', 'Sudah termasuk konsumsi')
+        // Harganya diformat ulang saat isiannya ditinggalkan, jadi yang
+        // tergambar bentuk bertitiknya.
+        ->assertSee('value="750.000"', false)
         ->assertSee('value="Panitia SMA 3"', false)
         ->assertSee('value="081234567890"', false)
         ->assertSee('value="panitia@sekolah.test"', false)
         ->assertSee('value="Halaman sekolah"', false)
-        ->assertSee('value="750000"', false)
         // Textarea menyimpan nilainya sebagai isi elemen, bukan atribut.
         ->assertSee('>Sudah termasuk konsumsi</textarea>', false);
 });
@@ -353,4 +355,68 @@ test('tautan yang sudah benar tidak ikut diperingatkan', function () {
     isiRombongan(Livewire::actingAs(adminRombongan())->test(OrchaDaftarkanRombongan::class))
         ->call('simpan')
         ->assertDontSee('Jangan kirim tautan ini');
+});
+
+test('harga tergambar bertitik, bukan deretan angka yang harus dihitung jarinya', function () {
+    /*
+     | "140000000" di layar memaksa yang membacanya menghitung nolnya dengan
+     | jari — dan pada harga rundingan yang dirapatkan lewat telepon, satu nol
+     | yang terlewat adalah selisih sepuluh kali lipat.
+     |
+     | Diformat saat isiannya DITINGGALKAN, bukan saat diketik: memformat tiap
+     | ketukan membuat kursor melompat ke ujung setiap kali pemisah ribuan
+     | bertambah.
+     */
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('hargaJual', '140000000')
+        ->assertSet('hargaJual', '140.000.000')
+        ->set('hargaModal', 'Rp 19.000.000')
+        ->assertSet('hargaModal', '19.000.000');
+});
+
+test('titik pemisah tidak pernah ikut terkirim ke Orcha', function () {
+    // Yang dikirim angkanya, bukan yang tampil. Titik yang ikut membuat Orcha
+    // menolaknya sebagai bukan-angka, dan penolakannya sampai ke admin sebagai
+    // pesan yang tidak menunjuk kotak mana pun.
+    isiRombongan(Livewire::actingAs(adminRombongan())->test(OrchaDaftarkanRombongan::class))
+        ->set('hargaJual', '140000000')
+        ->set('hargaModal', '19000000')
+        ->call('simpan');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && $p['harga_jual'] === 140000000
+        && $p['harga_modal'] === 19000000);
+});
+
+test('kolom di sebelah pendamping gratis tidak dibiarkan menganga', function () {
+    /*
+     | Dua isian pada baris bertiga menyisakan ruang kosong sepertiga lebar
+     | layar, dan ruang kosong di tengah formulir terbaca sebagai sesuatu yang
+     | belum selesai dimuat.
+     |
+     | Yang ditaruh di sana bukan pengisi: total tagihan adalah angka yang
+     | admin hitung sendiri dengan kalkulator saat merundingkan harga per orang
+     | dengan sekolah.
+     */
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->assertSee('Total tagihan')
+        // Sebelum harganya diisi, kotaknya tetap tergambar dengan keterangan —
+        // bukan kosong yang membingungkan.
+        ->assertSee('menunggu harga & jumlah');
+});
+
+test('total tagihan menghitung yang DITAGIH, bukan yang berangkat', function () {
+    // Guru pendamping ikut berangkat tetapi tidak dibayar. Total yang
+    // mengalikan seluruh peserta membuat angka yang ditawarkan ke sekolah
+    // lebih besar daripada yang akan ditagihkan.
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('hargaJual', '500000')
+        ->set('jumlahPeserta', 42)
+        ->set('pendampingGratis', 2)
+        ->assertSee('Rp 20.000.000')
+        ->assertSee('42 berangkat')
+        ->assertSee('40 ditagih');
 });

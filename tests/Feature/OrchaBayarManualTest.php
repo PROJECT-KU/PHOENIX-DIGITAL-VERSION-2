@@ -174,3 +174,38 @@ test('peserta yang ditagih disebut terpisah saat ada pendamping gratis', functio
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
         ->assertSee('42 orang · 40 ditagih');
 });
+
+test('nominal tergambar bertitik dan titiknya tidak ikut terkirim', function () {
+    /*
+     | Nominal transfer sekolah berupa angka jutaan. "5000000" di layar memaksa
+     | admin menghitung nolnya dengan jari sambil menatap mutasi rekening di
+     | layar sebelah — dan itulah saat paling mudah meleset satu digit.
+     |
+     | Yang dikirim ke Orcha tetap angkanya: titik yang ikut membuat Orcha
+     | menolaknya sebagai bukan-angka.
+     */
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('bayar.nominal', '5000000')
+        ->assertSet('bayar.nominal', '5.000.000')
+        ->set('bayar.bank_pengirim', 'BCA')
+        ->call('catatBayar')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST' && $p['nominal'] === 5000000);
+});
+
+test('nominal nol ditahan di layar, bukan dikirim lalu ditolak Orcha', function () {
+    // Penolakan yang datang dari server lain sampai ke admin sebagai pesan
+    // merah tanpa menunjuk kotak mana yang salah.
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('bayar.nominal', '0')
+        ->set('bayar.bank_pengirim', 'BCA')
+        ->call('catatBayar')
+        ->assertHasErrors('bayar.nominal');
+
+    Http::assertNotSent(fn ($p) => $p->method() === 'POST');
+});

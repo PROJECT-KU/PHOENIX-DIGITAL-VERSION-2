@@ -292,10 +292,14 @@ Detail Pendaftaran || lemon
                                     <div class="row g-3">
                                         <div class="col-12 col-lg-4">
                                             <label class="form-label small fw-semibold">Nominal <span class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <span class="input-group-text">Rp</span>
-                                                <input type="number" min="1" wire:model="bayar.nominal"
-                                                    value="{{ $bayar['nominal'] }}"
+                                            {{-- .orcha-rupiah menaruh "Rp" DI DALAM kotaknya —
+                                                 pola yang sudah dipakai seluruh isian uang di
+                                                 lemon. Kotak "Rp" terpisah membuat layar ini
+                                                 satu-satunya yang berbeda bentuknya. --}}
+                                            <div class="orcha-rupiah">
+                                                <input type="text" inputmode="numeric"
+                                                    wire:model.blur="bayar.nominal"
+                                                    value="{{ $bayar['nominal'] }}" placeholder="5.000.000"
                                                     class="form-control @error('bayar.nominal') is-invalid @enderror">
                                             </div>
                                             @error('bayar.nominal')

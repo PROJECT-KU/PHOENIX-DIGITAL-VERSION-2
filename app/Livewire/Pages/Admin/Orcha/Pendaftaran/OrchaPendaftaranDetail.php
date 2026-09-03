@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Orcha\Pendaftaran;
 
 use App\Exceptions\OrchaTidakTerjangkau;
+use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use App\Models\User;
 use Livewire\Component;
@@ -19,7 +20,7 @@ use Livewire\WithFileUploads;
  */
 class OrchaPendaftaranDetail extends Component
 {
-    use MemanggilOrcha, WithFileUploads;
+    use IsianRupiah, MemanggilOrcha, WithFileUploads;
 
     public int $pendaftaranId;
 
@@ -83,10 +84,24 @@ class OrchaPendaftaranDetail extends Component
         $this->kosongkanBayar();
     }
 
+    /*
+     | Nominalnya diformat ulang saat isiannya ditinggalkan.
+     |
+     | Nominal transfer sekolah berupa angka jutaan; "5000000" di layar memaksa
+     | admin menghitung nolnya dengan jari sambil menatap mutasi rekening di
+     | layar sebelah — dan itulah saat paling mudah meleset satu digit.
+     */
+    public function updatedBayarNominal(): void
+    {
+        $this->bayar['nominal'] = $this->keRupiah($this->angkaDari($this->bayar['nominal'] ?? ''));
+    }
+
     public function catatBayar(): void
     {
         $this->validate([
-            'bayar.nominal' => 'required|numeric|min:1',
+            // Bentuknya bertitik, jadi yang divalidasi keberadaannya —
+            // angkanya diperiksa di bawah, setelah titiknya dibuang.
+            'bayar.nominal' => 'required|string',
             'bayar.tanggal_transfer' => 'required|date|before_or_equal:today',
             'bayar.bank_pengirim' => 'required|string|max:60',
             'bayar.atas_nama_pengirim' => 'required|string|max:120',
@@ -99,9 +114,17 @@ class OrchaPendaftaranDetail extends Component
             'bayar.atas_nama_pengirim' => 'atas nama pengirim',
         ]);
 
+        $nominal = $this->angkaDari($this->bayar['nominal']);
+
+        if ($nominal < 1) {
+            $this->addError('bayar.nominal', 'Nominal harus lebih dari nol.');
+
+            return;
+        }
+
         try {
             $hasil = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pembayaran", [
-                'nominal' => (int) $this->bayar['nominal'],
+                'nominal' => $nominal,
                 'tanggal_transfer' => $this->bayar['tanggal_transfer'],
                 'bank_pengirim' => $this->bayar['bank_pengirim'],
                 'atas_nama_pengirim' => $this->bayar['atas_nama_pengirim'],

@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Orcha\Pendaftaran;
 
 use App\Exceptions\OrchaTidakTerjangkau;
+use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use Livewire\Component;
 
@@ -25,7 +26,7 @@ use Livewire\Component;
  */
 class OrchaDaftarkanRombongan extends Component
 {
-    use MemanggilOrcha;
+    use IsianRupiah, MemanggilOrcha;
 
     public string $paketId = '';
 
@@ -49,6 +50,15 @@ class OrchaDaftarkanRombongan extends Component
      */
     public $pendampingGratis = 0;
 
+    /**
+     * Bentuk bertitik yang tampil di layar; angkanya diambil saat menyimpan.
+     *
+     * Memakai pola yang sudah dipakai formulir Paket Wisata — trait
+     * IsianRupiah plus kelas .orcha-rupiah yang menaruh "Rp" DI DALAM
+     * isiannya. Sebelumnya layar ini memasang kotak "Rp" terpisah bergaya
+     * Bootstrap dan angkanya tanpa pemisah ribuan: 140000000 di layar, dan
+     * yang membacanya harus menghitung nolnya dengan jari.
+     */
     public string $hargaJual = '';
 
     public string $hargaModal = '';
@@ -66,6 +76,31 @@ class OrchaDaftarkanRombongan extends Component
     public function mount(): void
     {
         $this->peserta = [['nama' => '', 'titik_jemput' => '']];
+    }
+
+    /*
+     | Diformat ulang saat isiannya ditinggalkan, bukan saat diketik.
+     |
+     | Memformat tiap ketukan membuat kursor melompat ke ujung setiap kali
+     | pemisah ribuan bertambah — dan yang membetulkan satu digit di tengah
+     | angka harus mengetik ulang seluruhnya.
+     */
+    public function updatedHargaJual(): void
+    {
+        $this->hargaJual = $this->keRupiah($this->angkaDari($this->hargaJual));
+    }
+
+    public function updatedHargaModal(): void
+    {
+        $this->hargaModal = $this->keRupiah($this->angkaDari($this->hargaModal));
+    }
+
+    /** Total yang benar-benar ditagihkan, dipakai layar sebagai ringkasan. */
+    public function totalTagihan(): int
+    {
+        $ditagih = max(0, (int) $this->jumlahPeserta - (int) ($this->pendampingGratis ?: 0));
+
+        return $this->angkaDari($this->hargaJual) * $ditagih;
     }
 
     public function tambahBaris(): void
@@ -129,8 +164,10 @@ class OrchaDaftarkanRombongan extends Component
             // Rombongan yang seluruhnya gratis berarti tidak ada yang membayar
             // apa pun — itu bukan pendaftaran melainkan salah ketik.
             'pendampingGratis' => 'nullable|integer|min:0|lt:jumlahPeserta',
-            'hargaJual' => 'nullable|numeric|min:0',
-            'hargaModal' => 'nullable|numeric|min:0',
+            // Bentuknya bertitik, jadi yang divalidasi angkanya — bukan
+            // teksnya, yang tidak akan pernah lolos aturan numeric.
+            'hargaJual' => 'nullable|string|max:20',
+            'hargaModal' => 'nullable|string|max:20',
             'peserta.*.nama' => 'nullable|string|max:120',
         ], [], [
             'paketId' => 'paket',
@@ -179,8 +216,8 @@ class OrchaDaftarkanRombongan extends Component
                 'peserta' => $isi,
                 'titik_jemput' => $this->titikJemput ?: null,
                 'catatan' => $this->catatan ?: null,
-                'harga_jual' => $this->hargaJual !== '' ? (int) $this->hargaJual : null,
-                'harga_modal' => $this->hargaModal !== '' ? (int) $this->hargaModal : null,
+                'harga_jual' => $this->hargaJual !== '' ? $this->angkaDari($this->hargaJual) : null,
+                'harga_modal' => $this->hargaModal !== '' ? $this->angkaDari($this->hargaModal) : null,
             ], fn ($nilai) => $nilai !== null));
 
             $this->hasil = $hasil['data'] ?? [];

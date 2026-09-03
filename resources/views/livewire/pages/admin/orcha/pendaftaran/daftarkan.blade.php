@@ -320,13 +320,21 @@ Daftarkan Rombongan || lemon
                     </div>
 
                     <div class="row g-3">
+                        {{-- Isian uang memakai .orcha-rupiah, yang menaruh "Rp" DI DALAM
+                             kotaknya — pola yang sudah dipakai seluruh formulir uang di
+                             lemon. Kotak "Rp" terpisah bergaya Bootstrap membuat layar
+                             ini satu-satunya yang berbeda bentuknya.
+
+                             wire:model.blur, bukan .live: memformat tiap ketukan membuat
+                             kursor melompat ke ujung setiap kali pemisah ribuan
+                             bertambah, dan yang membetulkan satu digit di tengah angka
+                             harus mengetik ulang seluruhnya. --}}
                         <div class="col-12 col-lg-6">
                             <label class="form-label small fw-semibold">Harga per orang</label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="number" min="0" wire:model="hargaJual" value="{{ $hargaJual }}"
-                                    class="form-control @error('hargaJual') is-invalid @enderror"
-                                    placeholder="750000">
+                            <div class="orcha-rupiah">
+                                <input type="text" inputmode="numeric" wire:model.blur="hargaJual"
+                                    value="{{ $hargaJual }}" placeholder="750.000"
+                                    class="form-control @error('hargaJual') is-invalid @enderror">
                             </div>
                             {{-- Paket private trip dan study tour sering belum berharga
                                  di sistem karena memang dihitung per rombongan. Tanpa
@@ -340,11 +348,10 @@ Daftarkan Rombongan || lemon
 
                         <div class="col-12 col-lg-6">
                             <label class="form-label small fw-semibold">Modal per orang <span class="text-muted fw-normal">(opsional)</span></label>
-                            <div class="input-group">
-                                <span class="input-group-text">Rp</span>
-                                <input type="number" min="0" wire:model="hargaModal" value="{{ $hargaModal }}"
-                                    class="form-control @error('hargaModal') is-invalid @enderror"
-                                    placeholder="500000">
+                            <div class="orcha-rupiah">
+                                <input type="text" inputmode="numeric" wire:model.blur="hargaModal"
+                                    value="{{ $hargaModal }}" placeholder="500.000"
+                                    class="form-control @error('hargaModal') is-invalid @enderror">
                             </div>
                             <div class="form-text">Dipakai laporan keuntungan.</div>
                             @error('hargaModal')
@@ -415,6 +422,37 @@ Daftarkan Rombongan || lemon
                             @error('pendampingGratis')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
+                        </div>
+
+                        {{-- Kolom ketiga TIDAK dibiarkan menganga.
+
+                             Dua isian pada baris bertiga menyisakan ruang kosong
+                             sepertiga lebar layar, dan ruang kosong di tengah formulir
+                             terbaca sebagai sesuatu yang belum selesai dimuat.
+
+                             Yang ditaruh di sini bukan pengisi: total tagihan adalah
+                             angka yang admin hitung sendiri dengan kalkulator saat
+                             merundingkan harga per orang dengan sekolah — dan
+                             menghitungnya sendiri di kepala itulah yang paling sering
+                             meleset. --}}
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label small fw-semibold">Total tagihan</label>
+
+                            @php $total = $this->totalTagihan(); @endphp
+
+                            <div class="form-control d-flex align-items-center"
+                                style="background:#f8fafc;font-weight:700;{{ $total > 0 ? '' : 'color:#94a3b8;font-weight:400' }}">
+                                {{ $total > 0 ? 'Rp '.number_format($total, 0, ',', '.') : 'menunggu harga & jumlah' }}
+                            </div>
+
+                            <div class="form-text">
+                                @if ($total > 0)
+                                    {{ $jumlahPeserta }} berangkat ·
+                                    {{ max(0, (int) $jumlahPeserta - (int) ($pendampingGratis ?: 0)) }} ditagih
+                                @else
+                                    Terhitung dari harga per orang dikali yang ditagih.
+                                @endif
+                            </div>
                         </div>
 
                         <div class="col-12">
