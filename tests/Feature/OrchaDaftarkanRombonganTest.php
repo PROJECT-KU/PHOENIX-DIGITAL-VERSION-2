@@ -63,12 +63,22 @@ beforeEach(function () {
 
         return Http::response(['data' => [
             'status_pendaftaran' => ['baru' => 'Baru'],
-            'paket_wisata' => [
+            /*
+             | Daftarnya lewat config supaya uji bisa menggantinya.
+             |
+             | Http::fake yang dipanggil dua kali MENAMBAH tiruan, bukan
+             | menggantinya — dan yang terdaftar lebih dulu menang. Uji yang
+             | memasang tiruannya sendiri di tengah jalan lalu tidak berlaku,
+             | tanpa galat apa pun.
+             */
+            'paket_wisata' => config('uji.paket_wisata', [
                 ['id' => 5, 'nama' => 'Study Tour SMA Uji', 'kategori' => 'study_tour',
                     'tanggal_berangkat' => now()->addDays(30)->toDateString()],
                 ['id' => 6, 'nama' => 'Open Trip Banyuwangi', 'kategori' => 'open_trip',
                     'tanggal_berangkat' => now()->addDays(10)->toDateString()],
-            ],
+                ['id' => 7, 'nama' => 'Private Trip Premium', 'kategori' => 'private_trip',
+                    'tanggal_berangkat' => null],
+            ]),
         ]]);
     });
 });
@@ -92,7 +102,39 @@ test('paketnya dikelompokkan, private trip dan study tour didahulukan', function
     // pemesanannya pun datang lewat telepon.
     Livewire::actingAs(adminRombongan())
         ->test(OrchaDaftarkanRombongan::class)
-        ->assertSeeInOrder(['Study Tour', 'Open Trip']);
+        ->assertSeeInOrder(['Private Trip', 'Study Tour', 'Open Trip']);
+});
+
+test('kategori yang belum punya paket TETAP ditulis', function () {
+    /*
+     | Bug yang ditemukan saat memakainya, bukan saat mengujinya.
+     |
+     | Grupnya dilewati begitu saja saat kosong, dan itu membuat layarnya
+     | berbohong tentang dirinya sendiri: admin yang mencari Study Tour tidak
+     | menemukannya, lalu menyimpulkan study tour tidak didukung — padahal
+     | yang kurang cuma paketnya belum dibuat.
+     |
+     | Ketiadaan yang diam terbaca sebagai ketidakmampuan.
+     */
+    config()->set('uji.paket_wisata', [
+        ['id' => 6, 'nama' => 'Open Trip Banyuwangi', 'kategori' => 'open_trip',
+            'tanggal_berangkat' => now()->addDays(10)->toDateString()],
+    ]);
+
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->assertSee('Study Tour')
+        ->assertSee('belum ada paket Study Tour')
+        // Jalan keluarnya disebut, bukan cuma keadaannya.
+        ->assertSee('Buat paketnya dulu');
+});
+
+test('saat semua kategori terisi, tidak ada peringatan yang mengganggu', function () {
+    // Peringatan yang muncul terus akhirnya diabaikan, termasuk saat ia benar.
+    // Bawaannya sudah memuat ketiga kategori.
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->assertDontSee('belum ada paket');
 });
 
 test('menempel daftar nama membuang nomor urutnya', function () {

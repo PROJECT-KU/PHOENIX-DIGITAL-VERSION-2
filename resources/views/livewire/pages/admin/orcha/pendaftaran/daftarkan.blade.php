@@ -205,7 +205,17 @@ Daftarkan Rombongan || lemon
                                 {{-- Dikelompokkan menurut kategori, dan private trip
                                      serta study tour didahulukan: merekalah yang
                                      mengisi layar ini. Open trip tetap ada — sebagian
-                                     pemesanannya pun datang lewat telepon. --}}
+                                     pemesanannya pun datang lewat telepon.
+
+                                     KATEGORI YANG BELUM PUNYA PAKET TETAP DITULIS.
+
+                                     Sebelumnya grupnya dilewati begitu saja saat kosong,
+                                     dan itu membuat layarnya berbohong tentang dirinya
+                                     sendiri: admin yang mencari Study Tour tidak
+                                     menemukannya, lalu menyimpulkan study tour tidak
+                                     didukung — padahal yang kurang cuma paketnya belum
+                                     dibuat. Ketiadaan yang diam terbaca sebagai
+                                     ketidakmampuan. --}}
                                 @php
                                     $labelKategori = [
                                         'private_trip' => 'Private Trip',
@@ -213,23 +223,43 @@ Daftarkan Rombongan || lemon
                                         'open_trip' => 'Open Trip',
                                     ];
                                     $terkelompok = collect($pilihanPaket)->groupBy('kategori');
+                                    $kategoriKosong = collect($labelKategori)
+                                        ->reject(fn ($label, $kunci) => $terkelompok->has($kunci));
                                 @endphp
 
                                 @foreach ($labelKategori as $kunci => $label)
-                                    @if ($terkelompok->has($kunci))
-                                        <optgroup label="{{ $label }}">
-                                            @foreach ($terkelompok[$kunci] as $paket)
-                                                <option value="{{ $paket['id'] }}"
-                                                    @selected((string) $paketId === (string) $paket['id'])>
-                                                    {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
-                                                        · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
-                                                    @endif
-                                                </option>
-                                            @endforeach
-                                        </optgroup>
-                                    @endif
+                                    <optgroup label="{{ $label }}">
+                                        @forelse ($terkelompok[$kunci] ?? [] as $paket)
+                                            <option value="{{ $paket['id'] }}"
+                                                @selected((string) $paketId === (string) $paket['id'])>
+                                                {{ $paket['nama'] }}@if ($paket['tanggal_berangkat'])
+                                                    · {{ \Carbon\Carbon::parse($paket['tanggal_berangkat'])->locale('id')->translatedFormat('d M Y') }}
+                                                @endif
+                                            </option>
+                                        @empty
+                                            <option value="" disabled>
+                                                — belum ada paket {{ $label }} —
+                                            </option>
+                                        @endforelse
+                                    </optgroup>
                                 @endforeach
                             </select>
+                            {{-- Jalan keluarnya disebutkan, bukan cuma keadaannya.
+
+                                 "Belum ada paket Study Tour" tanpa memberi tahu ke mana
+                                 harus pergi meninggalkan admin di layar yang sama tanpa
+                                 langkah berikutnya. --}}
+                            @if ($kategoriKosong->isNotEmpty())
+                                <div class="form-text">
+                                    Belum ada paket {{ $kategoriKosong->values()->implode(' dan ') }}.
+                                    {{-- Tautannya ditulis rapat tanpa baris baru: Blade
+                                         meneruskan baris baru apa adanya, dan koma di
+                                         sebelahnya jadi terpisah spasi. --}}
+                                    <a href="{{ route('admin.orcha.paket.tambah') }}" wire:navigate>Buat paketnya dulu</a>,
+                                    lalu kembali ke sini.
+                                </div>
+                            @endif
+
                             @error('paketId')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
