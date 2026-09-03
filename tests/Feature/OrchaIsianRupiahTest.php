@@ -46,16 +46,99 @@ class OrchaIsianRupiahTest extends TestCase
         )));
     }
 
+    public function test_perapian_saat_diketik_dipasang_di_partial_bersama(): void
+    {
+        /*
+         | Perapian saat diketik dikerjakan di peramban, satu pendengar di
+         | document, dipasang lewat partial gaya yang disertakan seluruh layar
+         | Orcha.
+         |
+         | Yang diperiksa di sini PEMASANGANNYA, bukan perilakunya — perilaku
+         | JavaScript tidak bisa dijalankan PHPUnit. Algoritmanya sendiri
+         | dibuktikan dengan menjalankannya di peramban sungguhan: mengetik
+         | berurutan, menyisipkan digit di tengah sambil memeriksa posisi
+         | kursornya, mengetik huruf, mengosongkan, dan melewati batas digit.
+         |
+         | Yang bisa lepas tanpa suara justru pemasangannya: pemilihnya diubah,
+         | atau skripnya terhapus saat partialnya disunting, dan isiannya
+         | kembali menampilkan deretan angka tanpa satu pun galat.
+         */
+        $gaya = file_get_contents(
+            resource_path('views/livewire/pages/admin/orcha/partials/gaya.blade.php')
+        );
+
+        $this->assertStringContainsString('.orcha-rupiah input', $gaya,
+            'Pendengar perapian rupiah tidak lagi menyasar isian di dalam .orcha-rupiah.');
+
+        // Menempel di document, bukan di elemennya: Livewire menggambar ulang
+        // kotaknya kapan saja, dan pendengar yang menempel pada elemen ikut
+        // hilang bersamanya.
+        $this->assertStringContainsString("document.addEventListener('input'", $gaya,
+            'Pendengarnya tidak lagi menempel di document — akan hilang saat Livewire menggambar ulang.');
+
+        // Dipasang sekali walau partialnya disertakan berkali-kali: pendengar
+        // ganda memformat dua kali dan melempar kursornya dua kali pula.
+        $this->assertStringContainsString('__orchaRupiahTerpasang', $gaya,
+            'Penjaga pemasangan ganda hilang.');
+
+        // setSelectionRange itu yang menjaga kursornya. Tanpa itu, kursor
+        // melompat ke ujung tiap kali titik pemisah bertambah.
+        $this->assertStringContainsString('setSelectionRange', $gaya,
+            'Penjagaan posisi kursor hilang — kursor akan melompat ke ujung saat mengetik.');
+    }
+
+    public function test_skrip_bersama_tidak_memuat_kurung_sudut_pembuka(): void
+    {
+        /*
+         | Bug nyata, dan gagalnya di tempat yang sama sekali lain.
+         |
+         | strip_tags membaca kurung sudut pembuka sebagai awal sebuah tag lalu
+         | menelan segalanya sampai penutupnya — termasuk isi halaman yang sah.
+         | Livewire memakai strip_tags di assertSee, sehingga satu operator
+         | perbandingan di dalam skrip ini membuat uji layar LAIN gagal
+         | menemukan angka yang jelas-jelas tergambar.
+         |
+         | Ditemukan begitu: uji dasbor mendadak merah, dan sebabnya skrip di
+         | partial gaya yang tidak ada hubungannya dengan dasbor. Yang mencari
+         | sebabnya nanti akan mulai dari dasbor, dan tidak akan menemukan apa
+         | pun di sana.
+         |
+         | Perbandingannya dibalik — "a.length > b" alih-alih sebaliknya —
+         | supaya bahayanya hilang sama sekali, bukan sekadar dihindari sekali.
+         */
+        $gaya = file_get_contents(
+            resource_path('views/livewire/pages/admin/orcha/partials/gaya.blade.php')
+        );
+
+        $mulai = strrpos($gaya, '<script>') + strlen('<script>');
+        $badan = substr($gaya, $mulai, strrpos($gaya, '</script>') - $mulai);
+
+        $this->assertStringNotContainsString('<', $badan, implode("\n", [
+            'Skrip di partial gaya memuat kurung sudut pembuka.',
+            '',
+            'strip_tags akan menelan isi halaman sesudahnya, dan uji layar lain',
+            'gagal menemukan teks yang jelas-jelas tergambar — tanpa satu pun',
+            'petunjuk yang mengarah ke berkas ini.',
+            '',
+            'Balik perbandingannya: tulis "a.length > posisi", bukan sebaliknya.',
+        ]));
+    }
+
     public function test_isian_rupiah_memformat_lewat_blur_bukan_tiap_ketukan(): void
     {
         /*
-         | Memformat tiap ketukan membuat kursor melompat ke ujung setiap kali
-         | pemisah ribuan bertambah — dan yang membetulkan satu digit di tengah
-         | angka harus mengetik ulang seluruhnya.
+         | Perapian tampilannya dikerjakan peramban; yang ke server tetap
+         | menunggu isiannya ditinggalkan.
          |
-         | Diperiksa di berkas, bukan lewat perilaku: yang menentukan
-         | wire:model.blur, dan .live yang menyelinap masuk tidak menghasilkan
-         | galat apa pun — cuma isian yang menyebalkan dipakai.
+         | wire:model.live di sini berarti bolak-balik ke server tiap ketukan.
+         | Pada sambungan yang lambat isiannya tersendat, dan setiap balasan
+         | menggambar ulang kotaknya — kursor melompat ke ujung tepat saat
+         | orangnya sedang mengetik di tengah, persis hal yang penjagaan kursor
+         | di peramban dibuat untuk mencegahnya.
+         |
+         | Diperiksa di berkas, bukan lewat perilaku: .live yang menyelinap
+         | masuk tidak menghasilkan galat apa pun — cuma isian yang menyebalkan
+         | dipakai.
          */
         $berkas = array_merge(
             glob(resource_path('views/livewire/pages/admin/orcha/*.blade.php')) ?: [],

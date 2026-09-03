@@ -4550,3 +4550,91 @@
 
     .orcha-pratinjau-ket em { color: var(--orc-primer-2); font-style: normal; }
 </style>
+
+{{-- Isian rupiah dirapikan SAAT DIKETIK, di peramban.
+
+     Sebelumnya perapiannya dikerjakan server saat isian ditinggalkan
+     (wire:model.blur), dan selama mengetik yang terlihat "1000000" — deretan
+     angka yang harus dihitung nolnya dengan jari. Pada harga rundingan yang
+     dirapatkan lewat telepon, satu nol yang terlewat adalah selisih sepuluh
+     kali lipat.
+
+     DIKERJAKAN DI PERAMBAN, bukan dengan wire:model.live. Bolak-balik ke
+     server tiap ketukan membuat isiannya tersendat pada sambungan yang lambat,
+     dan setiap balasan menggambar ulang kotaknya — kursor melompat ke ujung
+     tepat saat orangnya sedang mengetik di tengah.
+
+     KURSORNYA DIJAGA. Menyetel value begitu saja memindahkan kursor ke ujung
+     setiap kali titik pemisah bertambah; yang membetulkan satu digit di tengah
+     angka lalu harus mengetik ulang seluruhnya. Yang dihitung DIGIT sebelum
+     kursor, bukan posisi hurufnya — posisi huruf bergeser saat titiknya
+     bertambah, digitnya tidak.
+
+     Dipasang sebagai satu pendengar di document, bukan per isian: Livewire
+     menggambar ulang kotaknya kapan saja, dan pendengar yang menempel pada
+     elemennya sendiri ikut hilang bersamanya tanpa ada yang menyadarinya.
+
+     Server tetap merapikan sekali lagi saat isiannya ditinggalkan — itu yang
+     membersihkan tempelan seperti "Rp 1.430.000,-" dan yang berlaku saat
+     JavaScript mati sama sekali. --}}
+<script>
+    (function () {
+        // Sekali saja walau partial ini disertakan lebih dari satu kali di
+        // satu halaman: pendengar ganda memformat dua kali dan kursornya
+        // dilempar dua kali pula.
+        if (window.__orchaRupiahTerpasang) return;
+        window.__orchaRupiahTerpasang = true;
+
+        /* Dikelompokkan sendiri, bukan lewat toLocaleString.
+           toLocaleString membaca setelan bahasa peramban — pada peramban
+           berbahasa Inggris pemisahnya jadi koma, dan angka yang sama tampil
+           berbeda di dua komputer di ruangan yang sama. */
+        function berTitik(angka) {
+            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        document.addEventListener('input', function (peristiwa) {
+            var kotak = peristiwa.target;
+
+            if (!kotak.matches || !kotak.matches('.orcha-rupiah input')) return;
+
+            var kursor = kotak.selectionStart;
+            var digitSebelumKursor = kotak.value.slice(0, kursor).replace(/\D/g, '').length;
+
+            // Dibatasi lima belas digit: di atas itu angkanya bukan rupiah
+            // yang masuk akal, dan yang mengetiknya hampir pasti keyboard yang
+            // tertahan.
+            var angka = kotak.value.replace(/\D/g, '').slice(0, 15);
+            var rapi = berTitik(angka);
+
+            if (rapi === kotak.value) return;
+
+            kotak.value = rapi;
+
+            /* Kursor diletakkan sesudah digit ke-N yang sama, berapa pun titik
+               yang sekarang menyelinap di antaranya.
+
+               TIDAK ADA TANDA KURUNG SUDUT PEMBUKA DI SELURUH SKRIP INI, dan
+               itu disengaja. strip_tags membacanya sebagai awal sebuah tag
+               lalu menelan segalanya sampai penutupnya — termasuk isi halaman
+               yang sah. Livewire memakai strip_tags di assertSee, sehingga
+               satu operator perbandingan di sini membuat uji layar LAIN gagal
+               menemukan angka yang jelas-jelas tergambar.
+
+               Ditemukan begitu: uji dasbor mendadak merah karena skrip di
+               berkas ini. Perbandingannya dibalik supaya bahayanya hilang
+               sama sekali, bukan sekadar dihindari sekali ini. */
+            var terhitung = 0;
+            var posisi = 0;
+
+            while (rapi.length > posisi && digitSebelumKursor > terhitung) {
+                if (/[0-9]/.test(rapi.charAt(posisi))) {
+                    terhitung++;
+                }
+                posisi++;
+            }
+
+            kotak.setSelectionRange(posisi, posisi);
+        });
+    })();
+</script>
