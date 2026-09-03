@@ -136,10 +136,25 @@ class OrchaClient
     private function bacaBalasan(\Illuminate\Http\Client\Response $balasan): array
     {
         if ($balasan->status() === 422) {
-            // Pesan galat per kolom dari Orcha sudah berbahasa Indonesia,
-            // jadi cukup diteruskan apa adanya ke admin.
+            /*
+             | Tiga bentuk, karena Orcha memang menolak lewat tiga jalur.
+             |
+             |   errors  — dari $request->validate(), satu pesan per kolom
+             |   pesan   — dari penolakan yang ditulis controller sendiri
+             |   message — dari abort(422, '...'), bentuk bawaan Laravel
+             |
+             | Yang ketiga sebelumnya tidak dibaca, dan itu menelan justru
+             | penolakan yang paling menjelaskan: "Nomor ini sudah punya kode
+             | rujukan: BUDI-K7QM" sampai ke admin sebagai "Isian ditolak oleh
+             | Orcha." Admin lalu menyunting kotak yang salah, menekan Simpan
+             | lagi, dan menduga sambungannya bermasalah.
+             |
+             | Pesannya sudah berbahasa Indonesia di sisi Orcha, jadi cukup
+             | diteruskan apa adanya.
+             */
             $pesan = collect($balasan->json('errors', []))->flatten()->first()
-                ?: $balasan->json('pesan');
+                ?: $balasan->json('pesan')
+                ?: $balasan->json('message');
 
             throw new OrchaTidakTerjangkau($pesan ?: 'Isian ditolak oleh Orcha.');
         }

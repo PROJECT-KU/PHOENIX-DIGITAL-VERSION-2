@@ -588,6 +588,9 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/promo-rombongan', \App\Livewire\Pages\Admin\Orcha\Promo\OrchaPromoList::class)
         ->name('admin.orcha.promo');
 
+    Route::get('/admin/orcha/kode-rujukan', \App\Livewire\Pages\Admin\Orcha\Rujukan\OrchaRujukanList::class)
+        ->name('admin.orcha.rujukan');
+
     Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
     // Tambah dan ubah destinasi punya halamannya sendiri: isiannya terlalu
     // banyak untuk jendela yang isinya harus digulung sendiri.

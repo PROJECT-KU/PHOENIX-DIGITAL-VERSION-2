@@ -459,6 +459,13 @@ new class extends Component
                                 // Bertetangga dengan Keuntungan Paket: keduanya
                                 // mengurus ANGKA jualannya, bukan isi paketnya.
                                 ['admin.orcha.promo', 'bi-gift', 'Promo Rombongan'],
+                                // Bertetangga dengan Promo Rombongan, dan itu
+                                // disengaja: keduanya menurunkan harga, dan yang
+                                // membuka salah satunya hampir selalu sedang
+                                // menimbang keduanya. Bedanya promo berlaku dalam
+                                // satu pendaftaran, rujukan berlaku lintas
+                                // pendaftaran.
+                                ['admin.orcha.rujukan', 'bi-share', 'Kode Rujukan'],
                                 ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
                                 // Bertetangga dengan Armada karena keduanya mengurus
                                 // unitnya, bukan penyewaannya: yang satu daftar unit,
