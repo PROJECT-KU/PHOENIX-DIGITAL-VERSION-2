@@ -466,6 +466,11 @@ new class extends Component
                                 // satu pendaftaran, rujukan berlaku lintas
                                 // pendaftaran.
                                 ['admin.orcha.rujukan', 'bi-share', 'Kode Rujukan'],
+                                // Pelanggan menyusul Kode Rujukan, bukan mendahului:
+                                // yang paling sering dikerjakan di sana justru
+                                // membagikan kode lewat WhatsApp, dan urutan ini
+                                // membacanya sebagai satu rangkaian.
+                                ['admin.orcha.pelanggan', 'bi-people', 'Pelanggan'],
                                 ['admin.orcha.armada', 'bi-bus-front', 'Armada'],
                                 // Bertetangga dengan Armada karena keduanya mengurus
                                 // unitnya, bukan penyewaannya: yang satu daftar unit,

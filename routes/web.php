@@ -591,6 +591,9 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/kode-rujukan', \App\Livewire\Pages\Admin\Orcha\Rujukan\OrchaRujukanList::class)
         ->name('admin.orcha.rujukan');
 
+    Route::get('/admin/orcha/pelanggan', \App\Livewire\Pages\Admin\Orcha\Pelanggan\OrchaPelangganList::class)
+        ->name('admin.orcha.pelanggan');
+
     Route::get('/admin/orcha/destinasi', OrchaEtalaseList::class)->name('admin.orcha.destinasi');
     // Tambah dan ubah destinasi punya halamannya sendiri: isiannya terlalu
     // banyak untuk jendela yang isinya harus digulung sendiri.
