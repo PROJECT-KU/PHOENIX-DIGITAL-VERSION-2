@@ -65,7 +65,17 @@
             <button type="button" class="ts-mini-btn reopen" title="Buka kembali untuk revisi" wire:click.stop="openReopen('{{ $task->id }}')"><i class="bi bi-arrow-counterclockwise"></i></button>
             @endif
             <button type="button" class="ts-mini-btn edit" title="Edit task" wire:click.stop="openEditTask('{{ $task->id }}')"><i class="bi bi-pencil"></i></button>
-            <button type="button" class="ts-mini-btn del" title="Hapus task" wire:click.stop="deleteTask('{{ $task->id }}')" wire:confirm="Hapus task ini? Tindakan tidak bisa dibatalkan."><i class="bi bi-trash"></i></button>
+            {{-- Konfirmasinya lewat SweetAlert, bukan wire:confirm.
+
+                 Dialog bawaan peramban menampilkan "127.0.0.1:8001 says" di atas
+                 kalimatnya — terbaca seperti peringatan sistem yang bocor, bukan
+                 bagian dari aplikasi. Penangannya di layout, jadi berlaku di
+                 seluruh layar admin tanpa perlu disalin ke sini. --}}
+            <button type="button" class="ts-mini-btn del pcek-konfirmasi" title="Hapus task"
+                data-action="deleteTask" data-arg="{{ $task->id }}"
+                data-title="Hapus task ini?"
+                data-text="Tindakan ini tidak bisa dibatalkan."
+                data-confirm="Ya, hapus" data-icon="warning"><i class="bi bi-trash"></i></button>
         </div>
         @endif
     </div>

@@ -51,7 +51,15 @@
                 </button>
                 @if($anyManage)
                 <button type="button" class="ts-mini-btn edit" title="Edit task grup" wire:click.stop="openEditTask('{{ $first->id }}')"><i class="bi bi-pencil"></i></button>
-                <button type="button" class="ts-mini-btn del" title="Hapus seluruh grup" wire:click.stop="deleteGroup('{{ $first->group_id }}')" wire:confirm="Hapus SELURUH grup task ini ({{ $total }} penerima)? Tidak bisa dibatalkan."><i class="bi bi-trash"></i></button>
+                {{-- Konfirmasinya lewat SweetAlert, bukan wire:confirm — lihat alasannya
+                     di task-card. Jumlah penerimanya disebut di kalimatnya: menghapus
+                     grup mengenai banyak orang sekaligus, dan angkanya yang membuat
+                     orang berhenti sebentar. --}}
+                <button type="button" class="ts-mini-btn del pcek-konfirmasi" title="Hapus seluruh grup"
+                    data-action="deleteGroup" data-arg="{{ $first->group_id }}"
+                    data-title="Hapus SELURUH grup task ini?"
+                    data-text="{{ $total }} penerima ikut kehilangan tasknya. Tindakan ini tidak bisa dibatalkan."
+                    data-confirm="Ya, hapus semua" data-icon="warning"><i class="bi bi-trash"></i></button>
                 @endif
                 <i class="bi ts-folder-chev" :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
             </div>

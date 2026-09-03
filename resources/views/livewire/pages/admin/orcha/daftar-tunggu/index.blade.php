@@ -143,9 +143,17 @@ Daftar Tunggu || lemon
                                                 <i class="bi bi-whatsapp"></i>
                                             </a>
 
-                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
-                                                wire:click="keluarkan({{ $baris['id'] }})"
-                                                wire:confirm="Keluarkan {{ $baris['nama'] }} dari daftar tunggu? Ia tidak akan dikabari lagi saat ada kursi terbuka."
+                                            {{-- Konfirmasinya lewat SweetAlert, bukan wire:confirm.
+
+                                                 Dialog bawaan peramban menampilkan
+                                                 "127.0.0.1:8001 says" di atas kalimatnya —
+                                                 terbaca seperti peringatan sistem yang bocor,
+                                                 bukan bagian dari aplikasi. --}}
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
+                                                data-action="keluarkan" data-arg="{{ $baris['id'] }}"
+                                                data-title="Keluarkan {{ addslashes($baris['nama']) }} dari daftar tunggu?"
+                                                data-text="Ia tidak akan dikabari lagi saat ada kursi terbuka."
+                                                data-confirm="Ya, keluarkan" data-icon="warning"
                                                 title="Keluarkan dari antrean">
                                                 <i class="bi bi-x-lg"></i>
                                             </button>

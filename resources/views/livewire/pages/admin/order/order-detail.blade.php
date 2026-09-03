@@ -1573,45 +1573,12 @@ Detail Pesanan || lemon
 
     // Konfirmasi seragam (SweetAlert glossy) untuk tombol ber-class .pcek-konfirmasi,
     // menggantikan wire:confirm bawaan browser. Aksi & teks diambil dari data-*.
-    if (!window.__pcekKonfirmasiBound) {
-        window.__pcekKonfirmasiBound = true;
-        document.addEventListener('click', function (e) {
-            const btn = e.target.closest('.pcek-konfirmasi');
-            if (!btn) return;
-            e.preventDefault();
+    /* Konfirmasi .pcek-konfirmasi TIDAK dipasang di sini lagi.
 
-            const method = btn.dataset.action;
-            const arg = btn.dataset.arg || null;
-            const component = btn.closest('[wire\\:id]');
-            if (!method || !component) return;
-
-            const jalankan = () => {
-                const lw = Livewire.find(component.getAttribute('wire:id'));
-                if (lw) arg ? lw.call(method, arg) : lw.call(method);
-            };
-
-            if (typeof Swal === 'undefined') { jalankan(); return; }
-
-            Swal.fire({
-                title: btn.dataset.title || 'Anda yakin?',
-                text: btn.dataset.text || '',
-                icon: btn.dataset.icon || 'question',
-                showCancelButton: true,
-                confirmButtonText: btn.dataset.confirm || 'Ya, lanjutkan',
-                cancelButtonText: 'Batal',
-                reverseButtons: true,
-                ...waGlossyConfig,
-                // waGlossyConfig tak mendefinisikan kelas tombol (buttonsStyling:false),
-                // jadi tombol akan polos. Sisipkan kelas glossy standar agar seragam
-                // dengan konfirmasi hapus di seluruh admin.
-                customClass: {
-                    ...waGlossyConfig.customClass,
-                    confirmButton: 'btn-glossy-confirm',
-                    cancelButton: 'btn-glossy-cancel',
-                },
-            }).then((r) => { if (r.isConfirmed) jalankan(); });
-        });
-    }
+       Penangannya pindah ke layout templateindex, satu salinan untuk seluruh
+       layar admin. Dua salinan yang sama membuat gayanya berbeda suatu saat —
+       dan dialog yang berbeda bentuk untuk tindakan yang sama berbahayanya
+       membuat orang berhenti membacanya. */
 
     function escapeHtml(str) {
         return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

@@ -618,4 +618,71 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+    {{-- Konfirmasi hapus SERAGAM untuk seluruh layar admin.
+
+         Dipasang di layout, bukan disalin ke tiap halaman. Sebelumnya
+         penangannya ada dua salinan — satu di partial skrip Orcha, satu di
+         detail pesanan — dan halaman lain yang tidak menyalinnya jatuh ke
+         wire:confirm bawaan peramban.
+
+         Dialog bawaan itu menampilkan "127.0.0.1:8001 says" di atas
+         kalimatnya. Terbaca seperti peringatan sistem yang bocor, bukan bagian
+         dari aplikasi — dan pada tindakan yang menghapus data, kepercayaan
+         pada dialognya ikut menentukan apakah orang membacanya atau menekan OK
+         begitu saja.
+
+         SATU salinan, di sini, supaya gayanya tidak pernah berbeda antara dua
+         halaman untuk tindakan yang sama berbahayanya.
+
+         INI BUKAN PENGAMAN. Siapa pun bisa memanggil metodenya langsung tanpa
+         melewati dialog ini; yang menjaga tetap pemeriksaan izin di server. --}}
+    <script data-navigate-once>
+        if (!window.__pcekKonfirmasiBound) {
+            window.__pcekKonfirmasiBound = true;
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.pcek-konfirmasi');
+                if (!btn) return;
+                e.preventDefault();
+
+                const method = btn.dataset.action;
+                const arg = btn.dataset.arg || null;
+                const component = btn.closest('[wire\\:id]');
+                if (!method || !component) return;
+
+                const jalankan = () => {
+                    const lw = Livewire.find(component.getAttribute('wire:id'));
+                    if (lw) arg ? lw.call(method, arg) : lw.call(method);
+                };
+
+                // SweetAlert belum termuat — tindakannya tetap jalan.
+                // Menahannya berarti tombol yang diam tanpa sebab, dan yang
+                // menekannya menyimpulkan aplikasinya rusak.
+                if (typeof Swal === 'undefined') { jalankan(); return; }
+
+                Swal.fire({
+                    title: btn.dataset.title || 'Anda yakin?',
+                    text: btn.dataset.text || '',
+                    icon: btn.dataset.icon || 'question',
+                    showCancelButton: true,
+                    confirmButtonText: btn.dataset.confirm || 'Ya, lanjutkan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    background: 'rgba(255,255,255,.96)',
+                    backdrop: 'rgba(31, 45, 61,.25)',
+                    // Tombolnya digaya kelas .btn-glossy-* milik lemon, jadi
+                    // gaya bawaan SweetAlert dimatikan supaya tidak bertumpuk.
+                    buttonsStyling: false,
+                    customClass: {
+                        popup: 'shadow rounded-4',
+                        confirmButton: 'btn-glossy-confirm',
+                        cancelButton: 'btn-glossy-cancel',
+                    },
+                }).then((r) => { if (r.isConfirmed) jalankan(); });
+            });
+        }
+    </script>
+@endpush
 @endsection

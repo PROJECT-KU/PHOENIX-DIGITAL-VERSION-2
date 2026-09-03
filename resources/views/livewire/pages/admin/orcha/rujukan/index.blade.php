@@ -271,9 +271,12 @@ Kode Rujukan || lemon
                                                 {{-- Menandai, bukan membayar: uangnya berpindah
                                                      lewat transfer di luar sistem. Yang dicatat di
                                                      sini pengakuan bahwa itu sudah terjadi. --}}
-                                                <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                                                    wire:click="bayar({{ $satu['id'] }})"
-                                                    wire:confirm="Tandai imbalan Rp {{ number_format($satu['imbalan'], 0, ',', '.') }} untuk {{ $satu['kode'] }} sudah dibayar? Penandaan ini tidak bisa dibatalkan.">
+                                                <button type="button"
+                                                    class="orcha-btn orcha-btn-lembut orcha-btn-kecil pcek-konfirmasi"
+                                                    data-action="bayar" data-arg="{{ $satu['id'] }}"
+                                                    data-title="Tandai imbalan Rp {{ number_format($satu['imbalan'], 0, ',', '.') }} sudah dibayar?"
+                                                    data-text="Untuk pendaftaran {{ $satu['kode'] }}. Penandaan ini tidak bisa dibatalkan."
+                                                    data-confirm="Ya, sudah dibayar" data-icon="warning">
                                                     <i class="bi bi-cash-coin"></i> Tandai dibayar
                                                 </button>
                                             @endif

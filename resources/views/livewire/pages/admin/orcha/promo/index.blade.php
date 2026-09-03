@@ -319,9 +319,21 @@ Promo Rombongan || lemon
                                                 <i class="bi bi-pencil"></i>
                                             </button>
 
-                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
-                                                wire:click="hapus({{ $baris['id'] }})"
-                                                wire:confirm="Hapus tingkat {{ $baris['min_peserta'] }} peserta? Rombongan sebesar itu akan turun ke tingkat di bawahnya."
+                                            {{-- Konfirmasinya lewat SweetAlert, bukan wire:confirm.
+
+                                                 Dialog bawaan peramban menampilkan
+                                                 "127.0.0.1:8001 says" di atas kalimatnya —
+                                                 terbaca seperti peringatan sistem yang bocor,
+                                                 bukan bagian dari aplikasi. Pola
+                                                 .pcek-konfirmasi sudah dipakai halaman Orcha
+                                                 lain; dipakai ulang supaya admin tidak melihat
+                                                 dua bentuk konfirmasi untuk tindakan yang sama
+                                                 berbahayanya. --}}
+                                            <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus pcek-konfirmasi"
+                                                data-action="hapus" data-arg="{{ $baris['id'] }}"
+                                                data-title="Hapus tingkat {{ $baris['min_peserta'] }} peserta?"
+                                                data-text="Rombongan sebesar itu akan turun ke tingkat di bawahnya."
+                                                data-confirm="Ya, hapus" data-icon="warning"
                                                 title="Hapus tingkat ini">
                                                 <i class="bi bi-trash"></i>
                                             </button>
