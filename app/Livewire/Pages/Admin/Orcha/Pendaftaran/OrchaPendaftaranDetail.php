@@ -45,6 +45,20 @@ class OrchaPendaftaranDetail extends Component
 
     public array $bayar = [];
 
+    /**
+     * Tangkapan layar mutasi rekening; BOLEH kosong.
+     *
+     * Bedanya dengan formulir publik: di sana bukti wajib karena tanpa gambar
+     * tidak ada yang bisa dicek. Di sini yang mencatat justru orang yang sudah
+     * mengecek — dan sebagian panitia memang cuma menulis "sudah ditransfer
+     * ya" tanpa tangkapan layar apa pun.
+     *
+     * Mewajibkannya berarti pembayaran yang nyata tidak bisa dicatat karena
+     * kurang sebuah gambar, dan yang terjadi berikutnya bukan admin mengejar
+     * gambarnya melainkan pembayarannya tidak dicatat sama sekali.
+     */
+    public $buktiBayar;
+
     public function mount(int $pendaftaran): void
     {
         $this->pendaftaranId = $pendaftaran;
@@ -81,6 +95,7 @@ class OrchaPendaftaranDetail extends Component
     public function tutupFormulirBayar(): void
     {
         $this->bukaBayar = false;
+        $this->buktiBayar = null;
         $this->kosongkanBayar();
     }
 
@@ -107,11 +122,13 @@ class OrchaPendaftaranDetail extends Component
             'bayar.atas_nama_pengirim' => 'required|string|max:120',
             'bayar.jenis' => 'required|string',
             'bayar.catatan' => 'nullable|string|max:1000',
+            'buktiBayar' => 'nullable|image|max:4096',
         ], [], [
             'bayar.nominal' => 'nominal',
             'bayar.tanggal_transfer' => 'tanggal transfer',
             'bayar.bank_pengirim' => 'bank pengirim',
             'bayar.atas_nama_pengirim' => 'atas nama pengirim',
+            'buktiBayar' => 'bukti transfer',
         ]);
 
         $nominal = $this->angkaDari($this->bayar['nominal']);
@@ -122,15 +139,34 @@ class OrchaPendaftaranDetail extends Component
             return;
         }
 
+        $isi = [
+            'nominal' => $nominal,
+            'tanggal_transfer' => $this->bayar['tanggal_transfer'],
+            'bank_pengirim' => $this->bayar['bank_pengirim'],
+            'atas_nama_pengirim' => $this->bayar['atas_nama_pengirim'],
+            'jenis' => $this->bayar['jenis'],
+            'catatan' => $this->bayar['catatan'] ?: null,
+        ];
+
         try {
-            $hasil = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pembayaran", [
-                'nominal' => $nominal,
-                'tanggal_transfer' => $this->bayar['tanggal_transfer'],
-                'bank_pengirim' => $this->bayar['bank_pengirim'],
-                'atas_nama_pengirim' => $this->bayar['atas_nama_pengirim'],
-                'jenis' => $this->bayar['jenis'],
-                'catatan' => $this->bayar['catatan'] ?: null,
-            ]);
+            /*
+             | Dua jalur karena unggah() memang menuntut sebuah berkas.
+             |
+             | unggah() mengirim multipart bernama dan meratakan seluruh
+             | nilainya jadi teks; kirim() mengirim JSON dengan tipe aslinya.
+             | Keduanya diterima Orcha — aturan integer di sana menerima
+             | "5000000" bertipe teks — tetapi memaksa multipart saat tidak ada
+             | berkasnya cuma menambah satu bentuk kiriman yang harus ikut
+             | dipikirkan setiap kali jalur ini disunting.
+             */
+            $hasil = $this->buktiBayar
+                ? $this->orcha()->unggah(
+                    "/pendaftaran/{$this->pendaftaranId}/pembayaran",
+                    'bukti',
+                    $this->buktiBayar,
+                    $isi,
+                )
+                : $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pembayaran", $isi);
 
             cache()->forget('orcha.perlu-ditindak');
 

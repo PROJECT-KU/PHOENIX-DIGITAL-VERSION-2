@@ -147,6 +147,26 @@ Detail Pendaftaran || lemon
                                     <i class="bi bi-file-earmark-spreadsheet"></i> Excel
                                 </a>
                             @endif
+
+                            {{-- Mencatat pembayaran adalah TINDAKAN, sama seperti
+                                 menghubungi pemesan — bukan keterangan yang menempel
+                                 pada ringkasan biaya.
+
+                                 Sebelumnya tombolnya terselip di bawah batang kemajuan
+                                 pembayaran, tempat mata membaca angka dan berhenti. Di
+                                 bilah ini ia sejajar dengan perkakas lain yang memang
+                                 dicari orang saat membuka halaman.
+
+                                 Disembunyikan saat sudah lunas atau batal: mencatat
+                                 pembayaran pada pesanan yang sudah selesai hampir selalu
+                                 salah orang. --}}
+                            @if (! $lunas && ($pendaftaran['status'] ?? '') !== 'batal')
+                                <button type="button" wire:click="bukaFormulirBayar"
+                                    class="orcha-btn orcha-btn-lembut orcha-aksi-sewa"
+                                    title="Untuk transfer yang dikabari lewat WhatsApp dan sudah Anda cocokkan dengan mutasi rekening">
+                                    <i class="bi bi-cash-coin"></i> Catat Pembayaran
+                                </button>
+                            @endif
                         </div>
 
                         {{-- Labelnya di samping, bukan di atas: sebaris supaya kartunya
@@ -265,18 +285,11 @@ Detail Pendaftaran || lemon
                              harus diabaikan mata, dan mencatat pembayaran pada
                              pesanan yang sudah lunas hampir selalu salah orang. --}}
                         @if (! $lunas && ($pendaftaran['status'] ?? '') !== 'batal')
-                            <div class="pt-3 mt-3 border-top">
-                                @if (! $bukaBayar)
-                                    <button type="button" wire:click="bukaFormulirBayar"
-                                        class="orcha-btn orcha-btn-lembut orcha-btn-kecil">
-                                        <i class="bi bi-cash-coin"></i>
-                                        Catat pembayaran diterima
-                                    </button>
-                                    <div class="text-muted mt-2" style="font-size:.76rem">
-                                        Untuk transfer yang dikabari lewat WhatsApp dan sudah Anda
-                                        cocokkan sendiri dengan mutasi rekening.
-                                    </div>
-                                @else
+                            {{-- Tombol pembukanya kini di bilah perkakas atas; yang
+                                 tinggal di sini formulirnya, tepat di bawah angka yang
+                                 sedang diubahnya. --}}
+                            <div @class(['pt-3 mt-3 border-top' => $bukaBayar])>
+                                @if ($bukaBayar)
                                     <div class="orcha-bagian-kepala">
                                         <div class="orcha-bagian-nomor"><i class="bi bi-cash-coin"></i></div>
                                         <div>
@@ -352,11 +365,45 @@ Detail Pendaftaran || lemon
                                             @enderror
                                         </div>
 
-                                        <div class="col-12">
+                                        <div class="col-12 col-lg-8">
                                             <label class="form-label small fw-semibold">Catatan <span class="text-muted fw-normal">(opsional)</span></label>
                                             <input type="text" maxlength="200" wire:model="bayar.catatan"
                                                 value="{{ $bayar['catatan'] }}" class="form-control"
                                                 placeholder="Cicilan ke-2, dana komite tahap 1, ...">
+                                        </div>
+
+                                        {{-- Bukti transfer, dan sengaja TIDAK wajib.
+
+                                             Di formulir publik bukti wajib karena tanpa gambar
+                                             tidak ada yang bisa dicek. Di sini yang mencatat
+                                             justru orang yang sudah mengecek — dan sebagian
+                                             panitia memang cuma menulis "sudah ditransfer ya"
+                                             tanpa tangkapan layar apa pun.
+
+                                             Mewajibkannya berarti pembayaran yang nyata tidak
+                                             bisa dicatat karena kurang sebuah gambar, dan yang
+                                             terjadi berikutnya bukan admin mengejar gambarnya
+                                             melainkan pembayarannya tidak dicatat sama sekali. --}}
+                                        <div class="col-12 col-lg-4">
+                                            <label class="form-label small fw-semibold">
+                                                Bukti transfer <span class="text-muted fw-normal">(opsional)</span>
+                                            </label>
+
+                                            <input type="file" accept="image/*" wire:model="buktiBayar"
+                                                class="form-control @error('buktiBayar') is-invalid @enderror">
+
+                                            <div wire:loading wire:target="buktiBayar" class="form-text">
+                                                <span class="spinner-border spinner-border-sm me-1" role="status"
+                                                    aria-hidden="true"></span>Mengunggah…
+                                            </div>
+
+                                            @error('buktiBayar')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @else
+                                                <div wire:loading.remove wire:target="buktiBayar" class="form-text">
+                                                    Tangkapan layar mutasi rekening, bila ada.
+                                                </div>
+                                            @enderror
                                         </div>
                                     </div>
 

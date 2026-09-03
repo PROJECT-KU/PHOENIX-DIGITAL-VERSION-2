@@ -89,10 +89,16 @@ beforeEach(function () {
     });
 });
 
-test('tombolnya ada selama belum lunas', function () {
+test('tombolnya ada di bilah perkakas selama belum lunas', function () {
+    /*
+     | Mencatat pembayaran adalah TINDAKAN, sama seperti menghubungi pemesan —
+     | bukan keterangan yang menempel pada ringkasan biaya. Terselip di bawah
+     | batang kemajuan pembayaran, ia berada di tempat mata membaca angka lalu
+     | berhenti.
+     */
     Livewire::actingAs(adminBayar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->assertSee('Catat pembayaran diterima');
+        ->assertSeeInOrder(['Excel', 'Catat Pembayaran', 'Total tagihan']);
 });
 
 test('tombolnya hilang begitu lunas', function () {
@@ -105,7 +111,7 @@ test('tombolnya hilang begitu lunas', function () {
 
     Livewire::actingAs(adminBayar())
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
-        ->assertDontSee('Catat pembayaran diterima');
+        ->assertDontSee('Catat Pembayaran');
 });
 
 test('atas nama pengirim terisi si pemesan lebih dulu', function () {
@@ -208,4 +214,71 @@ test('nominal nol ditahan di layar, bukan dikirim lalu ditolak Orcha', function 
         ->assertHasErrors('bayar.nominal');
 
     Http::assertNotSent(fn ($p) => $p->method() === 'POST');
+});
+
+test('bukti transfer bisa ikut diunggah, dan boleh kosong', function () {
+    /*
+     | Di formulir publik bukti wajib karena tanpa gambar tidak ada yang bisa
+     | dicek. Di sini yang mencatat justru orang yang SUDAH mengecek — dan
+     | sebagian panitia memang cuma menulis "sudah ditransfer ya".
+     |
+     | Mewajibkannya berarti pembayaran yang nyata tidak bisa dicatat karena
+     | kurang sebuah gambar, dan yang terjadi berikutnya bukan admin mengejar
+     | gambarnya melainkan pembayarannya tidak dicatat sama sekali.
+     */
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('bayar.nominal', '5000000')
+        ->set('bayar.bank_pengirim', 'BCA')
+        ->set('buktiBayar', \Illuminate\Http\UploadedFile::fake()->image('mutasi.jpg'))
+        ->call('catatBayar')
+        ->assertHasNoErrors();
+
+    // Dikirim sebagai multipart bernama "bukti", bukan JSON.
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/pembayaran')
+        && $p->hasFile('bukti'));
+});
+
+test('tanpa bukti, kirimannya JSON biasa — bukan multipart kosong', function () {
+    /*
+     | unggah() menuntut sebuah berkas dan meratakan seluruh nilainya jadi
+     | teks. Memaksanya saat tidak ada berkasnya cuma menambah satu bentuk
+     | kiriman yang harus ikut dipikirkan setiap kali jalur ini disunting.
+     */
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('bayar.nominal', '5000000')
+        ->set('bayar.bank_pengirim', 'BCA')
+        ->call('catatBayar')
+        ->assertHasNoErrors();
+
+    Http::assertSent(fn ($p) => str_contains($p->url(), '/pembayaran')
+        && ! $p->hasFile('bukti')
+        && $p['nominal'] === 5000000);
+});
+
+test('berkas yang bukan gambar ditolak di layar, bukan setelah terkirim', function () {
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('bayar.nominal', '5000000')
+        ->set('bayar.bank_pengirim', 'BCA')
+        ->set('buktiBayar', \Illuminate\Http\UploadedFile::fake()->create('daftar.pdf', 100, 'application/pdf'))
+        ->call('catatBayar')
+        ->assertHasErrors('buktiBayar');
+
+    Http::assertNotSent(fn ($p) => $p->method() === 'POST');
+});
+
+test('menutup formulir membuang buktinya, bukan menyisakannya', function () {
+    // Bukti yang tertinggal akan ikut terkirim pada pencatatan berikutnya —
+    // menempel pada pembayaran orang lain, dan tidak ada yang menyadarinya.
+    Livewire::actingAs(adminBayar())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 7])
+        ->call('bukaFormulirBayar')
+        ->set('buktiBayar', \Illuminate\Http\UploadedFile::fake()->image('mutasi.jpg'))
+        ->call('tutupFormulirBayar')
+        ->assertSet('buktiBayar', null);
 });
