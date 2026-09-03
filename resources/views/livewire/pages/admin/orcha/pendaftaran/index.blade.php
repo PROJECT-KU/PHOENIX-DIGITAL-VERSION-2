@@ -136,7 +136,15 @@ Pendaftaran Open Trip || lemon
 
                          Pada layar sempit ms-auto tidak berlaku dan keduanya turun
                          mengikuti sakelar; itu memang yang diinginkan. --}}
-                    <div class="d-flex gap-2 ms-lg-auto align-items-center" style="flex:0 1 auto">
+                    {{-- align-items-stretch, bukan center.
+
+                         Dipusatkan, tombolnya berhenti di tinggi alaminya (39px)
+                         sementara kartu sakelar di sebelahnya 70px — dua benda
+                         sebaris dengan tinggi yang jauh berbeda terbaca seperti yang
+                         satu menempel belakangan.
+
+                         Diregangkan, keduanya setinggi baris yang sama. --}}
+                    <div class="d-flex gap-2 ms-lg-auto align-items-stretch" style="flex:0 1 auto">
                         <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
                             class="orcha-btn orcha-btn-lembut orcha-btn-seragam"
                             title="Masukkan rombongan yang disepakati lewat WhatsApp">

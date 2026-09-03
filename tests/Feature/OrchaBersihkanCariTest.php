@@ -205,3 +205,27 @@ test('tombol di bilah saringan sama lebarnya', function () {
         ['', 'Tambahkan orcha-btn-seragam supaya tepi kanannya rata.'],
     )));
 });
+
+test('tombol tindakan setinggi kartu sakelar di sebelahnya', function () {
+    /*
+     | Dipusatkan, tombolnya berhenti di tinggi alaminya (39px) sementara
+     | kartu sakelar di sebelahnya 70px — dua benda sebaris dengan tinggi yang
+     | jauh berbeda terbaca seperti yang satu menempel belakangan.
+     |
+     | Yang dijaga pembungkusnya: align-items-center yang menyelinap masuk
+     | mengembalikan cacatnya tanpa satu pun galat. Tingginya sendiri diukur
+     | di peramban — 140x70 untuk keduanya — bukan dari berkas ini.
+     */
+    $isi = file_get_contents(
+        resource_path('views/livewire/pages/admin/orcha/pendaftaran/index.blade.php')
+    );
+
+    $bilah = substr($isi, 0, strpos($isi, 'orcha-gulung'));
+
+    $this->assertStringContainsString('ms-lg-auto align-items-stretch', $bilah,
+        'Pembungkus tombol tindakan tidak lagi meregangkan isinya — tombolnya akan '
+        .'berhenti di 39px sementara kartu sakelar di sebelahnya 70px.');
+
+    $this->assertStringNotContainsString('ms-lg-auto align-items-center', $bilah,
+        'Pembungkus tombol tindakan memusatkan isinya; pakai align-items-stretch.');
+});
