@@ -15,8 +15,8 @@ Pendaftaran Open Trip || lemon
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-lg-4">
                 <div class="row g-2">
-                    <div class="col-12 col-lg-4">
-                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode, nama, atau WhatsApp...'])
+                    <div class="col-12 col-lg-2">
+                        @include('livewire.pages.admin.orcha.partials.cari', ['petunjuk' => 'Cari kode, nama...'])
                     </div>
 
                     {{-- Saringan paket berdiri sendiri, tidak menumpang kotak cari.
@@ -59,6 +59,20 @@ Pendaftaran Open Trip || lemon
 
                          Tombolnya diberi tulisan, bukan ikon sendirian: yang jarang
                          dipakai justru yang paling perlu menyebut namanya. --}}
+                    {{-- Daftarkan rombongan: private trip dan study tour.
+
+                         Ditaruh di baris saringan bersama Manifes, bukan di kepala
+                         halaman: keduanya sama-sama tindakan yang berdiri sendiri,
+                         bukan cara melihat daftarnya. --}}
+                    <div class="col-12 col-lg-2 d-grid">
+                        <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
+                            class="orcha-btn orcha-btn-lembut justify-content-center"
+                            title="Masukkan rombongan yang disepakati lewat WhatsApp">
+                            <i class="bi bi-person-plus"></i>
+                            <span>Daftarkan</span>
+                        </a>
+                    </div>
+
                     @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
                         <div class="col-12 col-lg-2 d-grid">
                             <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"

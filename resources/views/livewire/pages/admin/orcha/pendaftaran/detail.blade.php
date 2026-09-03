@@ -606,6 +606,50 @@ Detail Pendaftaran || lemon
                                 </span>
                             </div>
 
+                            {{-- Tautan pengisian, siap dikirim ulang.
+
+                                 Yang paling sering diminta bukan pengiriman pertama
+                                 melainkan pengiriman ULANG, berhari-hari kemudian,
+                                 kepada peserta yang belum juga mengisi. Sebelum ini
+                                 admin merangkainya sendiri dari ingatan — dan kode
+                                 enam huruf acak yang salah satu hurufnya membawa
+                                 orang ke halaman yang menolaknya.
+
+                                 Muncul hanya selama masih ada yang belum mengisi:
+                                 tautan yang tetap terpampang setelah semuanya lengkap
+                                 cuma menambah benda yang harus diabaikan mata. --}}
+                            @if (! ($pendaftaran['kesehatan_lengkap'] ?? false) && ($pendaftaran['tautan_kesehatan'] ?? null))
+                                @php
+                                    $panggil = trim(explode(' ', trim($pendaftaran['nama'] ?? ''))[0] ?? '');
+
+                                    $pesanKesehatan = "Halo Kak {$panggil}, mohon tiap peserta mengisi riwayat "
+                                        . "kesehatan sebelum berangkat ya.\n\n"
+                                        . 'Kode pemesanan: ' . ($pendaftaran['kode'] ?? '') . "\n"
+                                        . $pendaftaran['tautan_kesehatan'] . "\n\n"
+                                        . 'Yang kami butuhkan golongan darah, alergi, dan kontak darurat.';
+
+                                    $waKesehatan = 'https://api.whatsapp.com/send?phone='
+                                        . preg_replace('/^0/', '62', preg_replace('/\D/', '', $pendaftaran['whatsapp'] ?? ''))
+                                        . '&text=' . rawurlencode($pesanKesehatan);
+                                @endphp
+
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-3 mb-3 rounded-4"
+                                    style="background:#f8fafc;border:1px solid #e2e8f0">
+                                    <div class="small text-break" style="min-width:0">
+                                        <div class="text-muted" style="font-size:.72rem">Tautan pengisian riwayat kesehatan</div>
+                                        <a href="{{ $pendaftaran['tautan_kesehatan'] }}" target="_blank" rel="noopener">
+                                            {{ $pendaftaran['tautan_kesehatan'] }}
+                                        </a>
+                                    </div>
+
+                                    <a href="{{ $waKesehatan }}" target="_blank" rel="noopener"
+                                        class="orcha-btn orcha-btn-lembut orcha-btn-kecil">
+                                        <i class="bi bi-whatsapp"></i>
+                                        Kirim ulang
+                                    </a>
+                                </div>
+                            @endif
+
                             @forelse ($peserta as $satu)
                                 @php
                                     $sudahIsi = ! in_array(mb_strtolower(trim($satu['nama'] ?? '')), $belumIsi, true);

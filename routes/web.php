@@ -521,6 +521,22 @@ Route::middleware('permission:akses_orcha')->group(function () {
     Route::get('/admin/orcha/dashboard', OrchaDashboard::class)->name('admin.orcha.dashboard');
     Route::get('/admin/orcha/pendaftaran', OrchaPendaftaranList::class)->name('admin.orcha.pendaftaran');
     Route::get('/admin/orcha/pendaftaran-manifes', [OrchaEksporController::class, 'manifesDaftar'])->name('admin.orcha.pendaftaran.manifes');
+    /*
+     | HARUS SEBELUM /{pendaftaran} — tanpa ini "daftarkan" terbaca sebagai
+     | nomor pendaftaran, dan halaman ini tidak pernah bisa dibuka.
+     |
+     | Jebakan yang sama sudah pernah kena di jalur API, pada "perhatian".
+     |
+     | Isinya: mendaftarkan rombongan private trip dan study tour. Keduanya
+     | tidak pernah lewat formulir publik — harganya dirundingkan dan seluruh
+     | percakapannya di WhatsApp. Tetapi begitu disepakati, rombongannya harus
+     | masuk sistem: tanpa itu ia tidak punya kode pemesanan, tidak bisa
+     | mengisi riwayat kesehatan, tidak masuk manifes, dan tidak terhitung di
+     | laporan keuntungan.
+     */
+    Route::get('/admin/orcha/pendaftaran/daftarkan', \App\Livewire\Pages\Admin\Orcha\Pendaftaran\OrchaDaftarkanRombongan::class)
+        ->name('admin.orcha.pendaftaran.daftarkan');
+
     Route::get('/admin/orcha/pendaftaran/{pendaftaran}', OrchaPendaftaranDetail::class)->name('admin.orcha.pendaftaran.detail');
     // Melengkapi nama peserta: halaman tersendiri, karena rombongan bisa berisi
     // puluhan orang dan daftar sepanjang itu sesak di dalam jendela kecil.
