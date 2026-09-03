@@ -173,3 +173,35 @@ test('bilah saringan tidak kembali ke grid dua belas kolom', function () {
         'Pakai flex: <div style="flex:1 1 170px"> dan seterusnya.',
     ]));
 });
+
+test('tombol di bilah saringan sama lebarnya', function () {
+    /*
+     | Lebarnya mengikuti panjang tulisannya sendiri kalau dibiarkan —
+     | "Manifes" keluar 112px sedangkan "Daftarkan" 126px. Bedanya kecil satu
+     | per satu, tetapi mata membaca tepi kanan sebuah deretan sebagai satu
+     | garis, dan garis yang bergerigi itu yang terlihat.
+     |
+     | Yang dijaga di sini KETIGANYA memakai penyeragamnya. Satu tombol baru
+     | yang lupa memakainya tidak menghasilkan galat apa pun — cuma satu tepi
+     | yang meleset, dan itu jenis cacat yang bertahan bertahun-tahun karena
+     | tidak pernah cukup mengganggu untuk dilaporkan.
+     */
+    $bilah = substr(
+        file_get_contents(resource_path('views/livewire/pages/admin/orcha/pendaftaran/index.blade.php')),
+        0,
+        strpos(file_get_contents(resource_path('views/livewire/pages/admin/orcha/pendaftaran/index.blade.php')), 'orcha-gulung')
+    );
+
+    preg_match_all('/class="orcha-btn[^"]*"/', $bilah, $cocok);
+
+    $tanpaSeragam = array_values(array_filter(
+        $cocok[0],
+        fn ($kelas) => ! str_contains($kelas, 'orcha-btn-seragam')
+    ));
+
+    $this->assertSame([], $tanpaSeragam, implode("\n", array_merge(
+        ['Tombol di bilah saringan tidak memakai penyeragam lebar:'],
+        $tanpaSeragam,
+        ['', 'Tambahkan orcha-btn-seragam supaya tepi kanannya rata.'],
+    )));
+});

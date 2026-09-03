@@ -4549,6 +4549,23 @@
     }
 
     .orcha-pratinjau-ket em { color: var(--orc-primer-2); font-style: normal; }
+
+    /* Tombol di bilah perkakas disamakan lebarnya.
+
+       Tanpa ini lebarnya mengikuti panjang tulisannya sendiri — "Manifes"
+       keluar 112px sedangkan "Daftarkan" 126px — dan deretan tombol yang
+       tepinya tidak rata terbaca seperti disusun terburu-buru. Bedanya kecil
+       satu per satu, tetapi mata membaca tepi kanan sebuah deretan sebagai
+       satu garis, dan garis yang bergerigi itu yang terlihat.
+
+       Hanya dari lg ke atas. Di layar sempit tombolnya melebar sendiri
+       memenuhi barisnya, dan lebar minimum di sana justru memaksanya
+       membungkus lebih awal daripada perlu. */
+    @media (min-width: 992px) {
+        .orcha-btn-seragam {
+            min-width: 8.75rem;
+        }
+    }
 </style>
 
 {{-- Isian rupiah dirapikan SAAT DIKETIK, di peramban.

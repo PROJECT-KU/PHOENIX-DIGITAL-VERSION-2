@@ -77,7 +77,7 @@ Pendaftaran Open Trip || lemon
                          bolak-balik setiap kali saringannya dinyalakan. --}}
                     @if ($this->adaSaringan())
                         <button type="button" wire:click="bersihkanSaringan"
-                            class="orcha-btn orcha-btn-lembut"
+                            class="orcha-btn orcha-btn-lembut orcha-btn-seragam"
                             title="Kosongkan pencarian, paket, status, dan saringan tagihan sekaligus">
                             <i class="bi bi-arrow-counterclockwise"></i>
                             <span>Bersihkan</span>
@@ -138,7 +138,7 @@ Pendaftaran Open Trip || lemon
                          mengikuti sakelar; itu memang yang diinginkan. --}}
                     <div class="d-flex gap-2 ms-lg-auto align-items-center" style="flex:0 1 auto">
                         <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
-                            class="orcha-btn orcha-btn-lembut"
+                            class="orcha-btn orcha-btn-lembut orcha-btn-seragam"
                             title="Masukkan rombongan yang disepakati lewat WhatsApp">
                             <i class="bi bi-person-plus"></i>
                             <span>Daftarkan</span>
@@ -146,7 +146,7 @@ Pendaftaran Open Trip || lemon
 
                         @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
                             <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
-                                class="orcha-btn orcha-btn-utama"
+                                class="orcha-btn orcha-btn-utama orcha-btn-seragam"
                                 title="Manifes tour leader untuk daftar yang sedang tampil">
                                 <i class="bi bi-filetype-pdf"></i>
                                 <span>Manifes</span>
