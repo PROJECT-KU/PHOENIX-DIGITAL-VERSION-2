@@ -84,29 +84,6 @@ Pendaftaran Open Trip || lemon
                         </button>
                     @endif
 
-                    {{-- Tindakan didorong ke kanan, terpisah dari saringan.
-
-                         Daftarkan dan Manifes bukan cara MELIHAT daftar melainkan
-                         hal yang dikerjakan terhadapnya. Pada layar sempit ms-auto
-                         tidak berlaku dan keduanya turun mengikuti yang lain —
-                         itu memang yang diinginkan. --}}
-                    <div class="d-flex gap-2 ms-lg-auto" style="flex:0 1 auto">
-                        <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
-                            class="orcha-btn orcha-btn-lembut"
-                            title="Masukkan rombongan yang disepakati lewat WhatsApp">
-                            <i class="bi bi-person-plus"></i>
-                            <span>Daftarkan</span>
-                        </a>
-
-                        @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
-                            <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
-                                class="orcha-btn orcha-btn-utama"
-                                title="Manifes tour leader untuk daftar yang sedang tampil">
-                                <i class="bi bi-filetype-pdf"></i>
-                                <span>Manifes</span>
-                            </a>
-                        @endif
-                    </div>
                 </div>
 
                 {{-- Saringan tagihan berdiri sendiri di barisnya, bukan jadi
@@ -121,8 +98,20 @@ Pendaftaran Open Trip || lemon
                      Pengingat pelunasan sudah dikirim sistem tiap pagi. Yang
                      tersisa di daftar ini justru yang sudah dikirimi dan tetap
                      diam — dan itu cuma bisa diselesaikan lewat telepon. --}}
-                <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-                    <label class="orcha-sakelar-kartu {{ $perluDitagih ? 'nyala' : '' }} mb-0" style="flex:1 1 320px">
+                {{-- Sakelar dan tindakan SEBARIS.
+
+                     Baris pertama sudah penuh oleh empat saringan, dan memaksa
+                     Daftarkan serta Manifes ikut di sana membuat salah satunya
+                     terlempar sendirian ke baris kedua — bergesernya terjadi persis
+                     saat saringan dinyalakan, yaitu saat admin sedang menekan
+                     tombol.
+
+                     Turun ke sini, keduanya sejajar dengan sakelar dan barisnya
+                     tetap satu. Sakelarnya menyusut mengikuti ruang yang tersisa;
+                     lebar dasarnya 260px, cukup untuk judul dan keterangannya
+                     sebelum ia mulai membungkus. --}}
+                <div class="d-flex flex-wrap align-items-stretch gap-2 mt-3">
+                    <label class="orcha-sakelar-kartu {{ $perluDitagih ? 'nyala' : '' }} mb-0" style="flex:1 1 260px">
                         <span class="rupa">
                             <i class="bi {{ $perluDitagih ? 'bi-telephone-outbound' : 'bi-cash-coin' }}"></i>
                         </span>
@@ -140,6 +129,30 @@ Pendaftaran Open Trip || lemon
                             <input class="form-check-input" type="checkbox" role="switch" wire:model.live="perluDitagih">
                         </span>
                     </label>
+
+                    {{-- Daftarkan dan Manifes bukan cara MELIHAT daftar melainkan hal
+                         yang dikerjakan terhadapnya — karena itu terpisah dari
+                         saringan di atas, dan didorong ke ujung kanan.
+
+                         Pada layar sempit ms-auto tidak berlaku dan keduanya turun
+                         mengikuti sakelar; itu memang yang diinginkan. --}}
+                    <div class="d-flex gap-2 ms-lg-auto align-items-center" style="flex:0 1 auto">
+                        <a href="{{ route('admin.orcha.pendaftaran.daftarkan') }}" wire:navigate
+                            class="orcha-btn orcha-btn-lembut"
+                            title="Masukkan rombongan yang disepakati lewat WhatsApp">
+                            <i class="bi bi-person-plus"></i>
+                            <span>Daftarkan</span>
+                        </a>
+
+                        @if (auth()->user()->hasPermission('view_orcha_kesehatan'))
+                            <a href="{{ route('admin.orcha.pendaftaran.manifes', $this->saringanTampil()) }}"
+                                class="orcha-btn orcha-btn-utama"
+                                title="Manifes tour leader untuk daftar yang sedang tampil">
+                                <i class="bi bi-filetype-pdf"></i>
+                                <span>Manifes</span>
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
                 {{-- Keterangannya tinggal di bawah; tombolnya sudah naik ke baris
