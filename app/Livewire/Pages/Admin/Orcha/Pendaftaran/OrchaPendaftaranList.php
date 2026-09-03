@@ -26,6 +26,25 @@ class OrchaPendaftaranList extends Component
     }
 
     /**
+     * Saringan "perlu ditagih": sudah bayar DP, tanggalnya sudah dekat.
+     *
+     * Ini daftar yang perlu dikejar orang. Pengingat otomatis sudah mengurus
+     * yang bergerak setelah membaca suratnya; yang tersisa di sini justru yang
+     * TIDAK bergerak — dan itu cuma bisa diselesaikan lewat telepon.
+     *
+     * Sebelum ada saringan ini, satu-satunya cara menemukannya adalah membuka
+     * pendaftaran satu per satu dan menghitung tanggalnya di kepala.
+     * Pekerjaannya cukup melelahkan sehingga tidak pernah benar-benar
+     * dikerjakan, dan uangnya menguap tanpa ada yang menyadarinya.
+     */
+    public bool $perluDitagih = false;
+
+    public function updatedPerluDitagih(): void
+    {
+        $this->halaman = 1;
+    }
+
+    /**
      * Saringan paket ikut dikosongkan.
      *
      * Menimpa milik trait: halaman ini punya saringan ketiga, dan tombol yang
@@ -34,13 +53,14 @@ class OrchaPendaftaranList extends Component
      */
     public function bersihkanSaringan(): void
     {
-        $this->reset(['cari', 'filterStatus', 'filterPaket']);
+        $this->reset(['cari', 'filterStatus', 'filterPaket', 'perluDitagih']);
         $this->halaman = 1;
     }
 
     public function adaSaringan(): bool
     {
-        return $this->cari !== '' || $this->filterStatus !== '' || $this->filterPaket !== '';
+        return $this->cari !== '' || $this->filterStatus !== '' || $this->filterPaket !== ''
+            || $this->perluDitagih;
     }
 
     /** Saringan yang sedang berlaku — dipakai daftar maupun tautan manifes. */
@@ -50,6 +70,9 @@ class OrchaPendaftaranList extends Component
             'cari' => $this->cari,
             'status' => $this->filterStatus,
             'paket_id' => $this->filterPaket,
+            // Dikirim hanya saat menyala. Mengirim 0 membuat Orcha membaca
+            // parameternya ada, dan daftar biasa ikut tersaring.
+            'perlu_ditagih' => $this->perluDitagih ? 1 : '',
         ], fn ($nilai) => $nilai !== '' && $nilai !== null);
     }
 
@@ -60,7 +83,10 @@ class OrchaPendaftaranList extends Component
 
     public function render()
     {
-        $hasil = $this->muat('/pendaftaran', $this->parameterDaftar(['paket_id' => $this->filterPaket]));
+        $hasil = $this->muat('/pendaftaran', $this->parameterDaftar(array_filter([
+            'paket_id' => $this->filterPaket,
+            'perlu_ditagih' => $this->perluDitagih ? 1 : null,
+        ], fn ($nilai) => $nilai !== null && $nilai !== '')));
 
         return view('livewire.pages.admin.orcha.pendaftaran.index', [
             'daftar' => $hasil['data'] ?? [],

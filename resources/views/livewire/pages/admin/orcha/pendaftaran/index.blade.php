@@ -71,6 +71,39 @@ Pendaftaran Open Trip || lemon
                     @endif
                 </div>
 
+                {{-- Saringan tagihan berdiri sendiri di barisnya, bukan jadi
+                     pilihan keempat di dalam kotak status.
+
+                     Yang ini bukan cara MELIHAT daftar, melainkan daftar
+                     pekerjaan: siapa yang harus ditelepon hari ini. Menaruhnya
+                     sejajar dengan "Semua status" membuatnya tenggelam jadi
+                     salah satu dari sekian pilihan, dan pekerjaan yang tidak
+                     terlihat tidak pernah dikerjakan.
+
+                     Pengingat pelunasan sudah dikirim sistem tiap pagi. Yang
+                     tersisa di daftar ini justru yang sudah dikirimi dan tetap
+                     diam — dan itu cuma bisa diselesaikan lewat telepon. --}}
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+                    <label class="orcha-sakelar-kartu {{ $perluDitagih ? 'nyala' : '' }} mb-0" style="flex:1 1 320px">
+                        <span class="rupa">
+                            <i class="bi {{ $perluDitagih ? 'bi-telephone-outbound' : 'bi-cash-coin' }}"></i>
+                        </span>
+                        <span class="isi">
+                            <span class="judul">
+                                {{ $perluDitagih ? 'Sedang melihat yang perlu ditagih' : 'Perlu ditagih' }}
+                            </span>
+                            <span class="ket">
+                                {{ $perluDitagih
+                                    ? ($meta['total'] ?? 0) . ' pendaftaran sudah bayar DP tetapi belum lunas, dan tanggalnya sudah dekat. Yang paling mepet di atas.'
+                                    : 'Sudah bayar DP, belum lunas, dan tanggalnya sudah dekat.' }}
+                            </span>
+                        </span>
+                        <span class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" wire:model.live="perluDitagih">
+                        </span>
+                    </label>
+                </div>
+
                 {{-- Muncul hanya saat ada saringan yang hidup. Tiga saringan yang
                      dipasang berurutan mudah membuat daftarnya kosong tanpa
                      ketahuan mana penyebabnya; satu tombol mengembalikannya. --}}
@@ -134,6 +167,29 @@ Pendaftaran Open Trip || lemon
                                         {{-- Rombongan tanpa nama peserta tidak masuk manifes
                                              panggil-nama. Ditandai di sini supaya bisa dicari
                                              sebelum hari berangkat, bukan ditemukan di lapangan. --}}
+                                        {{-- Hanya saat daftar tagihan menyala.
+
+                                             Yang mengangkat telepon perlu tahu mana yang sudah
+                                             menerima surat pengingat dan tetap diam, dan mana
+                                             yang memang belum pernah dihubungi sama sekali. Dua
+                                             keadaan itu menuntut kalimat pembuka yang berbeda —
+                                             menanyakan "sudah terima email kami?" kepada orang
+                                             yang belum dikirimi membuat kita terdengar seperti
+                                             sedang mengarang. --}}
+                                        @if ($perluDitagih)
+                                            @if (! empty($baris['pengingat_pelunasan_pada']))
+                                                <div class="text-muted mt-1" style="font-size:.72rem">
+                                                    <i class="bi bi-envelope-check"></i>
+                                                    diingatkan
+                                                    {{ \Carbon\Carbon::parse($baris['pengingat_pelunasan_pada'])->locale('id')->diffForHumans() }}
+                                                </div>
+                                            @else
+                                                <div class="text-muted mt-1" style="font-size:.72rem">
+                                                    <i class="bi bi-envelope"></i> belum diingatkan
+                                                </div>
+                                            @endif
+                                        @endif
+
                                         @if (empty($baris['peserta']))
                                             {{-- Cipnya sekaligus jalan keluarnya: sekali klik
                                                  langsung ke halaman pengisian nama, tanpa mampir

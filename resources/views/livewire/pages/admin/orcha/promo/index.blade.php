@@ -93,6 +93,19 @@ Promo Rombongan || lemon
                         $min = (int) ($isian['min_peserta'] ?: 0);
                         $nilai = (int) (($jenis === 'gratis' ? $isian['gratis_orang'] : $isian['potongan_persen']) ?: 0);
                         $siap = $min > 0 && $nilai > 0;
+
+                        /* Dua angka untuk satu tingkat, dan keduanya perlu terlihat.
+
+                           Yang DIBANDINGKAN sistem jumlah peserta pendaftaran — pemesannya
+                           ikut terhitung. Yang DIUCAPKAN orang jumlah rekan: "ajak 5 dapat
+                           diskon" berarti enam orang berangkat.
+
+                           Selisihnya cuma satu, dan justru karena cuma satu ia lolos dari
+                           pemeriksaan mata. Admin yang mengetik 5 sambil membayangkan "ajak
+                           5 rekan" memberi potongan satu tingkat lebih murah kepada setiap
+                           rombongan berlima — tanpa ada yang menyadarinya sampai laporan
+                           keuntungan turun. */
+                        $rekan = max(1, $min - 1);
                     @endphp
 
                     {{-- Isian di kiri, pratinjau di kanan.
@@ -108,8 +121,21 @@ Promo Rombongan || lemon
                                     <label class="form-label small fw-semibold">Minimal peserta <span class="text-danger">*</span></label>
                                     <input type="number" min="2" max="100" wire:model.live.debounce.400ms="isian.min_peserta"
                                         class="form-control @error('isian.min_peserta') is-invalid @enderror"
-                                        placeholder="10">
-                                    <div class="form-text">Rombongan sebanyak ini atau lebih.</div>
+                                        placeholder="6">
+
+                                    {{-- Terjemahannya ditampilkan hidup, bukan cuma
+                                         dijelaskan sekali di keterangan.
+
+                                         Keterangan dibaca sekali lalu dilupakan; angka yang
+                                         berubah mengikuti ketikan tidak bisa dilupakan. --}}
+                                    @if ($min >= 2)
+                                        <div class="form-text text-success-emphasis fw-semibold">
+                                            <i class="bi bi-arrow-return-right"></i>
+                                            pemesan mengajak {{ $rekan }} rekan
+                                        </div>
+                                    @else
+                                        <div class="form-text">Termasuk pemesannya. Ajak 5 rekan berarti isi 6.</div>
+                                    @endif
                                     @error('isian.min_peserta')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
@@ -183,9 +209,9 @@ Promo Rombongan || lemon
                                 @if ($siap)
                                     <div class="orcha-pratinjau-judul">
                                         @if ($jenis === 'gratis')
-                                            Ajak {{ $min }} orang — gratis {{ $nilai }} orang
+                                            Ajak {{ $rekan }} rekan — gratis {{ $nilai }} orang
                                         @else
-                                            Ajak {{ $min }} orang — potongan {{ $nilai }}% untuk pemesan
+                                            Ajak {{ $rekan }} rekan — potongan {{ $nilai }}% untuk pemesan
                                         @endif
                                     </div>
 
@@ -193,11 +219,15 @@ Promo Rombongan || lemon
                                         Yang belum mencapainya membaca:
                                         <em>
                                             @if ($jenis === 'gratis')
-                                                "Ajak {{ $min }} orang, {{ $nilai }} orang gratis."
+                                                "Ajak {{ $rekan }} rekan, {{ $nilai }} orang gratis."
                                             @else
-                                                "Ajak {{ $min }} orang, Anda dapat potongan {{ $nilai }}%."
+                                                "Ajak {{ $rekan }} rekan, Anda dapat potongan {{ $nilai }}%."
                                             @endif
                                         </em>
+                                    </div>
+
+                                    <div class="orcha-pratinjau-ket mt-2">
+                                        Berlaku mulai <strong>{{ $min }} peserta</strong> dalam satu pendaftaran.
                                     </div>
                                 @else
                                     <div class="orcha-pratinjau-ket">
@@ -247,7 +277,10 @@ Promo Rombongan || lemon
                         <tbody>
                             @forelse ($daftar as $baris)
                                 <tr wire:key="promo-{{ $baris['id'] }}">
-                                    <td class="ps-4 fw-bold">{{ $baris['min_peserta'] }} orang</td>
+                                    <td class="ps-4">
+                                        <div class="fw-bold">{{ $baris['min_peserta'] }} peserta</div>
+                                        <div class="text-muted small">ajak {{ max(1, (int) $baris['min_peserta'] - 1) }} rekan</div>
+                                    </td>
 
                                     <td>
                                         @if (($baris['gratis_orang'] ?? 0) > 0)
@@ -288,7 +321,7 @@ Promo Rombongan || lemon
 
                                             <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-hapus"
                                                 wire:click="hapus({{ $baris['id'] }})"
-                                                wire:confirm="Hapus tingkat {{ $baris['min_peserta'] }} orang? Rombongan sebesar itu akan turun ke tingkat di bawahnya."
+                                                wire:confirm="Hapus tingkat {{ $baris['min_peserta'] }} peserta? Rombongan sebesar itu akan turun ke tingkat di bawahnya."
                                                 title="Hapus tingkat ini">
                                                 <i class="bi bi-trash"></i>
                                             </button>
