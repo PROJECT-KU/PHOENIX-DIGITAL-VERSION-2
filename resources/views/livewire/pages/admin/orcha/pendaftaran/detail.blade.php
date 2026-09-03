@@ -186,7 +186,16 @@ Detail Pendaftaran || lemon
                                 ['Total tagihan', $tagihan['total_teks'], '', 'bi-receipt'],
                                 ['Sudah dibayar', $tagihan['sudah_teks'], 'lunas', 'bi-cash-coin'],
                                 ['Sisa', $tagihan['sisa_teks'], ($tagihan['lunas'] ?? false) ? 'lunas' : 'sisa', 'bi-hourglass-split'],
-                                ['Peserta', $pendaftaran['jumlah_peserta'] . ' orang', '', 'bi-people'],
+                                /* Dua angka yang memang berbeda, dan keduanya disebut.
+
+                                   "42 orang" pada rombongan yang dua di antaranya guru
+                                   pendamping gratis membuat siapa pun mengalikannya dengan
+                                   harga satuan dan mendapat angka yang tidak cocok dengan
+                                   total tagihan di sebelahnya — lalu menyimpulkan salah
+                                   satunya salah. */
+                                ['Peserta', ($pendaftaran['pendamping_gratis'] ?? 0) > 0
+                                    ? $pendaftaran['jumlah_peserta'].' orang · '.$pendaftaran['peserta_dibayar'].' ditagih'
+                                    : $pendaftaran['jumlah_peserta'].' orang', '', 'bi-people'],
                             ] as [$label, $nilai, $kelas, $ikon])
                                 <div class="col-6 col-lg-3">
                                     <div class="orcha-ringkas {{ $kelas }}">
@@ -240,7 +249,134 @@ Detail Pendaftaran || lemon
                                     </span>
                                 @endif
                             </div>
-                        </div>                    </div>
+                        </div>
+
+                        {{-- Mencatat pembayaran yang diterima admin sendiri.
+
+                             Private trip dan study tour tidak lewat formulir
+                             konfirmasi publik: panitia mentransfer lalu mengabari
+                             lewat WhatsApp, kadang tanpa tangkapan layar. Yang
+                             memastikan uangnya masuk adalah admin yang membuka
+                             mutasi rekening — dan sebelum ini pemeriksaan itu
+                             tidak punya tempat pulang.
+
+                             Disembunyikan saat sudah lunas: tombol yang selalu ada
+                             tetapi tidak selalu berguna hanya menambah benda yang
+                             harus diabaikan mata, dan mencatat pembayaran pada
+                             pesanan yang sudah lunas hampir selalu salah orang. --}}
+                        @if (! $lunas && ($pendaftaran['status'] ?? '') !== 'batal')
+                            <div class="pt-3 mt-3 border-top">
+                                @if (! $bukaBayar)
+                                    <button type="button" wire:click="bukaFormulirBayar"
+                                        class="orcha-btn orcha-btn-lembut orcha-btn-kecil">
+                                        <i class="bi bi-cash-coin"></i>
+                                        Catat pembayaran diterima
+                                    </button>
+                                    <div class="text-muted mt-2" style="font-size:.76rem">
+                                        Untuk transfer yang dikabari lewat WhatsApp dan sudah Anda
+                                        cocokkan sendiri dengan mutasi rekening.
+                                    </div>
+                                @else
+                                    <div class="orcha-bagian-kepala">
+                                        <div class="orcha-bagian-nomor"><i class="bi bi-cash-coin"></i></div>
+                                        <div>
+                                            <div class="orcha-bagian-judul">Catat pembayaran diterima</div>
+                                            <div class="orcha-bagian-sub">
+                                                Langsung terhitung sebagai diterima — yang dicatat di sini
+                                                adalah hasil pemeriksaan Anda sendiri, bukan klaim pelanggan
+                                                yang masih perlu dicek. Tercatat di jejak audit atas nama Anda.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3">
+                                        <div class="col-12 col-lg-4">
+                                            <label class="form-label small fw-semibold">Nominal <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">Rp</span>
+                                                <input type="number" min="1" wire:model="bayar.nominal"
+                                                    value="{{ $bayar['nominal'] }}"
+                                                    class="form-control @error('bayar.nominal') is-invalid @enderror">
+                                            </div>
+                                            @error('bayar.nominal')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-12 col-lg-4">
+                                            <label class="form-label small fw-semibold">Tanggal transfer <span class="text-danger">*</span></label>
+                                            <input type="date" wire:model="bayar.tanggal_transfer"
+                                                value="{{ $bayar['tanggal_transfer'] }}"
+                                                max="{{ now()->toDateString() }}"
+                                                class="form-control @error('bayar.tanggal_transfer') is-invalid @enderror">
+                                            @error('bayar.tanggal_transfer')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-12 col-lg-4">
+                                            <label class="form-label small fw-semibold">Jenis <span class="text-danger">*</span></label>
+                                            <select wire:model="bayar.jenis" class="form-select">
+                                                @foreach ($pilihanJenisBayar as $kunci => $label)
+                                                    <option value="{{ $kunci }}" @selected($bayar['jenis'] === $kunci)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div class="col-12 col-lg-4">
+                                            <label class="form-label small fw-semibold">Bank pengirim <span class="text-danger">*</span></label>
+                                            <input type="text" maxlength="60" wire:model="bayar.bank_pengirim"
+                                                value="{{ $bayar['bank_pengirim'] }}" placeholder="BCA"
+                                                class="form-control @error('bayar.bank_pengirim') is-invalid @enderror">
+                                            @error('bayar.bank_pengirim')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-12 col-lg-8">
+                                            <label class="form-label small fw-semibold">Atas nama pengirim <span class="text-danger">*</span></label>
+                                            <input type="text" maxlength="120" wire:model="bayar.atas_nama_pengirim"
+                                                value="{{ $bayar['atas_nama_pengirim'] }}"
+                                                class="form-control @error('bayar.atas_nama_pengirim') is-invalid @enderror">
+                                            {{-- Keduanya yang dipakai mencocokkan dengan mutasi
+                                                 rekening saat ada yang mempersoalkan. Catatan
+                                                 uang tanpa asal-usulnya cuma angka yang harus
+                                                 dipercaya. --}}
+                                            <div class="form-text">Sesuai yang tertera di mutasi rekening.</div>
+                                            @error('bayar.atas_nama_pengirim')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label small fw-semibold">Catatan <span class="text-muted fw-normal">(opsional)</span></label>
+                                            <input type="text" maxlength="200" wire:model="bayar.catatan"
+                                                value="{{ $bayar['catatan'] }}" class="form-control"
+                                                placeholder="Cicilan ke-2, dana komite tahap 1, ...">
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2 justify-content-end pt-3 mt-3 border-top">
+                                        <button type="button" wire:click="tutupFormulirBayar"
+                                            class="orcha-btn orcha-btn-lembut">Batal</button>
+
+                                        <button type="button" wire:click="catatBayar"
+                                            wire:loading.attr="disabled" wire:target="catatBayar"
+                                            class="orcha-btn orcha-btn-utama">
+                                            <span wire:loading.remove wire:target="catatBayar">
+                                                <i class="bi bi-check2-circle"></i>
+                                                Catat pembayaran
+                                            </span>
+                                            <span wire:loading wire:target="catatBayar">
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"
+                                                    aria-hidden="true"></span>Menyimpan…
+                                            </span>
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                 </div>
             @endif
 

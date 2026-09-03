@@ -112,10 +112,27 @@ Daftar Peserta || lemon
                     <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
                         <i class="bi bi-people-fill text-primary"></i> Nama Peserta
                     </h2>
-                    <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
-                        wire:click="tambahBaris">
-                        <i class="bi bi-plus-lg"></i> Tambah baris
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                        {{-- Sakelar pembagian bus & kamar.
+
+                             Disembunyikan sampai diminta: untuk open trip berlima,
+                             dua kolom yang selalu kosong hanya menyempitkan kolom
+                             nama. Menyala sendiri bila pembagiannya sudah ada —
+                             yang membuka rombongan yang sudah dibagi tidak boleh
+                             melihat pembagiannya lenyap. --}}
+                        <button type="button"
+                            class="orcha-btn orcha-btn-kecil {{ $bagiKelompok ? 'orcha-btn-utama' : 'orcha-btn-lembut' }}"
+                            wire:click="$toggle('bagiKelompok')"
+                            title="Tampilkan kolom pembagian bus dan kamar">
+                            <i class="bi bi-bus-front"></i>
+                            {{ $bagiKelompok ? 'Sedang membagi bus & kamar' : 'Bagi bus & kamar' }}
+                        </button>
+
+                        <button type="button" class="orcha-btn orcha-btn-lembut orcha-btn-kecil"
+                            wire:click="tambahBaris">
+                            <i class="bi bi-plus-lg"></i> Tambah baris
+                        </button>
+                    </div>
                 </div>
 
                 {{-- Peringatan yang harus dibaca SEBELUM mengetik: kaitan riwayat
@@ -270,6 +287,28 @@ Daftar Peserta || lemon
                                 </div>
                             @endif
                         </div>
+
+                        {{-- Bus dan kamar, hanya saat pembagian dinyalakan.
+
+                             Untuk open trip berlima, dua kolom yang selalu kosong
+                             hanya menyempitkan kolom nama dan menambah benda yang
+                             harus diabaikan mata. Untuk study tour 120 orang,
+                             inilah yang dikerjakan seminggu sebelum berangkat. --}}
+                        @if ($bagiKelompok)
+                            <div class="col-12 col-md-2">
+                                <input type="text" class="form-control form-control-sm"
+                                    wire:model="barisPeserta.{{ $urutan }}.bus"
+                                    value="{{ $baris['bus'] ?? '' }}"
+                                    maxlength="60" placeholder="Bus">
+                            </div>
+
+                            <div class="col-12 col-md-2">
+                                <input type="text" class="form-control form-control-sm"
+                                    wire:model="barisPeserta.{{ $urutan }}.kamar"
+                                    value="{{ $baris['kamar'] ?? '' }}"
+                                    maxlength="60" placeholder="Kamar">
+                            </div>
+                        @endif
 
                         <div class="col-auto text-end" style="width:5.4rem">
                             @if (filled($baris['gantikan'] ?? null))

@@ -45,6 +45,13 @@
                 'kode' => $satu['kode'],
                 'pemesan' => $satu['nama'],
                 'wa' => $satu['whatsapp'],
+                /* Bus dan kamar ikut di baris yang sama, bukan di lembar
+                   terpisah. Yang memegang manifes ini berdiri di parkiran
+                   sambil memanggil nama — menyuruhnya membuka lembar kedua
+                   untuk tahu orang ini naik bus mana adalah pekerjaan yang
+                   akhirnya dilewati, dan pembagiannya kembali ke ingatan. */
+                'bus' => trim($orang['bus'] ?? '') ?: null,
+                'kamar' => trim($orang['kamar'] ?? '') ?: null,
             ];
             $totalPeserta++;
         }
@@ -186,8 +193,9 @@
                     <td width="24%">Nama peserta</td>
                     <td width="20%">Kesehatan</td>
                     <td width="20%">Kontak darurat</td>
-                    <td width="18%">Kode &amp; WhatsApp</td>
-                    <td width="8%"></td>
+                    <td width="10%">Bus &amp; kamar</td>
+                    <td width="14%">Kode &amp; WhatsApp</td>
+                    <td width="4%"></td>
                 </tr>
                 @foreach ($orang as $satu)
                     @php
@@ -220,12 +228,29 @@
                                 <span style="color:#94a3b8;">—</span>
                             @endif
                         </td>
+                        {{-- Bus dan kamar di baris yang sama dengan namanya.
+
+                             Yang memegang lembar ini berdiri di parkiran sambil
+                             memanggil nama; menyuruhnya membuka lembar kedua untuk
+                             tahu orang ini naik bus mana adalah pekerjaan yang
+                             akhirnya dilewati, dan pembagiannya kembali ke ingatan. --}}
+                        <td width="10%" style="font-size:10px;">
+                            @if ($satu['bus'] || $satu['kamar'])
+                                {{ collect([
+                                    $satu['bus'],
+                                    $satu['kamar'] ? 'kmr '.$satu['kamar'] : null,
+                                ])->filter()->implode(' · ') }}
+                            @else
+                                <span style="color:#94a3b8;">—</span>
+                            @endif
+                        </td>
+
                         {{-- Kode pendaftarannya tetap disebut: kalau ada yang tidak
                              muncul, tour leader tahu harus menelepon siapa. --}}
-                        <td width="18%" style="font-size:9px;color:#64748b;">
+                        <td width="14%" style="font-size:9px;color:#64748b;">
                             {{ $satu['kode'] }}<br>{{ $satu['wa'] }}
                         </td>
-                        <td width="8%" align="right">
+                        <td width="4%" align="right">
                             @if ($awas)
                                 <span class="cap-awas">PERHATIAN</span>
                             @endif

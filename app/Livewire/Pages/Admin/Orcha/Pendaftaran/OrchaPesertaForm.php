@@ -49,6 +49,19 @@ class OrchaPesertaForm extends Component
     /** Tempelan dari Excel/WhatsApp; diuraikan jadi baris. */
     public string $tempelan = '';
 
+    /**
+     * Kolom bus dan kamar disembunyikan sampai diminta.
+     *
+     * Pembagiannya cuma dipakai rombongan besar — study tour dan private trip
+     * yang menginap. Untuk open trip berlima, dua kolom tambahan yang selalu
+     * kosong hanya menyempitkan kolom nama dan menambah benda yang harus
+     * diabaikan mata.
+     *
+     * Menyala sendiri bila SUDAH ADA pembagiannya: yang membuka rombongan yang
+     * sudah dibagi tidak boleh melihat pembagiannya lenyap.
+     */
+    public bool $bagiKelompok = false;
+
     public $berkasPeserta;
 
     public function mount(int $pendaftaran): void
@@ -62,6 +75,8 @@ class OrchaPesertaForm extends Component
             ->map(fn ($satu) => [
                 'nama' => (string) ($satu['nama'] ?? ''),
                 'titik_jemput' => (string) ($satu['titik_jemput'] ?? ''),
+                'bus' => (string) ($satu['bus'] ?? ''),
+                'kamar' => (string) ($satu['kamar'] ?? ''),
                 'gantikan' => null,
                 'gantikan_titik' => null,
             ])
@@ -70,6 +85,9 @@ class OrchaPesertaForm extends Component
         if ($this->barisPeserta === []) {
             $this->barisPeserta = [$this->barisKosong()];
         }
+
+        $this->bagiKelompok = collect($this->barisPeserta)
+            ->contains(fn ($baris) => $baris['bus'] !== '' || $baris['kamar'] !== '');
     }
 
     public function tambahBaris(): void
@@ -150,6 +168,17 @@ class OrchaPesertaForm extends Component
                 return array_filter([
                     'nama' => trim($baris['nama'] ?? ''),
                     'titik_jemput' => $titik,
+                    /*
+                     | Dikirim SELALU, termasuk saat kosong.
+                     |
+                     | array_filter di bawah cuma membuang null, bukan teks
+                     | kosong — dan itu disengaja: mengosongkan bus seseorang
+                     | adalah perbuatan yang harus tersimpan. Kalau baris
+                     | kosongnya ikut dibuang, admin yang memindahkan orang
+                     | keluar dari Bus 1 mendapati orangnya tetap di Bus 1.
+                     */
+                    'bus' => trim($baris['bus'] ?? ''),
+                    'kamar' => trim($baris['kamar'] ?? ''),
                     'gantikan' => trim((string) ($baris['gantikan'] ?? '')) ?: null,
                     // Ikut dikirim walau titiknya sama. Yang membaca arsipnya
                     // kelak tidak bisa membedakan "titiknya memang tetap" dari
@@ -217,7 +246,8 @@ class OrchaPesertaForm extends Component
     /** @return array{nama: string, titik_jemput: string, gantikan: ?string, gantikan_titik: ?string} */
     private function barisKosong(): array
     {
-        return ['nama' => '', 'titik_jemput' => '', 'gantikan' => null, 'gantikan_titik' => null];
+        return ['nama' => '', 'titik_jemput' => '', 'bus' => '', 'kamar' => '',
+            'gantikan' => null, 'gantikan_titik' => null];
     }
 
     /**

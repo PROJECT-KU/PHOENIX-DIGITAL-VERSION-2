@@ -28,9 +28,95 @@ class OrchaPendaftaranDetail extends Component
 
     public array $data = [];
 
+    /**
+     * Formulir pencatatan pembayaran yang diterima admin sendiri.
+     *
+     * Private trip dan study tour tidak lewat formulir konfirmasi publik.
+     * Panitia mentransfer lalu mengabari lewat WhatsApp, kadang cuma dengan
+     * kalimat "sudah ditransfer ya" tanpa tangkapan layar. Yang memastikan
+     * uangnya benar-benar masuk adalah admin yang membuka mutasi rekening.
+     *
+     * Sebelum ini pemeriksaan itu tidak punya tempat pulang: uangnya sudah
+     * diterima tetapi statusnya tertahan di "Baru", formulir kesehatannya
+     * tetap tertutup, dan laporan keuangan menyebut nol.
+     */
+    public bool $bukaBayar = false;
+
+    public array $bayar = [];
+
     public function mount(int $pendaftaran): void
     {
         $this->pendaftaranId = $pendaftaran;
+        $this->kosongkanBayar();
+    }
+
+    private function kosongkanBayar(): void
+    {
+        $this->bayar = [
+            'nominal' => '',
+            // Bawaannya HARI INI, bukan kosong. Admin mencatatnya pada hari ia
+            // membuka mutasi rekening, dan transfer yang dicek hari ini
+            // hampir selalu masuk hari ini atau kemarin.
+            'tanggal_transfer' => now()->toDateString(),
+            'bank_pengirim' => '',
+            'atas_nama_pengirim' => '',
+            'jenis' => 'dp',
+            'catatan' => '',
+        ];
+    }
+
+    public function bukaFormulirBayar(): void
+    {
+        $this->kosongkanBayar();
+
+        // Atas nama pengirim hampir selalu si pemesan. Diisikan lebih dulu
+        // supaya yang paling sering benar tidak perlu diketik tiap kali.
+        $this->bayar['atas_nama_pengirim'] = (string) ($this->data['nama'] ?? '');
+
+        $this->bukaBayar = true;
+        $this->resetValidation();
+    }
+
+    public function tutupFormulirBayar(): void
+    {
+        $this->bukaBayar = false;
+        $this->kosongkanBayar();
+    }
+
+    public function catatBayar(): void
+    {
+        $this->validate([
+            'bayar.nominal' => 'required|numeric|min:1',
+            'bayar.tanggal_transfer' => 'required|date|before_or_equal:today',
+            'bayar.bank_pengirim' => 'required|string|max:60',
+            'bayar.atas_nama_pengirim' => 'required|string|max:120',
+            'bayar.jenis' => 'required|string',
+            'bayar.catatan' => 'nullable|string|max:1000',
+        ], [], [
+            'bayar.nominal' => 'nominal',
+            'bayar.tanggal_transfer' => 'tanggal transfer',
+            'bayar.bank_pengirim' => 'bank pengirim',
+            'bayar.atas_nama_pengirim' => 'atas nama pengirim',
+        ]);
+
+        try {
+            $hasil = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/pembayaran", [
+                'nominal' => (int) $this->bayar['nominal'],
+                'tanggal_transfer' => $this->bayar['tanggal_transfer'],
+                'bank_pengirim' => $this->bayar['bank_pengirim'],
+                'atas_nama_pengirim' => $this->bayar['atas_nama_pengirim'],
+                'jenis' => $this->bayar['jenis'],
+                'catatan' => $this->bayar['catatan'] ?: null,
+            ]);
+
+            cache()->forget('orcha.perlu-ditindak');
+
+            $this->tutupFormulirBayar();
+            $this->dispatch('order-updated',
+                message: $hasil['pesan'] ?? 'Pembayaran dicatat.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
     }
 
     /**
@@ -410,6 +496,11 @@ class OrchaPendaftaranDetail extends Component
             // dan tenggat yang berbeda antara dua aplikasi adalah janji yang
             // saling bertentangan di depan pelanggan yang sama.
             'aturanBayar' => $this->rujukan('pembayaran'),
+            // Pilihan jenis pembayaran datang dari Orcha, bukan diketik di
+            // sini: kunci yang berbeda antara kedua aplikasi ditolak validasi
+            // di sana, dan penolakannya sampai ke admin sebagai pesan yang
+            // tidak menunjuk apa pun.
+            'pilihanJenisBayar' => $this->rujukan('jenis_pembayaran'),
         ])->layout('livewire.layout.templateindex');
     }
 

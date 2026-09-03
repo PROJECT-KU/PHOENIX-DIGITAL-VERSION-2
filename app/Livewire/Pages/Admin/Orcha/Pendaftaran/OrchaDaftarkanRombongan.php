@@ -37,6 +37,18 @@ class OrchaDaftarkanRombongan extends Component
 
     public $jumlahPeserta = 1;
 
+    /**
+     * Guru pendamping yang ikut berangkat tanpa dibayar.
+     *
+     * Dua angka yang memang berbeda: jumlah peserta menjawab berapa orang
+     * BERANGKAT — kursi bus, manifes, riwayat kesehatan — dan angka ini
+     * menjawab berapa di antaranya TIDAK DITAGIH.
+     *
+     * Sebelum ada kolomnya, satu-satunya cara menyatakannya adalah menurunkan
+     * jumlah peserta, dan gurunya lalu hilang dari ketiga hal di atas.
+     */
+    public $pendampingGratis = 0;
+
     public string $hargaJual = '';
 
     public string $hargaModal = '';
@@ -114,6 +126,9 @@ class OrchaDaftarkanRombongan extends Component
             'whatsapp' => 'required|string|min:8|max:32',
             'email' => 'nullable|email|max:150',
             'jumlahPeserta' => 'required|integer|min:1|max:200',
+            // Rombongan yang seluruhnya gratis berarti tidak ada yang membayar
+            // apa pun — itu bukan pendaftaran melainkan salah ketik.
+            'pendampingGratis' => 'nullable|integer|min:0|lt:jumlahPeserta',
             'hargaJual' => 'nullable|numeric|min:0',
             'hargaModal' => 'nullable|numeric|min:0',
             'peserta.*.nama' => 'nullable|string|max:120',
@@ -122,6 +137,7 @@ class OrchaDaftarkanRombongan extends Component
             'nama' => 'nama pemesan',
             'whatsapp' => 'nomor WhatsApp',
             'jumlahPeserta' => 'jumlah peserta',
+            'pendampingGratis' => 'pendamping gratis',
             'hargaJual' => 'harga per orang',
             'hargaModal' => 'modal per orang',
         ]);
@@ -159,6 +175,7 @@ class OrchaDaftarkanRombongan extends Component
                 'whatsapp' => $this->whatsapp,
                 'email' => $this->email ?: null,
                 'jumlah_peserta' => (int) $this->jumlahPeserta,
+                'pendamping_gratis' => (int) ($this->pendampingGratis ?: 0),
                 'peserta' => $isi,
                 'titik_jemput' => $this->titikJemput ?: null,
                 'catatan' => $this->catatan ?: null,
@@ -179,9 +196,10 @@ class OrchaDaftarkanRombongan extends Component
     public function lagi(): void
     {
         $this->reset(['paketId', 'nama', 'whatsapp', 'email', 'jumlahPeserta',
-            'hargaJual', 'hargaModal', 'titikJemput', 'catatan', 'hasil']);
+            'pendampingGratis', 'hargaJual', 'hargaModal', 'titikJemput', 'catatan', 'hasil']);
 
         $this->jumlahPeserta = 1;
+        $this->pendampingGratis = 0;
         $this->peserta = [['nama' => '', 'titik_jemput' => '']];
         $this->resetValidation();
     }

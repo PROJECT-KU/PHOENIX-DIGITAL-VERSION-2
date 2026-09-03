@@ -360,7 +360,34 @@ Daftarkan Rombongan || lemon
                             @enderror
                         </div>
 
-                        <div class="col-12 col-lg-8">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label small fw-semibold">
+                                Pendamping gratis <span class="text-muted fw-normal">(opsional)</span>
+                            </label>
+                            <input type="number" min="0" wire:model.live="pendampingGratis"
+                                value="{{ $pendampingGratis }}"
+                                class="form-control @error('pendampingGratis') is-invalid @enderror">
+
+                            {{-- Terjemahannya ditampilkan hidup, bukan cuma diterangkan sekali.
+
+                                 Dua angka yang berbeda cuma satu kata — "berangkat" dan
+                                 "ditagih" — dan tanpa hitungannya terlihat, admin harus
+                                 menyimpulkan sendiri bahwa gurunya tetap dapat kursi. --}}
+                            @if ((int) $pendampingGratis > 0 && (int) $jumlahPeserta > (int) $pendampingGratis)
+                                <div class="form-text text-success-emphasis fw-semibold">
+                                    <i class="bi bi-arrow-return-right"></i>
+                                    {{ $jumlahPeserta }} berangkat, {{ (int) $jumlahPeserta - (int) $pendampingGratis }} ditagih
+                                </div>
+                            @else
+                                <div class="form-text">Guru pendamping tetap dapat kursi dan masuk manifes.</div>
+                            @endif
+
+                            @error('pendampingGratis')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-12">
                             {{-- Tempel daftar dari WhatsApp.
 
                                  Daftar peserta study tour datang sebagai satu blok

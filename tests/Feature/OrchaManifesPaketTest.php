@@ -231,3 +231,57 @@ test('manifes satu pendaftaran mengakui nama peserta yang belum didata', functio
         // Tetap ada tempat menghitung yang naik.
         ->toContain('Sudah naik:');
 });
+
+test('manifes menyebut bus dan kamar tiap peserta', function () {
+    /*
+     | Yang memegang lembar ini berdiri di parkiran sambil memanggil nama.
+     | Menyuruhnya membuka lembar kedua untuk tahu orang ini naik bus mana
+     | adalah pekerjaan yang akhirnya dilewati, dan pembagiannya kembali ke
+     | ingatan.
+     |
+     | Templatnya dirender langsung jadi HTML, bukan lewat PDF: isi PDF
+     | terkompresi dan tidak bisa dicari apa adanya, sehingga uji yang
+     | memeriksanya hanya membuktikan berkasnya ADA — bukan bahwa bus dan
+     | kamarnya benar-benar tercetak di sana.
+     */
+    $html = view('exports.orcha-manifest-daftar-pdf', [
+        'daftar' => [[
+            'id' => 1, 'kode' => 'OT-0309-AAAA', 'nama' => 'Panitia',
+            'whatsapp' => '081200000000', 'jumlah_peserta' => 2,
+            'nama_paket' => 'Study Tour SMA',
+            'tanggal_berangkat' => now()->addDays(10)->toDateString(),
+            'peserta' => [
+                ['nama' => 'Budi', 'titik_jemput' => 'Sekolah', 'bus' => 'Bus 1', 'kamar' => '201'],
+                ['nama' => 'Sari', 'titik_jemput' => 'Sekolah', 'bus' => 'Bus 2', 'kamar' => '202'],
+            ],
+        ]],
+        'kesehatan' => [],
+        'saringan' => [],
+    ])->render();
+
+    expect($html)->toContain('Bus 1')
+        ->toContain('Bus 2')
+        // Nomor kamar berupa angka harus tercetak apa adanya, bukan jadi indeks.
+        ->toContain('kmr 201')
+        ->toContain('kmr 202');
+});
+
+test('peserta yang belum dibagi tidak dicetak sebagai kosong yang membingungkan', function () {
+    // Pembagian dikerjakan beberapa hari sebelum berangkat. Selama itu
+    // manifesnya tetap dipakai, dan kolom yang kosong harus terbaca sebagai
+    // "belum dibagi" — bukan sebagai kolom yang rusak.
+    $html = view('exports.orcha-manifest-daftar-pdf', [
+        'daftar' => [[
+            'id' => 1, 'kode' => 'OT-0309-AAAA', 'nama' => 'Panitia',
+            'whatsapp' => '081200000000', 'jumlah_peserta' => 1,
+            'nama_paket' => 'Open Trip',
+            'tanggal_berangkat' => now()->addDays(10)->toDateString(),
+            'peserta' => [['nama' => 'Budi', 'titik_jemput' => 'Sekolah']],
+        ]],
+        'kesehatan' => [],
+        'saringan' => [],
+    ])->render();
+
+    expect($html)->toContain('Bus &amp; kamar')
+        ->toContain('Budi');
+});
