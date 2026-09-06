@@ -572,10 +572,51 @@ Detail Pendaftaran || lemon
                                 @endforeach
                             </div>
 
-                            @if ($pendaftaran['catatan'])
+                            {{-- Catatan pemesan dan catatan sistem berbagi SATU kolom
+                                 di basis data, dan itu tidak bisa diubah dari sini.
+
+                                 Yang bisa diubah labelnya. Sebelum ini seluruh isinya
+                                 diberi judul "Catatan dari pemesan" — termasuk baris
+                                 "[Sistem] Kursi dilepas otomatis … tidak ada pembayaran
+                                 dalam 72 jam" yang ditulis LepaskanKursiTertahan. Admin
+                                 yang membuka pemesanan batal lalu membaca alasan
+                                 pembatalan seolah pelanggan sendiri yang mengetiknya.
+
+                                 Dipisah di sini, bukan di Orcha: memecah kolomnya berarti
+                                 memindahkan data lama, dan yang rusak sekarang cuma
+                                 keterangannya. --}}
+                            @php
+                                $barisCatatan = preg_split('/\r?\n/', (string) $pendaftaran['catatan']);
+                                $catatanSistem = array_values(array_filter(
+                                    $barisCatatan,
+                                    fn ($b) => str_starts_with(trim($b), '[Sistem]')
+                                ));
+                                $catatanPemesan = trim(implode("\n", array_filter(
+                                    $barisCatatan,
+                                    fn ($b) => ! str_starts_with(trim($b), '[Sistem]')
+                                )));
+                            @endphp
+
+                            @if ($catatanPemesan !== '')
                                 <div class="mt-3 p-3 rounded-3 bg-light">
                                     <div class="orcha-label-kecil">Catatan dari pemesan</div>
-                                    <div style="font-size:.9rem">{{ $pendaftaran['catatan'] }}</div>
+                                    <div style="font-size:.9rem">{{ $catatanPemesan }}</div>
+                                </div>
+                            @endif
+
+                            @if ($catatanSistem !== [])
+                                {{-- Warna berbeda, dan itu perlu: yang membacanya sedang
+                                     mencari sebab, dan sebab yang ditulis mesin tidak boleh
+                                     tertukar dengan kalimat orang. --}}
+                                <div class="orcha-catatan-sistem mt-3">
+                                    <div class="orcha-label-kecil">
+                                        <i class="bi bi-robot"></i> Dicatat sistem
+                                    </div>
+                                    @foreach ($catatanSistem as $baris)
+                                        <div style="font-size:.86rem">
+                                            {{ trim(str_replace('[Sistem]', '', $baris)) }}
+                                        </div>
+                                    @endforeach
                                 </div>
                             @endif
                         </div>

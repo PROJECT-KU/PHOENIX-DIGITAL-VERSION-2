@@ -96,6 +96,36 @@ function orchaDenganTermin(array $status): void
     ]);
 }
 
+/** Payload pendaftaran lengkap, dipakai beberapa uji di berkas ini. */
+function barisPendaftaranLengkap(): array
+{
+    return [
+        'id' => 5, 'kode' => 'OT-1508-0VCZ', 'nama' => 'Joko', 'whatsapp' => '0895',
+        'email' => 'joko@contoh.test',
+        'jumlah_peserta' => 4, 'peserta_dibayar' => 4, 'pendamping_gratis' => 0,
+        'peserta' => [], 'jemput_per_titik' => [], 'bus_per_kelompok' => [],
+        'kamar_per_kelompok' => [], 'peserta_belum_isi' => [],
+        'kesehatan_terisi' => 0, 'kesehatan_lengkap' => false,
+        'jumlah_riwayat_kesehatan' => 0, 'riwayat_penggantian' => [],
+        'surat_penggantian' => null, 'surat_penggantian_pada' => null,
+        'tautan_kesehatan' => 'https://orcha.test/riwayat-kesehatan/OT-1508-0VCZ',
+        'titik_jemput' => 'Malioboro', 'catatan' => null,
+        'hari_ke_berangkat' => 40, 'pengingat_pelunasan_pada' => null,
+        'paket' => ['id' => 1, 'nama' => 'Open Trip Banyuwangi', 'titik_jemput' => []],
+        'status' => 'lunas', 'status_label' => 'Lunas',
+        'tanggal_berangkat' => now()->addDays(40)->toDateString(),
+        'dibuat_pada' => now()->toIso8601String(),
+        'keuntungan' => [
+            'jual_satuan' => 1_430_000, 'modal_satuan' => 1_400_000,
+            'margin_satuan' => 30_000, 'omzet' => 5_720_000, 'potongan_promo' => 0,
+            'biaya_tetap' => 0, 'modal_per_kepala' => 1_400_000,
+            'modal' => 5_600_000, 'untung' => 120_000,
+            'modal_terisi' => true, 'dihitung' => true,
+        ],
+        'tagihan' => [], 'pembayaran' => [], 'pembatalan' => [],
+    ];
+}
+
 beforeEach(function () {
     config()->set('orcha.url', 'https://orcha.test/api/v1');
     config()->set('orcha.kunci', 'kunci-uji');
@@ -156,4 +186,49 @@ test('termin yang telat mengubah lencananya, bukan disamarkan hijau', function (
         ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 5])
         ->assertSee('3× ada yang telat')
         ->assertDontSee('3× berjalan');
+});
+
+test('catatan sistem tidak diakui sebagai catatan pemesan', function () {
+    /*
+     | Catatan pemesan dan catatan sistem berbagi SATU kolom di basis data.
+     | Sebelum ini seluruh isinya diberi judul "Catatan dari pemesan" —
+     | termasuk baris yang ditulis LepaskanKursiTertahan saat kursinya dilepas
+     | otomatis.
+     |
+     | Admin yang membuka pemesanan batal lalu membaca alasan pembatalan
+     | seolah pelanggan sendiri yang mengetiknya — dan alasan yang salah
+     | atribusinya lebih menyesatkan daripada alasan yang tidak ditampilkan.
+     */
+    /*
+     | TIDAK memanggil orchaDenganTermin() lebih dulu: Http::fake() yang
+     | dipanggil dua kali tidak mengganti stub sebelumnya untuk pola yang sama,
+     | jadi payload kedua tidak akan pernah terpakai — dan uji ini lolos atau
+     | gagal karena alasan yang salah.
+     */
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => []]),
+        '*/angsuran*' => Http::response(['data' => ['boleh_diangsur' => false, 'lunas' => false,
+            'maks_termin' => 1, 'ingatkan_hari_sebelum' => 3, 'pilihan' => [], 'rencana' => null]]),
+        '*' => Http::response(['data' => array_merge(
+            json_decode(json_encode(barisPendaftaranLengkap()), true),
+            ['catatan' => "Tolong kursi dekat jendela.\n[Sistem] Kursi dilepas otomatis pada 6 September 2026, 14:20 — tidak ada pembayaran dalam 72 jam sejak pendaftaran."],
+        )]),
+    ]);
+
+    $layar = Livewire::actingAs(adminAngsuranSelesai())
+        ->test(OrchaPendaftaranDetail::class, ['pendaftaran' => 5]);
+
+    $isi = $layar->html();
+
+    // Keduanya tampil, tetapi di kotaknya masing-masing.
+    expect($isi)->toContain('Tolong kursi dekat jendela.')
+        ->toContain('Dicatat sistem')
+        ->toContain('tidak ada pembayaran dalam 72 jam');
+
+    // Dan yang menentukan: baris sistem TIDAK berada di dalam kotak pemesan.
+    $awalPemesan = strpos($isi, 'Catatan dari pemesan');
+    $awalSistem = strpos($isi, 'Dicatat sistem');
+    expect($awalPemesan)->toBeLessThan($awalSistem)
+        ->and(substr($isi, $awalPemesan, $awalSistem - $awalPemesan))
+        ->not->toContain('tidak ada pembayaran dalam 72 jam');
 });

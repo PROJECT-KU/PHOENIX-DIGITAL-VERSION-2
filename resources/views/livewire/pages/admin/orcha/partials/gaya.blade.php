@@ -2401,6 +2401,25 @@
         color: #94a3b8;
     }
 
+    /* Catatan yang ditulis mesin, bukan orang.
+
+       Latar dan bingkainya dibedakan dari catatan pemesan karena keduanya
+       berbagi satu kolom di basis data. Yang membacanya sedang mencari sebab —
+       "kenapa pemesanan ini batal" — dan sebab yang ditulis sistem tidak boleh
+       tertukar dengan kalimat pelanggan. */
+    .orcha-catatan-sistem {
+        padding: .75rem 1rem;
+        border: 1px solid #e6e0f5;
+        border-left: 3px solid var(--orc-primer);
+        border-radius: 12px;
+        background: #faf8ff;
+        color: var(--orc-tinta);
+    }
+
+    .orcha-catatan-sistem .orcha-label-kecil {
+        color: var(--orc-primer);
+    }
+
     /* Pengganti tombol batalkan pada rencana angsuran yang sudah tuntas.
 
        Tempatnya tidak dibiarkan kosong: baris tindakan yang tiba-tiba kosong
