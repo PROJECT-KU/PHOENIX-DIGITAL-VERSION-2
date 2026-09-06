@@ -97,8 +97,8 @@ Blog Orcha || lemon
                         @endif
                     </div>
                 @else
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
+                    <div class="orcha-gulung">
+                        <table class="table table-hover align-middle orcha-tabel mb-0">
                             <thead>
                                 <tr class="text-muted small text-uppercase">
                                     <th style="width:88px;">Sampul</th>

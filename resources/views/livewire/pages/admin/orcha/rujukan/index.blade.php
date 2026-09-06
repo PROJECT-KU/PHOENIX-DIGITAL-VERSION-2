@@ -230,20 +230,25 @@ Kode Rujukan || lemon
                         </button>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table align-middle mb-0">
+                    {{-- Panel pemakaian ikut memakai pola yang sama: kartunya
+                         sudah berpadding, jadi ps-4/pe-4 di sini justru
+                         menggeser kolomnya lebih jauh daripada tabel di
+                         bawahnya — dua tabel bertumpuk yang tepi kirinya tidak
+                         segaris. --}}
+                    <div class="orcha-gulung">
+                        <table class="table table-hover align-middle orcha-tabel mb-0">
                             <thead>
                                 <tr>
-                                    <th class="ps-4">PENDAFTARAN</th>
-                                    <th>TRIP</th>
-                                    <th>IMBALAN</th>
-                                    <th class="text-end pe-4">AKSI</th>
+                                    <th>Pendaftaran</th>
+                                    <th>Trip</th>
+                                    <th>Imbalan</th>
+                                    <th class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($pemakaian as $satu)
                                     <tr wire:key="pakai-{{ $satu['id'] }}">
-                                        <td class="ps-4">
+                                        <td>
                                             <span class="orcha-kode">{{ $satu['kode'] }}</span>
                                             <div class="fw-semibold">{{ $satu['nama'] }}</div>
                                         </td>
@@ -261,7 +266,7 @@ Kode Rujukan || lemon
                                             Rp {{ number_format($satu['imbalan'], 0, ',', '.') }}
                                         </td>
 
-                                        <td class="text-end pe-4">
+                                        <td class="text-end">
                                             @if ($satu['dibayar_pada'])
                                                 <span class="badge bg-success-subtle text-success-emphasis">
                                                     Dibayar
@@ -316,24 +321,35 @@ Kode Rujukan || lemon
             </div>
         @endif
 
+        {{-- Bungkus tabelnya disamakan dengan daftar Orcha yang lain.
+
+             Layar ini dulu berdiri sendiri: card-body tanpa padding, pembungkus
+             gulung bawaan Bootstrap, dan tabel tanpa .orcha-tabel — sehingga
+             kepala kolomnya kehilangan latar biru muda yang dipakai empat belas
+             daftar lainnya, barisnya tidak menyala saat disorot, dan keterangan
+             jumlah data menempel di tepi kartu karena tidak ada padding yang
+             menahannya.
+
+             Padding itu juga yang membuat ps-4/pe-4 di tiap sel tidak lagi
+             diperlukan: keduanya dulu ada justru untuk menambal p-0. --}}
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
+            <div class="card-body p-3 p-lg-4">
+                <div class="orcha-gulung">
+                    <table class="table table-hover align-middle orcha-tabel mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4">KODE</th>
-                                <th>PEMILIK</th>
-                                <th>DIPAKAI</th>
-                                <th>KOMISI BELUM DIBAYAR</th>
-                                <th>STATUS</th>
-                                <th class="text-end pe-4">AKSI</th>
+                                <th>Kode</th>
+                                <th>Pemilik</th>
+                                <th>Dipakai</th>
+                                <th>Komisi belum dibayar</th>
+                                <th>Status</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($daftar as $baris)
                                 <tr wire:key="rujukan-{{ $baris['id'] }}">
-                                    <td class="ps-4">
+                                    <td>
                                         <span class="orcha-kode">{{ $baris['kode'] }}</span>
                                         @if ($baris['kode_pendaftaran_asal'])
                                             <div class="text-muted" style="font-size:.72rem">
@@ -401,7 +417,7 @@ Kode Rujukan || lemon
                                         @endif
                                     </td>
 
-                                    <td class="text-end pe-4">
+                                    <td class="text-end">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-lihat"
                                                 wire:click="bukaPemakaian({{ $baris['id'] }})"

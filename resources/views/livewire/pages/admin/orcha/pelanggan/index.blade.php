@@ -104,22 +104,22 @@ Pelanggan || lemon
         </div>
 
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
+            <div class="card-body p-3 p-lg-4">
+                <div class="orcha-gulung">
+                    <table class="table table-hover align-middle orcha-tabel mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4">PELANGGAN</th>
+                                <th>PELANGGAN</th>
                                 <th>PESANAN</th>
                                 <th>TERAKHIR</th>
                                 <th>KODE RUJUKAN</th>
-                                <th class="text-end pe-4">AKSI</th>
+                                <th class="text-end">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($daftar as $baris)
                                 <tr wire:key="pelanggan-{{ $baris['whatsapp_angka'] }}">
-                                    <td class="ps-4">
+                                    <td>
                                         <div class="fw-bold">{{ $baris['nama'] }}</div>
                                         <div class="text-muted small">{{ $baris['whatsapp'] }}</div>
 
@@ -186,7 +186,7 @@ Pelanggan || lemon
                                         @endif
                                     </td>
 
-                                    <td class="text-end pe-4">
+                                    <td class="text-end">
                                         <div class="d-flex gap-2 justify-content-end">
                                             <button type="button" class="btn btn-sm orcha-aksi orcha-aksi-wa"
                                                 wire:click="bukaPesan({{ json_encode($baris) }})"

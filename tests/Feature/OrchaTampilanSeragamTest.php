@@ -171,4 +171,64 @@ class OrchaTampilanSeragamTest extends TestCase
             'Kelas d-* mengalahkan display:none milik Livewire, jadi kedua keadaan tombol tampil bersamaan: '
             .implode(', ', $pelanggar));
     }
+
+    /**
+     * Setiap tabel daftar memakai pola rumah yang sama.
+     *
+     * Kode Rujukan sempat berdiri sendiri: card-body tanpa padding, pembungkus
+     * gulung bawaan Bootstrap, dan tabel tanpa .orcha-tabel — sehingga kepala
+     * kolomnya kehilangan latar biru muda yang dipakai empat belas daftar
+     * lainnya, barisnya tidak menyala saat disorot, dan keterangan jumlah data
+     * menempel di tepi kartu.
+     *
+     * Penyimpangan semacam ini tidak pernah terlihat oleh yang mengerjakan satu
+     * layar; ia hanya terlihat oleh yang membuka dua layar berurutan.
+     */
+    public function test_tabel_daftar_memakai_pola_rumah(): void
+    {
+        $menyimpang = [];
+
+        foreach ($this->berkasOrcha() as $berkas) {
+            $isi = (string) file_get_contents($berkas);
+
+            // Hanya berkas yang benar-benar punya tabel daftar.
+            if (! preg_match_all('/<table class="([^"]*)"/', $isi, $cocok)) {
+                continue;
+            }
+
+            foreach ($cocok[1] as $kelas) {
+                if (! str_contains($kelas, 'table')) {
+                    continue;
+                }
+
+                /*
+                 | .table-sm dilewati dengan sengaja.
+                 |
+                 | Ia penanda tabel kecil DI DALAM formulir — baris tarif
+                 | kerusakan di serah-terima kendaraan, misalnya — bukan daftar
+                 | yang berdiri sendiri di kartunya. Memaksanya memakai
+                 | .orcha-tabel akan memberinya kepala kolom berlatar dan huruf
+                 | kapital yang tidak pantas untuk enam baris di tengah
+                 | formulir.
+                 */
+                if (str_contains($kelas, 'table-sm')) {
+                    continue;
+                }
+
+                if (! str_contains($kelas, 'orcha-tabel')) {
+                    $menyimpang[] = basename(dirname($berkas)).'/'.basename($berkas)
+                        .' — tabel tanpa .orcha-tabel: "'.$kelas.'"';
+                }
+            }
+
+            // Pembungkus gulung bawaan Bootstrap memberi perilaku yang mirip
+            // tetapi tidak sama; yang dipakai di sini .orcha-gulung.
+            if (str_contains($isi, 'class="table-responsive"')) {
+                $menyimpang[] = basename(dirname($berkas)).'/'.basename($berkas)
+                    .' — memakai .table-responsive, bukan .orcha-gulung';
+            }
+        }
+
+        $this->assertSame([], $menyimpang, "Tabel yang keluar dari pola rumah:\n".implode("\n", $menyimpang));
+    }
 }

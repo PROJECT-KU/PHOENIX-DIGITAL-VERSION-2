@@ -262,22 +262,22 @@ Promo Rombongan || lemon
         @endif
 
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
+            <div class="card-body p-3 p-lg-4">
+                <div class="orcha-gulung">
+                    <table class="table table-hover align-middle orcha-tabel mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4">MINIMAL</th>
+                                <th>MINIMAL</th>
                                 <th>KEUNTUNGAN</th>
                                 <th>TULISAN</th>
                                 <th>STATUS</th>
-                                <th class="text-end pe-4">AKSI</th>
+                                <th class="text-end">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($daftar as $baris)
                                 <tr wire:key="promo-{{ $baris['id'] }}">
-                                    <td class="ps-4">
+                                    <td>
                                         <div class="fw-bold">{{ $baris['min_peserta'] }} peserta</div>
                                         <div class="text-muted small">ajak {{ max(1, (int) $baris['min_peserta'] - 1) }} rekan</div>
                                     </td>
@@ -305,7 +305,7 @@ Promo Rombongan || lemon
                                         @endif
                                     </td>
 
-                                    <td class="text-end pe-4">
+                                    <td class="text-end">
                                         {{-- Varian tombolnya dari partial gaya, bukan .orcha-aksi polos.
 
                                              Polos, latar dan batasnya bening — tombolnya tergambar
