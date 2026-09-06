@@ -4,16 +4,44 @@
     Bukan paginator Laravel — angkanya dari meta balasan API, dan perpindahannya
     lewat metode keHalaman() di komponen.
 
-    Variabel: $meta
+    Variabel: $meta, $alamatHalaman (dari trait MemanggilOrcha)
 --}}
 @php
     $halamanKini = (int) ($meta['halaman'] ?? 1);
 
-    // Alamat satu halaman, membawa saringan yang sedang aktif supaya berpindah
-    // halaman tidak diam-diam menghapus pencarian admin.
-    $tautanHalaman = fn (int $nomor) => request()->fullUrlWithQuery([
-        'halaman' => $nomor > 1 ? $nomor : null,
-    ]);
+    /*
+     | Href DAN wire:click, dan keduanya memang diperlukan.
+     |
+     | Href sendirian pernah dipakai, dan rusaknya diam serta bersyarat: ia
+     | dirakit dari request()->fullUrlWithQuery(), yang benar pada pemuatan
+     | pertama dan hanya itu. Begitu admin mengetik di kotak cari, halaman
+     | digambar ulang DI DALAM permintaan Livewire — dan request() di sana
+     | adalah POST ke /livewire/update. Seluruh tombol nomor lalu menunjuk
+     | "/livewire/update?halaman=2". Muat halaman, semuanya benar; ketik satu
+     | huruf, semuanya rusak. Itu sebabnya ia bertahan lama.
+     |
+     | wire:click sendirian juga tidak cukup, dan alasannya sudah dijaga uji
+     | sejak lama: berpindah halaman lalu menuntut JavaScript hidup, dan admin
+     | yang skripnya gagal dimuat tidak punya cara lain sama sekali untuk
+     | melihat halaman kedua.
+     |
+     | Jadi keduanya. Alamatnya dari $alamatHalaman — ditangkap komponen saat
+     | mount, satu-satunya saat permintaannya benar-benar permintaan halaman —
+     | dan wire:click.prevent mengambil alih selama JavaScript hidup supaya
+     | perpindahannya tidak memuat ulang seluruh halaman.
+     */
+    $tautanHalaman = function (int $nomor) use ($alamatHalaman) {
+        $bagian = parse_url($alamatHalaman ?: url()->current());
+        parse_str($bagian['query'] ?? '', $kueri);
+
+        $kueri['halaman'] = $nomor > 1 ? $nomor : null;
+        $kueri = array_filter($kueri, fn ($nilai) => $nilai !== null && $nilai !== '');
+
+        $dasar = ($bagian['scheme'] ?? 'http').'://'.($bagian['host'] ?? '')
+            .(isset($bagian['port']) ? ':'.$bagian['port'] : '').($bagian['path'] ?? '/');
+
+        return $kueri === [] ? $dasar : $dasar.'?'.http_build_query($kueri);
+    };
     $halamanAkhir = (int) ($meta['halaman_terakhir'] ?? 1);
     $total = (int) ($meta['total'] ?? 0);
     $perHalaman = (int) ($meta['per_halaman'] ?? 0);
@@ -48,14 +76,14 @@
         <nav class="orcha-halaman">
             <ul class="pagination pagination-sm mb-0">
                 <li class="page-item {{ $halamanKini <= 1 ? 'disabled' : '' }}">
-                    <a class="page-link" href="{{ $tautanHalaman($halamanKini - 1) }}" wire:navigate>
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini - 1) }}" wire:click.prevent="keHalaman($halamanKini - 1)">
                         <i class="bi bi-chevron-left"></i>
                     </a>
                 </li>
 
                 @if ($mulai > 1)
                     <li class="page-item">
-                        <a class="page-link" href="{{ $tautanHalaman(1) }}" wire:navigate>1</a>
+                        <a class="page-link" href="{{ $tautanHalaman(1) }}" wire:click.prevent="keHalaman(1)">1</a>
                     </li>
                     @if ($mulai > 2)
                         <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -64,7 +92,7 @@
 
                 @for ($nomor = $mulai; $nomor <= $selesai; $nomor++)
                     <li class="page-item {{ $nomor === $halamanKini ? 'active' : '' }}">
-                        <a class="page-link" href="{{ $tautanHalaman($nomor) }}" wire:navigate>{{ $nomor }}</a>
+                        <a class="page-link" href="{{ $tautanHalaman($nomor) }}" wire:click.prevent="keHalaman($nomor)">{{ $nomor }}</a>
                     </li>
                 @endfor
 
@@ -73,12 +101,12 @@
                         <li class="page-item disabled"><span class="page-link">…</span></li>
                     @endif
                     <li class="page-item">
-                        <a class="page-link" href="{{ $tautanHalaman($halamanAkhir) }}" wire:navigate>{{ $halamanAkhir }}</a>
+                        <a class="page-link" href="{{ $tautanHalaman($halamanAkhir) }}" wire:click.prevent="keHalaman($halamanAkhir)">{{ $halamanAkhir }}</a>
                     </li>
                 @endif
 
                 <li class="page-item {{ $halamanKini >= $halamanAkhir ? 'disabled' : '' }}">
-                    <a class="page-link" href="{{ $tautanHalaman($halamanKini + 1) }}" wire:navigate>
+                    <a class="page-link" href="{{ $tautanHalaman($halamanKini + 1) }}" wire:click.prevent="keHalaman($halamanKini + 1)">
                         <i class="bi bi-chevron-right"></i>
                     </a>
                 </li>

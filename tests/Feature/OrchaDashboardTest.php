@@ -1272,16 +1272,28 @@ test('penomoran halaman bukti pembayaran berupa tautan, bukan tombol', function 
     ]);
 
     /*
-     | Sebagai tombol Livewire, berpindah halaman menuntut JavaScript hidup
-     | lebih dulu — dan admin yang tombolnya diam tidak punya cara lain sama
-     | sekali untuk melihat data di halaman kedua.
+     | Href SUNGGUHAN, bukan tombol Livewire semata: berpindah halaman lewat
+     | tombol menuntut JavaScript hidup lebih dulu, dan admin yang skripnya
+     | gagal dimuat tidak punya cara lain sama sekali untuk melihat halaman
+     | kedua.
+     |
+     | wire:click.prevent ADA di sampingnya, dan itu disengaja — ia mengambil
+     | alih selama JavaScript hidup supaya perpindahannya tidak memuat ulang
+     | seluruh halaman. Uji ini dulu melarang wire:click sepenuhnya, dan
+     | larangan itu memaksa href dirakit dari request() — yang berubah jadi
+     | /livewire/update begitu admin mengetik di kotak cari.
      */
     $isi = tanpaGaya($this->actingAs(adminOrcha())
         ->get('/admin/orcha/pembayaran?halaman=2')->assertOk()->getContent());
 
     expect($isi)->toContain('halaman=3')
         ->toContain('Menampilkan <strong>11–20</strong> dari')
-        ->not->toContain('wire:click="keHalaman');
+        // Tetap bisa ditekan tanpa JavaScript...
+        ->toContain('href=')
+        // ...dan tetap ditangani Livewire saat JavaScript hidup.
+        ->toContain('wire:click.prevent="keHalaman')
+        // Yang TIDAK boleh muncul: alamat titik-akhir Livewire di dalam href.
+        ->not->toContain('livewire/update?halaman');
 });
 
 test('judul kolom bukti pembayaran ditengahkan', function () {

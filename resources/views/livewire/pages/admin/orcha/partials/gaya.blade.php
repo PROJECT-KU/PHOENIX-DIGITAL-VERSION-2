@@ -326,6 +326,18 @@
         color: #fff;
     }
 
+    /* Nomor halaman kini <button>, bukan <a>.
+
+       Peramban memberi tombol jenis huruf dan tinggi barisnya sendiri, dan
+       tanpa dua baris ini angka di paginasi tampak lebih kecil serta sedikit
+       bergeser dibanding sebelumnya — perbedaan yang mudah dikira "paginasi
+       halaman ini beda sendiri". */
+    .orcha-halaman button.page-link {
+        font: inherit;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
     /* Tabel lebar tetap bisa digulung di layar kecil, tanpa memaksa halaman
        ikut bergeser ke samping. */
     .orcha-gulung {

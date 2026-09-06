@@ -44,6 +44,21 @@ trait MemanggilOrcha
     #[\Livewire\Attributes\Url(as: 'halaman', except: 1)]
     public int $halaman = 1;
 
+    /**
+     * Alamat halaman ini, ditangkap sekali saat dimuat.
+     *
+     * Dipakai paginasi untuk merakit href yang tetap benar. Sebelumnya href-nya
+     * dirakit dari request()->fullUrlWithQuery() langsung di lembar tampilan —
+     * benar pada pemuatan pertama, dan hanya itu. Begitu admin mengetik di
+     * kotak cari, halaman digambar ulang DI DALAM permintaan Livewire, dan
+     * request() di sana adalah POST ke /livewire/update. Seluruh tombol nomor
+     * lalu menunjuk "/livewire/update?halaman=2".
+     *
+     * Ditangkap saat mount karena di situlah — dan hanya di situlah —
+     * permintaannya benar-benar permintaan halaman.
+     */
+    public string $alamatHalaman = '';
+
     public function updatedCari(): void
     {
         $this->halaman = 1;
@@ -85,6 +100,17 @@ trait MemanggilOrcha
     public function adaSaringan(): bool
     {
         return $this->cari !== '' || $this->filterStatus !== '';
+    }
+
+    /**
+     * Kait mount milik trait; berjalan sebelum mount() komponennya sendiri.
+     */
+    public function mountMemanggilOrcha(): void
+    {
+        // fullUrl(), bukan current(): saringan yang sedang aktif ikut di
+        // kuerinya, dan href tanpa-JS harus membawanya — kalau tidak,
+        // berpindah halaman diam-diam menghapus pencarian admin.
+        $this->alamatHalaman = request()->fullUrl();
     }
 
     public function keHalaman(int $nomor): void

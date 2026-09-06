@@ -168,3 +168,41 @@ test('daftar ini menyebut dirinya Pendaftaran Trip, bukan Open Trip saja', funct
         // Keterangannya ikut jujur: tidak semuanya datang lewat website.
         ->assertSee('didaftarkan admin');
 });
+
+test('tombol halaman tidak menunjuk /livewire/update sesudah admin mencari', function () {
+    /*
+     | Cacat yang sempat berjalan di KELIMA BELAS daftar sekaligus, karena
+     | semuanya memakai partial paginasi yang sama.
+     |
+     | Tautannya dirakit dengan request()->fullUrlWithQuery(). Benar pada
+     | pemuatan pertama, dan hanya itu: begitu admin mengetik di kotak cari,
+     | halaman digambar ulang DI DALAM permintaan Livewire, dan request() di
+     | sana adalah POST ke /livewire/update. Seluruh tombol nomor lalu
+     | menunjuk "/livewire/update?halaman=2".
+     |
+     | Rusaknya diam dan bersyarat — muat halaman, semuanya benar; ketik satu
+     | huruf, semuanya rusak. Itu sebabnya ia bertahan lama.
+     */
+    Http::fake([
+        '*/rujukan*' => Http::response(['data' => [
+            'status_pendaftaran' => ['dp' => 'DP Masuk'], 'paket_wisata' => [],
+        ]]),
+        '*' => Http::response([
+            'data' => [barisPendaftaran(null)],
+            'meta' => ['halaman' => 1, 'per_halaman' => 25, 'total' => 120, 'halaman_terakhir' => 5],
+        ]),
+    ]);
+
+    $layar = Livewire::actingAs(adminPendaftaran())
+        ->test(OrchaPendaftaranList::class)
+        ->set('cari', 'joko');
+
+    // Href-nya tetap alamat halaman, bukan titik-akhir Livewire.
+    expect($layar->html())->not->toContain('livewire/update?halaman')
+        ->and($layar->html())->toContain('wire:click.prevent="keHalaman');
+
+    // Perpindahannya lewat komponen, bukan lewat alamat — dan nomornya terikat
+    // #[Url], jadi bilah alamat tetap ikut berubah.
+    $layar->call('keHalaman', 3);
+    expect($layar->get('halaman'))->toBe(3);
+});
