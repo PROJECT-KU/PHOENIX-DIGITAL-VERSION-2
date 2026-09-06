@@ -4,10 +4,9 @@ namespace App\Livewire\Pages\Admin\Orcha\Pendaftaran;
 
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use App\Livewire\Pages\Admin\Orcha\Concerns\MembacaDaftarPeserta;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Maatwebsite\Excel\Concerns\ToArray;
-use Maatwebsite\Excel\Facades\Excel;
 
 /**
  * Melengkapi nama peserta sebuah pendaftaran.
@@ -25,7 +24,7 @@ use Maatwebsite\Excel\Facades\Excel;
  */
 class OrchaPesertaForm extends Component
 {
-    use MemanggilOrcha, WithFileUploads;
+    use MemanggilOrcha, MembacaDaftarPeserta, WithFileUploads;
 
     public int $pendaftaranId;
 
@@ -112,7 +111,7 @@ class OrchaPesertaForm extends Component
      */
     public function tempel(): void
     {
-        $baris = $this->uraikan(preg_split('/\r\n|\r|\n/', $this->tempelan) ?: []);
+        $baris = $this->uraikanTempelan($this->tempelan);
 
         if ($baris === []) {
             $this->dispatch('toast-error', message: 'Tidak ada nama yang bisa dibaca dari tempelan itu.');
@@ -131,21 +130,14 @@ class OrchaPesertaForm extends Component
             'berkasPeserta' => 'file|mimes:xlsx,xls,csv,txt|max:2048',
         ], [], ['berkasPeserta' => 'berkas peserta']);
 
-        try {
-            $lembar = Excel::toArray(new class implements ToArray
-            {
-                public function array(array $baris) {}
-            }, $this->berkasPeserta);
-        } catch (\Throwable $e) {
+        $baris = $this->bacaBerkasPeserta($this->berkasPeserta);
+
+        if ($baris === null) {
             $this->dispatch('toast-error', message: 'Berkas itu tidak bisa dibaca. Coba simpan ulang sebagai CSV.');
             $this->berkasPeserta = null;
 
             return;
         }
-
-        $baris = $this->uraikan(collect($lembar[0] ?? [])
-            ->map(fn ($kolom) => implode("\t", array_map(fn ($isi) => (string) $isi, (array) $kolom)))
-            ->all(), dariBerkas: true);
 
         if ($baris === []) {
             $this->dispatch('toast-error', message: 'Tidak ada nama yang terbaca di berkas itu.');
@@ -302,67 +294,14 @@ class OrchaPesertaForm extends Component
         $this->barisPeserta[$urutan]['gantikan_titik'] = null;
     }
 
-    /**
-     * @param  array<int, string>  $mentah
-     * @param  bool  $dariBerkas  selnya sudah terpisah sejak dibaca, jadi hanya tab yang memisah
-     * @return array<int, array{nama: string, titik_jemput: string, gantikan: ?string}>
+    /*
+     | Penguraiannya pindah ke trait MembacaDaftarPeserta.
+     |
+     | Layar Daftarkan Rombongan membutuhkan pengurai yang sama persis, dan
+     | menyalinnya ke sana berarti dua pengurai yang lama-lama berbeda
+     | hasilnya untuk berkas yang sama — perbedaan yang baru ketahuan saat
+     | satu layar menghasilkan daftar peserta yang berbeda dari layar lain.
      */
-    private function uraikan(array $mentah, bool $dariBerkas = false): array
-    {
-        return collect($mentah)
-            ->map(function ($baris) use ($dariBerkas) {
-                /*
-                 | Tempelan dipisah tab, titik koma, atau koma — tiga bentuk yang
-                 | sama-sama datang ke admin.
-                 |
-                 | Berkas TIDAK. Sel-selnya sudah terpisah sejak dibaca lalu
-                 | disambung dengan tab di sini, jadi memisah ulang dengan koma
-                 | hanya merusak isi selnya sendiri: "Budi Santoso, S.Pd" terbaca
-                 | sebagai nama "Budi Santoso" dengan titik jemput " S.Pd", dan
-                 | gelar di belakang nama bukan hal yang jarang di daftar peserta.
-                 */
-                $pemisah = $dariBerkas ? '/\t/' : '/\t|;|,/';
-
-                $bagian = preg_split($pemisah, (string) $baris);
-                $nama = trim((string) ($bagian[0] ?? ''));
-
-                /*
-                 | Penggantian boleh dinyatakan langsung di tempelan maupun berkas,
-                 | memakai tanda panah: "Haha > Wiam".
-                 |
-                 | Panitia mengirim daftarnya sekaligus — sebagian nama baru,
-                 | sebagian menggantikan yang berhalangan — dan memaksa admin
-                 | memilah dua kelompok itu dengan tangan hanya memindahkan
-                 | pekerjaan, tidak menghilangkannya.
-                 */
-                $gantikan = null;
-
-                if (preg_match('/^(.+?)\s*(?:->|>|=>)\s*(.+)$/u', $nama, $cocok)) {
-                    $gantikan = trim($cocok[1]);
-                    $nama = trim($cocok[2]);
-                }
-
-                // Berkas boleh menyatakannya lewat kolom ketiga: "Menggantikan".
-                if ($dariBerkas && filled($bagian[2] ?? null)) {
-                    $gantikan = trim((string) $bagian[2]);
-                }
-
-                // Penomoran daftar WhatsApp ikut terbuang: "1." "2)" "3 -".
-                $nama = trim(preg_replace('/^\s*\d+\s*[.)\-]?\s*/', '', $nama));
-
-                return [
-                    'nama' => $nama,
-                    'titik_jemput' => trim((string) ($bagian[1] ?? '')),
-                    'gantikan' => $gantikan,
-                    'gantikan_titik' => null,
-                ];
-            })
-            ->filter(fn ($baris) => $baris['nama'] !== '')
-            // Baris judul dari Excel ("Nama", "Nama Peserta") tidak ikut jadi peserta.
-            ->reject(fn ($baris) => in_array(mb_strtolower($baris['nama']), ['nama', 'nama peserta', 'peserta'], true))
-            ->values()
-            ->all();
-    }
 
     /**
      * Hasil uraian menimpa baris kosong, dan menambah yang sudah terisi.
@@ -388,7 +327,18 @@ class OrchaPesertaForm extends Component
             );
 
             if ($urutan === false) {
-                $daftar[] = $masuk;
+                /*
+                 | Dilengkapi jadi bentuk baris yang utuh, bukan dipakai apa
+                 | adanya.
+                 |
+                 | Yang keluar dari pengurai cuma nama, titik jemput, dan
+                 | gantikan — sedangkan barisnya juga punya bus, kamar, dan
+                 | gantikan_titik. Baris yang kekurangan kunci membuat
+                 | wire:model menulis ke kunci yang belum ada, dan bentuk baris
+                 | yang tidak seragam adalah asal galat yang muncul jauh dari
+                 | tempat ia dibuat.
+                 */
+                $daftar[] = array_merge($this->barisKosong(), $masuk);
 
                 continue;
             }

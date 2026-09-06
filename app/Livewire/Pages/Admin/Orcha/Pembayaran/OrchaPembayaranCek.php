@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Pages\Admin\Orcha\Pembayaran;
 
+use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
 use App\Livewire\Pages\Admin\Orcha\Pembayaran\Concerns\KabarPembayaran;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Lembar cek satu bukti pembayaran.
@@ -25,6 +27,7 @@ class OrchaPembayaranCek extends Component
 {
     use KabarPembayaran;
     use MemanggilOrcha;
+    use WithFileUploads;
 
     public int $pembayaranId;
 
@@ -33,6 +36,17 @@ class OrchaPembayaranCek extends Component
     public string $statusBaru = '';
 
     public string $catatanAdmin = '';
+
+    /**
+     * Bukti susulan, atau pengganti bukti yang sudah ada.
+     *
+     * Sebelum ini satu-satunya jalur yang menerima berkas adalah pencatatan
+     * pembayaran BARU. Admin yang lupa melampirkan buktinya tinggal punya dua
+     * pilihan, dan dua-duanya buruk: mencatat ulang — yang menghitung uangnya
+     * dua kali sehingga tagihannya salah — atau membiarkannya tanpa gambar,
+     * sehingga tidak ada yang bisa ditelusuri kalau suatu saat dipersoalkan.
+     */
+    public $buktiBaru;
 
     public function mount(int $pembayaran): void
     {
@@ -64,6 +78,43 @@ class OrchaPembayaranCek extends Component
         // mengirimkannya ke pelanggan.
         $this->bukti = $this->muat("/pembayaran/{$this->pembayaranId}")['data'] ?? $this->bukti;
 
+    }
+
+    /**
+     * Melampirkan bukti susulan, atau mengganti yang sudah ada.
+     *
+     * Terpisah dari simpan(): menyimpan status mengirim email ke pelanggan
+     * yang tidak bisa ditarik kembali, sedangkan melampirkan bukti tidak
+     * mengabari siapa pun. Menggabungkannya berarti admin yang cuma ingin
+     * menyusulkan gambar ikut mengirim surat.
+     */
+    public function unggahBukti(): void
+    {
+        $this->validate([
+            'buktiBaru' => 'required|image|max:4096',
+        ], [], ['buktiBaru' => 'bukti transfer']);
+
+        try {
+            $hasil = $this->orcha()->unggah(
+                "/pembayaran/{$this->pembayaranId}/bukti",
+                'bukti',
+                $this->buktiBaru,
+            );
+
+            $this->buktiBaru = null;
+
+            // Buktinya disegarkan dari jawaban Orcha, bukan ditebak dari
+            // berkas yang baru diunggah: alamat gambarnya dirakit di sana, dan
+            // menebaknya di sini berarti tautan yang salah begitu jalurnya
+            // berubah.
+            $this->bukti = $hasil['data'] ?? $this->bukti;
+
+            $this->dispatch('order-updated',
+                message: $hasil['pesan'] ?? 'Bukti transfer tersimpan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->buktiBaru = null;
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
     }
 
     /** Kembali ke daftar. Dulu menutup jendela; sekarang berpindah halaman. */

@@ -137,6 +137,86 @@ test('saat semua kategori terisi, tidak ada peringatan yang mengganggu', functio
         ->assertDontSee('belum ada paket');
 });
 
+test('tempelan boleh menyertakan titik jemput di baris yang sama', function () {
+    /*
+     | Daftar panitia hampir selalu memuat titik jemput di sebelah namanya —
+     | kolom Excel yang disalin datang dipisah tab, ketikan tangan dipisah
+     | koma. Sebelumnya seluruh baris dibaca sebagai nama, sehingga "Budi,
+     | Terminal Bungurasih" masuk sebagai satu nama panjang yang lalu tidak
+     | cocok dengan nama mana pun saat riwayat kesehatan diisi.
+     */
+    $halaman = Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->call('tempel', "Budi Santoso, Terminal Bungurasih\nSari Dewi; Stasiun Gubeng\nRian Pratama\tTerminal Bungurasih");
+
+    $peserta = $halaman->get('peserta');
+
+    expect($peserta[0])->toBe(['nama' => 'Budi Santoso', 'titik_jemput' => 'Terminal Bungurasih'])
+        ->and($peserta[1])->toBe(['nama' => 'Sari Dewi', 'titik_jemput' => 'Stasiun Gubeng'])
+        ->and($peserta[2])->toBe(['nama' => 'Rian Pratama', 'titik_jemput' => 'Terminal Bungurasih']);
+});
+
+test('baris tanpa titik jemput memakai titik jemput utama', function () {
+    // Rombongan sekolah berangkat dari satu titik. Yang menyebut titiknya
+    // sendiri menang; yang tidak, ikut titik utama.
+    $halaman = Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('titikJemput', 'Halaman sekolah')
+        ->call('tempel', "Budi\nSari, Stasiun Gubeng");
+
+    $peserta = $halaman->get('peserta');
+
+    expect($peserta[0]['titik_jemput'])->toBe('Halaman sekolah')
+        ->and($peserta[1]['titik_jemput'])->toBe('Stasiun Gubeng');
+});
+
+test('daftar peserta bisa diunggah sebagai berkas CSV', function () {
+    /*
+     | Daftar study tour biasanya sudah berbentuk berkas sejak awal — dikirim
+     | panitia sebagai lampiran. Menyuruh admin membukanya lalu menyalin
+     | isinya ke kotak tempelan hanya memindahkan pekerjaan, dan pada empat
+     | puluh baris pekerjaan itu cukup melelahkan untuk akhirnya dilewati.
+     */
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+        'peserta.csv',
+        "Nama,Titik Jemput\nBudi Santoso,Terminal Bungurasih\nSari Dewi,Stasiun Gubeng\n"
+    );
+
+    $halaman = Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('berkasPeserta', $berkas);
+
+    $peserta = $halaman->get('peserta');
+
+    // Baris judul "Nama" tidak ikut jadi peserta.
+    expect($peserta)->toHaveCount(2)
+        ->and($peserta[0]['nama'])->toBe('Budi Santoso')
+        ->and($peserta[0]['titik_jemput'])->toBe('Terminal Bungurasih')
+        ->and($halaman->get('jumlahPeserta'))->toBe(2);
+});
+
+test('berkas yang bukan Excel atau CSV ditolak', function () {
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('berkasPeserta', \Illuminate\Http\UploadedFile::fake()->image('foto.jpg'))
+        ->assertHasErrors('berkasPeserta');
+});
+
+test('berkasnya dilepas setelah dibaca, tidak tertinggal', function () {
+    /*
+     | Berkas yang tertinggal terbaca lagi saat Livewire menggambar ulang, dan
+     | daftar rombongan sebelumnya muncul di rombongan berikutnya.
+     */
+    $berkas = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+        'peserta.csv', "Budi Santoso,Terminal Bungurasih\n"
+    );
+
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('berkasPeserta', $berkas)
+        ->assertSet('berkasPeserta', null);
+});
+
 test('menempel daftar nama membuang nomor urutnya', function () {
     /*
      | Daftar peserta study tour datang sebagai satu blok teks, kadang
@@ -419,4 +499,85 @@ test('total tagihan menghitung yang DITAGIH, bukan yang berangkat', function () 
         ->assertSee('Rp 20.000.000')
         ->assertSee('42 berangkat')
         ->assertSee('40 ditagih');
+});
+
+/* ---------------- BIAYA TETAP PER ROMBONGAN ---------------- */
+
+test('biaya tetap terkirim terpisah dari modal per orang', function () {
+    /*
+     | Dua satuan yang berbeda, dan memaksanya jadi satu kolom menuntut admin
+     | membagi sendiri tiap kali. Selama ia ingat, hasilnya benar. Yang
+     | benar-benar terjadi adalah ia memakai ulang angka rombongan
+     | sebelumnya — dan rombongan bertiga lalu dilaporkan untung besar padahal
+     | satu carter busnya saja lebih mahal daripada seluruh omzetnya.
+     */
+    isiRombongan(Livewire::actingAs(adminRombongan())->test(OrchaDaftarkanRombongan::class))
+        ->set('hargaJual', '1000000')
+        ->set('hargaModal', '400000')
+        ->set('biayaTetap', '3.000.000')
+        ->call('simpan');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST'
+        && $p['harga_modal'] === 400000
+        && $p['biaya_tetap'] === 3000000);
+});
+
+test('biaya tetap yang dikosongkan terkirim nol, bukan null', function () {
+    /*
+     | Nol berarti "memang tidak ada", dan itu keadaan normal seluruh open
+     | trip. Null berarti "belum diketahui" dan membuat laporan menolak
+     | menghitung — arti yang sama sekali berbeda untuk kotak yang sengaja
+     | dilewati admin.
+     */
+    isiRombongan(Livewire::actingAs(adminRombongan())->test(OrchaDaftarkanRombongan::class))
+        ->set('hargaJual', '1000000')
+        ->call('simpan');
+
+    Http::assertSent(fn ($p) => $p->method() === 'POST' && $p['biaya_tetap'] === 0);
+});
+
+test('biaya tetap ikut diformat bertitik', function () {
+    Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('biayaTetap', 'Rp 3000000')
+        ->assertSet('biayaTetap', '3.000.000');
+});
+
+test('akibat harga terbaca sebelum rombongannya masuk, bukan berbulan kemudian', function () {
+    /*
+     | Inilah satu-satunya tempat admin bisa melihat bahwa harga yang ia
+     | sepakati ternyata merugi. Angka yang sama baru muncul di laporan
+     | keuntungan berbulan-bulan kemudian — dan pada saat itu tidak ada lagi
+     | yang bisa dikerjakan terhadapnya.
+     */
+    $layar = Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('jumlahPeserta', 3)
+        ->set('hargaJual', '750000')
+        ->set('hargaModal', '300000')
+        ->set('biayaTetap', '3000000');
+
+    // Modal sesungguhnya Rp 1.300.000 per kepala, bukan Rp 300.000 yang
+    // diketik — dan harga Rp 750.000 berarti rugi Rp 1.650.000.
+    expect($layar->instance()->modalPerKepala())->toBe(1_300_000)
+        ->and($layar->instance()->perkiraanUntung())->toBe(-1_650_000);
+
+    $layar->assertSee('Rp 1.300.000')
+        ->assertSee('merugi');
+});
+
+test('rombongan besar dengan angka yang sama tidak diperingatkan', function () {
+    // Penjaga arah sebaliknya: peringatan yang muncul di setiap rombongan
+    // berhenti dibaca dalam sehari.
+    $layar = Livewire::actingAs(adminRombongan())
+        ->test(OrchaDaftarkanRombongan::class)
+        ->set('jumlahPeserta', 30)
+        ->set('hargaJual', '750000')
+        ->set('hargaModal', '300000')
+        ->set('biayaTetap', '3000000');
+
+    expect($layar->instance()->modalPerKepala())->toBe(400_000)
+        ->and($layar->instance()->perkiraanUntung())->toBe(10_500_000);
+
+    $layar->assertDontSee('merugi');
 });

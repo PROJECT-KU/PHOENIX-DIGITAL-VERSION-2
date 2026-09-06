@@ -26,3 +26,14 @@ yarn-error.log
 # berkas seperti itu sempat ikut ter-stage menjelang deploy.
 *\ 3.*
 *\ 4.*
+
+# Salinan bentrok OneDrive: "NamaBerkas 2.php", "NamaBerkas 27.php".
+#
+# Dibuat OneDrive sendiri saat menduga ada dua versi berkas yang sama, dan
+# jumlahnya bisa puluhan tanpa ada yang menyadarinya. Pada berkas uji ia bukan
+# cuma sampah: yang isinya kembar mendeklarasikan ulang fungsi yang sama, dan
+# seluruh suite berhenti dengan galat fatal sebelum satu pun uji dijalankan.
+* [0-9].php
+* [0-9][0-9].php
+* [0-9].blade.php
+* [0-9][0-9].blade.php

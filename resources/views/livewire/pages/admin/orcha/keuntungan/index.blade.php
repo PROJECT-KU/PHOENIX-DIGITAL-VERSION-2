@@ -85,6 +85,12 @@ Keuntungan Paket || lemon
             $omzet = (int) ($ringkasan['omzet'] ?? 0);
             $modal = (int) ($ringkasan['modal'] ?? 0);
             $belumLengkap = (int) ($ringkasan['belum_lengkap'] ?? 0);
+            // Yang masih potensi ikut dihitung. Pesanan bermodal kosong di
+            // kolom potensi menyumbang omzetnya penuh tetapi keuntungannya
+            // nol, dan tanpa penanda ini yang membacanya menyimpulkan
+            // marginnya tipis — padahal sebabnya cuma modal yang belum diisi.
+            $potensiBelumLengkap = (int) ($ringkasan['potensi_belum_lengkap'] ?? 0);
+            $totalBelumLengkap = $belumLengkap + $potensiBelumLengkap;
             $adaData = (int) ($ringkasan['pendaftaran'] ?? 0) > 0;
 
             // Porsi batang susun. Modal dan untung dihitung terhadap omzet yang
@@ -185,12 +191,26 @@ Keuntungan Paket || lemon
         </div>
 
         {{-- Laporan yang belum utuh harus mengakui dirinya belum utuh. --}}
-        @if ($belumLengkap > 0)
+        @if ($totalBelumLengkap > 0)
             <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex align-items-start gap-3 mb-4">
                 <i class="bi bi-exclamation-triangle-fill fs-4"></i>
                 <div>
-                    <strong class="d-block">{{ $belumLengkap }} pendaftaran belum bisa dihitung untungnya</strong>
+                    <strong class="d-block">
+                        {{ $totalBelumLengkap }} pendaftaran belum bisa dihitung untungnya
+                    </strong>
                     <span class="small">
+                        {{-- Dipecah dua bila keduanya ada. Admin yang membaca
+                             "3 pendaftaran" perlu tahu mana yang menodai angka
+                             keuntungan yang sudah pasti, dan mana yang baru
+                             menodai potensinya — keduanya menuntut kesegeraan
+                             yang berbeda. --}}
+                        @if ($belumLengkap > 0 && $potensiBelumLengkap > 0)
+                            <span class="fw-semibold">{{ $belumLengkap }}</span> di antaranya sudah lunas,
+                            <span class="fw-semibold">{{ $potensiBelumLengkap }}</span> masih potensi.
+                        @elseif ($potensiBelumLengkap > 0)
+                            Seluruhnya masih potensi — belum menodai angka keuntungan yang sudah pasti,
+                            tetapi potensinya terbaca lebih kecil daripada yang sebenarnya.
+                        @endif
                         Modal per orang belum diisi pada paket:
                         {{ implode(', ', $ringkasan['paket_belum_lengkap'] ?? []) }}.
                         Omzetnya tetap terhitung, keuntungannya tidak dikarang.
@@ -493,7 +513,23 @@ Keuntungan Paket || lemon
                                     </td>
                                     <td class="text-center">{{ $baris['peserta'] }}</td>
                                     <td class="text-end text-nowrap">{{ $baris['omzet_teks'] }}</td>
-                                    <td class="text-end text-nowrap">{{ $baris['modal_teks'] }}</td>
+                                    <td class="text-end text-nowrap">
+                                        {{ $baris['modal_teks'] }}
+                                        {{-- Rombongan yang menanggung biaya tetap tampak merugi
+                                             tanpa keterangan apa pun: modalnya jauh lebih besar
+                                             daripada modal per orang dikali peserta, dan yang
+                                             membacanya menyangka ada salah hitung. Dua baris ini
+                                             yang menjelaskannya, tanpa perlu membuka
+                                             pendaftarannya. --}}
+                                        @if (($baris['biaya_tetap'] ?? 0) > 0)
+                                            <div class="text-muted" style="font-size:.72rem">
+                                                termasuk tetap {{ $baris['biaya_tetap_teks'] }}
+                                            </div>
+                                            <div class="text-muted" style="font-size:.72rem">
+                                                {{ $baris['modal_per_kepala_teks'] }}/kepala
+                                            </div>
+                                        @endif
+                                    </td>
                                     <td class="text-end text-nowrap">
                                         <span class="orcha-untung-nilai {{ $baris['keuntungan'] === null ? 'kosong' : ((int) $baris['keuntungan'] < 0 ? 'rugi' : '') }}">
                                             {{ $baris['keuntungan_teks'] }}

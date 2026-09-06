@@ -1,5 +1,5 @@
 @section('title')
-Pendaftaran Open Trip || lemon
+Pendaftaran Trip || lemon
 @stop
 
 <div>
@@ -7,8 +7,11 @@ Pendaftaran Open Trip || lemon
 
     <div class="container-fluid">
         @include('livewire.pages.admin.orcha.partials.kepala', [
-            'judul' => 'Pendaftaran Open Trip',
-            'keterangan' => 'Peserta yang mendaftar lewat website Orcha Journey.',
+            'judul' => 'Pendaftaran Trip',
+            // Keterangannya ikut dibetulkan: rombongan private trip dan study
+            // tour TIDAK datang lewat website — admin yang memasukkannya lewat
+            // Daftarkan Rombongan, dan keduanya tampil di daftar yang sama.
+            'keterangan' => 'Open trip, private trip, dan study tour — dari website maupun yang didaftarkan admin.',
         ])
 
         {{-- Pencarian & saringan --}}
@@ -209,6 +212,14 @@ Pendaftaran Open Trip || lemon
                                     $totalPeserta = max(1, (int) $baris['jumlah_peserta']);
                                     $lengkap = $baris['kesehatan_lengkap'] ?? false;
                                     $titikJemput = $baris['jemput_per_titik'] ?? [];
+
+                                    // Penanda angsuran. Kunci 'angsuran' hanya dikirim Orcha
+                                    // saat relasinya sengaja dimuat — barisnya harus tetap
+                                    // tergambar kalau suatu saat ia tidak ikut.
+                                    $angsuran = $baris['angsuran'] ?? null;
+                                    $temponBerikutnya = ! empty($angsuran['berikutnya'])
+                                        ? \Carbon\Carbon::parse($angsuran['berikutnya'])->locale('id')->translatedFormat('d M')
+                                        : null;
                                 @endphp
                                 <tr wire:key="pendaftaran-{{ $baris['id'] }}">
                                     <td>
@@ -354,6 +365,43 @@ Pendaftaran Open Trip || lemon
                                                     </option>
                                                 @endforeach
                                             </select>
+                                        @endif
+
+                                        {{-- Penanda angsuran.
+
+                                             Tanpa ini, pesanan yang belum lunas menjelang berangkat
+                                             tergambar persis sama entah ia menunggak atau sedang
+                                             menjalani jadwal yang kita sendiri berikan. Yang membaca
+                                             daftar sedang memilih siapa yang ditelepon hari ini, dan
+                                             menelepon orang yang membayar tepat waktu dengan nada
+                                             penagihan merusak kesepakatan yang baru dibuat.
+
+                                             Tiga keadaan, tiga kalimat berbeda — bukan satu cip yang
+                                             cuma bilang "diangsur" lalu memaksa admin membuka
+                                             detailnya untuk tahu apakah ada yang perlu dikerjakan. --}}
+                                        @if ($angsuran)
+                                            @if ($angsuran['telat'] > 0)
+                                                <span class="orcha-cip-angsuran telat"
+                                                    title="Rencana angsuran {{ $angsuran['jumlah_termin'] }} termin. {{ $angsuran['telat'] }} termin sudah lewat jatuh tempo dan belum tertutup pembayaran.">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                                    Angsuran telat {{ $angsuran['telat'] }} termin
+                                                </span>
+                                            @elseif ($angsuran['selesai'])
+                                                <span class="orcha-cip-angsuran selesai"
+                                                    title="Seluruh termin sudah tertutup pembayaran.">
+                                                    <i class="bi bi-calendar2-check-fill"></i>
+                                                    Angsuran selesai
+                                                </span>
+                                            @else
+                                                <span class="orcha-cip-angsuran"
+                                                    title="Rencana angsuran {{ $angsuran['jumlah_termin'] }} termin. Termin berikutnya jatuh tempo {{ $temponBerikutnya }}.">
+                                                    <i class="bi bi-calendar2-range-fill"></i>
+                                                    Angsuran {{ $angsuran['lunas'] }}/{{ $angsuran['jumlah_termin'] }}
+                                                    @if ($temponBerikutnya)
+                                                        · {{ $temponBerikutnya }}
+                                                    @endif
+                                                </span>
+                                            @endif
                                         @endif
                                     </td>
 

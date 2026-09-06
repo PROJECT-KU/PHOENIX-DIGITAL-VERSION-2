@@ -981,16 +981,62 @@ Detail Pendaftaran || lemon
                     <div class="card border-0 shadow-sm rounded-4">
                         <div class="card-body p-3 p-lg-4">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                {{-- "Bukti Pembayaran" hanya benar bila semuanya berupa
+                                     bukti. Sejak pembayaran publik lewat gerbang, sebagian
+                                     baris di sini tidak punya bukti apa pun dan memang
+                                     tidak seharusnya punya. --}}
                                 <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
-                                    <i class="bi bi-cash-stack text-primary"></i> Bukti Pembayaran
+                                    <i class="bi bi-cash-stack text-primary"></i> Pembayaran Masuk
                                 </h2>
-                                <a href="{{ route('admin.orcha.pembayaran') }}" class="text-decoration-none"
-                                    style="font-size:.8rem">Kelola semua</a>
+                                {{-- Membawa kode pesanannya, bukan mendarat di seluruh
+                                     daftar.
+
+                                     Admin yang menekannya sedang melihat SATU pesanan;
+                                     menjatuhkannya ke daftar penuh berarti menyuruhnya
+                                     mengetik ulang kode yang barusan ada di layarnya —
+                                     lalu mencarinya lagi di antara pesanan orang lain. --}}
+                                <a href="{{ route('admin.orcha.pembayaran', ['cari' => $pendaftaran['kode']]) }}"
+                                    class="text-decoration-none" style="font-size:.8rem">
+                                    Kelola pembayaran ini
+                                </a>
                             </div>
 
+                            @php
+                                /*
+                                 | Total kode unik seluruh pemesanan ini.
+                                 |
+                                 | Kode unik TIDAK mengurangi tagihan — ia penanda, bukan
+                                 | cicilan. Tetapi uangnya nyata masuk ke rekening, dan
+                                 | selisih antara "uang diterima" dan "masuk ke tagihan"
+                                 | itulah yang bikin admin ragu saat mencocokkan dengan
+                                 | dashboard DOKU. Dijumlahkan sekali di sini supaya
+                                 | selisihnya punya angka, bukan jadi teka-teki.
+                                 */
+                                $totalKodeUnik = collect($pembayaran)
+                                    ->sum(fn ($b) => (int) ($b['rincian']['kode_unik'] ?? 0));
+                                $totalDiterima = collect($pembayaran)
+                                    ->where('status', 'diterima')
+                                    ->sum(fn ($b) => (int) ($b['rincian']['total'] ?? $b['nominal']));
+                            @endphp
+
                             @forelse ($pembayaran as $bayar)
+                                @php $lewatGerbang = ($bayar['kanal'] ?? 'transfer') === 'doku'; @endphp
+
                                 <div class="d-flex gap-3 pb-3 mb-3 {{ ! $loop->last ? 'border-bottom' : '' }}">
-                                    @if ($bayar['bukti'])
+                                    {{-- Pembayaran gerbang tidak menempati kolom gambar sama
+                                         sekali — tidak dengan foto, dan tidak dengan kotak
+                                         pengganti.
+
+                                         Kotak "Tanpa bukti" jujur untuk transfer manual yang
+                                         buktinya belum dilampirkan: di sana memang ada yang
+                                         hilang. Untuk pembayaran gerbang tidak ada yang
+                                         hilang, dan kotak apa pun di tempat itu tetap
+                                         terbaca sebagai tempat gambar — admin lalu mencari
+                                         berkas yang tidak akan pernah ada. Metodenya
+                                         disebutkan di barisnya, tempat keterangan memang
+                                         seharusnya berada. --}}
+                                    @if ($lewatGerbang)
+                                    @elseif ($bayar['bukti'])
                                         {{-- Dibuka menumpang di halaman ini, bukan di tab baru:
                                              admin yang sedang mencocokkan pembayaran tidak perlu
                                              kehilangan posisi gulungnya. --}}
@@ -1010,38 +1056,442 @@ Detail Pendaftaran || lemon
                                     @endif
 
                                     <div class="flex-grow-1">
+                                        {{-- Nominal yang MASUK TAGIHAN, dan itu yang paling besar
+                                             di baris ini. Untuk pembayaran gerbang ia berbeda
+                                             dari uang yang diterima — pecahannya menyusul di
+                                             bawah, tetapi yang pertama ditangkap mata harus
+                                             angka yang menggerakkan sisa tagihan. --}}
                                         <div class="d-flex justify-content-between align-items-start gap-2">
-                                            <span class="fw-bold">{{ $bayar['nominal_formatted'] }}</span>
+                                            <span class="orcha-nominal-utama">{{ $bayar['nominal_formatted'] }}</span>
                                             <span class="badge orcha-lencana-bayar-{{ $bayar['status'] }}">
                                                 {{ $bayar['status_label'] }}
                                             </span>
                                         </div>
-                                        <div class="text-muted" style="font-size:.78rem">
-                                            {{ $bayar['jenis_label'] }} ·
-                                            {{ $bayar['tanggal_transfer'] ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('d M Y') : '—' }}
+
+                                        {{-- Jenis dipisahkan jadi keping, tanggal dibiarkan
+                                             redup.
+
+                                             Keduanya dulu satu baris abu dipisah titik, dan
+                                             "Pelunasan · 05 Sep 2026" terbaca sebagai satu
+                                             frasa. Padahal jenisnya yang menentukan arti baris
+                                             ini — uang muka, angsuran, atau pelunasan
+                                             menggerakkan status pesanan dengan cara yang
+                                             berbeda — sedangkan tanggalnya cuma keterangan. --}}
+                                        <div class="orcha-jenis-tanggal">
+                                            <span class="jenis jenis-{{ $bayar['jenis'] }}">{{ $bayar['jenis_label'] }}</span>
+                                            <span class="tgl">
+                                                {{ $bayar['tanggal_transfer'] ? \Carbon\Carbon::parse($bayar['tanggal_transfer'])->locale('id')->translatedFormat('d M Y') : '—' }}
+                                            </span>
                                         </div>
-                                        <div class="text-muted" style="font-size:.78rem">
-                                            {{ $bayar['bank_pengirim'] }} a.n. {{ $bayar['atas_nama_pengirim'] }}
-                                        </div>
+                                        {{-- Untuk pembayaran gerbang, yang berguna bukan
+                                             "a.n. siapa" — nama itu nama pemesannya sendiri —
+                                             melainkan pecahan angkanya. --}}
+                                        @if ($lewatGerbang)
+                                            {{-- Metodenya naik ke sini, menggantikan kolom
+                                                 gambar yang sudah tidak ada. --}}
+                                            {{-- Metodenya berwarna merek, bukan abu.
+
+                                                 Ia satu-satunya keterangan yang menggantikan
+                                                 kolom gambar yang sudah dihapus — kalau ikut
+                                                 redup seperti sisanya, kolom itu terbaca
+                                                 kosong begitu saja. --}}
+                                            <div class="orcha-metode-bayar">
+                                                <i class="bi bi-lightning-charge-fill"></i>
+                                                {{ $bayar['bank_pengirim'] }}
+                                            </div>
+
+                                            {{-- Hitungannya diberi warna per peran, bukan
+                                                 satu blok abu seragam.
+
+                                                 Tiga angka berdampingan dalam satu warna
+                                                 memaksa mata membacanya sebagai kalimat —
+                                                 padahal yang perlu ditangkap justru
+                                                 hubungannya: mana yang diterima, mana yang
+                                                 masuk tagihan, mana yang cuma penanda.
+                                                 Warna mengerjakan pemisahan itu tanpa
+                                                 menambah satu kata pun. --}}
+                                            @if ($rincian = $bayar['rincian'] ?? null)
+                                                {{-- Labelnya "Dibayar", bukan "Diterima".
+
+                                                     Lencana status di kanan atas juga berbunyi
+                                                     DITERIMA, dan artinya lain sama sekali —
+                                                     yang satu keadaan catatannya, yang satu
+                                                     uang yang masuk. Dua kata sama dalam satu
+                                                     baris memaksa pembacanya menebak mana yang
+                                                     dimaksud. --}}
+                                                <div class="orcha-pecah-bayar">
+                                                    <span class="lbl">Dibayar</span>
+                                                    <span class="tot">Rp {{ number_format($rincian['total'], 0, ',', '.') }}</span>
+                                                    <span class="op">=</span>
+                                                    <span class="pokok">Rp {{ number_format($rincian['pokok'], 0, ',', '.') }}</span>
+                                                    <span class="op">+</span>
+                                                    <span class="unik">kode unik {{ number_format($rincian['kode_unik'], 0, ',', '.') }}</span>
+                                                </div>
+                                                <div class="orcha-nomor-tagihan">
+                                                    <i class="bi bi-receipt-cutoff"></i> {{ $rincian['invoice'] }}
+                                                </div>
+                                            @endif
+                                        @else
+                                            {{-- Jalur manual: banknya adalah METODE-nya, jadi
+                                                 diberi bobot yang sama dengan metode gerbang.
+                                                 Nama pengirim tetap redup — ia yang dicocokkan
+                                                 saat ragu, bukan yang dipindai sekilas. --}}
+                                            <div class="orcha-metode-bayar bank">
+                                                <i class="bi bi-bank"></i>
+                                                {{ $bayar['bank_pengirim'] }}
+                                                <span class="atas-nama">a.n. {{ $bayar['atas_nama_pengirim'] }}</span>
+                                            </div>
+                                        @endif
+
+                                        {{-- Catatan admin diredam menjadi baris terakhir yang
+                                             paling ringan. Ia keterangan, bukan angka — dan
+                                             baris yang seberat angkanya membuat mata berhenti
+                                             di tempat yang salah. --}}
                                         @if ($bayar['catatan_admin'])
-                                            <div class="mt-1" style="font-size:.78rem">
-                                                <span class="orcha-label-kecil d-inline">Catatan admin:</span>
+                                            <div class="orcha-catatan-baris">
+                                                <span class="lbl">Catatan admin</span>
                                                 {{ $bayar['catatan_admin'] }}
                                             </div>
                                         @endif
                                     </div>
                                 </div>
+                                @if ($loop->last && $totalKodeUnik > 0)
+                                    {{-- Ringkasan kode unik seluruh pemesanan.
+
+                                         Inilah selisih antara uang yang masuk rekening dan
+                                         angka yang mengurangi tagihan. Tanpa baris ini,
+                                         admin yang mencocokkan dengan dashboard DOKU
+                                         menemukan selisih beberapa ribu dan tidak punya
+                                         cara tahu itu wajar. --}}
+                                    <div class="orcha-ringkas-unik">
+                                        <div class="baris">
+                                            <span>Total diterima</span>
+                                            <span>Rp {{ number_format($totalDiterima, 0, ',', '.') }}</span>
+                                        </div>
+                                        <div class="baris unik">
+                                            <span>Di antaranya kode unik <em>(penanda, bukan cicilan)</em></span>
+                                            <span>Rp {{ number_format($totalKodeUnik, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                @endif
                             @empty
                                 <div class="text-center py-4">
                                     <div class="empty-state-icon-wrapper mx-auto mb-2"><i class="bi bi-cash-coin"></i></div>
                                     <p class="text-muted mb-0" style="font-size:.88rem">
-                                        Belum ada bukti transfer yang dikirim pelanggan.
+                                        Belum ada pembayaran yang masuk untuk pemesanan ini.
                                     </p>
                                 </div>
                             @endforelse
                         </div>
                     </div>
                 </div>
+
+                    {{-- ============ ANGSURAN ============
+
+                         BERAPA KALI DITENTUKAN SISTEM. Layar ini menampilkan yang
+                         diizinkan berikut nominalnya, dan admin memilih dari situ —
+                         tidak pernah mengetik angkanya sendiri.
+
+                         Nominalnya ikut ditampilkan untuk tiap pilihan, bukan hanya
+                         jumlah terminnya. Admin yang menjelaskan lewat WhatsApp butuh
+                         angka itu di layarnya; "boleh 3x" tanpa nominal adalah janji
+                         yang tidak bisa dinilai orang yang sedang menghitung
+                         kemampuannya. --}}
+                    {{-- Kartu ini TIDAK ditampilkan untuk pesanan yang sudah lunas.
+
+                         Tidak ada sisa tagihan yang bisa diangsur, jadi tidak ada
+                         keputusan yang menunggu admin — dan kartu yang isinya hanya
+                         penolakan menyuruh orang membaca sesuatu yang tidak
+                         berkonsekuensi apa pun.
+
+                         Pengecualiannya: pesanan yang lunas LEWAT angsuran. Di sana
+                         jadwalnya adalah riwayat, dan riwayat yang hilang begitu lunas
+                         justru yang dicari saat ada yang dipersoalkan. --}}
+                    @if (empty($angsuran['lunas']) || ! empty($angsuran['rencana']))
+                    <div class="card border-0 shadow-sm rounded-4 mt-4">
+                        <div class="card-body p-3 p-lg-4">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                <h2 class="fw-bold mb-0 orcha-judul-ikon" style="font-size:1.05rem">
+                                    <i class="bi bi-calendar2-week text-primary"></i> Angsuran
+                                </h2>
+
+                                @php
+                                    // Dihitung dari terminnya sendiri, bukan dari status
+                                    // pesanan: yang ditanyakan kartu ini "jadwalnya sudah
+                                    // tuntas belum", dan itu dijawab baris-barisnya.
+                                    $terminRencana = $angsuran['rencana']['termin'] ?? [];
+                                    $rencanaSelesai = $terminRencana !== []
+                                        && collect($terminRencana)->every(fn ($t) => $t['status'] === 'lunas');
+                                    $adaTelat = collect($terminRencana)->contains(fn ($t) => $t['status'] === 'telat');
+
+                                    // Dirakit di sini, bukan disusun dari potongan di dalam
+                                    // markup: "{{ n }}×" pada baris terpisah dari katanya
+                                    // menghasilkan baris baru di tengah label, dan yang
+                                    // membaca sumbernya tidak melihat kalimat utuhnya.
+                                    $labelRencana = ($angsuran['rencana']['jumlah_termin'] ?? 0).'× '
+                                        .($rencanaSelesai ? 'selesai' : ($adaTelat ? 'ada yang telat' : 'berjalan'));
+                                @endphp
+
+                                @if (! empty($angsuran['rencana']))
+                                    {{-- "Berjalan" hanya benar selama masih ada yang belum
+                                         lunas. Rencana yang sudah tuntas tetapi dilabeli
+                                         berjalan membuat admin mengira masih ada yang perlu
+                                         ditagih — dan ia menelepon orang yang sudah selesai
+                                         membayar. --}}
+                                    <span class="badge {{ $adaTelat ? 'orcha-lencana-bayar-ditolak' : 'orcha-lencana-bayar-diterima' }}">{{ $labelRencana }}</span>
+                                @endif
+                            </div>
+
+                            @if (! empty($angsuran['rencana']))
+                                @php $rencana = $angsuran['rencana']; @endphp
+
+                                <ul class="orcha-termin">
+                                    @foreach ($rencana['termin'] as $termin)
+                                        <li class="baris {{ $termin['status'] }}">
+                                            <span class="urut">{{ $termin['urutan'] }}</span>
+
+                                            <div class="isi">
+                                                <div class="fw-semibold">
+                                                    {{ $termin['urutan'] === 1 ? 'Uang muka' : 'Angsuran ke-' . ($termin['urutan'] - 1) }}
+                                                </div>
+                                                <div class="text-muted" style="font-size:.76rem">
+                                                    Jatuh tempo
+                                                    {{ \Carbon\Carbon::parse($termin['jatuh_tempo'])->locale('id')->translatedFormat('j F Y') }}
+                                                    @if ($termin['kurang'] > 0 && $termin['kurang'] < $termin['nominal'])
+                                                        · kurang Rp {{ number_format($termin['kurang'], 0, ',', '.') }}
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <div class="text-end">
+                                                <div class="fw-bold">{{ $termin['nominal_teks'] }}</div>
+                                                <span class="tanda">
+                                                    {{ ['lunas' => 'Lunas', 'telat' => 'Telat', 'menunggu' => 'Menunggu'][$termin['status']] }}
+                                                </span>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+
+                                @if ($rencana['catatan'])
+                                    <div class="orcha-cek-catatan mt-3">{{ $rencana['catatan'] }}</div>
+                                @endif
+
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                                    <span class="text-muted" style="font-size:.76rem">
+                                        Dibuat {{ $rencana['dibuat_oleh'] ?: 'admin' }}
+                                        @if ($rencana['dibuat_pada'])
+                                            · {{ \Carbon\Carbon::parse($rencana['dibuat_pada'])->locale('id')->translatedFormat('j M Y') }}
+                                        @endif
+                                    </span>
+
+                                    {{-- Tidak ada yang bisa dibatalkan dari jadwal yang sudah
+                                         tuntas, dan menawarkannya bukan sekadar tidak berguna
+                                         — merusak. Yang tersisa dari rencana selesai cuma
+                                         catatannya: bukti bahwa pelanggan diberi keringanan,
+                                         jadwalnya apa, dan ia menyelesaikannya. Itu persis
+                                         yang dicari saat belakangan ada yang dipersoalkan.
+
+                                         Endpoint-nya juga menolak, bukan cuma tombolnya yang
+                                         disembunyikan — layar boleh dilewati. --}}
+                                    @if ($rencanaSelesai)
+                                        <span class="orcha-rencana-tuntas">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            Seluruh termin lunas — jadwalnya disimpan sebagai riwayat
+                                        </span>
+                                    @else
+                                        {{-- Membatalkan rencana TIDAK mengubah tagihannya, dan itu
+                                             disebut di dialognya — admin yang mengira ia sedang
+                                             menghapus utang pelanggan akan ragu menekannya. --}}
+                                        <button type="button" class="orcha-btn orcha-btn-bahaya pcek-konfirmasi"
+                                            data-action="batalkanAngsuran"
+                                            data-title="Batalkan rencana angsuran?"
+                                            data-text="Jadwalnya dihapus, tetapi tagihannya tidak berubah — uang yang sudah masuk tetap masuk, dan sisanya kembali jatuh tempo H-{{ $aturanBayar['pelunasan_hari_sebelum'] ?? 5 }} sebelum berangkat."
+                                            data-confirm="Ya, batalkan">
+                                            <i class="bi bi-x-circle"></i> Batalkan rencana
+                                        </button>
+                                    @endif
+                                </div>
+
+                            @elseif (! ($angsuran['boleh_diangsur'] ?? false))
+                                {{-- Alasannya disebut, bukan sekadar "tidak boleh": admin yang
+                                     harus menjelaskan ke pelanggan butuh kalimatnya. --}}
+                                <div class="orcha-alasan">
+                                    <span class="orcha-label-kecil orcha-ikon-teks">
+                                        <i class="bi bi-info-circle"></i> Belum bisa diangsur
+                                    </span>
+                                    <div style="font-size:.84rem" class="mt-1">
+                                        {{ $angsuran['alasan'] ?? 'Pesanan ini belum memenuhi syarat angsuran.' }}
+                                    </div>
+                                </div>
+
+                            @elseif (! $formulirAngsuran)
+                                <p class="text-muted mb-3" style="font-size:.88rem">
+                                    Sistem membolehkan maksimal
+                                    <strong>{{ $angsuran['maks_termin'] }}× angsuran</strong> untuk pesanan ini.
+                                    Berikan hanya bila pelanggan memang memintanya.
+                                </p>
+
+                                {{-- Memakai .orcha-btn, bukan .btn Bootstrap mentah.
+
+                                     .btn lemon dipatok padding 10px 20px !important dan tidak
+                                     mengatur perataan isinya, jadi ikon dan teks jatuh sebagai
+                                     dua benda terpisah — plusnya menggantung sendiri di atas
+                                     tulisannya. .orcha-btn sudah inline-flex, tengah, bergap,
+                                     dan nowrap; itulah bentuk tombol yang dipakai 88 tempat
+                                     lain di panel ini. --}}
+                                <button type="button" class="orcha-btn orcha-btn-utama"
+                                    wire:click="bukaFormulirAngsuran">
+                                    <i class="bi bi-plus-lg"></i> Buat rencana angsuran
+                                </button>
+
+                            @else
+                                {{-- Angka yang sedang DIBAGI, disebut lebih dulu.
+
+                                     Admin yang memilih "3×" sedang membagi sebuah angka, dan
+                                     angka itu harus ada di layar yang sama — bukan diingat
+                                     dari kartu lain yang sudah tergulung ke atas. --}}
+                                <div class="orcha-angsuran-konteks">
+                                    <span class="lbl">Yang dibagi</span>
+                                    <span class="nil">{{ $angsuran['total_teks'] }}</span>
+                                    <span class="ket">seluruh tagihan pesanan ini</span>
+                                </div>
+
+                                {{-- Arti "jatuh tempo" dijelaskan sekali di sini, bukan
+                                     diulang di tiap baris.
+
+                                     Yang ditanyakan admin bukan tanggalnya melainkan sifatnya:
+                                     apakah itu hari pelanggan harus membayar, atau batas
+                                     akhirnya. Perbedaannya nyata — yang mengira itu tanggal
+                                     pasti akan menelepon pelanggan yang sebenarnya belum
+                                     terlambat. --}}
+                                <p class="orcha-angsuran-arahan">
+                                    Pilih berapa kali pelanggan akan membayar. Termin pertama selalu
+                                    sebesar uang muka — kursinya baru ditahan setelah itu masuk.
+                                    Tanggal di bawah adalah <strong>batas akhir tiap termin</strong>;
+                                    pelanggan boleh membayar lebih awal, dan termin terakhir selalu
+                                    jatuh tepat di batas pelunasan.
+                                </p>
+
+                                <div class="orcha-pilih-termin">
+                                    @foreach ($angsuran['pilihan'] as $opsi)
+                                        @php $terpilih = $terminDipilih === $opsi['jumlah_termin']; @endphp
+
+                                        <label class="opsi {{ $terpilih ? 'aktif' : '' }}">
+                                            <input type="radio" wire:model.live="terminDipilih"
+                                                value="{{ $opsi['jumlah_termin'] }}" class="d-none">
+
+                                            <div class="kepala">
+                                                <div>
+                                                    <span class="judul">{{ $opsi['jumlah_termin'] }}× pembayaran</span>
+                                                    {{-- Diterjemahkan jadi kalimat, karena "3×" saja
+                                                         tidak memberi tahu apa isinya. --}}
+                                                    <span class="sub">
+                                                        uang muka + {{ $opsi['jumlah_termin'] - 1 }} angsuran
+                                                    </span>
+                                                </div>
+
+                                                <span class="tandanya">
+                                                    <i class="bi {{ $terpilih ? 'bi-check-circle-fill' : 'bi-circle' }}"></i>
+                                                </span>
+                                            </div>
+
+                                            <ul class="rinci">
+                                                @foreach ($opsi['termin'] as $t)
+                                                    <li>
+                                                        <span class="urut">{{ $t['urutan'] }}</span>
+                                                        <span class="apa">{{ $t['label'] }}</span>
+                                                        {{-- Tanggalnya DIBERI LABEL, tidak berdiri
+                                                             telanjang.
+
+                                                             "26 Sep 2026" sendirian tidak menjawab
+                                                             pertanyaan pertama yang muncul: itu
+                                                             tanggal apa — hari bayarnya, atau batas
+                                                             akhirnya? Admin yang menebak salah akan
+                                                             menjanjikan hal yang salah pula ke
+                                                             pelanggan.
+
+                                                             Kata yang dipakai "jatuh tempo", sama
+                                                             dengan jadwal berjalan, halaman
+                                                             pembayaran pelanggan, dan surat
+                                                             pengingatnya. Dua istilah untuk satu hal
+                                                             lebih membingungkan daripada satu
+                                                             istilah yang perlu dipelajari sekali. --}}
+                                                        <span class="kapan">
+                                                            <span class="lbl">Jatuh tempo</span>
+                                                            {{ \Carbon\Carbon::parse($t['jatuh_tempo'])->locale('id')->translatedFormat('j M Y') }}
+                                                        </span>
+                                                        <span class="berapa">{{ $t['nominal_teks'] }}</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </label>
+                                    @endforeach
+                                </div>
+
+                                {{-- Akibat yang akan terjadi, disebut SEBELUM tombolnya ditekan.
+
+                                     Admin awam tidak tahu apa yang berubah bagi pelanggan setelah
+                                     ia menekan Terbitkan — dan yang tidak tahu cenderung tidak
+                                     menekan sama sekali, lalu mengurus angsurannya lewat
+                                     percakapan seperti sebelum fitur ini ada. --}}
+                                <div class="orcha-angsuran-akibat">
+                                    <i class="bi bi-info-circle"></i>
+                                    <div>
+                                        Setelah diterbitkan, pelanggan melihat jadwal ini di halaman
+                                        pembayaran dan membayar tiap termin sendiri. Ia diingatkan lewat
+                                        email <strong>{{ $angsuran['ingatkan_hari_sebelum'] }} hari</strong>
+                                        sebelum tiap jatuh tempo, dan <strong>kotak surat kantor</strong>
+                                        dikabari bila ada termin yang terlewat.
+                                    </div>
+                                </div>
+
+                                <div class="mt-3">
+                                    <label class="form-label small fw-semibold mb-1">
+                                        Catatan <span class="text-muted fw-normal">(internal — hanya dibaca admin)</span>
+                                    </label>
+                                    <input type="text" class="form-control" wire:model="catatanAngsuran"
+                                        placeholder="Mis. diminta wali murid, dibayar per gajian.">
+                                    <div class="form-text">
+                                        Alasan keringanan ini diberikan — berguna saat admin lain
+                                        membukanya berbulan-bulan kemudian.
+                                    </div>
+                                </div>
+
+                                {{-- Terbitkan di kanan, Batal di kiri — urutan yang sama
+                                     dengan kaki lembar cek pembayaran, supaya tangan admin
+                                     tidak perlu belajar dua kebiasaan di satu panel. --}}
+                                {{-- Dua tombol setengah lebar, bukan sepasang tombol kecil di
+                                     pojok kanan. Kaki kartu yang separuhnya kosong terbaca
+                                     seperti ada yang gagal dimuat — dan tombol lebar juga lebih
+                                     mudah ditekan di layar sentuh, tempat sebagian admin
+                                     mengurus pesanan. --}}
+                                <div class="row g-2 mt-3">
+                                    <div class="col-6">
+                                        <button type="button"
+                                            class="orcha-btn orcha-btn-lembut orcha-tombol-lembar"
+                                            wire:click="tutupFormulirAngsuran">
+                                            <i class="bi bi-x-lg"></i> Batal
+                                        </button>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <button type="button"
+                                            class="orcha-btn orcha-btn-utama orcha-tombol-lembar"
+                                            wire:click="simpanAngsuran" wire:target="simpanAngsuran"
+                                            wire:loading.attr="disabled">
+                                            <span wire:loading.remove wire:target="simpanAngsuran"
+                                                class="orcha-ikon-teks">
+                                                <i class="bi bi-check-lg"></i> Terbitkan jadwal
+                                            </span>
+                                            <span wire:loading wire:target="simpanAngsuran">Menyimpan…</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
             </div>
         @endif
     </div>

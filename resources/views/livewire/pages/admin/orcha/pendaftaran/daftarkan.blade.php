@@ -353,11 +353,70 @@ Daftarkan Rombongan || lemon
                                     value="{{ $hargaModal }}" placeholder="500.000"
                                     class="form-control @error('hargaModal') is-invalid @enderror">
                             </div>
-                            <div class="form-text">Dipakai laporan keuntungan.</div>
+                            <div class="form-text">Yang ikut bertambah tiap peserta: tiket, makan, kamar.</div>
                             @error('hargaModal')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        {{-- Biaya tetap, satu-satunya angka di layar ini yang PER ROMBONGAN.
+
+                             Punya kolomnya sendiri karena memaksanya masuk ke "modal per
+                             orang" menuntut admin membagi sendiri tiap kali. Selama ia
+                             ingat, hasilnya benar. Yang benar-benar terjadi adalah ia
+                             memakai ulang angka rombongan sebelumnya — dan rombongan
+                             bertiga lalu dilaporkan untung besar padahal satu carter
+                             busnya saja lebih mahal daripada seluruh omzetnya. --}}
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label small fw-semibold">
+                                Biaya tetap rombongan <span class="text-muted fw-normal">(opsional)</span>
+                            </label>
+                            <div class="orcha-rupiah">
+                                <input type="text" inputmode="numeric" wire:model.blur="biayaTetap"
+                                    value="{{ $biayaTetap }}" placeholder="3.000.000"
+                                    class="form-control @error('biayaTetap') is-invalid @enderror">
+                            </div>
+                            <div class="form-text">
+                                Yang <strong>tidak</strong> bertambah walau pesertanya bertambah:
+                                carter bus, guide, sopir, tol. Kosongkan untuk open trip.
+                            </div>
+                            @error('biayaTetap')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Akibat dari angka yang barusan diketik, dihitung hidup.
+
+                             Inilah satu-satunya tempat admin bisa melihat bahwa harga
+                             yang ia sepakati ternyata merugi — sebelum rombongannya
+                             masuk, bukan berbulan-bulan kemudian saat laporan dibuka. --}}
+                        @if ($this->modalPerKepala() > 0 && (int) $jumlahPeserta > 0)
+                            @php $untung = $this->perkiraanUntung(); @endphp
+                            <div class="col-12">
+                                <div @class([
+                                    'orcha-akibat-modal',
+                                    'rugi' => $untung < 0,
+                                ])>
+                                    <div class="baris">
+                                        <span class="lbl">Modal sesungguhnya per kepala</span>
+                                        <span class="nil">Rp {{ number_format($this->modalPerKepala(), 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="baris">
+                                        <span class="lbl">Perkiraan untung rombongan</span>
+                                        <span class="nil {{ $untung < 0 ? 'merah' : 'hijau' }}">
+                                            Rp {{ number_format($untung, 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                    @if ($untung < 0)
+                                        <p class="peringatan">
+                                            Harga ini <strong>merugi</strong>. Biaya tetapnya dibagi
+                                            {{ (int) $jumlahPeserta }} orang, jadi rombongan kecil
+                                            menanggung jauh lebih berat per kepalanya.
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -464,14 +523,58 @@ Daftarkan Rombongan || lemon
                                  pekerjaan yang membuat layar ini tidak dipakai sama
                                  sekali, dan rombongannya kembali dicatat di kertas. --}}
                             <label class="form-label small fw-semibold">
-                                Tempel daftar nama <span class="text-muted fw-normal">(satu nama per baris)</span>
+                                Tempel daftar peserta
+                                <span class="text-muted fw-normal">(satu orang per baris)</span>
                             </label>
                             <textarea rows="3" class="form-control" x-data
                                 x-on:change="$wire.tempel($event.target.value); $event.target.value = ''"
-                                placeholder="1. Budi Santoso&#10;2. Sari Dewi&#10;3. Rian Pratama"></textarea>
+                                placeholder="Budi Santoso, Terminal Bungurasih&#10;Sari Dewi, Stasiun Gubeng&#10;Rian Pratama"></textarea>
+
+                            {{-- Titik jemput boleh menyusul di baris yang sama.
+
+                                 Kolom Excel yang disalin datang dipisah tab, daftar
+                                 ketikan tangan dipisah koma atau titik koma. Ketiganya
+                                 diterima — memaksa admin merapikan dulu berarti
+                                 pekerjaan yang sama tetap dikerjakan tangan, hanya
+                                 pindah tempat. --}}
                             <div class="form-text">
-                                Nomor urut di depan dibuang sendiri. Jumlah pesertanya ikut menyesuaikan.
+                                Boleh sekalian titik jemputnya: <em>Nama, Titik jemput</em> —
+                                dipisah koma, titik koma, atau tab. Nomor urut di depan dibuang
+                                sendiri, dan jumlah pesertanya ikut menyesuaikan.
                             </div>
+                        </div>
+
+                        {{-- Unggah berkas, sejajar dengan kotak tempelan.
+
+                             Daftar study tour biasanya sudah berbentuk berkas sejak
+                             awal — dikirim panitia sebagai lampiran, bukan diketik di
+                             badan pesan. Menyuruh admin membukanya lalu menyalin
+                             isinya ke kotak di atas hanya memindahkan pekerjaan, dan
+                             pada empat puluh baris pekerjaan itu cukup melelahkan
+                             untuk akhirnya dilewati. --}}
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">
+                                Atau unggah berkas
+                                <span class="text-muted fw-normal">(Excel / CSV)</span>
+                            </label>
+
+                            <input type="file" accept=".xlsx,.xls,.csv,.txt"
+                                wire:model="berkasPeserta"
+                                class="form-control @error('berkasPeserta') is-invalid @enderror">
+
+                            <div wire:loading wire:target="berkasPeserta" class="form-text">
+                                <span class="spinner-border spinner-border-sm me-1" role="status"
+                                    aria-hidden="true"></span>Membaca berkas…
+                            </div>
+
+                            @error('berkasPeserta')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @else
+                                <div wire:loading.remove wire:target="berkasPeserta" class="form-text">
+                                    Kolom pertama nama, kolom kedua titik jemput. Baris judul
+                                    seperti "Nama" dilewati sendiri.
+                                </div>
+                            @enderror
                         </div>
                     </div>
 

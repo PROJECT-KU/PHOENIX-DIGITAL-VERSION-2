@@ -5,7 +5,9 @@ namespace App\Livewire\Pages\Admin\Orcha\Pendaftaran;
 use App\Exceptions\OrchaTidakTerjangkau;
 use App\Livewire\Pages\Admin\Orcha\Concerns\IsianRupiah;
 use App\Livewire\Pages\Admin\Orcha\Concerns\MemanggilOrcha;
+use App\Livewire\Pages\Admin\Orcha\Concerns\MembacaDaftarPeserta;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Mendaftarkan rombongan private trip dan study tour.
@@ -26,7 +28,7 @@ use Livewire\Component;
  */
 class OrchaDaftarkanRombongan extends Component
 {
-    use IsianRupiah, MemanggilOrcha;
+    use IsianRupiah, MemanggilOrcha, MembacaDaftarPeserta, WithFileUploads;
 
     public string $paketId = '';
 
@@ -63,6 +65,17 @@ class OrchaDaftarkanRombongan extends Component
 
     public string $hargaModal = '';
 
+    /**
+     * Biaya yang TIDAK ikut bertambah saat pesertanya bertambah.
+     *
+     * Carter bus, guide, sopir, tol. Punya kolomnya sendiri karena memaksanya
+     * masuk ke "modal per orang" menuntut admin membagi sendiri tiap kali —
+     * dan yang benar-benar terjadi adalah ia memakai ulang angka rombongan
+     * sebelumnya, lalu rombongan bertiga dilaporkan untung besar padahal satu
+     * busnya saja lebih mahal daripada seluruh omzetnya.
+     */
+    public string $biayaTetap = '';
+
     public string $titikJemput = '';
 
     public string $catatan = '';
@@ -93,6 +106,37 @@ class OrchaDaftarkanRombongan extends Component
     public function updatedHargaModal(): void
     {
         $this->hargaModal = $this->keRupiah($this->angkaDari($this->hargaModal));
+    }
+
+    public function updatedBiayaTetap(): void
+    {
+        $this->biayaTetap = $this->keRupiah($this->angkaDari($this->biayaTetap));
+    }
+
+    /**
+     * Modal sesungguhnya per kepala — biaya tetap sudah dibagi rata.
+     *
+     * Ditampilkan hidup selagi admin mengetik, karena inilah angka yang
+     * menentukan apakah harganya masuk akal. Rombongan bertiga dengan carter
+     * Rp 3.000.000 menanggung sejuta per kepala di luar biaya per orangnya,
+     * dan tanpa baris ini angka itu tidak muncul di mana pun sampai laporan
+     * keuntungan dibuka berbulan-bulan kemudian.
+     */
+    public function modalPerKepala(): int
+    {
+        $orang = max(1, (int) $this->jumlahPeserta);
+
+        return (int) round(
+            ($this->angkaDari($this->hargaModal) * $orang + $this->angkaDari($this->biayaTetap)) / $orang
+        );
+    }
+
+    /** Untung yang diperkirakan dari angka yang sedang diketik. */
+    public function perkiraanUntung(): int
+    {
+        return $this->totalTagihan()
+            - $this->angkaDari($this->hargaModal) * max(1, (int) $this->jumlahPeserta)
+            - $this->angkaDari($this->biayaTetap);
     }
 
     /** Total yang benar-benar ditagihkan, dipakai layar sebagai ringkasan. */
@@ -128,18 +172,64 @@ class OrchaDaftarkanRombongan extends Component
      */
     public function tempel(string $teks): void
     {
-        $nama = collect(preg_split('/\r\n|\r|\n/', $teks))
-            // Nomor urut di depan ikut dibuang: "1. Budi", "1) Budi", "1 Budi".
-            ->map(fn ($baris) => trim(preg_replace('/^\s*\d+\s*[.)\-]?\s*/', '', $baris)))
-            ->filter(fn ($baris) => $baris !== '')
-            ->values();
+        $this->pakaiDaftar($this->uraikanTempelan($teks));
+    }
 
-        if ($nama->isEmpty()) {
+    /**
+     * Berkas Excel/CSV panitia.
+     *
+     * Daftar study tour biasanya sudah berbentuk berkas sejak awal — dikirim
+     * panitia sebagai lampiran, bukan diketik di badan pesan. Menyuruh admin
+     * membukanya lalu menyalin isinya ke kotak tempelan hanya memindahkan
+     * pekerjaan, dan pada empat puluh baris pekerjaan itu cukup melelahkan
+     * untuk akhirnya dilewati.
+     */
+    public $berkasPeserta;
+
+    public function updatedBerkasPeserta(): void
+    {
+        $this->validate([
+            'berkasPeserta' => 'file|mimes:xlsx,xls,csv,txt|max:2048',
+        ], [], ['berkasPeserta' => 'berkas peserta']);
+
+        $baris = $this->bacaBerkasPeserta($this->berkasPeserta);
+        $this->berkasPeserta = null;
+
+        if ($baris === null) {
+            $this->dispatch('toast-error',
+                message: 'Berkas itu tidak bisa dibaca. Coba simpan ulang sebagai CSV.');
+
             return;
         }
 
-        $this->peserta = $nama
-            ->map(fn ($satu) => ['nama' => $satu, 'titik_jemput' => $this->titikJemput])
+        if ($baris === []) {
+            $this->dispatch('toast-error', message: 'Tidak ada nama yang terbaca di berkas itu.');
+
+            return;
+        }
+
+        $this->pakaiDaftar($baris);
+    }
+
+    /**
+     * Memakai hasil uraian sebagai daftar peserta.
+     *
+     * @param  array<int, array<string, mixed>>  $baris
+     */
+    private function pakaiDaftar(array $baris): void
+    {
+        if ($baris === []) {
+            return;
+        }
+
+        $this->peserta = collect($baris)
+            ->map(fn ($satu) => [
+                'nama' => $satu['nama'],
+                // Titik jemput utama dipakai hanya bila barisnya sendiri tidak
+                // menyebutkannya. Rombongan sekolah berangkat dari satu titik,
+                // tetapi sebagian daftar memang menyebut titik per orang.
+                'titik_jemput' => $satu['titik_jemput'] !== '' ? $satu['titik_jemput'] : $this->titikJemput,
+            ])
             ->all();
 
         /*
@@ -150,7 +240,7 @@ class OrchaDaftarkanRombongan extends Component
          | rombongan empat puluh orang ditagih untuk satu orang — dan yang
          | menemukannya nanti bukan kita.
          */
-        $this->jumlahPeserta = $nama->count();
+        $this->jumlahPeserta = count($this->peserta);
     }
 
     public function simpan(): void
@@ -168,6 +258,7 @@ class OrchaDaftarkanRombongan extends Component
             // teksnya, yang tidak akan pernah lolos aturan numeric.
             'hargaJual' => 'nullable|string|max:20',
             'hargaModal' => 'nullable|string|max:20',
+            'biayaTetap' => 'nullable|string|max:20',
             'peserta.*.nama' => 'nullable|string|max:120',
         ], [], [
             'paketId' => 'paket',
@@ -177,6 +268,7 @@ class OrchaDaftarkanRombongan extends Component
             'pendampingGratis' => 'pendamping gratis',
             'hargaJual' => 'harga per orang',
             'hargaModal' => 'modal per orang',
+            'biayaTetap' => 'biaya tetap rombongan',
         ]);
 
         $isi = collect($this->peserta)
@@ -218,6 +310,7 @@ class OrchaDaftarkanRombongan extends Component
                 'catatan' => $this->catatan ?: null,
                 'harga_jual' => $this->hargaJual !== '' ? $this->angkaDari($this->hargaJual) : null,
                 'harga_modal' => $this->hargaModal !== '' ? $this->angkaDari($this->hargaModal) : null,
+                'biaya_tetap' => $this->angkaDari($this->biayaTetap),
             ], fn ($nilai) => $nilai !== null));
 
             $this->hasil = $hasil['data'] ?? [];
@@ -232,8 +325,12 @@ class OrchaDaftarkanRombongan extends Component
     /** Mengosongkan layar untuk rombongan berikutnya. */
     public function lagi(): void
     {
+        // berkasPeserta ikut dikosongkan: berkas yang tertinggal akan terbaca
+        // lagi saat Livewire menggambar ulang, dan daftar rombongan sebelumnya
+        // muncul di rombongan berikutnya.
         $this->reset(['paketId', 'nama', 'whatsapp', 'email', 'jumlahPeserta',
-            'pendampingGratis', 'hargaJual', 'hargaModal', 'titikJemput', 'catatan', 'hasil']);
+            'pendampingGratis', 'hargaJual', 'hargaModal', 'biayaTetap', 'titikJemput', 'catatan',
+            'berkasPeserta', 'hasil']);
 
         $this->jumlahPeserta = 1;
         $this->pendampingGratis = 0;

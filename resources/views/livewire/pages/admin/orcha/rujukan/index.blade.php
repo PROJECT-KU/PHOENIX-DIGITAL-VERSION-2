@@ -267,6 +267,26 @@ Kode Rujukan || lemon
                                                     Dibayar
                                                     {{ \Carbon\Carbon::parse($satu['dibayar_pada'])->locale('id')->translatedFormat('d M Y') }}
                                                 </span>
+                                            @elseif (! ($satu['berhak'] ?? false))
+                                                {{-- Belum lunas, jadi belum jadi hak siapa pun.
+
+                                                     Tombolnya TIDAK ditampilkan — bukan ditampilkan
+                                                     lalu ditolak setelah ditekan. Penolakan yang
+                                                     datang sesudah admin menekan tombol terbaca
+                                                     seperti sistem yang berubah pikiran, dan pada
+                                                     tindakan yang menyangkut uang itu membuat orang
+                                                     ragu apakah tekanan sebelumnya sudah terlanjur
+                                                     tersimpan.
+
+                                                     Keputusannya datang dari Orcha lewat 'berhak',
+                                                     bukan disimpulkan di sini dari statusnya: satu
+                                                     aturan, satu tempat. Server tetap menolaknya
+                                                     juga — layar bisa tertinggal keadaannya. --}}
+                                                <span class="badge bg-secondary-subtle text-secondary-emphasis"
+                                                    title="Imbalan baru jadi hak pemilik kode setelah pendaftarannya lunas. Uang muka belum cukup — DP bisa hangus dan pesanannya bisa batal.">
+                                                    <i class="bi bi-hourglass-split"></i>
+                                                    Menunggu lunas
+                                                </span>
                                             @else
                                                 {{-- Menandai, bukan membayar: uangnya berpindah
                                                      lewat transfer di luar sistem. Yang dicatat di
@@ -351,6 +371,24 @@ Kode Rujukan || lemon
                                         @if ($baris['imbalan_total'] > 0)
                                             <div class="text-muted" style="font-size:.72rem">
                                                 total Rp {{ number_format($baris['imbalan_total'], 0, ',', '.') }}
+                                            </div>
+                                        @endif
+
+                                        {{-- Yang sudah memakai kodenya tetapi belum lunas.
+
+                                             Bukan utang — belum jadi hak siapa pun, dan bisa saja
+                                             tidak pernah jadi kalau pesanannya batal. Tetapi
+                                             disebutkan, karena pemilik kode yang bertanya "kenapa
+                                             komisi saya belum muncul" perlu dijawab dengan angka,
+                                             bukan dengan keterangan bahwa datanya tidak ada.
+
+                                             Warnanya samar dan barisnya di bawah: ia keterangan,
+                                             bukan tagihan. --}}
+                                        @if (($baris['imbalan_menunggu'] ?? 0) > 0)
+                                            <div class="text-muted" style="font-size:.72rem"
+                                                title="Sudah memakai kode ini tetapi belum lunas. Komisi baru jadi hak setelah pelunasan.">
+                                                <i class="bi bi-hourglass-split"></i>
+                                                Rp {{ number_format($baris['imbalan_menunggu'], 0, ',', '.') }} menunggu lunas
                                             </div>
                                         @endif
                                     </td>

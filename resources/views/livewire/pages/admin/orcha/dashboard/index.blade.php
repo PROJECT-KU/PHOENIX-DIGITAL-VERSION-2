@@ -200,11 +200,16 @@ Dashboard Orcha Journey || lemon
             {{-- Yang belum bisa dihitung disebut apa adanya. Laporan yang diam
                  soal paket tanpa modal membuat keuntungannya terbaca lebih kecil
                  daripada yang sebenarnya, tanpa satu pun tanda. --}}
-            @if (($uang['belum_lengkap'] ?? 0) > 0)
+            @php
+                // Yang masih potensi ikut dihitung: modalnya sama-sama kosong,
+                // dan pekerjaan yang menunggu admin sama persis.
+                $belumUtuh = (int) ($uang['belum_lengkap'] ?? 0) + (int) ($uang['potensi_belum_lengkap'] ?? 0);
+            @endphp
+            @if ($belumUtuh > 0)
                 <div class="alert alert-warning border-0 shadow-sm rounded-4 d-flex gap-3 align-items-start mb-4">
                     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                     <div style="font-size:.86rem">
-                        <strong>{{ $uang['belum_lengkap'] }} pendaftaran belum ikut terhitung keuntungannya</strong>
+                        <strong>{{ $belumUtuh }} pendaftaran belum ikut terhitung keuntungannya</strong>
                         — paketnya belum diisi harga modal, jadi angka di atas lebih kecil
                         daripada yang sebenarnya.
                         <a href="{{ route('admin.orcha.keuntungan') }}" wire:navigate>Lengkapi modalnya</a>.

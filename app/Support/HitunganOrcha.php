@@ -88,6 +88,7 @@ abstract class HitunganOrcha
             OrchaPembatalanPerhatian::class,
             OrchaPesanPerhatian::class,
             OrchaPendaftaranPerhatian::class,
+            OrchaDaftarTungguPerhatian::class,
         ];
     }
 

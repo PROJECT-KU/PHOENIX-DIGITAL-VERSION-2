@@ -28,9 +28,11 @@ Daftar Tunggu || lemon
                             membayar — yang paling lama menunggu langsung dikabari lewat email,
                             sebanyak kursi yang terbuka saja.
                             <br>
-                            Yang perlu Anda kerjakan sendiri dua hal: menghubungi yang
-                            <strong>tidak mencantumkan email</strong>, dan memutuskan apakah
-                            antrean yang panjang layak dibukakan keberangkatan tambahan.
+                            Yang perlu Anda kerjakan sendiri dua hal: menghubungi mereka yang
+                            <strong>kursinya sudah terbuka tetapi tanpa email</strong> — merekalah
+                            yang tidak bisa dijangkau sistem, dan angkanya yang tampil di menu —
+                            lalu memutuskan apakah antrean yang panjang layak dibukakan
+                            keberangkatan tambahan.
                         </div>
                     </div>
                 </div>
@@ -39,42 +41,100 @@ Daftar Tunggu || lemon
 
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-lg-4">
-                <div class="row g-3 align-items-center">
-                    <div class="col-12 col-lg-6">
-                        <div class="position-relative">
-                            <i class="bi bi-search position-absolute top-50 translate-middle-y ms-3 text-muted"></i>
-                            <input type="text" class="form-control" wire:model.live.debounce.400ms="cari"
-                                placeholder="Cari nama atau nomor WhatsApp...">
-                        </div>
+                {{-- Kotak carinya memakai partial bersama, bukan markup sendiri.
+
+                     Layar ini sempat memasang ikon kaca pembesarnya sendiri —
+                     position-absolute tanpa memberi padding kiri pada isiannya —
+                     sehingga ikonnya menindih tulisan petunjuknya. Partial
+                     bersama sudah mengurus jaraknya lewat .form-control-icon dan
+                     ps-5, dan sekalian membawa tombol pengosong yang muncul saat
+                     ada isinya.
+
+                     Markup sendiri untuk hal yang sudah punya partial adalah cara
+                     paling pasti untuk berbeda dari layar lain — dan bedanya baru
+                     terlihat setelah ada yang membuka keduanya berurutan. --}}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div style="flex:2 1 240px">
+                        @include('livewire.pages.admin.orcha.partials.cari', [
+                            'petunjuk' => 'Cari nama atau nomor WhatsApp...',
+                        ])
                     </div>
 
-                    <div class="col-12 col-lg-4">
+                    <div style="flex:1 1 200px">
                         <select class="form-select" wire:model.live="filterPaket">
                             <option value="">Semua trip</option>
                             @foreach ($paketPilihan as $id => $nama)
-                                <option value="{{ $id }}">{{ $nama }}</option>
+                                {{-- @selected ditulis meski nilainya diikat wire:model:
+                                     tanpa itu markup dari server tidak pernah menandai
+                                     pilihan yang sedang aktif, dan kotaknya memajang
+                                     trip lama sementara daftarnya sudah tidak disaring. --}}
+                                <option value="{{ $id }}" @selected((string) $filterPaket === (string) $id)>
+                                    {{ $nama }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div class="col-12 col-lg-2 text-lg-end">
-                        <span class="text-muted small">{{ $meta['total'] ?? 0 }} menunggu</span>
+                    {{-- DUA angka, berdampingan, dan itu yang menghilangkan
+                         kebingungannya.
+
+                         Sebelumnya layar cuma menyebut "1 menunggu kursi"
+                         sementara penanda di menu kosong — dan yang melihatnya
+                         menyimpulkan keduanya tidak sinkron. Padahal keduanya
+                         menjawab pertanyaan yang berbeda: yang satu seberapa besar
+                         antreannya, yang satu berapa yang menunggu ditelepon.
+
+                         Angka merah di sini SAMA PERSIS dengan yang di menu.
+                         Menaruhnya berdampingan membuat hubungan keduanya terlihat
+                         sendiri, tanpa perlu satu kalimat penjelasan pun.
+
+                         Yang biru bukan keadaan baik maupun buruk, cuma ukuran —
+                         karena itu warnanya berbeda dari lencana status di dalam
+                         tabel yang memakai hijau dan merah. --}}
+                    <div class="d-flex align-items-center gap-2 ms-lg-auto">
+                        <span class="badge bg-primary-subtle text-primary-emphasis"
+                            style="font-size:.82rem;padding:.5rem .85rem"
+                            title="Seluruh peminat yang masih menunggu kursi terbuka">
+                            <i class="bi bi-hourglass-split"></i>
+                            {{ $meta['total'] ?? 0 }} menunggu kursi
+                        </span>
+
+                        @if (($meta['perlu_dihubungi'] ?? 0) > 0)
+                            <span class="badge bg-danger-subtle text-danger-emphasis"
+                                style="font-size:.82rem;padding:.5rem .85rem"
+                                title="Kursinya sudah terbuka tetapi mereka tanpa email — angka inilah yang tampil di menu">
+                                <i class="bi bi-telephone-outbound"></i>
+                                {{ $meta['perlu_dihubungi'] }} perlu dihubungi
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
+            {{-- Bentuk tabelnya mengikuti layar Orcha lain, bukan kelas
+                 Bootstrap polos.
+
+                 Layar ini sempat memakai card-body p-0 dan table-responsive —
+                 akibatnya keterangan "Menampilkan 1–1 dari 1" menempel di tepi
+                 kartu tanpa jarak, sedangkan di layar lain ia berjarak sama
+                 dengan isi kartunya. Tabelnya pun kehilangan sorotan baris dan
+                 gaya .orcha-tabel.
+
+                 Bedanya kecil satu per satu, tetapi admin berpindah antar layar
+                 ini sepanjang hari — dan satu layar yang bentuknya lain
+                 terbaca seperti bagian yang belum selesai. --}}
+            <div class="card-body p-3 p-lg-4">
+                <div class="orcha-gulung">
+                    <table class="table table-hover align-middle orcha-tabel mb-0">
                         <thead>
                             <tr>
-                                <th class="ps-4">PEMINAT</th>
-                                <th>TRIP</th>
-                                <th>MENUNGGU SEJAK</th>
-                                <th>KABAR</th>
-                                <th class="text-end pe-4">AKSI</th>
+                                <th>Peminat</th>
+                                <th>Trip</th>
+                                <th>Menunggu Sejak</th>
+                                <th>Kabar</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -88,7 +148,7 @@ Daftar Tunggu || lemon
                                 @endphp
 
                                 <tr wire:key="tunggu-{{ $baris['id'] }}">
-                                    <td class="ps-4">
+                                    <td>
                                         <div class="fw-bold">{{ $baris['nama'] }}</div>
                                         <div class="text-muted small">
                                             {{ $baris['whatsapp'] }} · {{ $baris['jumlah_peserta'] }} orang
@@ -104,17 +164,44 @@ Daftar Tunggu || lemon
                                     </td>
 
                                     <td>
-                                        @if ($baris['dikabari_pada'])
+                                        {{-- Urutan pemeriksaannya MENENTUKAN, dan sempat salah.
+
+                                             dikabari_pada tidak berarti "sudah dikabari". Artinya
+                                             "kursi terbuka dan orang ini yang dipilih sistem".
+                                             Untuk yang punya email, surat memang terkirim; untuk
+                                             yang TANPA email, penandanya dipasang lalu tidak ada
+                                             apa pun yang dikirim — sengaja, supaya tim menelepon.
+
+                                             Sebelumnya dikabari_pada diperiksa lebih dulu,
+                                             sehingga orang yang tidak bisa dijangkau siapa pun
+                                             tergambar hijau "Dikabari 2 jam lalu". Layarnya
+                                             mengatakan kebalikan dari kenyataan, tepat untuk
+                                             orang yang paling membutuhkan admin. --}}
+                                        @if ($baris['dihubungi_pada'] ?? null)
+                                            <span class="badge bg-success-subtle text-success-emphasis">
+                                                Sudah dihubungi
+                                                {{ \Carbon\Carbon::parse($baris['dihubungi_pada'])->locale('id')->diffForHumans() }}
+                                                @if ($baris['dihubungi_oleh'] ?? null)
+                                                    · {{ $baris['dihubungi_oleh'] }}
+                                                @endif
+                                            </span>
+                                        @elseif ($baris['dikabari_pada'] && blank($baris['email']))
+                                            {{-- Inilah yang menuntut perbuatan, dan yang dihitung
+                                                 penanda di bilah samping. --}}
+                                            <span class="badge bg-danger-subtle text-danger-emphasis">
+                                                Kursi terbuka — belum bisa dikabari
+                                            </span>
+                                        @elseif ($baris['dikabari_pada'])
                                             <span class="badge bg-success-subtle text-success-emphasis">
                                                 Dikabari
                                                 {{ \Carbon\Carbon::parse($baris['dikabari_pada'])->locale('id')->diffForHumans() }}
                                             </span>
                                         @elseif (blank($baris['email']))
-                                            {{-- Ini yang menuntut perbuatan: tanpa email, sistem
-                                                 tidak bisa mengabarinya sama sekali. Ditandai
-                                                 supaya tidak tenggelam di antara yang lain. --}}
-                                            <span class="badge bg-warning-subtle text-warning-emphasis">
-                                                Tanpa email — hubungi sendiri
+                                            {{-- Tanpa email, tetapi kursinya belum terbuka. Belum
+                                                 ada yang bisa dikabarkan, jadi belum ada yang
+                                                 perlu dikerjakan — ditandai netral, bukan awas. --}}
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                                                Menunggu kursi · tanpa email
                                             </span>
                                         @else
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis">
@@ -123,7 +210,7 @@ Daftar Tunggu || lemon
                                         @endif
                                     </td>
 
-                                    <td class="text-end pe-4">
+                                    <td class="text-end">
                                         {{-- Varian tombolnya dipakai apa adanya dari partial gaya.
 
                                              Sebelumnya keduanya cuma berkelas .orcha-aksi — yang
@@ -137,9 +224,26 @@ Daftar Tunggu || lemon
                                              dipakai halaman Pesan Kontak; bentuk pembungkusnya pun
                                              disalin dari sana supaya jaraknya sama. --}}
                                         <div class="d-flex gap-2 justify-content-end">
+                                            {{-- Menekan tombol ini SEKALIGUS menandai bahwa
+                                                 orangnya sudah dihubungi.
+
+                                                 Tanpa itu, satu-satunya cara menurunkan penanda di
+                                                 bilah samping adalah mengeluarkannya dari antrean
+                                                 — padahal orang yang menjawab "nanti saya kabari
+                                                 lagi" memang belum boleh dikeluarkan. Tombol
+                                                 tersendiri untuk menandainya juga tidak dipakai:
+                                                 langkah tambahan yang harus diingat adalah
+                                                 langkah yang akhirnya terlewat.
+
+                                                 x-on:click, BUKAN wire:click. Livewire menahan
+                                                 perilaku bawaan tautan, sehingga WhatsApp-nya
+                                                 tidak jadi terbuka; Alpine tidak. Jadi tautannya
+                                                 terbuka seperti biasa oleh peramban, dan
+                                                 penandanya dipasang di belakangnya. --}}
                                             <a href="{{ $wa }}" target="_blank" rel="noopener"
                                                 class="btn btn-sm orcha-aksi orcha-aksi-wa"
-                                                title="Hubungi lewat WhatsApp">
+                                                x-on:click="$wire.tandaiDihubungi({{ $baris['id'] }})"
+                                                title="Hubungi lewat WhatsApp — sekaligus menandainya sudah dihubungi">
                                                 <i class="bi bi-whatsapp"></i>
                                             </a>
 

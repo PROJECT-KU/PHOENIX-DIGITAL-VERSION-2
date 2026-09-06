@@ -443,7 +443,13 @@ new class extends Component
                             // semuanya berpenanda angka: semakin ke bawah,
                             // semakin jauh dari uang yang sudah masuk.
                             'Pemesanan' => [
-                                ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Open Trip'],
+                                // "Trip", bukan "Open Trip": daftar ini memuat open
+                                // trip, private trip, dan study tour sekaligus —
+                                // yang terakhir dua-duanya dimasukkan admin lewat
+                                // Daftarkan Rombongan. Nama lamanya membuat admin
+                                // mencari halaman lain untuk rombongan sekolah, dan
+                                // halaman itu tidak pernah ada.
+                                ['admin.orcha.pendaftaran', 'bi-clipboard-check', 'Pendaftaran Trip'],
                                 ['admin.orcha.penyewaan', 'bi-truck', 'Sewa Kendaraan'],
                                 ['admin.orcha.pembayaran', 'bi-cash-coin', 'Bukti Pembayaran'],
                                 ['admin.orcha.pembatalan', 'bi-x-circle', 'Pembatalan'],
@@ -558,8 +564,32 @@ new class extends Component
                             $daftarTrip['telat_lunas'] > 0 ? $daftarTrip['telat_lunas'].' lewat tenggat pelunasan' : null,
                         ])->filter()->implode(' · ');
 
+                        /*
+                         | Daftar tunggu: yang dihitung HANYA yang kursinya sudah
+                         | terbuka, tanpa surel, dan belum dihubungi siapa pun.
+                         |
+                         | Antrean yang panjang bukan pekerjaan — sistem mengabari
+                         | mereka sendiri begitu ada kursi. Penanda yang menghitung
+                         | seluruhnya menyala terus tanpa pernah bisa dinolkan, dan
+                         | penanda yang tidak pernah padam berhenti dibaca orang —
+                         | lalu ikut membawa serta penanda lain yang mendesak.
+                         |
+                         | Judul tempelnya tetap menyebut seluruh antreannya, supaya
+                         | angka kecil di menu tidak dibaca sebagai "cuma segini yang
+                         | menunggu".
+                         */
+                        $tunggu = \App\Support\OrchaDaftarTungguPerhatian::ambil();
+
+                        $judulTunggu = collect([
+                            $tunggu['perlu_dihubungi'] > 0
+                                ? $tunggu['perlu_dihubungi'].' kursinya terbuka tetapi tanpa email — hubungi sendiri'
+                                : null,
+                            $tunggu['menunggu'] > 0 ? $tunggu['menunggu'].' menunggu kursi' : null,
+                        ])->filter()->implode(' · ');
+
                         $penanda = [
                             'admin.orcha.pendaftaran' => [$tripJumlah, $judulTrip],
+                            'admin.orcha.daftar-tunggu' => [$tunggu['perlu_dihubungi'], $judulTunggu],
                             'admin.orcha.pembayaran' => [
                                 $menungguDicek,
                                 $menungguDicek.' bukti transfer menunggu dicek',

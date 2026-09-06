@@ -530,6 +530,92 @@ class OrchaPendaftaranDetail extends Component
             ->translatedFormat('j F Y');
     }
 
+    /* --------------------------------------------------------------------
+     | Angsuran
+     |
+     | BERAPA KALI DITENTUKAN ORCHA, bukan diketik di sini. Layar ini hanya
+     | menampilkan yang diizinkan berikut nominalnya, dan mengirim balik
+     | pilihan admin. Batasnya bergantung pada tanggal berangkat — dan Orcha
+     | menolak lagi di endpointnya, karena tanggal itu bisa berubah antara
+     | layar dibuka dan tombol ditekan.
+     -------------------------------------------------------------------- */
+
+    /** Jumlah termin yang sedang dipilih di layar. */
+    public ?int $terminDipilih = null;
+
+    public string $catatanAngsuran = '';
+
+    public bool $formulirAngsuran = false;
+
+    public function bukaFormulirAngsuran(): void
+    {
+        $this->formulirAngsuran = true;
+
+        // Pilihan terbesar dipasang lebih dulu: yang meminta keringanan
+        // biasanya membutuhkan yang paling ringan, dan admin yang ingin
+        // memperketat tinggal menurunkannya.
+        $pilihan = $this->angsuran()['pilihan'] ?? [];
+        $this->terminDipilih = $pilihan ? (int) end($pilihan)['jumlah_termin'] : null;
+    }
+
+    public function tutupFormulirAngsuran(): void
+    {
+        $this->formulirAngsuran = false;
+        $this->catatanAngsuran = '';
+        $this->resetErrorBag();
+    }
+
+    public function simpanAngsuran(): void
+    {
+        if (! $this->terminDipilih) {
+            $this->dispatch('toast-error', message: 'Pilih dulu berapa kali angsurannya.');
+
+            return;
+        }
+
+        try {
+            $jawaban = $this->orcha()->kirim("/pendaftaran/{$this->pendaftaranId}/angsuran", [
+                'jumlah_termin' => $this->terminDipilih,
+                'catatan' => $this->catatanAngsuran ?: null,
+            ]);
+
+            $this->tutupFormulirAngsuran();
+            \App\Support\HitunganOrcha::lupakanSemua();
+            $this->dispatch('order-updated', message: $jawaban['pesan'] ?? 'Rencana angsuran dibuat.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    public function batalkanAngsuran(): void
+    {
+        try {
+            $jawaban = $this->orcha()->hapus("/pendaftaran/{$this->pendaftaranId}/angsuran");
+
+            \App\Support\HitunganOrcha::lupakanSemua();
+            $this->dispatch('order-updated', message: $jawaban['pesan'] ?? 'Rencana angsuran dibatalkan.');
+        } catch (OrchaTidakTerjangkau $e) {
+            $this->dispatch('toast-error', message: $e->getMessage());
+        }
+    }
+
+    /**
+     * Keadaan angsuran pesanan ini menurut Orcha.
+     *
+     * Disimpan sebentar di properti supaya satu kali gambar ulang tidak
+     * menembak Orcha berkali-kali — render() memanggilnya, dan begitu pula
+     * bukaFormulirAngsuran().
+     *
+     * @return array<string, mixed>
+     */
+    private function angsuran(): array
+    {
+        return $this->angsuranTersimpan ??= ($this->muat("/pendaftaran/{$this->pendaftaranId}/angsuran")['data'] ?? []);
+    }
+
+    /** @var array<string, mixed>|null */
+    private ?array $angsuranTersimpan = null;
+
     public function ubahStatus(string $status): void
     {
         $this->kirimPerubahan(
@@ -560,6 +646,7 @@ class OrchaPendaftaranDetail extends Component
             // di sana, dan penolakannya sampai ke admin sebagai pesan yang
             // tidak menunjuk apa pun.
             'pilihanJenisBayar' => $this->rujukan('jenis_pembayaran'),
+            'angsuran' => $this->angsuran(),
         ])->layout('livewire.layout.templateindex');
     }
 

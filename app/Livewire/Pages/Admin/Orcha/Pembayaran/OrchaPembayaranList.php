@@ -18,6 +18,27 @@ class OrchaPembayaranList extends Component
     use KabarPembayaran;
     use MemanggilOrcha;
 
+    /**
+     * Kata cari boleh datang dari alamatnya.
+     *
+     * Dipakai tautan "Kelola pembayaran ini" di halaman detail pendaftaran:
+     * admin yang menekannya sedang melihat SATU pesanan, dan mendaratkannya di
+     * seluruh daftar berarti menyuruhnya mengetik ulang kode yang barusan ada
+     * di layarnya.
+     *
+     * Hanya dibaca saat halaman dibuka. Sesudah itu kotak carinya milik admin
+     * sepenuhnya — Livewire tidak memuat ulang halaman, jadi ketikannya tidak
+     * pernah tertimpa oleh alamat yang sudah lewat.
+     *
+     * Dipasang di sini, bukan sebagai #[Url] di MemanggilOrcha: trait itu
+     * dipakai enam daftar lain, dan menambahkan pengikatan alamat di sana
+     * mengubah perilaku semuanya sekaligus demi satu tautan.
+     */
+    public function mount(): void
+    {
+        $this->cari = trim((string) request()->query('cari', ''));
+    }
+
     public function render()
     {
         $hasil = $this->muat('/pembayaran', $this->parameterDaftar());

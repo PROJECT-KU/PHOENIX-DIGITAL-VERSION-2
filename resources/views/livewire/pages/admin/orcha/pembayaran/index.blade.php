@@ -129,6 +129,20 @@ Bukti Pembayaran Orcha || lemon
                                         <div class="fw-semibold">{{ $baris['atas_nama_pengirim'] }}</div>
                                         <div class="text-muted" style="font-size:.78rem">{{ $baris['bank_pengirim'] }}
                                         </div>
+
+                                        {{-- Dari mana uangnya masuk.
+
+                                             Baris DOKU tidak punya bukti untuk dibuka dan memang
+                                             tidak perlu dicek — uangnya sudah dipastikan gerbang
+                                             pembayaran sebelum barisnya lahir. Tanpa penanda ini
+                                             admin membuka baris itu mencari gambar bukti yang tidak
+                                             akan pernah ada, lalu mengira datanya rusak. --}}
+                                        @if (($baris['kanal'] ?? 'transfer') === 'doku')
+                                            <span class="badge orcha-lencana-kanal orcha-lencana-kanal-doku mt-1">
+                                                <i class="bi bi-lightning-charge-fill"></i>
+                                                Pembayaran online
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="small">{{ $baris['jenis_label'] }}</td>
                                     <td class="text-end fw-semibold text-nowrap">{{ $baris['nominal_formatted'] }}</td>

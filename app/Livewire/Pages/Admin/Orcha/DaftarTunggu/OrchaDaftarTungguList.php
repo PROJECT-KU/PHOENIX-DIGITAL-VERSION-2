@@ -38,10 +38,49 @@ class OrchaDaftarTungguList extends Component
      * WhatsApp. Tanpa ini antreannya cuma menumpuk, dan kabar kursi terbuka
      * dikirim ke orang yang sudah tidak menunggu.
      */
+    /**
+     * Menandai bahwa orangnya sudah dihubungi lewat WhatsApp.
+     *
+     * Dipanggil dari tombol WhatsApp itu sendiri, bukan tombol tersendiri:
+     * langkah tambahan yang harus diingat adalah langkah yang akhirnya
+     * terlewat — dan penanda yang tidak pernah dipasang membuat antrean tampak
+     * belum diurus padahal seluruhnya sudah ditelepon.
+     *
+     * Orangnya TIDAK dikeluarkan dari antrean: ia bisa saja menjawab "nanti
+     * saya kabari lagi", dan mengeluarkannya berarti kehilangan jejaknya.
+     *
+     * Gagalnya DIAM. WhatsApp-nya sudah telanjur terbuka di tab sebelah oleh
+     * peramban, dan pesan merah yang muncul sesudahnya tidak bisa
+     * membatalkannya — yang didapat admin cuma kebingungan tentang sesuatu
+     * yang sudah terjadi. Yang hilang hanya penandanya, dan itu bisa dipasang
+     * lagi dengan menekan tombol yang sama.
+     */
+    public function tandaiDihubungi(int $id): void
+    {
+        try {
+            $this->orcha()->kirim("/daftar-tunggu/{$id}/dihubungi", []);
+            \App\Support\HitunganOrcha::lupakanSemua();
+        } catch (OrchaTidakTerjangkau) {
+            // Sengaja diam — lihat alasannya di atas.
+        }
+    }
+
     public function keluarkan(int $id): void
     {
         try {
             $this->orcha()->hapus("/daftar-tunggu/{$id}");
+
+            /*
+             | Penanda di bilah samping ikut dilupakan.
+             |
+             | Angkanya disimpan semenit supaya tiap perpindahan halaman tidak
+             | menembak Orcha lagi — tetapi begitu admin sendiri yang
+             | mengubahnya, simpanan itu berubah dari penghemat jadi pembohong:
+             | orang yang baru saja dikeluarkan tetap terhitung, dan admin
+             | mengira tekanannya tidak tersimpan lalu mengulanginya.
+             */
+            \App\Support\HitunganOrcha::lupakanSemua();
+
             $this->dispatch('order-updated', message: 'Dikeluarkan dari daftar tunggu.');
         } catch (OrchaTidakTerjangkau $e) {
             $this->dispatch('toast-error', message: $e->getMessage());

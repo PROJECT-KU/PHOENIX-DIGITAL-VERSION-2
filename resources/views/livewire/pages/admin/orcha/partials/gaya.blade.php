@@ -626,6 +626,30 @@
         color: #a33a51;
     }
 
+    /* Lencana kanal: dari mana uangnya masuk.
+
+       Sengaja berbeda bentuk dari lencana status di sebelahnya — bergaris,
+       bukan berlatar penuh. Dua lencana berlatar penuh yang berdampingan
+       terbaca sebagai dua status yang saling bertentangan, padahal keduanya
+       menjawab pertanyaan yang berbeda: yang satu sudah dicek atau belum,
+       yang satu lewat gerbang atau lewat transfer. */
+    .orcha-lencana-kanal {
+        font-weight: 700;
+        font-size: .64rem;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+        background: transparent;
+        border: 1px solid currentColor;
+    }
+
+    .orcha-lencana-kanal-doku {
+        color: var(--orc-primer);
+    }
+
+    .orcha-lencana-kanal-transfer {
+        color: #64748b;
+    }
+
     /* Ikon di tombol tambah baris ikut sejajar tengah dengan tulisannya. */
     .orcha-tambah-baris i,
     .orcha-bahaya i,
@@ -2365,6 +2389,125 @@
         color: #94a3b8;
     }
 
+    /* Pengganti tombol batalkan pada rencana angsuran yang sudah tuntas.
+
+       Tempatnya tidak dibiarkan kosong: baris tindakan yang tiba-tiba kosong
+       terbaca sebagai sesuatu yang gagal dimuat, dan admin mencari-cari tombol
+       yang memang sengaja tidak ada. */
+    .orcha-rencana-tuntas {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        font-size: .78rem;
+        font-weight: 600;
+        color: #1a7f45;
+    }
+
+    .orcha-rencana-tuntas > i {
+        font-size: .85rem;
+        line-height: 1;
+    }
+
+    /* Akibat dari modal yang sedang diketik di formulir Daftarkan Rombongan.
+
+       Ada supaya admin melihat kerugiannya SEBELUM rombongannya masuk. Angka
+       yang sama baru muncul di laporan keuntungan berbulan-bulan kemudian —
+       dan pada saat itu tidak ada lagi yang bisa dikerjakan terhadapnya. */
+    .orcha-akibat-modal {
+        margin-top: .25rem;
+        padding: .75rem 1rem;
+        border: 1px solid #e6e0f5;
+        border-left: 4px solid var(--orc-primer);
+        border-radius: 12px;
+        background: #faf8ff;
+    }
+
+    .orcha-akibat-modal.rugi {
+        border-color: #f6d5d2;
+        border-left-color: #b42318;
+        background: #fdf5f4;
+    }
+
+    .orcha-akibat-modal .baris {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: .5rem;
+        font-size: .84rem;
+    }
+
+    .orcha-akibat-modal .baris + .baris {
+        margin-top: .3rem;
+        padding-top: .3rem;
+        border-top: 1px dashed #e6e0f5;
+    }
+
+    .orcha-akibat-modal .lbl {
+        color: #6b7280;
+    }
+
+    .orcha-akibat-modal .nil {
+        font-weight: 700;
+        color: var(--orc-tinta);
+    }
+
+    .orcha-akibat-modal .nil.hijau {
+        color: #1a7f45;
+    }
+
+    .orcha-akibat-modal .nil.merah {
+        color: #b42318;
+    }
+
+    .orcha-akibat-modal .peringatan {
+        margin: .5rem 0 0;
+        font-size: .8rem;
+        color: #b42318;
+    }
+
+    /* Penanda "pesanan ini diangsur", di bawah kotak status.
+
+       Duduk di sel status dan bukan di sel pemesan karena ia MENJELASKAN
+       statusnya: pesanan yang masih "DP Masuk" pada H-20 terbaca sebagai
+       tunggakan sampai baris ini mengatakan bahwa jadwalnya memang kita yang
+       berikan. Warnanya ungu merek, bukan biru seperti cip lain di baris yang
+       sama — supaya mata menemukannya saat menyapu kolom status, bukan saat
+       membaca barisnya satu per satu. */
+    .orcha-cip-angsuran {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        margin-top: .35rem;
+        padding: .15rem .5rem;
+        border-radius: 999px;
+        font-size: .72rem;
+        font-weight: 700;
+        white-space: nowrap;
+        line-height: 1.5;
+        background: #f3eeff;
+        color: var(--orc-primer);
+        cursor: help;
+    }
+
+    .orcha-cip-angsuran > i {
+        font-size: .72rem;
+        line-height: 1;
+    }
+
+    /* Satu-satunya keadaan di daftar ini yang menuntut tindakan HARI INI.
+       Merahnya sengaja setua ini: cip yang berteriak di sebelah kotak status
+       berwarna membuat seluruh kolomnya sulit dibaca. */
+    .orcha-cip-angsuran.telat {
+        background: #fdecec;
+        color: #b42318;
+    }
+
+    .orcha-cip-angsuran.selesai {
+        background: #eaf7ef;
+        color: #1a7f45;
+    }
+
     /* Kelengkapan riwayat kesehatan: angka dan batang kecil di bawahnya.
        Angkanya menjawab "berapa", batangnya menjawab "kurang berapa" tanpa
        perlu mengurangi sendiri. */
@@ -2560,6 +2703,457 @@
     .orcha-bukti-kosong > i {
         font-size: 1rem;
         line-height: 1;
+    }
+
+    /* Nominal yang masuk tagihan: angka terbesar di barisnya.
+
+       Untuk pembayaran gerbang ia BERBEDA dari uang yang diterima, dan
+       pecahannya menyusul di bawah — tetapi yang pertama ditangkap mata harus
+       angka yang benar-benar menggerakkan sisa tagihan. */
+    .orcha-nominal-utama {
+        font-size: .98rem;
+        font-weight: 800;
+        letter-spacing: -.01em;
+        color: var(--orc-tinta);
+    }
+
+    /* Jenis pembayaran jadi keping, tanggalnya dibiarkan redup.
+
+       Keduanya dulu satu baris abu dipisah titik, dan "Pelunasan · 05 Sep 2026"
+       terbaca sebagai satu frasa. Padahal jenisnya yang menentukan arti baris
+       ini — uang muka, angsuran, dan pelunasan menggerakkan status pesanan
+       dengan cara yang berbeda — sedangkan tanggalnya cuma keterangan. */
+    .orcha-jenis-tanggal {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .35rem;
+        margin-top: .2rem;
+    }
+
+    .orcha-jenis-tanggal .jenis {
+        font-size: .64rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        padding: .08rem .4rem;
+        border-radius: .35rem;
+        background: #eef2f7;
+        color: #5b7186;
+    }
+
+    /* Tiga jenis, tiga warna — karena ketiganya menggerakkan status pesanan
+       dengan cara yang berbeda, dan admin yang memindai daftar panjang
+       membedakannya dari warna sebelum sempat membaca hurufnya. */
+    .orcha-jenis-tanggal .jenis-dp { background: #fff4e0; color: #96590d; }
+    .orcha-jenis-tanggal .jenis-angsuran { background: #f4f1ff; color: var(--orc-primer); }
+    .orcha-jenis-tanggal .jenis-pelunasan { background: #eafaf1; color: #14683f; }
+
+    .orcha-jenis-tanggal .tgl {
+        font-size: .74rem;
+        color: #9aa9b8;
+    }
+
+    /* Metode pembayaran: satu-satunya keterangan yang menggantikan kolom
+       gambar yang sudah dihapus. Kalau ikut redup seperti sisanya, kolom itu
+       terbaca kosong begitu saja. */
+    .orcha-metode-bayar {
+        display: flex;
+        align-items: center;
+        gap: .3rem;
+        margin-top: .25rem;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--orc-primer);
+    }
+
+    .orcha-metode-bayar > i {
+        font-size: .82rem;
+        line-height: 1;
+    }
+
+    .orcha-metode-bayar.bank { color: #5b7186; }
+
+    /* Nama pengirim tetap redup: ia yang dicocokkan saat ragu, bukan yang
+       dipindai sekilas. */
+    .orcha-metode-bayar .atas-nama {
+        font-weight: 400;
+        color: #9aa9b8;
+    }
+
+    /* Pecahan nominal pembayaran gerbang, diberi warna per peran.
+
+       Warna di sini bukan hiasan: tiga angka berdampingan dalam satu warna
+       terbaca sebagai kalimat, padahal yang perlu ditangkap justru
+       hubungannya — mana yang diterima, mana yang masuk tagihan, mana yang
+       cuma penanda. Warna mengerjakan pemisahan itu tanpa menambah satu kata. */
+    .orcha-pecah-bayar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: .3rem;
+        margin-top: .15rem;
+        font-size: .78rem;
+    }
+
+    .orcha-pecah-bayar .lbl {
+        font-size: .64rem;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: #9aa9b8;
+        font-weight: 700;
+    }
+
+    .orcha-pecah-bayar .op { color: #b6c2ce; }
+
+    /* Yang benar-benar masuk rekening — angka yang dicocokkan dengan DOKU. */
+    .orcha-pecah-bayar .tot {
+        font-weight: 700;
+        color: var(--orc-tinta);
+    }
+
+    /* Yang mengurangi tagihan. */
+    .orcha-pecah-bayar .pokok {
+        font-weight: 600;
+        color: #14683f;
+        background: #eafaf1;
+        border-radius: .35rem;
+        padding: .02rem .3rem;
+    }
+
+    /* Penanda, bukan cicilan. Warnanya sengaja berbeda dari keduanya supaya
+       tidak pernah terbaca sebagai uang yang mengurangi tagihan. */
+    .orcha-pecah-bayar .unik {
+        font-weight: 600;
+        color: var(--orc-primer);
+        background: #f4f1ff;
+        border-radius: .35rem;
+        padding: .02rem .3rem;
+    }
+
+    .orcha-nomor-tagihan {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: .7rem;
+        color: #9aa9b8;
+        margin-top: .2rem;
+        word-break: break-all;
+    }
+
+    .orcha-nomor-tagihan > i { margin-right: .15rem; }
+
+    /* Catatan admin: baris paling ringan di dalam satu pembayaran. Ia
+       keterangan, bukan angka — dan baris yang seberat angkanya membuat mata
+       berhenti di tempat yang salah. */
+    .orcha-catatan-baris {
+        margin-top: .35rem;
+        padding-left: .55rem;
+        border-left: 2px solid #e9eff5;
+        font-size: .74rem;
+        line-height: 1.6;
+        color: #8398ab;
+    }
+
+    .orcha-catatan-baris .lbl {
+        display: block;
+        font-size: .62rem;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: #b6c2ce;
+        font-weight: 700;
+    }
+
+    /* ---- Angsuran ---- */
+
+    .orcha-termin {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        border: 1px solid #e9eff5;
+        border-radius: .8rem;
+        overflow: hidden;
+    }
+
+    .orcha-termin .baris {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .7rem .9rem;
+    }
+
+    .orcha-termin .baris + .baris { border-top: 1px solid #f1f5f9; }
+
+    .orcha-termin .baris .isi {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* Nomor termin berdiri sendiri di lingkaran: yang dibaca admin bukan
+       "termin ketiga" melainkan "sudah sampai mana", dan urutan yang berdiri
+       sendiri lebih cepat dipindai daripada yang tenggelam di kalimat. */
+    .orcha-termin .urut {
+        flex: 0 0 auto;
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .74rem;
+        font-weight: 800;
+        background: #eef2f7;
+        color: #64748b;
+    }
+
+    .orcha-termin .tanda {
+        font-size: .66rem;
+        font-weight: 700;
+        letter-spacing: .03em;
+        text-transform: uppercase;
+    }
+
+    .orcha-termin .baris.lunas .urut { background: #eafaf1; color: #14683f; }
+    .orcha-termin .baris.lunas .tanda { color: #14683f; }
+    .orcha-termin .baris.telat { background: #fffafa; }
+    .orcha-termin .baris.telat .urut { background: #fdeaea; color: #b91c1c; }
+    .orcha-termin .baris.telat .tanda { color: #b91c1c; }
+    .orcha-termin .baris.menunggu .tanda { color: #8398ab; }
+
+    /* Angka yang sedang dibagi, disebut sebelum pilihannya.
+
+       Admin yang memilih "3x" sedang membagi sebuah angka, dan angka itu harus
+       ada di layar yang sama — bukan diingat dari kartu lain yang sudah
+       tergulung ke atas. */
+    .orcha-angsuran-konteks {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: .5rem;
+        padding: .7rem .9rem;
+        border-radius: .75rem;
+        background: #f7f9fc;
+        border: 1px solid #e5edf4;
+    }
+
+    .orcha-angsuran-konteks .lbl {
+        font-size: .64rem;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        color: #9aa9b8;
+        font-weight: 700;
+    }
+
+    .orcha-angsuran-konteks .nil {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: var(--orc-tinta);
+        letter-spacing: -.01em;
+    }
+
+    .orcha-angsuran-konteks .ket {
+        font-size: .76rem;
+        color: #9aa9b8;
+    }
+
+    .orcha-angsuran-arahan {
+        margin: .8rem 0 .7rem;
+        font-size: .84rem;
+        line-height: 1.65;
+        color: #5b7186;
+    }
+
+    /* Akibat yang akan terjadi, disebut SEBELUM tombolnya ditekan.
+
+       Admin awam tidak tahu apa yang berubah bagi pelanggan setelah ia menekan
+       Terbitkan — dan yang tidak tahu cenderung tidak menekan sama sekali,
+       lalu mengurus angsurannya lewat percakapan seperti sebelum ini ada. */
+    .orcha-angsuran-akibat {
+        display: flex;
+        gap: .6rem;
+        margin-top: .9rem;
+        padding: .75rem .9rem;
+        border-radius: .75rem;
+        background: #f6f4ff;
+        border: 1px solid #e4dcff;
+        font-size: .8rem;
+        line-height: 1.65;
+        color: #5b5177;
+    }
+
+    .orcha-angsuran-akibat > i {
+        flex: 0 0 auto;
+        margin-top: .15rem;
+        color: var(--orc-primer);
+        font-size: .95rem;
+        line-height: 1;
+    }
+
+    /* Pilihan jumlah termin: kartu berdampingan, bukan daftar turun.
+
+       Yang dibandingkan admin adalah NOMINALNYA, dan nominal hanya bisa
+       dibandingkan bila terlihat sekaligus. Dropdown menyembunyikan tepat
+       bagian yang menentukan keputusannya. */
+    .orcha-pilih-termin {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: .7rem;
+    }
+
+    .orcha-pilih-termin .opsi {
+        cursor: pointer;
+        padding: .8rem .9rem;
+        border-radius: .8rem;
+        border: 2px solid #e9eff5;
+        transition: border-color .15s, background .15s;
+    }
+
+    .orcha-pilih-termin .opsi:hover { border-color: #cfd9e6; }
+
+    .orcha-pilih-termin .opsi.aktif {
+        border-color: var(--orc-primer);
+        background: #faf8ff;
+    }
+
+    .orcha-pilih-termin .kepala {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: .5rem;
+        color: var(--orc-tinta);
+        padding-bottom: .55rem;
+        margin-bottom: .55rem;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .orcha-pilih-termin .judul {
+        display: block;
+        font-size: .95rem;
+        font-weight: 800;
+        letter-spacing: -.01em;
+    }
+
+    /* "3x" saja tidak memberi tahu apa isinya; diterjemahkan jadi kalimat. */
+    .orcha-pilih-termin .sub {
+        display: block;
+        margin-top: .1rem;
+        font-size: .74rem;
+        font-weight: 600;
+        color: #9aa9b8;
+    }
+
+    .orcha-pilih-termin .tandanya > i {
+        font-size: 1.15rem;
+        line-height: 1;
+        color: #cfd9e6;
+    }
+
+    .orcha-pilih-termin .opsi.aktif .tandanya > i { color: var(--orc-primer); }
+    .orcha-pilih-termin .opsi.aktif .sub { color: var(--orc-primer); }
+
+    .orcha-pilih-termin .rinci {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: .78rem;
+    }
+
+    /* Empat kolom: urutan, apa, kapan, berapa.
+
+       Sebelumnya label dan nominal berdesakan di dua sisi, dan tanggalnya
+       menempel di belakang angka — terbaca sebagai satu blok. Yang dibandingkan
+       admin justru kolomnya: berapa kali, kapan saja, dan berapa tiap kali. */
+    .orcha-pilih-termin .rinci > li {
+        display: grid;
+        grid-template-columns: 1.25rem 1fr auto;
+        align-items: baseline;
+        gap: .15rem .5rem;
+        padding: .3rem 0;
+        color: #5b7186;
+    }
+
+    .orcha-pilih-termin .rinci > li + li { border-top: 1px dashed #eef2f7; }
+
+    .orcha-pilih-termin .rinci .urut {
+        grid-row: span 2;
+        align-self: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .62rem;
+        font-weight: 800;
+        background: #eef2f7;
+        color: #8398ab;
+    }
+
+    .orcha-pilih-termin .opsi.aktif .rinci .urut {
+        background: #ece7ff;
+        color: var(--orc-primer);
+    }
+
+    .orcha-pilih-termin .rinci .apa { font-weight: 600; }
+
+    .orcha-pilih-termin .rinci .berapa {
+        font-weight: 800;
+        color: var(--orc-tinta);
+        white-space: nowrap;
+    }
+
+    .orcha-pilih-termin .rinci .kapan {
+        grid-column: 2 / 4;
+        font-size: .72rem;
+        color: #9aa9b8;
+    }
+
+    /* Labelnya lebih redup dari tanggalnya: yang dibaca berulang adalah
+       angkanya, sedangkan kata "jatuh tempo" cukup dikenali sekali lalu
+       diabaikan mata. */
+    .orcha-pilih-termin .rinci .kapan .lbl {
+        font-size: .62rem;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #c2cdd9;
+        font-weight: 700;
+        margin-right: .15rem;
+    }
+
+    /* Ringkasan kode unik seluruh pemesanan: selisih antara uang yang masuk
+       rekening dan angka yang mengurangi tagihan. */
+    .orcha-ringkas-unik {
+        padding: .7rem .85rem;
+        border-radius: .7rem;
+        background: #f7f9fc;
+        border: 1px solid #e5edf4;
+    }
+
+    .orcha-ringkas-unik .baris {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: .8rem;
+        font-size: .8rem;
+        line-height: 1.8;
+    }
+
+    .orcha-ringkas-unik .baris > span:first-child {
+        color: #5b7186;
+    }
+
+    .orcha-ringkas-unik .baris > span:last-child {
+        font-weight: 700;
+        color: var(--orc-tinta);
+        white-space: nowrap;
+    }
+
+    .orcha-ringkas-unik .baris.unik > span:last-child {
+        color: var(--orc-primer);
+    }
+
+    .orcha-ringkas-unik em {
+        font-style: normal;
+        font-size: .72rem;
+        color: #9aa9b8;
     }
 
     /* Keadaan "nama peserta belum didata" di kartu peserta. Diberi warna
@@ -4398,7 +4992,7 @@
        tetap sejajar, tetapi jelas tidak bisa ditekan.
 
        Dipakai daftar Bagian Pemeriksaan (bagian yang tidak boleh dihapus) dan
-       daftar Pendaftaran Open Trip (riwayat kesehatan yang belum ada isinya).
+       daftar Pendaftaran Trip (riwayat kesehatan yang belum ada isinya).
        Sebaris tombol yang salah satu selnya berisi teks polos membuat kolom
        Aksi terlihat bolong. */
     .orcha-aksi-mati {
