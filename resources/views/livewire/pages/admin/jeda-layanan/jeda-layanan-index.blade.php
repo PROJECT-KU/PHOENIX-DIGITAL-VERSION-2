@@ -491,8 +491,9 @@ Jeda Layanan || lemon
                 {{-- ===== Halaman publik =====
                      Berbeda dari dua bagian di atas: yang ditutup bukan tombol
                      belinya, melainkan halamannya sendiri — diganti pemberitahuan
-                     dan tautannya hilang dari menu. Dipakai saat halamannya yang
-                     sedang dikerjakan, bukan barangnya yang habis. --}}
+                     sementara tautannya TETAP ada di menu — sama seperti produk yang
+                     dijeda tetap tampil di toko. Dipakai saat halamannya yang sedang
+                     dikerjakan, bukan barangnya yang habis. --}}
                 <div class="jl-bagian">
                     Halaman Publik
                     <span>{{ collect($fitur)->where('ditutup', true)->count() }} ditutup dari {{ count($fitur) }}</span>
@@ -522,7 +523,7 @@ Jeda Layanan || lemon
                                 class="jl-aktif-tombol {{ $info['ditutup'] ? 'is-buka' : '' }} pcek-konfirmasi"
                                 data-action="alihkanFitur" data-arg="{{ $kunci }}"
                                 data-title="{{ $info['ditutup'] ? 'Buka kembali '.$info['label'].'?' : 'Tutup '.$info['label'].'?' }}"
-                                data-text="{{ $info['ditutup'] ? 'Pengunjung bisa membuka halaman ini lagi.' : 'Pengunjung akan melihat pemberitahuan perbaikan, dan tautannya hilang dari menu.' }}"
+                                data-text="{{ $info['ditutup'] ? 'Pengunjung bisa membuka halaman ini lagi.' : 'Pengunjung yang membukanya melihat pemberitahuan perbaikan. Tautannya tetap ada di menu.' }}"
                                 data-confirm="{{ $info['ditutup'] ? 'Ya, buka' : 'Ya, tutup' }}"
                                 data-icon="{{ $info['ditutup'] ? 'question' : 'warning' }}">
                                 <i class="bi bi-{{ $info['ditutup'] ? 'play-fill' : 'pause-fill' }}"></i>

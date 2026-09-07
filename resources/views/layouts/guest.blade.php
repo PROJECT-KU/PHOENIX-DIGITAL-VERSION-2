@@ -162,19 +162,11 @@
                     <nav id="navmenu" class="navmenu">
                         <ul>
                             <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
-                            @unless (\App\Support\FiturPublik::ditutup('shop'))
-                            <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
-                            @endunless
-                            @unless (\App\Support\FiturPublik::ditutup('bundling'))
-                            <li><a class="{{request()->routeIs('bundling.*') ? 'active' : ''}}" href="{{ route('bundling.product-bundlings') }}">Bundling</a></li>
-                            @endunless
-                            @unless (\App\Support\FiturPublik::ditutup('layanan'))
-                            <li><a class="{{request()->routeIs('services') ? 'active' : ''}}" href="{{ route('services') }}">Layanan</a></li>
-                            @endunless
+                                                        <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
+                                                        <li><a class="{{request()->routeIs('bundling.*') ? 'active' : ''}}" href="{{ route('bundling.product-bundlings') }}">Bundling</a></li>
+                                                        <li><a class="{{request()->routeIs('services') ? 'active' : ''}}" href="{{ route('services') }}">Layanan</a></li>
                             <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
-                            @unless (\App\Support\FiturPublik::ditutup('kontak'))
-                            <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
-                            @endunless
+                                                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
                         </ul>
                     </nav>
 
@@ -244,9 +236,7 @@
                                 <li><a href="{{ route('shop.index') }}">Shop</a></li>
                                 <li><a href="{{ route('bundling.product-bundlings') }}">Paket Bundling</a></li>
                                 <li><a href="{{ route('services') }}">Layanan Teknologi</a></li>
-                                @unless (\App\Support\FiturPublik::ditutup('blog'))
-                                <li><a href="{{ route('blog.index') }}">Blog</a></li>
-                                @endunless
+                                                                <li><a href="{{ route('blog.index') }}">Blog</a></li>
                                 <li><a href="{{ route('order.history') }}">Riwayat Pesanan</a></li>
                                 <li><a href="{{ route('track-order') }}">Lacak Pesanan</a></li>
                                 <li><a href="/about">Tentang Kami</a></li>

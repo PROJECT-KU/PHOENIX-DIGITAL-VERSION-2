@@ -153,3 +153,15 @@ it('keterangan tersimpan tanpa mengubah status tutupnya', function () {
     expect(FiturPublik::pesan('blog'))->toBe('Artikel sedang dirapikan.')
         ->and(FiturPublik::ditutup('blog'))->toBeTrue();
 });
+
+it('tautan menu tetap tampil meski halamannya sedang ditutup', function () {
+    FiturPublik::setel('blog', true);
+    FiturPublik::setel('bundling', true);
+
+    // Sengaja tidak disembunyikan: sama seperti produk yang dijeda tetap tampil
+    // di toko, pengunjung baru tahu setelah membukanya.
+    $this->get('/')
+        ->assertOk()
+        ->assertSee(route('blog.index'), false)
+        ->assertSee(route('bundling.product-bundlings'), false);
+});
