@@ -190,6 +190,41 @@ Jeda Layanan || lemon
         .jl-aktif-tombol:hover { border-color: #dc3545; background: #fdf1f1; color: #b02a2a; }
 
 
+        /* align-items:start — tanpa ini kartu yang TERBUKA ikut memanjang
+           mengikuti tetangganya yang tertutup (yang punya kolom keterangan),
+           menyisakan ruang kosong besar tanpa isi. */
+        .jl-fitur-daftar {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: start;
+        }
+        @media (max-width: 1000px) { .jl-fitur-daftar { grid-template-columns: 1fr; } }
+
+        .jl-fitur {
+            position: relative; overflow: hidden;
+            border: 1px solid #e6ebf1; border-radius: 13px; background: #fff;
+            padding: 14px 14px 14px 18px; display: flex; flex-direction: column; gap: 11px;
+        }
+        .jl-fitur::before {
+            content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 3px; background: #22c55e;
+        }
+        .jl-fitur.is-tutup { border-color: #f6dcae; background: #fffdf7; }
+        .jl-fitur.is-tutup::before { background: #f59e0b; }
+
+        .jl-fitur-atas { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .jl-fitur-teks { min-width: 0; }
+        .jl-fitur-nama {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-weight: 700; font-size: .9rem; color: #334155;
+        }
+        .jl-fitur-nama i.bi { color: #10b981; font-size: .9rem; line-height: 1; display: block; }
+        .jl-fitur.is-tutup .jl-fitur-nama { color: #92400e; }
+        .jl-fitur.is-tutup .jl-fitur-nama i.bi { color: #d97706; }
+        .jl-fitur-ket { font-size: .77rem; color: #94a3b8; margin-top: 2px; }
+        .jl-fitur.is-tutup .jl-fitur-ket { color: #b08c56; }
+
+        /* Tombol buka memakai bahasa hijau, sama seperti "Buka kembali" lain. */
+        .jl-aktif-tombol.is-buka { border-color: #bfe3cd; color: #197a4b; }
+        .jl-aktif-tombol.is-buka:hover { border-color: #197a4b; background: #f1faf5; color: #14603b; }
+
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn { width: 100%; border-radius: 12px; font-weight: 600; padding: 11px; }
 
@@ -452,6 +487,71 @@ Jeda Layanan || lemon
                     @endforeach
                 </div>
                 @endif
+
+                {{-- ===== Halaman publik =====
+                     Berbeda dari dua bagian di atas: yang ditutup bukan tombol
+                     belinya, melainkan halamannya sendiri — diganti pemberitahuan
+                     dan tautannya hilang dari menu. Dipakai saat halamannya yang
+                     sedang dikerjakan, bukan barangnya yang habis. --}}
+                <div class="jl-bagian">
+                    Halaman Publik
+                    <span>{{ collect($fitur)->where('ditutup', true)->count() }} ditutup dari {{ count($fitur) }}</span>
+                </div>
+
+                <p class="jl-catatan" style="margin-bottom:16px">
+                    Pengunjung yang membuka halaman tertutup melihat pemberitahuan, bukan halaman kosong.
+                    Anda sendiri <b>tetap bisa membukanya</b> selama masih masuk sebagai admin, jadi hasil
+                    perbaikan bisa diperiksa sebelum dibuka untuk umum. Halaman pembayaran, struk, tautan
+                    pengecekan, serta syarat &amp; kebijakan privasi <b>tidak pernah bisa ditutup</b> —
+                    menutupnya akan menelantarkan pelanggan yang sudah membayar.
+                </p>
+
+                <div class="jl-fitur-daftar">
+                    @foreach ($fitur as $kunci => $info)
+                    <div class="jl-fitur {{ $info['ditutup'] ? 'is-tutup' : '' }}">
+                        <div class="jl-fitur-atas">
+                            <div class="jl-fitur-teks">
+                                <div class="jl-fitur-nama">
+                                    <i class="bi bi-{{ $info['ditutup'] ? 'eye-slash-fill' : 'eye-fill' }}"></i>
+                                    {{ $info['label'] }}
+                                </div>
+                                <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
+                            </div>
+                            @if ($bolehKelola)
+                            <button type="button"
+                                class="jl-aktif-tombol {{ $info['ditutup'] ? 'is-buka' : '' }} pcek-konfirmasi"
+                                data-action="alihkanFitur" data-arg="{{ $kunci }}"
+                                data-title="{{ $info['ditutup'] ? 'Buka kembali '.$info['label'].'?' : 'Tutup '.$info['label'].'?' }}"
+                                data-text="{{ $info['ditutup'] ? 'Pengunjung bisa membuka halaman ini lagi.' : 'Pengunjung akan melihat pemberitahuan perbaikan, dan tautannya hilang dari menu.' }}"
+                                data-confirm="{{ $info['ditutup'] ? 'Ya, buka' : 'Ya, tutup' }}"
+                                data-icon="{{ $info['ditutup'] ? 'question' : 'warning' }}">
+                                <i class="bi bi-{{ $info['ditutup'] ? 'play-fill' : 'pause-fill' }}"></i>
+                                {{ $info['ditutup'] ? 'Buka' : 'Tutup' }}
+                            </button>
+                            @endif
+                        </div>
+
+                        @if ($info['ditutup'])
+                        <div class="jl-pesan">
+                            <input type="text" class="form-control" maxlength="200"
+                                wire:model="pesanFitur.{{ $kunci }}"
+                                placeholder="Opsional — ada kalimat bawaan"
+                                @disabled(! $bolehKelola)>
+                            <button class="btn" type="button"
+                                wire:click="simpanPesanFitur('{{ $kunci }}')"
+                                wire:loading.attr="disabled" wire:target="simpanPesanFitur('{{ $kunci }}')"
+                                @disabled(! $bolehKelola)>
+                                Simpan
+                            </button>
+                        </div>
+                        <div class="jl-pratinjau">
+                            <span>Dibaca pengunjung</span>
+                            <p>&ldquo;{{ \App\Support\FiturPublik::pesan($kunci) }}&rdquo;</p>
+                        </div>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
             </div>
         </div>
     </div>

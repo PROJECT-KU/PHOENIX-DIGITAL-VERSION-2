@@ -41,6 +41,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\LastUserActivity::class,
             \App\Http\Middleware\IdleTimeout::class,
             \App\Http\Middleware\EnsureGuestToken::class,
+
+            // Halaman publik yang sedang ditutup admin. Diletakkan SESUDAH
+            // StartSession karena perlu tahu apakah pengunjung sudah masuk —
+            // admin tetap boleh melihat halaman yang sedang diperbaiki.
+            \App\Http\Middleware\CekFiturPublik::class,
             \App\Http\Middleware\EnsureProfileComplete::class,
             \App\Http\Middleware\KickScheduler::class,
 

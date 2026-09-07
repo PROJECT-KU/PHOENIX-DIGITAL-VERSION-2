@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\JedaLayanan;
 
 use App\Models\Product;
+use App\Support\FiturPublik;
 use App\Support\JedaLayanan;
 use Livewire\Component;
 
@@ -22,10 +23,69 @@ class JedaLayananIndex extends Component
     /** Keterangan per produk akun yang sedang dijeda, dikunci id produk. */
     public array $pesanProduk = [];
 
+    /** Keterangan per fitur publik, dikunci nama fitur. */
+    public array $pesanFitur = [];
+
     public function mount(): void
     {
         $this->muat();
         $this->muatPesanProduk();
+        $this->muatPesanFitur();
+    }
+
+    private function muatPesanFitur(): void
+    {
+        $this->pesanFitur = collect(FiturPublik::keadaan())
+            ->map(fn ($info) => $info['pesan'])
+            ->all();
+    }
+
+    /**
+     * Buka/tutup satu halaman publik.
+     *
+     * Berbeda dari jeda produk yang hanya menutup tombol belinya, di sini
+     * halamannya sendiri diganti pemberitahuan — dipakai saat halamannya yang
+     * sedang dikerjakan, bukan barangnya yang habis.
+     */
+    public function alihkanFitur(string $fitur): void
+    {
+        if (! $this->bolehKelola()) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah status layanan.');
+
+            return;
+        }
+
+        if (! FiturPublik::ada($fitur)) {
+            return;
+        }
+
+        $jadiDitutup = ! FiturPublik::ditutup($fitur);
+
+        FiturPublik::setel($fitur, $jadiDitutup, $this->pesanFitur[$fitur] ?? null);
+        $this->muatPesanFitur();
+
+        $this->dispatch('swal-success', message: $jadiDitutup
+            ? FiturPublik::label($fitur).' ditutup untuk pengunjung.'
+            : FiturPublik::label($fitur).' dibuka kembali.');
+    }
+
+    /** Simpan keterangan satu fitur tanpa mengubah status tutupnya. */
+    public function simpanPesanFitur(string $fitur): void
+    {
+        if (! $this->bolehKelola()) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah status layanan.');
+
+            return;
+        }
+
+        if (! FiturPublik::ada($fitur)) {
+            return;
+        }
+
+        FiturPublik::setel($fitur, FiturPublik::ditutup($fitur), $this->pesanFitur[$fitur] ?? '');
+        $this->muatPesanFitur();
+
+        $this->dispatch('swal-success', message: 'Keterangan disimpan.');
     }
 
     private function muat(): void
@@ -169,6 +229,7 @@ class JedaLayananIndex extends Component
             'bolehKelola' => $this->bolehKelola(),
             'akunDijeda' => JedaLayanan::produkAkunDijeda(),
             'akunAktif' => $akunAktif,
+            'fitur' => FiturPublik::keadaan(),
         ])->layout('livewire.layout.templateindex');
     }
 }
