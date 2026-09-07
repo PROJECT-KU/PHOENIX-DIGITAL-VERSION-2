@@ -115,6 +115,54 @@ Jeda Layanan || lemon
         }
         .jl-kartu.is-jeda .jl-pratinjau p { color: #92400e; }
 
+        .jl-bagian {
+            display: flex; align-items: baseline; gap: 10px;
+            font-size: .74rem; font-weight: 700; letter-spacing: .09em;
+            text-transform: uppercase; color: #94a3b8;
+            padding-bottom: 9px; margin: 26px 0 16px; border-bottom: 2px solid #eef2f7;
+        }
+        .jl-bagian:first-of-type { margin-top: 0; }
+        .jl-bagian span {
+            font-size: .68rem; letter-spacing: .04em; text-transform: none;
+            color: #b6c0cd; font-weight: 600;
+        }
+
+        .jl-hampa {
+            display: flex; align-items: center; gap: 13px;
+            padding: 18px 20px; border-radius: 14px;
+            background: #f6fbf8; border: 1px solid #d9efe4; color: #15803d;
+        }
+        .jl-hampa > i { font-size: 1.35rem; line-height: 1; }
+        .jl-hampa b { display: block; font-size: .9rem; }
+        .jl-hampa span { display: block; font-size: .8rem; color: #5f8b74; margin-top: 1px; }
+
+        .jl-akun-daftar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        @media (max-width: 1000px) { .jl-akun-daftar { grid-template-columns: 1fr; } }
+        .jl-akun {
+            position: relative; overflow: hidden;
+            border: 1px solid #f6dcae; background: #fffdf7; border-radius: 16px;
+            padding: 18px 18px 18px 22px; display: flex; flex-direction: column; gap: 13px;
+        }
+        /* Pita tepi sama seperti kartu jasa, supaya keduanya bicara bahasa yang sama. */
+        .jl-akun::before {
+            content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: #f59e0b;
+        }
+        .jl-akun-atas { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .jl-akun-nama { font-weight: 700; font-size: .98rem; margin-bottom: 5px; }
+        .jl-akun .jl-pil { background: #fef3c7; color: #b45309; }
+        .jl-akun .jl-pratinjau p { color: #92400e; }
+
+        .jl-cari { margin-top: 20px; max-width: 520px; }
+        .jl-cari .form-control { border-radius: 11px; font-size: .85rem; padding: 10px 13px; }
+        .jl-cari-baris {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            width: 100%; margin-top: 7px; padding: 11px 14px;
+            border: 1px solid #e6ebf1; border-radius: 11px; background: #fff;
+            font-size: .86rem; color: #334155; text-align: left;
+        }
+        .jl-cari-baris:hover { border-color: #f0c36d; background: #fffdf7; color: #b45309; }
+        .jl-cari-baris i { font-size: 1rem; line-height: 1; flex-shrink: 0; }
+
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn {
             width: 100%; border-radius: 12px; font-weight: 600; padding: 11px;
@@ -138,7 +186,21 @@ Jeda Layanan || lemon
                         </div>
                     </div>
 
-                    @php $adaJeda = collect($jeda)->contains(fn ($j) => $j['dijeda']); @endphp
+                    @php
+                        // Ringkasan harus menghitung KEDUANYA. Menghitung jasa saja
+                        // membuat kepala halaman berkata "semua menerima pesanan"
+                        // padahal ada produk akun yang tertutup.
+                        $jenisDijeda = collect($jeda)->filter(fn ($j) => $j['dijeda'])->keys();
+                        $adaJeda = $jenisDijeda->isNotEmpty() || $akunDijeda->isNotEmpty();
+
+                        $bagian = [];
+                        if ($jenisDijeda->isNotEmpty()) {
+                            $bagian[] = $jenisDijeda->map(fn ($k) => $labelJeda[$k])->implode(', ');
+                        }
+                        if ($akunDijeda->isNotEmpty()) {
+                            $bagian[] = $akunDijeda->count().' produk akun';
+                        }
+                    @endphp
                     <div class="jl-ringkas">
                         <span class="stat-icon-wrapper jl-ikon {{ $adaJeda ? 'jl-jingga' : 'jl-hijau' }}">
                             <i class="bi bi-{{ $adaJeda ? 'bag-x-fill' : 'bag-check-fill' }}"></i>
@@ -146,12 +208,14 @@ Jeda Layanan || lemon
                         <div class="jl-ringkas-teks">
                             <b>
                                 @if ($adaJeda)
-                                Dijeda: {{ collect($jeda)->filter(fn ($j) => $j['dijeda'])->keys()->map(fn ($k) => $labelJeda[$k])->implode(', ') }}
+                                {{-- Ampersand ditulis polos: {{ }} sudah meng-escape, menulis &amp; di sini
+                                     akan tampil mentah sebagai &amp;amp; --}}
+                                Dijeda: {{ implode(' & ', $bagian) }}
                                 @else
                                 Semua layanan menerima pesanan
                                 @endif
                             </b>
-                            <small>Status pemesanan layanan jasa</small>
+                            <small>Status pemesanan layanan jasa &amp; produk akun</small>
                         </div>
                     </div>
                 </div>
@@ -173,6 +237,8 @@ Jeda Layanan || lemon
                     <span>Anda hanya dapat melihat status ini. Mengubahnya membutuhkan izin <b>Kelola Jeda Layanan</b>.</span>
                 </div>
                 @endunless
+
+                <div class="jl-bagian">Layanan Jasa</div>
 
                 <div class="jl-grid">
                     @foreach ($labelJeda as $jenis => $label)
@@ -244,6 +310,89 @@ Jeda Layanan || lemon
                     </div>
                     @endforeach
                 </div>
+
+                {{-- ===== Produk akun =====
+                     Dijeda satu per satu: tidak ada pengelompokan alami seperti jasa,
+                     dan yang bermasalah biasanya satu produk saja. Yang ditampilkan
+                     hanya yang SEDANG dijeda — 24 produk kalau didaftar semua. --}}
+                <div class="jl-bagian">
+                    Produk Akun
+                    <span>{{ $akunDijeda->count() }} dijeda</span>
+                </div>
+
+                @if ($akunDijeda->isEmpty())
+                <div class="jl-hampa">
+                    <i class="bi bi-bag-check"></i>
+                    <div>
+                        <b>Semua produk akun menerima pesanan</b>
+                        <span>Cari produk di bawah bila ada yang perlu ditutup sementara.</span>
+                    </div>
+                </div>
+                @else
+                <div class="jl-akun-daftar">
+                    @foreach ($akunDijeda as $produk)
+                    <div class="jl-akun">
+                        <div class="jl-akun-atas">
+                            <div>
+                                <div class="jl-akun-nama">{{ $produk->nama_akun }}</div>
+                                <span class="jl-pil">Pesanan ditutup</span>
+                            </div>
+                            @if ($bolehKelola)
+                            <button type="button" class="btn btn-sm btn-success pcek-konfirmasi"
+                                data-action="alihkanProduk" data-arg="{{ $produk->id }}"
+                                data-title="Buka kembali {{ $produk->nama_akun }}?"
+                                data-text="Pembeli bisa memesan produk ini lagi."
+                                data-confirm="Ya, buka" data-icon="question">
+                                Buka kembali
+                            </button>
+                            @endif
+                        </div>
+
+                        <div class="jl-pesan">
+                            <input type="text" class="form-control" maxlength="200"
+                                wire:model="pesanProduk.{{ $produk->id }}"
+                                placeholder="Opsional — ada kalimat bawaan"
+                                @disabled(! $bolehKelola)>
+                            <button class="btn" type="button"
+                                wire:click="simpanPesanProduk('{{ $produk->id }}')"
+                                wire:loading.attr="disabled" wire:target="simpanPesanProduk('{{ $produk->id }}')"
+                                @disabled(! $bolehKelola)>
+                                Simpan
+                            </button>
+                        </div>
+
+                        <div class="jl-pratinjau">
+                            <span>Dibaca pembeli</span>
+                            <p>&ldquo;{{ \App\Support\JedaLayanan::pesanProduk($produk) }}&rdquo;</p>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                @if ($bolehKelola)
+                <div class="jl-cari">
+                    <label class="jl-label" for="cariProduk">Tutup produk akun lain</label>
+                    <input type="text" class="form-control" id="cariProduk"
+                        wire:model.live.debounce.300ms="cariProduk"
+                        placeholder="Ketik nama produk, mis. Netflix">
+
+                    @if (trim($cariProduk) !== '')
+                    @forelse ($hasilCari as $produk)
+                    <button type="button" class="jl-cari-baris pcek-konfirmasi"
+                        data-action="alihkanProduk" data-arg="{{ $produk->id }}"
+                        data-title="Jeda {{ $produk->nama_akun }}?"
+                        data-text="Pembeli tidak bisa memesan produk ini sampai dibuka lagi. Produknya tetap tampil di toko."
+                        data-confirm="Ya, jeda" data-icon="warning">
+                        <span>{{ $produk->nama_akun }}</span>
+                        <i class="bi bi-pause-circle"></i>
+                    </button>
+                    @empty
+                    <div class="jl-kosong mt-2">Tidak ada produk akun yang cocok.</div>
+                    @endforelse
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
     </div>

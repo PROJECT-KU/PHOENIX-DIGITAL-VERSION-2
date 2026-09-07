@@ -49,6 +49,15 @@ class JedaLayanan
 
     public const PESAN_UMUM = 'Pemesanan layanan ini kami tutup sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.';
 
+    /**
+     * Kalimat bawaan untuk PRODUK AKUN yang dijeda satu per satu.
+     *
+     * Tidak menyebut sebab tertentu: produk akun ditutup karena bermacam hal —
+     * stok habis, penyedianya bermasalah, akun sering kena banned — dan menebak
+     * salah satunya akan terdengar mengarang di kasus lain.
+     */
+    public const PESAN_PRODUK = 'Produk ini sedang tidak tersedia untuk sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.';
+
     private static function kunci(string $jenis): string
     {
         return 'jeda_layanan_'.$jenis;
@@ -72,12 +81,17 @@ class JedaLayanan
     /**
      * Apakah produk ini sedang dijeda?
      *
-     * Produk non-jasa tidak pernah dijeda — jenisLayanan()-nya null. Fitur ini
-     * sengaja tidak menyentuh alur produk biasa sama sekali.
+     * Dua jalan yang saling melengkapi: sakelar per JENIS untuk layanan jasa,
+     * dan sakelar per PRODUK untuk produk akun. Keduanya berdiri sendiri —
+     * produk akun tidak punya jenis layanan, jadi hanya kolomnya yang berlaku.
      */
     public static function produkDijeda(?Product $produk): bool
     {
-        return $produk instanceof Product && self::dijeda($produk->jenisLayanan());
+        if (! $produk instanceof Product) {
+            return false;
+        }
+
+        return (bool) $produk->dijeda || self::dijeda($produk->jenisLayanan());
     }
 
     /**
@@ -107,10 +121,47 @@ class JedaLayanan
         return $pesan !== '' ? $pesan : self::pesanBawaan($jenis);
     }
 
-    /** Keterangan untuk satu produk. */
+    /**
+     * Keterangan untuk satu produk.
+     *
+     * Jeda per produk lebih spesifik daripada jeda per jenis, jadi ia yang
+     * menang bila keduanya menyala pada produk yang sama.
+     */
     public static function pesanProduk(?Product $produk): string
     {
+        if ($produk instanceof Product && $produk->dijeda) {
+            $pesan = trim((string) $produk->pesan_jeda);
+
+            return $pesan !== '' ? $pesan : self::PESAN_PRODUK;
+        }
+
         return self::pesan($produk?->jenisLayanan());
+    }
+
+    /** Buka atau tutup pemesanan satu produk. */
+    public static function setelProduk(Product $produk, bool $dijeda, ?string $pesan = null): void
+    {
+        $produk->forceFill([
+            'dijeda' => $dijeda,
+            'pesan_jeda' => $pesan === null ? $produk->pesan_jeda : (trim($pesan) ?: null),
+        ])->save();
+    }
+
+    /**
+     * Produk AKUN yang sedang dijeda — untuk ditampilkan di halaman admin.
+     *
+     * Hanya produk akun: layanan jasa sudah punya sakelar jenisnya sendiri,
+     * dan menampilkannya lagi di sini akan memunculkan dua tempat untuk satu
+     * hal yang sama.
+     *
+     * @return \Illuminate\Support\Collection<int, Product>
+     */
+    public static function produkAkunDijeda()
+    {
+        return Product::where('butuh_file', false)
+            ->where('dijeda', true)
+            ->orderBy('nama_akun')
+            ->get();
     }
 
     /** Buka atau tutup satu jenis layanan. */

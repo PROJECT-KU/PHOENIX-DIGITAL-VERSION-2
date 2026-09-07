@@ -326,3 +326,179 @@ it('jenis yang tidak dikenal diabaikan, bukan menimbulkan galat', function () {
 
     expect(\App\Models\Setting::where('key', 'like', 'jeda_layanan_%')->count())->toBe(0);
 });
+
+/* ===================== Produk akun (non-jasa) ===================== */
+
+it('produk akun bisa dijeda satu per satu tanpa menyentuh yang lain', function () {
+    $a = produkBiasa();
+    $b = Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+
+    JedaLayanan::setelProduk($a, true);
+
+    expect(JedaLayanan::produkDijeda($a->fresh()))->toBeTrue()
+        ->and(JedaLayanan::produkDijeda($b->fresh()))->toBeFalse();
+});
+
+it('menjeda produk akun tidak terpengaruh sakelar jenis jasa', function () {
+    $akun = produkBiasa();
+
+    foreach (array_keys(JedaLayanan::JENIS) as $jenis) {
+        JedaLayanan::setel($jenis, true);
+    }
+
+    // Produk akun tidak punya jenis layanan, jadi hanya kolomnya yang berlaku.
+    expect(JedaLayanan::produkDijeda($akun->fresh()))->toBeFalse();
+});
+
+it('produk akun yang dijeda memakai kalimat bawaannya sendiri', function () {
+    $akun = produkBiasa();
+    JedaLayanan::setelProduk($akun, true);
+
+    expect(JedaLayanan::pesanProduk($akun->fresh()))->toBe(JedaLayanan::PESAN_PRODUK)
+        ->and(JedaLayanan::PESAN_PRODUK)->toContain('WhatsApp');
+});
+
+it('keterangan tulisan admin mengalahkan kalimat bawaan produk', function () {
+    $akun = produkBiasa();
+    JedaLayanan::setelProduk($akun, true, 'Stok habis, restock Senin.');
+
+    expect(JedaLayanan::pesanProduk($akun->fresh()))->toBe('Stok habis, restock Senin.');
+});
+
+it('jeda per produk mengalahkan jeda per jenis pada produk yang sama', function () {
+    $jasa = produkPlagiasi();
+    JedaLayanan::setel('plagiasi', true);
+    JedaLayanan::setelProduk($jasa, true, 'Alasan khusus produk ini.');
+
+    // Yang lebih spesifik menang, supaya keterangannya tidak tertukar.
+    expect(JedaLayanan::pesanProduk($jasa->fresh()))->toBe('Alasan khusus produk ini.');
+});
+
+it('pemilih durasi di daftar toko menolak produk akun yang dijeda', function () {
+    $akun = produkBiasa();
+    JedaLayanan::setelProduk($akun, true, 'Stok habis.');
+
+    // Ditolak SEBELUM pemilih paket terbuka, bukan sesudah pembeli memilih.
+    Livewire::test(\App\Livewire\Pages\Public\ShopPage\Index::class)
+        ->call('openDuration', $akun->id)
+        ->assertDispatched('cart-error', message: 'Stok habis.');
+});
+
+it('produk akun yang dijeda tidak bisa dimasukkan ke keranjang dari daftar', function () {
+    $akun = produkBiasa();
+    JedaLayanan::setelProduk($akun, true);
+
+    Livewire::test(\App\Livewire\Pages\Public\ShopPage\Index::class)
+        ->call('addToCart', $akun->id, 'bulan', 1)
+        ->assertDispatched('cart-error');
+
+    expect(session('cart'))->toBeNull();
+});
+
+it('produk akun yang tidak dijeda tetap bisa dibeli seperti biasa', function () {
+    $akun = produkBiasa();
+
+    Livewire::test(\App\Livewire\Pages\Public\ShopPage\Index::class)
+        ->call('addToCart', $akun->id, 'bulan', 1)
+        ->assertNotDispatched('cart-error');
+
+    expect(session('cart'))->not->toBeNull();
+});
+
+it('checkout menolak keranjang berisi produk akun yang dijeda', function () {
+    $akun = produkBiasa();
+
+    session()->put('cart', ["p_{$akun->id}" => [
+        'product_id' => $akun->id,
+        'product_name' => $akun->nama_akun,
+        'product_image' => null,
+        'duration_type' => 'bulan',
+        'duration_value' => 1,
+        'price' => 25000,
+        'quantity' => 1,
+        'subtotal' => 25000,
+    ]]);
+
+    JedaLayanan::setelProduk($akun, true, 'Stok habis.');
+
+    Livewire::test(CheckoutPage::class)
+        ->set('no_hp', '081200000910')
+        ->set('nama', 'Pembeli')
+        ->set('email', 'akun.jeda@contoh.test')
+        ->call('checkout')
+        ->assertDispatched('cart-error', message: 'Stok habis.');
+
+    expect(Order::count())->toBe(0);
+});
+
+it('halaman admin menampilkan produk akun yang sedang dijeda', function () {
+    $akun = produkBiasa();
+    JedaLayanan::setelProduk($akun, true);
+
+    halamanJeda()
+        ->assertSee('Produk Akun')
+        ->assertSee('Microsoft Office 365')
+        ->assertSee('1 dijeda');
+});
+
+it('admin bisa menjeda dan membuka produk akun dari halaman itu', function () {
+    $akun = produkBiasa();
+
+    halamanJeda()
+        ->call('alihkanProduk', $akun->id)
+        ->assertDispatched('swal-success');
+
+    expect($akun->fresh()->dijeda)->toBeTrue();
+});
+
+it('pencarian hanya menawarkan produk akun yang belum dijeda', function () {
+    $akun = produkBiasa();
+    produkPlagiasi();
+
+    halamanJeda()
+        ->set('cariProduk', 'Microsoft')
+        ->assertSee('Microsoft Office 365');
+
+    JedaLayanan::setelProduk($akun, true);
+
+    // Sudah dijeda: berhenti ditawarkan di pencarian, karena sudah terdaftar
+    // di bagian atas — menjedanya dua kali tidak ada artinya.
+    halamanJeda()
+        ->set('cariProduk', 'Microsoft')
+        ->assertSee('Tidak ada produk akun yang cocok');
+});
+
+it('produk jasa tidak muncul di pencarian produk akun', function () {
+    produkPlagiasi();
+
+    halamanJeda()
+        ->set('cariProduk', 'Cek Plagiasi')
+        ->assertSee('Tidak ada produk akun yang cocok');
+});
+
+it('tanpa izin kelola, menjeda produk akun ditolak server', function () {
+    $akun = produkBiasa();
+
+    halamanJeda(adminJeda(['view_jeda_layanan']))
+        ->call('alihkanProduk', $akun->id)
+        ->assertDispatched('swal-error');
+
+    expect($akun->fresh()->dijeda)->toBeFalse();
+});
+
+it('ringkasan kepala halaman menghitung jasa dan produk akun sekaligus', function () {
+    JedaLayanan::setel('plagiasi', true);
+    JedaLayanan::setelProduk(produkBiasa(), true);
+
+    // Menghitung jasa saja pernah membuat kepala halaman berkata semuanya
+    // menerima pesanan padahal ada produk akun yang tertutup.
+    halamanJeda()->assertSee('Dijeda: Cek Plagiasi & 1 produk akun');
+});
+
+it('ringkasan menyebut produk akun meski tak ada jasa yang dijeda', function () {
+    JedaLayanan::setelProduk(produkBiasa(), true);
+
+    halamanJeda()
+        ->assertSee('Dijeda: 1 produk akun')
+        ->assertDontSee('Semua layanan menerima pesanan');
+});

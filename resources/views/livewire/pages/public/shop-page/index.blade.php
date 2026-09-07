@@ -8,6 +8,9 @@
          memenuhi layar. Menaruhnya di sini membuat markup & gaya selalu
          terkirim bersama. --}}
     <style>
+        /* Ditulis inline: public/build tidak ikut terdeploy ke server. */
+        .fs-btn-cart:disabled { opacity: .55; cursor: not-allowed; filter: grayscale(.4); }
+
         .shp-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
         .shp-empty-art { margin-bottom: 6px; }
         .shp-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
@@ -175,13 +178,18 @@
                                                 <small>{{ $satuanHarga }}</small>
                                             </div>
 
+                                            @php $dijeda = \App\Support\JedaLayanan::produkDijeda($item); @endphp
                                             <div class="fs-actions">
                                                 <button type="button" wire:click="openDuration('{{ $item->id }}')"
                                                     wire:loading.attr="disabled"
-                                                    wire:target="openDuration('{{ $item->id }}')" class="fs-btn-cart">
+                                                    wire:target="openDuration('{{ $item->id }}')" class="fs-btn-cart"
+                                                    @disabled($dijeda)>
                                                     <span wire:loading.remove
                                                         wire:target="openDuration('{{ $item->id }}')">
-                                                        @if ($isJasa)
+                                                        @if ($dijeda)
+                                                            {{-- Dikatakan di kartu supaya pembeli tak mengklik sia-sia --}}
+                                                            <i class="bi bi-pause-circle"></i> Tidak Tersedia
+                                                        @elseif ($isJasa)
                                                             {{-- Jasa: harga ditentukan di halaman produk (unggah file / add-on) --}}
                                                             <i class="bi bi-sliders"></i> Atur Pesanan
                                                         @else

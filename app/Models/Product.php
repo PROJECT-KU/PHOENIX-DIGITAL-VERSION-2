@@ -155,10 +155,13 @@ class Product extends Model
         'harga_10_perbulan',
         'harga_pertahun',
         'deskripsi',
+        'dijeda',
+        'pesan_jeda',
     ];
 
     protected $casts = [
         'butuh_file' => 'boolean',
+        'dijeda' => 'boolean',
         'pakai_exclude' => 'boolean',
         'cek_ai' => 'boolean',
     ];

@@ -111,6 +111,14 @@ class Index extends Component
             return;
         }
 
+        // Dijeda: dijawab SEBELUM pemilih durasi terbuka, supaya pembeli tidak
+        // memilih paket lebih dulu lalu baru ditolak.
+        if (\App\Support\JedaLayanan::produkDijeda($product)) {
+            $this->dispatch('cart-error', message: \App\Support\JedaLayanan::pesanProduk($product));
+
+            return;
+        }
+
         // Produk JASA tak bisa dibeli langsung dari daftar: harganya bergantung
         // pada dokumen yang diunggah (per halaman) dan/atau add-on yang dipilih.
         // Arahkan ke halaman produk tempat semua itu ditentukan.
@@ -279,6 +287,15 @@ class Index extends Component
         // (butuh unggah dokumen dan/atau pilihan add-on agar harganya benar).
         if ($product->butuh_file) {
             return $this->redirectRoute('shop.detail-product', ['id' => $product->id], navigate: true);
+        }
+
+        // Produk akun masuk keranjang LANGSUNG dari kartu di daftar, tanpa
+        // melewati halaman detail — jadi penjaga jedanya harus ada di sini juga,
+        // bukan hanya di halaman detail.
+        if (\App\Support\JedaLayanan::produkDijeda($product)) {
+            $this->dispatch('cart-error', message: \App\Support\JedaLayanan::pesanProduk($product));
+
+            return;
         }
 
         // Tentukan harga berdasarkan durasi
