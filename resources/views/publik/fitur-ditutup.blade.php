@@ -16,32 +16,31 @@
         }
         .kotak{max-width:520px;width:100%;text-align:center}
         /* ===== Adegan animasi =====
+           Dua roda gigi bertaut — lambang perbaikan yang langsung terbaca, dan
+           sengaja BUKAN buah lemon: lemon itu identitas merek, bukan tanda
+           sedang ada gangguan.
+
            Digambar sebagai SVG + CSS, bukan berkas GIF: tak ada aset tambahan
-           yang harus ikut terdeploy, tajam di layar rapat, dan bisa dihentikan
-           untuk yang menyetel prefers-reduced-motion. */
-        .adegan{width:172px;height:172px;margin:0 auto 6px}
+           yang harus ikut terdeploy (public/build memang tidak ikut), tajam di
+           layar rapat, dan geraknya bisa dihentikan. */
+        .adegan{width:176px;height:176px;margin:0 auto 4px}
         .adegan svg{width:100%;height:100%;overflow:visible}
 
-        /* Gerigi: lingkaran bergaris putus-putus, berputar pelan. */
-        .gerigi{
-            fill:none;stroke:#f3d9a4;stroke-width:13;stroke-dasharray:9 15;stroke-linecap:round;
-            transform-origin:80px 80px;animation:putar 9s linear infinite;
-        }
-        .gerigi-dalam{fill:none;stroke:#f8e7c4;stroke-width:3}
+        .gigi-besar,.gigi-kecil{fill:url(#kulit)}
+        .poros{fill:#fdfaf4}
+        .bayang{fill:#f3e3c6;opacity:.55}
 
-        /* Halo berdenyut, menandai ada yang sedang berjalan. */
+        /* Arah putaran berlawanan, dan yang kecil lebih cepat sesuai
+           perbandingan jumlah giginya (12 : 8) — kalau sama cepat, mata
+           langsung merasa giginya saling menembus. */
+        .gigi-besar,.poros-besar{transform-origin:62px 66px;animation:putar-kanan 8s linear infinite}
+        .gigi-kecil,.poros-kecil{transform-origin:113px 105px;animation:putar-kiri 5.33s linear infinite}
+
         .halo{
-            fill:none;stroke:#f59e0b;stroke-width:2;opacity:.5;
-            transform-origin:80px 80px;animation:denyut 2.8s ease-in-out infinite;
+            fill:none;stroke:#f59e0b;stroke-width:2;opacity:.35;
+            transform-origin:88px 86px;animation:denyut 2.8s ease-in-out infinite;
         }
 
-        /* Buah lemon yang mengambang naik-turun perlahan. */
-        .lemon{transform-origin:80px 80px;animation:apung 3.4s ease-in-out infinite}
-        .lemon-badan{fill:url(#kulit)}
-        .lemon-kilau{fill:#fff;opacity:.42}
-        .daun{fill:#7fae4b}
-
-        /* Tiga titik: penanda "sedang dikerjakan". */
         .titik{display:flex;gap:7px;justify-content:center;margin-bottom:20px}
         .titik span{
             width:7px;height:7px;border-radius:50%;background:#e0b567;
@@ -50,14 +49,11 @@
         .titik span:nth-child(2){animation-delay:.16s}
         .titik span:nth-child(3){animation-delay:.32s}
 
-        @keyframes putar{to{transform:rotate(360deg)}}
+        @keyframes putar-kanan{to{transform:rotate(360deg)}}
+        @keyframes putar-kiri{to{transform:rotate(-360deg)}}
         @keyframes denyut{
-            0%,100%{transform:scale(1);opacity:.5}
-            50%{transform:scale(1.09);opacity:.12}
-        }
-        @keyframes apung{
-            0%,100%{transform:translateY(0) rotate(-3deg)}
-            50%{transform:translateY(-7px) rotate(3deg)}
+            0%,100%{transform:scale(1);opacity:.35}
+            50%{transform:scale(1.08);opacity:.08}
         }
         @keyframes lompat{
             0%,100%{transform:translateY(0);opacity:.45}
@@ -66,7 +62,7 @@
 
         /* Yang menyetel kurangi-gerak tetap melihat gambarnya, tanpa geraknya. */
         @media (prefers-reduced-motion:reduce){
-            .gerigi,.halo,.lemon,.titik span{animation:none}
+            .gigi-besar,.gigi-kecil,.poros-besar,.poros-kecil,.halo,.titik span{animation:none}
             .titik span{opacity:.75}
         }
         h1{font-size:clamp(20px,4vw,27px);line-height:1.25;margin-bottom:12px;color:#2a2113}
@@ -83,25 +79,23 @@
 <body>
     <div class="kotak">
         <div class="adegan" aria-hidden="true">
-            <svg viewBox="0 0 160 160" role="img">
+            <svg viewBox="0 0 176 176" role="img">
                 <defs>
                     <linearGradient id="kulit" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stop-color="#fde047"/>
-                        <stop offset="1" stop-color="#f0a91b"/>
+                        <stop offset="0" stop-color="#fcd34d"/>
+                        <stop offset="1" stop-color="#e78c0a"/>
                     </linearGradient>
                 </defs>
 
-                <circle class="halo" cx="80" cy="80" r="66"/>
-                <circle class="gerigi" cx="80" cy="80" r="58"/>
-                <circle class="gerigi-dalam" cx="80" cy="80" r="47"/>
+                <circle class="halo" cx="88" cy="86" r="80"/>
 
-                <g class="lemon">
-                    <ellipse class="lemon-badan" cx="80" cy="82" rx="27" ry="34"
-                             transform="rotate(-24 80 82)"/>
-                    <ellipse class="lemon-kilau" cx="70" cy="70" rx="7" ry="12"
-                             transform="rotate(-24 70 70)"/>
-                    <path class="daun" d="M92 50c9-7 19-6 19-6s-2 10-10 14c-6 3-11 1-11 1s-2-6 2-9z"/>
-                </g>
+                <g class="bayang"><path d="M93.0 66.0 L101.5 72.1 L99.3 80.5 L88.8 81.5 L93.2 91.0 L87.0 97.2 L77.5 92.8 L76.5 103.3 L68.1 105.5 L62.0 97.0 L55.9 105.5 L47.5 103.3 L46.5 92.8 L37.0 97.2 L30.8 91.0 L35.2 81.5 L24.7 80.5 L22.5 72.1 L31.0 66.0 L22.5 59.9 L24.7 51.5 L35.2 50.5 L30.8 41.0 L37.0 34.8 L46.5 39.2 L47.5 28.7 L55.9 26.5 L62.0 35.0 L68.1 26.5 L76.5 28.7 L77.5 39.2 L87.0 34.8 L93.2 41.0 L88.8 50.5 L99.3 51.5 L101.5 59.9 L93.0 66.0 Z" transform="translate(3,4)"/></g>
+                <path class="gigi-besar" d="M93.0 66.0 L101.5 72.1 L99.3 80.5 L88.8 81.5 L93.2 91.0 L87.0 97.2 L77.5 92.8 L76.5 103.3 L68.1 105.5 L62.0 97.0 L55.9 105.5 L47.5 103.3 L46.5 92.8 L37.0 97.2 L30.8 91.0 L35.2 81.5 L24.7 80.5 L22.5 72.1 L31.0 66.0 L22.5 59.9 L24.7 51.5 L35.2 50.5 L30.8 41.0 L37.0 34.8 L46.5 39.2 L47.5 28.7 L55.9 26.5 L62.0 35.0 L68.1 26.5 L76.5 28.7 L77.5 39.2 L87.0 34.8 L93.2 41.0 L88.8 50.5 L99.3 51.5 L101.5 59.9 L93.0 66.0 Z"/>
+                <circle class="poros poros-besar" cx="62" cy="66" r="13"/>
+
+                <g class="bayang"><path d="M133.5 105.0 L139.3 111.1 L135.9 119.3 L127.5 119.5 L127.3 127.9 L119.1 131.3 L113.0 125.5 L106.9 131.3 L98.7 127.9 L98.5 119.5 L90.1 119.3 L86.7 111.1 L92.5 105.0 L86.7 98.9 L90.1 90.7 L98.5 90.5 L98.7 82.1 L106.9 78.7 L113.0 84.5 L119.1 78.7 L127.3 82.1 L127.5 90.5 L135.9 90.7 L139.3 98.9 L133.5 105.0 Z" transform="translate(3,4)"/></g>
+                <path class="gigi-kecil" d="M133.5 105.0 L139.3 111.1 L135.9 119.3 L127.5 119.5 L127.3 127.9 L119.1 131.3 L113.0 125.5 L106.9 131.3 L98.7 127.9 L98.5 119.5 L90.1 119.3 L86.7 111.1 L92.5 105.0 L86.7 98.9 L90.1 90.7 L98.5 90.5 L98.7 82.1 L106.9 78.7 L113.0 84.5 L119.1 78.7 L127.3 82.1 L127.5 90.5 L135.9 90.7 L139.3 98.9 L133.5 105.0 Z"/>
+                <circle class="poros poros-kecil" cx="113" cy="105" r="9"/>
             </svg>
         </div>
 
