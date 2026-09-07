@@ -270,10 +270,16 @@ it('keterangan untuk pembeli tersimpan tanpa mengubah status jeda', function () 
 it('hanya bisa melihat bila tak punya izin kelola', function () {
     $pengintip = adminJeda(['view_jeda_layanan']);
 
+    // Ditandai lewat data-action, bukan teks tombol: teksnya ikut berubah saat
+    // tampilan dirapikan, sehingga asersi berbasis teks diam-diam jadi tumpul.
     halamanJeda($pengintip)
         ->assertOk()
         ->assertSee('Kelola Jeda Layanan')
-        ->assertDontSee('Jeda layanan</button>', false);
+        ->assertDontSee('data-action="alihkanJeda"', false);
+});
+
+it('yang berizin kelola melihat sakelarnya', function () {
+    halamanJeda()->assertSee('data-action="alihkanJeda"', false);
 });
 
 it('tanpa izin kelola, sakelarnya ditolak server', function () {
