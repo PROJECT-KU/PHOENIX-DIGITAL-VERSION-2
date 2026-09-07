@@ -9,8 +9,32 @@ Jeda Layanan || lemon
         /* Glyph Bootstrap Icons punya line-height bawaan yang menariknya turun,
            sehingga terlihat melenceng di dalam kotak yang sudah di-flex-center.
            Pola perbaikan yang sama dipakai di daftar produk. */
-        .jl-ikon i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .jl-ikon i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; position: relative; z-index: 1; }
         .jl-ikon i.bi::before { display: block; line-height: 1; }
+
+        /* Warna keadaan dipegang di sini, bukan memakai .bg-gradient-red bersama:
+           merah terbaca "rusak", padahal jeda adalah keadaan sementara yang
+           disengaja. Jingga menyatu dengan pita tepi dan lencana kartunya. */
+        .jl-ikon { position: relative; overflow: hidden; border-radius: 18px; }
+        .jl-ikon::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,.24), transparent 62%);
+        }
+        .jl-hijau {
+            background: linear-gradient(135deg, #34d399, #059669);
+            box-shadow: 0 8px 18px rgba(5,150,105,.26), 0 0 0 5px rgba(16,185,129,.10);
+        }
+        .jl-jingga {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            box-shadow: 0 8px 18px rgba(217,119,6,.26), 0 0 0 5px rgba(245,158,11,.13);
+            animation: jl-denyut 2.8s ease-in-out infinite;
+        }
+        /* Denyut halus menarik mata ke satu-satunya kartu yang butuh perhatian. */
+        @keyframes jl-denyut {
+            0%, 100% { box-shadow: 0 8px 18px rgba(217,119,6,.26), 0 0 0 5px rgba(245,158,11,.13); }
+            50%      { box-shadow: 0 8px 18px rgba(217,119,6,.32), 0 0 0 10px rgba(245,158,11,.05); }
+        }
+        @media (prefers-reduced-motion: reduce) { .jl-jingga { animation: none; } }
 
         .jl-ringkas { display: flex; align-items: center; gap: 14px; }
         .jl-ringkas-teks { line-height: 1.35; }
@@ -116,8 +140,8 @@ Jeda Layanan || lemon
 
                     @php $adaJeda = collect($jeda)->contains(fn ($j) => $j['dijeda']); @endphp
                     <div class="jl-ringkas">
-                        <span class="stat-icon-wrapper jl-ikon {{ $adaJeda ? 'bg-gradient-red' : 'bg-gradient-green' }}">
-                            <i class="bi bi-{{ $adaJeda ? 'pause-fill' : 'check-lg' }}"></i>
+                        <span class="stat-icon-wrapper jl-ikon {{ $adaJeda ? 'jl-jingga' : 'jl-hijau' }}">
+                            <i class="bi bi-{{ $adaJeda ? 'bag-x-fill' : 'bag-check-fill' }}"></i>
                         </span>
                         <div class="jl-ringkas-teks">
                             <b>
@@ -154,8 +178,11 @@ Jeda Layanan || lemon
                     @foreach ($labelJeda as $jenis => $label)
                     <div class="jl-kartu {{ $jeda[$jenis]['dijeda'] ? 'is-jeda' : '' }}">
                         <div class="jl-atas">
-                            <span class="stat-icon-wrapper jl-ikon {{ $jeda[$jenis]['dijeda'] ? 'bg-gradient-red' : 'bg-gradient-green' }}">
-                                <i class="bi bi-{{ $jeda[$jenis]['dijeda'] ? 'pause-fill' : 'check-lg' }}"></i>
+                            {{-- Satu objek, dua keadaan: tas berpesan diterima vs ditutup.
+                                 Lebih cepat terbaca daripada centang lawan jeda, yang
+                                 bentuknya sama sekali tak berhubungan. --}}
+                            <span class="stat-icon-wrapper jl-ikon {{ $jeda[$jenis]['dijeda'] ? 'jl-jingga' : 'jl-hijau' }}">
+                                <i class="bi bi-{{ $jeda[$jenis]['dijeda'] ? 'bag-x-fill' : 'bag-check-fill' }}"></i>
                             </span>
                             <div>
                                 <div class="jl-nama">{{ $label }}</div>
