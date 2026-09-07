@@ -185,63 +185,110 @@ it('pelanggan yang sudah bayar tetap bisa mengunggah sisa kuotanya', function ()
         ->and(JedaLayanan::produkDijeda($produk))->toBeTrue();
 });
 
-/* ===================== Panel di admin ===================== */
+/* ===================== Halaman Jeda Layanan ===================== */
 
-function adminJeda(): \App\Models\User
+function adminJeda(array $izin = ['view_jeda_layanan', 'manage_jeda_layanan']): \App\Models\User
 {
-    $role = \App\Models\Role::create(['name' => 'uji-jeda-'.uniqid(), 'description' => 'Peran uji jeda']);
+    $peran = \App\Models\Role::create([
+        'name' => 'uji-jeda-'.uniqid(),
+        'description' => 'Peran uji jeda layanan',
+    ]);
 
-    foreach (['view_product', 'edit_product'] as $nama) {
-        $izin = \App\Models\Permission::firstOrCreate(
+    foreach ($izin as $nama) {
+        $p = \App\Models\Permission::firstOrCreate(
             ['name' => $nama],
-            ['display_name' => $nama, 'group' => 'product', 'description' => 'uji']
+            ['display_name' => $nama, 'group' => 'jasa', 'description' => 'uji']
         );
-        $role->permissions()->attach($izin->id);
+        $peran->permissions()->attach($p->id);
     }
 
-    return \App\Models\User::factory()->create(['role_id' => $role->id])->fresh();
+    return \App\Models\User::factory()->create(['role_id' => $peran->id])->fresh();
 }
 
-it('panel jeda tampil di halaman Data Produk', function () {
-    Livewire::actingAs(adminJeda())
-        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+function halamanJeda(?\App\Models\User $user = null)
+{
+    return Livewire::actingAs($user ?: adminJeda())
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class);
+}
+
+it('halaman jeda layanan tampil dengan ketiga jenisnya', function () {
+    halamanJeda()
         ->assertOk()
-        ->assertSee('Jeda Layanan Jasa')
+        ->assertSee('Jeda Layanan')
+        ->assertSee('Cek Plagiasi')
+        ->assertSee('Cek AI')
+        ->assertSee('Parafrase')
         ->assertSee('Semua layanan menerima pesanan');
 });
 
-it('judul panel menyebut jenis yang sedang dijeda', function () {
-    JedaLayanan::setel('plagiasi', true);
+it('kartu menyebut produk mana saja yang ikut terjeda', function () {
+    produkPlagiasi();
+    produkCekAi();
 
-    Livewire::actingAs(adminJeda())
-        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
-        ->assertSee('Dijeda: Cek Plagiasi');
+    // Diambil dari data, bukan daftar manual: produk jasa baru langsung muncul.
+    halamanJeda()
+        ->assertSee('Cek Plagiasi Turnitin')
+        ->assertSee('Cek Plagiasi AI');
 });
 
-it('admin bisa menjeda dan membuka kembali dari panel', function () {
-    Livewire::actingAs(adminJeda())
-        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+it('ringkasan di kepala halaman menyebut jenis yang sedang dijeda', function () {
+    JedaLayanan::setel('plagiasi', true);
+
+    halamanJeda()->assertSee('Dijeda: Cek Plagiasi');
+});
+
+it('admin bisa menjeda satu jenis tanpa menyentuh jenis lain', function () {
+    halamanJeda()
         ->call('alihkanJeda', 'plagiasi')
         ->assertDispatched('swal-success');
 
     expect(JedaLayanan::dijeda('plagiasi'))->toBeTrue()
-        ->and(JedaLayanan::dijeda('ai'))->toBeFalse();
+        ->and(JedaLayanan::dijeda('ai'))->toBeFalse()
+        ->and(JedaLayanan::dijeda('parafrase'))->toBeFalse();
 });
 
-it('tanpa izin ubah produk, sakelarnya ditolak server', function () {
-    $role = \App\Models\Role::create(['name' => 'uji-tanpa-'.uniqid(), 'description' => 'Tanpa izin ubah']);
-    $izin = \App\Models\Permission::firstOrCreate(
-        ['name' => 'view_product'],
-        ['display_name' => 'view_product', 'group' => 'product', 'description' => 'uji']
-    );
-    $role->permissions()->attach($izin->id);
-    $user = \App\Models\User::factory()->create(['role_id' => $role->id])->fresh();
+it('admin bisa membuka kembali layanan yang dijeda', function () {
+    JedaLayanan::setel('ai', true);
 
-    // Dialognya bukan pengaman; yang menjaga pemeriksaan izin di server.
-    Livewire::actingAs($user)
-        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+    halamanJeda()->call('alihkanJeda', 'ai');
+
+    expect(JedaLayanan::dijeda('ai'))->toBeFalse();
+});
+
+it('keterangan untuk pembeli tersimpan tanpa mengubah status jeda', function () {
+    JedaLayanan::setel('plagiasi', true);
+
+    halamanJeda()
+        ->set('jeda.plagiasi.pesan', 'Groupy sedang perbaikan.')
+        ->call('simpanPesan', 'plagiasi')
+        ->assertDispatched('swal-success');
+
+    expect(JedaLayanan::pesan('plagiasi'))->toBe('Groupy sedang perbaikan.')
+        ->and(JedaLayanan::dijeda('plagiasi'))->toBeTrue();
+});
+
+it('hanya bisa melihat bila tak punya izin kelola', function () {
+    $pengintip = adminJeda(['view_jeda_layanan']);
+
+    halamanJeda($pengintip)
+        ->assertOk()
+        ->assertSee('Kelola Jeda Layanan')
+        ->assertDontSee('Jeda layanan</button>', false);
+});
+
+it('tanpa izin kelola, sakelarnya ditolak server', function () {
+    $pengintip = adminJeda(['view_jeda_layanan']);
+
+    // Tombol yang disembunyikan bukan pengaman; server tetap memeriksa.
+    halamanJeda($pengintip)
         ->call('alihkanJeda', 'plagiasi')
         ->assertDispatched('swal-error');
 
     expect(JedaLayanan::dijeda('plagiasi'))->toBeFalse();
+});
+
+it('jenis yang tidak dikenal diabaikan, bukan menimbulkan galat', function () {
+    halamanJeda()->call('alihkanJeda', 'jenis-karangan')->assertOk();
+
+    expect(\App\Models\Setting::where('key', 'like', 'jeda_layanan_%')->count())->toBe(0);
 });

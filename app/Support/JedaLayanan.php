@@ -114,6 +114,29 @@ class JedaLayanan
         return $out;
     }
 
+    /**
+     * Produk jasa yang tercakup tiap jenis, untuk ditampilkan di halaman admin.
+     *
+     * Dibaca dari data, bukan didaftar manual, sehingga produk jasa baru
+     * langsung muncul di bawah sakelar yang sesuai tanpa perlu diubah di sini.
+     *
+     * @return array<string, array<int, string>>
+     */
+    public static function produkPerJenis(): array
+    {
+        $out = array_fill_keys(array_keys(self::JENIS), []);
+
+        foreach (Product::where('butuh_file', true)->orderBy('nama_akun')->get() as $produk) {
+            $jenis = $produk->jenisLayanan();
+
+            if ($jenis !== null && array_key_exists($jenis, $out)) {
+                $out[$jenis][] = $produk->nama_akun;
+            }
+        }
+
+        return $out;
+    }
+
     /** Jenis yang sedang dijeda saat ini. */
     public static function yangDijeda(): array
     {

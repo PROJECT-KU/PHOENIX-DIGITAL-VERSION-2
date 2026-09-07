@@ -350,6 +350,14 @@ Route::middleware('permission:view_product')->group(function () {
     Route::get('/admin/product/{product}/edit', ProductEdit::class)->middleware('permission:edit_product')->name('admin.product.edit');
 });
 
+// Jeda Layanan — menutup pemesanan baru layanan jasa tanpa menyembunyikan produknya.
+// Izinnya terpisah dari izin produk supaya bisa diberikan tanpa membuka hak
+// mengubah harga atau data produk.
+Route::middleware('permission:view_jeda_layanan')->group(function () {
+    Route::get('/admin/jeda-layanan', \App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->name('admin.jeda-layanan.index');
+});
+
 // Ebook Bonus
 Route::middleware('permission:view_ebook')->group(function () {
     Route::get('/admin/ebook', \App\Livewire\Pages\Admin\Ebook\EbookList::class)->name('admin.ebook.index');

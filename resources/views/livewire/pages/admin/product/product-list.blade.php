@@ -4,26 +4,6 @@ Data Produk || lemon
 @stop
 <div>
     <style>
-        /* ===== Panel jeda layanan ===== */
-        .jeda-head { display:flex; align-items:center; justify-content:space-between; gap:12px;
-            width:100%; background:none; border:0; padding:0; text-align:left; }
-        .jeda-head-kiri { display:flex; align-items:center; gap:12px; min-width:0; }
-        .jeda-head b { display:block; font-size:.95rem; }
-        .jeda-head small { display:block; color:#94a3b8; font-size:.78rem; }
-        .jeda-info { margin:14px 0 12px; font-size:.82rem; color:#64748b; line-height:1.5; }
-        .jeda-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-        @media (max-width:900px){ .jeda-grid{ grid-template-columns:1fr; } }
-        .jeda-item { border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; background:#fff; }
-        .jeda-item.is-jeda { border-color:#f0c36d; background:#fffdf6; }
-        .jeda-item-head { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .jeda-nama { display:inline-flex; align-items:center; gap:6px; font-weight:700; font-size:.88rem; }
-        .jeda-item .jeda-nama i { color:#16a34a; }
-        .jeda-item.is-jeda .jeda-nama i { color:#d97706; }
-        .jeda-status { font-size:.76rem; color:#94a3b8; margin:2px 0 9px; }
-        .jeda-item.is-jeda .jeda-status { color:#b45309; }
-        .jeda-tombol { white-space:nowrap; }
-        .jeda-pesan .form-control { font-size:.78rem; }
-
         /* ===== Sel produk JASA di daftar (harga + add-on) ===== */
         .jsa-box { display: flex; flex-direction: column; gap: 6px; }
         .jsa-row { display: flex; align-items: flex-start; gap: 9px; }
@@ -97,77 +77,6 @@ Data Produk || lemon
                         @endif
                     </div>
                 </div>
-            </div>
-        </div>
-
-        {{-- ===== Jeda layanan jasa =====
-             Menutup PEMBELIAN BARU tanpa menyembunyikan produknya: halaman produk
-             tetap terbuka agar calon pembeli tahu layanan itu ada. Tiap jenis berdiri
-             sendiri — menjeda Cek Plagiasi tidak menyentuh Cek AI. --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4 jeda-card">
-            <div class="card-body p-4">
-                <button type="button" class="jeda-head" wire:click="$toggle('panelJeda')">
-                    <span class="jeda-head-kiri">
-                        <span class="stat-icon-wrapper {{ collect($jeda)->contains(fn ($j) => $j['dijeda']) ? 'bg-gradient-red' : 'bg-gradient-green' }}">
-                            <i class="bi bi-pause-circle"></i>
-                        </span>
-                        <span>
-                            <b>Jeda Layanan Jasa</b>
-                            <small>
-                                @php $mati = collect($jeda)->filter(fn ($j) => $j['dijeda'])->keys(); @endphp
-                                @if ($mati->isEmpty())
-                                Semua layanan menerima pesanan
-                                @else
-                                Dijeda: {{ $mati->map(fn ($k) => $labelJeda[$k])->implode(', ') }}
-                                @endif
-                            </small>
-                        </span>
-                    </span>
-                    <i class="bi bi-chevron-{{ $panelJeda ? 'up' : 'down' }} text-muted"></i>
-                </button>
-
-                @if ($panelJeda)
-                <p class="jeda-info">
-                    Saat dijeda, produknya <b>tetap tampil</b> di toko — hanya tombol belinya yang ditutup,
-                    dan keterangan di bawah ini yang muncul. Pelanggan yang sudah membayar tetap bisa
-                    mengunggah berkas memakai sisa kuotanya.
-                </p>
-
-                <div class="jeda-grid">
-                    @foreach ($labelJeda as $jenis => $label)
-                    <div class="jeda-item {{ $jeda[$jenis]['dijeda'] ? 'is-jeda' : '' }}">
-                        <div class="jeda-item-head">
-                            <span class="jeda-nama">
-                                <i class="bi bi-{{ $jeda[$jenis]['dijeda'] ? 'pause-circle-fill' : 'check-circle-fill' }}"></i>
-                                {{ $label }}
-                            </span>
-                            <button type="button"
-                                class="btn btn-sm {{ $jeda[$jenis]['dijeda'] ? 'btn-success' : 'btn-outline-danger' }} jeda-tombol pcek-konfirmasi"
-                                data-action="alihkanJeda" data-arg="{{ $jenis }}"
-                                data-title="{{ $jeda[$jenis]['dijeda'] ? 'Buka kembali '.$label.'?' : 'Jeda '.$label.'?' }}"
-                                data-text="{{ $jeda[$jenis]['dijeda'] ? 'Pembeli bisa memesan layanan ini lagi.' : 'Pembeli tidak bisa memesan layanan ini sampai dibuka lagi. Produknya tetap tampil di toko.' }}"
-                                data-confirm="{{ $jeda[$jenis]['dijeda'] ? 'Ya, buka' : 'Ya, jeda' }}"
-                                data-icon="{{ $jeda[$jenis]['dijeda'] ? 'question' : 'warning' }}">
-                                {{ $jeda[$jenis]['dijeda'] ? 'Buka kembali' : 'Jeda' }}
-                            </button>
-                        </div>
-                        <div class="jeda-status">
-                            {{ $jeda[$jenis]['dijeda'] ? 'Pesanan baru ditutup' : 'Menerima pesanan' }}
-                        </div>
-                        <div class="input-group input-group-sm jeda-pesan">
-                            <input type="text" class="form-control" maxlength="160"
-                                wire:model="jeda.{{ $jenis }}.pesan"
-                                placeholder="{{ \App\Support\JedaLayanan::PESAN_BAWAAN }}">
-                            <button class="btn btn-outline-secondary" type="button"
-                                wire:click="simpanPesanJeda('{{ $jenis }}')"
-                                wire:loading.attr="disabled" wire:target="simpanPesanJeda('{{ $jenis }}')">
-                                Simpan
-                            </button>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                @endif
             </div>
         </div>
 

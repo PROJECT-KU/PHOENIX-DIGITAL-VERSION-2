@@ -824,15 +824,15 @@ new class extends Component
                 </li>
                 @endif
 
-                @if (auth()->user()->hasAnyPermission(['view_dataakun', 'view_product', 'view_bundlings']))
+                @if (auth()->user()->hasAnyPermission(['view_dataakun', 'view_product', 'view_bundlings', 'view_jeda_layanan']))
                 <li
-                    class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'active open' : '' }}">
+                    class="sidebar-item has-sub {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') || request()->routeIs('admin.jeda-layanan.*') ? 'active open' : '' }}">
                     <a href="javascript:void(0)"
-                        class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary fw-bold' : '' }}">
+                        class="sidebar-link {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') || request()->routeIs('admin.jeda-layanan.*') ? 'text-primary fw-bold' : '' }}">
                         <i
-                            class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}"></i>
+                            class="bi bi-box {{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') || request()->routeIs('admin.jeda-layanan.*') ? 'text-primary' : '' }}"></i>
                         <span
-                            class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') ? 'text-primary' : '' }}">
+                            class="{{ request()->routeIs('admin.DataAkun.*') || request()->routeIs('admin.product.*') || request()->routeIs('admin.Bundlings.*') || request()->routeIs('admin.jeda-layanan.*') ? 'text-primary' : '' }}">
                             Produk
                         </span>
                     </a>
@@ -850,6 +850,11 @@ new class extends Component
                         @if (auth()->user()->hasPermission('view_bundlings'))
                         <li class="submenu-item {{ request()->routeIs('admin.Bundlings.*') ? 'active' : '' }}">
                             <a wire:navigate href="{{ route('admin.Bundlings.index') }}" class="submenu-link">Product Bundling</a>
+                        </li>
+                        @endif
+                        @if (auth()->user()->hasPermission('view_jeda_layanan'))
+                        <li class="submenu-item {{ request()->routeIs('admin.jeda-layanan.*') ? 'active' : '' }}">
+                            <a wire:navigate href="{{ route('admin.jeda-layanan.index') }}" class="submenu-link">Jeda Layanan</a>
                         </li>
                         @endif
                     </ul>
