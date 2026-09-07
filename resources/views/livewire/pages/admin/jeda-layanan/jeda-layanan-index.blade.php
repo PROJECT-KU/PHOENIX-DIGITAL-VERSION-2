@@ -183,26 +183,36 @@ Jeda Layanan || lemon
            utama di daftar ini. Warnanya menyamai tombol "Jeda layanan" pada
            kartu jasa: tindakan yang sama, bahasa yang sama. */
         .jl-aktif-tombol {
-            flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
-            border: 1px solid #f0c2c2; background: #fff; color: #d63c3c;
+            flex-shrink: 0; border: 1px solid #f0c2c2; background: #fff; color: #d63c3c;
             border-radius: 8px; padding: 5px 12px; font-size: .76rem; font-weight: 600;
             transition: background .16s ease, border-color .16s ease, color .16s ease;
         }
-        .jl-aktif-tombol i.bi { font-size: .72rem; line-height: 1; display: block; }
         .jl-aktif-tombol:hover { border-color: #dc3545; background: #fdf1f1; color: #b02a2a; }
 
-        /* Ikon di dalam tombol aksi kartu produk akun, disejajarkan seperti
-           tombol pada kartu jasa. */
-        .jl-akun-atas .btn { display: inline-flex; align-items: center; gap: 6px; }
-        .jl-akun-atas .btn i.bi { font-size: .85rem; line-height: 1; display: block; }
 
         .jl-aksi { margin-top: auto; padding-top: 4px; }
-        .jl-aksi .btn {
-            width: 100%; border-radius: 12px; font-weight: 600; padding: 11px;
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .jl-aksi .btn i.bi { display: flex; align-items: center; line-height: 1; font-size: 1rem; }
-        .jl-aksi .btn i.bi::before { display: block; line-height: 1; }
+        .jl-aksi .btn { width: 100%; border-radius: 12px; font-weight: 600; padding: 11px; }
+
+        /* ===== Satu aturan untuk SEMUA tombol berikon di halaman ini =====
+           Glyph Bootstrap Icons membawa line-height sendiri, jadi meluruskannya
+           menuntut dua hal sekaligus: elemen <i> DAN pseudo ::before-nya. Aturan
+           ini sempat tersebar di tiga tempat dan dua di antaranya lupa ::before,
+           sehingga ikonnya melenceng — disatukan agar tak terulang. */
+        .jl-aksi .btn,
+        .jl-akun-atas .btn,
+        .jl-aktif-tombol { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+
+        .jl-aksi .btn i.bi,
+        .jl-akun-atas .btn i.bi,
+        .jl-aktif-tombol i.bi { display: flex; align-items: center; line-height: 1; }
+
+        .jl-aksi .btn i.bi::before,
+        .jl-akun-atas .btn i.bi::before,
+        .jl-aktif-tombol i.bi::before { display: block; line-height: 1; }
+
+        .jl-aksi .btn i.bi { font-size: 1rem; }
+        .jl-akun-atas .btn i.bi { font-size: .85rem; }
+        .jl-aktif-tombol i.bi { font-size: .72rem; }
     </style>
 
     <div class="page-heading">
