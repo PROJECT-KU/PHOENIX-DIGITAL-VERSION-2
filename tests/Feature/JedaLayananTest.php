@@ -509,3 +509,39 @@ it('ringkasan menyebut produk akun meski tak ada jasa yang dijeda', function () 
         ->assertSee('Dijeda: 1 produk akun')
         ->assertDontSee('Semua layanan menerima pesanan');
 });
+
+it('kartu jasa memakai nama produk asli bila jenisnya menaungi satu produk', function () {
+    produkPlagiasi();
+
+    // "Cek Plagiasi Turnitin", bukan label jenis "Cek Plagiasi" — nama itulah
+    // yang admin kenal dari katalog produknya.
+    halamanJeda()->assertSee('Cek Plagiasi Turnitin');
+});
+
+it('nama jenis tetap tampil sebagai penanda cakupan sakelarnya', function () {
+    produkPlagiasi();
+
+    // Tetap perlu: sakelarnya berlaku untuk JENIS, bukan hanya satu produk itu.
+    halamanJeda()->assertSee('Cek Plagiasi');
+});
+
+it('jenis dengan beberapa produk memakai nama jenis dan mendaftar produknya', function () {
+    produkPlagiasi();
+    Product::create([
+        'nama_akun' => 'Cek Plagiasi Turnitin Instruktur',
+        'butuh_file' => true,
+        'pakai_exclude' => true,
+        'harga_perbulan' => 8000,
+    ]);
+
+    halamanJeda()
+        ->assertSee('Produk yang tercakup')
+        ->assertSee('Cek Plagiasi Turnitin')
+        ->assertSee('Cek Plagiasi Turnitin Instruktur');
+});
+
+it('kalimat ajakan tidak lagi menyebut pencarian yang sudah dihapus', function () {
+    halamanJeda()
+        ->assertSee('Semua produk akun menerima pesanan')
+        ->assertDontSee('Cari produk di bawah');
+});

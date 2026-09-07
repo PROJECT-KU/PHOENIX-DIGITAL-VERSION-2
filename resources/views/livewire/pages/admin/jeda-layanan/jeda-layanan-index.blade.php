@@ -67,7 +67,13 @@ Jeda Layanan || lemon
         .jl-kartu.is-jeda::before { background: #f59e0b; }
 
         .jl-atas { display: flex; align-items: center; gap: 14px; }
-        .jl-nama { font-weight: 700; font-size: 1.05rem; line-height: 1.25; margin-bottom: 5px; }
+        .jl-judul { min-width: 0; }
+        .jl-jenis {
+            font-size: .64rem; font-weight: 700; letter-spacing: .09em;
+            text-transform: uppercase; color: #b6c0cd; margin-bottom: 2px;
+        }
+        .jl-kartu.is-jeda .jl-jenis { color: #c99a4e; }
+        .jl-nama { font-weight: 700; font-size: 1.02rem; line-height: 1.25; margin-bottom: 6px; }
 
         .jl-pil {
             display: inline-flex; align-items: center; gap: 6px;
@@ -258,6 +264,15 @@ Jeda Layanan || lemon
 
                 <div class="jl-grid">
                     @foreach ($labelJeda as $jenis => $label)
+                    @php
+                        // Judul memakai NAMA PRODUK ASLI bila jenis ini hanya
+                        // menaungi satu produk — itu nama yang admin kenal dari
+                        // katalog. Bila lebih dari satu, judulnya kembali ke nama
+                        // jenis dan produknya didaftar sebagai keping di bawah.
+                        $namaProduk = $produkPerJenis[$jenis];
+                        $tunggal = count($namaProduk) === 1;
+                        $judul = $tunggal ? $namaProduk[0] : $label;
+                    @endphp
                     <div class="jl-kartu {{ $jeda[$jenis]['dijeda'] ? 'is-jeda' : '' }}">
                         <div class="jl-atas">
                             {{-- Satu objek, dua keadaan: tas berpesan diterima vs ditutup.
@@ -266,26 +281,30 @@ Jeda Layanan || lemon
                             <span class="stat-icon-wrapper jl-ikon {{ $jeda[$jenis]['dijeda'] ? 'jl-jingga' : 'jl-hijau' }}">
                                 <i class="bi bi-{{ $jeda[$jenis]['dijeda'] ? 'bag-x-fill' : 'bag-check-fill' }}"></i>
                             </span>
-                            <div>
-                                <div class="jl-nama">{{ $label }}</div>
+                            <div class="jl-judul">
+                                <div class="jl-jenis">{{ $label }}</div>
+                                <div class="jl-nama">{{ $judul }}</div>
                                 <span class="jl-pil">
                                     {{ $jeda[$jenis]['dijeda'] ? 'Pesanan ditutup' : 'Menerima pesanan' }}
                                 </span>
                             </div>
                         </div>
 
+                        @unless ($tunggal)
+                        {{-- Dilewati bila judulnya sudah nama produk itu sendiri. --}}
                         <div class="jl-blok">
                             <div class="jl-label">Produk yang tercakup</div>
-                            @if (empty($produkPerJenis[$jenis]))
+                            @if (empty($namaProduk))
                             <div class="jl-kosong">Belum ada produk jenis ini.</div>
                             @else
                             <ul class="jl-chips">
-                                @foreach ($produkPerJenis[$jenis] as $nama)
+                                @foreach ($namaProduk as $nama)
                                 <li>{{ $nama }}</li>
                                 @endforeach
                             </ul>
                             @endif
                         </div>
+                        @endunless
 
                         <div class="jl-blok">
                             <div class="jl-label">Keterangan untuk pembeli</div>
@@ -341,7 +360,7 @@ Jeda Layanan || lemon
                     <i class="bi bi-bag-check"></i>
                     <div>
                         <b>Semua produk akun menerima pesanan</b>
-                        <span>Cari produk di bawah bila ada yang perlu ditutup sementara.</span>
+                        <span>Tekan Jeda pada daftar di bawah bila ada yang perlu ditutup sementara.</span>
                     </div>
                 </div>
                 @else
