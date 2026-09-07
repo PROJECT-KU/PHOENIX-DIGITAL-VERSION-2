@@ -229,7 +229,12 @@ class JedaLayananIndex extends Component
             'bolehKelola' => $this->bolehKelola(),
             'akunDijeda' => JedaLayanan::produkAkunDijeda(),
             'akunAktif' => $akunAktif,
-            'fitur' => FiturPublik::keadaan(),
+            // Dipisah di sini, bukan di tampilan: yang ditutup tampil sebagai
+            // kartu penuh di atas, sisanya baris ringkas — pola yang sama
+            // dengan bagian Produk Akun.
+            'fiturTutup' => collect(FiturPublik::keadaan())->filter(fn ($i) => $i['ditutup'])->all(),
+            'fiturBuka' => collect(FiturPublik::keadaan())->reject(fn ($i) => $i['ditutup'])->all(),
+            'jumlahFitur' => count(FiturPublik::DAFTAR),
         ])->layout('livewire.layout.templateindex');
     }
 }

@@ -165,3 +165,31 @@ it('tautan menu tetap tampil meski halamannya sedang ditutup', function () {
         ->assertSee(route('blog.index'), false)
         ->assertSee(route('bundling.product-bundlings'), false);
 });
+
+it('halaman yang ditutup naik ke atas, yang terbuka jadi daftar ringkas', function () {
+    FiturPublik::setel('blog', true);
+
+    $html = Livewire::actingAs(adminFitur())
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->html();
+
+    // Yang butuh perhatian tidak boleh terselip di tengah daftar.
+    expect(strpos($html, 'Blog'))->toBeLessThan(strpos($html, 'Terbuka &middot;'));
+});
+
+it('menampilkan keadaan kosong saat semua halaman terbuka', function () {
+    Livewire::actingAs(adminFitur())
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->assertSee('Semua halaman publik terbuka')
+        ->assertDontSee('Dibaca pengunjung');
+});
+
+it('hitungan di judul mengikuti berapa yang ditutup', function () {
+    FiturPublik::setel('blog', true);
+    FiturPublik::setel('wishlist', true);
+
+    Livewire::actingAs(adminFitur())
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->assertSee('2 ditutup dari '.count(FiturPublik::DAFTAR))
+        ->assertSee('Terbuka &middot; '.(count(FiturPublik::DAFTAR) - 2).' halaman', false);
+});

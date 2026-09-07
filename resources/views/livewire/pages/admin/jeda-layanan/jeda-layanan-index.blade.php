@@ -508,43 +508,49 @@ Jeda Layanan || lemon
             <div class="card-body p-4">
                 <div class="jl-bagian">
                     Halaman Publik
-                    <span>{{ collect($fitur)->where('ditutup', true)->count() }} ditutup dari {{ count($fitur) }}</span>
+                    <span>{{ count($fiturTutup) }} ditutup dari {{ $jumlahFitur }}</span>
                 </div>
 
-                <p class="jl-catatan" style="margin-bottom:16px">
-                    Pengunjung yang membuka halaman tertutup melihat pemberitahuan, bukan halaman kosong.
-                    Anda sendiri <b>tetap bisa membukanya</b> selama masih masuk sebagai admin, jadi hasil
-                    perbaikan bisa diperiksa sebelum dibuka untuk umum. Halaman pembayaran, struk, tautan
-                    pengecekan, serta syarat &amp; kebijakan privasi <b>tidak pernah bisa ditutup</b> —
-                    menutupnya akan menelantarkan pelanggan yang sudah membayar.
+                <p class="jl-catatan">
+                    Pengunjung yang membuka halaman tertutup melihat pemberitahuan, bukan halaman kosong, dan
+                    <b>tautannya tetap ada di menu</b>. Anda sendiri <b>tetap bisa membukanya</b> selama masih
+                    masuk sebagai admin, jadi hasil perbaikan bisa diperiksa sebelum dibuka untuk umum.
+                    Halaman pembayaran, struk, tautan pengecekan, serta syarat &amp; kebijakan privasi
+                    <b>tidak pernah bisa ditutup</b> — menutupnya akan menelantarkan pelanggan yang sudah membayar.
                 </p>
 
-                <div class="jl-fitur-daftar">
-                    @foreach ($fitur as $kunci => $info)
-                    <div class="jl-fitur {{ $info['ditutup'] ? 'is-tutup' : '' }}">
-                        <div class="jl-fitur-atas">
-                            <div class="jl-fitur-teks">
-                                <div class="jl-fitur-nama">
-                                    <i class="bi bi-{{ $info['ditutup'] ? 'eye-slash-fill' : 'eye-fill' }}"></i>
-                                    {{ $info['label'] }}
-                                </div>
-                                <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
+                @if (empty($fiturTutup))
+                <div class="jl-hampa">
+                    <i class="bi bi-eye-fill"></i>
+                    <div>
+                        <b>Semua halaman publik terbuka</b>
+                        <span>Tekan Tutup pada daftar di bawah bila ada yang sedang diperbaiki.</span>
+                    </div>
+                </div>
+                @else
+                {{-- Yang ditutup naik ke atas sebagai kartu penuh — sama seperti
+                     produk akun yang dijeda. Yang butuh perhatian tidak boleh
+                     terselip di tengah daftar. --}}
+                <div class="jl-akun-daftar">
+                    @foreach ($fiturTutup as $kunci => $info)
+                    <div class="jl-akun">
+                        <div class="jl-akun-atas">
+                            <div>
+                                <div class="jl-akun-nama">{{ $info['label'] }}</div>
+                                <span class="jl-pil">Ditutup</span>
+                                <div class="jl-fitur-ket" style="margin-top:5px">{{ $info['ket'] }}</div>
                             </div>
                             @if ($bolehKelola)
-                            <button type="button"
-                                class="jl-aktif-tombol {{ $info['ditutup'] ? 'is-buka' : '' }} pcek-konfirmasi"
+                            <button type="button" class="btn btn-sm btn-success pcek-konfirmasi"
                                 data-action="alihkanFitur" data-arg="{{ $kunci }}"
-                                data-title="{{ $info['ditutup'] ? 'Buka kembali '.$info['label'].'?' : 'Tutup '.$info['label'].'?' }}"
-                                data-text="{{ $info['ditutup'] ? 'Pengunjung bisa membuka halaman ini lagi.' : 'Pengunjung yang membukanya melihat pemberitahuan perbaikan. Tautannya tetap ada di menu.' }}"
-                                data-confirm="{{ $info['ditutup'] ? 'Ya, buka' : 'Ya, tutup' }}"
-                                data-icon="{{ $info['ditutup'] ? 'question' : 'warning' }}">
-                                <i class="bi bi-{{ $info['ditutup'] ? 'play-fill' : 'pause-fill' }}"></i>
-                                {{ $info['ditutup'] ? 'Buka' : 'Tutup' }}
+                                data-title="Buka kembali {{ $info['label'] }}?"
+                                data-text="Pengunjung bisa membuka halaman ini lagi."
+                                data-confirm="Ya, buka" data-icon="question">
+                                <i class="bi bi-play-fill"></i> Buka kembali
                             </button>
                             @endif
                         </div>
 
-                        @if ($info['ditutup'])
                         <div class="jl-pesan">
                             <input type="text" class="form-control" maxlength="200"
                                 wire:model="pesanFitur.{{ $kunci }}"
@@ -557,14 +563,44 @@ Jeda Layanan || lemon
                                 Simpan
                             </button>
                         </div>
+
                         <div class="jl-pratinjau">
                             <span>Dibaca pengunjung</span>
                             <p>&ldquo;{{ \App\Support\FiturPublik::pesan($kunci) }}&rdquo;</p>
                         </div>
-                        @endif
                     </div>
                     @endforeach
                 </div>
+                @endif
+
+                @if (! empty($fiturBuka))
+                <div class="jl-sub">Terbuka &middot; {{ count($fiturBuka) }} halaman</div>
+
+                <div class="jl-fitur-daftar">
+                    @foreach ($fiturBuka as $kunci => $info)
+                    <div class="jl-fitur">
+                        <div class="jl-fitur-atas">
+                            <div class="jl-fitur-teks">
+                                <div class="jl-fitur-nama">
+                                    <i class="bi bi-eye-fill"></i>
+                                    {{ $info['label'] }}
+                                </div>
+                                <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
+                            </div>
+                            @if ($bolehKelola)
+                            <button type="button" class="jl-aktif-tombol pcek-konfirmasi"
+                                data-action="alihkanFitur" data-arg="{{ $kunci }}"
+                                data-title="Tutup {{ $info['label'] }}?"
+                                data-text="Pengunjung yang membukanya melihat pemberitahuan perbaikan. Tautannya tetap ada di menu."
+                                data-confirm="Ya, tutup" data-icon="warning">
+                                <i class="bi bi-pause-fill"></i> Tutup
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
     </div>
