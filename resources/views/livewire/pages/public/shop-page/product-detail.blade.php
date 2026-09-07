@@ -2,8 +2,11 @@
     @include('partials.media-produk-style')
     <style>
     /* Pemberitahuan layanan dijeda — memakai warna peringatan, bukan aksen toko,
-       supaya terbaca sebagai keadaan sementara dan bukan bagian dari promosi. */
-    .pd-jeda{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin-bottom:12px;
+       supaya terbaca sebagai keadaan sementara dan bukan bagian dari promosi.
+       Jarak atas 22px menyamai .pd-buy di public-custom-styles.css, sehingga
+       kotak ini mengikuti ritme halaman dan tidak menempel ke kartu paket di
+       atasnya; jarak bawahnya diserahkan ke margin .pd-buy itu sendiri. */
+    .pd-jeda{display:flex;gap:11px;align-items:flex-start;padding:13px 15px;margin:22px 0 0;
         border:1px solid #f0c36d;background:#fdf6e3;border-radius:12px;color:#7a5a12}
     .pd-jeda > i{font-size:1.15rem;line-height:1.35;flex-shrink:0}
     .pd-jeda b{display:block;font-size:.92rem}
