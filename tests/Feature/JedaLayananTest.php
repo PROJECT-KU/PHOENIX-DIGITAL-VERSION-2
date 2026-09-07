@@ -184,3 +184,64 @@ it('pelanggan yang sudah bayar tetap bisa mengunggah sisa kuotanya', function ()
     expect($order->fresh()->share_token)->toBe('TOKENJEDA1')
         ->and(JedaLayanan::produkDijeda($produk))->toBeTrue();
 });
+
+/* ===================== Panel di admin ===================== */
+
+function adminJeda(): \App\Models\User
+{
+    $role = \App\Models\Role::create(['name' => 'uji-jeda-'.uniqid(), 'description' => 'Peran uji jeda']);
+
+    foreach (['view_product', 'edit_product'] as $nama) {
+        $izin = \App\Models\Permission::firstOrCreate(
+            ['name' => $nama],
+            ['display_name' => $nama, 'group' => 'product', 'description' => 'uji']
+        );
+        $role->permissions()->attach($izin->id);
+    }
+
+    return \App\Models\User::factory()->create(['role_id' => $role->id])->fresh();
+}
+
+it('panel jeda tampil di halaman Data Produk', function () {
+    Livewire::actingAs(adminJeda())
+        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+        ->assertOk()
+        ->assertSee('Jeda Layanan Jasa')
+        ->assertSee('Semua layanan menerima pesanan');
+});
+
+it('judul panel menyebut jenis yang sedang dijeda', function () {
+    JedaLayanan::setel('plagiasi', true);
+
+    Livewire::actingAs(adminJeda())
+        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+        ->assertSee('Dijeda: Cek Plagiasi');
+});
+
+it('admin bisa menjeda dan membuka kembali dari panel', function () {
+    Livewire::actingAs(adminJeda())
+        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+        ->call('alihkanJeda', 'plagiasi')
+        ->assertDispatched('swal-success');
+
+    expect(JedaLayanan::dijeda('plagiasi'))->toBeTrue()
+        ->and(JedaLayanan::dijeda('ai'))->toBeFalse();
+});
+
+it('tanpa izin ubah produk, sakelarnya ditolak server', function () {
+    $role = \App\Models\Role::create(['name' => 'uji-tanpa-'.uniqid(), 'description' => 'Tanpa izin ubah']);
+    $izin = \App\Models\Permission::firstOrCreate(
+        ['name' => 'view_product'],
+        ['display_name' => 'view_product', 'group' => 'product', 'description' => 'uji']
+    );
+    $role->permissions()->attach($izin->id);
+    $user = \App\Models\User::factory()->create(['role_id' => $role->id])->fresh();
+
+    // Dialognya bukan pengaman; yang menjaga pemeriksaan izin di server.
+    Livewire::actingAs($user)
+        ->test(\App\Livewire\Pages\Admin\Product\ProductList::class)
+        ->call('alihkanJeda', 'plagiasi')
+        ->assertDispatched('swal-error');
+
+    expect(JedaLayanan::dijeda('plagiasi'))->toBeFalse();
+});
