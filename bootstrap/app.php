@@ -46,6 +46,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // StartSession karena perlu tahu apakah pengunjung sudah masuk —
             // admin tetap boleh melihat halaman yang sedang diperbaiki.
             \App\Http\Middleware\CekFiturPublik::class,
+
+            // Modul admin yang sedang ditutup. Pemegang izin kelola dilewatkan,
+            // supaya tidak ada keadaan di mana tak seorang pun bisa membukanya.
+            \App\Http\Middleware\CekFiturAdmin::class,
             \App\Http\Middleware\EnsureProfileComplete::class,
             \App\Http\Middleware\KickScheduler::class,
 

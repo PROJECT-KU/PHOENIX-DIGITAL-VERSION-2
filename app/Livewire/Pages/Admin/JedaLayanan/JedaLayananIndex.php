@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\JedaLayanan;
 
 use App\Models\Product;
+use App\Support\FiturAdmin;
 use App\Support\FiturPublik;
 use App\Support\JedaLayanan;
 use Livewire\Component;
@@ -26,11 +27,70 @@ class JedaLayananIndex extends Component
     /** Keterangan per fitur publik, dikunci nama fitur. */
     public array $pesanFitur = [];
 
+    /** Keterangan per modul admin, dikunci nama modul. */
+    public array $pesanModul = [];
+
     public function mount(): void
     {
         $this->muat();
         $this->muatPesanProduk();
         $this->muatPesanFitur();
+        $this->muatPesanModul();
+    }
+
+    private function muatPesanModul(): void
+    {
+        $this->pesanModul = collect(FiturAdmin::keadaan())
+            ->map(fn ($info) => $info['pesan'])
+            ->all();
+    }
+
+    /**
+     * Buka/tutup satu modul admin.
+     *
+     * Berbeda dari izin: izin menentukan siapa yang boleh, ini menentukan
+     * apakah modulnya sedang bisa dipakai sama sekali. Pemegang izin kelola
+     * tetap bisa menembus, supaya perbaikannya bisa diperiksa dan dibuka lagi.
+     */
+    public function alihkanModul(string $modul): void
+    {
+        if (! $this->bolehKelola()) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah status layanan.');
+
+            return;
+        }
+
+        if (! FiturAdmin::ada($modul)) {
+            return;
+        }
+
+        $jadiDitutup = ! FiturAdmin::ditutup($modul);
+
+        FiturAdmin::setel($modul, $jadiDitutup, $this->pesanModul[$modul] ?? null);
+        $this->muatPesanModul();
+
+        $this->dispatch('swal-success', message: $jadiDitutup
+            ? FiturAdmin::label($modul).' ditutup untuk karyawan.'
+            : FiturAdmin::label($modul).' dibuka kembali.');
+    }
+
+    /** Simpan keterangan satu modul tanpa mengubah status tutupnya. */
+    public function simpanPesanModul(string $modul): void
+    {
+        if (! $this->bolehKelola()) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin mengubah status layanan.');
+
+            return;
+        }
+
+        if (! FiturAdmin::ada($modul)) {
+            return;
+        }
+
+        FiturAdmin::setel($modul, FiturAdmin::ditutup($modul), $this->pesanModul[$modul] ?? '');
+        $this->muatPesanModul();
+
+        $this->dispatch('swal-success', message: 'Keterangan disimpan.');
     }
 
     private function muatPesanFitur(): void
@@ -235,6 +295,9 @@ class JedaLayananIndex extends Component
             'fiturTutup' => collect(FiturPublik::keadaan())->filter(fn ($i) => $i['ditutup'])->all(),
             'fiturBuka' => collect(FiturPublik::keadaan())->reject(fn ($i) => $i['ditutup'])->all(),
             'jumlahFitur' => count(FiturPublik::DAFTAR),
+            'modulTutup' => collect(FiturAdmin::keadaan())->filter(fn ($i) => $i['ditutup'])->all(),
+            'modulBuka' => collect(FiturAdmin::keadaan())->reject(fn ($i) => $i['ditutup'])->all(),
+            'jumlahModul' => count(FiturAdmin::DAFTAR),
         ])->layout('livewire.layout.templateindex');
     }
 }

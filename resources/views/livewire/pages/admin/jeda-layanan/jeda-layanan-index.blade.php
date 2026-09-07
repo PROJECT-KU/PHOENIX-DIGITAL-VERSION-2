@@ -603,6 +603,107 @@ Jeda Layanan || lemon
                 @endif
             </div>
         </div>
+
+        {{-- ===== Modul admin =====
+             Bukan pengganti izin: izin menentukan siapa yang BOLEH, ini
+             menentukan apakah modulnya sedang BISA dipakai sama sekali —
+             mis. saat gaji satu periode sedang dihitung ulang. --}}
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <div class="jl-bagian">
+                    Modul Admin
+                    <span>{{ count($modulTutup) }} ditutup dari {{ $jumlahModul }}</span>
+                </div>
+
+                <p class="jl-catatan">
+                    Menutup modul <b>tidak mencabut izin siapa pun</b> — begitu dibuka, semua kembali seperti
+                    semula. Karyawan yang membukanya melihat pemberitahuan perbaikan. <b>Anda yang memegang izin
+                    Kelola Jeda Layanan tetap bisa masuk</b>, supaya hasil perbaikan bisa diperiksa sebelum
+                    dibuka untuk yang lain. Dasbor, Akun Profil, dan halaman ini sendiri
+                    <b>tidak pernah bisa ditutup</b>, agar tidak ada keadaan terkunci tanpa jalan keluar.
+                </p>
+
+                @if (empty($modulTutup))
+                <div class="jl-hampa">
+                    <i class="bi bi-tools"></i>
+                    <div>
+                        <b>Semua modul admin bisa dipakai</b>
+                        <span>Tekan Tutup pada daftar di bawah bila ada yang sedang diperbaiki.</span>
+                    </div>
+                </div>
+                @else
+                <div class="jl-akun-daftar">
+                    @foreach ($modulTutup as $kunci => $info)
+                    <div class="jl-akun">
+                        <div class="jl-akun-atas">
+                            <div>
+                                <div class="jl-akun-nama">{{ $info['label'] }}</div>
+                                <span class="jl-pil">Ditutup</span>
+                                <div class="jl-fitur-ket" style="margin-top:5px">{{ $info['ket'] }}</div>
+                            </div>
+                            @if ($bolehKelola)
+                            <button type="button" class="btn btn-sm btn-success pcek-konfirmasi"
+                                data-action="alihkanModul" data-arg="{{ $kunci }}"
+                                data-title="Buka kembali {{ $info['label'] }}?"
+                                data-text="Karyawan bisa memakai modul ini lagi."
+                                data-confirm="Ya, buka" data-icon="question">
+                                <i class="bi bi-play-fill"></i> Buka kembali
+                            </button>
+                            @endif
+                        </div>
+
+                        <div class="jl-pesan">
+                            <input type="text" class="form-control" maxlength="200"
+                                wire:model="pesanModul.{{ $kunci }}"
+                                placeholder="Opsional — ada kalimat bawaan"
+                                @disabled(! $bolehKelola)>
+                            <button class="btn" type="button"
+                                wire:click="simpanPesanModul('{{ $kunci }}')"
+                                wire:loading.attr="disabled" wire:target="simpanPesanModul('{{ $kunci }}')"
+                                @disabled(! $bolehKelola)>
+                                Simpan
+                            </button>
+                        </div>
+
+                        <div class="jl-pratinjau">
+                            <span>Dibaca karyawan</span>
+                            <p>&ldquo;{{ \App\Support\FiturAdmin::pesan($kunci) }}&rdquo;</p>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                @if (! empty($modulBuka))
+                <div class="jl-sub">Bisa dipakai &middot; {{ count($modulBuka) }} modul</div>
+
+                <div class="jl-fitur-daftar">
+                    @foreach ($modulBuka as $kunci => $info)
+                    <div class="jl-fitur">
+                        <div class="jl-fitur-atas">
+                            <div class="jl-fitur-teks">
+                                <div class="jl-fitur-nama">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    {{ $info['label'] }}
+                                </div>
+                                <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
+                            </div>
+                            @if ($bolehKelola)
+                            <button type="button" class="jl-aktif-tombol pcek-konfirmasi"
+                                data-action="alihkanModul" data-arg="{{ $kunci }}"
+                                data-title="Tutup {{ $info['label'] }}?"
+                                data-text="Karyawan yang membukanya melihat pemberitahuan perbaikan. Izin mereka tidak dicabut, dan Anda sendiri tetap bisa masuk."
+                                data-confirm="Ya, tutup" data-icon="warning">
+                                <i class="bi bi-pause-fill"></i> Tutup
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </div>
     </div>
 
     @include('livewire.layout.sweetalert')
