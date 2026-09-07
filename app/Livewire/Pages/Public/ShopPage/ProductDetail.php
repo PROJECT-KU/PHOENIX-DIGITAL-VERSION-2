@@ -505,6 +505,14 @@ class ProductDetail extends Component
 
     public function addToCart()
     {
+        // Layanan yang sedang dijeda admin: halamannya tetap terbuka, hanya
+        // pembeliannya yang ditutup. Produk non-jasa tak pernah kena.
+        if (\App\Support\JedaLayanan::produkDijeda($this->product)) {
+            $this->dispatch('cart-error', message: \App\Support\JedaLayanan::pesanProduk($this->product));
+
+            return;
+        }
+
         // ===== Jasa PER HALAMAN (mis. parafrase): file wajib diunggah dulu =====
         if ($this->product->jasaPerHalaman()) {
             return $this->addToCartPerHalaman();
@@ -577,6 +585,14 @@ class ProductDetail extends Component
      */
     private function addToCartPerHalaman()
     {
+        // Dipanggil juga dari luar addToCart() pada alur unggah-dulu, jadi
+        // penjaganya diulang di sini — bukan pengulangan yang sia-sia.
+        if (\App\Support\JedaLayanan::produkDijeda($this->product)) {
+            $this->dispatch('cart-error', message: \App\Support\JedaLayanan::pesanProduk($this->product));
+
+            return;
+        }
+
         if (! $this->draftUploadId || $this->jumlahHalaman < 1) {
             $this->dispatch('cart-error', message: 'Unggah dokumen PDF dulu agar jumlah halaman & harganya bisa dihitung.');
 

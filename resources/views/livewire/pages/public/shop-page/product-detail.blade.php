@@ -1,6 +1,15 @@
 <main class="main">
     @include('partials.media-produk-style')
     <style>
+    /* Pemberitahuan layanan dijeda — memakai warna peringatan, bukan aksen toko,
+       supaya terbaca sebagai keadaan sementara dan bukan bagian dari promosi. */
+    .pd-jeda{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin-bottom:12px;
+        border:1px solid #f0c36d;background:#fdf6e3;border-radius:12px;color:#7a5a12}
+    .pd-jeda > i{font-size:1.15rem;line-height:1.35;flex-shrink:0}
+    .pd-jeda b{display:block;font-size:.92rem}
+    .pd-jeda span{display:block;font-size:.85rem;opacity:.9;margin-top:1px}
+    .pd-add:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.35)}
+
         /* Gambar produk terkait ("Mungkin Anda juga suka"): tampilkan UTUH,
            jangan ke-crop. Override object-fit:cover dari public-custom-styles.css
            (berkas build tak ikut deploy). mix-blend-mode:multiply membuat latar
@@ -637,12 +646,31 @@
                     </div>
                     @endif
 
+                    @php $dijeda = \App\Support\JedaLayanan::produkDijeda($product); @endphp
+
+                    @if ($dijeda)
+                    {{-- Layanan dijeda: halaman tetap utuh supaya calon pembeli tahu
+                         layanan ini ada, hanya pintu belinya yang ditutup. --}}
+                    <div class="pd-jeda">
+                        <i class="bi bi-pause-circle"></i>
+                        <div>
+                            <b>Sedang tidak menerima pesanan baru</b>
+                            <span>{{ \App\Support\JedaLayanan::pesanProduk($product) }}</span>
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- Beli --}}
                     <div class="pd-buy">
                         <button type="button" class="pd-add" wire:click="addToCart"
-                            wire:loading.attr="disabled" wire:target="addToCart">
+                            wire:loading.attr="disabled" wire:target="addToCart"
+                            @disabled($dijeda)>
+                            @if ($dijeda)
+                            <span><i class="bi bi-pause-circle"></i> Pesanan Ditutup Sementara</span>
+                            @else
                             <span wire:loading.remove wire:target="addToCart"><i class="bi bi-cart-plus"></i> Tambah ke Keranjang</span>
                             <span wire:loading wire:target="addToCart"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
+                            @endif
                         </button>
 
                         <button type="button" class="pd-wish"

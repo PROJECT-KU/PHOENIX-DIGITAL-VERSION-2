@@ -488,6 +488,19 @@ class CheckoutPage extends Component
             return redirect()->route('shop.index');
         }
 
+        // Layanan bisa dijeda admin SETELAH barangnya masuk keranjang — mis.
+        // penyedia pengecekan tiba-tiba perbaikan. Diperiksa lagi di sini,
+        // bukan hanya saat menambah ke keranjang, supaya keranjang lama tidak
+        // menerobos. Ini juga pengaman terakhir bila tombolnya dilewati.
+        if ($jeda = $this->layananDijedaDiKeranjang()) {
+            // Lewat event, BUKAN session()->flash: halaman checkout tidak
+            // menampilkan flash 'error' sama sekali, sehingga pembeli hanya
+            // akan melihat tombol Bayar yang seolah tidak bereaksi.
+            $this->dispatch('cart-error', message: $jeda);
+
+            return;
+        }
+
         // Email UNIQUE antar pelanggan. Pelanggan dikenali via no_hp (updateOrCreate),
         // jadi bila email yang diketik sudah dipakai pelanggan LAIN (no_hp berbeda),
         // penyimpanan akan gagal diam-diam karena constraint unik — tanpa keterangan.
@@ -714,6 +727,39 @@ class CheckoutPage extends Component
      * pembagian harga yang sama, supaya pesanan dari publik dan dari admin
      * berbentuk identik dan bisa diproses dengan alur yang sama.
      */
+    /**
+     * Keterangan bila keranjang memuat layanan yang sedang dijeda, atau null
+     * bila semuanya boleh dibeli.
+     *
+     * Paket bundling ikut diperiksa karena isinya bisa memuat produk jasa.
+     */
+    private function layananDijedaDiKeranjang(): ?string
+    {
+        foreach ($this->cart as $baris) {
+            if (($baris['type'] ?? null) === 'bundling') {
+                $paket = \App\Models\ProductBundlings::find($baris['product_id'] ?? null);
+
+                foreach ($paket?->bundleProducts() ?? [] as $bp) {
+                    $produk = \App\Models\Product::find($bp['product_id']);
+
+                    if (\App\Support\JedaLayanan::produkDijeda($produk)) {
+                        return \App\Support\JedaLayanan::pesanProduk($produk);
+                    }
+                }
+
+                continue;
+            }
+
+            $produk = \App\Models\Product::find($baris['product_id'] ?? null);
+
+            if (\App\Support\JedaLayanan::produkDijeda($produk)) {
+                return \App\Support\JedaLayanan::pesanProduk($produk);
+            }
+        }
+
+        return null;
+    }
+
     private function pecahPaketJadiItem(Order $order, array $item): void
     {
         $paket = \App\Models\ProductBundlings::find($item['product_id'] ?? null);
