@@ -125,9 +125,8 @@ Jeda Layanan || lemon
             display: flex; align-items: baseline; gap: 10px;
             font-size: .74rem; font-weight: 700; letter-spacing: .09em;
             text-transform: uppercase; color: #94a3b8;
-            padding-bottom: 9px; margin: 26px 0 16px; border-bottom: 2px solid #eef2f7;
+            padding-bottom: 9px; margin: 0 0 16px; border-bottom: 2px solid #eef2f7;
         }
-        .jl-bagian:first-of-type { margin-top: 0; }
         .jl-bagian span {
             font-size: .68rem; letter-spacing: .04em; text-transform: none;
             color: #b6c0cd; font-weight: 600;
@@ -300,23 +299,26 @@ Jeda Layanan || lemon
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm rounded-4">
+        @unless ($bolehKelola)
+        <div class="alert alert-light border d-flex align-items-center gap-2 rounded-4" role="alert">
+            <i class="bi bi-eye"></i>
+            <span>Anda hanya dapat melihat status ini. Mengubahnya membutuhkan izin <b>Kelola Jeda Layanan</b>.</span>
+        </div>
+        @endunless
+
+        {{-- Tiga kartu terpisah: ketiganya menutup hal yang BERBEDA — tombol beli
+             per jenis, tombol beli per produk, dan halamannya sendiri. Digabung
+             dalam satu kartu, ketiganya terbaca sebagai satu hal yang sama. --}}
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
+                <div class="jl-bagian">Layanan Jasa</div>
+
                 <p class="jl-catatan">
                     Menjeda layanan menutup <b>pemesanan baru</b> saja. Halaman produknya <b>tetap tampil</b> di toko
                     lengkap dengan harga — hanya tombol belinya yang ditutup, diganti keterangan yang Anda tulis di
                     bawah. Pelanggan yang sudah membayar tetap bisa mengunggah berkas memakai sisa kuotanya.
                     Tiap jenis berdiri sendiri: menjeda Cek Plagiasi tidak menyentuh Cek AI.
                 </p>
-
-                @unless ($bolehKelola)
-                <div class="alert alert-light border d-flex align-items-center gap-2" role="alert">
-                    <i class="bi bi-eye"></i>
-                    <span>Anda hanya dapat melihat status ini. Mengubahnya membutuhkan izin <b>Kelola Jeda Layanan</b>.</span>
-                </div>
-                @endunless
-
-                <div class="jl-bagian">Layanan Jasa</div>
 
                 <div class="jl-grid">
                     @foreach ($labelJeda as $jenis => $label)
@@ -406,6 +408,11 @@ Jeda Layanan || lemon
                      Dijeda satu per satu: tidak ada pengelompokan alami seperti jasa,
                      dan yang bermasalah biasanya satu produk saja. Yang ditampilkan
                      hanya yang SEDANG dijeda — 24 produk kalau didaftar semua. --}}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
                 <div class="jl-bagian">
                     Produk Akun
                     <span>{{ $akunDijeda->count() }} dijeda dari {{ $akunDijeda->count() + $akunAktif->count() }}</span>
@@ -494,6 +501,11 @@ Jeda Layanan || lemon
                      sementara tautannya TETAP ada di menu — sama seperti produk yang
                      dijeda tetap tampil di toko. Dipakai saat halamannya yang sedang
                      dikerjakan, bukan barangnya yang habis. --}}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
                 <div class="jl-bagian">
                     Halaman Publik
                     <span>{{ collect($fitur)->where('ditutup', true)->count() }} ditutup dari {{ count($fitur) }}</span>
