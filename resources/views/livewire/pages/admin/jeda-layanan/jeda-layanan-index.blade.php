@@ -152,16 +152,32 @@ Jeda Layanan || lemon
         .jl-akun .jl-pil { background: #fef3c7; color: #b45309; }
         .jl-akun .jl-pratinjau p { color: #92400e; }
 
-        .jl-cari { margin-top: 20px; max-width: 520px; }
-        .jl-cari .form-control { border-radius: 11px; font-size: .85rem; padding: 10px 13px; }
-        .jl-cari-baris {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
-            width: 100%; margin-top: 7px; padding: 11px 14px;
-            border: 1px solid #e6ebf1; border-radius: 11px; background: #fff;
-            font-size: .86rem; color: #334155; text-align: left;
+        .jl-sub {
+            font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+            color: #a0aab8; margin: 22px 0 11px;
         }
-        .jl-cari-baris:hover { border-color: #f0c36d; background: #fffdf7; color: #b45309; }
-        .jl-cari-baris i { font-size: 1rem; line-height: 1; flex-shrink: 0; }
+
+        .jl-aktif-daftar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+        @media (max-width: 1200px) { .jl-aktif-daftar { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 720px)  { .jl-aktif-daftar { grid-template-columns: 1fr; } }
+
+        .jl-aktif {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 10px 12px 10px 14px; border: 1px solid #e6ebf1; border-radius: 11px;
+            background: #fff; transition: border-color .16s ease, background .16s ease;
+        }
+        .jl-aktif:hover { border-color: #d7dee7; background: #fbfcfe; }
+        .jl-aktif-nama {
+            display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+            font-size: .85rem; color: #334155; font-weight: 600;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .jl-aktif-nama i { color: #10b981; font-size: .9rem; line-height: 1; flex-shrink: 0; }
+        .jl-aktif-tombol {
+            flex-shrink: 0; border: 1px solid #e6ebf1; background: #fff; color: #94a3b8;
+            border-radius: 8px; padding: 4px 12px; font-size: .76rem; font-weight: 600;
+        }
+        .jl-aktif-tombol:hover { border-color: #f0c36d; background: #fffdf7; color: #b45309; }
 
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn {
@@ -317,7 +333,7 @@ Jeda Layanan || lemon
                      hanya yang SEDANG dijeda — 24 produk kalau didaftar semua. --}}
                 <div class="jl-bagian">
                     Produk Akun
-                    <span>{{ $akunDijeda->count() }} dijeda</span>
+                    <span>{{ $akunDijeda->count() }} dijeda dari {{ $akunDijeda->count() + $akunAktif->count() }}</span>
                 </div>
 
                 @if ($akunDijeda->isEmpty())
@@ -370,27 +386,30 @@ Jeda Layanan || lemon
                 </div>
                 @endif
 
-                @if ($bolehKelola)
-                <div class="jl-cari">
-                    <label class="jl-label" for="cariProduk">Tutup produk akun lain</label>
-                    <input type="text" class="form-control" id="cariProduk"
-                        wire:model.live.debounce.300ms="cariProduk"
-                        placeholder="Ketik nama produk, mis. Netflix">
+                @if ($akunAktif->isNotEmpty())
+                {{-- Yang menerima pesanan: daftar RINGKAS satu baris. Kartu penuh
+                     untuk dua puluhan produk hanya akan mengubur yang benar-benar
+                     butuh perhatian, yaitu yang sedang dijeda di atas. --}}
+                <div class="jl-sub">Menerima pesanan &middot; {{ $akunAktif->count() }} produk</div>
 
-                    @if (trim($cariProduk) !== '')
-                    @forelse ($hasilCari as $produk)
-                    <button type="button" class="jl-cari-baris pcek-konfirmasi"
-                        data-action="alihkanProduk" data-arg="{{ $produk->id }}"
-                        data-title="Jeda {{ $produk->nama_akun }}?"
-                        data-text="Pembeli tidak bisa memesan produk ini sampai dibuka lagi. Produknya tetap tampil di toko."
-                        data-confirm="Ya, jeda" data-icon="warning">
-                        <span>{{ $produk->nama_akun }}</span>
-                        <i class="bi bi-pause-circle"></i>
-                    </button>
-                    @empty
-                    <div class="jl-kosong mt-2">Tidak ada produk akun yang cocok.</div>
-                    @endforelse
-                    @endif
+                <div class="jl-aktif-daftar">
+                    @foreach ($akunAktif as $produk)
+                    <div class="jl-aktif">
+                        <span class="jl-aktif-nama">
+                            <i class="bi bi-bag-check-fill"></i>
+                            {{ $produk->nama_akun }}
+                        </span>
+                        @if ($bolehKelola)
+                        <button type="button" class="jl-aktif-tombol pcek-konfirmasi"
+                            data-action="alihkanProduk" data-arg="{{ $produk->id }}"
+                            data-title="Jeda {{ $produk->nama_akun }}?"
+                            data-text="Pembeli tidak bisa memesan produk ini sampai dibuka lagi. Produknya tetap tampil di toko."
+                            data-confirm="Ya, jeda" data-icon="warning">
+                            Jeda
+                        </button>
+                        @endif
+                    </div>
+                    @endforeach
                 </div>
                 @endif
             </div>

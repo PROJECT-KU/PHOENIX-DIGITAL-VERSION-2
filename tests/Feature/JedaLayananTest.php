@@ -451,29 +451,36 @@ it('admin bisa menjeda dan membuka produk akun dari halaman itu', function () {
     expect($akun->fresh()->dijeda)->toBeTrue();
 });
 
-it('pencarian hanya menawarkan produk akun yang belum dijeda', function () {
-    $akun = produkBiasa();
-    produkPlagiasi();
+it('semua produk akun terdaftar tanpa perlu dicari', function () {
+    produkBiasa();
+    Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+    Product::create(['nama_akun' => 'Spotify Premium', 'harga_perbulan' => 18000]);
 
     halamanJeda()
-        ->set('cariProduk', 'Microsoft')
-        ->assertSee('Microsoft Office 365');
+        ->assertSee('Menerima pesanan &middot; 3 produk', false)
+        ->assertSee('Microsoft Office 365')
+        ->assertSee('Canva Pro')
+        ->assertSee('Spotify Premium');
+});
+
+it('produk yang dijeda pindah dari daftar aktif ke bagian atas', function () {
+    $akun = produkBiasa();
+    Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
 
     JedaLayanan::setelProduk($akun, true);
 
-    // Sudah dijeda: berhenti ditawarkan di pencarian, karena sudah terdaftar
-    // di bagian atas — menjedanya dua kali tidak ada artinya.
+    // Tidak boleh muncul di dua tempat sekaligus.
     halamanJeda()
-        ->set('cariProduk', 'Microsoft')
-        ->assertSee('Tidak ada produk akun yang cocok');
+        ->assertSee('1 dijeda dari 2')
+        ->assertSee('Menerima pesanan &middot; 1 produk', false);
 });
 
-it('produk jasa tidak muncul di pencarian produk akun', function () {
+it('produk jasa tidak ikut di daftar produk akun', function () {
+    produkBiasa();
     produkPlagiasi();
 
-    halamanJeda()
-        ->set('cariProduk', 'Cek Plagiasi')
-        ->assertSee('Tidak ada produk akun yang cocok');
+    // Jasa sudah punya sakelar jenisnya sendiri di atas.
+    halamanJeda()->assertSee('Menerima pesanan &middot; 1 produk', false);
 });
 
 it('tanpa izin kelola, menjeda produk akun ditolak server', function () {

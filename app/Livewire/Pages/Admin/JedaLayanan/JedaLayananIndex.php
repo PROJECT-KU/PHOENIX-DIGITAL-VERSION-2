@@ -19,9 +19,6 @@ class JedaLayananIndex extends Component
     /** @var array<string, array{dijeda:bool, pesan:string}> */
     public array $jeda = [];
 
-    /** Pencarian produk akun yang hendak dijeda. */
-    public string $cariProduk = '';
-
     /** Keterangan per produk akun yang sedang dijeda, dikunci id produk. */
     public array $pesanProduk = [];
 
@@ -70,7 +67,6 @@ class JedaLayananIndex extends Component
 
         JedaLayanan::setelProduk($produk, $jadiDijeda, $this->pesanProduk[$id] ?? null);
 
-        $this->cariProduk = '';
         $this->muatPesanProduk();
 
         $this->dispatch('swal-success', message: $jadiDijeda
@@ -159,25 +155,20 @@ class JedaLayananIndex extends Component
 
     public function render()
     {
-        // Hasil pencarian hanya muncul saat admin mengetik, dan tidak pernah
-        // menampilkan produk yang sudah dijeda — itu sudah terdaftar di atasnya.
-        $hasilCari = collect();
-
-        if (trim($this->cariProduk) !== '') {
-            $hasilCari = Product::where('butuh_file', false)
-                ->where('dijeda', false)
-                ->where('nama_akun', 'like', '%'.trim($this->cariProduk).'%')
-                ->orderBy('nama_akun')
-                ->limit(8)
-                ->get();
-        }
+        // Yang menerima pesanan ditampilkan sebagai daftar RINGKAS satu baris —
+        // dua puluhan produk dengan kartu penuh akan mengubur kartu jasa di
+        // atasnya, padahal yang butuh perhatian hanya yang sedang dijeda.
+        $akunAktif = Product::where('butuh_file', false)
+            ->where('dijeda', false)
+            ->orderBy('nama_akun')
+            ->get();
 
         return view('livewire.pages.admin.jeda-layanan.jeda-layanan-index', [
             'labelJeda' => JedaLayanan::JENIS,
             'produkPerJenis' => JedaLayanan::produkPerJenis(),
             'bolehKelola' => $this->bolehKelola(),
             'akunDijeda' => JedaLayanan::produkAkunDijeda(),
-            'hasilCari' => $hasilCari,
+            'akunAktif' => $akunAktif,
         ])->layout('livewire.layout.templateindex');
     }
 }
