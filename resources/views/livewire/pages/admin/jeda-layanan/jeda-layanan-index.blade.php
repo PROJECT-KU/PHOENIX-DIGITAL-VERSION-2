@@ -179,11 +179,22 @@ Jeda Layanan || lemon
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .jl-aktif-nama i { color: #10b981; font-size: .9rem; line-height: 1; flex-shrink: 0; }
+        /* Abu-abu membuatnya terbaca seperti tombol mati, padahal inilah aksi
+           utama di daftar ini. Warnanya menyamai tombol "Jeda layanan" pada
+           kartu jasa: tindakan yang sama, bahasa yang sama. */
         .jl-aktif-tombol {
-            flex-shrink: 0; border: 1px solid #e6ebf1; background: #fff; color: #94a3b8;
-            border-radius: 8px; padding: 4px 12px; font-size: .76rem; font-weight: 600;
+            flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+            border: 1px solid #f0c2c2; background: #fff; color: #d63c3c;
+            border-radius: 8px; padding: 5px 12px; font-size: .76rem; font-weight: 600;
+            transition: background .16s ease, border-color .16s ease, color .16s ease;
         }
-        .jl-aktif-tombol:hover { border-color: #f0c36d; background: #fffdf7; color: #b45309; }
+        .jl-aktif-tombol i.bi { font-size: .72rem; line-height: 1; display: block; }
+        .jl-aktif-tombol:hover { border-color: #dc3545; background: #fdf1f1; color: #b02a2a; }
+
+        /* Ikon di dalam tombol aksi kartu produk akun, disejajarkan seperti
+           tombol pada kartu jasa. */
+        .jl-akun-atas .btn { display: inline-flex; align-items: center; gap: 6px; }
+        .jl-akun-atas .btn i.bi { font-size: .85rem; line-height: 1; display: block; }
 
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn {
@@ -378,7 +389,7 @@ Jeda Layanan || lemon
                                 data-title="Buka kembali {{ $produk->nama_akun }}?"
                                 data-text="Pembeli bisa memesan produk ini lagi."
                                 data-confirm="Ya, buka" data-icon="question">
-                                Buka kembali
+                                <i class="bi bi-play-fill"></i> Buka kembali
                             </button>
                             @endif
                         </div>
@@ -424,7 +435,7 @@ Jeda Layanan || lemon
                             data-title="Jeda {{ $produk->nama_akun }}?"
                             data-text="Pembeli tidak bisa memesan produk ini sampai dibuka lagi. Produknya tetap tampil di toko."
                             data-confirm="Ya, jeda" data-icon="warning">
-                            Jeda
+                            <i class="bi bi-pause-fill"></i> Jeda
                         </button>
                         @endif
                     </div>
