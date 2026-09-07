@@ -156,7 +156,35 @@ it('checkout produk biasa tidak terhalang meski semua jasa dijeda', function () 
 it('pesan bawaan dipakai bila admin tidak menulis keterangan', function () {
     JedaLayanan::setel('ai', true, '   ');
 
-    expect(JedaLayanan::pesan('ai'))->toBe(JedaLayanan::PESAN_BAWAAN);
+    expect(JedaLayanan::pesan('ai'))->toBe(JedaLayanan::pesanBawaan('ai'));
+});
+
+it('kalimat bawaan berbeda antara pemeriksaan dan parafrase', function () {
+    // Sebabnya memang berbeda: sistem pemeriksaan vs antrean tim sendiri.
+    expect(JedaLayanan::pesanBawaan('parafrase'))
+        ->not->toBe(JedaLayanan::pesanBawaan('plagiasi'))
+        ->and(JedaLayanan::pesanBawaan('plagiasi'))->toContain('Sistem pemeriksaan')
+        ->and(JedaLayanan::pesanBawaan('parafrase'))->toContain('Antrean pengerjaan');
+});
+
+it('kalimat bawaan selalu menawarkan langkah berikutnya', function () {
+    foreach (array_keys(JedaLayanan::JENIS) as $jenis) {
+        expect(JedaLayanan::pesanBawaan($jenis))->toContain('WhatsApp');
+    }
+});
+
+it('keterangan tulisan admin mengalahkan kalimat bawaan', function () {
+    JedaLayanan::setel('plagiasi', true, 'Buka lagi Senin pagi.');
+
+    expect(JedaLayanan::pesan('plagiasi'))->toBe('Buka lagi Senin pagi.');
+});
+
+it('kalimat bawaan tidak ikut tersimpan ke database', function () {
+    JedaLayanan::setel('plagiasi', true);
+
+    // Dibiarkan kosong supaya perbaikan katanya kelak langsung berlaku.
+    expect(\App\Models\Setting::get('jeda_layanan_plagiasi_pesan', ''))->toBe('')
+        ->and(JedaLayanan::pesan('plagiasi'))->toBe(JedaLayanan::pesanBawaan('plagiasi'));
 });
 
 it('pelanggan yang sudah bayar tetap bisa mengunggah sisa kuotanya', function () {

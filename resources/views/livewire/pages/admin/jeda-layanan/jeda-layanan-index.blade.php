@@ -81,6 +81,16 @@ Jeda Layanan || lemon
         }
         .jl-pesan .btn:hover { background: #f1f5f9; color: #1e293b; }
 
+        .jl-pratinjau { margin-top: 10px; }
+        .jl-pratinjau span {
+            display: block; font-size: .66rem; font-weight: 700; letter-spacing: .07em;
+            text-transform: uppercase; color: #b6c0cd; margin-bottom: 3px;
+        }
+        .jl-pratinjau p {
+            margin: 0; font-size: .79rem; line-height: 1.55; color: #64748b; font-style: italic;
+        }
+        .jl-kartu.is-jeda .jl-pratinjau p { color: #92400e; }
+
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn {
             width: 100%; border-radius: 12px; font-weight: 600; padding: 11px;
@@ -171,9 +181,9 @@ Jeda Layanan || lemon
                         <div class="jl-blok">
                             <div class="jl-label">Keterangan untuk pembeli</div>
                             <div class="jl-pesan">
-                                <input type="text" class="form-control" maxlength="160"
+                                <input type="text" class="form-control" maxlength="200"
                                     wire:model="jeda.{{ $jenis }}.pesan"
-                                    placeholder="Mis. Groupy sedang perbaikan"
+                                    placeholder="Opsional — ada kalimat bawaan"
                                     @disabled(! $bolehKelola)>
                                 <button class="btn" type="button"
                                     wire:click="simpanPesan('{{ $jenis }}')"
@@ -181,6 +191,12 @@ Jeda Layanan || lemon
                                     @disabled(! $bolehKelola)>
                                     Simpan
                                 </button>
+                            </div>
+
+                            {{-- Apa yang BENAR-BENAR dibaca pembeli, bukan tebakan admin. --}}
+                            <div class="jl-pratinjau">
+                                <span>Dibaca pembeli</span>
+                                <p>&ldquo;{{ \App\Support\JedaLayanan::pesan($jenis) }}&rdquo;</p>
                             </div>
                         </div>
 

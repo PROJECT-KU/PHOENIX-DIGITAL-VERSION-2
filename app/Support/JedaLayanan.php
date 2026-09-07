@@ -29,7 +29,25 @@ class JedaLayanan
         'parafrase' => 'Parafrase',
     ];
 
-    public const PESAN_BAWAAN = 'Layanan ini sedang dijeda sementara. Silakan kembali lagi nanti.';
+    /**
+     * Kalimat yang dibaca PEMBELI bila admin tidak menulis keterangan sendiri.
+     *
+     * Ditulis per jenis karena sebabnya memang berbeda: plagiasi dan cek AI
+     * berhenti ketika sistem pemeriksaan sedang diperbaiki, sedangkan parafrase
+     * dikerjakan tim sendiri sehingga yang penuh adalah antreannya. Menyamakan
+     * ketiganya akan membuat salah satunya terdengar mengarang.
+     *
+     * Nadanya sengaja singkat, tanpa istilah teknis, dan selalu menawarkan
+     * jalan keluar — pembeli yang mendesak tetap punya langkah berikutnya
+     * alih-alih hanya disuruh menunggu.
+     */
+    private const PESAN_BAWAAN = [
+        'plagiasi' => 'Sistem pemeriksaan sedang dalam perbaikan, jadi pemesanan kami tutup sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.',
+        'ai' => 'Sistem pemeriksaan sedang dalam perbaikan, jadi pemesanan kami tutup sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.',
+        'parafrase' => 'Antrean pengerjaan sedang penuh, jadi pemesanan kami tutup sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.',
+    ];
+
+    public const PESAN_UMUM = 'Pemesanan layanan ini kami tutup sementara. Silakan coba lagi nanti, atau hubungi kami lewat WhatsApp bila butuh cepat.';
 
     private static function kunci(string $jenis): string
     {
@@ -62,16 +80,31 @@ class JedaLayanan
         return $produk instanceof Product && self::dijeda($produk->jenisLayanan());
     }
 
-    /** Keterangan yang ditampilkan ke pembeli. */
+    /**
+     * Kalimat bawaan untuk satu jenis — yang dipakai bila admin membiarkan
+     * kolom keterangannya kosong.
+     */
+    public static function pesanBawaan(?string $jenis): string
+    {
+        return self::PESAN_BAWAAN[$jenis] ?? self::PESAN_UMUM;
+    }
+
+    /**
+     * Keterangan yang ditampilkan ke pembeli.
+     *
+     * Keterangan tulisan admin selalu menang. Bila dikosongkan, dipakai kalimat
+     * bawaan — sengaja tidak disalin ke database, supaya perbaikan katanya kelak
+     * langsung berlaku pada layanan yang sudah pernah dijeda.
+     */
     public static function pesan(?string $jenis): string
     {
         if (! $jenis) {
-            return self::PESAN_BAWAAN;
+            return self::PESAN_UMUM;
         }
 
         $pesan = trim((string) Setting::get(self::kunciPesan($jenis), ''));
 
-        return $pesan !== '' ? $pesan : self::PESAN_BAWAAN;
+        return $pesan !== '' ? $pesan : self::pesanBawaan($jenis);
     }
 
     /** Keterangan untuk satu produk. */
