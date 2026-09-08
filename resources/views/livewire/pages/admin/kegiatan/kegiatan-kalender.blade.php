@@ -224,12 +224,15 @@ Kalender Kegiatan || lemon
 
         /* ===== Daftar hari terpilih & agenda ===== */
         .kg-judul-kartu { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; }
+        /* Tanpa bingkai dan bayangan: ini kartu di dalam kartu, dan kotak di
+           dalam kotak membuat halaman terasa penuh padahal isinya sedikit.
+           Cukup pita warna di kiri sebagai penanda, dan garis rambut sebagai
+           pemisah — sama seperti kartu Agenda Terdekat di sebelahnya. */
         .kg-baris {
-            display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px;
-            border: 1px solid #eef1f6; background: #fff; margin-bottom: 10px;
-            transition: border-color .15s ease, box-shadow .15s ease;
+            display: flex; gap: 12px; padding: 14px 2px;
+            border-bottom: 1px solid #f2f5f9;
         }
-        .kg-baris:hover { border-color: #e3e8ef; box-shadow: 0 4px 12px -6px rgba(15,23,42,.18); }
+        .kg-baris:last-child { border-bottom: 0; padding-bottom: 2px; }
         /* Pita memakai NADA kegiatan itu, agar sebuah kegiatan berwarna sama di
            kisi maupun di daftar. Lencana di sebelahnya tetap warna jenis murni —
            dialah yang harus selalu cocok dengan chip legenda. */
@@ -254,39 +257,21 @@ Kalender Kegiatan || lemon
 
         .kg-kosong { text-align: center; padding: 34px 14px; color: #a8b3c4; font-size: .87rem; }
 
-        /* ===== Agenda terdekat, satu baris ===== */
-        .kg-agenda { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
-        .kg-agenda-judul {
-            font-size: .78rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: .06em; color: #a8b3c4; flex: 0 0 auto;
+        /* ===== Agenda terdekat ===== */
+        .kg-agenda-baris {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 2px; border-bottom: 1px solid #f2f5f9;
         }
-        /* Basis 320px, bukan auto: dengan auto, deret pil menuntut selebar isinya
-           dan langsung terlempar ke baris bawah, meninggalkan label sendirian di
-           baris atas. Dengan basis kecil ia duduk di samping label, lalu tumbuh
-           mengisi sisa lebar dan membungkus di dalam dirinya sendiri. */
-        .kg-agenda-daftar { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 320px; min-width: 0; }
-        .kg-agenda-pil {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 7px 14px; border-radius: 999px;
-            background: var(--kg-lembut); border: 1px solid var(--kg-nada);
-            max-width: 100%; min-width: 0;
-        }
+        .kg-agenda-baris:last-child { border-bottom: 0; padding-bottom: 2px; }
         .kg-agenda-titik { width: 8px; height: 8px; border-radius: 50%; background: var(--kg-nada); flex: 0 0 auto; }
-        .kg-agenda-pil b {
-            font-size: .82rem; color: #1e293b; font-weight: 600;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        .kg-agenda-nama {
+            flex: 1 1 auto; min-width: 0; font-size: .87rem; color: #1e293b; font-weight: 600;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        /* Waktu tidak boleh ikut menyusut: judul yang terpotong masih bisa ditebak
-           dari beberapa huruf pertama, tapi "10 Sep" yang terpotong jadi "10 S"
-           tidak memberi tahu apa pun. */
-        .kg-agenda-pil small { font-size: .74rem; color: #94a3b8; white-space: nowrap; flex: 0 0 auto; }
-        .kg-agenda-kosong { font-size: .85rem; color: #a8b3c4; }
-
-        @media (max-width: 575.98px) {
-            .kg-agenda { align-items: flex-start; }
-            .kg-agenda-pil { width: 100%; }
-        }
-        .kg-kosong i.bi { display: block; font-size: 1.7rem; margin-bottom: 10px; color: #d7dee8; line-height: 1; }
+        /* Waktu tidak ikut menyusut: judul yang terpotong masih bisa ditebak dari
+           beberapa huruf pertama, tapi "10 Sep" yang terpotong tidak memberi tahu
+           apa pun. */
+        .kg-agenda-waktu { flex: 0 0 auto; font-size: .78rem; color: #94a3b8; white-space: nowrap; }
 
         /* ===== Modal =====
            Latar TIDAK bergulir: yang bergulir hanya isi modalnya, dengan kepala
@@ -557,9 +542,9 @@ Kalender Kegiatan || lemon
             </div>
         </div>
 
-        <div>
+        <div class="row g-4">
             {{-- ===== Hari terpilih ===== --}}
-            <div class="mb-4">
+            <div class="col-lg-7">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -643,26 +628,33 @@ Kalender Kegiatan || lemon
             </div>
 
             {{-- ===== Agenda terdekat =====
-                 Satu baris, bukan kolom tersendiri. Isinya paling banyak lima
-                 baris pendek, sementara sebagai kolom ia menyita sepertiga lebar
-                 halaman dan menyisakan ruang kosong yang tinggi. Sebagai deret
-                 pil mendatar, kartu hari terpilih di atasnya mendapat lebar
-                 penuh dan agenda tetap terbaca sekilas. --}}
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-3 p-md-4 kg-agenda">
-                    <span class="kg-agenda-judul">Agenda Terdekat</span>
+                 Sengaja dibuat paling sederhana di halaman ini: satu baris tipis
+                 per kegiatan, dipisah garis rambut, tanpa kotak dan tanpa kartu
+                 di dalam kartu. Ia hanya perlu menjawab "apa yang menunggu saya
+                 setelah ini" — begitu tiap barisnya diberi bingkai dan bayangan
+                 sendiri, ia mulai bersaing perhatian dengan kisi kalender di
+                 atasnya, yang justru inti halaman. --}}
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4">
+                        <h5 class="kg-judul-kartu mb-3">Agenda Terdekat</h5>
 
-                    <div class="kg-agenda-daftar">
                         @forelse ($berikutnya as $k)
-                        <span class="kg-agenda-pil" wire:key="next-{{ $k->id }}"
-                            style="--kg-nada:{{ $k->warnaBalok() }}; --kg-lembut:{{ $k->pucatBalok() }};"
+                        <div class="kg-agenda-baris" wire:key="next-{{ $k->id }}"
+                            style="--kg-nada:{{ $k->warnaBalok() }};"
                             title="{{ $k->judul }} — {{ $k->rentangWaktu() }}">
                             <span class="kg-agenda-titik"></span>
-                            <b>{{ $k->judul }}</b>
-                            <small>{{ $k->mulai->locale('id')->translatedFormat('d M') }} · {{ $k->rentangWaktu() }}</small>
-                        </span>
+                            <span class="kg-agenda-nama">{{ $k->judul }}</span>
+                            <span class="kg-agenda-waktu">
+                                {{ $k->mulai->locale('id')->translatedFormat('d M') }}
+                                @unless ($k->seharian) · {{ $k->mulai->translatedFormat('H:i') }} @endunless
+                            </span>
+                        </div>
                         @empty
-                        <span class="kg-agenda-kosong">Belum ada agenda mendatang.</span>
+                        <div class="kg-kosong">
+                            <i class="bi bi-calendar2-check"></i>
+                            Belum ada agenda mendatang.
+                        </div>
                         @endforelse
                     </div>
                 </div>
