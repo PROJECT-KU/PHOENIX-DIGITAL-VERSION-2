@@ -190,3 +190,70 @@ it('salinan yang menyebut jenisnya tegas tetap dipercaya', function () {
 
     expect($order->fresh(['items', 'uploads'])->kuotaPengecekan())->toBe(2);
 });
+
+/* ============ Penuntasan pesanan yang sudah beres ============ */
+
+it('pesanan jasa yang pekerjaannya tuntas menjadi completed', function () {
+    katalogAddon('Cek Plagiasi Turnitin', 'plagiasi');
+    katalogAddon('Cek Plagiasi AI', 'ai');
+    $order = pesananParafrase(['Cek Plagiasi Turnitin', 'Cek Plagiasi AI']);
+
+    OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'parafrase', 'path' => 'a.docx',
+        'nama_asli' => 'a.docx', 'status' => 'selesai',
+        'hasil_docx_path' => 'h.docx', 'hasil_path' => 'p.pdf', 'hasil_ai_path' => 'ai.pdf',
+    ]);
+
+    $order = $order->fresh(['items.product', 'uploads']);
+
+    expect(app(\App\Actions\Jasa\SelesaikanPesananJasa::class)->execute($order))->toBeTrue()
+        ->and($order->fresh()->status)->toBe('completed');
+});
+
+it('perintah tuntaskan menemukan pesanan yang menggantung', function () {
+    katalogAddon('Cek Plagiasi Turnitin', 'plagiasi');
+    katalogAddon('Cek Plagiasi AI', 'ai');
+    $order = pesananParafrase(['Cek Plagiasi Turnitin', 'Cek Plagiasi AI']);
+
+    OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'parafrase', 'path' => 'a.docx',
+        'nama_asli' => 'a.docx', 'status' => 'selesai',
+        'hasil_docx_path' => 'h.docx', 'hasil_path' => 'p.pdf', 'hasil_ai_path' => 'ai.pdf',
+    ]);
+
+    $this->artisan('jasa:tuntaskan', ['--terapkan' => true])->assertSuccessful();
+
+    expect($order->fresh()->status)->toBe('completed');
+});
+
+it('perintah tanpa --terapkan tidak mengubah status apa pun', function () {
+    katalogAddon('Cek Plagiasi Turnitin', 'plagiasi');
+    $order = pesananParafrase(['Cek Plagiasi Turnitin']);
+
+    OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'parafrase', 'path' => 'a.docx',
+        'nama_asli' => 'a.docx', 'status' => 'selesai',
+        'hasil_docx_path' => 'h.docx', 'hasil_path' => 'p.pdf',
+    ]);
+
+    $this->artisan('jasa:tuntaskan')->assertSuccessful();
+
+    expect($order->fresh()->status)->toBe('paid');
+});
+
+it('pesanan yang pekerjaannya belum lengkap tidak ikut dituntaskan', function () {
+    katalogAddon('Cek Plagiasi Turnitin', 'plagiasi');
+    katalogAddon('Cek Plagiasi AI', 'ai');
+    $order = pesananParafrase(['Cek Plagiasi Turnitin', 'Cek Plagiasi AI']);
+
+    // Hasil AI belum diunggah.
+    OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'parafrase', 'path' => 'a.docx',
+        'nama_asli' => 'a.docx', 'status' => 'selesai',
+        'hasil_docx_path' => 'h.docx', 'hasil_path' => 'p.pdf',
+    ]);
+
+    $this->artisan('jasa:tuntaskan', ['--terapkan' => true])->assertSuccessful();
+
+    expect($order->fresh()->status)->toBe('paid');
+});

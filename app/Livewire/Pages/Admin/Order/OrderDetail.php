@@ -192,39 +192,10 @@ class OrderDetail extends Component
      */
     public function selesaikanJasa(SyncCashFlowAction $syncCashFlow): void
     {
-        if (! $this->order->butuhUpload()) {
-            return;
-        }
-
-        DB::transaction(function () use ($syncCashFlow) {
-            // 1) Tandai item JASA sebagai terkirim (item non-jasa dilewati).
-            foreach ($this->order->items as $item) {
-                if ((bool) optional($item->product)->butuh_file && $item->delivery_status !== 'delivered') {
-                    $item->update(['delivery_status' => 'delivered']);
-                }
-            }
-
-            // 2) Syarat penyelesaian SAMA dengan alur lama: tak ada item tersisa.
-            $masihAdaBelumDelivered = $this->order
-                ->items()
-                ->where('delivery_status', '!=', 'delivered')
-                ->exists();
-
-            if (! $masihAdaBelumDelivered) {
-                $this->order->update([
-                    'status' => 'completed',
-                    'paid_at' => $this->order->paid_at ?: now(),
-                ]);
-
-                $syncCashFlow->execute($this->order, [
-                    'amount' => $this->order->total,
-                    'type' => 'income',
-                    'date' => $this->order->paid_at ?: $this->order->created_at,
-                    'category' => 'e-commerce',
-                    'description' => $this->order->deskripsi ?? 'Pembelian jasa dari e-commerce',
-                ]);
-            }
-        });
+        // Logikanya tinggal di Action agar pesanan yang menjadi tuntas
+        // BELAKANGAN — mis. sesudah hitungan kuota diperbaiki — bisa dinilai
+        // ulang lewat perintah, bukan hanya lewat layar ini.
+        app(\App\Actions\Jasa\SelesaikanPesananJasa::class)->execute($this->order);
 
         $this->reloadOrder();
         $this->dispatch('sidebar-badge-updated');
