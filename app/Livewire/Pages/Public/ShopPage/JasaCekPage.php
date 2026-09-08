@@ -381,6 +381,7 @@ class JasaCekPage extends Component
             return view('livewire.pages.public.shop-page.jasa-cek-kadaluarsa', [
                 'order' => $this->order,
                 'kadaluarsaAt' => $this->order->cekLinkKadaluarsaAt(),
+                'ragam' => \App\Support\RagamJasa::untuk($this->order),
             ]);
         }
 
@@ -412,6 +413,9 @@ class JasaCekPage extends Component
             'jenisTersisa' => $jenisTersisa,
             // Batas akhir link bisa diakses bila kuota sudah habis (utk peringatan).
             'kadaluarsaAt' => $this->order->cekLinkKadaluarsaAt(),
+            // Kosakata & warna halaman mengikuti jenis jasanya — pelanggan
+            // parafrase tidak boleh dibacakan kalimat milik layanan pengecekan.
+            'ragam' => \App\Support\RagamJasa::untuk($this->order),
         ]);
     }
 

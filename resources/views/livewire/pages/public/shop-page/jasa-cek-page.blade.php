@@ -5,6 +5,17 @@
            hasil pengecekan terlihat tanpa menggulir. */
         .cek-wrap { max-width: 1180px; margin: 0 auto; }
 
+        /* Warna halaman mengikuti jenis jasanya. Dipasang sekali di pembungkus
+           agar tiap bagian tinggal mewarisi — bukan ditulis ulang di belasan
+           tempat, yang pasti menyisakan satu-dua bagian tetap oranye. */
+        .cek-wrap { --kek-warna: {{ $ragam['warna'] }}; --kek-lembut: {{ $ragam['lembut'] }}; --kek-tepi: {{ $ragam['tepi'] }}; }
+        .cek-eyebrow { background: var(--kek-lembut) !important; color: var(--kek-warna) !important; border-color: var(--kek-tepi) !important; }
+        .cek-waspada {
+            background: var(--kek-lembut); border: 1px solid var(--kek-tepi); border-radius: 14px;
+            padding: 13px 15px; margin-bottom: 16px; color: var(--kek-warna);
+            font-size: .85rem; line-height: 1.6;
+        }
+
         /* Kartu pertama di tiap kolom tidak perlu jarak atas: jaraknya sudah
            diberi oleh row, dan margin ganda membuat kedua kolom mulai pada
            ketinggian yang berbeda. */
@@ -17,12 +28,12 @@
         @media (min-width: 992px) {
             .cek-samping { position: sticky; top: 16px; }
         }
-        .cek-quota { background: linear-gradient(135deg,#fff7ed,#fffdf9); border:1px solid #fde68a; border-radius:16px; padding:18px 18px 16px; margin-bottom:16px; }
+        .cek-quota { background: var(--kek-lembut); border:1px solid var(--kek-tepi); border-radius:16px; padding:18px 18px 16px; margin-bottom:16px; }
         .cek-quota-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:10px; }
-        .cek-quota-num { font-size:1.35rem; font-weight:800; color:#b45309; }
+        .cek-quota-num { font-size:1.35rem; font-weight:800; color:var(--kek-warna); }
         .cek-quota-num small { font-weight:600; font-size:.85rem; color:var(--ph-muted); }
-        .cek-bar { height:12px; border-radius:99px; background:#fde9c8; overflow:hidden; }
-        .cek-bar > span { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#fbbf24,#f26522); transition:width .4s ease; }
+        .cek-bar { height:12px; border-radius:99px; background:#fff; box-shadow: inset 0 0 0 1px var(--kek-tepi); overflow:hidden; }
+        .cek-bar > span { display:block; height:100%; border-radius:99px; background:var(--kek-warna); transition:width .4s ease; }
         .cek-item { border:1px solid var(--ph-line); border-radius:14px; padding:13px 14px; margin-bottom:10px; background:#fff; }
         .cek-item-top { display:flex; align-items:center; gap:10px; }
         .cek-file { flex:1; min-width:0; }
@@ -111,15 +122,18 @@
         }
 
         /* Panel jaminan privasi */
-        .cek-trust { margin-top:14px; padding:15px 16px; border:1px solid #bbf7d0; border-radius:16px; background:linear-gradient(180deg,#f0fdf4,#fff); }
-        .cek-trust-head { display:flex; align-items:center; gap:8px; font-weight:800; font-size:.88rem; color:#15803d; margin-bottom:10px; }
+        /* Kartu jaminan ikut berganti warna: pada pesanan parafrase ia bukan lagi
+           "jaminan Turnitin" melainkan keterangan cara pengerjaan, dan warnanya
+           harus mengaku begitu. */
+        .cek-trust { margin-top:14px; padding:15px 16px; border:1px solid var(--kek-tepi); border-radius:16px; background:var(--kek-lembut); }
+        .cek-trust-head { display:flex; align-items:center; gap:8px; font-weight:800; font-size:.88rem; color:var(--kek-warna); margin-bottom:10px; }
         .cek-trust-head i.bi { display:flex; align-items:center; line-height:1; font-size:1rem; }
         .cek-trust-head i.bi::before { display:block; line-height:1; }
         .cek-trust-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
         .cek-trust-list li { display:flex; align-items:flex-start; gap:9px; font-size:.81rem; color:#334155; line-height:1.5; }
-        .cek-trust-list li i.bi { flex-shrink:0; color:#16a34a; font-size:.92rem; margin-top:.12rem; display:flex; align-items:center; line-height:1; }
+        .cek-trust-list li i.bi { flex-shrink:0; color:var(--kek-warna); font-size:.92rem; margin-top:.12rem; display:flex; align-items:center; line-height:1; }
         .cek-trust-list li i.bi::before { display:block; line-height:1; }
-        .cek-trust-list b { color:#15803d; font-weight:700; }
+        .cek-trust-list b { color:var(--kek-warna); font-weight:700; }
         /* Field seragam (ambang & catatan) */
         .cek-field { width:100%; font-size:.85rem; padding:10px 12px; border:1px solid var(--ph-line); border-radius:10px; background:#fff; color:#334155; outline:none; transition:border-color .18s, box-shadow .18s; }
         .cek-field::placeholder { color:#94a3b8; }
@@ -167,11 +181,13 @@
                 {{-- Dirampingkan: kepala halaman yang tinggi mendorong hasil ke bawah
                      layar, padahal hasil itulah yang dicari pelanggan. --}}
                 <div class="ph-empty" style="padding:0 0 14px;">
-                    <span class="ph-sec-eyebrow" style="margin-bottom:10px;"><i class="bi bi-shield-check"></i> Cek Plagiasi</span>
-                    <h3 class="ph-empty-title" style="margin-bottom:4px;">Halaman Pengecekan Anda</h3>
+                    <span class="ph-sec-eyebrow cek-eyebrow" style="margin-bottom:10px;">
+                        <i class="bi bi-{{ $ragam['ikon'] }}"></i> {{ $ragam['nama'] }}
+                    </span>
+                    <h3 class="ph-empty-title" style="margin-bottom:4px;">{{ $ragam['judul'] }}</h3>
                     <p class="ph-empty-sub">
-                        Pesanan <span style="font-family:'Courier New',monospace; font-weight:700; color:var(--ph-orange);">{{ $order->order_number }}</span>.
-                        Simpan halaman ini untuk mengunggah file &amp; mengunduh hasil.
+                        Pesanan <span style="font-family:'Courier New',monospace; font-weight:700; color:var(--kek-warna);">{{ $order->order_number }}</span>.
+                        {{ $ragam['ajakan'] }}
                     </p>
                 </div>
 
@@ -191,18 +207,18 @@
                          hasil, bukan dari unggahan customer — kalau tidak, jamnya bisa habis
                          sebelum hasilnya sempat ada. --}}
                     @if ($sisa === 0 && $kadaluarsaAt)
-                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:13px 15px;margin-bottom:16px;color:#9a3412;font-size:.85rem;line-height:1.6;">
-                            <b><i class="bi bi-clock-history"></i> Pengecekan Anda sudah selesai seluruhnya ({{ $terpakai }}/{{ $kuota }}).</b><br>
+                        <div class="cek-waspada">
+                            <b><i class="bi bi-clock-history"></i> {{ $ragam['selesaiSemua'] }} ({{ $terpakai }}/{{ $kuota }}).</b><br>
                             Silakan <b>unduh semua hasil Anda sebelum</b>
                             <b>{{ $kadaluarsaAt->translatedFormat('l, d F Y • H:i') }} WIB</b>.
-                            Setelah waktu itu, link pengecekan ini <b>tidak dapat diakses lagi</b> demi menjaga kerahasiaan dokumen Anda.
+                            Setelah waktu itu, halaman ini <b>tidak dapat diakses lagi</b> demi menjaga kerahasiaan dokumen Anda.
                         </div>
                     @endif
 
                     {{-- ===== Form unggah / kunci kuota ===== --}}
                     @if ($order->bisaUploadPengecekan())
                     <div class="pay-card">
-                        <div class="pay-card-head" style="color:#b45309;"><i class="bi bi-cloud-arrow-up"></i> Unggah File untuk Diperiksa</div>
+                        <div class="pay-card-head" style="color:var(--kek-warna);"><i class="bi bi-{{ $ragam['unggahIkon'] }}"></i> {{ $ragam['unggahJudul'] }}</div>
                         <div class="pay-card-body">
                             <div wire:key="cek-form-{{ $terpakai }}" x-data="{
                                 fileName: '',
@@ -314,7 +330,7 @@
                                      customer membeli add-on cek plagiasi. --}}
                                 @if ($perluExclude)
                                 <div class="cek-set">
-                                    <span class="cek-set-label">Kecualikan dari pemeriksaan</span>
+                                    <span class="cek-set-label">Kecualikan dari perhitungan kemiripan</span>
                                     <span class="cek-set-hint">Bagian yang dicentang tidak dihitung sebagai kemiripan. Biarkan apa adanya bila ragu.</span>
 
                                     <div class="cek-chips">
@@ -389,7 +405,7 @@
 
                                 <button type="button" wire:click="uploadDokumen" wire:loading.attr="disabled"
                                     wire:target="uploadDokumen,dokumen" class="ph-empty-btn" style="width:100%; justify-content:center; margin-top:20px;">
-                                    <span wire:loading.remove wire:target="uploadDokumen,dokumen"><i class="bi bi-cloud-arrow-up"></i> Kirim untuk Diperiksa</span>
+                                    <span wire:loading.remove wire:target="uploadDokumen,dokumen"><i class="bi bi-{{ $ragam['unggahIkon'] }}"></i> {{ $ragam['tombol'] }}</span>
                                     <span wire:loading wire:target="uploadDokumen,dokumen"><i class="bi bi-hourglass-split"></i> Mengunggah…</span>
                                 </button>
                             </div>
@@ -403,7 +419,7 @@
                     <div class="pay-card" style="border-color:#fecaca; background:linear-gradient(180deg,#fef2f2,#fff);">
                         <div class="pay-card-body" style="text-align:center;">
                             <i class="bi bi-check2-all" style="font-size:1.8rem; color:#dc2626;"></i>
-                            <p style="font-weight:700; color:#b91c1c; margin:8px 0 2px;">Jumlah pengecekan Anda sudah maksimal ({{ $terpakai }}/{{ $kuota }}).</p>
+                            <p style="font-weight:700; color:#b91c1c; margin:8px 0 2px;">{{ $ragam['habis'] }} ({{ $terpakai }}/{{ $kuota }}).</p>
                             <p style="font-size:.84rem; color:var(--ph-muted); margin:0;">Anda tetap bisa mengunduh hasil di bawah kapan saja.</p>
                         </div>
                     </div>
@@ -411,7 +427,7 @@
 
                     {{-- ===== Riwayat pengecekan ===== --}}
                     <div class="pay-card" style="margin-top:14px;">
-                        <div class="pay-card-head"><i class="bi bi-list-check"></i> Riwayat Pengecekan</div>
+                        <div class="pay-card-head"><i class="bi bi-list-check"></i> {{ $ragam['riwayat'] }}</div>
                         <div class="pay-card-body">
                             @forelse ($pengecekan as $up)
                             <div class="cek-item" wire:key="cek-row-{{ $up->id }}">
@@ -469,16 +485,31 @@
                                 </div>
                                 @endif
 
-                                @if ($up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan || $up->catatan)
+                                @php
+                                    // "Kecualikan" hanya punya arti pada pemeriksaan kemiripan —
+                                    // di sanalah daftar pustaka & kutipan dikeluarkan dari hitungan.
+                                    // Pada deteksi AI dan parafrase, barisnya membingungkan: tidak
+                                    // ada persentase yang sedang dihitung untuk dikecualikan.
+                                    $adaExclude = $up->jenis === 'plagiasi' && (
+                                        $up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil
+                                        || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan
+                                    );
+                                @endphp
+                                @if ($adaExclude || $up->catatan)
                                 <div class="cek-excl" style="margin-top:8px;">
+                                    @if ($adaExclude)
                                     <i class="bi bi-sliders"></i> Kecualikan: {{ $up->ringkasanExclude() }}
-                                    @if ($up->catatan) <br><i class="bi bi-chat-left-text"></i> Catatan: {{ $up->catatan }} @endif
+                                    @endif
+                                    @if ($up->catatan)
+                                        @if ($adaExclude) <br> @endif
+                                        <i class="bi bi-chat-left-text"></i> Catatan: {{ $up->catatan }}
+                                    @endif
                                 </div>
                                 @endif
                             </div>
                             @empty
                             <p style="text-align:center; color:var(--ph-muted); font-size:.88rem; margin:6px 0;">
-                                <i class="bi bi-inbox"></i> Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.
+                                <i class="bi bi-inbox"></i> {{ $ragam['kosong'] }}
                             </p>
                             @endforelse
                         </div>
@@ -511,10 +542,12 @@
                                     <span class="lyn-chip is-scope">{{ $it->halaman_dihitung ?? $it->jumlah_halaman }} dari {{ $it->jumlah_halaman }} halaman</span>
                                 </div>
                                 @else
-                                {{-- Jasa paket: tampilkan jumlah pengecekan yang dibeli --}}
+                                {{-- Jasa paket: tampilkan jumlah yang dibeli, dengan satuan
+                                     milik jasanya sendiri — "1× pengecekan" pada pesanan
+                                     deteksi AI menyebut layanan yang tidak ia beli. --}}
                                 <div class="lyn-row">
                                     <span class="lyn-key">Paket</span>
-                                    <span class="lyn-chip is-scope">{{ $it->duration_value }}× pengecekan</span>
+                                    <span class="lyn-chip is-scope">{{ $it->duration_value }}× {{ $ragam['satuan'] }}</span>
                                 </div>
                                 @endif
 
@@ -550,37 +583,36 @@
                     {{-- ===== Kuota ===== --}}
                     <div class="cek-quota">
                         <div class="cek-quota-top">
-                            <div><i class="bi bi-collection" style="color:#b45309;"></i> <b style="color:#92400e;">Sisa Pengecekan</b></div>
+                            <div><i class="bi bi-{{ $ragam['jatahIkon'] }}" style="color:var(--kek-warna);"></i> <b style="color:var(--kek-warna);">{{ $ragam['jatahLabel'] }}</b></div>
                             <div class="cek-quota-num">{{ $sisa }} <small>dari {{ $kuota }}</small></div>
                         </div>
                         <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
                         <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                            <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
+                            <i class="bi bi-info-circle"></i>
+                        {{ $terpakai }} dari {{ $kuota }} {{ $ragam['satuan'] }} sudah dikirim. Sisanya bisa dikirim kapan saja tanpa bayar lagi.
                         </div>
                         {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
                         @if ($order->bonusKuota() > 0)
                         <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
-                            <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
+                            <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} {{ $ragam['satuan'] }} bonus</b> dari admin — gratis, tanpa biaya tambahan.
                         </div>
                         @endif
                     </div>
 
                     {{-- ===== Jaminan privasi & keaslian ===== --}}
+                    {{-- Isinya berbeda per jasa, dan bukan sekadar bunyi kalimat: janji
+                         "No Repository" & "100% Turnitin" hanya benar untuk pengecekan.
+                         Menampilkannya pada pesanan parafrase adalah janji yang tidak
+                         pernah kami buat. --}}
                     <div class="cek-trust">
-                        <div class="cek-trust-head"><i class="bi bi-shield-lock-fill"></i> Jaminan Privasi &amp; Keamanan</div>
+                        <div class="cek-trust-head"><i class="bi bi-shield-lock-fill"></i> {{ $ragam['jaminanJudul'] }}</div>
                         <ul class="cek-trust-list">
+                            @foreach ($ragam['jaminan'] as $poin)
                             <li>
                                 <i class="bi bi-check-circle-fill"></i>
-                                <span><b>No Repository</b> — file Anda <b>tidak disimpan</b> ke database Turnitin. Jadi dokumen Anda tidak akan terdeteksi sebagai kemiripan pada pengecekan berikutnya.</span>
+                                <span><b>{!! $poin['b'] !!}</b> — {!! $poin['t'] !!}</span>
                             </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill"></i>
-                                <span><b>100% Turnitin</b> — pengecekan dilakukan memakai Turnitin asli, bukan alat lain.</span>
-                            </li>
-                            <li>
-                                <i class="bi bi-check-circle-fill"></i>
-                                <span><b>Aman &amp; rahasia</b> — dokumen bersifat pribadi dan <b>tidak disebarluaskan</b> ke pihak mana pun.</span>
-                            </li>
+                            @endforeach
                         </ul>
                     </div>
 

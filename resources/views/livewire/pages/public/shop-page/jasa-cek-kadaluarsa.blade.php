@@ -27,27 +27,30 @@
         <div class="container">
             <div class="cke-wrap">
                 <div class="cke-ic"><i class="bi bi-clock-history"></i></div>
-                <h3 class="cke-title">Link Pengecekan Sudah Berakhir</h3>
+                {{-- Kata "pengecekan" diganti kosakata jasanya: pelanggan parafrase
+                     tidak pernah membeli pengecekan, dan membacanya di halaman
+                     penutup membuatnya mengira salah membuka pesanan orang lain. --}}
+                <h3 class="cke-title">Halaman {{ $ragam['nama'] }} Sudah Berakhir</h3>
                 <p class="cke-sub">
-                    Kuota pengecekan untuk pesanan
-                    <span class="cke-order">{{ $order->order_number }}</span> sudah habis,
-                    dan masa akses link ini telah berakhir.
+                    Seluruh {{ $ragam['satuan'] }} untuk pesanan
+                    <span class="cke-order">{{ $order->order_number }}</span> sudah selesai,
+                    dan masa akses halaman ini telah berakhir.
                 </p>
 
                 <div class="cke-info">
                     <b><i class="bi bi-info-circle"></i> Kenapa link ini tidak bisa dibuka lagi?</b><br>
-                    Setiap link pengecekan hanya aktif <b>24 jam setelah hasil terakhir diunggah</b>, demi
+                    Setiap halaman hanya aktif <b>24 jam setelah hasil terakhir diunggah</b>, demi
                     menjaga keamanan &amp; kerahasiaan dokumen Anda.
                     @isset($kadaluarsaAt)
                         Masa akses berakhir pada
                         <b>{{ $kadaluarsaAt->translatedFormat('l, d F Y • H:i') }} WIB</b>.
                     @endisset
-                    Jika Anda masih membutuhkan hasilnya atau ingin memesan pengecekan lagi, silakan hubungi kami.
+                    Jika Anda masih membutuhkan hasilnya atau ingin memesan lagi, silakan hubungi kami.
                 </div>
 
                 <div class="cke-actions">
                     <a href="{{ url('/') }}" class="cke-btn primary"><i class="bi bi-house-door"></i> Kembali ke Beranda</a>
-                    <a href="{{ url('/shop') }}" class="cke-btn ghost"><i class="bi bi-bag"></i> Pesan Pengecekan Lagi</a>
+                    <a href="{{ url('/shop') }}" class="cke-btn ghost"><i class="bi bi-bag"></i> Pesan Lagi</a>
                 </div>
             </div>
         </div>
