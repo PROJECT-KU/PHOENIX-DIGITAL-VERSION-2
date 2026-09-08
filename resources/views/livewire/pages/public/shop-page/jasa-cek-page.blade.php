@@ -1,6 +1,22 @@
 <div wire:poll.20s="refreshStatus">
     <style>
-        .cek-wrap { max-width: 640px; margin: 0 auto; }
+        /* Dulu 640px — satu kolom sempit yang memaksa semuanya bertumpuk ke
+           bawah. Dilebarkan supaya isi halaman bisa berdampingan, sehingga
+           hasil pengecekan terlihat tanpa menggulir. */
+        .cek-wrap { max-width: 1180px; margin: 0 auto; }
+
+        /* Kartu pertama di tiap kolom tidak perlu jarak atas: jaraknya sudah
+           diberi oleh row, dan margin ganda membuat kedua kolom mulai pada
+           ketinggian yang berbeda. */
+        .cek-wrap .col-lg-7 > :first-child,
+        .cek-wrap .col-lg-5 > :first-child { margin-top: 0 !important; }
+
+        /* Keterangan pendukung ikut bergulir sampai batas atas lalu berhenti,
+           supaya kolom kanan yang pendek tidak meninggalkan ruang kosong panjang
+           saat riwayat pengecekan di kiri memanjang. */
+        @media (min-width: 992px) {
+            .cek-samping { position: sticky; top: 16px; }
+        }
         .cek-quota { background: linear-gradient(135deg,#fff7ed,#fffdf9); border:1px solid #fde68a; border-radius:16px; padding:18px 18px 16px; margin-bottom:16px; }
         .cek-quota-top { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:10px; }
         .cek-quota-num { font-size:1.35rem; font-weight:800; color:#b45309; }
@@ -148,7 +164,9 @@
     <section class="cart-section">
         <div class="container">
             <div class="cek-wrap">
-                <div class="ph-empty" style="padding-bottom:6px;">
+                {{-- Dirampingkan: kepala halaman yang tinggi mendorong hasil ke bawah
+                     layar, padahal hasil itulah yang dicari pelanggan. --}}
+                <div class="ph-empty" style="padding:0 0 14px;">
                     <span class="ph-sec-eyebrow" style="margin-bottom:10px;"><i class="bi bi-shield-check"></i> Cek Plagiasi</span>
                     <h3 class="ph-empty-title" style="margin-bottom:4px;">Halaman Pengecekan Anda</h3>
                     <p class="ph-empty-sub">
@@ -157,400 +175,421 @@
                     </p>
                 </div>
 
-                {{-- ===== Kuota ===== --}}
-                <div class="cek-quota">
-                    <div class="cek-quota-top">
-                        <div><i class="bi bi-collection" style="color:#b45309;"></i> <b style="color:#92400e;">Sisa Pengecekan</b></div>
-                        <div class="cek-quota-num">{{ $sisa }} <small>dari {{ $kuota }}</small></div>
-                    </div>
-                    <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
-                    <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                        <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
-                    </div>
-                    {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
-                    @if ($order->bonusKuota() > 0)
-                    <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
-                        <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
-                    </div>
+                {{-- Dua kolom di layar lebar. Yang dicari pelanggan adalah HASILNYA,
+                     dan dulu hasil itu berada di urutan ketujuh dari atas — di bawah
+                     kuota, form unggah, rincian layanan, dan jaminan privasi. Ia harus
+                     menggulir jauh hanya untuk menemukan tombol unduh yang sudah lama
+                     menunggunya.
+
+                     Kini kolom kiri berisi apa yang ia kerjakan dan ia ambil; kolom
+                     kanan berisi keterangan yang hanya perlu dibaca sekali. Di layar
+                     sempit keduanya menumpuk, dengan urutan yang sama. --}}
+                <div class="row g-3 g-lg-4">
+                    <div class="col-lg-7">
+                    {{-- Kuota habis: link masih bisa dibuka utk mengunduh hasil, TAPI hanya
+                         sampai 24 jam setelah HASIL TERAKHIR diunggah admin. Dihitung dari
+                         hasil, bukan dari unggahan customer — kalau tidak, jamnya bisa habis
+                         sebelum hasilnya sempat ada. --}}
+                    @if ($sisa === 0 && $kadaluarsaAt)
+                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:13px 15px;margin-bottom:16px;color:#9a3412;font-size:.85rem;line-height:1.6;">
+                            <b><i class="bi bi-clock-history"></i> Pengecekan Anda sudah selesai seluruhnya ({{ $terpakai }}/{{ $kuota }}).</b><br>
+                            Silakan <b>unduh semua hasil Anda sebelum</b>
+                            <b>{{ $kadaluarsaAt->translatedFormat('l, d F Y • H:i') }} WIB</b>.
+                            Setelah waktu itu, link pengecekan ini <b>tidak dapat diakses lagi</b> demi menjaga kerahasiaan dokumen Anda.
+                        </div>
                     @endif
-                </div>
 
-                {{-- Kuota habis: link masih bisa dibuka utk mengunduh hasil, TAPI hanya
-                     sampai 24 jam setelah HASIL TERAKHIR diunggah admin. Dihitung dari
-                     hasil, bukan dari unggahan customer — kalau tidak, jamnya bisa habis
-                     sebelum hasilnya sempat ada. --}}
-                @if ($sisa === 0 && $kadaluarsaAt)
-                    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:13px 15px;margin-bottom:16px;color:#9a3412;font-size:.85rem;line-height:1.6;">
-                        <b><i class="bi bi-clock-history"></i> Kuota pengecekan sudah habis.</b><br>
-                        Silakan <b>unduh semua hasil Anda sebelum</b>
-                        <b>{{ $kadaluarsaAt->translatedFormat('l, d F Y • H:i') }} WIB</b>.
-                        Setelah waktu itu, link pengecekan ini <b>tidak dapat diakses lagi</b> demi menjaga kerahasiaan dokumen Anda.
-                    </div>
-                @endif
+                    {{-- ===== Form unggah / kunci kuota ===== --}}
+                    @if ($order->bisaUploadPengecekan())
+                    <div class="pay-card">
+                        <div class="pay-card-head" style="color:#b45309;"><i class="bi bi-cloud-arrow-up"></i> Unggah File untuk Diperiksa</div>
+                        <div class="pay-card-body">
+                            <div wire:key="cek-form-{{ $terpakai }}" x-data="{
+                                fileName: '',
 
-                {{-- ===== Form unggah / kunci kuota ===== --}}
-                @if ($order->bisaUploadPengecekan())
-                <div class="pay-card">
-                    <div class="pay-card-head" style="color:#b45309;"><i class="bi bi-cloud-arrow-up"></i> Unggah File untuk Diperiksa</div>
-                    <div class="pay-card-body">
-                        <div wire:key="cek-form-{{ $terpakai }}" x-data="{
-                            fileName: '',
+                                /*
+                                 * Firewall hosting menolak unggahan yang nama berkasnya memuat
+                                 * apostrof atau tanda kutip (dikira SQL injection) dengan HTTP 403,
+                                 * sebelum permintaannya menyentuh Laravel — jadi tak ada pesan yang
+                                 * bisa kita perbaiki dari sisi PHP. Terbukti 22 Agu 2026 pada
+                                 * &quot;ILMU al-jarh wa Ta'dil.docx&quot;.
+                                 *
+                                 * Berkasnya diganti nama menjadi versi bersih sebelum diunggah, dan
+                                 * nama aslinya dititipkan lewat kolom tersembunyi supaya yang dilihat
+                                 * customer maupun admin tetap nama yang mereka kenal.
+                                 */
+                                amankanNamaBerkas(e) {
+                                    const input = e.target;
+                                    if (!input || input.type !== 'file') return;
 
-                            /*
-                             * Firewall hosting menolak unggahan yang nama berkasnya memuat
-                             * apostrof atau tanda kutip (dikira SQL injection) dengan HTTP 403,
-                             * sebelum permintaannya menyentuh Laravel — jadi tak ada pesan yang
-                             * bisa kita perbaiki dari sisi PHP. Terbukti 22 Agu 2026 pada
-                             * &quot;ILMU al-jarh wa Ta'dil.docx&quot;.
-                             *
-                             * Berkasnya diganti nama menjadi versi bersih sebelum diunggah, dan
-                             * nama aslinya dititipkan lewat kolom tersembunyi supaya yang dilihat
-                             * customer maupun admin tetap nama yang mereka kenal.
-                             */
-                            amankanNamaBerkas(e) {
-                                const input = e.target;
-                                if (!input || input.type !== 'file') return;
+                                    if (!input.files || !input.files.length) {
+                                        this.fileName = '';
 
-                                if (!input.files || !input.files.length) {
-                                    this.fileName = '';
+                                        return;
+                                    }
 
-                                    return;
-                                }
+                                    const berkas = input.files[0];
 
-                                const berkas = input.files[0];
+                                    // Nama ASLI yang ditampilkan ke customer — bukan versi bersih,
+                                    // supaya ia tetap mengenali berkas yang barusan dipilihnya.
+                                    this.fileName = berkas.name;
 
-                                // Nama ASLI yang ditampilkan ke customer — bukan versi bersih,
-                                // supaya ia tetap mengenali berkas yang barusan dipilihnya.
-                                this.fileName = berkas.name;
+                                    if (this.$refs.namaAsli) {
+                                        this.$refs.namaAsli.value = berkas.name;
+                                        this.$refs.namaAsli.dispatchEvent(new Event('input'));
+                                    }
 
-                                if (this.$refs.namaAsli) {
-                                    this.$refs.namaAsli.value = berkas.name;
-                                    this.$refs.namaAsli.dispatchEvent(new Event('input'));
-                                }
+                                    const bersih = berkas.name.replace(/[^A-Za-z0-9 ._()\-]/g, '-');
+                                    if (bersih === berkas.name) return;
 
-                                const bersih = berkas.name.replace(/[^A-Za-z0-9 ._()\-]/g, '-');
-                                if (bersih === berkas.name) return;
+                                    try {
+                                        const dt = new DataTransfer();
+                                        dt.items.add(new File([berkas], bersih, {
+                                            type: berkas.type,
+                                            lastModified: berkas.lastModified,
+                                        }));
+                                        input.files = dt.files;
+                                    } catch (err) {
+                                        /* Peramban lawas tanpa DataTransfer: biarkan apa adanya. */
+                                    }
+                                },
+                            }"
+                                x-on:cek-file-ditolak.window="fileName = ''; $refs.dokumenInput && ($refs.dokumenInput.value = '')">
 
-                                try {
-                                    const dt = new DataTransfer();
-                                    dt.items.add(new File([berkas], bersih, {
-                                        type: berkas.type,
-                                        lastModified: berkas.lastModified,
-                                    }));
-                                    input.files = dt.files;
-                                } catch (err) {
-                                    /* Peramban lawas tanpa DataTransfer: biarkan apa adanya. */
-                                }
-                            },
-                        }"
-                            x-on:cek-file-ditolak.window="fileName = ''; $refs.dokumenInput && ($refs.dokumenInput.value = '')">
-
-                            {{-- Pemilih jenis — hanya bila pesanan punya >1 jenis pemeriksaan.
-                                 Tiap dokumen dipilih untuk pemeriksaan yang mana, dengan
-                                 aturan bahasa & kuota masing-masing. --}}
-                            @if (count($jenisTersisa) > 1)
-                            <div class="cek-jenis">
-                                <span class="cek-jenis-label">Dokumen ini untuk pemeriksaan:</span>
-                                <div class="cek-jenis-opts">
-                                    @foreach ($jenisTersisa as $kode => $info)
-                                    <label class="cek-jenis-opt {{ $jenisPilihan === $kode ? 'is-on' : '' }}">
-                                        <input type="radio" wire:model.live="jenisPilihan" value="{{ $kode }}">
-                                        <span class="cek-jenis-name">{{ $info['label'] }}</span>
-                                        <span class="cek-jenis-sisa">sisa {{ $info['sisa'] }}</span>
-                                    </label>
-                                    @endforeach
+                                {{-- Pemilih jenis — hanya bila pesanan punya >1 jenis pemeriksaan.
+                                     Tiap dokumen dipilih untuk pemeriksaan yang mana, dengan
+                                     aturan bahasa & kuota masing-masing. --}}
+                                @if (count($jenisTersisa) > 1)
+                                <div class="cek-jenis">
+                                    <span class="cek-jenis-label">Dokumen ini untuk pemeriksaan:</span>
+                                    <div class="cek-jenis-opts">
+                                        @foreach ($jenisTersisa as $kode => $info)
+                                        <label class="cek-jenis-opt {{ $jenisPilihan === $kode ? 'is-on' : '' }}">
+                                            <input type="radio" wire:model.live="jenisPilihan" value="{{ $kode }}">
+                                            <span class="cek-jenis-name">{{ $info['label'] }}</span>
+                                            <span class="cek-jenis-sisa">sisa {{ $info['sisa'] }}</span>
+                                        </label>
+                                        @endforeach
+                                    </div>
+                                    @error('jenisPilihan') <div style="color:#dc2626; font-size:.8rem; margin-top:6px;">{{ $message }}</div> @enderror
+                                    @if ($jenisPilihan === 'ai')
+                                    <div class="cek-jenis-note"><i class="bi bi-translate"></i> Dokumen untuk Cek AI wajib berbahasa Inggris.</div>
+                                    @endif
                                 </div>
-                                @error('jenisPilihan') <div style="color:#dc2626; font-size:.8rem; margin-top:6px;">{{ $message }}</div> @enderror
-                                @if ($jenisPilihan === 'ai')
-                                <div class="cek-jenis-note"><i class="bi bi-translate"></i> Dokumen untuk Cek AI wajib berbahasa Inggris.</div>
                                 @endif
-                            </div>
-                            @endif
 
-                            {{-- .capture: penyaring nama HARUS jalan sebelum Livewire membaca
-                                 berkasnya. Listener capture di elemen induk dijamin lebih dulu
-                                 daripada listener milik input di dalamnya. --}}
-                            <label class="cek-drop" x-on:change.capture="amankanNamaBerkas($event)">
-                                <input type="file" wire:model="dokumen" accept=".pdf,.docx" class="cek-drop-input"
-                                    x-ref="dokumenInput">
+                                {{-- .capture: penyaring nama HARUS jalan sebelum Livewire membaca
+                                     berkasnya. Listener capture di elemen induk dijamin lebih dulu
+                                     daripada listener milik input di dalamnya. --}}
+                                <label class="cek-drop" x-on:change.capture="amankanNamaBerkas($event)">
+                                    <input type="file" wire:model="dokumen" accept=".pdf,.docx" class="cek-drop-input"
+                                        x-ref="dokumenInput">
 
-                                {{-- Nama asli dititipkan ke server terpisah dari berkasnya. --}}
-                                <input type="hidden" wire:model="namaAsliDokumen" x-ref="namaAsli">
+                                    {{-- Nama asli dititipkan ke server terpisah dari berkasnya. --}}
+                                    <input type="hidden" wire:model="namaAsliDokumen" x-ref="namaAsli">
 
-                                {{-- Sedang mengunggah --}}
-                                <div wire:loading wire:target="dokumen" class="cek-drop-loading">
-                                    <i class="bi bi-arrow-repeat cek-spin"></i> Mengunggah file…
-                                </div>
-
-                                {{-- Belum/sudah pilih file --}}
-                                <div wire:loading.remove wire:target="dokumen">
-                                    <div class="cek-drop-empty" x-show="!fileName">
-                                        <i class="bi bi-cloud-arrow-up cek-drop-ic"></i>
-                                        <div class="cek-drop-title">Pilih file atau seret ke sini</div>
-                                        <div class="cek-drop-hint">PDF atau DOCX &middot; maksimal 20 MB</div>
-                                    </div>
-                                    <div class="cek-drop-file" x-show="fileName" style="display:none;">
-                                        <i class="bi bi-file-earmark-check"></i>
-                                        <span class="cek-drop-fname" x-text="fileName"></span>
-                                        <span class="cek-drop-change"><i class="bi bi-arrow-repeat"></i> Ganti file</span>
-                                    </div>
-                                </div>
-                            </label>
-                            @error('dokumen') <div style="color:#dc2626; font-size:.8rem; margin-top:8px;">{{ $message }}</div> @enderror
-
-                            {{-- Pengaturan pemeriksaan — hanya untuk layanan yang memakai exclude.
-                                 Cek AI menilai teks utuh, jadi panel ini disembunyikan kecuali
-                                 customer membeli add-on cek plagiasi. --}}
-                            @if ($perluExclude)
-                            <div class="cek-set">
-                                <span class="cek-set-label">Kecualikan dari pemeriksaan</span>
-                                <span class="cek-set-hint">Bagian yang dicentang tidak dihitung sebagai kemiripan. Biarkan apa adanya bila ragu.</span>
-
-                                <div class="cek-chips">
-                                    <label class="cek-chip">
-                                        <input type="checkbox" wire:model="exclude_bibliografi">
-                                        <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
-                                        <i class="bi bi-journal-bookmark cek-chip-ic"></i>
-                                        <span>Exclude Daftar Pustaka</span>
-                                    </label>
-
-                                    <label class="cek-chip">
-                                        <input type="checkbox" wire:model="exclude_kutipan">
-                                        <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
-                                        <i class="bi bi-quote cek-chip-ic"></i>
-                                        <span>Exclude Kutipan</span>
-                                    </label>
-
-                                    <label class="cek-chip">
-                                        <input type="checkbox" wire:model.live="exclude_sumber_kecil">
-                                        <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
-                                        <i class="bi bi-funnel cek-chip-ic"></i>
-                                        <span>Exclude Source</span>
-                                    </label>
-                                </div>
-
-                                @if ($exclude_sumber_kecil)
-                                {{-- Ambang exclude source — pilihan siap pakai, ramah orang awam --}}
-                                @php $ambNilai = (int) $ambang_nilai; @endphp
-                                <div class="cek-amb">
-                                    <div class="cek-amb-why">
-                                        <i class="bi bi-info-circle-fill"></i>
-                                        <span>Kemiripan yang <b>sangat kecil</b> (misalnya hanya satu kalimat umum yang kebetulan sama) tidak ikut dihitung, supaya hasilnya lebih adil.</span>
+                                    {{-- Sedang mengunggah --}}
+                                    <div wire:loading wire:target="dokumen" class="cek-drop-loading">
+                                        <i class="bi bi-arrow-repeat cek-spin"></i> Mengunggah file…
                                     </div>
 
-                                    {{-- 1) Pilih satuan --}}
-                                    <span class="cek-amb-step">1. Hitung berdasarkan</span>
-                                    <div class="cek-amb-unit">
-                                        <button type="button" wire:click="$set('ambang_satuan','persen')"
-                                            class="{{ $ambang_satuan === 'persen' ? 'is-on' : '' }}">Persen (%)</button>
-                                        <button type="button" wire:click="$set('ambang_satuan','kata')"
-                                            class="{{ $ambang_satuan === 'kata' ? 'is-on' : '' }}">Jumlah kata</button>
+                                    {{-- Belum/sudah pilih file --}}
+                                    <div wire:loading.remove wire:target="dokumen">
+                                        <div class="cek-drop-empty" x-show="!fileName">
+                                            <i class="bi bi-cloud-arrow-up cek-drop-ic"></i>
+                                            <div class="cek-drop-title">Pilih file atau seret ke sini</div>
+                                            <div class="cek-drop-hint">PDF atau DOCX &middot; maksimal 20 MB</div>
+                                        </div>
+                                        <div class="cek-drop-file" x-show="fileName" style="display:none;">
+                                            <i class="bi bi-file-earmark-check"></i>
+                                            <span class="cek-drop-fname" x-text="fileName"></span>
+                                            <span class="cek-drop-change"><i class="bi bi-arrow-repeat"></i> Ganti file</span>
+                                        </div>
+                                    </div>
+                                </label>
+                                @error('dokumen') <div style="color:#dc2626; font-size:.8rem; margin-top:8px;">{{ $message }}</div> @enderror
+
+                                {{-- Pengaturan pemeriksaan — hanya untuk layanan yang memakai exclude.
+                                     Cek AI menilai teks utuh, jadi panel ini disembunyikan kecuali
+                                     customer membeli add-on cek plagiasi. --}}
+                                @if ($perluExclude)
+                                <div class="cek-set">
+                                    <span class="cek-set-label">Kecualikan dari pemeriksaan</span>
+                                    <span class="cek-set-hint">Bagian yang dicentang tidak dihitung sebagai kemiripan. Biarkan apa adanya bila ragu.</span>
+
+                                    <div class="cek-chips">
+                                        <label class="cek-chip">
+                                            <input type="checkbox" wire:model="exclude_bibliografi">
+                                            <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
+                                            <i class="bi bi-journal-bookmark cek-chip-ic"></i>
+                                            <span>Exclude Daftar Pustaka</span>
+                                        </label>
+
+                                        <label class="cek-chip">
+                                            <input type="checkbox" wire:model="exclude_kutipan">
+                                            <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
+                                            <i class="bi bi-quote cek-chip-ic"></i>
+                                            <span>Exclude Kutipan</span>
+                                        </label>
+
+                                        <label class="cek-chip">
+                                            <input type="checkbox" wire:model.live="exclude_sumber_kecil">
+                                            <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
+                                            <i class="bi bi-funnel cek-chip-ic"></i>
+                                            <span>Exclude Source</span>
+                                        </label>
                                     </div>
 
-                                    {{-- 2) Isi angka — satuan tampil di dalam kotak --}}
-                                    <span class="cek-amb-step" style="margin-top:11px;">2. Abaikan sumber di bawah</span>
-                                    <div class="cek-amb-inputwrap">
-                                        <input type="number" min="1" inputmode="numeric"
-                                            wire:model.live.debounce.400ms="ambang_nilai" class="cek-amb-num"
-                                            placeholder="{{ $ambang_satuan === 'persen' ? '5' : '10' }}">
-                                        <span class="cek-amb-suffix">{{ $ambang_satuan === 'persen' ? '%' : 'kata' }}</span>
-                                    </div>
+                                    @if ($exclude_sumber_kecil)
+                                    {{-- Ambang exclude source — pilihan siap pakai, ramah orang awam --}}
+                                    @php $ambNilai = (int) $ambang_nilai; @endphp
+                                    <div class="cek-amb">
+                                        <div class="cek-amb-why">
+                                            <i class="bi bi-info-circle-fill"></i>
+                                            <span>Kemiripan yang <b>sangat kecil</b> (misalnya hanya satu kalimat umum yang kebetulan sama) tidak ikut dihitung, supaya hasilnya lebih adil.</span>
+                                        </div>
 
-                                    @if ($ambNilai > 0)
-                                    <div class="cek-amb-echo">
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        Sumber dengan kemiripan di bawah <b>{{ $ambNilai }}{{ $ambang_satuan === 'persen' ? '%' : ' kata' }}</b> akan diabaikan.
+                                        {{-- 1) Pilih satuan --}}
+                                        <span class="cek-amb-step">1. Hitung berdasarkan</span>
+                                        <div class="cek-amb-unit">
+                                            <button type="button" wire:click="$set('ambang_satuan','persen')"
+                                                class="{{ $ambang_satuan === 'persen' ? 'is-on' : '' }}">Persen (%)</button>
+                                            <button type="button" wire:click="$set('ambang_satuan','kata')"
+                                                class="{{ $ambang_satuan === 'kata' ? 'is-on' : '' }}">Jumlah kata</button>
+                                        </div>
+
+                                        {{-- 2) Isi angka — satuan tampil di dalam kotak --}}
+                                        <span class="cek-amb-step" style="margin-top:11px;">2. Abaikan sumber di bawah</span>
+                                        <div class="cek-amb-inputwrap">
+                                            <input type="number" min="1" inputmode="numeric"
+                                                wire:model.live.debounce.400ms="ambang_nilai" class="cek-amb-num"
+                                                placeholder="{{ $ambang_satuan === 'persen' ? '5' : '10' }}">
+                                            <span class="cek-amb-suffix">{{ $ambang_satuan === 'persen' ? '%' : 'kata' }}</span>
+                                        </div>
+
+                                        @if ($ambNilai > 0)
+                                        <div class="cek-amb-echo">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            Sumber dengan kemiripan di bawah <b>{{ $ambNilai }}{{ $ambang_satuan === 'persen' ? '%' : ' kata' }}</b> akan diabaikan.
+                                        </div>
+                                        @endif
+
+                                        @error('ambang_nilai') <div style="color:#dc2626; font-size:.78rem; margin-top:6px;">{{ $message }}</div> @enderror
                                     </div>
                                     @endif
+                                </div>
+                                @endif
 
-                                    @error('ambang_nilai') <div style="color:#dc2626; font-size:.78rem; margin-top:6px;">{{ $message }}</div> @enderror
+                                <div class="cek-set">
+                                    <span class="cek-set-label">Catatan untuk admin</span>
+                                    <span class="cek-set-hint">Opsional — mis. “tolong exclude bab lampiran juga”.</span>
+                                    <textarea wire:model="catatan" rows="2" placeholder="Tulis permintaan khusus di sini…" class="cek-field"></textarea>
+                                    @error('catatan') <div style="color:#dc2626; font-size:.78rem; margin-top:5px;">{{ $message }}</div> @enderror
+                                </div>
+
+                                <button type="button" wire:click="uploadDokumen" wire:loading.attr="disabled"
+                                    wire:target="uploadDokumen,dokumen" class="ph-empty-btn" style="width:100%; justify-content:center; margin-top:20px;">
+                                    <span wire:loading.remove wire:target="uploadDokumen,dokumen"><i class="bi bi-cloud-arrow-up"></i> Kirim untuk Diperiksa</span>
+                                    <span wire:loading wire:target="uploadDokumen,dokumen"><i class="bi bi-hourglass-split"></i> Mengunggah…</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Hanya bila peringatan masa berlaku di atas TIDAK tampil. Keduanya
+                         mengabarkan hal yang sama — "kuota habis, hasilnya tetap bisa
+                         diunduh" — dan dua kartu berturut-turut dengan pesan kembar
+                         mendorong tombol unduh turun tanpa memberi tahu apa pun yang baru. --}}
+                    @elseif ($sisa <= 0 && $kuota > 0 && ! $kadaluarsaAt)
+                    <div class="pay-card" style="border-color:#fecaca; background:linear-gradient(180deg,#fef2f2,#fff);">
+                        <div class="pay-card-body" style="text-align:center;">
+                            <i class="bi bi-check2-all" style="font-size:1.8rem; color:#dc2626;"></i>
+                            <p style="font-weight:700; color:#b91c1c; margin:8px 0 2px;">Jumlah pengecekan Anda sudah maksimal ({{ $terpakai }}/{{ $kuota }}).</p>
+                            <p style="font-size:.84rem; color:var(--ph-muted); margin:0;">Anda tetap bisa mengunduh hasil di bawah kapan saja.</p>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- ===== Riwayat pengecekan ===== --}}
+                    <div class="pay-card" style="margin-top:14px;">
+                        <div class="pay-card-head"><i class="bi bi-list-check"></i> Riwayat Pengecekan</div>
+                        <div class="pay-card-body">
+                            @forelse ($pengecekan as $up)
+                            <div class="cek-item" wire:key="cek-row-{{ $up->id }}">
+                                <div class="cek-item-top">
+                                    <i class="bi bi-file-earmark-text" style="color:var(--ph-orange); font-size:1.2rem;"></i>
+                                    <div class="cek-file">
+                                        <b>{{ $up->nama_asli }}
+                                            @if ($up->jenisLabel())
+                                            <span class="cek-jenis-tag">{{ $up->jenisLabel() }}</span>
+                                            @endif
+                                        </b>
+                                        <span>{{ $up->ukuranLabel() }} · {{ $up->created_at->format('d M Y H:i') }}</span>
+                                    </div>
+                                    <span class="cek-chip {{ $up->statusWarna() }}">
+                                        @if ($up->status === 'diproses') <span class="cek-pulse"></span> @else <i class="bi {{ $up->statusIcon() }}"></i> @endif
+                                        {{ $up->statusLabel() }}
+                                    </span>
+                                </div>
+
+                                @if (in_array($up->status, ['menunggu', 'diproses']))
+                                <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
+                                    <i class="bi bi-clock"></i> Perkiraan {{ $estimasiWaktu }}. Hasil akan muncul otomatis di halaman ini.
+                                </div>
+                                @endif
+
+                                @if ($up->status === 'selesai')
+                                <div class="cek-meta">
+                                    @if (! is_null($up->persentase))
+                                    <span class="cek-persen"><i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%</span>
+                                    @endif
+                                    @if ($up->labelPersenAi())
+                                    <span class="cek-persen" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-robot"></i> AI: {{ $up->labelPersenAi() }}</span>
+                                    @endif
+                                    @if ($up->hasil_docx_path)
+                                    <a class="cek-dl" href="{{ route('jasa.cek.hasil-docx', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                        <i class="bi bi-file-earmark-word"></i> Dokumen Hasil
+                                    </a>
+                                    @endif
+                                    @if ($up->hasil_path)
+                                    <a class="cek-dl" href="{{ route('jasa.cek.hasil', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                        <i class="bi bi-download"></i> Hasil Plagiasi
+                                    </a>
+                                    @endif
+                                    @if ($up->hasil_ai_path)
+                                    <a class="cek-dl" style="background:#0ea5e9;" href="{{ route('jasa.cek.hasil-ai', ['token' => $order->share_token, 'upload' => $up->id]) }}">
+                                        <i class="bi bi-robot"></i> Hasil AI
+                                    </a>
+                                    @endif
+                                </div>
+                                @endif
+
+                                @if ($up->status === 'dibatalkan')
+                                <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
+                                    <i class="bi bi-info-circle"></i> Pengecekan dibatalkan — kuota Anda dikembalikan.
+                                </div>
+                                @endif
+
+                                @if ($up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan || $up->catatan)
+                                <div class="cek-excl" style="margin-top:8px;">
+                                    <i class="bi bi-sliders"></i> Kecualikan: {{ $up->ringkasanExclude() }}
+                                    @if ($up->catatan) <br><i class="bi bi-chat-left-text"></i> Catatan: {{ $up->catatan }} @endif
                                 </div>
                                 @endif
                             </div>
-                            @endif
-
-                            <div class="cek-set">
-                                <span class="cek-set-label">Catatan untuk admin</span>
-                                <span class="cek-set-hint">Opsional — mis. “tolong exclude bab lampiran juga”.</span>
-                                <textarea wire:model="catatan" rows="2" placeholder="Tulis permintaan khusus di sini…" class="cek-field"></textarea>
-                                @error('catatan') <div style="color:#dc2626; font-size:.78rem; margin-top:5px;">{{ $message }}</div> @enderror
-                            </div>
-
-                            <button type="button" wire:click="uploadDokumen" wire:loading.attr="disabled"
-                                wire:target="uploadDokumen,dokumen" class="ph-empty-btn" style="width:100%; justify-content:center; margin-top:20px;">
-                                <span wire:loading.remove wire:target="uploadDokumen,dokumen"><i class="bi bi-cloud-arrow-up"></i> Kirim untuk Diperiksa</span>
-                                <span wire:loading wire:target="uploadDokumen,dokumen"><i class="bi bi-hourglass-split"></i> Mengunggah…</span>
-                            </button>
+                            @empty
+                            <p style="text-align:center; color:var(--ph-muted); font-size:.88rem; margin:6px 0;">
+                                <i class="bi bi-inbox"></i> Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.
+                            </p>
+                            @endforelse
                         </div>
                     </div>
-                </div>
-                @elseif ($sisa <= 0 && $kuota > 0)
-                <div class="pay-card" style="border-color:#fecaca; background:linear-gradient(180deg,#fef2f2,#fff);">
-                    <div class="pay-card-body" style="text-align:center;">
-                        <i class="bi bi-check2-all" style="font-size:1.8rem; color:#dc2626;"></i>
-                        <p style="font-weight:700; color:#b91c1c; margin:8px 0 2px;">Jumlah pengecekan Anda sudah maksimal ({{ $terpakai }}/{{ $kuota }}).</p>
-                        <p style="font-size:.84rem; color:var(--ph-muted); margin:0;">Anda tetap bisa mengunduh hasil di bawah kapan saja.</p>
                     </div>
-                </div>
-                @endif
 
-                {{-- ===== Rincian layanan yang dipesan =====
-                     Ditampilkan untuk SEMUA pesanan jasa — dulu hanya muncul bila ada
-                     add-on/halaman, sehingga layanan polos (mis. cek AI tanpa add-on)
-                     tak punya keterangan apa pun tentang apa yang dibeli. --}}
-                @php
-                    $itemJasa = $order->items->filter(fn ($i) => (bool) optional($i->product)->butuh_file);
-                    $adaRincian = $itemJasa->isNotEmpty();
-                @endphp
-                @if ($adaRincian)
-                <div class="pay-card" style="margin-top:14px;">
-                    <div class="pay-card-head"><i class="bi bi-list-ul"></i> Layanan Anda</div>
-                    <div class="pay-card-body">
-                        @foreach ($itemJasa as $it)
-                        <div class="lyn-item">
-                            <div class="lyn-name">{{ $it->product_name }}</div>
-
-                            {{-- Cakupan pengerjaan (halaman) --}}
-                            @if ($it->jumlah_halaman)
-                            <div class="lyn-row">
-                                <span class="lyn-key">Dikerjakan</span>
-                                <span class="lyn-chip is-scope">{{ $it->halaman_dihitung ?? $it->jumlah_halaman }} dari {{ $it->jumlah_halaman }} halaman</span>
-                            </div>
-                            @else
-                            {{-- Jasa paket: tampilkan jumlah pengecekan yang dibeli --}}
-                            <div class="lyn-row">
-                                <span class="lyn-key">Paket</span>
-                                <span class="lyn-chip is-scope">{{ $it->duration_value }}× pengecekan</span>
-                            </div>
-                            @endif
-
-                            {{-- Halaman yang tidak dikerjakan --}}
-                            @if ($it->halaman_dikecualikan)
-                            <div class="lyn-row">
-                                <span class="lyn-key">Dilewati</span>
-                                <span class="lyn-chip is-skip">Halaman {{ $it->halamanDikecualikanRingkas() ?? $it->halaman_dikecualikan }}</span>
-                            </div>
-                            @endif
-
-                            {{-- Tambahan berbayar (add-on) --}}
-                            @if (! empty($it->addons))
-                            <div class="lyn-row">
-                                <span class="lyn-key">Tambahan</span>
-                                <span class="lyn-vals">
-                                    @foreach ($it->addons as $ad)
-                                    <span class="lyn-chip is-addon"><i class="bi bi-plus-lg"></i> {{ $ad['nama'] ?? '-' }}</span>
-                                    @endforeach
-                                </span>
-                            </div>
-                            @endif
+                    <div class="col-lg-5">
+                        <div class="cek-samping">
+                    {{-- ===== Kuota ===== --}}
+                    <div class="cek-quota">
+                        <div class="cek-quota-top">
+                            <div><i class="bi bi-collection" style="color:#b45309;"></i> <b style="color:#92400e;">Sisa Pengecekan</b></div>
+                            <div class="cek-quota-num">{{ $sisa }} <small>dari {{ $kuota }}</small></div>
                         </div>
-                        @endforeach
+                        <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
+                        <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
+                            <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
+                        </div>
+                        {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
+                        @if ($order->bonusKuota() > 0)
+                        <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
+                            <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
+                        </div>
+                        @endif
                     </div>
-                </div>
-                @endif
 
-                {{-- ===== Jaminan privasi & keaslian ===== --}}
-                <div class="cek-trust">
-                    <div class="cek-trust-head"><i class="bi bi-shield-lock-fill"></i> Jaminan Privasi &amp; Keamanan</div>
-                    <ul class="cek-trust-list">
-                        <li>
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span><b>No Repository</b> — file Anda <b>tidak disimpan</b> ke database Turnitin. Jadi dokumen Anda tidak akan terdeteksi sebagai kemiripan pada pengecekan berikutnya.</span>
-                        </li>
-                        <li>
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span><b>100% Turnitin</b> — pengecekan dilakukan memakai Turnitin asli, bukan alat lain.</span>
-                        </li>
-                        <li>
-                            <i class="bi bi-check-circle-fill"></i>
-                            <span><b>Aman &amp; rahasia</b> — dokumen bersifat pribadi dan <b>tidak disebarluaskan</b> ke pihak mana pun.</span>
-                        </li>
-                    </ul>
-                </div>
+                    {{-- ===== Rincian layanan yang dipesan =====
+                         Ditampilkan untuk SEMUA pesanan jasa — dulu hanya muncul bila ada
+                         add-on/halaman, sehingga layanan polos (mis. cek AI tanpa add-on)
+                         tak punya keterangan apa pun tentang apa yang dibeli. --}}
+                    @php
+                        $itemJasa = $order->items->filter(fn ($i) => (bool) optional($i->product)->butuh_file);
+                        $adaRincian = $itemJasa->isNotEmpty();
+                    @endphp
+                    @if ($adaRincian)
+                    <div class="pay-card" style="margin-top:14px;">
+                        <div class="pay-card-head"><i class="bi bi-list-ul"></i> Layanan Anda</div>
+                        <div class="pay-card-body">
+                            @foreach ($itemJasa as $it)
+                            <div class="lyn-item">
+                                <div class="lyn-name">{{ $it->product_name }}</div>
 
-                {{-- ===== Riwayat pengecekan ===== --}}
-                <div class="pay-card" style="margin-top:14px;">
-                    <div class="pay-card-head"><i class="bi bi-list-check"></i> Riwayat Pengecekan</div>
-                    <div class="pay-card-body">
-                        @forelse ($pengecekan as $up)
-                        <div class="cek-item" wire:key="cek-row-{{ $up->id }}">
-                            <div class="cek-item-top">
-                                <i class="bi bi-file-earmark-text" style="color:var(--ph-orange); font-size:1.2rem;"></i>
-                                <div class="cek-file">
-                                    <b>{{ $up->nama_asli }}
-                                        @if ($up->jenisLabel())
-                                        <span class="cek-jenis-tag">{{ $up->jenisLabel() }}</span>
-                                        @endif
-                                    </b>
-                                    <span>{{ $up->ukuranLabel() }} · {{ $up->created_at->format('d M Y H:i') }}</span>
+                                {{-- Cakupan pengerjaan (halaman) --}}
+                                @if ($it->jumlah_halaman)
+                                <div class="lyn-row">
+                                    <span class="lyn-key">Dikerjakan</span>
+                                    <span class="lyn-chip is-scope">{{ $it->halaman_dihitung ?? $it->jumlah_halaman }} dari {{ $it->jumlah_halaman }} halaman</span>
                                 </div>
-                                <span class="cek-chip {{ $up->statusWarna() }}">
-                                    @if ($up->status === 'diproses') <span class="cek-pulse"></span> @else <i class="bi {{ $up->statusIcon() }}"></i> @endif
-                                    {{ $up->statusLabel() }}
-                                </span>
-                            </div>
+                                @else
+                                {{-- Jasa paket: tampilkan jumlah pengecekan yang dibeli --}}
+                                <div class="lyn-row">
+                                    <span class="lyn-key">Paket</span>
+                                    <span class="lyn-chip is-scope">{{ $it->duration_value }}× pengecekan</span>
+                                </div>
+                                @endif
 
-                            @if (in_array($up->status, ['menunggu', 'diproses']))
-                            <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                                <i class="bi bi-clock"></i> Perkiraan {{ $estimasiWaktu }}. Hasil akan muncul otomatis di halaman ini.
-                            </div>
-                            @endif
+                                {{-- Halaman yang tidak dikerjakan --}}
+                                @if ($it->halaman_dikecualikan)
+                                <div class="lyn-row">
+                                    <span class="lyn-key">Dilewati</span>
+                                    <span class="lyn-chip is-skip">Halaman {{ $it->halamanDikecualikanRingkas() ?? $it->halaman_dikecualikan }}</span>
+                                </div>
+                                @endif
 
-                            @if ($up->status === 'selesai')
-                            <div class="cek-meta">
-                                @if (! is_null($up->persentase))
-                                <span class="cek-persen"><i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%</span>
-                                @endif
-                                @if ($up->labelPersenAi())
-                                <span class="cek-persen" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-robot"></i> AI: {{ $up->labelPersenAi() }}</span>
-                                @endif
-                                @if ($up->hasil_docx_path)
-                                <a class="cek-dl" href="{{ route('jasa.cek.hasil-docx', ['token' => $order->share_token, 'upload' => $up->id]) }}">
-                                    <i class="bi bi-file-earmark-word"></i> Dokumen Hasil
-                                </a>
-                                @endif
-                                @if ($up->hasil_path)
-                                <a class="cek-dl" href="{{ route('jasa.cek.hasil', ['token' => $order->share_token, 'upload' => $up->id]) }}">
-                                    <i class="bi bi-download"></i> Hasil Plagiasi
-                                </a>
-                                @endif
-                                @if ($up->hasil_ai_path)
-                                <a class="cek-dl" style="background:#0ea5e9;" href="{{ route('jasa.cek.hasil-ai', ['token' => $order->share_token, 'upload' => $up->id]) }}">
-                                    <i class="bi bi-robot"></i> Hasil AI
-                                </a>
+                                {{-- Tambahan berbayar (add-on) --}}
+                                @if (! empty($it->addons))
+                                <div class="lyn-row">
+                                    <span class="lyn-key">Tambahan</span>
+                                    <span class="lyn-vals">
+                                        @foreach ($it->addons as $ad)
+                                        <span class="lyn-chip is-addon"><i class="bi bi-plus-lg"></i> {{ $ad['nama'] ?? '-' }}</span>
+                                        @endforeach
+                                    </span>
+                                </div>
                                 @endif
                             </div>
-                            @endif
-
-                            @if ($up->status === 'dibatalkan')
-                            <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                                <i class="bi bi-info-circle"></i> Pengecekan dibatalkan — kuota Anda dikembalikan.
-                            </div>
-                            @endif
-
-                            @if ($up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan || $up->catatan)
-                            <div class="cek-excl" style="margin-top:8px;">
-                                <i class="bi bi-sliders"></i> Kecualikan: {{ $up->ringkasanExclude() }}
-                                @if ($up->catatan) <br><i class="bi bi-chat-left-text"></i> Catatan: {{ $up->catatan }} @endif
-                            </div>
-                            @endif
+                            @endforeach
                         </div>
-                        @empty
-                        <p style="text-align:center; color:var(--ph-muted); font-size:.88rem; margin:6px 0;">
-                            <i class="bi bi-inbox"></i> Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.
-                        </p>
-                        @endforelse
                     </div>
-                </div>
+                    @endif
 
-                {{-- ===== Simpan link ===== --}}
-                <div class="pay-card" style="margin-top:14px;">
-                    <div class="pay-card-head"><i class="bi bi-link-45deg"></i> Link Halaman Ini</div>
-                    <div class="pay-card-body">
-                        <p style="font-size:.83rem; color:var(--ph-muted); margin:0 0 4px;">Simpan link ini agar bisa kembali kapan saja (unggah &amp; unduh hasil):</p>
-                        <div class="cek-linkbox">
-                            <code id="cek-permalink">{{ url('/cek/'.$order->share_token) }}</code>
-                            <button type="button" class="cek-copy" onclick="cekSalinLink()"><i class="bi bi-clipboard"></i> Salin</button>
+                    {{-- ===== Jaminan privasi & keaslian ===== --}}
+                    <div class="cek-trust">
+                        <div class="cek-trust-head"><i class="bi bi-shield-lock-fill"></i> Jaminan Privasi &amp; Keamanan</div>
+                        <ul class="cek-trust-list">
+                            <li>
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span><b>No Repository</b> — file Anda <b>tidak disimpan</b> ke database Turnitin. Jadi dokumen Anda tidak akan terdeteksi sebagai kemiripan pada pengecekan berikutnya.</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span><b>100% Turnitin</b> — pengecekan dilakukan memakai Turnitin asli, bukan alat lain.</span>
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span><b>Aman &amp; rahasia</b> — dokumen bersifat pribadi dan <b>tidak disebarluaskan</b> ke pihak mana pun.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {{-- ===== Simpan link ===== --}}
+                    <div class="pay-card" style="margin-top:14px;">
+                        <div class="pay-card-head"><i class="bi bi-link-45deg"></i> Link Halaman Ini</div>
+                        <div class="pay-card-body">
+                            <p style="font-size:.83rem; color:var(--ph-muted); margin:0 0 4px;">Simpan link ini agar bisa kembali kapan saja (unggah &amp; unduh hasil):</p>
+                            <div class="cek-linkbox">
+                                <code id="cek-permalink">{{ url('/cek/'.$order->share_token) }}</code>
+                                <button type="button" class="cek-copy" onclick="cekSalinLink()"><i class="bi bi-clipboard"></i> Salin</button>
+                            </div>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
