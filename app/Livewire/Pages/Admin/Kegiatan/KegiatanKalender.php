@@ -20,6 +20,15 @@ use Livewire\Component;
  */
 class KegiatanKalender extends Component
 {
+    /**
+     * Berapa balok kegiatan yang muat dalam satu sel sebelum sisanya diringkas.
+     *
+     * Tiga, bukan sebanyak-banyaknya: sel yang meninggi mengikuti hari tersibuk
+     * membuat seluruh kisi ikut meninggi, dan satu bulan tidak lagi terlihat
+     * sekaligus — padahal itulah gunanya tampilan bulanan.
+     */
+    public const LAJUR_MAKS = 3;
+
     /** Bulan & tahun yang sedang ditampilkan. */
     public int $bulan;
 
@@ -385,6 +394,123 @@ class KegiatanKalender extends Component
         $this->dispatch('swal-success', message: 'Kegiatan berhasil dihapus.');
     }
 
+    // ===== Menyusun balok kegiatan =====
+
+    /**
+     * Kegiatan yang berlangsung pada satu tanggal — bukan yang MULAI hari itu.
+     *
+     * @param  \Illuminate\Support\Collection<int, Kegiatan>  $kegiatan
+     * @return \Illuminate\Support\Collection<int, Kegiatan>
+     */
+    private function padaTanggal($kegiatan, string $tanggal)
+    {
+        $hari = Carbon::parse($tanggal);
+
+        return $kegiatan
+            ->filter(fn (Kegiatan $k) => $k->mulai->lte($hari->copy()->endOfDay())
+                && $k->akhirEfektif()->gte($hari->copy()->startOfDay()))
+            ->sortBy(fn (Kegiatan $k) => $k->mulai->timestamp)
+            ->values();
+    }
+
+    /**
+     * Menyusun kegiatan satu minggu menjadi balok-balok yang membentang.
+     *
+     * Kegiatan 8–9 September harus tampil sebagai SATU balok utuh melintasi dua
+     * kolom, bukan dua potongan terpisah — mata membaca satu batang panjang
+     * sebagai satu urusan, dan dua kotak kecil sebagai dua urusan.
+     *
+     * Baloknya ditumpuk dalam "lajur": balok yang tanggalnya beririsan tidak
+     * boleh berbagi lajur, karena akan saling menimpa. Yang mulai lebih dulu
+     * dan yang paling panjang mendapat lajur teratas, supaya batang terpanjang
+     * tidak terpotong-potong di bawah batang pendek.
+     *
+     * @param  \Illuminate\Support\Collection<int, Kegiatan>  $kegiatan
+     * @return array{balok: array<int, array<string, mixed>>, lebih: array<int, int>}
+     */
+    private function susunBalok($kegiatan, Carbon $awalMinggu): array
+    {
+        // Kolom dicari lewat peta tanggal, bukan hitung selisih hari: peta tidak
+        // bisa meleset karena pergantian zona waktu atau pembulatan pecahan hari.
+        $kolomHari = [];
+        for ($i = 0; $i < 7; $i++) {
+            $kolomHari[$awalMinggu->copy()->addDays($i)->toDateString()] = $i;
+        }
+
+        $awalHari = $awalMinggu->copy()->startOfDay();
+        $akhirHari = $awalMinggu->copy()->addDays(6)->endOfDay();
+
+        $dalamMinggu = $kegiatan
+            ->filter(fn (Kegiatan $k) => $k->mulai->lte($akhirHari) && $k->akhirEfektif()->gte($awalHari))
+            ->sortBy([
+                fn (Kegiatan $a, Kegiatan $b) => $a->mulai->timestamp <=> $b->mulai->timestamp,
+                // Yang lebih panjang lebih dulu bila mulainya sama.
+                fn (Kegiatan $a, Kegiatan $b) => $b->akhirEfektif()->timestamp <=> $a->akhirEfektif()->timestamp,
+            ])
+            ->values();
+
+        $lajur = [];      // lajur => daftar [kolomAwal, kolomAkhir] yang sudah terpakai
+        $balok = [];
+        $lebih = array_fill(0, 7, 0);
+
+        foreach ($dalamMinggu as $k) {
+            $mulaiKolom = $kolomHari[$k->mulai->toDateString()] ?? 0;
+            $akhirKolom = $kolomHari[$k->akhirEfektif()->toDateString()] ?? 6;
+
+            $indeks = $this->lajurKosong($lajur, $mulaiKolom, $akhirKolom);
+            $lajur[$indeks][] = [$mulaiKolom, $akhirKolom];
+
+            if ($indeks >= self::LAJUR_MAKS) {
+                // Tidak muat: dihitung sebagai "+N lagi" pada setiap hari yang dilewatinya.
+                for ($c = $mulaiKolom; $c <= $akhirKolom; $c++) {
+                    $lebih[$c]++;
+                }
+
+                continue;
+            }
+
+            $balok[] = [
+                'kegiatan' => $k,
+                'kolom' => $mulaiKolom,
+                'rentang' => $akhirKolom - $mulaiKolom + 1,
+                'lajur' => $indeks,
+                // Ujung yang terpotong batas minggu dibuat rata, bukan membulat:
+                // ujung membulat berarti "selesai di sini", dan itu bohong.
+                'sambungKiri' => $k->mulai->lt($awalHari),
+                'sambungKanan' => $k->akhirEfektif()->gt($akhirHari),
+            ];
+        }
+
+        return ['balok' => $balok, 'lebih' => $lebih];
+    }
+
+    /**
+     * Lajur pertama yang kolomnya belum terpakai pada rentang ini.
+     *
+     * @param  array<int, array<int, array{0: int, 1: int}>>  $lajur
+     */
+    private function lajurKosong(array $lajur, int $mulai, int $akhir): int
+    {
+        $indeks = 0;
+
+        while (true) {
+            $bentrok = false;
+
+            foreach ($lajur[$indeks] ?? [] as [$a, $b]) {
+                if ($mulai <= $b && $akhir >= $a) {
+                    $bentrok = true;
+                    break;
+                }
+            }
+
+            if (! $bentrok) {
+                return $indeks;
+            }
+
+            $indeks++;
+        }
+    }
+
     // ===== Tampilan =====
 
     #[Layout('livewire.layout.templateindex')]
@@ -403,35 +529,33 @@ class KegiatanKalender extends Component
             ->dalamRentang($awalGrid, $akhirGrid)
             ->when($this->saringJenis, fn ($q) => $q->where('jenis', $this->saringJenis))
             ->when($this->hanyaSaya, fn ($q) => $q->milik($idSaya))
-            ->get()
-            ->groupBy(fn (Kegiatan $k) => $k->mulai->toDateString());
+            ->get();
 
         $minggu = [];
         $hari = $awalGrid->copy();
 
         while ($hari->lessThanOrEqualTo($akhirGrid)) {
+            $awalMinggu = $hari->copy();
             $baris = [];
 
             for ($i = 0; $i < 7; $i++) {
-                $kunci = $hari->toDateString();
                 $baris[] = [
-                    'tanggal' => $kunci,
+                    'tanggal' => $hari->toDateString(),
                     'angka' => (int) $hari->day,
                     'bulanIni' => (int) $hari->month === $this->bulan,
                     'hariIni' => $hari->isToday(),
                     'akhirPekan' => $hari->isWeekend(),
-                    'kegiatan' => $kegiatan->get($kunci, collect()),
                 ];
                 $hari->addDay();
             }
 
-            $minggu[] = $baris;
+            $minggu[] = ['hari' => $baris] + $this->susunBalok($kegiatan, $awalMinggu);
         }
 
         return view('livewire.pages.admin.kegiatan.kegiatan-kalender', [
             'minggu' => $minggu,
             'namaBulan' => $awalBulan->locale('id')->translatedFormat('F Y'),
-            'jumlahBulanIni' => $kegiatan->flatten()->filter(
+            'jumlahBulanIni' => $kegiatan->filter(
                 fn (Kegiatan $k) => (int) $k->mulai->month === $this->bulan && (int) $k->mulai->year === $this->tahun
             )->count(),
             'berikutnya' => Kegiatan::with('peserta:id,name')
@@ -440,7 +564,7 @@ class KegiatanKalender extends Component
                 ->limit(5)
                 ->get(),
             'daftarKegiatanTerpilih' => $this->tanggalTerpilih
-                ? $kegiatan->get($this->tanggalTerpilih, collect())
+                ? $this->padaTanggal($kegiatan, $this->tanggalTerpilih)
                 : collect(),
             'semuaKaryawan' => User::orderBy('name')->get(['id', 'name']),
         ]);

@@ -103,14 +103,38 @@ Kalender Kegiatan || lemon
         .kg-titik { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--kg-warna); }
         .kg-chip.aktif .kg-titik { background: rgba(255,255,255,.9); }
 
-        /* ===== Kisi kalender ===== */
-        .kg-kisi { width: 100%; border-collapse: separate; border-spacing: 7px; table-layout: fixed; }
-        .kg-kisi th {
-            font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
-            color: #a8b3c4; font-weight: 700; padding-bottom: 4px; text-align: center;
+        /* ===== Kisi kalender =====
+           Sel hari jadi latar; balok kegiatan duduk di lapisan sendiri di
+           atasnya dan bebas melintasi kolom. Semua ukuran diturunkan dari tiga
+           angka di bawah ini, jadi mengubah tinggi sel atau jarak antar sel
+           tidak akan membuat balok meleset dari kolomnya. */
+        .kg-kisi-ukuran {
+            --kg-jarak: 7px;      /* jarak antar sel */
+            --kg-sisip: 7px;      /* jarak balok dari tepi sel */
+            --kg-atas: 36px;      /* ruang untuk angka tanggal */
+            --kg-tinggi: 20px;    /* tinggi satu balok */
+            --kg-antar: 4px;      /* jarak antar balok */
         }
+
+        .kg-kepala-hari {
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--kg-jarak);
+            padding: 0 0 6px;
+        }
+        .kg-kepala-hari span {
+            text-align: center; font-size: .72rem; text-transform: uppercase;
+            letter-spacing: .07em; color: #a8b3c4; font-weight: 700;
+        }
+
+        .kg-minggu {
+            position: relative;
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--kg-jarak);
+            margin-bottom: var(--kg-jarak);
+        }
+        .kg-minggu:last-child { margin-bottom: 0; }
+
         .kg-sel {
-            vertical-align: top; height: 108px; padding: 8px;
+            min-height: calc(var(--kg-atas) + 3 * (var(--kg-tinggi) + var(--kg-antar)) + 16px);
+            padding: 8px;
             border: 1px solid #eef1f6; border-radius: 16px; background: #fff;
             cursor: pointer;
             transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
@@ -129,22 +153,58 @@ Kalender Kegiatan || lemon
             background: linear-gradient(135deg, #a78bfa, #6d28d9); color: #fff;
             box-shadow: 0 4px 10px -2px rgba(109,40,217,.45);
         }
-
-        /* Kegiatan di dalam sel: pil berwarna lembut dengan pita warna pekat di
-           tepi kiri. Blok penuh warna pekat lima baris berturut-turut membuat
-           kisinya berteriak; nada lembut menjaga angka tanggal tetap terbaca. */
-        .kg-acara {
-            display: flex; align-items: center; gap: 5px; width: 100%;
-            font-size: .73rem; line-height: 1.35; padding: 3px 7px; margin-top: 4px;
-            border-radius: 6px; font-weight: 600; text-align: left;
-            background: var(--kg-lembut); color: var(--kg-warna);
-            border: 0; border-left: 3px solid var(--kg-warna);
+        .kg-lebih {
+            position: absolute; left: 8px; right: 8px; bottom: 7px;
+            font-size: .7rem; color: #a8b3c4; font-weight: 600;
         }
-        .kg-acara span {
+        .kg-sel { position: relative; }
+
+        /* Balok kegiatan. Lebar satu kolom = (100% - 6 jarak) / 7; sisi kirinya
+           digeser sebanyak kolom yang dilewati, ditambah jarak antar sel yang
+           ikut terlewati. Itu sebabnya baloknya menempel persis di atas selnya
+           berapa pun lebar layarnya. */
+        .kg-balok {
+            --kg-lebar-kolom: calc((100% - 6 * var(--kg-jarak)) / 7);
+            position: absolute;
+            left: calc(var(--kg-kolom) * (var(--kg-lebar-kolom) + var(--kg-jarak)) + var(--kg-sisip));
+            width: calc(var(--kg-rentang) * var(--kg-lebar-kolom)
+                        + (var(--kg-rentang) - 1) * var(--kg-jarak)
+                        - 2 * var(--kg-sisip));
+            top: calc(var(--kg-atas) + var(--kg-lajur) * (var(--kg-tinggi) + var(--kg-antar)));
+            height: var(--kg-tinggi);
+
+            display: flex; align-items: center; gap: 5px;
+            padding: 0 8px; border: 0; border-radius: 6px;
+            font-size: .73rem; font-weight: 600; text-align: left;
+            background: var(--kg-lembut); color: var(--kg-warna);
+            border-left: 3px solid var(--kg-warna);
+            transition: filter .12s ease, box-shadow .15s ease;
+        }
+        .kg-balok span {
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
         }
-        .kg-acara.kg-lewat { opacity: .5; }
-        .kg-lebih { font-size: .7rem; color: #a8b3c4; font-weight: 600; margin-top: 4px; display: block; }
+        .kg-balok:hover { filter: brightness(.96); box-shadow: 0 4px 10px -4px var(--kg-warna); }
+        .kg-balok.kg-lewat { opacity: .5; }
+
+        /* Terpotong batas minggu: ujungnya dibuat rata, bukan membulat. Ujung
+           membulat berarti "selesai di sini", dan kegiatannya belum selesai. */
+        .kg-balok.kg-sambung-kiri {
+            border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;
+            left: calc(var(--kg-kolom) * (var(--kg-lebar-kolom) + var(--kg-jarak)));
+            width: calc(var(--kg-rentang) * var(--kg-lebar-kolom)
+                        + (var(--kg-rentang) - 1) * var(--kg-jarak) - var(--kg-sisip));
+            box-shadow: inset 3px 0 0 var(--kg-warna);
+        }
+        .kg-balok.kg-sambung-kanan {
+            border-top-right-radius: 0; border-bottom-right-radius: 0;
+            width: calc(var(--kg-rentang) * var(--kg-lebar-kolom)
+                        + (var(--kg-rentang) - 1) * var(--kg-jarak) - var(--kg-sisip));
+        }
+        .kg-balok.kg-sambung-kiri.kg-sambung-kanan {
+            left: calc(var(--kg-kolom) * (var(--kg-lebar-kolom) + var(--kg-jarak)));
+            width: calc(var(--kg-rentang) * var(--kg-lebar-kolom)
+                        + (var(--kg-rentang) - 1) * var(--kg-jarak));
+        }
 
         /* ===== Daftar hari terpilih & agenda ===== */
         .kg-judul-kartu { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; }
@@ -154,7 +214,10 @@ Kalender Kegiatan || lemon
             transition: border-color .15s ease, box-shadow .15s ease;
         }
         .kg-baris:hover { border-color: #e3e8ef; box-shadow: 0 4px 12px -6px rgba(15,23,42,.18); }
-        .kg-pita { width: 4px; border-radius: 999px; flex: 0 0 auto; background: var(--kg-warna); }
+        /* Pita memakai NADA kegiatan itu, agar sebuah kegiatan berwarna sama di
+           kisi maupun di daftar. Lencana di sebelahnya tetap warna jenis murni —
+           dialah yang harus selalu cocok dengan chip legenda. */
+        .kg-pita { width: 4px; border-radius: 999px; flex: 0 0 auto; background: var(--kg-nada, var(--kg-warna)); }
         .kg-baris-isi { flex: 1 1 auto; min-width: 0; }
         .kg-baris-isi b { display: block; font-size: .93rem; color: #1e293b; line-height: 1.35; }
         .kg-meta { font-size: .78rem; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 3px 14px; margin-top: 4px; }
@@ -286,12 +349,13 @@ Kalender Kegiatan || lemon
         }
 
         @media (max-width: 767.98px) {
-            .kg-kisi { border-spacing: 4px; }
-            .kg-sel { height: 76px; padding: 5px; border-radius: 12px; }
-            /* Di layar sempit judulnya mustahil terbaca; disederhanakan jadi
-               pita warna saja, yang tetap memberi tahu ADA kegiatan dan jenisnya. */
-            .kg-acara { font-size: 0; padding: 0; height: 5px; margin-top: 3px; border-radius: 999px; border-left: 0; background: var(--kg-warna); gap: 0; }
-            .kg-acara i.bi { display: none; }
+            .kg-kisi-ukuran { --kg-jarak: 4px; --kg-sisip: 4px; --kg-atas: 28px; --kg-tinggi: 6px; --kg-antar: 3px; }
+            .kg-sel { padding: 5px; border-radius: 12px; }
+            /* Di layar sempit judulnya mustahil terbaca; baloknya disederhanakan
+               jadi pita warna saja, yang tetap memberi tahu ADA kegiatan, jenisnya,
+               dan sampai tanggal berapa ia membentang. */
+            .kg-balok { font-size: 0; padding: 0; border-radius: 999px; border-left: 0; background: var(--kg-warna); gap: 0; }
+            .kg-balok.kg-sambung-kiri { box-shadow: none; }
             .kg-lebih { display: none; }
             .kg-bulan { min-width: 0; flex: 1 1 auto; font-size: .95rem; }
             .kg-alat .kg-btn { height: 40px; padding: 0 13px !important; }
@@ -383,48 +447,61 @@ Kalender Kegiatan || lemon
             </div>
         </div>
 
-        {{-- ===== Kisi kalender ===== --}}
+        {{-- ===== Kisi kalender =====
+             Bukan tabel: kegiatan yang membentang beberapa hari harus tampil
+             sebagai SATU balok melintasi kolom-kolomnya. Di dalam tabel, satu
+             baris kegiatan mau tak mau terpotong oleh dinding tiap sel. Karena
+             itu sel harinya menjadi latar, dan baloknya diletakkan di lapisan
+             sendiri di atasnya. --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-2 p-md-3">
-                <table class="kg-kisi">
-                    <thead>
-                        <tr>
-                            @foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $h)
-                            <th>{{ $h }}</th>
-                            @endforeach
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($minggu as $baris)
-                        <tr>
-                            @foreach ($baris as $sel)
-                            <td class="kg-sel
-                                       {{ $sel['bulanIni'] ? '' : 'kg-luar' }}
-                                       {{ $sel['akhirPekan'] ? 'kg-pekan' : '' }}
-                                       {{ $sel['hariIni'] ? 'kg-hariini' : '' }}
-                                       {{ $tanggalTerpilih === $sel['tanggal'] ? 'kg-terpilih' : '' }}"
-                                wire:key="sel-{{ $sel['tanggal'] }}"
-                                wire:click="pilihTanggal('{{ $sel['tanggal'] }}')">
+            <div class="card-body p-2 p-md-3 kg-kisi-ukuran">
+                <div class="kg-kepala-hari">
+                    @foreach (['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as $h)
+                    <span>{{ $h }}</span>
+                    @endforeach
+                </div>
 
-                                <span class="kg-angka">{{ $sel['angka'] }}</span>
+                @foreach ($minggu as $iMinggu => $m)
+                <div class="kg-minggu" wire:key="minggu-{{ $iMinggu }}">
 
-                                @foreach ($sel['kegiatan']->take(3) as $k)
-                                <span class="kg-acara {{ $k->sudahLewat() ? 'kg-lewat' : '' }}"
-                                    style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};"
-                                    title="{{ $k->rentangWaktu() }} — {{ $k->judul }}">
-                                    <span>{{ $k->judul }}</span>
-                                </span>
-                                @endforeach
+                    {{-- Lapisan bawah: sel hari, yang bisa diklik --}}
+                    @foreach ($m['hari'] as $iHari => $sel)
+                    <div class="kg-sel
+                                {{ $sel['bulanIni'] ? '' : 'kg-luar' }}
+                                {{ $sel['akhirPekan'] ? 'kg-pekan' : '' }}
+                                {{ $sel['hariIni'] ? 'kg-hariini' : '' }}
+                                {{ $tanggalTerpilih === $sel['tanggal'] ? 'kg-terpilih' : '' }}"
+                        wire:key="sel-{{ $sel['tanggal'] }}"
+                        wire:click="pilihTanggal('{{ $sel['tanggal'] }}')">
 
-                                @if ($sel['kegiatan']->count() > 3)
-                                <span class="kg-lebih">+{{ $sel['kegiatan']->count() - 3 }} lagi</span>
-                                @endif
-                            </td>
-                            @endforeach
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        <span class="kg-angka">{{ $sel['angka'] }}</span>
+
+                        @if ($m['lebih'][$iHari] > 0)
+                        <span class="kg-lebih">+{{ $m['lebih'][$iHari] }} lagi</span>
+                        @endif
+                    </div>
+                    @endforeach
+
+                    {{-- Lapisan atas: balok kegiatan --}}
+                    @foreach ($m['balok'] as $b)
+                    @php $k = $b['kegiatan']; @endphp
+                    <button type="button"
+                        class="kg-balok
+                               {{ $k->sudahLewat() ? 'kg-lewat' : '' }}
+                               {{ $b['sambungKiri'] ? 'kg-sambung-kiri' : '' }}
+                               {{ $b['sambungKanan'] ? 'kg-sambung-kanan' : '' }}"
+                        {{-- Nada, bukan warna jenis mentah: dua Acara yang tanggalnya
+                             bertumpuk kalau tidak akan terbaca sebagai satu batang panjang. --}}
+                        style="--kg-warna:{{ $k->warnaBalok() }}; --kg-lembut:{{ $k->lembutBalok() }};
+                               --kg-kolom:{{ $b['kolom'] }}; --kg-rentang:{{ $b['rentang'] }}; --kg-lajur:{{ $b['lajur'] }};"
+                        wire:key="balok-{{ $iMinggu }}-{{ $k->id }}"
+                        wire:click="pilihTanggal('{{ $m['hari'][$b['kolom']]['tanggal'] }}')"
+                        title="{{ $k->judul }} — {{ $k->rentangWaktu() }}">
+                        <span>{{ $k->judul }}</span>
+                    </button>
+                    @endforeach
+                </div>
+                @endforeach
             </div>
         </div>
 
@@ -452,7 +529,7 @@ Kalender Kegiatan || lemon
 
                         @forelse ($daftarKegiatanTerpilih as $k)
                         <div class="kg-baris" wire:key="pilih-{{ $k->id }}"
-                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};">
+                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }}; --kg-nada:{{ $k->warnaBalok() }};">
                             <span class="kg-pita"></span>
                             <div class="kg-baris-isi">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -521,7 +598,7 @@ Kalender Kegiatan || lemon
 
                         @forelse ($berikutnya as $k)
                         <div class="kg-baris" wire:key="next-{{ $k->id }}"
-                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};">
+                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }}; --kg-nada:{{ $k->warnaBalok() }};">
                             <span class="kg-pita"></span>
                             <div class="kg-baris-isi">
                                 <b>{{ $k->judul }}</b>

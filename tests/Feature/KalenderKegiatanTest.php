@@ -46,7 +46,7 @@ it('kisi kalender selalu mulai Senin dan menutup seluruh bulan', function () {
         ->test(KegiatanKalender::class)
         ->viewData('minggu');
 
-    $rata = collect($minggu)->flatten(1);
+    $rata = collect($minggu)->flatMap(fn ($m) => $m['hari']);
 
     expect($rata->first()['tanggal'])->toBe('2026-08-31')  // Senin sebelum tanggal 1
         ->and($rata->last()['tanggal'])->toBe('2026-10-04') // Minggu setelah tanggal 30
