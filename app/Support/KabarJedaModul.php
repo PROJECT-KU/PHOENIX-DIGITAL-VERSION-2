@@ -66,8 +66,14 @@ class KabarJedaModul
      *
      * @return int jumlah alamat yang dikirimi
      */
-    public static function kirim(string $namaModul, bool $ditutup, string $pesan, ?User $pelaku = null): int
-    {
+    public static function kirim(
+        string $namaModul,
+        bool $ditutup,
+        string $pesan,
+        ?User $pelaku = null,
+        ?\Illuminate\Support\Carbon $mulai = null,
+        ?\Illuminate\Support\Carbon $sampai = null,
+    ): int {
         $penerima = self::penerima($pelaku);
 
         if (empty($penerima)) {
@@ -78,7 +84,7 @@ class KabarJedaModul
 
         try {
             Mail::to($penerima)->send(
-                new ModulAdminDijedaMail($namaModul, $ditutup, $pesan, $oleh)
+                new ModulAdminDijedaMail($namaModul, $ditutup, $pesan, $oleh, $mulai, $sampai)
             );
 
             return count($penerima);

@@ -4,9 +4,9 @@ namespace App\Livewire\Pages\Admin\JedaLayanan;
 
 use App\Models\Product;
 use App\Support\FiturAdmin;
-use App\Support\KabarJedaModul;
 use App\Support\FiturPublik;
 use App\Support\JedaLayanan;
+use App\Support\KabarJedaModul;
 use Livewire\Component;
 
 /**
@@ -31,6 +31,9 @@ class JedaLayananIndex extends Component
     /** Keterangan per modul admin, dikunci nama modul. */
     public array $pesanModul = [];
 
+    /** Perkiraan selesai per modul admin (format datetime-local). */
+    public array $sampaiModul = [];
+
     public function mount(): void
     {
         $this->muat();
@@ -39,10 +42,38 @@ class JedaLayananIndex extends Component
         $this->muatPesanModul();
     }
 
+    /**
+     * Perkiraan selesai dalam bentuk waktu biasa, atau null bila dikosongkan.
+     *
+     * Nilai dari datetime-local ("2026-09-09T08:00") tidak bisa langsung
+     * disimpan sebagai waktu; huruf T di tengahnya membuat pembacaan kembali
+     * bergantung pada tebakan penata waktu.
+     */
+    private function waktuSampai(string $modul): ?string
+    {
+        $mentah = trim((string) ($this->sampaiModul[$modul] ?? ''));
+
+        if ($mentah === '') {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($mentah)->toDateTimeString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function muatPesanModul(): void
     {
-        $this->pesanModul = collect(FiturAdmin::keadaan())
-            ->map(fn ($info) => $info['pesan'])
+        $keadaan = collect(FiturAdmin::keadaan());
+
+        $this->pesanModul = $keadaan->map(fn ($info) => $info['pesan'])->all();
+
+        // datetime-local menuntut bentuk "Y-m-dTH:i"; nilainya disimpan sebagai
+        // waktu biasa agar tetap terbaca di database.
+        $this->sampaiModul = $keadaan
+            ->map(fn ($info) => $info['sampai']?->format('Y-m-d\\TH:i') ?? '')
             ->all();
     }
 
@@ -67,7 +98,12 @@ class JedaLayananIndex extends Component
 
         $jadiDitutup = ! FiturAdmin::ditutup($modul);
 
-        FiturAdmin::setel($modul, $jadiDitutup, $this->pesanModul[$modul] ?? null);
+        FiturAdmin::setel(
+            $modul,
+            $jadiDitutup,
+            $this->pesanModul[$modul] ?? null,
+            $this->waktuSampai($modul),
+        );
         $this->muatPesanModul();
 
         // Dikirim SESUDAH statusnya tersimpan: kabar hanya boleh keluar untuk
@@ -79,6 +115,8 @@ class JedaLayananIndex extends Component
             $jadiDitutup,
             FiturAdmin::pesan($modul),
             auth()->user(),
+            FiturAdmin::mulai($modul),
+            FiturAdmin::sampai($modul),
         );
 
         $kabar = match (true) {
@@ -105,7 +143,12 @@ class JedaLayananIndex extends Component
             return;
         }
 
-        FiturAdmin::setel($modul, FiturAdmin::ditutup($modul), $this->pesanModul[$modul] ?? '');
+        FiturAdmin::setel(
+            $modul,
+            FiturAdmin::ditutup($modul),
+            $this->pesanModul[$modul] ?? '',
+            $this->waktuSampai($modul) ?? '',
+        );
         $this->muatPesanModul();
 
         $this->dispatch('swal-success', message: 'Keterangan disimpan.');

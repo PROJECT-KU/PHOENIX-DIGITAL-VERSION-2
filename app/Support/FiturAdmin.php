@@ -101,6 +101,45 @@ class FiturAdmin
         return 'fitur_admin_'.$fitur.'_pesan';
     }
 
+    private static function kunciMulai(string $fitur): string
+    {
+        return 'fitur_admin_'.$fitur.'_mulai';
+    }
+
+    private static function kunciSampai(string $fitur): string
+    {
+        return 'fitur_admin_'.$fitur.'_sampai';
+    }
+
+    /** Sejak kapan modul ini ditutup. Null bila sedang terbuka. */
+    public static function mulai(?string $fitur): ?\Illuminate\Support\Carbon
+    {
+        if (! $fitur || ! self::ada($fitur) || ! self::ditutup($fitur)) {
+            return null;
+        }
+
+        $nilai = (string) Setting::get(self::kunciMulai($fitur), '');
+
+        return $nilai !== '' ? \Illuminate\Support\Carbon::parse($nilai) : null;
+    }
+
+    /**
+     * Perkiraan kapan dibuka kembali, bila admin mengisinya.
+     *
+     * Sengaja boleh kosong: menebak waktu selesai yang tidak diketahui lalu
+     * meleset lebih merusak kepercayaan daripada mengaku belum tahu.
+     */
+    public static function sampai(?string $fitur): ?\Illuminate\Support\Carbon
+    {
+        if (! $fitur || ! self::ada($fitur) || ! self::ditutup($fitur)) {
+            return null;
+        }
+
+        $nilai = (string) Setting::get(self::kunciSampai($fitur), '');
+
+        return $nilai !== '' ? \Illuminate\Support\Carbon::parse($nilai) : null;
+    }
+
     public static function ada(string $fitur): bool
     {
         return array_key_exists($fitur, self::DAFTAR);
@@ -131,16 +170,40 @@ class FiturAdmin
         return self::DAFTAR[$fitur]['label'] ?? 'Modul ini';
     }
 
-    public static function setel(string $fitur, bool $ditutup, ?string $pesan = null): void
-    {
+    public static function setel(
+        string $fitur,
+        bool $ditutup,
+        ?string $pesan = null,
+        ?string $sampai = null,
+    ): void {
         if (! self::ada($fitur)) {
             return;
         }
+
+        $sebelumnya = self::ditutup($fitur);
 
         Setting::set(self::kunci($fitur), $ditutup ? '1' : '0');
 
         if ($pesan !== null) {
             Setting::set(self::kunciPesan($fitur), trim($pesan));
+        }
+
+        if ($sampai !== null) {
+            Setting::set(self::kunciSampai($fitur), trim($sampai));
+        }
+
+        // Waktu mulai dicatat SEKALI, saat benar-benar berpindah dari terbuka
+        // ke tertutup. Menyimpan ulang keterangan di tengah masa perbaikan
+        // tidak boleh memundurkan "sudah ditutup sejak kapan".
+        if ($ditutup && ! $sebelumnya) {
+            Setting::set(self::kunciMulai($fitur), now()->toDateTimeString());
+        }
+
+        // Dibuka kembali: jejaknya dibersihkan supaya penutupan berikutnya
+        // tidak mewarisi waktu lama yang sudah tidak berlaku.
+        if (! $ditutup) {
+            Setting::set(self::kunciMulai($fitur), '');
+            Setting::set(self::kunciSampai($fitur), '');
         }
     }
 
@@ -178,6 +241,9 @@ class FiturAdmin
                 'ket' => $info['ket'],
                 'ditutup' => self::ditutup($fitur),
                 'pesan' => trim((string) Setting::get(self::kunciPesan($fitur), '')),
+                'mulai' => self::mulai($fitur),
+                'sampai' => self::sampai($fitur),
+                'sampaiInput' => trim((string) Setting::get(self::kunciSampai($fitur), '')),
             ];
         }
 

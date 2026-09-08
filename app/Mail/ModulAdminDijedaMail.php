@@ -19,6 +19,8 @@ class ModulAdminDijedaMail extends Mailable
         public bool $ditutup,
         public string $pesan,
         public string $olehSiapa,
+        public ?\Illuminate\Support\Carbon $mulai = null,
+        public ?\Illuminate\Support\Carbon $sampai = null,
     ) {}
 
     public function build()
@@ -34,6 +36,8 @@ class ModulAdminDijedaMail extends Mailable
                 'ditutup' => $this->ditutup,
                 'pesan' => $this->pesan,
                 'olehSiapa' => $this->olehSiapa,
+                'mulai' => $this->mulai,
+                'sampai' => $this->sampai,
             ]);
     }
 }

@@ -29,7 +29,16 @@
         .ikon svg{width:34px;height:34px;fill:#fff;
             transform-origin:50% 50%;animation:goyang 2.6s ease-in-out infinite}
         h1{font-size:1.24rem;font-weight:700;margin-bottom:11px;color:#1e293b}
-        p{font-size:.94rem;color:#64748b;margin-bottom:26px}
+        p{font-size:.94rem;color:#64748b;margin-bottom:22px}
+        .waktu{
+            display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-bottom:24px;
+            background:#f6dcae;border:1px solid #f6dcae;border-radius:12px;overflow:hidden;text-align:left;
+        }
+        @media (max-width:460px){.waktu{grid-template-columns:1fr}}
+        .waktu div{background:#fffdf7;padding:12px 14px}
+        .waktu dt{font-size:.66rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#a08048;margin-bottom:3px}
+        .waktu dd{margin:0;font-size:.88rem;font-weight:600;color:#92400e}
+        .waktu dd small{display:block;font-weight:400;font-size:.75rem;color:#b08c56;margin-top:1px}
         a{
             display:inline-flex;align-items:center;gap:8px;text-decoration:none;
             padding:11px 22px;border-radius:12px;font-weight:600;font-size:.9rem;
@@ -54,6 +63,30 @@
         </div>
         <h1>{{ $judul }} sedang diperbaiki</h1>
         <p>{{ $pesan }}</p>
+
+        {{-- Sejak kapan dan sampai kapan: tanpa ini, karyawan hanya tahu
+             pekerjaannya berhenti, bukan berapa lama harus menunggu. --}}
+        <dl class="waktu">
+            <div>
+                <dt>Ditutup sejak</dt>
+                <dd>
+                    {{ $mulai?->translatedFormat('d M Y · H:i') ?? 'baru saja' }}
+                    @if ($mulai) <small>{{ $mulai->diffForHumans() }}</small> @endif
+                </dd>
+            </div>
+            <div>
+                <dt>Perkiraan selesai</dt>
+                <dd>
+                    @if ($sampai)
+                        {{ $sampai->translatedFormat('d M Y · H:i') }}
+                        <small>{{ $sampai->diffForHumans() }}</small>
+                    @else
+                        Belum ditentukan
+                        <small>Anda akan dikabari lewat surel</small>
+                    @endif
+                </dd>
+            </div>
+        </dl>
         <a href="{{ route('admin.dashboard') }}">Kembali ke Dashboard</a>
     </div>
 </body>

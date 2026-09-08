@@ -224,6 +224,23 @@ Jeda Layanan || lemon
         .jl-aktif-tombol.is-buka { border-color: #bfe3cd; color: #197a4b; }
         .jl-aktif-tombol.is-buka:hover { border-color: #197a4b; background: #f1faf5; color: #14603b; }
 
+        .jl-waktu {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            border-top: 1px dashed #f2e3c4; padding-top: 12px;
+        }
+        @media (max-width: 620px) { .jl-waktu { grid-template-columns: 1fr; } }
+        .jl-waktu-nilai { font-size: .84rem; font-weight: 600; color: #92400e; }
+        .jl-waktu-nilai small { display: block; font-weight: 400; color: #b08c56; font-size: .74rem; }
+        .jl-waktu .form-control { border-radius: 9px; font-size: .8rem; }
+
+        .jl-sampai-awal { flex-shrink: 0; }
+        .jl-sampai-awal label {
+            display: block; font-size: .64rem; font-weight: 700; letter-spacing: .06em;
+            text-transform: uppercase; color: #a0aab8; margin-bottom: 3px;
+        }
+        .jl-sampai-awal label span { font-weight: 500; letter-spacing: 0; text-transform: none; }
+        .jl-sampai-awal .form-control { border-radius: 9px; font-size: .76rem; width: 190px; }
+
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn { width: 100%; border-radius: 12px; font-weight: 600; padding: 11px; }
 
@@ -643,13 +660,29 @@ Jeda Layanan || lemon
                             </div>
                             @if ($bolehKelola)
                             <button type="button" class="btn btn-sm btn-success pcek-konfirmasi"
-                                data-action="alihkanModul" data-arg="{{ $kunci }}"
+                                data-action="alihkanModul" data-arg="{{ $kunci }}" data-waktu="1"
                                 data-title="Buka kembali {{ $info['label'] }}?"
                                 data-text="Karyawan bisa memakai modul ini lagi."
                                 data-confirm="Ya, buka" data-icon="question">
                                 <i class="bi bi-play-fill"></i> Buka kembali
                             </button>
                             @endif
+                        </div>
+
+                        <div class="jl-waktu">
+                            <div>
+                                <div class="jl-label">Ditutup sejak</div>
+                                <div class="jl-waktu-nilai">
+                                    {{ $info['mulai']?->translatedFormat('d M Y · H:i') ?? 'baru saja' }}
+                                    @if ($info['mulai']) <small>({{ $info['mulai']->diffForHumans() }})</small> @endif
+                                </div>
+                            </div>
+                            <div>
+                                <div class="jl-label">Perkiraan selesai</div>
+                                <input type="datetime-local" class="form-control form-control-sm"
+                                    wire:model="sampaiModul.{{ $kunci }}"
+                                    @disabled(! $bolehKelola)>
+                            </div>
                         </div>
 
                         <div class="jl-pesan">
@@ -689,6 +722,11 @@ Jeda Layanan || lemon
                                 <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
                             </div>
                             @if ($bolehKelola)
+                            <div class="jl-sampai-awal">
+                                <label>Perkiraan selesai <span>(opsional)</span></label>
+                                <input type="datetime-local" class="form-control form-control-sm"
+                                    wire:model="sampaiModul.{{ $kunci }}">
+                            </div>
                             <button type="button" class="jl-aktif-tombol pcek-konfirmasi"
                                 data-action="alihkanModul" data-arg="{{ $kunci }}"
                                 data-title="Tutup {{ $info['label'] }}?"

@@ -32,6 +32,8 @@ class CekFiturAdmin
         return response()->view('admin.fitur-ditutup', [
             'judul' => FiturAdmin::label($fitur),
             'pesan' => FiturAdmin::pesan($fitur),
+            'mulai' => FiturAdmin::mulai($fitur),
+            'sampai' => FiturAdmin::sampai($fitur),
         ], 503);
     }
 }

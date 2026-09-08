@@ -162,3 +162,65 @@ it('tanpa izin kelola, menutup modul ditolak server', function () {
 
     expect(FiturAdmin::ditutup('blog'))->toBeFalse();
 });
+
+/* ===================== Waktu perbaikan ===================== */
+
+it('waktu mulai dicatat saat modul ditutup', function () {
+    expect(FiturAdmin::mulai('keuangan'))->toBeNull();
+
+    FiturAdmin::setel('keuangan', true);
+
+    expect(FiturAdmin::mulai('keuangan'))->not->toBeNull()
+        ->and(FiturAdmin::mulai('keuangan')->isToday())->toBeTrue();
+});
+
+it('menyimpan ulang keterangan tidak memundurkan waktu mulai', function () {
+    FiturAdmin::setel('keuangan', true);
+    $mulai = FiturAdmin::mulai('keuangan');
+
+    $this->travel(2)->hours();
+    FiturAdmin::setel('keuangan', true, 'Keterangan diperbarui di tengah jalan.');
+
+    // "Sudah ditutup sejak kapan" harus tetap menunjuk penutupan pertamanya.
+    expect(FiturAdmin::mulai('keuangan')->eq($mulai))->toBeTrue();
+});
+
+it('perkiraan selesai boleh dikosongkan', function () {
+    FiturAdmin::setel('keuangan', true);
+
+    // Menebak waktu selesai yang tidak diketahui lalu meleset lebih merusak
+    // kepercayaan daripada mengaku belum tahu.
+    expect(FiturAdmin::sampai('keuangan'))->toBeNull();
+});
+
+it('perkiraan selesai tersimpan bila diisi', function () {
+    FiturAdmin::setel('keuangan', true, null, '2026-09-09 08:00:00');
+
+    expect(FiturAdmin::sampai('keuangan')->format('Y-m-d H:i'))->toBe('2026-09-09 08:00');
+});
+
+it('membuka kembali membersihkan jejak waktunya', function () {
+    FiturAdmin::setel('keuangan', true, null, '2026-09-09 08:00:00');
+    FiturAdmin::setel('keuangan', false);
+
+    // Penutupan berikutnya tidak boleh mewarisi waktu lama yang tak berlaku.
+    expect(FiturAdmin::mulai('keuangan'))->toBeNull()
+        ->and(FiturAdmin::sampai('keuangan'))->toBeNull();
+
+    FiturAdmin::setel('keuangan', true);
+    expect(FiturAdmin::sampai('keuangan'))->toBeNull();
+});
+
+it('modul yang terbuka tidak punya waktu mulai maupun selesai', function () {
+    expect(FiturAdmin::mulai('blog'))->toBeNull()
+        ->and(FiturAdmin::sampai('blog'))->toBeNull();
+});
+
+it('halaman pemberitahuan menyebut sejak kapan dan sampai kapan', function () {
+    FiturAdmin::setel('keuangan', true, 'Arus kas dihitung ulang.', '2026-09-09 08:00:00');
+
+    $this->actingAs(penggunaAdmin(['view_cashflow']))->get('/admin/cashflow')
+        ->assertStatus(503)
+        ->assertSee('Ditutup sejak')
+        ->assertSee('Perkiraan selesai');
+});
