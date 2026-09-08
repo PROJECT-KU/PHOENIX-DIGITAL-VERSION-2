@@ -678,6 +678,20 @@ class OrderDetail extends Component
 
         $up->update($data);
 
+        /*
+         | Berkas hasil yang seharusnya ada tapi belum terunggah.
+         |
+         | Aturan penyimpanan hanya menuntut "minimal satu berkas", jadi
+         | menyimpan 2 dari 3 berhasil tanpa tanda apa pun. Admin mengira sudah
+         | mengirim semuanya, pelanggan hanya menerima sebagian, dan tak ada
+         | yang memberi tahu — persis yang terjadi pada pesanan parafrase
+         | 5 Sep 2026 dan baru ketahuan tiga hari kemudian.
+         |
+         | Penyimpanan TIDAK dibatalkan: hasil yang sudah ada tetap berguna
+         | bagi pelanggan. Yang ditambahkan hanyalah tanda yang jelas.
+         */
+        $kurang = \App\Support\HasilPengecekan::yangKurang($this->order, $up->fresh());
+
         // Beri tahu customer via email bahwa hasil siap + link unduh.
         $this->kirimEmailHasil($up);
 
@@ -695,6 +709,14 @@ class OrderDetail extends Component
         }
 
         $this->dispatch('sidebar-badge-updated');
+
+        if (! empty($kurang)) {
+            $this->dispatch('order-updated', message: 'Hasil tersimpan, TAPI belum lengkap — '
+                .implode(' dan ', $kurang).' belum terunggah. Pelanggan tidak akan melihatnya.');
+
+            return;
+        }
+
         $this->dispatch('order-updated', message: 'Hasil pengecekan berhasil diunggah.');
     }
 
