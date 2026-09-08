@@ -483,28 +483,11 @@
                             @endforelse
                         </div>
                     </div>
-                    </div>
-
-                    <div class="col-lg-5">
-                        <div class="cek-samping">
-                    {{-- ===== Kuota ===== --}}
-                    <div class="cek-quota">
-                        <div class="cek-quota-top">
-                            <div><i class="bi bi-collection" style="color:#b45309;"></i> <b style="color:#92400e;">Sisa Pengecekan</b></div>
-                            <div class="cek-quota-num">{{ $sisa }} <small>dari {{ $kuota }}</small></div>
-                        </div>
-                        <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
-                        <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
-                            <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
-                        </div>
-                        {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
-                        @if ($order->bonusKuota() > 0)
-                        <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
-                            <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
-                        </div>
-                        @endif
-                    </div>
-
+                    {{-- Diletakkan di kiri, tepat di bawah hasilnya: pelanggan bisa
+                         mencocokkan apa yang ia beli dengan apa yang ia terima tanpa
+                         memindahkan pandangan ke kolom lain. Sekaligus mengisi kolom
+                         kiri, yang kalau hanya berisi riwayat akan menyisakan ruang
+                         kosong panjang di sebelah kolom kanan yang jauh lebih tinggi. --}}
                     {{-- ===== Rincian layanan yang dipesan =====
                          Ditampilkan untuk SEMUA pesanan jasa — dulu hanya muncul bila ada
                          add-on/halaman, sehingga layanan polos (mis. cek AI tanpa add-on)
@@ -559,6 +542,28 @@
                         </div>
                     </div>
                     @endif
+                    </div>
+
+
+                    <div class="col-lg-5">
+                        <div class="cek-samping">
+                    {{-- ===== Kuota ===== --}}
+                    <div class="cek-quota">
+                        <div class="cek-quota-top">
+                            <div><i class="bi bi-collection" style="color:#b45309;"></i> <b style="color:#92400e;">Sisa Pengecekan</b></div>
+                            <div class="cek-quota-num">{{ $sisa }} <small>dari {{ $kuota }}</small></div>
+                        </div>
+                        <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
+                        <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
+                            <i class="bi bi-info-circle"></i> Sudah dipakai {{ $terpakai }} kali. Tiap unggahan mengurangi 1 kuota (tanpa bayar lagi).
+                        </div>
+                        {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
+                        @if ($order->bonusKuota() > 0)
+                        <div style="font-size:.78rem; color:#15803d; margin-top:6px;">
+                            <i class="bi bi-gift"></i> Termasuk <b>{{ $order->bonusKuota() }} pengecekan bonus</b> dari admin — gratis, tanpa biaya tambahan.
+                        </div>
+                        @endif
+                    </div>
 
                     {{-- ===== Jaminan privasi & keaslian ===== --}}
                     <div class="cek-trust">
