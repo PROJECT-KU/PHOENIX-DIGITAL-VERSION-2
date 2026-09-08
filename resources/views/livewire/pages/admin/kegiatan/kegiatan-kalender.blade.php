@@ -176,15 +176,114 @@ Kalender Kegiatan || lemon
         .kg-kosong { text-align: center; padding: 34px 14px; color: #a8b3c4; font-size: .87rem; }
         .kg-kosong i.bi { display: block; font-size: 1.7rem; margin-bottom: 10px; color: #d7dee8; line-height: 1; }
 
-        /* ===== Modal ===== */
+        /* ===== Modal =====
+           Latar TIDAK bergulir: yang bergulir hanya isi modalnya, dengan kepala
+           dan kaki dipatok. `overscroll-behavior: contain` menahan gulirannya
+           agar tidak merembet ke halaman di belakang begitu isinya mentok. */
         .kg-modal-latar {
-            position: fixed; inset: 0; z-index: 1055; background: rgba(15,23,42,.45);
-            backdrop-filter: blur(3px); overflow-y: auto; padding: 24px 14px;
+            position: fixed; inset: 0; z-index: 1055;
+            background: rgba(15,23,42,.5);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px 14px;
+            overscroll-behavior: contain;
         }
-        .kg-modal { max-width: 640px; margin: 0 auto; }
+        .kg-modal {
+            width: 100%; max-width: 640px;
+            max-height: calc(100vh - 48px);
+            display: flex; flex-direction: column;
+            background: #fff; border-radius: 20px; overflow: hidden;
+            box-shadow: 0 24px 60px -12px rgba(15,23,42,.4);
+        }
+        /* flex-basis 0 + min-height 0 wajib: tanpa keduanya form ikut memanjang
+           mengikuti isinya, kaki modal terdorong keluar layar, dan yang bergulir
+           kembali jadi halamannya — persis yang hendak dihindari. */
+        .kg-modal-badan { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+
+        /* Kepala memakai warna jenis yang sedang dipilih. */
+        .kg-modal-kepala {
+            display: flex; align-items: center; gap: 14px;
+            padding: 18px 22px; flex: 0 0 auto;
+            background: var(--kg-warna);
+            background-image: linear-gradient(180deg, rgba(255,255,255,.18), transparent 70%);
+            color: #fff;
+        }
+        .kg-modal-tanda {
+            width: 42px; height: 42px; flex: 0 0 auto;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 13px; background: rgba(255,255,255,.22);
+        }
+        .kg-modal-tanda i.bi { font-size: 1.15rem; line-height: 1; }
+        .kg-modal-tanda i.bi::before { display: block; line-height: 1; }
+        .kg-modal-tajuk { flex: 1 1 auto; min-width: 0; line-height: 1.3; }
+        .kg-modal-tajuk b { display: block; font-size: 1.08rem; }
+        .kg-modal-tajuk small { opacity: .82; font-size: .8rem; }
+        .kg-modal-tutup {
+            width: 36px; height: 36px; flex: 0 0 auto; border: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 11px; background: rgba(255,255,255,.18); color: #fff;
+            transition: background .15s ease;
+        }
+        .kg-modal-tutup:hover { background: rgba(255,255,255,.32); }
+        .kg-modal-tutup i.bi { font-size: .9rem; line-height: 1; }
+        .kg-modal-tutup i.bi::before { display: block; line-height: 1; }
+
+        .kg-modal-isi { padding: 22px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+        .kg-modal-kaki {
+            display: flex; justify-content: flex-end; gap: 10px;
+            padding: 16px 22px; flex: 0 0 auto;
+            background: #f8fafc; border-top: 1px solid #eef1f6;
+        }
+        /* Tombol simpan ikut warna jenis — sekaligus penegas terakhir sebelum
+           kegiatannya benar-benar tersimpan sebagai jenis itu. */
+        .kg-simpan {
+            background: var(--kg-warna) !important; border: 0 !important; color: #fff !important;
+            box-shadow: 0 8px 18px -6px var(--kg-warna);
+        }
+        .kg-simpan:hover { filter: brightness(1.06); color: #fff !important; }
+
+        /* Panel waktu: empat isian yang saling terkait dikumpulkan jadi satu. */
+        .kg-panel { background: var(--kg-lembut); border-radius: 16px; padding: 16px; }
+        .kg-panel-judul {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; margin-bottom: 14px;
+        }
+        .kg-panel-judul > span {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: .78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; color: var(--kg-warna);
+        }
+        .kg-panel-judul i.bi { line-height: 1; font-size: .9rem; }
+        .kg-panel-judul i.bi::before { display: block; line-height: 1; }
+        .kg-panel .form-check-label { font-size: .84rem; color: #475569; font-weight: 600; }
+        .kg-panel .form-control { background: #fff; }
+        .kg-bisik { display: block; font-size: .74rem; color: #94a3b8; margin-top: 4px; }
+
         .kg-pilih-jenis { display: flex; flex-wrap: wrap; gap: 8px; }
         .kg-pilih-jenis .kg-chip { padding: 0 15px; font-size: .84rem; }
-        .kg-peserta-kotak { max-height: 190px; overflow-y: auto; border: 1px solid #e9edf3; border-radius: 12px; padding: 10px 12px; }
+
+        .kg-hitung {
+            font-size: .73rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+            background: var(--kg-lembut); color: var(--kg-warna);
+        }
+        .kg-peserta-kotak {
+            max-height: 200px; overflow-y: auto; overscroll-behavior: contain;
+            border: 1px solid #e9edf3; border-radius: 14px; padding: 6px;
+        }
+        .kg-peserta-baris {
+            display: flex; align-items: center; gap: 10px;
+            padding: 7px 10px; border-radius: 10px; cursor: pointer;
+            font-size: .87rem; color: #334155; transition: background .12s ease;
+        }
+        .kg-peserta-baris:hover { background: #f6f8fb; }
+        .kg-peserta-baris input:checked + span { color: var(--kg-warna); font-weight: 600; }
+
+        @media (max-width: 575.98px) {
+            .kg-modal-latar { padding: 12px 10px; }
+            .kg-modal { max-height: calc(100vh - 24px); border-radius: 16px; }
+            .kg-modal-isi { padding: 16px; }
+            .kg-modal-kaki { padding: 14px 16px; }
+        }
 
         @media (max-width: 767.98px) {
             .kg-kisi { border-spacing: 4px; }
@@ -445,22 +544,55 @@ Kalender Kegiatan || lemon
         </div>
     </div>
 
-    {{-- ===== Modal form ===== --}}
-    @if ($formTampil)
-    <div class="kg-modal-latar" wire:key="form-kegiatan">
-        <div class="kg-modal card border-0 shadow-lg rounded-4">
-            <div class="card-body p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="gradient-text fw-bold mb-0">
-                        {{ $formId ? 'Ubah Kegiatan' : 'Tambah Kegiatan' }}
-                    </h5>
-                    <button type="button" class="btn btn-light kg-nav kg-btn border kg-alat" wire:click="tutupForm"
-                        aria-label="Tutup" style="width:42px; height:42px; padding:0;">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
+    {{-- ===== Modal form =====
+         Modal mengambil WARNA JENIS yang sedang dipilih: memilih "Tenggat"
+         membuat kepalanya berubah merah mawar seketika. Warnanya bukan hiasan —
+         ia menegaskan pilihan yang baru saja dibuat di tempat yang sedang
+         dilihat mata, sehingga salah jenis lebih sulit lolos.
 
-                <form wire:submit="simpan">
+         Kepala dan kaki dipatok; hanya isinya yang bergulir. Tombol "Simpan"
+         karena itu selalu terlihat, sepanjang apa pun daftar pesertanya. --}}
+    @if ($formTampil)
+    @php $jAktif = $jenisPeta[$jenis] ?? $jenisPeta['lainnya']; @endphp
+    <div class="kg-modal-latar" wire:key="form-kegiatan"
+        style="--kg-warna:{{ $jAktif['warna'] }}; --kg-lembut:{{ $jAktif['lembut'] }};"
+        x-data="{
+            init() {
+                /* Latar dikunci agar yang bergulir hanya modalnya. Lebar bilah
+                   gulir diganti jadi padding supaya halaman di belakang tidak
+                   tersentak melebar saat bilahnya hilang. */
+                const geser = window.innerWidth - document.documentElement.clientWidth;
+                document.body.style.overflow = 'hidden';
+                document.body.style.paddingRight = geser + 'px';
+            },
+            destroy() {
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            },
+        }"
+        x-on:keydown.escape.window="$wire.tutupForm()">
+
+        <div class="kg-modal">
+
+            {{-- Kepala --}}
+            <div class="kg-modal-kepala">
+                <div class="kg-modal-tanda">
+                    <i class="bi bi-{{ $jAktif['ikon'] }}"></i>
+                </div>
+                <div class="kg-modal-tajuk">
+                    <b>{{ $formId ? 'Ubah Kegiatan' : 'Tambah Kegiatan' }}</b>
+                    <small>{{ $jAktif['label'] }}</small>
+                </div>
+                <button type="button" class="kg-modal-tutup" wire:click="tutupForm" aria-label="Tutup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form wire:submit="simpan" class="kg-modal-badan">
+
+                {{-- Isi yang bergulir --}}
+                <div class="kg-modal-isi">
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Judul <span class="text-danger">*</span></label>
                         <input type="text" class="form-control @error('judul') is-invalid @enderror"
@@ -468,7 +600,7 @@ Kalender Kegiatan || lemon
                         @error('judul') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label fw-semibold">Jenis</label>
                         <div class="kg-pilih-jenis">
                             @foreach ($jenisPeta as $kunci => $j)
@@ -484,45 +616,53 @@ Kalender Kegiatan || lemon
                         @error('jenis') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="kg-seharian" wire:model.live="seharian">
-                        <label class="form-check-label" for="kg-seharian">Berlangsung seharian</label>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Tanggal mulai <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control @error('tanggalMulai') is-invalid @enderror"
-                                wire:model="tanggalMulai">
-                            @error('tanggalMulai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    {{-- Waktu dikumpulkan dalam satu panel: empat isian yang saling
+                         terkait lebih mudah dibaca sebagai satu keputusan. --}}
+                    <div class="kg-panel mb-4">
+                        <div class="kg-panel-judul">
+                            <span><i class="bi bi-clock-history"></i> Waktu</span>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="kg-seharian"
+                                    wire:model.live="seharian">
+                                <label class="form-check-label" for="kg-seharian">Seharian</label>
+                            </div>
                         </div>
 
-                        @if (! $seharian)
-                        <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Jam mulai <span class="text-danger">*</span></label>
-                            <input type="time" class="form-control @error('jamMulai') is-invalid @enderror"
-                                wire:model="jamMulai">
-                            @error('jamMulai') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        @endif
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Tanggal mulai <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control @error('tanggalMulai') is-invalid @enderror"
+                                    wire:model="tanggalMulai">
+                                @error('tanggalMulai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
 
-                        <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Tanggal selesai</label>
-                            <input type="date" class="form-control @error('tanggalSelesai') is-invalid @enderror"
-                                wire:model="tanggalSelesai">
-                            <small class="text-muted">Kosongkan bila selesai di hari yang sama.</small>
-                            @error('tanggalSelesai') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                            @if (! $seharian)
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Jam mulai <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control @error('jamMulai') is-invalid @enderror"
+                                    wire:model="jamMulai">
+                                @error('jamMulai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            @endif
 
-                        @if (! $seharian)
-                        <div class="col-sm-6">
-                            <label class="form-label fw-semibold">Jam selesai</label>
-                            <input type="time" class="form-control @error('jamSelesai') is-invalid @enderror"
-                                wire:model="jamSelesai">
-                            <small class="text-muted">Boleh kosong bila belum pasti.</small>
-                            @error('jamSelesai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Tanggal selesai</label>
+                                <input type="date" class="form-control @error('tanggalSelesai') is-invalid @enderror"
+                                    wire:model="tanggalSelesai">
+                                <small class="kg-bisik">Kosongkan bila selesai di hari yang sama.</small>
+                                @error('tanggalSelesai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            @if (! $seharian)
+                            <div class="col-sm-6">
+                                <label class="form-label fw-semibold">Jam selesai</label>
+                                <input type="time" class="form-control @error('jamSelesai') is-invalid @enderror"
+                                    wire:model="jamSelesai">
+                                <small class="kg-bisik">Boleh kosong bila belum pasti.</small>
+                                @error('jamSelesai') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            @endif
                         </div>
-                        @endif
                     </div>
 
                     <div class="mb-3">
@@ -532,39 +672,45 @@ Kalender Kegiatan || lemon
                         @error('lokasi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label class="form-label fw-semibold">Catatan</label>
                         <textarea class="form-control @error('deskripsi') is-invalid @enderror" rows="3"
                             wire:model="deskripsi" placeholder="Agenda, hal yang perlu disiapkan, dsb."></textarea>
                         @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Peserta</label>
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-semibold mb-0">Peserta</label>
+                            {{-- Jumlahnya disebut supaya orang tidak perlu menghitung
+                                 sendiri centang yang tergulung di dalam kotak. --}}
+                            <span class="kg-hitung">{{ count($peserta) }} dipilih</span>
+                        </div>
                         <div class="kg-peserta-kotak">
                             @foreach ($semuaKaryawan as $u)
-                            <div class="form-check" wire:key="peserta-{{ $u->id }}">
-                                <input class="form-check-input" type="checkbox" id="kg-u-{{ $u->id }}"
-                                    value="{{ $u->id }}" wire:model="peserta">
-                                <label class="form-check-label" for="kg-u-{{ $u->id }}">{{ $u->name }}</label>
-                            </div>
+                            <label class="kg-peserta-baris" wire:key="peserta-{{ $u->id }}">
+                                <input class="form-check-input m-0" type="checkbox"
+                                    value="{{ $u->id }}" wire:model.live="peserta">
+                                <span>{{ $u->name }}</span>
+                            </label>
                             @endforeach
                         </div>
                         @error('peserta') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-end gap-2 kg-alat">
-                        <button type="button" class="btn btn-light border kg-btn" wire:click="tutupForm">
-                            Batal
-                        </button>
-                        <button type="submit" class="btn btn-primary kg-btn" wire:loading.attr="disabled">
-                            <i class="bi bi-check2"></i>
-                            <span wire:loading.remove wire:target="simpan">Simpan</span>
-                            <span wire:loading wire:target="simpan">Menyimpan…</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                {{-- Kaki --}}
+                <div class="kg-modal-kaki kg-alat">
+                    <button type="button" class="btn btn-light border kg-btn" wire:click="tutupForm">
+                        Batal
+                    </button>
+                    <button type="submit" class="btn kg-btn kg-simpan" wire:loading.attr="disabled">
+                        <i class="bi bi-check2"></i>
+                        <span wire:loading.remove wire:target="simpan">Simpan</span>
+                        <span wire:loading wire:target="simpan">Menyimpan…</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
     @endif
