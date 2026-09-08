@@ -194,6 +194,29 @@ class Kegiatan extends Model
     }
 
     /**
+     * Latar sel hari: lebih pucat lagi daripada latar baloknya.
+     *
+     * Harus lebih pucat, bukan sama: bila sel dan balok berlatar sama, batang
+     * kegiatan beserta judulnya lenyap ke dalam selnya.
+     */
+    public function pucatBalok(): string
+    {
+        return self::campurPutih($this->lembutBalok(), 0.45);
+    }
+
+    /** Dihitung di sini, bukan lewat color-mix() CSS, agar tidak bergantung versi peramban. */
+    private static function campurPutih(string $heks, float $kadar): string
+    {
+        [$r, $g, $b] = sscanf(ltrim($heks, '#'), '%2x%2x%2x');
+
+        return sprintf('#%02x%02x%02x',
+            (int) round($r + (255 - $r) * $kadar),
+            (int) round($g + (255 - $g) * $kadar),
+            (int) round($b + (255 - $b) * $kadar),
+        );
+    }
+
+    /**
      * Menggeser rona & kecerahan sebuah warna heks.
      *
      * Tanpa pergeseran sama sekali, warnanya dikembalikan apa adanya — bolak-balik

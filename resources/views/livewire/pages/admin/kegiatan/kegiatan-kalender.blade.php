@@ -143,7 +143,23 @@ Kalender Kegiatan || lemon
         .kg-sel.kg-luar { background: #fbfcfd; border-color: #f2f5f8; }
         .kg-sel.kg-luar .kg-angka { color: #cbd5e1; }
         .kg-sel.kg-pekan { background: #fcfcfe; }
-        .kg-sel.kg-terpilih { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167,139,250,.22); }
+        /* Hari yang dipakai kegiatan ikut berbingkai warna kegiatannya, sehingga
+           8-9 September terbaca sebagai satu blok dan bukan dua kotak terpisah.
+           Latarnya hanya disapu tipis — kalau sepekat baloknya, judul kegiatan
+           di atasnya justru tenggelam. */
+        .kg-sel.kg-terpakai {
+            border-color: var(--kg-tepi);
+            background: var(--kg-tepi-lembut);
+        }
+        .kg-sel.kg-terpakai:hover {
+            border-color: var(--kg-tepi);
+            box-shadow: 0 6px 16px -6px var(--kg-tepi);
+        }
+
+        /* Tanggal terpilih tetap menang: itu jawaban atas klik yang baru saja
+           dilakukan, dan harus terlihat betapa pun ramainya kegiatan hari itu. */
+        .kg-sel.kg-terpilih,
+        .kg-sel.kg-terpakai.kg-terpilih { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167,139,250,.22); }
         .kg-angka {
             font-size: .82rem; font-weight: 700; color: #64748b;
             width: 27px; height: 27px; display: inline-flex; align-items: center; justify-content: center;
@@ -466,11 +482,14 @@ Kalender Kegiatan || lemon
 
                     {{-- Lapisan bawah: sel hari, yang bisa diklik --}}
                     @foreach ($m['hari'] as $iHari => $sel)
+                    @php $tepi = $m['tepi'][$iHari]; @endphp
                     <div class="kg-sel
                                 {{ $sel['bulanIni'] ? '' : 'kg-luar' }}
                                 {{ $sel['akhirPekan'] ? 'kg-pekan' : '' }}
                                 {{ $sel['hariIni'] ? 'kg-hariini' : '' }}
+                                {{ $tepi ? 'kg-terpakai' : '' }}
                                 {{ $tanggalTerpilih === $sel['tanggal'] ? 'kg-terpilih' : '' }}"
+                        @if ($tepi) style="--kg-tepi:{{ $tepi['warna'] }}; --kg-tepi-lembut:{{ $tepi['lembut'] }};" @endif
                         wire:key="sel-{{ $sel['tanggal'] }}"
                         wire:click="pilihTanggal('{{ $sel['tanggal'] }}')">
 

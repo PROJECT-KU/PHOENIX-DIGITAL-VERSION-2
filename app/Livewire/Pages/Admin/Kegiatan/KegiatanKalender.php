@@ -426,7 +426,7 @@ class KegiatanKalender extends Component
      * tidak terpotong-potong di bawah batang pendek.
      *
      * @param  \Illuminate\Support\Collection<int, Kegiatan>  $kegiatan
-     * @return array{balok: array<int, array<string, mixed>>, lebih: array<int, int>}
+     * @return array{balok: array<int, array<string, mixed>>, lebih: array<int, int>, tepi: array<int, ?array{warna: string, lembut: string}>}
      */
     private function susunBalok($kegiatan, Carbon $awalMinggu): array
     {
@@ -481,7 +481,44 @@ class KegiatanKalender extends Component
             ];
         }
 
-        return ['balok' => $balok, 'lebih' => $lebih];
+        return ['balok' => $balok, 'lebih' => $lebih, 'tepi' => $this->tepiHari($balok)];
+    }
+
+    /**
+     * Warna bingkai tiap sel hari.
+     *
+     * Batang saja belum cukup membuat 8-9 September terbaca sebagai SATU blok:
+     * di antara keduanya masih ada dinding sel yang memisahkan. Dengan bingkai
+     * selnya ikut berwarna, kedua hari itu terlihat menyatu, dan hari yang
+     * tidak dipakai kegiatan apa pun tetap bersih.
+     *
+     * Bila satu hari dipakai beberapa kegiatan, yang menang adalah lajur
+     * teratas — kegiatan yang paling dulu mulai dan paling panjang. Mencampur
+     * warna hanya menghasilkan warna yang bukan milik siapa-siapa.
+     *
+     * @param  array<int, array<string, mixed>>  $balok
+     * @return array<int, ?array{warna: string, lembut: string}>
+     */
+    private function tepiHari(array $balok): array
+    {
+        $tepi = array_fill(0, 7, null);
+        $lajurTerpilih = array_fill(0, 7, PHP_INT_MAX);
+
+        foreach ($balok as $b) {
+            for ($c = $b['kolom']; $c < $b['kolom'] + $b['rentang']; $c++) {
+                if ($b['lajur'] >= $lajurTerpilih[$c]) {
+                    continue;
+                }
+
+                $lajurTerpilih[$c] = $b['lajur'];
+                $tepi[$c] = [
+                    'warna' => $b['kegiatan']->warnaBalok(),
+                    'lembut' => $b['kegiatan']->pucatBalok(),
+                ];
+            }
+        }
+
+        return $tepi;
     }
 
     /**
