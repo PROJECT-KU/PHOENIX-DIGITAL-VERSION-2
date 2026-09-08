@@ -4,6 +4,7 @@ namespace App\Livewire\Pages\Admin\JedaLayanan;
 
 use App\Models\Product;
 use App\Support\FiturAdmin;
+use App\Support\KabarJedaModul;
 use App\Support\FiturPublik;
 use App\Support\JedaLayanan;
 use Livewire\Component;
@@ -69,9 +70,26 @@ class JedaLayananIndex extends Component
         FiturAdmin::setel($modul, $jadiDitutup, $this->pesanModul[$modul] ?? null);
         $this->muatPesanModul();
 
-        $this->dispatch('swal-success', message: $jadiDitutup
+        // Dikirim SESUDAH statusnya tersimpan: kabar hanya boleh keluar untuk
+        // keadaan yang benar-benar sudah berlaku. Gagal kirim tidak
+        // membatalkan penutupan — modulnya ditutup karena ada yang perlu
+        // diperbaiki, dan surel yang gagal urusan yang jauh lebih ringan.
+        $terkirim = KabarJedaModul::kirim(
+            FiturAdmin::label($modul),
+            $jadiDitutup,
+            FiturAdmin::pesan($modul),
+            auth()->user(),
+        );
+
+        $kabar = match (true) {
+            $terkirim === 0 => ' Kabar surel tidak terkirim — cek log.',
+            KabarJedaModul::modeUji() => ' Kabar surel dikirim ke alamat uji coba.',
+            default => ' Kabar surel dikirim ke '.$terkirim.' karyawan.',
+        };
+
+        $this->dispatch('swal-success', message: ($jadiDitutup
             ? FiturAdmin::label($modul).' ditutup untuk karyawan.'
-            : FiturAdmin::label($modul).' dibuka kembali.');
+            : FiturAdmin::label($modul).' dibuka kembali.').$kabar);
     }
 
     /** Simpan keterangan satu modul tanpa mengubah status tutupnya. */
