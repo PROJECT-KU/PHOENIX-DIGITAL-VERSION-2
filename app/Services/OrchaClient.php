@@ -21,7 +21,78 @@ class OrchaClient
 {
     public function siap(): bool
     {
-        return filled(config('orcha.url')) && filled(config('orcha.kunci'));
+        return filled(config('orcha.url'))
+            && filled(config('orcha.kunci'))
+            && ! $this->menunjukDiriSendiri();
+    }
+
+    /**
+     * Apakah ORCHA_API_URL justru menunjuk aplikasi INI?
+     *
+     * Di komputer pengembang, Orcha dan lemon berjalan sebagai dua
+     * `php artisan serve` yang portnya bisa bertukar tanpa disadari — cukup
+     * salah satunya dinyalakan lebih dulu. Bila .env lalu menunjuk port lemon
+     * sendiri, lemon memanggil dirinya sendiri; server bawaan PHP hanya
+     * melayani satu permintaan pada satu waktu, jadi permintaan dalam tak
+     * pernah dilayani dan tiap halaman admin menggantung sampai batas waktu.
+     *
+     * Sudah terjadi tiga kali (15 Agu, 7 Sep, 8 Sep 2026), dan gejalanya tak
+     * pernah menyebut port — hanya "Maximum execution time exceeded" di dalam
+     * Guzzle. Lebih baik sambungannya dianggap belum disetel: pesannya jelas,
+     * dan panelnya tetap terbuka seketika.
+     */
+    private function menunjukDiriSendiri(): bool
+    {
+        /*
+         | HANYA saat melayani permintaan HTTP sungguhan.
+         |
+         | Di luar itu — artisan, antrean, uji — Laravel tetap menyediakan objek
+         | permintaan, tetapi isinya dibuat dari APP_URL. Kedua proyek sama-sama
+         | menulis APP_URL=localhost:8000 padahal salah satunya jelas tidak di
+         | situ, jadi menebak di sana pernah menuduh 83 uji Orcha yang sebenarnya
+         | sah. Tidak tahu lebih baik daripada salah menuduh.
+         */
+        if (app()->runningInConsole()) {
+            return false;
+        }
+
+        $permintaan = request();
+
+        if (! $permintaan instanceof \Illuminate\Http\Request) {
+            return false;
+        }
+
+        return self::alamatSama(
+            (string) config('orcha.url'),
+            $permintaan->getHost(),
+            $permintaan->getPort()
+        );
+    }
+
+    /**
+     * Apakah $urlOrcha menunjuk host & port yang sama dengan yang sedang
+     * melayani permintaan ini?
+     *
+     * Dipisah sebagai fungsi murni agar bisa diuji tanpa permintaan HTTP palsu
+     * yang justru mewarisi APP_URL yang menyesatkan.
+     */
+    public static function alamatSama(string $urlOrcha, ?string $inang, ?int $port): bool
+    {
+        $tujuan = parse_url($urlOrcha);
+
+        // Tanpa port, tidak bisa disimpulkan menunjuk diri sendiri: di produksi
+        // lemon dan Orcha bisa satu domain dengan jalur berbeda, dan menolaknya
+        // di sana akan mematikan sambungan yang sah.
+        if (! isset($tujuan['host'], $tujuan['port']) || $inang === null || $port === null) {
+            return false;
+        }
+
+        $lokal = ['127.0.0.1', 'localhost', '::1'];
+
+        $hostSama = $tujuan['host'] === $inang
+            || (in_array($tujuan['host'], $lokal, true) && in_array($inang, $lokal, true));
+
+        return $hostSama && (int) $tujuan['port'] === $port;
     }
 
     private function permintaan(): PendingRequest
