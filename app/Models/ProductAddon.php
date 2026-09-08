@@ -23,6 +23,7 @@ class ProductAddon extends Model
         'aktif',
         'pakai_exclude',
         'cek_ai',
+        'jenis_layanan',
     ];
 
     protected $casts = [
@@ -54,12 +55,19 @@ class ProductAddon extends Model
      * bukan pemeriksaan (mis. "plagiasi di bawah 30%" — itu target parafrase,
      * bukan kuota pengecekan terpisah).
      */
+    /**
+     * Jenis pekerjaan yang dihasilkan add-on ini, atau null bila tidak
+     * menghasilkan berkas apa pun untuk pelanggan.
+     *
+     * Dinyatakan tegas lewat kolomnya, TIDAK disimpulkan dari pakai_exclude
+     * lagi: pada add-on jaminan, pakai_exclude berarti "pengecekannya memakai
+     * setelan exclude", bukan "ini pengecekan tersendiri" — dan penyimpulan itu
+     * dulu melahirkan kuota hantu yang tak pernah bisa dipakai.
+     */
     public function jenisLayanan(): ?string
     {
-        return match (true) {
-            (bool) $this->cek_ai => 'ai',
-            (bool) $this->pakai_exclude => 'plagiasi',
-            default => null,
-        };
+        $jenis = trim((string) $this->jenis_layanan);
+
+        return $jenis !== '' ? $jenis : null;
     }
 }

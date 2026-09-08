@@ -402,9 +402,11 @@ class JasaCekPage extends Component
         return view('livewire.pages.public.shop-page.jasa-cek-page', [
             'order' => $this->order,
             'estimasiWaktu' => $adaPerHalaman ? '5–7 hari kerja' : '5–15 menit',
-            'kuota' => $this->order->kuotaPengecekan(),
+            // Jatah KIRIM DOKUMEN. Menampilkan jumlah pekerjaan di sini akan
+            // membuat pelanggan mengira boleh mengunggah lebih banyak berkas.
+            'kuota' => array_sum($this->order->kuotaUnggahanPerJenis()),
             'terpakai' => $this->order->terpakaiPengecekan(),
-            'sisa' => $this->order->sisaKuota(),
+            'sisa' => $this->order->sisaUnggahan(),
             'pengecekan' => $this->order->uploads->sortByDesc('created_at')->values(),
             'perluExclude' => $this->perluExclude(),
             'jenisTersisa' => $jenisTersisa,

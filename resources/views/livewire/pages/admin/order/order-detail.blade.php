@@ -523,8 +523,11 @@ Detail Pesanan || lemon
     {{-- ===== Pengecekan plagiasi (pesanan JASA) ===== --}}
     @if ($order->butuhUpload())
     @php
+        // Yang dilihat admin adalah PEKERJAAN yang harus diserahkan — dokumen
+        // parafrase, hasil plagiasi, dan hasil AI masing-masing satu. Bukan
+        // jumlah dokumen yang dikirim pelanggan; itu urusan halaman /cek.
         $jKuota = $order->kuotaPengecekan();
-        $jTerpakai = $order->terpakaiPengecekan();
+        $jTerpakai = $order->pekerjaanTerserah();
         $jSisa = $order->sisaKuota();
         // Bonus kuota dari admin (kompensasi bila customer terkendala).
         $jBonus = $order->bonusKuotaPerJenis();

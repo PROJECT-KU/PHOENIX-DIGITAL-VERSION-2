@@ -333,23 +333,100 @@ class Order extends Model
             ->count();
     }
 
-    /** Sisa kuota TOTAL (semua jenis, tidak pernah negatif). */
+    /**
+     * Sisa PEKERJAAN yang belum diserahkan.
+     *
+     * Inilah angka yang dilihat admin sebagai "kuota". Habis berarti seluruh
+     * berkas hasil sudah diunggah — bukan sekadar dokumennya sudah masuk.
+     */
     public function sisaKuota(): int
     {
-        return max(0, $this->kuotaPengecekan() - $this->terpakaiPengecekan());
+        return max(0, $this->kuotaPengecekan() - $this->pekerjaanTerserah());
     }
 
-    /** Jenis pemeriksaan yang MASIH punya sisa kuota (untuk pemilih di /cek). */
+    /*
+     |--------------------------------------------------------------------------
+     | Dua hitungan yang berbeda, dan dulu tercampur
+     |--------------------------------------------------------------------------
+     | UNGGAHAN — berapa dokumen boleh DIKIRIM pelanggan. Hanya dari produknya;
+     |            add-on tidak menambah, karena add-on adalah berkas BALASAN
+     |            atas dokumen yang sama, bukan undangan mengirim dokumen lagi.
+     |
+     | PEKERJAAN — berapa berkas hasil harus DISERAHKAN. Dokumen parafrase,
+     |             hasil plagiasi, dan hasil AI masing-masing satu pekerjaan.
+     |
+     | Sebelumnya keduanya memakai angka yang sama, sehingga add-on yang
+     | menambah pekerjaan ikut membuka jatah unggah baru — dan sebaliknya,
+     | hasil yang sudah diserahkan tidak pernah menghabiskan kuota.
+     */
+
+    /** Berapa dokumen boleh dikirim pelanggan, per jenis. */
+    public function kuotaUnggahanPerJenis(): array
+    {
+        $out = [];
+
+        foreach ($this->items as $item) {
+            $product = $item->product;
+
+            if (! $product || ! $product->butuh_file) {
+                continue;
+            }
+
+            $jenis = $product->jenisLayanan();
+
+            if ($jenis) {
+                $out[$jenis] = ($out[$jenis] ?? 0)
+                    + max(1, (int) $item->duration_value) * max(1, (int) $item->quantity);
+            }
+        }
+
+        foreach ($this->bonusKuotaPerJenis() as $jenis => $jumlah) {
+            if ($jumlah > 0 && isset($out[$jenis])) {
+                $out[$jenis] += $jumlah;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Sisa jatah kirim dokumen untuk satu jenis. */
+    public function sisaUnggahanJenis(string $jenis): int
+    {
+        return max(0, ($this->kuotaUnggahanPerJenis()[$jenis] ?? 0) - $this->terpakaiPerJenis($jenis));
+    }
+
+    /** Total jatah kirim dokumen yang masih tersisa. */
+    public function sisaUnggahan(): int
+    {
+        return max(0, array_sum($this->kuotaUnggahanPerJenis()) - $this->terpakaiPengecekan());
+    }
+
+    /** Jenis pemeriksaan yang MASIH punya sisa jatah kirim (untuk pemilih di /cek). */
     public function jenisTersisa(): array
     {
         $out = [];
-        foreach (array_keys($this->kuotaPerJenis()) as $jenis) {
-            if ($this->sisaKuotaJenis($jenis) > 0) {
+        foreach (array_keys($this->kuotaUnggahanPerJenis()) as $jenis) {
+            if ($this->sisaUnggahanJenis($jenis) > 0) {
                 $out[] = $jenis;
             }
         }
 
         return $out;
+    }
+
+    /**
+     * Berkas hasil yang SUDAH diserahkan.
+     *
+     * Dihitung dari berkasnya sendiri, bukan dari jumlah baris unggahan: satu
+     * dokumen pelanggan bisa melahirkan tiga berkas hasil sekaligus.
+     */
+    public function pekerjaanTerserah(): int
+    {
+        return (int) $this->uploads
+            ->filter(fn ($u) => $u->status !== 'dibatalkan')
+            ->sum(fn ($u) => (int) filled($u->hasil_docx_path)
+                + (int) filled($u->hasil_path)
+                + (int) filled($u->hasil_ai_path));
     }
 
     /*
@@ -551,9 +628,11 @@ class Order extends Model
     /** Masih boleh mengunggah untuk SATU jenis pemeriksaan tertentu? */
     public function bisaUploadJenis(string $jenis): bool
     {
+        // Jatah KIRIM DOKUMEN, bukan jumlah pekerjaan: pelanggan yang membeli
+        // tambahan hasil plagiasi & AI tetap hanya mengirim satu dokumen.
         return $this->butuhUpload()
             && $this->statusBolehUpload()
-            && $this->sisaKuotaJenis($jenis) > 0;
+            && $this->sisaUnggahanJenis($jenis) > 0;
     }
 
     /**
