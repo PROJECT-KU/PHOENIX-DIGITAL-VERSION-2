@@ -7,7 +7,13 @@
      tetap meyakinkan.
 
      Gaya ditulis inline, bukan di stylesheet Vite: public/build masuk
-     .gitignore, jadi markup bisa sampai ke server (git pull) tanpa CSS-nya. --}}
+     .gitignore, jadi markup bisa sampai ke server (git pull) tanpa CSS-nya.
+
+     TANPA pita jaminan di bawahnya. Rancangan yang dicontoh memang memuatnya,
+     tapi beranda ini sudah punya baris kepercayaan sendiri tepat di bawah hero
+     (Proses Instan / Bergaransi / Bantuan 24/7 — lihat partials/banner). Dua
+     baris yang mengatakan hal sama dalam satu layar bukan menguatkan, melainkan
+     saling melemahkan: pembaca berhenti mempercayai keduanya. --}}
 @php
     // Harga ditampilkan dengan satuan yang benar. Produk jasa harga per
     // bulannya 0; tanpa pembedaan ini semuanya tampil "Rp 0 / bulan".
@@ -105,29 +111,7 @@
         .pt-tombol i.bi { line-height: 1; }
         .pt-tombol i.bi::before { display: block; line-height: 1; }
 
-        /* ===== Pita jaminan ===== */
-        .pt-jaminan {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-            margin-top: 22px; padding: 22px 10px;
-            background: #fff; border: 1px solid #eef1f5; border-radius: 18px;
-        }
-        .pt-jaminan-item { display: flex; align-items: center; gap: 14px; padding: 4px 22px; }
-        .pt-jaminan-item + .pt-jaminan-item { border-left: 1px solid #f1f3f6; }
-        .pt-jaminan-ikon {
-            width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            background: #fff3e6; color: #f26522; font-size: 1.15rem;
-        }
-        .pt-jaminan-ikon i.bi { line-height: 1; }
-        .pt-jaminan-ikon i.bi::before { display: block; line-height: 1; }
-        .pt-jaminan-teks b { display: block; font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .92rem; color: #23272f; line-height: 1.3; }
-        .pt-jaminan-teks span { font-size: .8rem; color: #6b7280; line-height: 1.5; }
-
         @media (max-width: 1199.98px) { .pt-deret { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 991.98px) {
-            .pt-jaminan { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }
-            .pt-jaminan-item:nth-child(odd) { border-left: 0; }
-        }
         @media (max-width: 767.98px) {
             .pt-head { flex-direction: column; align-items: flex-start; gap: 10px; }
             .pt-head h2 { font-size: 1.6rem; }
@@ -136,10 +120,6 @@
             .pt-logo { height: 72px; }
             .pt-logo img { max-height: 66px; }
             .pt-nama { font-size: .95rem; }
-        }
-        @media (max-width: 575.98px) {
-            .pt-jaminan { grid-template-columns: 1fr; }
-            .pt-jaminan-item { border-left: 0 !important; }
         }
     </style>
 
@@ -190,22 +170,6 @@
             @endforeach
         </div>
 
-        <div class="pt-jaminan">
-            @foreach ([
-                ['bi-patch-check-fill', 'Harga Terjangkau', 'Harga bersahabat untuk mahasiswa & peneliti'],
-                ['bi-lightning-charge-fill', 'Proses Cepat', 'Akun aktif seketika tanpa menunggu lama'],
-                ['bi-headset', 'Support Responsif', 'Tim support siap bantu kapan pun kamu butuh'],
-                ['bi-shield-check', 'Aman & Terpercaya', 'Transaksi aman, garansi akun & privasi terjamin'],
-            ] as [$ikon, $judul, $ket])
-                <div class="pt-jaminan-item">
-                    <span class="pt-jaminan-ikon"><i class="bi {{ $ikon }}"></i></span>
-                    <div class="pt-jaminan-teks">
-                        <b>{{ $judul }}</b>
-                        <span>{{ $ket }}</span>
-                    </div>
-                </div>
-            @endforeach
-        </div>
     </div>
 </section>
 @endif
