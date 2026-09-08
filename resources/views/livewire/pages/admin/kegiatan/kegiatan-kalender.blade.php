@@ -32,6 +32,28 @@ Kalender Kegiatan || lemon
         /* Semua tombol batang alat setinggi sama persis, apa pun isinya. */
         .kg-alat .kg-btn { height: 42px; padding: 0 14px !important; }
         .kg-alat .kg-nav { width: 42px; padding: 0 !important; }
+        /* Panah sendirian tanpa teks pendamping terbaca lebih tipis daripada
+           ikon yang berdampingan dengan tulisan; diperbesar sedikit agar
+           bobotnya terasa sama dengan "Hari ini" di sebelahnya. */
+        .kg-alat .kg-nav i.bi { font-size: 1.15rem !important; }
+
+        /* Navigasi bulan & "Hari ini": satu kelompok berwarna ungu lembut.
+           Sengaja TIDAK ungu pekat — "Tambah" adalah aksi utama halaman ini dan
+           harus tetap yang paling menonjol. Nada lembut memakai bahasa yang sama
+           dengan chip legenda: lembut berarti tersedia, pekat berarti terpilih. */
+        .kg-jelajah {
+            background: #f3ecfe !important;
+            border: 1px solid #e6d9fb !important;
+            color: #6d28d9 !important;
+            box-shadow: 0 2px 6px -2px rgba(109,40,217,.18);
+        }
+        .kg-jelajah:hover {
+            background: #e9dcfd !important;
+            border-color: #d8c4f8 !important;
+            color: #5b21b6 !important;
+            box-shadow: 0 6px 14px -5px rgba(109,40,217,.42);
+        }
+        .kg-jelajah:focus-visible { outline: 2px solid #a78bfa; outline-offset: 2px; }
 
         /* Tombol kecil di dalam kartu. `.btn { padding: 10px 20px !important }`
            dari layout berlaku juga untuk .btn-sm, jadi tingginya harus disetel
@@ -237,17 +259,17 @@ Kalender Kegiatan || lemon
                 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 kg-alat">
 
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-light kg-nav kg-btn border" wire:click="bulanSebelumnya"
+                        <button type="button" class="btn kg-nav kg-btn kg-jelajah" wire:click="bulanSebelumnya"
                             aria-label="Bulan sebelumnya">
                             <i class="bi bi-chevron-left"></i>
                         </button>
                         <span class="kg-bulan">{{ $namaBulan }}</span>
-                        <button type="button" class="btn btn-light kg-nav kg-btn border" wire:click="bulanBerikutnya"
+                        <button type="button" class="btn kg-nav kg-btn kg-jelajah" wire:click="bulanBerikutnya"
                             aria-label="Bulan berikutnya">
                             <i class="bi bi-chevron-right"></i>
                         </button>
-                        <button type="button" class="btn btn-light kg-btn border ms-1" wire:click="keHariIni">
-                            <i class="bi bi-calendar-check"></i> Hari ini
+                        <button type="button" class="btn kg-btn kg-jelajah ms-1" wire:click="keHariIni">
+                            <i class="bi bi-calendar-check-fill"></i> Hari ini
                         </button>
                     </div>
 
