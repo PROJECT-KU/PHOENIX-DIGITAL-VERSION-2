@@ -70,6 +70,28 @@ class Kegiatan extends Model
             ->orderBy('mulai');
     }
 
+    /**
+     * Kegiatan yang menyangkut satu orang: ia pesertanya, atau ia yang membuatnya.
+     *
+     * Pembuat ikut disertakan karena orang yang menjadwalkan rapat jelas perlu
+     * melihatnya di agendanya sendiri, meski lupa mencentang namanya.
+     */
+    public function scopeMilik($query, $idPengguna)
+    {
+        return $query->where(function ($w) use ($idPengguna) {
+            $w->where('dibuat_oleh', $idPengguna)
+                ->orWhereHas('peserta', fn ($p) => $p->where('users.id', $idPengguna));
+        });
+    }
+
+    /** Agenda mendatang milik satu orang, terurut paling dekat lebih dulu. */
+    public function scopeAgenda($query, $idPengguna)
+    {
+        return $query->milik($idPengguna)
+            ->where(fn ($w) => $w->where('mulai', '>=', now()->startOfDay()))
+            ->orderBy('mulai');
+    }
+
     public function label(): string
     {
         return self::JENIS[$this->jenis]['label'] ?? 'Lainnya';

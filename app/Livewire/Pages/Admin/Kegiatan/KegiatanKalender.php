@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Pages\Admin\Kegiatan;
 
+use App\Mail\UndanganKegiatanMail;
 use App\Models\Kegiatan;
 use App\Models\User;
+use App\Support\KabarKegiatan;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -272,14 +274,26 @@ class KegiatanKalender extends Component
             'seharian' => $this->seharian,
         ];
 
+        $pesertaBaru = array_values(array_unique(array_map('intval', $this->peserta)));
+
         if ($this->formId) {
             $k = Kegiatan::findOrFail($this->formId);
+
+            // Direkam SEBELUM update: sesudahnya, model sudah memuat nilai baru
+            // dan tidak ada lagi yang bisa dibandingkan.
+            $sebelum = $k->only(KabarKegiatan::RINCIAN_PENTING);
+            $pesertaLama = $k->peserta()->pluck('users.id')->map('intval')->all();
+
             $k->update($data);
         } else {
             $k = Kegiatan::create($data + ['dibuat_oleh' => auth()->id()]);
+            $sebelum = null;
+            $pesertaLama = [];
         }
 
-        $k->peserta()->sync($this->peserta);
+        $k->peserta()->sync($pesertaBaru);
+
+        $this->kabari($k, $pesertaLama, $pesertaBaru, $sebelum);
 
         // Kalender melompat ke bulan kegiatannya. Tanpa ini, menyimpan kegiatan
         // bulan depan terlihat seperti gagal menyimpan: tidak muncul di mana pun.
@@ -293,6 +307,40 @@ class KegiatanKalender extends Component
         $this->dispatch('swal-success', message: $ubah
             ? 'Kegiatan berhasil diperbarui.'
             : 'Kegiatan berhasil ditambahkan.');
+    }
+
+    /**
+     * Kabari peserta sesuai apa yang benar-benar berubah bagi masing-masing.
+     *
+     * Dipisah dari simpan() karena aturannya punya alasannya sendiri dan akan
+     * terus tumbuh; menyelipkannya di tengah alur penyimpanan membuat keduanya
+     * sulit dibaca sekaligus sulit diuji.
+     *
+     * @param  array<int>  $lama
+     * @param  array<int>  $baru
+     * @param  array<string, mixed>|null  $sebelum  null bila kegiatannya baru
+     */
+    private function kabari(Kegiatan $k, array $lama, array $baru, ?array $sebelum): void
+    {
+        $pelaku = auth()->user();
+
+        $masuk = array_diff($baru, $lama);
+        $keluar = array_diff($lama, $baru);
+        $tetap = array_intersect($baru, $lama);
+
+        // Peserta baru selalu diundang, apa pun yang berubah pada kegiatannya.
+        if ($masuk) {
+            KabarKegiatan::kirim($k, $masuk, UndanganKegiatanMail::UNDANGAN, $pelaku);
+        }
+
+        if ($keluar) {
+            KabarKegiatan::kirim($k, $keluar, UndanganKegiatanMail::DIKELUARKAN, $pelaku);
+        }
+
+        // Peserta lama hanya dikabari bila yang berubah menyangkut kehadirannya.
+        if ($tetap && $sebelum !== null && KabarKegiatan::perluDikabarkan($k, $sebelum)) {
+            KabarKegiatan::kirim($k, $tetap, UndanganKegiatanMail::PERUBAHAN, $pelaku);
+        }
     }
 
     private function hitungSelesai(Carbon $mulai): ?Carbon
@@ -322,7 +370,17 @@ class KegiatanKalender extends Component
             return;
         }
 
-        Kegiatan::findOrFail($id)->delete();
+        $k = Kegiatan::findOrFail($id);
+
+        // Dikumpulkan sebelum dihapus: setelah delete, baris pivotnya ikut
+        // hilang dan tidak ada lagi yang bisa dikabari.
+        $peserta = $k->peserta()->pluck('users.id')->all();
+
+        $k->delete();
+
+        // $k masih utuh di memori, jadi suratnya tetap bisa menyebut rincian
+        // kegiatan yang baru saja dihapus.
+        KabarKegiatan::kirim($k, $peserta, UndanganKegiatanMail::PEMBATALAN, auth()->user());
 
         $this->dispatch('swal-success', message: 'Kegiatan berhasil dihapus.');
     }
@@ -344,10 +402,7 @@ class KegiatanKalender extends Component
         $kegiatan = Kegiatan::with('peserta:id,name')
             ->dalamRentang($awalGrid, $akhirGrid)
             ->when($this->saringJenis, fn ($q) => $q->where('jenis', $this->saringJenis))
-            ->when($this->hanyaSaya, fn ($q) => $q->where(function ($w) use ($idSaya) {
-                $w->where('dibuat_oleh', $idSaya)
-                    ->orWhereHas('peserta', fn ($p) => $p->where('users.id', $idSaya));
-            }))
+            ->when($this->hanyaSaya, fn ($q) => $q->milik($idSaya))
             ->get()
             ->groupBy(fn (Kegiatan $k) => $k->mulai->toDateString());
 

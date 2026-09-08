@@ -198,6 +198,10 @@ Dashboard || lemon
     </div>
     <!--================== END MENAMPILKAN GRAFIK PEMASUKAN & PENGELUARAN ==================-->
 
+    <!--================== AGENDA KEGIATAN SAYA ==================-->
+    @include('livewire.pages.admin.partials.agenda-saya')
+    <!--================== END AGENDA KEGIATAN SAYA ==================-->
+
     <!--================== MENAMPILKAN DATA ORDER & CUSTOMER TERBARU ==================-->
     <div class="row g-4 mb-4 align-items-stretch">
 

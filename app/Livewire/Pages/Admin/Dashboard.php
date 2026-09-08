@@ -132,7 +132,19 @@ class Dashboard extends Component
             'statusPinjaman' => $statusPinjaman,
             'riwayat' => $riwayat,
             'tahunIni' => $tahunIni,
+            'agendaSaya' => $this->agendaSaya(),
         ])->layout('livewire.layout.templateindex');
+    }
+
+    /**
+     * Kegiatan mendatang yang menyangkut pengguna ini.
+     *
+     * Dipakai kedua dasbor: pengurus pun ikut diundang rapat, jadi tidak ada
+     * alasan agendanya hanya muncul bagi karyawan.
+     */
+    protected function agendaSaya(int $batas = 5)
+    {
+        return \App\Models\Kegiatan::agenda(Auth::id())->limit($batas)->get();
     }
 
     protected function renderDashboardPerusahaan()
@@ -286,6 +298,7 @@ class Dashboard extends Component
             'recentCustomers' => $recentCustomers,
             'countries' => $paymentLabels,
             'counts' => $paymentCounts,
+            'agendaSaya' => $this->agendaSaya(),
         ])
             ->layout('livewire.layout.templateindex');
     }

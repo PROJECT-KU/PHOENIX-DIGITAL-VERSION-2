@@ -167,6 +167,8 @@ Dashboard || lemon
             </div>
         </div>
 
+        @include('livewire.pages.admin.partials.agenda-saya')
+
         <div class="row g-3">
             <!--================== GRAFIK GAJI & PENGEMBALIAN ==================-->
             <div class="col-12 col-xl-7">
