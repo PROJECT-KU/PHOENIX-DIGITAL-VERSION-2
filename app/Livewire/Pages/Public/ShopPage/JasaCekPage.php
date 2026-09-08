@@ -374,7 +374,7 @@ class JasaCekPage extends Component
         // Selalu ambil data terbaru saat render (termasuk saat polling).
         $this->order->load('uploads');
 
-        // Link kedaluwarsa 24 jam setelah kuota pengecekan habis → tampilkan
+        // Link kedaluwarsa 24 jam setelah hasil terakhir diserahkan → tampilkan
         // halaman pesan (bukan UI unggah). Dicek saat render agar ikut berubah
         // sendiri lewat polling begitu melewati batas waktu.
         if ($this->order->cekLinkKadaluarsa()) {

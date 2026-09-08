@@ -176,7 +176,9 @@
                 </div>
 
                 {{-- Kuota habis: link masih bisa dibuka utk mengunduh hasil, TAPI hanya
-                     sampai 24 jam setelah kuota habis. Setelahnya link tak bisa diakses. --}}
+                     sampai 24 jam setelah HASIL TERAKHIR diunggah admin. Dihitung dari
+                     hasil, bukan dari unggahan customer — kalau tidak, jamnya bisa habis
+                     sebelum hasilnya sempat ada. --}}
                 @if ($sisa === 0 && $kadaluarsaAt)
                     <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:13px 15px;margin-bottom:16px;color:#9a3412;font-size:.85rem;line-height:1.6;">
                         <b><i class="bi bi-clock-history"></i> Kuota pengecekan sudah habis.</b><br>

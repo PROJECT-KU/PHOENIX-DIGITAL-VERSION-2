@@ -221,7 +221,7 @@ class OrderDetail extends Component
      *
      * Kebutuhannya nyata: banyak customer membeli paket beberapa kali
      * pengecekan, memakai sekali, lalu lupa bahwa sisanya masih ada. Link
-     * /cek pun mati 24 jam setelah kuota HABIS, jadi sisa yang tak pernah
+     * /cek pun mati 24 jam setelah HASIL TERAKHIR diserahkan, jadi sisa yang tak pernah
      * dipakai berujung jadi keluhan — padahal admin sudah bisa melihatnya di
      * layar ini sejak awal.
      *

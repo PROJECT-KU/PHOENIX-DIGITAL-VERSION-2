@@ -36,7 +36,7 @@
 
                 <div class="cke-info">
                     <b><i class="bi bi-info-circle"></i> Kenapa link ini tidak bisa dibuka lagi?</b><br>
-                    Setiap link pengecekan hanya aktif <b>24 jam setelah seluruh kuota terpakai</b>, demi
+                    Setiap link pengecekan hanya aktif <b>24 jam setelah hasil terakhir diunggah</b>, demi
                     menjaga keamanan &amp; kerahasiaan dokumen Anda.
                     @isset($kadaluarsaAt)
                         Masa akses berakhir pada

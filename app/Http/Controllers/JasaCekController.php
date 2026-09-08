@@ -20,7 +20,7 @@ class JasaCekController extends Controller
         $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
-        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        // Link kedaluwarsa 24 jam setelah hasil terakhir diserahkan → hasil pun tak bisa diunduh.
         abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_path), 404);
@@ -65,7 +65,7 @@ class JasaCekController extends Controller
         $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
-        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        // Link kedaluwarsa 24 jam setelah hasil terakhir diserahkan → hasil pun tak bisa diunduh.
         abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_ai_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_ai_path), 404);
@@ -79,7 +79,7 @@ class JasaCekController extends Controller
         $upload->loadMissing('order.items.product', 'order.uploads');
 
         abort_unless($upload->order && $upload->order->share_token === $token, 404);
-        // Link kedaluwarsa 24 jam setelah kuota habis → hasil pun tak bisa diunduh.
+        // Link kedaluwarsa 24 jam setelah hasil terakhir diserahkan → hasil pun tak bisa diunduh.
         abort_if($upload->order->cekLinkKadaluarsa(), 410, 'Masa akses link pengecekan sudah berakhir.');
         abort_unless($upload->status === 'selesai' && $upload->hasil_docx_path, 404);
         abort_unless(Storage::disk('local')->exists($upload->hasil_docx_path), 404);

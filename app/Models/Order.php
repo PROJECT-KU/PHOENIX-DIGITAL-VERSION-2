@@ -572,9 +572,25 @@ class Order extends Model
     }
 
     /**
-     * Waktu kuota pengecekan HABIS = unggahan (non-batal) TERAKHIR yang mengisi
-     * slot terakhir. Null bila pesanan tak berkuota atau masih ada sisa. Dipakai
-     * untuk menghitung masa berlaku link /cek — tanpa kolom DB baru.
+     * Kapan hitungan mundur link /cek MULAI berjalan.
+     *
+     * Yang dipakai adalah kejadian TERAKHIR di antara dua hal: unggahan
+     * pelanggan yang menghabiskan kuota, dan hasil terakhir yang diserahkan
+     * admin.
+     *
+     * Dulu hanya unggahan pelanggan yang dihitung, dan itu keliru dengan akibat
+     * yang berat: pelanggan INV-20260907-0008 mengunggah dokumen terakhirnya
+     * 7 September 15.05, hasilnya baru diunggah admin 8 September 22.00 —
+     * tujuh jam SETELAH linknya mati. Ia membayar, hasilnya jadi, dan tidak
+     * pernah bisa mengunduhnya.
+     *
+     * Link ini ada supaya pelanggan mengambil hasilnya. Maka jamnya harus mulai
+     * berjalan ketika hasil itu benar-benar ada, bukan ketika ia selesai
+     * menitipkan dokumennya.
+     *
+     * Null bila pesanan tak berkuota atau masih ada sisa. Dihitung, bukan
+     * disimpan — jadi pesanan yang telanjur mati ikut pulih sendiri begitu ini
+     * terpasang, tanpa perlu menyentuh datanya.
      */
     public function kuotaHabisAt(): ?\Illuminate\Support\Carbon
     {
@@ -582,14 +598,21 @@ class Order extends Model
             return null;
         }
 
-        $terakhir = $this->uploads
-            ->filter(fn ($u) => $u->status !== 'dibatalkan')
-            ->max('created_at');
+        $berlaku = $this->uploads->filter(fn ($u) => $u->status !== 'dibatalkan');
 
-        return $terakhir ? \Illuminate\Support\Carbon::parse($terakhir) : null;
+        $unggahan = $berlaku->max('created_at');
+        // Baris lama bisa saja belum punya selesai_at; max() mengabaikan null.
+        $hasil = $berlaku->max('selesai_at');
+
+        $waktu = collect([$unggahan, $hasil])
+            ->filter()
+            ->map(fn ($t) => \Illuminate\Support\Carbon::parse($t))
+            ->max();
+
+        return $waktu ?: null;
     }
 
-    /** Batas akhir link /cek bisa diakses = 24 jam setelah kuota habis (null bila belum habis). */
+    /** Batas akhir link /cek = 24 jam setelah hasil terakhir diserahkan (null bila kuota belum habis). */
     public function cekLinkKadaluarsaAt(): ?\Illuminate\Support\Carbon
     {
         return $this->kuotaHabisAt()?->copy()->addHours(24);

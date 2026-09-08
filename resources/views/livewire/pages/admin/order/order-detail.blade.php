@@ -865,7 +865,7 @@ Detail Pesanan || lemon
 
                  Banyak customer membeli paket beberapa kali pengecekan, memakai
                  sekali, lalu lupa sisanya. Link /cek sendiri mati 24 jam setelah
-                 kuota HABIS, jadi sisa yang tak pernah dipakai berujung jadi
+                 HASIL TERAKHIR diserahkan, jadi sisa yang tak pernah dipakai berujung jadi
                  keluhan — padahal sisanya sudah terlihat di layar ini sejak awal.
 
                  Tautannya kosong bila kuota habis atau nomor HP customer tidak
