@@ -45,8 +45,14 @@ class ModulAdminDijedaMail extends Mailable
             'sampai' => $this->sampai,
         ];
 
+        // Kabar internal tetap atas nama perusahaan — panel lemon bernaung di
+        // sana, dan karyawan mengenalnya. Dipatok tegas, bukan mengandalkan
+        // bawaan, supaya tidak ikut berubah bila pengirim bawaan diganti.
+        $dari = config('mail.from.address');
+
         return $this->subject($judul.' — lemon by ACM')
-            ->replyTo(config('mail.from.address'), config('mail.from.name'))
+            ->from($dari, config('mail.from.name'))
+            ->replyTo($dari, config('mail.from.name'))
             ->text('emails.modul-admin-dijeda-teks', $isi)
             ->view('emails.modul-admin-dijeda', $isi);
     }

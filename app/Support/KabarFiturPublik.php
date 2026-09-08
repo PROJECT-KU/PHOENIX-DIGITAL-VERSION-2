@@ -73,7 +73,8 @@ class KabarFiturPublik
     ): int {
         return KirimMassal::bcc(
             self::penerima(),
-            fn () => new FiturPublikDitutupMail($namaHalaman, $ditutup, $pesan, $mulai, $sampai)
+            fn () => new FiturPublikDitutupMail($namaHalaman, $ditutup, $pesan, $mulai, $sampai),
+            'phoenix',
         );
     }
 }

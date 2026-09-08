@@ -28,9 +28,16 @@ class KirimMassal
      * @param  callable():Mailable  $buatSurat  dipanggil sekali per kelompok,
      *                                          karena satu Mailable tidak boleh
      *                                          dipakai ulang antar pengiriman
+     * @param  string|null  $mailer  nama sambungan SMTP. WAJIB disebut bila
+     *                               pengirimnya bukan kotak bawaan: sifat
+     *                               $mailer di dalam Mailable TIDAK terbawa
+     *                               lewat Mail::to(), dan server menolaknya
+     *                               dengan "553 Sender address rejected:
+     *                               not owned by user ...". Kode lain di proyek
+     *                               ini pun selalu menyebutnya tegas.
      * @return int jumlah alamat yang berhasil dikirimi
      */
-    public static function bcc(array $penerima, callable $buatSurat): int
+    public static function bcc(array $penerima, callable $buatSurat, ?string $mailer = null): int
     {
         $penerima = array_values(array_unique(array_filter(
             $penerima,
@@ -41,12 +48,18 @@ class KirimMassal
             return 0;
         }
 
-        $dari = config('mail.from.address');
+        // Kolom To diisi alamat pengirimnya sendiri; bila memakai sambungan
+        // lain, alamat itu harus milik sambungan tersebut agar tidak ditolak.
+        $dari = $mailer
+            ? config("mail.mailers.{$mailer}.username", config('mail.from.address'))
+            : config('mail.from.address');
+
         $terkirim = 0;
 
         foreach (array_chunk($penerima, self::PER_KELOMPOK) as $kelompok) {
             try {
-                Mail::to($dari)->bcc($kelompok)->send($buatSurat());
+                $pengirim = $mailer ? Mail::mailer($mailer) : Mail::mailer();
+                $pengirim->to($dari)->bcc($kelompok)->send($buatSurat());
                 $terkirim += count($kelompok);
             } catch (\Throwable $e) {
                 // Satu kelompok gagal tidak boleh menghentikan sisanya.

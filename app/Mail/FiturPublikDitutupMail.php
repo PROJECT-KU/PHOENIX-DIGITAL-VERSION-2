@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 
 /**
  * Kabar ke PEMBELI bahwa satu halaman toko sedang diperbaiki.
@@ -22,7 +23,12 @@ class FiturPublikDitutupMail extends Mailable
         public string $pesan,
         public ?\Illuminate\Support\Carbon $mulai = null,
         public ?\Illuminate\Support\Carbon $sampai = null,
-    ) {}
+    ) {
+        // Dikirim atas nama TOKO, bukan perusahaan: pembeli mengenal Phoenix
+        // Digital, dan surel dari domain yang tak pernah mereka dengar justru
+        // mengundang curiga. Mengikuti pola OrderStatusMail yang sudah ada.
+        $this->mailer = 'phoenix';
+    }
 
     public function build()
     {
@@ -39,8 +45,11 @@ class FiturPublikDitutupMail extends Mailable
             'sampai' => $this->sampai,
         ];
 
+        $dari = config('mail.mailers.phoenix.username', 'halo@phoenixdigitalwarehouse.com');
+
         return $this->subject($judul.' — Phoenix Digital')
-            ->replyTo(config('mail.from.address'), config('mail.from.name'))
+            ->from(new Address($dari, 'Phoenix Digital'))
+            ->replyTo($dari, 'Phoenix Digital')
             ->text('emails.fitur-publik-ditutup-teks', $isi)
             ->view('emails.fitur-publik-ditutup', $isi);
     }
