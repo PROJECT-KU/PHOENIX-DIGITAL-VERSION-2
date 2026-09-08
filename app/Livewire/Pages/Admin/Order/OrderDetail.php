@@ -46,6 +46,14 @@ class OrderDetail extends Component
     /** Format laporan AI tak dikenali — admin perlu mengisi persen manual. */
     public bool $persenAiGagalBaca = false;
 
+    /**
+     * Turnitin menolak menyebut skor AI karena di bawah ambangnya.
+     *
+     * Bukan angka yang tersembunyi, melainkan keadaan tersendiri — jadi
+     * disimpan sebagai keadaan, bukan dipaksa menjadi bilangan.
+     */
+    public bool $aiBawahAmbang = false;
+
     /** Asal laporan AI yang terbaca: 'turnitin' | 'gptzero' | null. */
     public ?string $sumberAi = null;
 
@@ -429,6 +437,7 @@ class OrderDetail extends Component
         $up = $this->pengecekan($uploadId);
         $this->persentaseInput = $up->persentase;
         $this->persentaseAiInput = $up->persentase_ai;
+        $this->aiBawahAmbang = (bool) $up->ai_bawah_ambang;
     }
 
     public function tutupUploadHasil(): void
@@ -519,7 +528,7 @@ class OrderDetail extends Component
 
     private function resetFormHasil(): void
     {
-        $this->reset('hasilFile', 'persentaseInput', 'hasilAiFile', 'persentaseAiInput', 'hasilDocxFile');
+        $this->reset('hasilFile', 'persentaseInput', 'hasilAiFile', 'persentaseAiInput', 'hasilDocxFile', 'aiBawahAmbang');
         $this->persenTerbacaOtomatis = false;
         $this->persenGagalBaca = false;
         $this->persenAiTerbacaOtomatis = false;
@@ -561,6 +570,7 @@ class OrderDetail extends Component
     {
         $this->persenAiTerbacaOtomatis = false;
         $this->persenAiGagalBaca = false;
+        $this->aiBawahAmbang = false;
         $this->sumberAi = null;
         $this->labelAi = null;
         $this->pilihanAi = [];
@@ -580,6 +590,18 @@ class OrderDetail extends Component
                 $this->sumberAi = $baca['sumber'];
                 $this->labelAi = $baca['label'];
                 $this->pilihanAi = $baca['nilai'];
+
+                return;
+            }
+
+            // Skor di bawah ambang: isian persen DIKOSONGKAN dan dikunci.
+            // Mengetik angka di sini berarti mengarang ketelitian yang
+            // Turnitin sendiri menolak memberikannya.
+            if ($baca && ! empty($baca['bawah_ambang'])) {
+                $this->persentaseAiInput = null;
+                $this->aiBawahAmbang = true;
+                $this->sumberAi = $baca['sumber'];
+                $this->labelAi = $baca['label'];
 
                 return;
             }
@@ -645,7 +667,10 @@ class OrderDetail extends Component
         $folder = 'order-uploads/'.$this->order->id.'/hasil';
         $data = [
             'persentase' => $this->persentaseInput === '' || is_null($this->persentaseInput) ? null : (int) $this->persentaseInput,
-            'persentase_ai' => $this->persentaseAiInput === '' || is_null($this->persentaseAiInput) ? null : (int) $this->persentaseAiInput,
+            'persentase_ai' => $this->aiBawahAmbang || $this->persentaseAiInput === '' || is_null($this->persentaseAiInput)
+                ? null
+                : (int) $this->persentaseAiInput,
+            'ai_bawah_ambang' => $this->aiBawahAmbang,
             'status' => 'selesai',
             'selesai_at' => now(),
         ];

@@ -113,6 +113,30 @@ class PlagiarismReader
             return null;
         }
 
+        /*
+         | Turnitin menyembunyikan skor AI di bawah ambangnya dan menulis
+         | "*% detected as AI", dengan alasannya sendiri: skor sekecil itu
+         | terlalu sering keliru. Bintang itu BUKAN angka yang tersembunyi,
+         | melainkan penolakan menyebut angka — jadi dikenali lebih dulu,
+         | sebelum pola berangka mana pun sempat mencocokkan sesuatu.
+         */
+        $polaBawahAmbang = [
+            '/\*\s*%\s*detected\s+as\s+ai/i',
+            '/scores?\s+below\s+the\s+\d{1,3}\s*%\s+threshold\s+are\s+not\s+surfaced/i',
+        ];
+
+        foreach ($polaBawahAmbang as $pola) {
+            if (preg_match($pola, $norm)) {
+                return [
+                    'persen' => null,
+                    'bawah_ambang' => true,
+                    'sumber' => 'turnitin',
+                    'label' => 'Persen teks AI',
+                    'ambigu' => false,
+                ];
+            }
+        }
+
         // Turnitin — persentase teks AI.
         $polaTurnitin = [
             '/(\d{1,3})\s*%\s*detected\s+as\s+ai/i',              // "14% detected as AI"

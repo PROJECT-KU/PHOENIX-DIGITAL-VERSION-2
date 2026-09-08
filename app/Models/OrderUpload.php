@@ -29,6 +29,7 @@ class OrderUpload extends Model
         'hasil_ai_ukuran',
         'hasil_ai_mime',
         'persentase_ai',
+        'ai_bawah_ambang',
         'hasil_docx_path',
         'hasil_docx_nama',
         'hasil_docx_ukuran',
@@ -46,6 +47,7 @@ class OrderUpload extends Model
     ];
 
     protected $casts = [
+        'ai_bawah_ambang' => 'boolean',
         'ukuran' => 'integer',
         'hasil_ukuran' => 'integer',
         'persentase' => 'integer',
@@ -235,6 +237,30 @@ class OrderUpload extends Model
         $bagian[] = $awal === $akhir ? (string) $awal : $awal.'–'.$akhir;
 
         return implode(', ', $bagian);
+    }
+
+    /**
+     * Ambang yang dipakai Turnitin untuk menyembunyikan skor AI.
+     *
+     * Angkanya bagian dari laporan Turnitin, bukan pilihan kita — ditulis
+     * sebagai tetapan agar tidak tersebar sebagai angka telanjang di banyak
+     * tampilan.
+     */
+    public const AMBANG_AI = 20;
+
+    /**
+     * Persen AI siap tampil, atau null bila memang belum ada hasilnya.
+     *
+     * Satu sumber untuk tiga tempat — kartu admin, halaman pelanggan, dan
+     * surel — supaya ketiganya mustahil menyebut angka yang berbeda.
+     */
+    public function labelPersenAi(): ?string
+    {
+        if ($this->ai_bawah_ambang) {
+            return 'di bawah '.self::AMBANG_AI.'%';
+        }
+
+        return is_null($this->persentase_ai) ? null : $this->persentase_ai.'%';
     }
 
     /**

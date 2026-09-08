@@ -499,8 +499,8 @@
                                 @if (! is_null($up->persentase))
                                 <span class="cek-persen"><i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%</span>
                                 @endif
-                                @if (! is_null($up->persentase_ai))
-                                <span class="cek-persen" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-robot"></i> AI: {{ $up->persentase_ai }}%</span>
+                                @if ($up->labelPersenAi())
+                                <span class="cek-persen" style="background:#e0f2fe; color:#0369a1;"><i class="bi bi-robot"></i> AI: {{ $up->labelPersenAi() }}</span>
                                 @endif
                                 @if ($up->hasil_docx_path)
                                 <a class="cek-dl" href="{{ route('jasa.cek.hasil-docx', ['token' => $order->share_token, 'upload' => $up->id]) }}">

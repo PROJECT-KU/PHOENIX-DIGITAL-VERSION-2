@@ -920,16 +920,16 @@ Detail Pesanan || lemon
                 </div>
 
                 {{-- Persen kemiripan bila sudah selesai --}}
-                @if ($up->status === 'selesai' && (! is_null($up->persentase) || ! is_null($up->persentase_ai)))
+                @if ($up->status === 'selesai' && (! is_null($up->persentase) || $up->labelPersenAi()))
                 <div class="mt-2 d-flex flex-wrap gap-1">
                     @if (! is_null($up->persentase))
                     <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
                         <i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%
                     </span>
                     @endif
-                    @if (! is_null($up->persentase_ai))
+                    @if ($up->labelPersenAi())
                     <span class="badge bg-info-subtle text-info rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-robot"></i> AI: {{ $up->persentase_ai }}%
+                        <i class="bi bi-robot"></i> AI: {{ $up->labelPersenAi() }}
                     </span>
                     @endif
                 </div>
@@ -1097,7 +1097,9 @@ Detail Pesanan || lemon
                             <div class="pcek-persen mt-2">
                                 <label class="pcek-lbl">Persen AI <span>boleh dikosongkan</span></label>
                                 <div class="pcek-persen-wrap">
-                                    <input type="number" min="0" max="100" wire:model="persentaseAiInput" class="pcek-persen-num" placeholder="8">
+                                    <input type="number" min="0" max="100" wire:model="persentaseAiInput" class="pcek-persen-num"
+                                        placeholder="{{ $aiBawahAmbang ? 'tidak disebut Turnitin' : '8' }}"
+                                        @disabled($aiBawahAmbang)>
                                     <span class="pcek-persen-suffix">%</span>
                                 </div>
                                 @if ($persenAiTerbacaOtomatis)
@@ -1129,6 +1131,16 @@ Detail Pesanan || lemon
                                 </div>
                                 @elseif ($persenAiGagalBaca)
                                 <div class="pcek-manual"><i class="bi bi-pencil-square"></i><span>Format laporan tak dikenali — isi persen manual dari PDF.</span></div>
+                                @endif
+                                @if ($aiBawahAmbang)
+                                {{-- Turnitin menolak menyebut angkanya, jadi isian dikunci:
+                                     mengetik tebakan di sini akan berbeda dari PDF yang
+                                     dibaca pelanggan sendiri. --}}
+                                <div class="small mt-1" style="color:#0369a1;">
+                                    <i class="bi bi-info-circle"></i>
+                                    Turnitin menulis <b>*%</b> — skornya di bawah {{ \App\Models\OrderUpload::AMBANG_AI }}% dan sengaja tidak dirinci.
+                                    Pelanggan akan melihat &ldquo;di bawah {{ \App\Models\OrderUpload::AMBANG_AI }}%&rdquo;.
+                                </div>
                                 @endif
                                 @error('persentaseAiInput') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                             </div>

@@ -43,7 +43,7 @@
                                         <div style="font-size:12px;color:#9a8a79;text-transform:uppercase;letter-spacing:.06em;">Dokumen{{ $upload->jenisLabel() ? ' — '.$upload->jenisLabel() : '' }}</div>
                                         <div style="font-size:14px;font-weight:700;color:#2a1c10;margin-top:2px;word-break:break-all;">{{ $upload->nama_asli }}</div>
 
-                                        @if (! is_null($upload->persentase) || ! is_null($upload->persentase_ai))
+                                        @if (! is_null($upload->persentase) || $upload->labelPersenAi())
                                         <hr style="border:none;border-top:1px dashed #e7d8c6;margin:14px 0;">
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                             @if (! is_null($upload->persentase))
@@ -52,10 +52,10 @@
                                                 <td align="right" style="padding:3px 0;"><span style="display:inline-block;background:#eef2ff;color:#4338ca;font-weight:800;font-size:15px;padding:5px 14px;border-radius:99px;">{{ $upload->persentase }}%</span></td>
                                             </tr>
                                             @endif
-                                            @if (! is_null($upload->persentase_ai))
+                                            @if ($upload->labelPersenAi())
                                             <tr>
                                                 <td style="font-size:13px;color:#7a6449;padding:3px 0;">Terdeteksi AI</td>
-                                                <td align="right" style="padding:3px 0;"><span style="display:inline-block;background:#fdf4ff;color:#a21caf;font-weight:800;font-size:15px;padding:5px 14px;border-radius:99px;">{{ $upload->persentase_ai }}%</span></td>
+                                                <td align="right" style="padding:3px 0;"><span style="display:inline-block;background:#fdf4ff;color:#a21caf;font-weight:800;font-size:15px;padding:5px 14px;border-radius:99px;">{{ $upload->labelPersenAi() }}</span></td>
                                             </tr>
                                             @endif
                                         </table>
