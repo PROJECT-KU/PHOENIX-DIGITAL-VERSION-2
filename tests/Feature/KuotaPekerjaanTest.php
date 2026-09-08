@@ -163,3 +163,30 @@ it('unggahan yang dibatalkan tidak dihitung sebagai pekerjaan terserah', functio
 
     expect($order->fresh(['items', 'uploads'])->pekerjaanTerserah())->toBe(0);
 });
+
+it('salinan add-on lama tidak lagi menebak jenis dari pakai_exclude', function () {
+    katalogAddon('Plagiasi di bawah 20% maksimal 5%', '');
+    $order = pesananParafrase([]);
+
+    // Bentuk salinan pesanan LAMA: memuat penanda, tanpa jenis tegas.
+    $order->items->first()->update(['addons' => [[
+        'nama' => 'Plagiasi di bawah 20% maksimal 5%',
+        'harga' => 100000,
+        'pakai_exclude' => true,
+        'cek_ai' => false,
+    ]]]);
+
+    // Dulu penanda itu dibaca sebagai "satu pengecekan plagiasi" dan melahirkan
+    // kuota hantu; sekarang jenisnya diambil dari katalog.
+    expect($order->fresh(['items', 'uploads'])->kuotaPengecekan())->toBe(1);
+});
+
+it('salinan yang menyebut jenisnya tegas tetap dipercaya', function () {
+    $order = pesananParafrase([]);
+
+    $order->items->first()->update(['addons' => [[
+        'nama' => 'Cek Plagiasi AI', 'harga' => 0, 'jenis_layanan' => 'ai',
+    ]]]);
+
+    expect($order->fresh(['items', 'uploads'])->kuotaPengecekan())->toBe(2);
+});

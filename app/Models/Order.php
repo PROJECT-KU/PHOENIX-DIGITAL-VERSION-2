@@ -269,12 +269,15 @@ class Order extends Model
      */
     protected function jenisAddon(array $addon): ?string
     {
-        if (array_key_exists('cek_ai', $addon) || array_key_exists('pakai_exclude', $addon)) {
-            return match (true) {
-                ! empty($addon['cek_ai']) => 'ai',
-                ! empty($addon['pakai_exclude']) => 'plagiasi',
-                default => null,
-            };
+        // Salinan di dalam pesanan dipercaya HANYA bila memuat jenisnya secara
+        // tegas. Penanda pakai_exclude/cek_ai sengaja TIDAK dipakai lagi:
+        // pada add-on jaminan, pakai_exclude berarti "pengecekannya memakai
+        // setelan exclude", bukan "ini pengecekan tersendiri" — dan menebak
+        // dari situ melahirkan kuota hantu. Pesanan lama menyimpan penanda itu
+        // apa adanya, jadi membacanya membuat perbaikan katalog tak berarti
+        // apa-apa bagi pesanan yang sudah berjalan.
+        if (! empty($addon['jenis_layanan'])) {
+            return (string) $addon['jenis_layanan'];
         }
 
         $katalog = ! empty($addon['id']) ? ProductAddon::find($addon['id']) : null;
@@ -283,6 +286,8 @@ class Order extends Model
             $katalog = ProductAddon::whereRaw('LOWER(nama) = ?', [mb_strtolower($addon['nama'])])->first();
         }
 
+        // Add-on yang sudah dihapus dari katalog dianggap tidak menambah
+        // pekerjaan — lebih baik kurang daripada mengarang kuota.
         return $katalog?->jenisLayanan();
     }
 
