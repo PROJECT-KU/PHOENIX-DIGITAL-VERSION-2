@@ -61,6 +61,20 @@ Kalender Kegiatan || lemon
         .kg-btn-kecil { height: 34px; padding: 0 13px !important; font-size: .81rem; }
         .kg-btn-kecil i.bi { font-size: .88rem !important; }
 
+        /* Ubah & Hapus tidak boleh sama-sama abu-abu. Keduanya berdampingan dan
+           hanya salah satunya yang tak bisa dibatalkan; warna netral membuat
+           tangan bergerak ke keduanya dengan kepercayaan diri yang sama.
+           Merahnya sudah terlihat sebelum kursor menyentuhnya. */
+        .kg-ubah {
+            background: #f3ecfe !important; border: 1px solid #e6d9fb !important; color: #6d28d9 !important;
+        }
+        .kg-ubah:hover { background: #e9dcfd !important; border-color: #d8c4f8 !important; color: #5b21b6 !important; }
+
+        .kg-hapus {
+            background: #ffeef1 !important; border: 1px solid #ffd8df !important; color: #e11d48 !important;
+        }
+        .kg-hapus:hover { background: #ffe0e6 !important; border-color: #ffc2cd !important; color: #be123c !important; }
+
         /* ===== Ringkasan kepala halaman ===== */
         .kg-ringkas-teks { line-height: 1.35; text-align: right; }
         .kg-ringkas-teks b { display: block; font-size: .98rem; color: #1e293b; }
@@ -597,13 +611,13 @@ Kalender Kegiatan || lemon
                                 @if ($this->bolehUbah || $this->bolehHapus)
                                 <div class="mt-3 d-flex gap-2">
                                     @if ($this->bolehUbah)
-                                    <button type="button" class="btn btn-sm btn-light border kg-btn kg-btn-kecil"
+                                    <button type="button" class="btn btn-sm kg-btn kg-btn-kecil kg-ubah"
                                         wire:click="sunting('{{ $k->id }}')">
                                         <i class="bi bi-pencil"></i> Ubah
                                     </button>
                                     @endif
                                     @if ($this->bolehHapus)
-                                    <button type="button" class="btn btn-sm btn-light border kg-btn kg-btn-kecil text-danger hapus-kegiatan-btn"
+                                    <button type="button" class="btn btn-sm kg-btn kg-btn-kecil kg-hapus hapus-kegiatan-btn"
                                         data-id="{{ $k->id }}" data-judul="{{ $k->judul }}">
                                         <i class="bi bi-trash"></i> Hapus
                                     </button>
