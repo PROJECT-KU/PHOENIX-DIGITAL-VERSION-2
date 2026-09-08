@@ -61,20 +61,8 @@ Kalender Kegiatan || lemon
         .kg-btn-kecil { height: 34px; padding: 0 13px !important; font-size: .81rem; }
         .kg-btn-kecil i.bi { font-size: .88rem !important; }
 
-        /* ===== Lambang kepala halaman ===== */
-        .kg-ikon i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; position: relative; z-index: 1; }
-        .kg-ikon i.bi::before { display: block; line-height: 1; }
-        .kg-ikon {
-            position: relative; overflow: hidden; border-radius: 18px;
-            background: linear-gradient(135deg, #a78bfa, #6d28d9);
-            box-shadow: 0 8px 18px rgba(109,40,217,.24), 0 0 0 5px rgba(139,92,246,.10);
-        }
-        .kg-ikon::after {
-            content: ""; position: absolute; inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,.24), transparent 62%);
-        }
-        .kg-ringkas { display: flex; align-items: center; gap: 14px; }
-        .kg-ringkas-teks { line-height: 1.35; }
+        /* ===== Ringkasan kepala halaman ===== */
+        .kg-ringkas-teks { line-height: 1.35; text-align: right; }
         .kg-ringkas-teks b { display: block; font-size: .98rem; color: #1e293b; }
         .kg-ringkas-teks small { color: #94a3b8; }
 
@@ -233,14 +221,9 @@ Kalender Kegiatan || lemon
                     </div>
 
                     <div class="d-flex align-items-center gap-3 kg-alat">
-                        <div class="kg-ringkas">
-                            <span class="stat-icon-wrapper kg-ikon">
-                                <i class="bi bi-calendar3"></i>
-                            </span>
-                            <div class="kg-ringkas-teks">
-                                <b>{{ $jumlahBulanIni }} kegiatan</b>
-                                <small>{{ $namaBulan }}</small>
-                            </div>
+                        <div class="kg-ringkas-teks">
+                            <b>{{ $jumlahBulanIni }} kegiatan</b>
+                            <small>{{ $namaBulan }}</small>
                         </div>
 
                         @if ($this->bolehTambah)
