@@ -16,13 +16,23 @@ class Kegiatan extends Model
 {
     use HasFactory, HasUuids;
 
-    /** Jenis kegiatan beserta warnanya di kalender. */
+    /**
+     * Jenis kegiatan beserta warnanya.
+     *
+     * Tiap jenis punya DUA warna: 'warna' untuk keadaan terpilih dan pita di
+     * kalender, 'lembut' untuk latar saat tidak terpilih. Warna lembutnya
+     * ditulis tetap, bukan dihitung dari yang pekat, supaya hasilnya bisa
+     * dilihat langsung di sini dan tidak berubah diam-diam.
+     *
+     * Nadanya sengaja disamakan dengan tombol bawaan lemon (ungu, mawar,
+     * kuning) agar kalender tidak terasa seperti halaman dari aplikasi lain.
+     */
     public const JENIS = [
-        'rapat' => ['label' => 'Rapat', 'warna' => '#4f46e5', 'ikon' => 'people'],
-        'tenggat' => ['label' => 'Tenggat', 'warna' => '#dc2626', 'ikon' => 'flag'],
-        'acara' => ['label' => 'Acara', 'warna' => '#0891b2', 'ikon' => 'stars'],
-        'libur' => ['label' => 'Libur', 'warna' => '#16a34a', 'ikon' => 'sun'],
-        'lainnya' => ['label' => 'Lainnya', 'warna' => '#64748b', 'ikon' => 'dot'],
+        'rapat' => ['label' => 'Rapat', 'warna' => '#6366f1', 'lembut' => '#eef0ff', 'ikon' => 'people-fill'],
+        'tenggat' => ['label' => 'Tenggat', 'warna' => '#f43f5e', 'lembut' => '#ffeef1', 'ikon' => 'flag-fill'],
+        'acara' => ['label' => 'Acara', 'warna' => '#0ea5e9', 'lembut' => '#e8f6fe', 'ikon' => 'stars'],
+        'libur' => ['label' => 'Libur', 'warna' => '#10b981', 'lembut' => '#e7f8f2', 'ikon' => 'sun-fill'],
+        'lainnya' => ['label' => 'Lainnya', 'warna' => '#94a3b8', 'lembut' => '#f1f5f9', 'ikon' => 'three-dots'],
     ];
 
     protected $fillable = [
@@ -67,12 +77,17 @@ class Kegiatan extends Model
 
     public function warna(): string
     {
-        return self::JENIS[$this->jenis]['warna'] ?? '#64748b';
+        return self::JENIS[$this->jenis]['warna'] ?? '#94a3b8';
+    }
+
+    public function lembut(): string
+    {
+        return self::JENIS[$this->jenis]['lembut'] ?? '#f1f5f9';
     }
 
     public function ikon(): string
     {
-        return self::JENIS[$this->jenis]['ikon'] ?? 'dot';
+        return self::JENIS[$this->jenis]['ikon'] ?? 'three-dots';
     }
 
     /**

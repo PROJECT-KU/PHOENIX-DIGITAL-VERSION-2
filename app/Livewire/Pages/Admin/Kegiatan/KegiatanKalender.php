@@ -63,6 +63,8 @@ class KegiatanKalender extends Component
         'tahun' => ['except' => ''],
         'saringJenis' => ['except' => ''],
         'hanyaSaya' => ['except' => false],
+        // Ikut di URL supaya satu hari tertentu bisa dikirim sebagai tautan.
+        'tanggalTerpilih' => ['except' => ''],
     ];
 
     public function mount(): void

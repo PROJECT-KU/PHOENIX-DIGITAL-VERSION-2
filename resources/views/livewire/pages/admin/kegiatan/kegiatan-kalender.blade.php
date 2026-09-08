@@ -6,18 +6,46 @@ Kalender Kegiatan || lemon
     <style>
         /* Ditulis inline: public/build tidak ikut terdeploy ke server. */
 
-        /* Glyph Bootstrap Icons punya line-height bawaan yang menariknya turun,
-           sehingga melenceng di dalam kotak yang sudah di-flex-center. Keduanya
-           (<i> dan ::before) harus disetel — pola yang sama dipakai di Jeda Layanan. */
+        /* ===== Tombol =====
+           Layout admin menyetel `.btn .bi { display: flex }` untuk SEMUA tombol.
+           Kotak flex itu elemen blok, jadi setiap ikon di dalam tombol turun ke
+           barisnya sendiri — itulah sebab "Tambah" dan "Hari ini" tampil dua
+           baris dengan tinggi yang tidak seragam.
+
+           Perbaikannya bukan melawan aturan itu, melainkan menjadikan TOMBOLNYA
+           wadah flex: ikon dan teks lalu berdiri sebagai dua item sebaris,
+           rata tengah, dengan jarak dari `gap` (bukan margin) sehingga sisa
+           ruang kiri-kanan tetap seimbang. */
+        .kg-btn {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .kg-btn i.bi { font-size: 1rem !important; line-height: 1; flex: 0 0 auto; }
+        .kg-btn i.bi::before { display: block; line-height: 1; }
+        /* Jarak sudah dipegang gap; margin bawaan hanya menggeser teks dari tengah. */
+        .kg-btn i.me-1 { margin-right: 0 !important; }
+
+        /* Semua tombol batang alat setinggi sama persis, apa pun isinya. */
+        .kg-alat .kg-btn { height: 42px; padding: 0 16px !important; }
+        .kg-alat .kg-nav { width: 42px; padding: 0 !important; }
+
+        /* Tombol kecil di dalam kartu. `.btn { padding: 10px 20px !important }`
+           dari layout berlaku juga untuk .btn-sm, jadi tingginya harus disetel
+           tegas di sini — kalau tidak, tombol "kecil" sama besar dengan yang biasa. */
+        .kg-btn-kecil { height: 34px; padding: 0 13px !important; font-size: .81rem; }
+        .kg-btn-kecil i.bi { font-size: .88rem !important; }
+
+        /* ===== Lambang kepala halaman ===== */
         .kg-ikon i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; position: relative; z-index: 1; }
         .kg-ikon i.bi::before { display: block; line-height: 1; }
-        .kg-btn i.bi { line-height: 1; vertical-align: -.08em; }
-        .kg-btn i.bi::before { line-height: 1; }
-
         .kg-ikon {
             position: relative; overflow: hidden; border-radius: 18px;
-            background: linear-gradient(135deg, #818cf8, #4f46e5);
-            box-shadow: 0 8px 18px rgba(79,70,229,.26), 0 0 0 5px rgba(99,102,241,.10);
+            background: linear-gradient(135deg, #a78bfa, #6d28d9);
+            box-shadow: 0 8px 18px rgba(109,40,217,.24), 0 0 0 5px rgba(139,92,246,.10);
         }
         .kg-ikon::after {
             content: ""; position: absolute; inset: 0;
@@ -25,75 +53,116 @@ Kalender Kegiatan || lemon
         }
         .kg-ringkas { display: flex; align-items: center; gap: 14px; }
         .kg-ringkas-teks { line-height: 1.35; }
-        .kg-ringkas-teks b { display: block; font-size: .98rem; }
+        .kg-ringkas-teks b { display: block; font-size: .98rem; color: #1e293b; }
         .kg-ringkas-teks small { color: #94a3b8; }
 
         /* ===== Batang alat ===== */
-        .kg-bulan { min-width: 190px; text-align: center; font-weight: 700; font-size: 1.05rem; color: #1e293b; }
-        .kg-nav { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; }
-        .kg-saring { display: flex; flex-wrap: wrap; gap: 8px; }
-        .kg-chip {
-            border: 1px solid #e2e8f0; background: #fff; border-radius: 999px;
-            padding: 5px 13px; font-size: .82rem; font-weight: 600; color: #64748b;
-            display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
-            transition: all .15s ease;
+        .kg-bulan {
+            min-width: 172px; text-align: center; font-weight: 700;
+            font-size: 1.02rem; color: #1e293b; letter-spacing: -.01em;
         }
-        .kg-chip:hover { border-color: #cbd5e1; color: #334155; }
-        .kg-chip.aktif { color: #fff; border-color: transparent; box-shadow: 0 4px 10px rgba(15,23,42,.16); }
-        .kg-titik { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+
+        /* Legenda jenis. Saat tidak terpilih chip memakai warna JENISNYA sendiri
+           dalam nada lembut — bukan putih dengan titik kecil. Dengan begitu
+           batang saring sekaligus menjadi legenda: warna di chip sama persis
+           dengan warna kegiatannya di kisi. */
+        /* Garis rambut inilah yang membuat baris kedua terbaca sebagai kelompok
+           tersendiri — legenda warna — bukan chip yang tercecer dari baris atas. */
+        .kg-saring {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f4f8;
+        }
+        .kg-chip {
+            border: 1px solid transparent; border-radius: 999px;
+            padding: 0 15px; height: 42px;
+            font-size: .84rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 7px;
+            cursor: pointer; transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
+            background: var(--kg-lembut); color: var(--kg-warna);
+        }
+        .kg-chip i.bi { font-size: .95rem; line-height: 1; }
+        .kg-chip i.bi::before { display: block; line-height: 1; }
+        .kg-chip:hover { filter: brightness(.97); }
+        .kg-chip.aktif {
+            background: var(--kg-warna); color: #fff;
+            box-shadow: 0 6px 14px -4px var(--kg-warna);
+        }
+        .kg-chip:active { transform: scale(.97); }
+        .kg-titik { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--kg-warna); }
+        .kg-chip.aktif .kg-titik { background: rgba(255,255,255,.9); }
 
         /* ===== Kisi kalender ===== */
-        .kg-kisi { width: 100%; border-collapse: separate; border-spacing: 6px; table-layout: fixed; }
+        .kg-kisi { width: 100%; border-collapse: separate; border-spacing: 7px; table-layout: fixed; }
         .kg-kisi th {
-            font-size: .74rem; text-transform: uppercase; letter-spacing: .06em;
-            color: #94a3b8; font-weight: 700; padding-bottom: 2px; text-align: center;
+            font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
+            color: #a8b3c4; font-weight: 700; padding-bottom: 4px; text-align: center;
         }
         .kg-sel {
-            vertical-align: top; height: 112px; padding: 8px;
-            border: 1px solid #eef2f7; border-radius: 14px; background: #fff;
-            cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+            vertical-align: top; height: 108px; padding: 8px;
+            border: 1px solid #eef1f6; border-radius: 16px; background: #fff;
+            cursor: pointer;
+            transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
         }
-        .kg-sel:hover { border-color: #c7d2fe; box-shadow: 0 6px 16px rgba(79,70,229,.10); }
-        .kg-sel.kg-luar { background: #fafbfc; }
+        .kg-sel:hover { border-color: #ddd8fb; box-shadow: 0 6px 16px -6px rgba(109,40,217,.28); }
+        .kg-sel.kg-luar { background: #fbfcfd; border-color: #f2f5f8; }
         .kg-sel.kg-luar .kg-angka { color: #cbd5e1; }
-        .kg-sel.kg-pekan { background: #fdfdfe; }
-        .kg-sel.kg-terpilih { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
+        .kg-sel.kg-pekan { background: #fcfcfe; }
+        .kg-sel.kg-terpilih { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167,139,250,.22); }
         .kg-angka {
-            font-size: .84rem; font-weight: 700; color: #475569;
-            width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
-            border-radius: 50%;
+            font-size: .82rem; font-weight: 700; color: #64748b;
+            width: 27px; height: 27px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 50%; line-height: 1;
         }
-        .kg-sel.kg-hariini .kg-angka { background: linear-gradient(135deg, #818cf8, #4f46e5); color: #fff; }
+        .kg-sel.kg-hariini .kg-angka {
+            background: linear-gradient(135deg, #a78bfa, #6d28d9); color: #fff;
+            box-shadow: 0 4px 10px -2px rgba(109,40,217,.45);
+        }
 
+        /* Kegiatan di dalam sel: pil berwarna lembut dengan pita warna pekat di
+           tepi kiri. Blok penuh warna pekat lima baris berturut-turut membuat
+           kisinya berteriak; nada lembut menjaga angka tanggal tetap terbaca. */
         .kg-acara {
-            display: block; width: 100%; text-align: left; border: 0; background: transparent;
-            font-size: .74rem; line-height: 1.3; padding: 3px 6px; margin-top: 4px;
-            border-radius: 7px; color: #fff; font-weight: 600;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center; gap: 5px; width: 100%;
+            font-size: .73rem; line-height: 1.35; padding: 3px 7px; margin-top: 4px;
+            border-radius: 6px; font-weight: 600; text-align: left;
+            background: var(--kg-lembut); color: var(--kg-warna);
+            border: 0; border-left: 3px solid var(--kg-warna);
         }
-        .kg-acara.kg-lewat { opacity: .55; }
-        .kg-lebih { font-size: .7rem; color: #94a3b8; font-weight: 600; margin-top: 3px; display: block; }
+        .kg-acara span {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+        }
+        .kg-acara.kg-lewat { opacity: .5; }
+        .kg-lebih { font-size: .7rem; color: #a8b3c4; font-weight: 600; margin-top: 4px; display: block; }
 
         /* ===== Daftar hari terpilih & agenda ===== */
+        .kg-judul-kartu { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0; }
         .kg-baris {
             display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px;
-            border: 1px solid #eef2f7; background: #fff; margin-bottom: 10px;
+            border: 1px solid #eef1f6; background: #fff; margin-bottom: 10px;
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
-        .kg-pita { width: 4px; border-radius: 999px; flex: 0 0 auto; }
+        .kg-baris:hover { border-color: #e3e8ef; box-shadow: 0 4px 12px -6px rgba(15,23,42,.18); }
+        .kg-pita { width: 4px; border-radius: 999px; flex: 0 0 auto; background: var(--kg-warna); }
         .kg-baris-isi { flex: 1 1 auto; min-width: 0; }
         .kg-baris-isi b { display: block; font-size: .93rem; color: #1e293b; line-height: 1.35; }
-        .kg-meta { font-size: .78rem; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 3px; }
+        .kg-meta { font-size: .78rem; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 3px 14px; margin-top: 4px; }
         .kg-meta span { display: inline-flex; align-items: center; gap: 5px; }
-        .kg-meta i.bi { line-height: 1; }
-        .kg-meta i.bi::before { line-height: 1; }
+        .kg-meta i.bi { line-height: 1; font-size: .85rem; }
+        .kg-meta i.bi::before { display: block; line-height: 1; }
         .kg-lencana {
-            font-size: .68rem; font-weight: 700; padding: 2px 9px; border-radius: 999px;
-            color: #fff; letter-spacing: .02em;
+            font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+            background: var(--kg-lembut); color: var(--kg-warna);
         }
-        .kg-catatan { font-size: .82rem; color: #64748b; line-height: 1.6; margin-top: 6px; white-space: pre-line; }
-        .kg-peserta { font-size: .74rem; color: #64748b; margin-top: 6px; }
+        .kg-lencana i.bi { font-size: .78rem; line-height: 1; }
+        .kg-lencana i.bi::before { display: block; line-height: 1; }
+        .kg-catatan { font-size: .82rem; color: #64748b; line-height: 1.6; margin-top: 7px; white-space: pre-line; }
+        .kg-peserta { font-size: .75rem; color: #64748b; margin-top: 7px; display: flex; align-items: center; gap: 6px; }
+        .kg-peserta i.bi { line-height: 1; flex: 0 0 auto; }
+        .kg-peserta i.bi::before { display: block; line-height: 1; }
 
-        .kg-kosong { text-align: center; padding: 30px 14px; color: #94a3b8; font-size: .87rem; }
+        .kg-kosong { text-align: center; padding: 34px 14px; color: #a8b3c4; font-size: .87rem; }
+        .kg-kosong i.bi { display: block; font-size: 1.7rem; margin-bottom: 10px; color: #d7dee8; line-height: 1; }
 
         /* ===== Modal ===== */
         .kg-modal-latar {
@@ -102,15 +171,20 @@ Kalender Kegiatan || lemon
         }
         .kg-modal { max-width: 640px; margin: 0 auto; }
         .kg-pilih-jenis { display: flex; flex-wrap: wrap; gap: 8px; }
-        .kg-pilih-jenis .kg-chip { padding: 7px 15px; }
         .kg-peserta-kotak { max-height: 190px; overflow-y: auto; border: 1px solid #e9edf3; border-radius: 12px; padding: 10px 12px; }
 
         @media (max-width: 767.98px) {
             .kg-kisi { border-spacing: 4px; }
-            .kg-sel { height: 78px; padding: 5px; }
-            .kg-acara { font-size: 0; padding: 0; height: 6px; margin-top: 3px; border-radius: 999px; }
+            .kg-sel { height: 76px; padding: 5px; border-radius: 12px; }
+            /* Di layar sempit judulnya mustahil terbaca; disederhanakan jadi
+               pita warna saja, yang tetap memberi tahu ADA kegiatan dan jenisnya. */
+            .kg-acara { font-size: 0; padding: 0; height: 5px; margin-top: 3px; border-radius: 999px; border-left: 0; background: var(--kg-warna); gap: 0; }
+            .kg-acara i.bi { display: none; }
             .kg-lebih { display: none; }
             .kg-bulan { min-width: 0; flex: 1 1 auto; font-size: .95rem; }
+            .kg-alat .kg-btn { height: 40px; padding: 0 13px !important; }
+            .kg-alat .kg-nav { width: 40px; }
+            .kg-chip { height: 38px; font-size: .8rem; padding: 0 13px; }
         }
     </style>
 
@@ -133,7 +207,7 @@ Kalender Kegiatan || lemon
                         </div>
                     </div>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3 kg-alat">
                         <div class="kg-ringkas">
                             <span class="stat-icon-wrapper kg-ikon">
                                 <i class="bi bi-calendar3"></i>
@@ -145,9 +219,8 @@ Kalender Kegiatan || lemon
                         </div>
 
                         @if ($this->bolehTambah)
-                        <button type="button" class="btn btn-primary kg-btn rounded-3 px-3"
-                            wire:click="buatBaru">
-                            <i class="bi bi-plus-lg me-1"></i> Tambah
+                        <button type="button" class="btn btn-primary kg-btn" wire:click="buatBaru">
+                            <i class="bi bi-plus-lg"></i> Tambah
                         </button>
                         @endif
                     </div>
@@ -158,9 +231,14 @@ Kalender Kegiatan || lemon
         {{-- ===== Batang alat ===== --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-md-4">
-                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                {{-- Dua baris tetap, bukan satu baris yang boleh pecah. Tujuh chip
+                     ditambah navigasi bulan tidak muat sebaris begitu sidebar terbuka,
+                     dan satu chip yang terlempar sendirian terlihat seperti salah
+                     susun. Breakpoint tidak menolong: lebarnya ditentukan sisa ruang
+                     di samping sidebar, bukan lebar layar. --}}
+                <div class="kg-alat">
 
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
                         <button type="button" class="btn btn-light kg-nav kg-btn border" wire:click="bulanSebelumnya"
                             aria-label="Bulan sebelumnya">
                             <i class="bi bi-chevron-left"></i>
@@ -170,34 +248,33 @@ Kalender Kegiatan || lemon
                             aria-label="Bulan berikutnya">
                             <i class="bi bi-chevron-right"></i>
                         </button>
-                        <button type="button" class="btn btn-light kg-btn border rounded-3 ms-1 px-3"
-                            wire:click="keHariIni">
-                            <i class="bi bi-dot"></i> Hari ini
+                        <button type="button" class="btn btn-light kg-btn border ms-1" wire:click="keHariIni">
+                            <i class="bi bi-calendar-check"></i> Hari ini
                         </button>
                     </div>
 
                     <div class="kg-saring">
                         <button type="button"
                             class="kg-chip {{ $saringJenis === '' ? 'aktif' : '' }}"
-                            style="{{ $saringJenis === '' ? 'background:#334155' : '' }}"
+                            style="--kg-warna:#6d28d9; --kg-lembut:#f2ecfd;"
                             wire:click="$set('saringJenis', '')">
-                            Semua
+                            <i class="bi bi-grid-fill"></i> Semua
                         </button>
                         @foreach ($jenisPeta as $kunci => $j)
                         <button type="button"
                             class="kg-chip {{ $saringJenis === $kunci ? 'aktif' : '' }}"
-                            style="{{ $saringJenis === $kunci ? 'background:'.$j['warna'] : '' }}"
+                            style="--kg-warna:{{ $j['warna'] }}; --kg-lembut:{{ $j['lembut'] }};"
                             wire:click="$set('saringJenis', '{{ $kunci }}')">
-                            <span class="kg-titik" style="background:{{ $saringJenis === $kunci ? 'rgba(255,255,255,.85)' : $j['warna'] }}"></span>
+                            <span class="kg-titik"></span>
                             {{ $j['label'] }}
                         </button>
                         @endforeach
 
                         <button type="button"
                             class="kg-chip {{ $hanyaSaya ? 'aktif' : '' }}"
-                            style="{{ $hanyaSaya ? 'background:#0f766e' : '' }}"
+                            style="--kg-warna:#0f766e; --kg-lembut:#e6f4f2;"
                             wire:click="$toggle('hanyaSaya')">
-                            <i class="bi bi-person-check"></i> Saya saja
+                            <i class="bi bi-person-check-fill"></i> Saya saja
                         </button>
                     </div>
                 </div>
@@ -231,9 +308,9 @@ Kalender Kegiatan || lemon
 
                                 @foreach ($sel['kegiatan']->take(3) as $k)
                                 <span class="kg-acara {{ $k->sudahLewat() ? 'kg-lewat' : '' }}"
-                                    style="background: {{ $k->warna() }}"
+                                    style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};"
                                     title="{{ $k->rentangWaktu() }} — {{ $k->judul }}">
-                                    {{ $k->judul }}
+                                    <span>{{ $k->judul }}</span>
                                 </span>
                                 @endforeach
 
@@ -255,7 +332,7 @@ Kalender Kegiatan || lemon
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0" style="font-size: 1rem; color:#1e293b;">
+                            <h5 class="kg-judul-kartu">
                                 @if ($tanggalTerpilih)
                                 {{ \Illuminate\Support\Carbon::parse($tanggalTerpilih)->locale('id')->translatedFormat('l, d F Y') }}
                                 @else
@@ -264,20 +341,23 @@ Kalender Kegiatan || lemon
                             </h5>
 
                             @if ($tanggalTerpilih && $this->bolehTambah)
-                            <button type="button" class="btn btn-sm btn-outline-primary kg-btn rounded-3"
+                            <button type="button" class="btn btn-sm btn-outline-primary kg-btn kg-btn-kecil"
                                 wire:click="buatBaru('{{ $tanggalTerpilih }}')">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah di tanggal ini
+                                <i class="bi bi-plus-lg"></i> Tambah di tanggal ini
                             </button>
                             @endif
                         </div>
 
                         @forelse ($daftarKegiatanTerpilih as $k)
-                        <div class="kg-baris" wire:key="pilih-{{ $k->id }}">
-                            <span class="kg-pita" style="background: {{ $k->warna() }}"></span>
+                        <div class="kg-baris" wire:key="pilih-{{ $k->id }}"
+                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};">
+                            <span class="kg-pita"></span>
                             <div class="kg-baris-isi">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
                                     <b>{{ $k->judul }}</b>
-                                    <span class="kg-lencana" style="background: {{ $k->warna() }}">{{ $k->label() }}</span>
+                                    <span class="kg-lencana">
+                                        <i class="bi bi-{{ $k->ikon() }}"></i>{{ $k->label() }}
+                                    </span>
                                 </div>
 
                                 <div class="kg-meta">
@@ -299,17 +379,17 @@ Kalender Kegiatan || lemon
                                 @endif
 
                                 @if ($this->bolehUbah || $this->bolehHapus)
-                                <div class="mt-2 d-flex gap-2">
+                                <div class="mt-3 d-flex gap-2">
                                     @if ($this->bolehUbah)
-                                    <button type="button" class="btn btn-sm btn-light border kg-btn rounded-3"
+                                    <button type="button" class="btn btn-sm btn-light border kg-btn kg-btn-kecil"
                                         wire:click="sunting('{{ $k->id }}')">
-                                        <i class="bi bi-pencil me-1"></i> Ubah
+                                        <i class="bi bi-pencil"></i> Ubah
                                     </button>
                                     @endif
                                     @if ($this->bolehHapus)
-                                    <button type="button" class="btn btn-sm btn-light border kg-btn rounded-3 text-danger hapus-kegiatan-btn"
+                                    <button type="button" class="btn btn-sm btn-light border kg-btn kg-btn-kecil text-danger hapus-kegiatan-btn"
                                         data-id="{{ $k->id }}" data-judul="{{ $k->judul }}">
-                                        <i class="bi bi-trash me-1"></i> Hapus
+                                        <i class="bi bi-trash"></i> Hapus
                                     </button>
                                     @endif
                                 </div>
@@ -319,8 +399,10 @@ Kalender Kegiatan || lemon
                         @empty
                         <div class="kg-kosong">
                             @if ($tanggalTerpilih)
+                            <i class="bi bi-calendar2-x"></i>
                             Tidak ada kegiatan pada tanggal ini.
                             @else
+                            <i class="bi bi-hand-index-thumb"></i>
                             Klik salah satu tanggal untuk melihat kegiatannya.
                             @endif
                         </div>
@@ -333,11 +415,12 @@ Kalender Kegiatan || lemon
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3" style="font-size: 1rem; color:#1e293b;">Agenda Terdekat</h5>
+                        <h5 class="kg-judul-kartu mb-3">Agenda Terdekat</h5>
 
                         @forelse ($berikutnya as $k)
-                        <div class="kg-baris" wire:key="next-{{ $k->id }}">
-                            <span class="kg-pita" style="background: {{ $k->warna() }}"></span>
+                        <div class="kg-baris" wire:key="next-{{ $k->id }}"
+                            style="--kg-warna:{{ $k->warna() }}; --kg-lembut:{{ $k->lembut() }};">
+                            <span class="kg-pita"></span>
                             <div class="kg-baris-isi">
                                 <b>{{ $k->judul }}</b>
                                 <div class="kg-meta">
@@ -348,7 +431,10 @@ Kalender Kegiatan || lemon
                             </div>
                         </div>
                         @empty
-                        <div class="kg-kosong">Belum ada agenda mendatang.</div>
+                        <div class="kg-kosong">
+                            <i class="bi bi-calendar2-check"></i>
+                            Belum ada agenda mendatang.
+                        </div>
                         @endforelse
                     </div>
                 </div>
@@ -365,8 +451,8 @@ Kalender Kegiatan || lemon
                     <h5 class="gradient-text fw-bold mb-0">
                         {{ $formId ? 'Ubah Kegiatan' : 'Tambah Kegiatan' }}
                     </h5>
-                    <button type="button" class="btn btn-light kg-nav kg-btn border" wire:click="tutupForm"
-                        aria-label="Tutup">
+                    <button type="button" class="btn btn-light kg-nav kg-btn border kg-alat" wire:click="tutupForm"
+                        aria-label="Tutup" style="width:42px; height:42px; padding:0;">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
@@ -385,9 +471,9 @@ Kalender Kegiatan || lemon
                             @foreach ($jenisPeta as $kunci => $j)
                             <button type="button"
                                 class="kg-chip {{ $jenis === $kunci ? 'aktif' : '' }}"
-                                style="{{ $jenis === $kunci ? 'background:'.$j['warna'] : '' }}"
+                                style="--kg-warna:{{ $j['warna'] }}; --kg-lembut:{{ $j['lembut'] }};"
                                 wire:click="$set('jenis', '{{ $kunci }}')">
-                                <span class="kg-titik" style="background:{{ $jenis === $kunci ? 'rgba(255,255,255,.85)' : $j['warna'] }}"></span>
+                                <i class="bi bi-{{ $j['ikon'] }}"></i>
                                 {{ $j['label'] }}
                             </button>
                             @endforeach
@@ -464,12 +550,12 @@ Kalender Kegiatan || lemon
                         @error('peserta') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light border kg-btn rounded-3 px-3" wire:click="tutupForm">
+                    <div class="d-flex justify-content-end gap-2 kg-alat">
+                        <button type="button" class="btn btn-light border kg-btn" wire:click="tutupForm">
                             Batal
                         </button>
-                        <button type="submit" class="btn btn-primary kg-btn rounded-3 px-4" wire:loading.attr="disabled">
-                            <i class="bi bi-check2 me-1"></i>
+                        <button type="submit" class="btn btn-primary kg-btn" wire:loading.attr="disabled">
+                            <i class="bi bi-check2"></i>
                             <span wire:loading.remove wire:target="simpan">Simpan</span>
                             <span wire:loading wire:target="simpan">Menyimpan…</span>
                         </button>
