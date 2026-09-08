@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Support\FiturAdmin;
 use App\Support\FiturPublik;
 use App\Support\JedaLayanan;
+use App\Support\KabarFiturPublik;
 use App\Support\KabarJedaModul;
 use Livewire\Component;
 
@@ -33,6 +34,9 @@ class JedaLayananIndex extends Component
 
     /** Perkiraan selesai per modul admin (format datetime-local). */
     public array $sampaiModul = [];
+
+    /** Perkiraan selesai per halaman publik (format datetime-local). */
+    public array $sampaiFitur = [];
 
     public function mount(): void
     {
@@ -156,9 +160,28 @@ class JedaLayananIndex extends Component
 
     private function muatPesanFitur(): void
     {
-        $this->pesanFitur = collect(FiturPublik::keadaan())
-            ->map(fn ($info) => $info['pesan'])
+        $keadaan = collect(FiturPublik::keadaan());
+
+        $this->pesanFitur = $keadaan->map(fn ($info) => $info['pesan'])->all();
+        $this->sampaiFitur = $keadaan
+            ->map(fn ($info) => $info['sampai']?->format('Y-m-d\\TH:i') ?? '')
             ->all();
+    }
+
+    /** Perkiraan selesai halaman publik dalam bentuk waktu biasa. */
+    private function waktuSampaiFitur(string $fitur): ?string
+    {
+        $mentah = trim((string) ($this->sampaiFitur[$fitur] ?? ''));
+
+        if ($mentah === '') {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($mentah)->toDateTimeString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -182,12 +205,33 @@ class JedaLayananIndex extends Component
 
         $jadiDitutup = ! FiturPublik::ditutup($fitur);
 
-        FiturPublik::setel($fitur, $jadiDitutup, $this->pesanFitur[$fitur] ?? null);
+        FiturPublik::setel(
+            $fitur,
+            $jadiDitutup,
+            $this->pesanFitur[$fitur] ?? null,
+            $this->waktuSampaiFitur($fitur),
+        );
         $this->muatPesanFitur();
 
-        $this->dispatch('swal-success', message: $jadiDitutup
+        // Dikirim SESUDAH statusnya tersimpan, dan lewat BCC — 123 pelanggan
+        // tidak boleh saling melihat alamat surelnya.
+        $terkirim = KabarFiturPublik::kirim(
+            FiturPublik::label($fitur),
+            $jadiDitutup,
+            FiturPublik::pesan($fitur),
+            FiturPublik::mulai($fitur),
+            FiturPublik::sampai($fitur),
+        );
+
+        $kabar = match (true) {
+            $terkirim === 0 => ' Kabar surel tidak terkirim — cek log.',
+            KabarFiturPublik::modeUji() => ' Kabar surel dikirim ke alamat uji coba.',
+            default => ' Kabar surel dikirim ke '.$terkirim.' pelanggan.',
+        };
+
+        $this->dispatch('swal-success', message: ($jadiDitutup
             ? FiturPublik::label($fitur).' ditutup untuk pengunjung.'
-            : FiturPublik::label($fitur).' dibuka kembali.');
+            : FiturPublik::label($fitur).' dibuka kembali.').$kabar);
     }
 
     /** Simpan keterangan satu fitur tanpa mengubah status tutupnya. */
@@ -203,7 +247,12 @@ class JedaLayananIndex extends Component
             return;
         }
 
-        FiturPublik::setel($fitur, FiturPublik::ditutup($fitur), $this->pesanFitur[$fitur] ?? '');
+        FiturPublik::setel(
+            $fitur,
+            FiturPublik::ditutup($fitur),
+            $this->pesanFitur[$fitur] ?? '',
+            $this->waktuSampaiFitur($fitur) ?? '',
+        );
         $this->muatPesanFitur();
 
         $this->dispatch('swal-success', message: 'Keterangan disimpan.');
@@ -356,6 +405,8 @@ class JedaLayananIndex extends Component
             'fiturTutup' => collect(FiturPublik::keadaan())->filter(fn ($i) => $i['ditutup'])->all(),
             'fiturBuka' => collect(FiturPublik::keadaan())->reject(fn ($i) => $i['ditutup'])->all(),
             'jumlahFitur' => count(FiturPublik::DAFTAR),
+            'jumlahPelanggan' => KabarFiturPublik::jumlahPenerima(),
+            'modeUjiSurel' => KabarFiturPublik::modeUji(),
             'modulTutup' => collect(FiturAdmin::keadaan())->filter(fn ($i) => $i['ditutup'])->all(),
             'modulBuka' => collect(FiturAdmin::keadaan())->reject(fn ($i) => $i['ditutup'])->all(),
             'jumlahModul' => count(FiturAdmin::DAFTAR),

@@ -4,8 +4,6 @@ namespace App\Support;
 
 use App\Mail\ModulAdminDijedaMail;
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 /**
  * Mengabari karyawan saat satu modul admin ditutup atau dibuka kembali.
@@ -82,16 +80,10 @@ class KabarJedaModul
 
         $oleh = $pelaku?->name ?: ($pelaku?->email ?: 'Admin');
 
-        try {
-            Mail::to($penerima)->send(
-                new ModulAdminDijedaMail($namaModul, $ditutup, $pesan, $oleh, $mulai, $sampai)
-            );
-
-            return count($penerima);
-        } catch (\Throwable $e) {
-            Log::warning('Kabar jeda modul gagal dikirim: '.$e->getMessage());
-
-            return 0;
-        }
+        // Lewat BCC: tanpa itu setiap karyawan melihat surel semua rekannya.
+        return KirimMassal::bcc(
+            $penerima,
+            fn () => new ModulAdminDijedaMail($namaModul, $ditutup, $pesan, $oleh, $mulai, $sampai)
+        );
     }
 }

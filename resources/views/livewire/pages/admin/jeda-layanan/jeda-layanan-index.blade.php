@@ -241,6 +241,18 @@ Jeda Layanan || lemon
         .jl-sampai-awal label span { font-weight: 500; letter-spacing: 0; text-transform: none; }
         .jl-sampai-awal .form-control { border-radius: 9px; font-size: .76rem; width: 190px; }
 
+        /* Berapa orang yang akan menerima surel — disebut SEBELUM tombolnya
+           ditekan, bukan sesudah. */
+        .jl-sasaran {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 13px 16px; border-radius: 12px; margin-bottom: 16px;
+            background: #fef6f6; border: 1px solid #f3cdcd; color: #a33a3a;
+        }
+        .jl-sasaran.is-uji { background: #f4f8fb; border-color: #cfe0ee; color: #3d6a90; }
+        .jl-sasaran > i { font-size: 1.05rem; line-height: 1.4; flex-shrink: 0; }
+        .jl-sasaran b { display: block; font-size: .87rem; }
+        .jl-sasaran span { display: block; font-size: .79rem; opacity: .85; margin-top: 2px; }
+
         .jl-aksi { margin-top: auto; padding-top: 4px; }
         .jl-aksi .btn { width: 100%; border-radius: 12px; font-weight: 600; padding: 11px; }
 
@@ -536,6 +548,19 @@ Jeda Layanan || lemon
                     <b>tidak pernah bisa ditutup</b> — menutupnya akan menelantarkan pelanggan yang sudah membayar.
                 </p>
 
+                <div class="jl-sasaran {{ $modeUjiSurel ? 'is-uji' : '' }}">
+                    <i class="bi bi-envelope"></i>
+                    <div>
+                        @if ($modeUjiSurel)
+                        <b>Kabar surel masih ke alamat uji coba</b>
+                        <span>Pelanggan sungguhan belum dikirimi apa pun. Kosongkan JEDA_EMAIL_UJI di server agar penerimanya diambil dari data pelanggan.</span>
+                        @else
+                        <b>Menutup halaman akan mengirim surel ke {{ $jumlahPelanggan }} pelanggan</b>
+                        <span>Dikirim lewat BCC, jadi mereka tidak saling melihat alamatnya. Membuka kembali juga mengirim satu kabar lagi.</span>
+                        @endif
+                    </div>
+                </div>
+
                 @if (empty($fiturTutup))
                 <div class="jl-hampa">
                     <i class="bi bi-eye-fill"></i>
@@ -566,6 +591,22 @@ Jeda Layanan || lemon
                                 <i class="bi bi-play-fill"></i> Buka kembali
                             </button>
                             @endif
+                        </div>
+
+                        <div class="jl-waktu">
+                            <div>
+                                <div class="jl-label">Ditutup sejak</div>
+                                <div class="jl-waktu-nilai">
+                                    {{ $info['mulai']?->translatedFormat('d M Y · H:i') ?? 'baru saja' }}
+                                    @if ($info['mulai']) <small>({{ $info['mulai']->diffForHumans() }})</small> @endif
+                                </div>
+                            </div>
+                            <div>
+                                <div class="jl-label">Perkiraan selesai</div>
+                                <input type="datetime-local" class="form-control form-control-sm"
+                                    wire:model="sampaiFitur.{{ $kunci }}"
+                                    @disabled(! $bolehKelola)>
+                            </div>
                         </div>
 
                         <div class="jl-pesan">
@@ -605,10 +646,15 @@ Jeda Layanan || lemon
                                 <div class="jl-fitur-ket">{{ $info['ket'] }}</div>
                             </div>
                             @if ($bolehKelola)
+                            <div class="jl-sampai-awal">
+                                <label>Perkiraan selesai <span>(opsional)</span></label>
+                                <input type="datetime-local" class="form-control form-control-sm"
+                                    wire:model="sampaiFitur.{{ $kunci }}">
+                            </div>
                             <button type="button" class="jl-aktif-tombol pcek-konfirmasi"
                                 data-action="alihkanFitur" data-arg="{{ $kunci }}"
                                 data-title="Tutup {{ $info['label'] }}?"
-                                data-text="Pengunjung yang membukanya melihat pemberitahuan perbaikan. Tautannya tetap ada di menu."
+                                data-text="Pengunjung yang membukanya melihat pemberitahuan perbaikan. Tautannya tetap ada di menu. {{ $modeUjiSurel ? 'Kabar surel dikirim ke alamat uji coba.' : 'Surel kabar akan dikirim ke '.$jumlahPelanggan.' pelanggan.' }}"
                                 data-confirm="Ya, tutup" data-icon="warning">
                                 <i class="bi bi-pause-fill"></i> Tutup
                             </button>

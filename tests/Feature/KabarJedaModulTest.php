@@ -106,7 +106,9 @@ it('surel terkirim saat modul ditutup dari panel', function () {
     Mail::assertSent(ModulAdminDijedaMail::class, function ($mail) {
         return $mail->ditutup === true
             && $mail->namaModul === 'Keuangan'
-            && $mail->hasTo('bertojunikrisnanto@gmail.com');
+            // BCC, bukan To: tanpa itu setiap penerima melihat surel rekannya.
+            && $mail->hasBcc('bertojunikrisnanto@gmail.com')
+            && ! $mail->hasTo('bertojunikrisnanto@gmail.com');
     });
 });
 
@@ -172,5 +174,23 @@ it('balasan diarahkan ke kotak yang sungguh dibaca', function () {
 
     Mail::assertSent(ModulAdminDijedaMail::class, function ($mail) {
         return ! empty($mail->build()->replyTo);
+    });
+});
+
+it('banyak penerima tidak saling melihat alamatnya', function () {
+    config(['jeda.email_uji' => null]);
+    karyawanAktif('satu@contoh.test');
+    karyawanAktif('dua@contoh.test');
+    $admin = karyawanAktif('admin6@contoh.test', ['view_jeda_layanan', 'manage_jeda_layanan']);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->call('alihkanModul', 'keuangan');
+
+    Mail::assertSent(ModulAdminDijedaMail::class, function ($mail) {
+        return $mail->hasBcc('satu@contoh.test')
+            && $mail->hasBcc('dua@contoh.test')
+            && ! $mail->hasTo('satu@contoh.test')
+            && ! $mail->hasTo('dua@contoh.test');
     });
 });
