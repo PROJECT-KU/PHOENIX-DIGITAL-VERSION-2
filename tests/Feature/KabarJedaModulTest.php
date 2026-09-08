@@ -143,3 +143,34 @@ it('tanpa penerima sama sekali, tidak ada surel yang dicoba dikirim', function (
 
     Mail::assertNothingSent();
 });
+
+it('surel selalu membawa versi teks di samping HTML-nya', function () {
+    config(['jeda.email_uji' => 'uji@contoh.test']);
+    $admin = karyawanAktif('admin4@contoh.test', ['view_jeda_layanan', 'manage_jeda_layanan']);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->call('alihkanModul', 'keuangan');
+
+    // HTML tanpa pasangan teks adalah penanda spam yang paling sering dipakai
+    // penyaring, dan kabar ini justru yang tidak boleh nyasar ke folder spam.
+    Mail::assertSent(ModulAdminDijedaMail::class, function ($mail) {
+        $dirakit = $mail->build();
+
+        return $dirakit->textView === 'emails.modul-admin-dijeda-teks'
+            && $dirakit->view === 'emails.modul-admin-dijeda';
+    });
+});
+
+it('balasan diarahkan ke kotak yang sungguh dibaca', function () {
+    config(['jeda.email_uji' => 'uji@contoh.test']);
+    $admin = karyawanAktif('admin5@contoh.test', ['view_jeda_layanan', 'manage_jeda_layanan']);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Pages\Admin\JedaLayanan\JedaLayananIndex::class)
+        ->call('alihkanModul', 'blog');
+
+    Mail::assertSent(ModulAdminDijedaMail::class, function ($mail) {
+        return ! empty($mail->build()->replyTo);
+    });
+});

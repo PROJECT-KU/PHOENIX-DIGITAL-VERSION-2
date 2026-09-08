@@ -11,6 +11,12 @@ use Illuminate\Mail\Mailable;
  * server ini tidak bisa diandalkan karena proc_open dimatikan hosting.
  * Kegagalan kirim TIDAK boleh membatalkan penutupan modulnya — itu diurus
  * pemanggilnya, bukan di sini.
+ *
+ * Selalu membawa versi TEKS di samping HTML-nya. Surel yang hanya berisi HTML
+ * adalah salah satu penanda spam yang paling sering dipakai penyaring, dan
+ * kabar ini justru yang tidak boleh nyasar ke folder spam: karyawan yang tidak
+ * membacanya akan mengira sistemnya rusak. Alamat balasan juga diarahkan ke
+ * kotak yang sungguh dibaca, bukan alamat pengirim otomatis.
  */
 class ModulAdminDijedaMail extends Mailable
 {
@@ -29,15 +35,19 @@ class ModulAdminDijedaMail extends Mailable
             ? 'Modul '.$this->namaModul.' ditutup sementara'
             : 'Modul '.$this->namaModul.' dibuka kembali';
 
+        $isi = [
+            'judul' => $judul,
+            'namaModul' => $this->namaModul,
+            'ditutup' => $this->ditutup,
+            'pesan' => $this->pesan,
+            'olehSiapa' => $this->olehSiapa,
+            'mulai' => $this->mulai,
+            'sampai' => $this->sampai,
+        ];
+
         return $this->subject($judul.' — lemon by ACM')
-            ->view('emails.modul-admin-dijeda', [
-                'judul' => $judul,
-                'namaModul' => $this->namaModul,
-                'ditutup' => $this->ditutup,
-                'pesan' => $this->pesan,
-                'olehSiapa' => $this->olehSiapa,
-                'mulai' => $this->mulai,
-                'sampai' => $this->sampai,
-            ]);
+            ->replyTo(config('mail.from.address'), config('mail.from.name'))
+            ->text('emails.modul-admin-dijeda-teks', $isi)
+            ->view('emails.modul-admin-dijeda', $isi);
     }
 }
