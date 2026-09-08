@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Pages\Public\Homepage\Index;
+use App\Models\Product;
 use Livewire\Livewire;
 
 /**
@@ -15,6 +16,11 @@ use Livewire\Livewire;
  * galat apa pun — hanya penjualan yang diam-diam berkurang.
  */
 it('flash sale dirender sebelum produk terlaris', function () {
+    // Bagian Produk Terlaris sengaja hilang sama sekali bila katalog kosong —
+    // bagian kosong lebih buruk daripada tidak ada. Jadi harus ada satu produk
+    // dulu supaya yang diuji benar-benar urutannya, bukan ketiadaannya.
+    Product::create(['nama_akun' => 'Produk Uji Urutan', 'harga_perbulan' => 15000]);
+
     $html = Livewire::test(Index::class)->html();
 
     // id="call-to-action" adalah akar komponen flash sale, dan tetap ada

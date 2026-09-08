@@ -34,6 +34,9 @@ class Index extends Component
             'banners' => $banners,
             'products' => $products,
             'bundlings' => $bundlings,
+            // Peringkat dihitung dari pesanan yang benar-benar dibayar, bukan
+            // daftar yang dipatok di Blade — lihat App\Support\ProdukTerlaris.
+            'terlaris' => \App\Support\ProdukTerlaris::ambil(5),
         ]);
     }
 }
