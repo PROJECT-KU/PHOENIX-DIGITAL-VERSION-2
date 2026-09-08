@@ -34,7 +34,7 @@
 <section id="promo-cards" class="promo-cards section">
     <style>
         /* ===== Produk Terlaris ===== */
-        #promo-cards { padding-top: 56px; }
+        #promo-cards { padding-top: 40px; }
 
         .pt-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
         .pt-head h2 {
