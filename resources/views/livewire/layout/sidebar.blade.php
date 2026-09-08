@@ -993,8 +993,24 @@ new class extends Component
                 </li>
 
                 <!-- section karir & karyawan-->
-                @if (auth()->user()->hasPermission('view_presensi'))
+                {{-- Judul bagian dipisah dari Presensi: kalender boleh dilihat semua
+                     peran, jadi judulnya tidak boleh ikut hilang saat seseorang
+                     tidak punya izin presensi. --}}
+                @if (auth()->user()->hasAnyPermission(['view_presensi', 'view_kegiatan']))
                 <li class="mt-4 sidebar-title">Kepegawaian</li>
+                @endif
+
+                @if (auth()->user()->hasPermission('view_kegiatan'))
+                <li class="sidebar-item {{ request()->routeIs('admin.kegiatan.*') ? 'active' : '' }}">
+                    <a wire:navigate href="{{ route('admin.kegiatan.index') }}"
+                        class="sidebar-link {{ request()->routeIs('admin.kegiatan.*') ? 'text-primary fw-bold' : '' }}">
+                        <i class="bi bi-calendar3 {{ request()->routeIs('admin.kegiatan.*') ? 'text-primary' : '' }}"></i>
+                        <span class="{{ request()->routeIs('admin.kegiatan.*') ? 'text-primary' : '' }}">Kalender Kegiatan</span>
+                    </a>
+                </li>
+                @endif
+
+                @if (auth()->user()->hasPermission('view_presensi'))
                 <li class="sidebar-item has-sub {{ request()->routeIs('admin.presensi.*') ? 'active open' : '' }}">
                     <a href="#"
                         class="sidebar-link {{ request()->routeIs('admin.presensi.*') ? 'text-primary fw-bold' : '' }}">

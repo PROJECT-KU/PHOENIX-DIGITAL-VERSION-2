@@ -324,6 +324,11 @@ Route::middleware('permission:view_karyawan')->group(function () {
     Route::get('/admin/karyawan/{user}/edit', KaryawanEdit::class)->middleware('permission:edit_karyawan')->name('admin.karyawan.edit');
 });
 
+// Kalender Kegiatan
+Route::middleware('permission:view_kegiatan')->group(function () {
+    Route::get('/admin/kegiatan', \App\Livewire\Pages\Admin\Kegiatan\KegiatanKalender::class)->name('admin.kegiatan.index');
+});
+
 // Presensi
 Route::middleware('permission:view_presensi')->group(function () {
     Route::get('/admin/presensi', \App\Livewire\Pages\Admin\Presensi\PresensiIndex::class)->name('admin.presensi.index');

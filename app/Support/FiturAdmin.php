@@ -64,8 +64,8 @@ class FiturAdmin
         ],
         'kepegawaian' => [
             'label' => 'Kepegawaian',
-            'ket' => 'Karyawan, presensi, gaji',
-            'rute' => ['admin.karyawan.', 'admin.presensi.', 'admin.gajikaryawan.'],
+            'ket' => 'Karyawan, presensi, gaji, kalender kegiatan',
+            'rute' => ['admin.karyawan.', 'admin.presensi.', 'admin.gajikaryawan.', 'admin.kegiatan.'],
         ],
         'task' => [
             'label' => 'Task & KPI',
