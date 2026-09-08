@@ -30,7 +30,7 @@ Kalender Kegiatan || lemon
         .kg-btn i.me-1 { margin-right: 0 !important; }
 
         /* Semua tombol batang alat setinggi sama persis, apa pun isinya. */
-        .kg-alat .kg-btn { height: 42px; padding: 0 16px !important; }
+        .kg-alat .kg-btn { height: 42px; padding: 0 14px !important; }
         .kg-alat .kg-nav { width: 42px; padding: 0 !important; }
 
         /* Tombol kecil di dalam kartu. `.btn { padding: 10px 20px !important }`
@@ -58,29 +58,31 @@ Kalender Kegiatan || lemon
 
         /* ===== Batang alat ===== */
         .kg-bulan {
-            min-width: 172px; text-align: center; font-weight: 700;
-            font-size: 1.02rem; color: #1e293b; letter-spacing: -.01em;
+            min-width: 148px; text-align: center; font-weight: 700;
+            font-size: 1rem; color: #1e293b; letter-spacing: -.01em;
         }
 
         /* Legenda jenis. Saat tidak terpilih chip memakai warna JENISNYA sendiri
            dalam nada lembut — bukan putih dengan titik kecil. Dengan begitu
            batang saring sekaligus menjadi legenda: warna di chip sama persis
            dengan warna kegiatannya di kisi. */
-        /* Garis rambut inilah yang membuat baris kedua terbaca sebagai kelompok
-           tersendiri — legenda warna — bukan chip yang tercecer dari baris atas. */
-        .kg-saring {
-            display: flex; flex-wrap: wrap; gap: 8px;
-            margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f4f8;
-        }
+        /* Tetap satu baris bersama navigasi bulan. Ukurannya dirampingkan
+           secukupnya agar tujuh chip muat di sisa ruang sebelah sidebar; masih
+           boleh membungkus di layar sempit, tapi tidak lagi pada lebar biasa. */
+        .kg-saring { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        /* Saat legenda duduk di kanan, baris yang terpaksa membungkus ikut rata
+           kanan — kalau rata kiri, sisanya terlihat menggantung di tengah kartu. */
+        @media (min-width: 992px) { .kg-saring { justify-content: flex-end; } }
         .kg-chip {
             border: 1px solid transparent; border-radius: 999px;
-            padding: 0 15px; height: 42px;
-            font-size: .84rem; font-weight: 600;
-            display: inline-flex; align-items: center; gap: 7px;
+            padding: 0 13px; height: 42px;
+            font-size: .81rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 6px;
             cursor: pointer; transition: transform .12s ease, box-shadow .15s ease, filter .15s ease;
             background: var(--kg-lembut); color: var(--kg-warna);
         }
-        .kg-chip i.bi { font-size: .95rem; line-height: 1; }
+        .kg-chip i.bi { font-size: .9rem; line-height: 1; }
         .kg-chip i.bi::before { display: block; line-height: 1; }
         .kg-chip:hover { filter: brightness(.97); }
         .kg-chip.aktif {
@@ -171,6 +173,7 @@ Kalender Kegiatan || lemon
         }
         .kg-modal { max-width: 640px; margin: 0 auto; }
         .kg-pilih-jenis { display: flex; flex-wrap: wrap; gap: 8px; }
+        .kg-pilih-jenis .kg-chip { padding: 0 15px; font-size: .84rem; }
         .kg-peserta-kotak { max-height: 190px; overflow-y: auto; border: 1px solid #e9edf3; border-radius: 12px; padding: 10px 12px; }
 
         @media (max-width: 767.98px) {
@@ -231,14 +234,9 @@ Kalender Kegiatan || lemon
         {{-- ===== Batang alat ===== --}}
         <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-3 p-md-4">
-                {{-- Dua baris tetap, bukan satu baris yang boleh pecah. Tujuh chip
-                     ditambah navigasi bulan tidak muat sebaris begitu sidebar terbuka,
-                     dan satu chip yang terlempar sendirian terlihat seperti salah
-                     susun. Breakpoint tidak menolong: lebarnya ditentukan sisa ruang
-                     di samping sidebar, bukan lebar layar. --}}
-                <div class="kg-alat">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 kg-alat">
 
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="d-flex align-items-center gap-2">
                         <button type="button" class="btn btn-light kg-nav kg-btn border" wire:click="bulanSebelumnya"
                             aria-label="Bulan sebelumnya">
                             <i class="bi bi-chevron-left"></i>
@@ -258,7 +256,7 @@ Kalender Kegiatan || lemon
                             class="kg-chip {{ $saringJenis === '' ? 'aktif' : '' }}"
                             style="--kg-warna:#6d28d9; --kg-lembut:#f2ecfd;"
                             wire:click="$set('saringJenis', '')">
-                            <i class="bi bi-grid-fill"></i> Semua
+                            Semua
                         </button>
                         @foreach ($jenisPeta as $kunci => $j)
                         <button type="button"
