@@ -1001,11 +1001,15 @@ new class extends Component
                 @endif
 
                 @if (auth()->user()->hasPermission('view_kegiatan'))
+                {{-- Menu tanpa submenu menandai keadaan aktifnya lewat `active` di
+                     <li> saja — temanya yang mengecat pil hijau berteks putih,
+                     sama seperti Dashboard & Task Saya. `text-primary` hanya untuk
+                     induk submenu, yang tidak pernah mendapat pil itu; memakai
+                     keduanya membuat teks ungu tertimpa di atas pil hijau. --}}
                 <li class="sidebar-item {{ request()->routeIs('admin.kegiatan.*') ? 'active' : '' }}">
-                    <a wire:navigate href="{{ route('admin.kegiatan.index') }}"
-                        class="sidebar-link {{ request()->routeIs('admin.kegiatan.*') ? 'text-primary fw-bold' : '' }}">
-                        <i class="bi bi-calendar3 {{ request()->routeIs('admin.kegiatan.*') ? 'text-primary' : '' }}"></i>
-                        <span class="{{ request()->routeIs('admin.kegiatan.*') ? 'text-primary' : '' }}">Kalender Kegiatan</span>
+                    <a wire:navigate href="{{ route('admin.kegiatan.index') }}" class="sidebar-link">
+                        <i class="bi bi-calendar3"></i>
+                        <span>Kalender Kegiatan</span>
                     </a>
                 </li>
                 @endif
