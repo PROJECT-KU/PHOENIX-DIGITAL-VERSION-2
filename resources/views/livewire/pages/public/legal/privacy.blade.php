@@ -30,6 +30,14 @@
                             <a href="#pv-{{ $i + 1 }}">{{ $i + 1 }}. {{ $judul }}</a>
                         @endforeach
                     </div>
+
+                    {{-- Tanggal perubahan ISI terakhir menurut riwayat git, bukan tanggal
+                         penyuntingan tata letak. Halaman hukum yang mengaku "diperbarui"
+                         padahal hanya gayanya yang berubah menyesatkan pembacanya. --}}
+                    <span class="lg-diperbarui">
+                        <b>Terakhir diperbarui</b>
+                        11 Juli 2026
+                    </span>
                 </nav>
 
                 <div>

@@ -44,6 +44,34 @@
        layar, dan pembaca mendarat di tengah paragraf. */
     .lg-lebar .legal-block { scroll-margin-top: 90px; }
 
+    /* Tanggal pembaruan, seperti halaman ketentuan Orcha. Pada dokumen hukum ini
+       bukan hiasan: pembaca perlu tahu versi mana yang sedang ia setujui. */
+    .lg-diperbarui {
+        display: block; margin-top: 18px; padding: 12px;
+        border-top: 1px solid #f1f3f6; font-size: .76rem; color: #a8b3c4; line-height: 1.5;
+    }
+    .lg-diperbarui b { display: block; color: #6b7280; font-weight: 700; }
+
+    /* ===== Menenangkan tampilan =====
+       Lencana judul sebelumnya kotak bergradasi jingga penuh dengan bayangan,
+       terulang di setiap pasal. Sembilan kotak menyala berderet ke bawah membuat
+       halaman hukum terlihat seperti brosur, dan setiap judul berebut perhatian
+       dengan judul di bawahnya. Diturunkan jadi nada datar: warnanya tetap
+       jingga merek, tapi tidak lagi bersinar. */
+    .lg-lebar .legal-block h2 span {
+        background: #fff3e6; color: #d9531a;
+        width: 26px; height: 26px; border-radius: 8px; font-size: .8rem; box-shadow: none;
+    }
+    .lg-lebar .legal-block h2 { font-size: 1.06rem; gap: 10px; margin-bottom: 10px; }
+
+    /* Blok sorotan: pembatas jingga tebal mengelilingi seluruh kotak menariknya
+       terlalu jauh dari sekitarnya. Cukup satu pita di tepi kiri — sorotannya
+       tetap terbaca tanpa memotong alur bacaan. */
+    .lg-lebar .legal-block.legal-highlight {
+        border: 0; border-left: 3px solid #f7c9a3; border-radius: 0 12px 12px 0;
+        background: #fffaf4; padding: 16px 18px;
+    }
+
     @media (max-width: 991.98px) {
         .lg-tata { grid-template-columns: 1fr; gap: 20px; }
         .lg-nav {

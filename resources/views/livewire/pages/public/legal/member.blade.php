@@ -2,41 +2,8 @@
     Keuntungan & Syarat Member | Phoenix Digital
 @endsection
 
-<main class="legal-page member-lebar">
-    <style>
-        /* Ditulis inline: resources/css/public-custom-styles.css dikompilasi ke
-           public/build yang MASUK .gitignore dan tidak ikut terdeploy — salinan
-           di server masih tertanggal 19 Agustus, jadi aturan yang ditulis di
-           sana tidak akan pernah sampai ke pengunjung lewat git pull.
-
-           Sama seperti FAQ: kartunya sempit di tengah layar lebar sementara
-           isinya bertumpuk menurun. Dilebarkan lalu dipecah dua kolom. */
-        .member-lebar .legal-card { max-width: 1180px; }
-
-        /* column-count, bukan grid: panjang tiap blok berbeda-beda dan kolom
-           menyeimbangkan tingginya sendiri. Dengan grid, blok panjang
-           meninggalkan lubang di sebelahnya. */
-        .member-kolom { column-count: 2; column-gap: 30px; }
-
-        /* Tanpa ini satu blok bisa terbelah di tengah — judulnya tertinggal di
-           kolom kiri sementara isinya pindah ke kanan. */
-        .member-kolom .legal-block { break-inside: avoid; page-break-inside: avoid; border-bottom: 0; }
-
-        /* Teks tombol tidak terlihat: `.legal-block a { color: oranye }` punya
-           kekhususan 0,1,1 dan mengalahkan `.co-btn-primary { color: #fff }`
-           yang hanya 0,1,0 — jadi tulisannya oranye di atas latar oranye.
-           Diperbaiki dengan menyebut keduanya sekaligus, bukan dengan
-           !important, supaya aturan tombolnya tetap bisa diubah kelak. */
-        .member-lebar .legal-block a.co-btn-primary { color: #fff; }
-        .member-lebar .legal-block a.co-btn-primary:hover { color: #fff; text-decoration: none; }
-
-        .member-lebar .legal-hero { padding-top: 34px; padding-bottom: 26px; }
-        .member-lebar .legal-hero h1 { margin-bottom: 6px; }
-
-        @media (max-width: 991.98px) {
-            .member-kolom { column-count: 1; }
-        }
-    </style>
+<main class="legal-page lg-lebar">
+    @include('partials.gaya-legal-daftar-isi')
     <div class="legal-hero">
         <div class="container">
             <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Gratis, selamanya</span>
@@ -48,10 +15,37 @@
 
     <div class="container">
         <div class="legal-card">
-            <div class="member-kolom">
+            @php
+                // Urutannya HARUS sama dengan urutan blok di bawah; id-nya mb-1..mb-4.
+                $pasal = [
+                    'Caranya cuma 2 langkah',
+                    'Apa untungnya?',
+                    'Contoh hitungannya',
+                    'Syarat & ketentuan',
+                ];
+            @endphp
+
+            <div class="lg-tata">
+                <nav class="lg-nav" aria-label="Daftar isi">
+                    <b>Daftar Isi</b>
+                    <div class="lg-nav-tautan">
+                        @foreach ($pasal as $i => $judul)
+                            <a href="#mb-{{ $i + 1 }}">{{ $i + 1 }}. {{ $judul }}</a>
+                        @endforeach
+                    </div>
+
+                    {{-- Tanggal perubahan ISI terakhir menurut riwayat git, bukan tanggal
+                         penyuntingan tata letak. --}}
+                    <span class="lg-diperbarui">
+                        <b>Terakhir diperbarui</b>
+                        15 Juli 2026
+                    </span>
+                </nav>
+
+                <div>
 
             {{-- ===== Cara jadi member ===== --}}
-            <div class="legal-block legal-highlight">
+            <div class="legal-block legal-highlight" id="mb-1">
                 <h2><span><i class="bi bi-key"></i></span> Caranya cuma 2 langkah</h2>
                 <p>
                     <b>1. Belanja</b> — pesan produk apa saja, lalu tunggu sampai pesananmu berstatus
@@ -66,7 +60,7 @@
             </div>
 
             {{-- ===== Keuntungan ===== --}}
-            <div class="legal-block">
+            <div class="legal-block" id="mb-2">
                 <h2><span><i class="bi bi-gift"></i></span> Apa untungnya?</h2>
                 <p>
                     <b>Poin belanja</b> — tiap <b>Rp {{ number_format($perPoin, 0, ',', '.') }}</b> belanja jadi
@@ -79,7 +73,7 @@
             </div>
 
             {{-- ===== Hitungan poin ===== --}}
-            <div class="legal-block legal-highlight">
+            <div class="legal-block legal-highlight" id="mb-3">
                 <h2><span><i class="bi bi-calculator"></i></span> Contoh hitungannya</h2>
                 <p>Misal kamu belanja <b>Rp {{ number_format($contohBelanja, 0, ',', '.') }}</b>:</p>
                 <p>
@@ -93,7 +87,7 @@
             </div>
 
             {{-- ===== Syarat & ketentuan ===== --}}
-            <div class="legal-block">
+            <div class="legal-block" id="mb-4">
                 <h2><span><i class="bi bi-list-check"></i></span> Syarat & ketentuan</h2>
                 <p>
                     &bull; Menjadi member <b>gratis</b> — tidak ada biaya pendaftaran maupun iuran.<br>
@@ -111,11 +105,6 @@
                 </p>
             </div>
 
-            </div>
-
-            {{-- Tombol sengaja DI LUAR kolom: ia satu-satunya tindakan di halaman
-                 ini, dan kalau ikut mengalir ke salah satu kolom ia akan berhenti
-                 di tengah halaman, bukan di ujung bacaan. --}}
             {{-- Rute checkout dipakai langsung, BUKAN url()->previous() — kalau halaman
                  ini dibuka dari tempat lain, previous() melempar ke sana padahal
                  tombolnya jelas-jelas bertuliskan "Kembali ke Checkout". --}}
@@ -125,6 +114,8 @@
                         <i class="bi bi-arrow-left"></i> Kembali ke Checkout
                     </a>
                 </p>
+            </div>
+                </div>
             </div>
 
         </div>
