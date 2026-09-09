@@ -17,6 +17,9 @@ use Livewire\Livewire;
  * Mengirim tiap kali tombol Simpan ditekan akan melatih orang mengabaikan
  * kabar dari lemon — dan begitu itu terjadi, undangan yang benar-benar penting
  * pun ikut tidak dibaca.
+ *
+ * Penerimanya diperiksa di kolom To, bukan BCC: tiap peserta menerima suratnya
+ * sendiri supaya tidak dianggap surat massal oleh penyaring spam.
  */
 function orangKegiatan(array $izin = ['view_kegiatan', 'create_kegiatan', 'edit_kegiatan', 'delete_kegiatan']): User
 {
@@ -61,7 +64,7 @@ it('peserta yang dipilih menerima undangan saat kegiatan dibuat', function () {
 
     Mail::assertSent(UndanganKegiatanMail::class, function ($surat) use ($peserta) {
         return $surat->rupa === UndanganKegiatanMail::UNDANGAN
-            && $surat->hasBcc($peserta->email);
+            && $surat->hasTo($peserta->email);
     });
 });
 
@@ -117,7 +120,7 @@ it('menggeser waktu mengabari peserta lama', function () {
 
     Mail::assertSent(UndanganKegiatanMail::class, function ($surat) use ($peserta) {
         return $surat->rupa === UndanganKegiatanMail::PERUBAHAN
-            && $surat->hasBcc($peserta->email);
+            && $surat->hasTo($peserta->email);
     });
 });
 
@@ -140,7 +143,7 @@ it('peserta yang baru ditambahkan dapat undangan, bukan pemberitahuan perubahan'
 
     // Yang baru diundang...
     Mail::assertSent(UndanganKegiatanMail::class, fn ($s) => $s->rupa === UndanganKegiatanMail::UNDANGAN
-        && $s->hasBcc($baru->email));
+        && $s->hasTo($baru->email));
 
     // ...dan yang lama tidak diganggu, karena baginya tidak ada yang berubah.
     Mail::assertNotSent(UndanganKegiatanMail::class, fn ($s) => $s->rupa === UndanganKegiatanMail::PERUBAHAN);
@@ -163,7 +166,7 @@ it('peserta yang dikeluarkan diberi tahu', function () {
         ->assertHasNoErrors();
 
     Mail::assertSent(UndanganKegiatanMail::class, fn ($s) => $s->rupa === UndanganKegiatanMail::DIKELUARKAN
-        && $s->hasBcc($keluar->email));
+        && $s->hasTo($keluar->email));
 });
 
 it('menghapus kegiatan mengabari seluruh pesertanya', function () {
@@ -179,7 +182,7 @@ it('menghapus kegiatan mengabari seluruh pesertanya', function () {
     Livewire::actingAs($admin)->test(KegiatanKalender::class)->call('hapus', $k->id);
 
     Mail::assertSent(UndanganKegiatanMail::class, fn ($s) => $s->rupa === UndanganKegiatanMail::PEMBATALAN
-        && $s->hasBcc($peserta->email));
+        && $s->hasTo($peserta->email));
 });
 
 it('alamat uji coba menggantikan seluruh peserta sungguhan', function () {
@@ -197,8 +200,8 @@ it('alamat uji coba menggantikan seluruh peserta sungguhan', function () {
         ->call('simpan')
         ->assertHasNoErrors();
 
-    Mail::assertSent(UndanganKegiatanMail::class, fn ($s) => $s->hasBcc('uji@example.test')
-        && ! $s->hasBcc($peserta->email));
+    Mail::assertSent(UndanganKegiatanMail::class, fn ($s) => $s->hasTo('uji@example.test')
+        && ! $s->hasTo($peserta->email));
 });
 
 it('akun yang diblokir tidak dikirimi', function () {

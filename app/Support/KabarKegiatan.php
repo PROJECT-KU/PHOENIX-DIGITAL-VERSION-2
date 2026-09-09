@@ -96,8 +96,15 @@ class KabarKegiatan
 
         $oleh = $pelaku?->name ?: ($pelaku?->email ?: 'Admin');
 
-        // Lewat BCC: tanpa itu setiap peserta melihat surel semua rekannya.
-        return KirimMassal::bcc(
+        // Satu surat per peserta, dengan namanya sendiri di kolom To.
+        //
+        // Sebelumnya semua dijadikan satu surat ber-BCC. Itu menjaga kerahasiaan
+        // alamat, tapi menghasilkan surat yang kolom To-nya alamat kantor dan
+        // daftar penerimanya kosong — persis ciri pengirim massal, dan Gmail
+        // memperlakukannya sebagai spam. Peserta kegiatannya paling banyak
+        // belasan orang, jadi mengirim satu per satu murah, dan kerahasiaannya
+        // sama saja: tak ada yang melihat alamat rekannya.
+        return KirimMassal::perOrang(
             $penerima,
             fn () => new UndanganKegiatanMail($kegiatan, $rupa, $oleh)
         );

@@ -63,7 +63,59 @@ class KirimMassal
                 $terkirim += count($kelompok);
             } catch (\Throwable $e) {
                 // Satu kelompok gagal tidak boleh menghentikan sisanya.
-                Log::warning('Kirim massal gagal untuk satu kelompok: '.$e->getMessage());
+                //
+                // Dicatat sebagai GALAT, bukan peringatan: server memakai
+                // LOG_LEVEL=error, sehingga peringatan tidak pernah sampai ke
+                // berkas log. Kabar yang gagal terkirim tanpa jejak apa pun
+                // adalah keadaan terburuk — orang mengira sudah memberi tahu,
+                // penerimanya mengira tidak ada apa-apa, dan tidak seorang pun
+                // punya cara mengetahuinya.
+                Log::error('Kirim massal gagal untuk satu kelompok ('.count($kelompok).' alamat): '.$e->getMessage());
+            }
+        }
+
+        return $terkirim;
+    }
+
+    /**
+     * Kirim satu kabar ke tiap penerima SECARA TERPISAH, satu surat per orang.
+     *
+     * Bedanya dengan bcc(): di sini kolom To berisi alamat penerimanya sendiri.
+     * Itu penting untuk kabar internal yang jumlahnya sedikit, karena surat
+     * yang kolom To-nya bukan si penerima — dan daftar penerimanya kosong —
+     * adalah pola yang dipakai pengirim massal, dan penyaring Gmail
+     * memperlakukannya begitu. Undangan rapat yang mendarat di folder spam
+     * sama saja dengan undangan yang tidak pernah dikirim.
+     *
+     * Karena tiap orang menerima suratnya sendiri, tidak ada yang bisa melihat
+     * alamat rekannya — kerahasiaan yang sama seperti bcc(), tanpa harganya.
+     *
+     * Hanya untuk kelompok kecil (karyawan, peserta rapat). Untuk ratusan
+     * pelanggan tetap pakai bcc(): seratus sambungan SMTP dalam satu permintaan
+     * web akan kehabisan waktu jauh sebelum selesai.
+     *
+     * @param  array<int, string>  $penerima
+     * @param  callable():Mailable  $buatSurat  dipanggil sekali per penerima
+     * @return int jumlah alamat yang berhasil dikirimi
+     */
+    public static function perOrang(array $penerima, callable $buatSurat, ?string $mailer = null): int
+    {
+        $penerima = array_values(array_unique(array_filter(
+            $penerima,
+            fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL)
+        )));
+
+        $terkirim = 0;
+
+        foreach ($penerima as $alamat) {
+            try {
+                $pengirim = $mailer ? Mail::mailer($mailer) : Mail::mailer();
+                $pengirim->to($alamat)->send($buatSurat());
+                $terkirim++;
+            } catch (\Throwable $e) {
+                // Satu alamat gagal tidak boleh menghentikan sisanya; galat,
+                // bukan peringatan, dengan alasan yang sama seperti di bcc().
+                Log::error('Kirim ke '.$alamat.' gagal: '.$e->getMessage());
             }
         }
 

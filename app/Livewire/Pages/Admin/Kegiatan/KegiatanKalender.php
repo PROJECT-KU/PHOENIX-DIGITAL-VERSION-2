@@ -302,7 +302,7 @@ class KegiatanKalender extends Component
 
         $k->peserta()->sync($pesertaBaru);
 
-        $this->kabari($k, $pesertaLama, $pesertaBaru, $sebelum);
+        $dikirimi = $this->kabari($k, $pesertaLama, $pesertaBaru, $sebelum);
 
         // Kalender melompat ke bulan kegiatannya. Tanpa ini, menyimpan kegiatan
         // bulan depan terlihat seperti gagal menyimpan: tidak muncul di mana pun.
@@ -313,9 +313,17 @@ class KegiatanKalender extends Component
         $this->formTampil = false;
         $this->bersihkanForm();
 
-        $this->dispatch('swal-success', message: $ubah
-            ? 'Kegiatan berhasil diperbarui.'
-            : 'Kegiatan berhasil ditambahkan.');
+        $pesan = $ubah ? 'Kegiatan berhasil diperbarui.' : 'Kegiatan berhasil ditambahkan.';
+
+        // Jumlah surel yang benar-benar keluar ikut dikatakan. Tanpa ini,
+        // "berhasil ditambahkan" terucap sama saja entah tujuh peserta
+        // dikabari atau tidak seorang pun — dan kegagalan kirim hanya
+        // ketahuan berhari-hari kemudian, saat rapatnya sepi.
+        if ($dikirimi > 0) {
+            $pesan .= ' Undangan dikirim ke '.$dikirimi.' peserta.';
+        }
+
+        $this->dispatch('swal-success', message: $pesan);
     }
 
     /**
@@ -328,8 +336,9 @@ class KegiatanKalender extends Component
      * @param  array<int>  $lama
      * @param  array<int>  $baru
      * @param  array<string, mixed>|null  $sebelum  null bila kegiatannya baru
+     * @return int jumlah alamat yang benar-benar dikirimi
      */
-    private function kabari(Kegiatan $k, array $lama, array $baru, ?array $sebelum): void
+    private function kabari(Kegiatan $k, array $lama, array $baru, ?array $sebelum): int
     {
         $pelaku = auth()->user();
 
@@ -337,19 +346,23 @@ class KegiatanKalender extends Component
         $keluar = array_diff($lama, $baru);
         $tetap = array_intersect($baru, $lama);
 
+        $dikirimi = 0;
+
         // Peserta baru selalu diundang, apa pun yang berubah pada kegiatannya.
         if ($masuk) {
-            KabarKegiatan::kirim($k, $masuk, UndanganKegiatanMail::UNDANGAN, $pelaku);
+            $dikirimi += KabarKegiatan::kirim($k, $masuk, UndanganKegiatanMail::UNDANGAN, $pelaku);
         }
 
         if ($keluar) {
-            KabarKegiatan::kirim($k, $keluar, UndanganKegiatanMail::DIKELUARKAN, $pelaku);
+            $dikirimi += KabarKegiatan::kirim($k, $keluar, UndanganKegiatanMail::DIKELUARKAN, $pelaku);
         }
 
         // Peserta lama hanya dikabari bila yang berubah menyangkut kehadirannya.
         if ($tetap && $sebelum !== null && KabarKegiatan::perluDikabarkan($k, $sebelum)) {
-            KabarKegiatan::kirim($k, $tetap, UndanganKegiatanMail::PERUBAHAN, $pelaku);
+            $dikirimi += KabarKegiatan::kirim($k, $tetap, UndanganKegiatanMail::PERUBAHAN, $pelaku);
         }
+
+        return $dikirimi;
     }
 
     private function hitungSelesai(Carbon $mulai): ?Carbon
