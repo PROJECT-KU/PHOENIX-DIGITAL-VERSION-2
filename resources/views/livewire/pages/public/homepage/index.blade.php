@@ -13,12 +13,11 @@
     <style>
         .beranda .section { padding-top: 52px; padding-bottom: 52px; }
 
-        /* Bagian berlatar krem lembut, berselang-seling dengan yang putih.
-           Ditulis per-id, bukan :nth-child, supaya menambah atau memindahkan satu
-           bagian tidak diam-diam menukar warna seluruh halaman di bawahnya. */
-        .beranda #layanan-beranda,
-        .beranda #cara-pesan,
-        .beranda #testimoni { background: linear-gradient(180deg, #fffaf4, #fff); }
+        /* Latar dibiarkan satu warna. Pita krem yang berselang-seling memang
+           memisahkan bagian, tapi ia juga menambah satu lapis pola lagi di atas
+           halaman yang sudah penuh pola. Pemisahnya kini dipindah ke STRUKTUR:
+           ada bagian yang memakai kartu, ada yang tidak — dan pergantian itu
+           terasa lebih tenang daripada pergantian warna. */
 
         /* Hero & etalase flash sale punya jaraknya sendiri: keduanya bukan
            bagian bertajuk melainkan pita pembuka. */

@@ -14,41 +14,62 @@
            langsung menyusul. */
         #call-to-action.section { padding: 28px 0 32px; }
 
+        /* Pita promo dibuat jelas BERBEDA dari bagian lain halaman: seluruh
+           halaman kini berlatar putih dengan kartu bergaris tipis, jadi satu
+           blok berlatar jingga pekat langsung terbaca sebagai "ini bukan bagian
+           biasa". Sebelumnya latarnya krem muda — nyaris sama dengan bagian
+           lain, sehingga promonya lewat begitu saja. */
         #call-to-action .fsx-pita {
             display: flex; align-items: center; justify-content: space-between; gap: 22px;
             flex-wrap: wrap;
-            background: linear-gradient(135deg, #fff6ec 0%, #fff 60%);
-            border: 1px solid #fcd9b6; border-radius: 20px;
-            padding: 18px 22px; margin-bottom: 18px;
+            background: linear-gradient(120deg, #f26522 0%, #fb8b3c 55%, #fba919 100%);
+            border: 0; border-radius: 20px;
+            padding: 20px 24px; margin-bottom: 18px;
+            color: #fff;
         }
         #call-to-action .fsx-kiri { min-width: 0; }
 
         #call-to-action .fsx-lencana {
             display: inline-flex; align-items: center; gap: 7px;
-            background: linear-gradient(135deg, #fba919, #f26522); color: #fff;
-            font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+            background: rgba(255, 255, 255, .95); color: #d9531a;
+            font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
             padding: 5px 12px; border-radius: 999px;
-            box-shadow: 0 6px 14px -6px rgba(242, 101, 34, .85);
+        }
+        /* Kilat berdenyut pelan — satu-satunya gerakan di pita ini. Flash sale
+           dikenali orang dari dua hal: petir dan hitungan mundur; keduanya ada
+           di sini, jadi tidak perlu tanda tambahan. */
+        #call-to-action .fsx-lencana i.bi { animation: fsx-denyut 1.8s ease-in-out infinite; }
+        @keyframes fsx-denyut { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+        @media (prefers-reduced-motion: reduce) {
+            #call-to-action .fsx-lencana i.bi { animation: none; }
         }
         #call-to-action .fsx-lencana i.bi { font-size: .78rem; line-height: 1; }
         #call-to-action .fsx-lencana i.bi::before { display: block; line-height: 1; }
 
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f;
-            font-size: 1.75rem; line-height: 1.15; margin: 10px 0 4px;
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.75rem;
+            line-height: 1.15; letter-spacing: -.02em; margin: 10px 0 4px;
+            /* -webkit-text-fill-color WAJIB ikut disetel: tema mewarnai judul
+               bagian ini dengan teks bergradasi, yang bekerja dengan membuat
+               isian hurufnya TRANSPARAN. Selama isian itu transparan, `color`
+               tidak berpengaruh sama sekali — judulnya tetap gelap di atas
+               latar jingga dan nyaris tak terbaca. */
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+            background: none;
         }
-        #call-to-action .fsx-hemat { margin: 0; font-size: .92rem; font-weight: 700; color: #f26522; }
-        #call-to-action .fsx-hemat span { color: #6b7280; font-weight: 500; }
+        #call-to-action .fsx-hemat { margin: 0; font-size: .92rem; font-weight: 700; color: #fff; }
+        #call-to-action .fsx-hemat span { color: rgba(255, 255, 255, .82); font-weight: 500; }
 
         #call-to-action .fsx-kanan { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
         #call-to-action .fsx-hitung-label {
             display: block; font-size: .7rem; font-weight: 700; letter-spacing: .07em;
-            text-transform: uppercase; color: #9ca3af; margin-bottom: 6px; text-align: center;
+            text-transform: uppercase; color: rgba(255, 255, 255, .9); margin-bottom: 6px; text-align: center;
         }
         #call-to-action .fsx-kotak-deret { display: flex; gap: 8px; }
         #call-to-action .fsx-kotak {
             min-width: 52px; padding: 7px 8px; border-radius: 12px; text-align: center;
-            background: #fff; border: 1px solid #f3e3d2;
+            background: rgba(255, 255, 255, .96); border: 0;
         }
         #call-to-action .fsx-kotak b {
             display: block; font-family: 'Poppins', sans-serif; font-weight: 800;
@@ -57,15 +78,17 @@
                tidak bergoyang mengikuti bentuk angka. */
             font-variant-numeric: tabular-nums;
         }
-        #call-to-action .fsx-kotak span { font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9ca3af; }
+        #call-to-action .fsx-kotak span { font-size: .64rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #a8886c; }
 
+        /* Tombol putih di atas latar jingga: kebalikan dari tombol di bagian
+           lain halaman, sehingga ia tetap yang paling menonjol di dalam pita. */
         #call-to-action .fsx-tombol {
             display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
-            background: linear-gradient(135deg, #fba919, #f26522); color: #fff;
-            font-weight: 700; font-size: .92rem; padding: .72rem 1.35rem; border-radius: 12px;
-            box-shadow: 0 10px 22px -10px rgba(242, 101, 34, .9); text-decoration: none;
+            background: #fff; color: #d9531a;
+            font-weight: 800; font-size: .92rem; padding: .72rem 1.35rem; border-radius: 12px;
+            text-decoration: none; transition: transform .18s ease;
         }
-        #call-to-action .fsx-tombol:hover { color: #fff; filter: brightness(1.05); }
+        #call-to-action .fsx-tombol:hover { color: #d9531a; transform: translateX(3px); }
         #call-to-action .fsx-tombol i.bi { line-height: 1; }
         #call-to-action .fsx-tombol i.bi::before { display: block; line-height: 1; }
 

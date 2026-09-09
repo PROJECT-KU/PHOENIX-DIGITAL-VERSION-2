@@ -73,6 +73,11 @@
        tanpa cahaya. Isinya tetap terbaca justru karena tidak lagi berteriak. */
     .fs-card-media .fs-badge,
     .pd-media .fs-badge {
+        /* animation WAJIB dimatikan, bukan cuma transform: lencananya punya
+           animasi berulang (fsBadgePop) yang memutar dan mengempas-kembangkannya
+           terus-menerus. Animasi mengalahkan deklarasi biasa di dalam cascade,
+           jadi `transform: none` saja tidak pernah menang. */
+        animation: none;
         transform: none;
         box-shadow: none;
         background: #f26522;
@@ -82,4 +87,18 @@
         padding: 4px 9px;
         border-radius: 7px;
     }
+
+    /* Garis jingga menarik diri di tepi atas kartu saat kursor menyentuhnya.
+       Perilaku yang sama dipakai kartu produk, paket, dan langkah Cara Pesan —
+       satu tanggapan untuk semua kartu, bukan efek berbeda-beda per bagian. */
+    .fs-card { position: relative; overflow: hidden; }
+    .fs-card::after {
+        content: ""; position: absolute; top: 0; left: 0; height: 2px; width: 100%;
+        background: linear-gradient(90deg, #fba919, #f26522);
+        transform: scaleX(0); transform-origin: left;
+        transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+        z-index: 3; pointer-events: none;
+    }
+    .fs-card:hover::after { transform: scaleX(1); }
+    @media (prefers-reduced-motion: reduce) { .fs-card::after { transition: none; } }
 </style>

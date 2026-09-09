@@ -46,11 +46,28 @@
         .pt-kartu {
             display: flex; flex-direction: column; text-align: left;
             background: #fff; border: 1px solid #eceff3; border-radius: 14px;
-            padding: 20px 18px 18px; position: relative;
+            padding: 20px 18px 18px; position: relative; overflow: hidden;
             text-decoration: none; color: inherit;
-            transition: border-color .18s ease;
+            transition: border-color .25s ease;
         }
-        .pt-kartu:hover { color: inherit; border-color: #d8dde4; }
+        .pt-kartu:hover { color: inherit; border-color: #f7c9a3; }
+
+        /* Garis jingga yang MENARIK DIRI dari kiri ke kanan di tepi atas kartu.
+           Bukan sekadar warna yang berganti: gerakannya yang memberi tahu bahwa
+           kartu ini menanggapi, sementara kartunya sendiri tetap diam — jauh
+           lebih tenang daripada lima kartu yang serentak melompat. */
+        .pt-kartu::after {
+            content: ""; position: absolute; top: 0; left: 0; height: 2px; width: 100%;
+            background: linear-gradient(90deg, #fba919, #f26522);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+        }
+        .pt-kartu:hover::after { transform: scaleX(1); }
+
+        /* Dimatikan bagi yang menyetel perangkatnya mengurangi gerak. */
+        @media (prefers-reduced-motion: reduce) {
+            .pt-kartu::after { transition: none; }
+        }
 
         /* Lencana hanya untuk peringkat satu, dan tanpa pil: cukup teks kecil
            berwarna merek. Kartu lain tidak lagi bernomor — angka #2 sampai #5

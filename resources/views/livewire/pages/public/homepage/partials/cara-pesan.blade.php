@@ -30,6 +30,18 @@
         }
         .cp-langkah:hover { border-color: #f7c9a3; }
 
+        /* Garis yang menarik diri di tepi atas, sama seperti kartu Produk
+           Terlaris — satu perilaku yang sama untuk semua kartu di halaman ini,
+           bukan efek berbeda-beda di tiap bagian. */
+        .cp-langkah::after {
+            content: ""; position: absolute; top: 0; left: 0; height: 2px; width: 100%;
+            background: linear-gradient(90deg, #fba919, #f26522);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+        }
+        .cp-langkah:hover::after { transform: scaleX(1); }
+        @media (prefers-reduced-motion: reduce) { .cp-langkah::after { transition: none; } }
+
         /* Angka pucat di pojok. Ditaruh di lapisan belakang supaya tulisan tetap
            yang pertama terbaca — angkanya penanda urutan, bukan judul. */
         /* Angkanya utuh di dalam kartu, tidak dipotong tepi. Angka yang separuh

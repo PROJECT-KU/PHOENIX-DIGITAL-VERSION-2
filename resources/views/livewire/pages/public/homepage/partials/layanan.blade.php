@@ -13,14 +13,22 @@
 <section id="layanan-beranda" class="section">
     <style>
         /* Ditulis inline: public/build masuk .gitignore dan tidak ikut terdeploy. */
-        .ly-deret { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+        /* TANPA kartu. Bagian ini sengaja jadi jeda di antara dua bagian
+           berkartu (Produk Terlaris di atas, Paket Bundling di bawah): tiga
+           kisi kartu berturut-turut membuat halaman terbaca sebagai satu pola
+           yang berulang, sebanyak apa pun isinya berbeda.
+
+           Pemisahnya cukup garis tegak tipis di antara kolom — cara yang lazim
+           di tata letak cetak, dan tidak menambah kotak baru. */
+        .ly-deret { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 34px; }
         .ly-kartu {
             display: flex; flex-direction: column; gap: 10px;
-            background: #fff; border: 1px solid #eceff3; border-radius: 14px;
-            padding: 22px; text-decoration: none; color: inherit;
+            padding: 4px 0 4px 26px; border-left: 1px solid #eceff3;
+            text-decoration: none; color: inherit;
             transition: border-color .18s ease;
         }
-        .ly-kartu:hover { color: inherit; border-color: #d8dde4; }
+        .ly-kartu:first-child { padding-left: 0; border-left: 0; }
+        .ly-kartu:hover { color: inherit; }
         .ly-ikon {
             width: 48px; height: 48px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
@@ -40,8 +48,19 @@
         .ly-aksi i.bi { line-height: 1; }
         .ly-aksi i.bi::before { display: block; line-height: 1; }
 
-        @media (max-width: 991.98px) { .ly-deret { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 575.98px) { .ly-deret { grid-template-columns: 1fr; } }
+        @media (max-width: 991.98px) {
+            .ly-deret { grid-template-columns: repeat(2, 1fr); gap: 26px 30px; }
+            /* Kolom pertama tiap baris tidak berpembatas kiri — pembatas di ujung
+               baris menggantung tanpa apa pun di sebelahnya. */
+            .ly-kartu:nth-child(2n+1) { padding-left: 0; border-left: 0; }
+        }
+        @media (max-width: 575.98px) {
+            /* Menumpuk: pembatasnya ikut berputar jadi garis mendatar di atas
+               tiap layanan, karena garis tegak tidak lagi memisahkan apa pun. */
+            .ly-deret { grid-template-columns: 1fr; gap: 0; }
+            .ly-kartu { padding: 20px 0; border-left: 0; border-top: 1px solid #eceff3; }
+            .ly-kartu:first-child { padding-top: 4px; border-top: 0; }
+        }
     </style>
 
     <div class="container" data-aos="fade-up" data-aos-delay="100">
