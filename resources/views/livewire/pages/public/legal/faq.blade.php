@@ -2,7 +2,38 @@
     FAQ — Pertanyaan Umum | Phoenix Digital
 @endsection
 
-<main class="legal-page">
+<main class="legal-page faq-lebar">
+    <style>
+        /* Ditulis inline, bukan di resources/css/public-custom-styles.css: berkas
+           itu dikompilasi Vite ke public/build yang MASUK .gitignore dan tidak
+           ikut terdeploy — salinan di server masih tertanggal 19 Agustus, jadi
+           aturan yang ditulis di sana tidak akan pernah sampai ke pengunjung.
+
+           Kartunya dulu selebar ~810px di layar 1470px: lebih dari separuh layar
+           kosong sementara tujuh jawaban bertumpuk menurun. Dilebarkan lalu
+           dipecah dua kolom, sehingga hampir seluruh isinya terbaca sekaligus. */
+        .faq-lebar .legal-card { max-width: 1180px; }
+
+        /* column-count, bukan grid: tiap jawaban panjangnya berbeda-beda, dan
+           kolom otomatis menyeimbangkan tingginya sendiri. Dengan grid, satu
+           jawaban panjang akan meninggalkan lubang di sebelahnya. */
+        .faq-kolom { column-count: 2; column-gap: 30px; }
+
+        /* Tanpa ini satu jawaban bisa terbelah di tengah, judulnya tertinggal di
+           kolom kiri sementara isinya pindah ke kanan. */
+        .faq-kolom .legal-block { break-inside: avoid; page-break-inside: avoid; }
+
+        /* Garis pemisah antar blok tidak lagi berarti begitu isinya berkolom:
+           yang di dasar kolom akan berhias garis menggantung. */
+        .faq-kolom .legal-block { border-bottom: 0; }
+
+        .faq-lebar .legal-hero { padding-top: 34px; padding-bottom: 26px; }
+        .faq-lebar .legal-hero h1 { margin-bottom: 6px; }
+
+        @media (max-width: 991.98px) {
+            .faq-kolom { column-count: 1; }
+        }
+    </style>
     <div class="legal-hero">
         <div class="container">
             <span class="ph-sec-eyebrow"><i class="bi bi-patch-question"></i> Bantuan</span>
@@ -13,6 +44,7 @@
 
     <div class="container">
         <div class="legal-card">
+            <div class="faq-kolom">
             <div class="legal-block">
                 <h2><span><i class="bi bi-bag-check"></i></span> Bagaimana cara memesan?</h2>
                 <p>Pilih produk atau paket bundling di halaman <a href="{{ route('shop.index') }}">Shop</a>, masukkan ke keranjang, lalu lanjut ke checkout. Isi nomor WhatsApp, nama, dan email, kemudian selesaikan pembayaran. Untuk pemesanan kolektif kampus/instansi, silakan <a href="https://wa.me/6289505967995" target="_blank" rel="noopener">booking via WhatsApp</a>.</p>
@@ -46,6 +78,8 @@
             <div class="legal-block">
                 <h2><span><i class="bi bi-lock"></i></span> Bagaimana data saya dijaga?</h2>
                 <p>Kami hanya menggunakan data Anda untuk memproses pesanan dan layanan purnajual. Selengkapnya baca <a href="{{ route('privacy') }}">Kebijakan Privasi</a>.</p>
+            </div>
+
             </div>
 
             <div class="legal-contact">
