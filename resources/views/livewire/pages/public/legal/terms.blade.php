@@ -2,56 +2,8 @@
     Syarat & Ketentuan | Phoenix Digital
 @endsection
 
-<main class="legal-page sk-lebar">
-    <style>
-        /* Ditulis inline: resources/css/public-custom-styles.css dikompilasi ke
-           public/build yang MASUK .gitignore dan tidak ikut terdeploy — salinan
-           di server masih tertanggal 19 Agustus.
-
-           Berbeda dari FAQ & Member yang dipecah dua kolom seimbang: teks hukum
-           dibaca BERURUTAN, jadi memecahnya jadi dua kolom justru memaksa mata
-           naik-turun. Yang dipakai di sini pola daftar isi — sama seperti
-           halaman ketentuan Orcha: navigasi lengket di kiri, isinya di kanan.
-           Pembaca bisa melompat ke pasal yang dicarinya tanpa menggulir. */
-        .sk-lebar .legal-card { max-width: 1180px; }
-        .sk-lebar .legal-hero { padding-top: 34px; padding-bottom: 26px; }
-        .sk-lebar .legal-hero h1 { margin-bottom: 6px; }
-
-        .sk-tata { display: grid; grid-template-columns: 250px 1fr; gap: 36px; align-items: start; }
-
-        /* Lengket, dengan tinggi maksimum & gulir sendiri: kalau daftarnya lebih
-           tinggi daripada layar, tanpa ini bagian bawahnya mustahil dijangkau. */
-        .sk-isi-nav {
-            position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
-            border-right: 1px solid #f1f3f6; padding-right: 18px;
-        }
-        .sk-isi-nav b {
-            display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em;
-            text-transform: uppercase; color: #a8b3c4; margin-bottom: 10px; padding-left: 12px;
-        }
-        .sk-isi-nav a {
-            display: block; padding: 8px 12px; border-radius: 10px; margin-bottom: 2px;
-            font-size: .86rem; font-weight: 600; color: #6b7280; text-decoration: none;
-            border-left: 2px solid transparent; transition: background .15s ease, color .15s ease;
-        }
-        .sk-isi-nav a:hover { background: #fff3e6; color: #d9531a; border-left-color: #f26522; }
-
-        /* Sasaran lompatan diberi jarak dari tepi atas: tanpa ini judul pasal
-           tersembunyi di balik bilah navigasi yang menempel di puncak layar. */
-        .sk-lebar .legal-block { scroll-margin-top: 90px; }
-
-        @media (max-width: 991.98px) {
-            .sk-tata { grid-template-columns: 1fr; gap: 20px; }
-            .sk-isi-nav {
-                position: static; max-height: none; overflow: visible;
-                border-right: 0; padding-right: 0; border-bottom: 1px solid #f1f3f6; padding-bottom: 14px;
-            }
-            /* Mendatar di layar sempit: daftar tegak sepanjang sembilan baris
-               justru mendorong isinya turun jauh dari pandangan. */
-            .sk-isi-nav-tautan { display: flex; flex-wrap: wrap; gap: 6px; }
-            .sk-isi-nav a { border-left: 0; background: #f8fafc; padding: 6px 11px; font-size: .8rem; }
-        }
-    </style>
+<main class="legal-page lg-lebar">
+    @include('partials.gaya-legal-daftar-isi')
     <div class="legal-hero">
         <div class="container">
             <span class="ph-sec-eyebrow"><i class="bi bi-file-earmark-text"></i> Legal</span>
@@ -71,10 +23,10 @@
                 ];
             @endphp
 
-            <div class="sk-tata">
-                <nav class="sk-isi-nav" aria-label="Daftar isi">
+            <div class="lg-tata">
+                <nav class="lg-nav" aria-label="Daftar isi">
                     <b>Daftar Isi</b>
-                    <div class="sk-isi-nav-tautan">
+                    <div class="lg-nav-tautan">
                         @foreach ($pasal as $i => $judul)
                             <a href="#sk-{{ $i + 1 }}">{{ $i + 1 }}. {{ $judul }}</a>
                         @endforeach
