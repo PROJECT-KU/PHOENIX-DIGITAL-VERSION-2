@@ -22,6 +22,14 @@
            kolom kiri sementara isinya pindah ke kanan. */
         .member-kolom .legal-block { break-inside: avoid; page-break-inside: avoid; border-bottom: 0; }
 
+        /* Teks tombol tidak terlihat: `.legal-block a { color: oranye }` punya
+           kekhususan 0,1,1 dan mengalahkan `.co-btn-primary { color: #fff }`
+           yang hanya 0,1,0 — jadi tulisannya oranye di atas latar oranye.
+           Diperbaiki dengan menyebut keduanya sekaligus, bukan dengan
+           !important, supaya aturan tombolnya tetap bisa diubah kelak. */
+        .member-lebar .legal-block a.co-btn-primary { color: #fff; }
+        .member-lebar .legal-block a.co-btn-primary:hover { color: #fff; text-decoration: none; }
+
         .member-lebar .legal-hero { padding-top: 34px; padding-bottom: 26px; }
         .member-lebar .legal-hero h1 { margin-bottom: 6px; }
 
