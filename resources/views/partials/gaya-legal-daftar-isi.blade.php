@@ -64,6 +64,17 @@
     }
     .lg-lebar .legal-block h2 { font-size: 1.06rem; gap: 10px; margin-bottom: 10px; }
 
+    /* Teks tombol tidak terlihat: `.legal-block a { color: jingga }` bernilai
+       0,1,1 dan mengalahkan `.co-btn-primary { color: #fff }` yang hanya 0,1,0 —
+       tombolnya berada DI DALAM .legal-block, jadi ia mewarisi warna tautan
+       halaman legal dan tulisannya jingga di atas latar jingga.
+
+       Aturan ini pernah ditulis langsung di halaman Member, lalu ikut terbuang
+       saat blok <style>-nya diganti partial ini. Ditaruh di sini supaya
+       nasibnya terikat pada gaya bersama, bukan pada satu berkas halaman. */
+    .lg-lebar .legal-block a.co-btn-primary { color: #fff; }
+    .lg-lebar .legal-block a.co-btn-primary:hover { color: #fff; text-decoration: none; }
+
     /* Blok sorotan: pembatas jingga tebal mengelilingi seluruh kotak menariknya
        terlalu jauh dari sekitarnya. Cukup satu pita di tepi kiri — sorotannya
        tetap terbaca tanpa memotong alur bacaan. */
