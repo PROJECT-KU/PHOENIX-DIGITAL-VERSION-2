@@ -1,19 +1,45 @@
 <!doctype html>
 <html lang="id">
-<head><meta charset="utf-8"><title>{{ $judul }}</title></head>
-<body style="margin:0;padding:26px 16px;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#334155;line-height:1.6;">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{{ $judul }}</title>
+</head>
+{{-- text-size-adjust dikunci 100%: aplikasi Gmail di ponsel menaikkan sendiri
+     huruf yang dianggapnya terlalu kecil, dan saat menskalakan ulang begitu ia
+     kerap membuang perataan teks yang diwarisi elemen inline. --}}
+<body style="margin:0;padding:26px 16px;background:#f4f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#334155;line-height:1.6;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;text-size-adjust:100%;">
 @php
-    // Warna kegiatan dipakai apa adanya untuk undangan & perubahan. Pembatalan
-    // sengaja abu-abu: kegiatannya sudah tidak ada, jadi tidak pantas tampil
-    // semeriah undangan yang masih berlaku.
+    // Warna kegiatan dipakai apa adanya untuk undangan & perubahan.
+    //
+    // PEMBATALAN merah: itu kabar yang harus terbaca dalam sekejap, karena
+    // orang yang melewatkannya datang ke rapat yang sudah tidak ada. Merah
+    // bukan kemeriahan, melainkan tanda berhenti.
+    //
+    // DIKELUARKAN tetap abu-abu: bagi si penerima kegiatannya memang berlanjut,
+    // hanya tanpa dirinya. Memerahkannya menyamakan "Anda tidak perlu ikut"
+    // dengan "acaranya batal", dan dua hal itu tidak sama.
+    $batal = $rupa === 'pembatalan';
     $pudar = in_array($rupa, ['pembatalan', 'dikeluarkan']);
-    $warna = $pudar ? '#94a3b8' : $kegiatan->warna();
-    $lembut = $pudar ? '#f1f5f9' : $kegiatan->lembut();
+
+    $warna = match (true) {
+        $batal => '#dc2626',
+        $pudar => '#94a3b8',
+        default => $kegiatan->warna(),
+    };
+
+    $lembut = match (true) {
+        $batal => '#fef2f2',
+        $pudar => '#f1f5f9',
+        default => $kegiatan->lembut(),
+    };
 @endphp
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 <tr><td align="center">
-<table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0"
-       style="max-width:540px;background:#ffffff;border-radius:16px;border:1px solid #e8ecf2;overflow:hidden;">
+{{-- width="100%" + max-width, bukan width="540": lebar tetap 540 membuat
+     kartunya terpotong di layar ponsel yang lebih sempit. --}}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="width:100%;max-width:540px;background:#ffffff;border-radius:16px;border:1px solid #e8ecf2;overflow:hidden;">
 
     {{-- Pita warna setipis mungkin sebagai pengganti gambar: klien surel sering
          memblokir gambar, tapi tidak pernah memblokir warna latar sel tabel. --}}
@@ -37,7 +63,10 @@
 
     <tr>
         <td style="padding:0 30px;">
-            <p style="margin:0 0 20px;font-size:14.5px;color:#64748b;text-align:center;">
+            {{-- Kalimat pembatalan ikut merah dan tebal. Pita serta lencana di
+                 atas sudah merah, tapi keduanya hiasan; kalimat inilah yang
+                 dibaca orang, jadi ia yang paling tidak boleh terlewat. --}}
+            <p style="margin:0 0 20px;font-size:14.5px;text-align:center;color:{{ $rupa === 'pembatalan' ? '#dc2626' : '#64748b' }};{{ $rupa === 'pembatalan' ? 'font-weight:700;' : '' }}">
                 @if ($rupa === 'pembatalan')
                     Kegiatan ini dibatalkan. Anda tidak perlu hadir.
                 @elseif ($rupa === 'dikeluarkan')
@@ -91,10 +120,18 @@
     </tr>
 
     <tr>
-        <td style="padding:16px 30px 26px;border-top:1px solid #f2f5f9;">
-            <p style="margin:0;font-size:12px;color:#a8b3c4;text-align:center;">
-                Dikirim oleh {{ $olehSiapa }} · {{ now()->translatedFormat('d F Y, H:i') }} WIB<br>
-                <strong style="color:#94a3b8;">lemon by ACM</strong>
+        <td align="center" style="padding:16px 30px 26px;border-top:1px solid #f2f5f9;text-align:center;">
+            {{-- Rata tengahnya dititipkan ke atribut align="center" pada <td>,
+                 bukan hanya ke CSS: atribut HTML dihormati bahkan oleh klien
+                 yang membuang sebagian gaya. Nama merek dipisah jadi paragraf
+                 sendiri dengan ukuran huruf yang disebut tegas — sebelumnya ia
+                 hanya <strong> di balik <br>, mewarisi ukuran dan perataan dari
+                 induknya, dan itulah yang lepas di Gmail ponsel. --}}
+            <p style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#a8b3c4;text-align:center;">
+                Dikirim oleh {{ $olehSiapa }} · {{ now()->translatedFormat('d F Y, H:i') }} WIB
+            </p>
+            <p style="margin:0;font-size:13px;line-height:1.5;font-weight:700;color:#94a3b8;text-align:center;">
+                lemon by ACM
             </p>
         </td>
     </tr>
