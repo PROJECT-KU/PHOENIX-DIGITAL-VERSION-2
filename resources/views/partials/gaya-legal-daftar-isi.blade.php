@@ -28,7 +28,10 @@
         position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto;
         border-right: 1px solid #f1f3f6; padding-right: 18px;
     }
-    .lg-nav b {
+    /* Anak LANGSUNG saja: tanpa tanda >, aturan ini juga mengenai label di dalam
+       blok "Terakhir diperbarui", sehingga padding kirinya bertumpuk (12px dari
+       blok + 12px dari sini) dan tanggalnya menjorok dibanding daftar di atasnya. */
+    .lg-nav > b {
         display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em;
         text-transform: uppercase; color: #a8b3c4; margin-bottom: 10px; padding-left: 12px;
     }
@@ -46,11 +49,18 @@
 
     /* Tanggal pembaruan, seperti halaman ketentuan Orcha. Pada dokumen hukum ini
        bukan hiasan: pembaca perlu tahu versi mana yang sedang ia setujui. */
+    /* Padding kiri 12px, sama persis dengan tautan daftar isi di atasnya,
+       supaya label dan tanggalnya berdiri di garis yang sama. */
     .lg-diperbarui {
-        display: block; margin-top: 18px; padding: 12px;
-        border-top: 1px solid #f1f3f6; font-size: .76rem; color: #a8b3c4; line-height: 1.5;
+        display: block; margin-top: 18px; padding: 14px 12px 0;
+        border-top: 1px solid #f1f3f6; font-size: .76rem; color: #a8b3c4; line-height: 1.55;
     }
-    .lg-diperbarui b { display: block; color: #6b7280; font-weight: 700; }
+    .lg-diperbarui b {
+        display: block; margin-bottom: 2px; padding-left: 0;
+        font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+        color: #a8b3c4;
+    }
+    .lg-diperbarui span { color: #6b7280; font-weight: 600; }
 
     /* ===== Menenangkan tampilan =====
        Lencana judul sebelumnya kotak bergradasi jingga penuh dengan bayangan,

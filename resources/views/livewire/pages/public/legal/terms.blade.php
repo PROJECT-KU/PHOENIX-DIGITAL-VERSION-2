@@ -37,7 +37,7 @@
                          padahal hanya gayanya yang berubah menyesatkan pembacanya. --}}
                     <span class="lg-diperbarui">
                         <b>Terakhir diperbarui</b>
-                        11 Juli 2026
+                        <span>11 Juli 2026</span>
                     </span>
                 </nav>
 

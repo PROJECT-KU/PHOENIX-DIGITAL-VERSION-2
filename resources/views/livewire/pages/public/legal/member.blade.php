@@ -38,7 +38,7 @@
                          penyuntingan tata letak. --}}
                     <span class="lg-diperbarui">
                         <b>Terakhir diperbarui</b>
-                        15 Juli 2026
+                        <span>15 Juli 2026</span>
                     </span>
                 </nav>
 
