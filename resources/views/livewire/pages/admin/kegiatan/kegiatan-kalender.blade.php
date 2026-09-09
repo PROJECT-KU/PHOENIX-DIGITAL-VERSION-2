@@ -115,6 +115,18 @@ Kalender Kegiatan || lemon
         }
         .kg-chip:active { transform: scale(.97); }
         .kg-titik { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; background: var(--kg-warna); }
+        /* Keterangan, bukan tombol: tidak menanggapi kursor sama sekali. */
+        .kg-chip-mati { cursor: default; }
+        .kg-chip-mati:hover { filter: none; }
+
+        .kg-catatan-libur {
+            display: flex; align-items: flex-start; gap: 8px;
+            margin: 14px 0 0; padding-top: 13px; border-top: 1px solid #f1f4f8;
+            font-size: .78rem; line-height: 1.6; color: #94a3b8;
+        }
+        .kg-catatan-libur i.bi { flex: 0 0 auto; margin-top: .18em; line-height: 1; }
+        .kg-catatan-libur i.bi::before { display: block; line-height: 1; }
+        .kg-catatan-libur b { color: #64748b; }
         .kg-chip.aktif .kg-titik { background: rgba(255,255,255,.9); }
 
         /* ===== Kisi kalender =====
@@ -187,6 +199,23 @@ Kalender Kegiatan || lemon
             position: absolute; left: 8px; right: 8px; bottom: 7px;
             font-size: .7rem; color: #a8b3c4; font-weight: 600;
         }
+
+        /* ===== Hari libur & peringatan nasional =====
+           Tanggal merah memakai MERAH, bukan warna jenis kegiatan mana pun:
+           itu satu-satunya konvensi kalender yang sudah dipahami semua orang
+           tanpa perlu melihat legenda. */
+        .kg-sel.kg-merah .kg-angka { color: #dc2626; }
+        .kg-sel.kg-merah { border-color: #f8d4d4; }
+        .kg-sel.kg-merah.kg-terpakai { border-color: var(--kg-tepi); }
+
+        /* Nama peringatan ditulis kecil di bawah angka. Dipotong satu baris —
+           sel harus tetap seukuran tetangganya berapa pun panjang namanya. */
+        .kg-tanda {
+            display: block; margin-top: 2px; font-size: .64rem; line-height: 1.25;
+            font-weight: 700; color: #94a3b8;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .kg-tanda-libur { color: #dc2626; }
         .kg-sel { position: relative; }
 
         /* Balok kegiatan. Lebar satu kolom = (100% - 6 jarak) / 7; sisi kirinya
@@ -490,8 +519,38 @@ Kalender Kegiatan || lemon
                             wire:click="$toggle('hanyaSaya')">
                             <i class="bi bi-person-check-fill"></i> Saya saja
                         </button>
+
+                        {{-- Keterangan, bukan saringan: tanggal merah bukan kegiatan
+                             yang bisa disembunyikan. Dibuat tidak bisa diklik supaya
+                             tidak ada yang mencoba menyaringnya. --}}
+                        <span class="kg-chip kg-chip-mati" style="--kg-warna:#dc2626; --kg-lembut:#fef2f2;">
+                            <span class="kg-titik"></span> Libur nasional
+                        </span>
                     </div>
+
                 </div>
+
+                {{-- Berterus terang, bukan diam-diam: libur yang tanggalnya
+                     berpindah tiap tahun (Idul Fitri, Nyepi, Waisak, dan
+                     seterusnya) ditetapkan lewat SKB dan TIDAK dihitung sendiri
+                     oleh sistem. Menghitungnya lewat konversi kalender akan
+                     menghasilkan tanggal yang meyakinkan tapi bisa meleset
+                     sehari — dan orang mengatur cuti serta tenggat dari
+                     kalender ini. Selama belum diisi, lebih baik dikatakan. --}}
+                @unless ($bergerakTerisi)
+                <p class="kg-catatan-libur">
+                    <i class="bi bi-info-circle"></i>
+                    {{-- Seluruh kalimat dibungkus SATU span: pembungkusnya flex, dan tanpa
+                         ini setiap elemen di dalamnya (termasuk <b>) jadi item flex
+                         tersendiri lalu terlempar ke ujung baris. --}}
+                    <span>
+                        Tanggal merah yang ditandai baru yang jatuh pada tanggal tetap tiap tahun.
+                        Libur yang tanggalnya berpindah — Idul Fitri, Nyepi, Waisak, dan sejenisnya —
+                        belum diisi untuk {{ $tahun }}; tambahkan sebagai kegiatan berjenis
+                        <b>Libur</b> bila diperlukan.
+                    </span>
+                </p>
+                @endunless
             </div>
         </div>
 
@@ -514,11 +573,16 @@ Kalender Kegiatan || lemon
 
                     {{-- Lapisan bawah: sel hari, yang bisa diklik --}}
                     @foreach ($m['hari'] as $iHari => $sel)
-                    @php $tepi = $m['tepi'][$iHari]; @endphp
+                    @php
+                        $tepi = $m['tepi'][$iHari];
+                        $tanda = $sel['penanda'];
+                        $merah = $tanda && $tanda['libur'];
+                    @endphp
                     <div class="kg-sel
                                 {{ $sel['bulanIni'] ? '' : 'kg-luar' }}
                                 {{ $sel['akhirPekan'] ? 'kg-pekan' : '' }}
                                 {{ $sel['hariIni'] ? 'kg-hariini' : '' }}
+                                {{ $merah ? 'kg-merah' : '' }}
                                 {{ $tepi ? 'kg-terpakai' : '' }}
                                 {{ $tanggalTerpilih === $sel['tanggal'] ? 'kg-terpilih' : '' }}"
                         @if ($tepi) style="--kg-tepi:{{ $tepi['warna'] }}; --kg-tepi-lembut:{{ $tepi['lembut'] }};" @endif
@@ -526,6 +590,16 @@ Kalender Kegiatan || lemon
                         wire:click="pilihTanggal('{{ $sel['tanggal'] }}')">
 
                         <span class="kg-angka">{{ $sel['angka'] }}</span>
+
+                        @if ($tanda)
+                            {{-- Judul lengkap ditaruh di atribut title: nama peringatan
+                                 sering lebih panjang daripada lebar selnya, dan dipotong
+                                 di tengah kata lebih membingungkan daripada membantu. --}}
+                            <span class="kg-tanda {{ $merah ? 'kg-tanda-libur' : '' }}"
+                                title="{{ $tanda['nama'] }}{{ $merah ? ' — hari libur nasional' : ' — hari peringatan, tetap hari kerja' }}">
+                                {{ $tanda['nama'] }}
+                            </span>
+                        @endif
 
                         @if ($m['lebih'][$iHari] > 0)
                         <span class="kg-lebih">+{{ $m['lebih'][$iHari] }} lagi</span>

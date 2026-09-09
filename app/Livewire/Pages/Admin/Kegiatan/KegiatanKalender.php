@@ -568,6 +568,10 @@ class KegiatanKalender extends Component
             ->when($this->hanyaSaya, fn ($q) => $q->milik($idSaya))
             ->get();
 
+        // Hari libur & peringatan nasional. Diambil sekali untuk seluruh kisi,
+        // bukan per sel: 42 pemanggilan untuk satu bulan yang sama itu sia-sia.
+        $penanda = \App\Support\HariLibur::untukRentang($awalGrid, $akhirGrid);
+
         $minggu = [];
         $hari = $awalGrid->copy();
 
@@ -576,12 +580,15 @@ class KegiatanKalender extends Component
             $baris = [];
 
             for ($i = 0; $i < 7; $i++) {
+                $tanggal = $hari->toDateString();
+
                 $baris[] = [
-                    'tanggal' => $hari->toDateString(),
+                    'tanggal' => $tanggal,
                     'angka' => (int) $hari->day,
                     'bulanIni' => (int) $hari->month === $this->bulan,
                     'hariIni' => $hari->isToday(),
                     'akhirPekan' => $hari->isWeekend(),
+                    'penanda' => $penanda[$tanggal] ?? null,
                 ];
                 $hari->addDay();
             }
@@ -604,6 +611,9 @@ class KegiatanKalender extends Component
                 ? $this->padaTanggal($kegiatan, $this->tanggalTerpilih)
                 : collect(),
             'semuaKaryawan' => User::orderBy('name')->get(['id', 'name']),
+            // Dipakai kepala halaman untuk berterus terang bahwa libur yang
+            // tanggalnya berpindah belum diisi untuk tahun ini.
+            'bergerakTerisi' => \App\Support\HariLibur::bergerakTerisi($this->tahun),
         ]);
     }
 }
