@@ -1,5 +1,28 @@
 @php $multiBanner = $banners->count() > 1; @endphp
 
+<style>
+    /* Ditulis inline, bukan di resources/css/public-custom-styles.css: berkas itu
+       dikompilasi Vite ke public/build, yang MASUK .gitignore dan tidak ikut
+       terdeploy — salinan di server masih tertanggal 19 Agustus. Aturan yang
+       ditulis di sana tidak akan pernah sampai ke pengunjung lewat git pull. */
+
+    /* Chip mengambang hanya masuk akal saat hero berdampingan dengan kartunya:
+       chip mengisi ruang kosong di sekelilingnya. Begitu tata letaknya menumpuk
+       (di bawah 992px) ruang kosong itu hilang, dan chip hanya bisa mendarat DI
+       ATAS tulisan — di tablet, "Proses Instan" menutupi kata "Checkout" pada
+       judul hero. Seluruh lapisannya disembunyikan, bukan sebagian. */
+    @media (max-width: 991.98px) {
+        .ph-hero-deco { display: none !important; }
+    }
+
+    /* Hanya jarak luar bagian hero yang dirapatkan. Padding di dalam slide
+       SENGAJA tidak disentuh: slide diatur Swiper dengan lebar tetap, dan
+       mengubah paddingnya membuat teks meluber keluar lalu terpotong tepi. */
+    @media (max-width: 991.98px) {
+        .ph-hero.section { padding: 14px 0 10px; }
+    }
+</style>
+
 <section id="hero" class="ph-hero section">
     <div class="container">
         {{-- Chip mengambang (ala flip.id) untuk mengisi area kosong --}}
