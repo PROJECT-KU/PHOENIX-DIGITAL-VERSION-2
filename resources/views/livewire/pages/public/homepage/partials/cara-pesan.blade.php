@@ -13,22 +13,23 @@
         /* Ditulis inline: public/build masuk .gitignore dan tidak ikut terdeploy. */
         .cp-deret { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .cp-langkah {
-            position: relative; background: #fff; border: 1px solid #eef1f5;
-            border-radius: 18px; padding: 22px 20px;
+            position: relative; background: #fff; border: 1px solid #eceff3;
+            border-radius: 14px; padding: 20px 18px;
         }
         /* Garis penyambung antar langkah: menegaskan ini URUTAN, bukan empat
            keterangan yang berdiri sendiri. Ditarik dari tepi kanan kartu ke
            tetangganya, dan tidak digambar setelah kartu terakhir. */
         .cp-langkah:not(:last-child)::after {
-            content: ""; position: absolute; top: 42px; right: -16px; width: 16px;
+            content: ""; position: absolute; top: 34px; right: -16px; width: 16px;
             border-top: 2px dashed #f7c9a3;
         }
+        /* Angka polos, bukan kotak bergradasi berbayang. Empat kotak menyala
+           berderet membuat langkah-langkah ini tampak seperti iklan; yang
+           dibutuhkan pembaca hanya urutannya. */
         .cp-nomor {
-            width: 40px; height: 40px; border-radius: 12px; margin-bottom: 14px;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #fba919, #f26522); color: #fff;
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.05rem;
-            box-shadow: 0 8px 18px -8px rgba(242, 101, 34, .85);
+            display: block; margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.6rem;
+            color: #f26522; line-height: 1;
         }
         .cp-judul { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem; color: #23272f; margin: 0 0 6px; line-height: 1.3; }
         .cp-ket { color: #6b7280; font-size: .86rem; line-height: 1.6; margin: 0; }

@@ -40,29 +40,30 @@
            berapa pun panjang nama produknya, jadi barisnya tidak pernah pincang. */
         .pt-deret { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
 
+        /* Kartu dibuat datar: garis tepi tipis, tanpa bayangan, tanpa melompat
+           saat disentuh. Lima kartu yang serentak mengambang begitu kursor lewat
+           membuat halaman terasa seperti demo, bukan toko. */
         .pt-kartu {
-            display: flex; flex-direction: column; text-align: center;
-            background: #fff; border: 1px solid #eef1f5; border-radius: 18px;
-            padding: 22px 18px 20px; position: relative;
+            display: flex; flex-direction: column; text-align: left;
+            background: #fff; border: 1px solid #eceff3; border-radius: 14px;
+            padding: 20px 18px 18px; position: relative;
             text-decoration: none; color: inherit;
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+            transition: border-color .18s ease;
         }
-        .pt-kartu:hover {
-            transform: translateY(-4px); color: inherit; border-color: #fcd9b6;
-            box-shadow: 0 18px 34px -20px rgba(242, 101, 34, .6);
-        }
+        .pt-kartu:hover { color: inherit; border-color: #d8dde4; }
 
+        /* Lencana hanya untuk peringkat satu, dan tanpa pil: cukup teks kecil
+           berwarna merek. Kartu lain tidak lagi bernomor — angka #2 sampai #5
+           tidak memberi tahu apa pun yang berguna bagi pembeli. */
         .pt-lencana {
-            position: absolute; top: 14px; left: 14px;
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 5px 10px; border-radius: 999px;
-            background: #fff3e6; color: #d9531a;
-            font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+            display: flex; height: 16px; align-items: center; gap: 6px; margin-bottom: 10px;
+            color: #f26522; font-size: .68rem; font-weight: 800;
+            letter-spacing: .1em; text-transform: uppercase;
         }
-        .pt-lencana i.bi { font-size: .7rem; line-height: 1; }
+        .pt-lencana i.bi { font-size: .72rem; line-height: 1; }
         .pt-lencana i.bi::before { display: block; line-height: 1; }
 
-        .pt-logo { height: 96px; display: flex; align-items: center; justify-content: center; margin: 12px 0 14px; }
+        .pt-logo { height: 84px; display: flex; align-items: center; justify-content: flex-start; margin: 4px 0 16px; }
         .pt-logo img { max-height: 88px; max-width: 100%; object-fit: contain; }
 
         /* Nama, keterangan, dan jumlah pesanan dipatok tingginya masing-masing.
@@ -82,18 +83,19 @@
         .pt-laku { font-size: .76rem; color: #9ca3af; font-weight: 600; margin: 0 0 14px; min-height: 1.2em; }
         .pt-laku b { color: #f26522; font-weight: 700; }
 
-        .pt-harga { border-top: 1px solid #f1f3f6; padding-top: 14px; margin-top: auto; text-align: left; }
+        .pt-harga { border-top: 1px solid #f2f4f7; padding-top: 14px; margin-top: auto; text-align: left; }
         .pt-harga small { display: block; font-size: .76rem; color: #9ca3af; margin-bottom: 2px; }
         .pt-harga b { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.28rem; color: #f26522; }
         .pt-harga span { font-size: .8rem; color: #9ca3af; font-weight: 600; }
 
+        /* Tautan teks, bukan tombol berbingkai. Lima tombol sekaligus dalam satu
+           baris membuat semuanya terasa sama mendesak, padahal seluruh kartunya
+           memang sudah bisa diklik. */
         .pt-tombol {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin-top: 14px; padding: .62rem 1rem; border-radius: 11px;
-            border: 1px solid #f7c9a3; color: #f26522; font-weight: 700; font-size: .88rem;
-            transition: background .18s ease, color .18s ease, border-color .18s ease;
+            display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
+            color: #f26522; font-weight: 700; font-size: .86rem;
         }
-        .pt-kartu:hover .pt-tombol { background: linear-gradient(135deg, #fba919, #f26522); border-color: transparent; color: #fff; }
+        .pt-kartu:hover .pt-tombol { color: #d9531a; }
         .pt-tombol i.bi { line-height: 1; }
         .pt-tombol i.bi::before { display: block; line-height: 1; }
 
@@ -122,9 +124,12 @@
             @foreach ($terlaris as $i => $p)
                 @php $h = $hargaProduk($p); @endphp
                 <a class="pt-kartu" href="{{ route('shop.detail-product', $p->id) }}" wire:key="terlaris-{{ $p->id }}">
-                    @if ($i === 0)
-                        <span class="pt-lencana"><i class="bi bi-star-fill"></i> Best Seller</span>
-                    @endif
+                    {{-- Selalu dirender, meski kosong: lencana ini kini elemen biasa,
+                         jadi tanpa slot yang tetap ada kartu pertama akan lebih tinggi
+                         daripada empat kartu di sebelahnya. --}}
+                    <span class="pt-lencana">
+                        @if ($i === 0)<i class="bi bi-star-fill"></i> Terlaris @endif
+                    </span>
 
                     <div class="pt-logo">
                         @if ($p->image)

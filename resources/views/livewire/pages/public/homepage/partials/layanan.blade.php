@@ -16,14 +16,11 @@
         .ly-deret { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
         .ly-kartu {
             display: flex; flex-direction: column; gap: 10px;
-            background: #fff; border: 1px solid #eef1f5; border-radius: 18px;
+            background: #fff; border: 1px solid #eceff3; border-radius: 14px;
             padding: 22px; text-decoration: none; color: inherit;
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+            transition: border-color .18s ease;
         }
-        .ly-kartu:hover {
-            transform: translateY(-4px); color: inherit; border-color: #fcd9b6;
-            box-shadow: 0 18px 34px -20px rgba(242, 101, 34, .6);
-        }
+        .ly-kartu:hover { color: inherit; border-color: #d8dde4; }
         .ly-ikon {
             width: 48px; height: 48px; border-radius: 14px;
             display: flex; align-items: center; justify-content: center;

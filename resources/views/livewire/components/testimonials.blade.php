@@ -17,7 +17,9 @@
                 kicker="Testimoni"
                 judul="Apa Kata Pelanggan Kami"
                 sub="Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital." />
-            <div class="ph-sec-head tm-kepala-aksi">
+            {{-- Tanpa .ph-sec-head: kelas itu memusatkan isinya, sehingga tombolnya
+                 berdiri di tengah sementara judul di atasnya rata kiri. --}}
+            <div class="tm-kepala-aksi" style="margin: -8px 0 26px;">
                 <button type="button" class="ph-empty-btn tm-share-btn"
                     @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
                     <i class="bi bi-pencil-square"></i> Tulis Testimoni

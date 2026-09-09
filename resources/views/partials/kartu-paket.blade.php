@@ -76,9 +76,11 @@
                 <i class="bi bi-lightning-charge-fill"></i>
                 Hemat Rp{{ number_format($hp['potongan'], 0, ',', '.') }}
             </span>
-        @else
-            <span class="fs-badge">Paket Hemat</span>
         @endif
+        {{-- Tidak ada lencana pengganti bila paketnya memang tanpa potongan.
+             "Paket Hemat" yang tertempel di semua kartu — termasuk yang harganya
+             tidak dipotong sama sekali — bukan cuma hiasan, melainkan klaim yang
+             tidak dibuktikan angka mana pun di kartu itu. --}}
     </div>
 
     <div class="fs-card-body">

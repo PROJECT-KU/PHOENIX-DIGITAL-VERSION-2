@@ -62,4 +62,24 @@
         .fs-card-media::after,
         .pd-media::after { animation: none; opacity: .7; transform: none; }
     }
+
+    /* ===== Lencana kartu ditenangkan =====
+       Sebelumnya lencana dimiringkan -6 derajat, bergradasi jingga penuh, dan
+       berbayang menyala. Stiker miring yang menempel di setiap kartu adalah
+       penanda paling kentara bahwa halaman disusun dari cetakan — mata
+       menangkap pengulangan kemiringannya sebelum membaca isinya.
+
+       Diturunkan jadi label datar: warnanya tetap jingga merek, tegak, dan
+       tanpa cahaya. Isinya tetap terbaca justru karena tidak lagi berteriak. */
+    .fs-card-media .fs-badge,
+    .pd-media .fs-badge {
+        transform: none;
+        box-shadow: none;
+        background: #f26522;
+        font-weight: 700;
+        font-size: .7rem;
+        letter-spacing: .01em;
+        padding: 4px 9px;
+        border-radius: 7px;
+    }
 </style>

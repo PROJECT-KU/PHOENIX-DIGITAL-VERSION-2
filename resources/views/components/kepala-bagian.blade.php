@@ -24,16 +24,22 @@
         gap: 20px; margin-bottom: 24px;
     }
     .kb-teks { min-width: 0; }
+    /* Label tanpa pil. Lima chip jingga identik yang berulang di atas tiap
+       judul adalah penanda paling kentara bahwa halaman disusun dari cetakan
+       yang sama — mata menangkap pengulangannya sebelum membaca isinya.
+       Dijadikan label polos: tetap memberi konteks, tanpa berteriak. */
     .kb-kicker {
-        display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px;
-        background: #fff3e6; color: #d9531a; border-radius: 999px; padding: 5px 12px;
-        font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+        display: inline-flex; align-items: center; gap: 7px; margin-bottom: 8px;
+        color: #f26522; font-size: .72rem; font-weight: 700;
+        letter-spacing: .12em; text-transform: uppercase;
     }
-    .kb-kicker i.bi { font-size: .76rem; line-height: 1; }
+    .kb-kicker i.bi { font-size: .78rem; line-height: 1; }
     .kb-kicker i.bi::before { display: block; line-height: 1; }
+    /* Judul lebih besar, jarak huruf sedikit dirapatkan — beban visualnya
+       dipindah dari hiasan ke tipografi. */
     .kb-judul {
-        font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f;
-        font-size: 2rem; line-height: 1.15; margin: 0 0 6px;
+        font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
+        font-size: 2.1rem; line-height: 1.12; letter-spacing: -.02em; margin: 0 0 8px;
     }
     .kb-sub { color: #6b7280; font-size: .95rem; line-height: 1.6; margin: 0; max-width: 62ch; }
     .kb-tautan {
