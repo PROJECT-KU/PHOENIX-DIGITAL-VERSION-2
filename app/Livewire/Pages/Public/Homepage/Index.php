@@ -37,6 +37,14 @@ class Index extends Component
             // Peringkat dihitung dari pesanan yang benar-benar dibayar, bukan
             // daftar yang dipatok di Blade — lihat App\Support\ProdukTerlaris.
             'terlaris' => \App\Support\ProdukTerlaris::ambil(5),
+            // Jasa punya bagiannya sendiri: alur belinya berbeda (unggah berkas
+            // lalu menunggu hasil), jadi tidak boleh bercampur dengan akun premium
+            // yang dikirim begitu dibayar.
+            'layanan' => Product::where('butuh_file', 1)
+                ->where(fn ($q) => $q->whereNull('dijeda')->orWhere('dijeda', false))
+                ->orderBy('nama_akun')
+                ->take(3)
+                ->get(),
         ]);
     }
 }

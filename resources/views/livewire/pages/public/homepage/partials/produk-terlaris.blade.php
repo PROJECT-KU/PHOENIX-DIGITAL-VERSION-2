@@ -36,20 +36,6 @@
         /* ===== Produk Terlaris ===== */
         #promo-cards { padding-top: 40px; }
 
-        .pt-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
-        .pt-head h2 {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f;
-            font-size: 2.1rem; margin: 0 0 6px; line-height: 1.15;
-        }
-        .pt-head p { color: #6b7280; font-size: .95rem; margin: 0; line-height: 1.6; }
-        .pt-semua {
-            display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
-            color: #f26522; font-weight: 700; font-size: .95rem; text-decoration: none; white-space: nowrap;
-        }
-        .pt-semua:hover { color: #d9531a; }
-        .pt-semua i.bi { line-height: 1; }
-        .pt-semua i.bi::before { display: block; line-height: 1; }
-
         /* Lima kartu sejajar. Grid, bukan flex: tiap kolom lebarnya sama persis
            berapa pun panjang nama produknya, jadi barisnya tidak pernah pincang. */
         .pt-deret { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
@@ -124,13 +110,13 @@
     </style>
 
     <div class="container" data-aos="fade-up" data-aos-delay="100">
-        <div class="pt-head">
-            <div>
-                <h2>Produk Terlaris</h2>
-                <p>Tools pilihan untuk riset, skripsi &amp; produktivitas yang paling banyak dipesan pelanggan.</p>
-            </div>
-            <a href="{{ route('shop.index') }}" class="pt-semua">Lihat Semua Produk <i class="bi bi-arrow-right"></i></a>
-        </div>
+        <x-kepala-bagian
+            ikon="bi-fire"
+            kicker="Paling Dicari"
+            judul="Produk Terlaris"
+            sub="Tools pilihan untuk riset, skripsi & produktivitas yang paling banyak dipesan pelanggan."
+            :tautan-url="route('shop.index')"
+            tautan-teks="Lihat Semua Produk" />
 
         <div class="pt-deret">
             @foreach ($terlaris as $i => $p)

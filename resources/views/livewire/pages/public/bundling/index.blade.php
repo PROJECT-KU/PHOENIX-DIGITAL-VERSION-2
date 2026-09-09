@@ -31,11 +31,13 @@
     </style>
     @if ($bundlings->isNotEmpty())
     <div class="container">
-        <div class="ph-sec-head">
-            <span class="ph-sec-eyebrow"><i class="bi bi-box2-heart-fill"></i> Hemat Lebih</span>
-            <h2 class="ph-sec-title">Paket Bundling</h2>
-            <p class="ph-sec-sub">Gabungan beberapa akun premium dalam satu paket — lebih lengkap &amp; lebih hemat.</p>
-        </div>
+        <x-kepala-bagian
+            ikon="bi-box2-heart-fill"
+            kicker="Hemat Lebih"
+            judul="Paket Bundling"
+            sub="Gabungan beberapa akun premium dalam satu paket — lebih lengkap & lebih hemat."
+            :tautan-url="$diBeranda ? route('bundling.index') : null"
+            tautan-teks="Lihat Semua Paket" />
 
         <div class="row g-4 justify-content-center">
             @forelse ($bundlings as $item)

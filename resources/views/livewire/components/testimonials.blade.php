@@ -12,10 +12,12 @@
     </style>
     <section id="testimoni" class="tm-section section">
         <div class="container">
-            <div class="ph-sec-head">
-                <span class="ph-sec-eyebrow"><i class="bi bi-chat-quote-fill"></i> Testimoni</span>
-                <h2 class="ph-sec-title">Apa kata pelanggan kami</h2>
-                <p class="ph-sec-sub">Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital.</p>
+            <x-kepala-bagian
+                ikon="bi-chat-quote-fill"
+                kicker="Testimoni"
+                judul="Apa Kata Pelanggan Kami"
+                sub="Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital." />
+            <div class="ph-sec-head tm-kepala-aksi">
                 <button type="button" class="ph-empty-btn tm-share-btn"
                     @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
                     <i class="bi bi-pencil-square"></i> Tulis Testimoni
