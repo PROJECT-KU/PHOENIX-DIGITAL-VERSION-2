@@ -246,13 +246,50 @@
             color: rgba(255, 255, 255, .5); margin-bottom: 12px;
         }
 
-        /* --- Pita layanan lain --- */
-        #footer .footer-services { padding: 18px 0 6px; }
+        /* --- Pita layanan lain ---
+
+           Ini AJAKAN, bukan kolom navigasi. Begitu keempat kolom di atasnya
+           jadi kartu netral, panel ini harus terlihat berbeda dari mereka —
+           kalau tidak, ia terbaca sebagai kolom kelima dan ajakan di dalamnya
+           hilang di antara daftar tautan.
+
+           Bedanya dibuat dari kehangatan: latarnya bernada jingga dan
+           bingkainya amber, sementara kartu kolom netral putih transparan. */
+        #footer .footer-services { padding: 22px 0 6px; }
         #footer .footer-services .fsv-inner {
-            background: rgba(255, 255, 255, .04);
-            border: 1px solid rgba(255, 255, 255, .10);
+            position: relative; overflow: hidden;
+            background:
+                radial-gradient(70% 120% at 100% 0%, rgba(251, 169, 25, .16) 0%, rgba(251, 169, 25, 0) 62%),
+                linear-gradient(120deg, rgba(242, 101, 34, .12), rgba(251, 169, 25, .06));
+            border: 1px solid rgba(251, 175, 69, .26);
+            padding: 28px 32px;
+        }
+        #footer .footer-services .fsv-inner > * { position: relative; z-index: 1; }
+
+        /* Label pembuka: teks polos berjarak lebar, bukan pil. Pil di dalam
+           panel yang sudah berbingkai membuat dua bingkai bertumpuk. */
+        #footer .fsv-text .ph-sec-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: none !important; border: 0 !important; padding: 0 !important;
+            font-size: .74rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+            color: #fbaf45 !important;
+        }
+        #footer .fsv-text h3 {
+            font-size: 1.5rem; letter-spacing: -.025em; line-height: 1.2; margin: 10px 0 6px;
+        }
+        #footer .fsv-text p { max-width: 52ch; }
+
+        /* Chip diberi latar berwarna, bukan hanya glif berwarna. Glif setinggi
+           14px yang berwarna sendirian di dalam pil abu nyaris tidak terbaca
+           sebagai warna — yang tertangkap mata bidangnya, bukan gorenya. */
+        #footer .fsv-chip {
+            background: color-mix(in srgb, var(--c) 14%, transparent) !important;
+            border-color: color-mix(in srgb, var(--c) 30%, transparent) !important;
+            padding: 7px 14px;
         }
         #footer .fsv-chip i.bi { font-size: .9rem; color: var(--c) !important; }
+
+        #footer .fsv-cta { align-self: center; }
 
         /* --- Kaki paling bawah --- */
         #footer .footer-bottom {
