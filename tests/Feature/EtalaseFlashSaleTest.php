@@ -191,3 +191,22 @@ it('menyebut siapa yang berhak, tepat di bawah angkanya', function () {
     // mencari sendiri di syarat & ketentuan.
     $this->get('/')->assertSee('khusus member', false);
 });
+
+it('label di garis atas tetap pendek meski badge_text sepanjang kalimat', function () {
+    produkPromo(promoBerjalan(['badge_text' => 'Rayakan Kemerdekaan, Belanja Makin Hemat!']));
+
+    // Label itu legend kartu: tugasnya memberi tahu JENIS kartunya dalam
+    // sekali lihat. Kalimat sepanjang itu, dengan huruf kapital berjarak
+    // lebar, melebar sampai 478px dan berhenti terbaca sebagai label — ia
+    // mulai terbaca sebagai judul kedua yang menyaingi judul aslinya.
+    $this->get('/')
+        ->assertDontSee('Rayakan Kemerdekaan', false)
+        ->assertSee('fsx-pita-atas', false)
+        ->assertSee('Flash Sale', false);
+});
+
+it('badge_text yang memang sependek label tetap dipakai', function () {
+    produkPromo(promoBerjalan(['badge_text' => 'Promo Kilat']));
+
+    $this->get('/')->assertSee('Promo Kilat', false);
+});

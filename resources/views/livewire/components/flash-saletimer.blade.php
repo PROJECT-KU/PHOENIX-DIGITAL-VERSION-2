@@ -49,7 +49,9 @@
             position: relative; z-index: 1;
             display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
             align-items: center; gap: 18px 32px;
-            padding: 22px 30px 18px;
+            /* Padding atas dilebihkan untuk memberi tempat label yang
+               menggantung dari garis atas (36px) plus jaraknya. */
+            padding: 58px 30px 18px;
         }
         #call-to-action .fsx-kiri { grid-column: 1; min-width: 0; }
         #call-to-action .fsx-tengah {
@@ -63,12 +65,43 @@
         #call-to-action .fsx-kanan { grid-column: 3; }
         #call-to-action .fsx-kaki { grid-column: 1 / -1; }
 
-        /* Rel jingga tipis di tepi kiri. Satu garis sudah cukup menandai
-           "bagian ini berbeda" — jauh lebih tenang daripada mewarnai seluruh
-           bidangnya, dan tidak menutupi apa pun. */
+        /* Garis jingga melintang di tepi ATAS, bukan di tepi kiri. Label
+           kartunya duduk di tengah garis itu, jadi garisnya bukan sekadar
+           hiasan — ia alas tempat nama kartu berdiri. */
         #call-to-action .fsx-hero::before {
-            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
-            background: linear-gradient(180deg, #f26522, #fba919);
+            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
+            background: linear-gradient(90deg, #f26522, #fba919, #f26522);
+        }
+
+        #call-to-action .fsx-pita-atas {
+            position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
+            display: inline-flex; align-items: center; gap: 9px;
+            background: linear-gradient(135deg, #f26522, #fb8b3c);
+            color: #fff; font-family: 'Poppins', sans-serif;
+            /* Huruf kapital berjarak lebar. Pada label sependek ini jarak antar
+               huruf yang longgar membuatnya terbaca sebagai PENANDA, bukan
+               sebagai kata biasa yang kebetulan ditulis besar. */
+            font-size: .72rem; font-weight: 800; letter-spacing: .24em;
+            text-transform: uppercase; white-space: nowrap;
+            /* Pengaman terakhir: berapa pun panjang teksnya, label tidak boleh
+               melebar sampai menyaingi lebar kartunya sendiri. */
+            max-width: min(80vw, 340px); overflow: hidden; text-overflow: ellipsis;
+            padding: 9px 26px 9px 24px;
+            /* Sudut atas lurus supaya menyatu dengan garisnya, sudut bawah
+               membulat — bentuk label yang menggantung, bukan kotak yang
+               kebetulan menempel. */
+            border-radius: 0 0 14px 14px;
+            box-shadow: 0 8px 20px rgba(242, 101, 34, .32);
+        }
+        #call-to-action .fsx-pita-atas .fsx-titik {
+            background: #fff;
+            box-shadow: 0 0 0 0 rgba(255, 255, 255, .7);
+            animation: fsxDenyutPutih 2s ease-out infinite;
+        }
+        @keyframes fsxDenyutPutih {
+            0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, .65); }
+            70%  { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
         }
 
         /* Butiran halus, sama seperti di hero: gradien selebar ini selalu
@@ -253,7 +286,10 @@
         }
 
         @media (max-width: 767.98px) {
-            #call-to-action .fsx-kepala { grid-template-columns: 1fr; gap: 16px; padding: 20px 20px 16px; }
+            /* Padding atas tetap melebih supaya label yang menggantung dari
+               garis atas tidak menabrak judul; di lebar ini label dan judul
+               sempat berjarak 15px saja. */
+            #call-to-action .fsx-kepala { grid-template-columns: 1fr; gap: 16px; padding: 48px 20px 16px; }
             #call-to-action .fsx-tengah {
                 grid-column: 1; padding-right: 0; border-right: 0;
                 padding-bottom: 14px; border-bottom: 1px solid #f2ddc9;
@@ -266,7 +302,10 @@
         }
         @media (max-width: 575.98px) {
             #call-to-action .fsx-hero { border-radius: 20px; }
-            #call-to-action .fsx-kepala { padding: 22px 18px 16px; }
+            /* Label menggantung setinggi 36px dari garis atas; padding 22px
+               membuat judul MENIMPA labelnya. Ini tidak terlihat saat membaca
+               kode — hanya saat mengukur jarak keduanya. */
+            #call-to-action .fsx-kepala { padding: 46px 18px 16px; }
             #call-to-action .fsx-isi { padding: 18px 18px 22px; }
             #call-to-action .fsx-judul { font-size: 1.55rem; }
             #call-to-action .fsx-ekor { font-size: .82rem; -webkit-line-clamp: 1; }
@@ -468,8 +507,25 @@
                 // nama yang sama muncul tiga kali berturut-turut dan memakan
                 // separuh layar. Yang kembar disaring di sini.
                 $nama = trim((string) $flashSale->nama_promo);
+                // Label di garis atas HARUS pendek. Ia legend kartu — tugasnya
+                // memberi tahu jenis kartunya dalam sekali lihat, bukan
+                // menyampaikan kalimat.
+                //
+                // badge_text sering diisi kalimat utuh oleh admin (di promo ini:
+                // "Rayakan Kemerdekaan, Belanja Makin Hemat!"), dan dipasang di
+                // garis atas dengan huruf kapital berjarak lebar ia jadi selebar
+                // 478 piksel — pada lebar itu ia berhenti terbaca sebagai label
+                // dan mulai terbaca sebagai judul kedua yang menyaingi judul
+                // aslinya.
+                //
+                // Jadi: dipakai HANYA bila memang sependek label. Selebihnya
+                // "Flash Sale", yang justru kata yang paling ingin dikenali
+                // pengunjung di sini.
                 $lencana = trim((string) $flashSale->badge_text);
-                $lencana = ($lencana === '' || strcasecmp($lencana, $nama) === 0) ? 'Flash Sale' : $lencana;
+
+                if ($lencana === '' || mb_strlen($lencana) > 18 || strcasecmp($lencana, $nama) === 0) {
+                    $lencana = 'Flash Sale';
+                }
 
                 // Nama promo dipecah jadi JUDUL dan EKOR.
                 //
@@ -588,14 +644,24 @@
                      untuk keterangan yang muat dalam separuhnya. Pita yang
                      lebih tinggi daripada barang yang diumumkannya bukan lagi
                      pita. --}}
+                {{-- Label menempel di TENGAH GARIS ATAS kartu, seperti legend
+                     pada fieldset.
+
+                     Sebelumnya ia lencana kecil di pojok kiri, sejajar dengan
+                     segala isi lain — sekadar satu unsur di antara banyak. Di
+                     tengah garis atas ia berhenti jadi unsur dan mulai jadi
+                     NAMA kartunya: terbaca sebelum apa pun yang lain, dan tidak
+                     bisa dikira bagian dari kalimat di sekitarnya.
+
+                     Titik berdenyut ikut pindah. Ia mengatakan "sedang
+                     berlangsung sekarang", dan itu satu-satunya hal yang perlu
+                     disampaikan gerakan di bagian ini. --}}
+                <span class="fsx-pita-atas">
+                    <i class="fsx-titik"></i> {{ $lencana }}
+                </span>
+
                 <div class="fsx-kepala">
                 <div class="fsx-kiri">
-                    {{-- Titik berdenyut: penanda status, bukan hiasan. Ia
-                         mengatakan "sedang berlangsung sekarang", dan itu
-                         satu-satunya hal yang perlu disampaikan gerakan di
-                         bagian ini. --}}
-                    <span class="fsx-lencana"><i class="fsx-titik"></i> {{ $lencana }}</span>
-
                     <h2 class="fsx-judul">{{ $judul }}</h2>
                     @if ($ekor)
                         <p class="fsx-ekor">{{ $ekor }}</p>
