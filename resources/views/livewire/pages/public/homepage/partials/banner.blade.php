@@ -72,10 +72,26 @@
        Isi layar dan seluruh teks di kiri tetap datang dari data banner yang
        diunggah admin — tidak ada satu pun yang dipatok di sini. */
 
+    /* Kolom gambar dilebarkan dari 52% ke 56%, dan laptopnya ikut membesar.
+       Poster yang diunggah adalah aset paling berharga di hero ini; sebelumnya
+       justru dia yang tampil paling kecil. */
     .ph-hero .ph-hero-media {
         background: none; border: 0; border-radius: 0; margin: 0;
+        flex: 1 1 56%;
         display: flex; align-items: center; justify-content: center;
-        padding: 26px 34px 26px 10px;
+        padding: 30px 30px 30px 0;
+        position: relative;
+    }
+    .ph-hero .ph-hero-text { flex: 1 1 44%; padding: 44px 26px 44px 50px; }
+
+    /* Cahaya hangat di belakang laptop. Inilah yang mengangkatnya dari
+       permukaan kartu — tanpa ini laptop dan latar sama-sama datar, dan tidak
+       ada yang terbaca sebagai "di depan". */
+    .ph-hero .ph-hero-media::before {
+        content: ""; position: absolute; z-index: 0;
+        width: 78%; aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        background: radial-gradient(circle, rgba(242, 101, 34, .16) 0%, rgba(242, 101, 34, 0) 68%);
+        pointer-events: none;
     }
     .ph-hero .ph-hero-media::after { display: none; }
 
@@ -90,7 +106,8 @@
        layarnya ikut menyerong sampai tulisannya sulit dibaca — padahal justru
        poster itu yang ingin ditunjukkan. */
     .ph-laptop {
-        width: 100%; max-width: 520px;
+        position: relative; z-index: 1;
+        width: 100%; max-width: 610px;
         transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
         transform-style: preserve-3d;
     }
@@ -117,8 +134,13 @@
 
     .ph-laptop-isi {
         position: relative; overflow: hidden; border-radius: 5px;
-        /* 16:10 — bentuk layar laptop yang paling dikenali. */
-        aspect-ratio: 16 / 10;
+        /* 4:3, bukan 16:10. Poster yang diunggah berbentuk PERSEGI; di layar
+           16:10 ia menyisakan bilah kosong hampir seperlima lebar di kiri dan
+           kanan, dan bilah itulah yang membuat posternya terlihat seperti
+           gambar yang salah ukuran. Pada 4:3 sisanya tinggal separuhnya, dan
+           latar layar dibuat sewarna supaya sisanya terbaca sebagai wallpaper,
+           bukan sebagai kekurangan. */
+        aspect-ratio: 4 / 3;
         background: linear-gradient(135deg, #ffeeda, #fff7ef);
     }
     .ph-laptop-isi img {
@@ -171,9 +193,14 @@
     .ph-hero-deco { pointer-events: none; }
     .ph-hero .ph-kartu {
         position: absolute; z-index: 5;
-        background: #fff; border: 1px solid #eceff4; border-radius: 14px;
-        padding: 11px 14px;
-        box-shadow: 0 16px 34px rgba(35, 39, 47, .16);
+        background: rgba(255, 255, 255, .92);
+        -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, .9); border-radius: 14px;
+        padding: 10px 13px;
+        /* Bayangan dilembutkan. Bayangan pekat pada elemen kecil membuatnya
+           tampak ditempel, bukan melayang — dan tiga elemen yang tampak
+           ditempel adalah tiga tambalan. */
+        box-shadow: 0 10px 30px rgba(35, 39, 47, .10), 0 2px 6px rgba(35, 39, 47, .05);
         animation: phChipFloat 5s ease-in-out infinite;
     }
 
@@ -250,28 +277,32 @@
     /* Datar, tanpa bingkai. Empat kartu berbingkai di sini akan menyaingi
        kartu hero yang menampungnya — kotak di dalam kotak. Yang dibutuhkan
        hanya keterangan kaki, jadi cukup ikon dan dua baris teks. */
+    /* Jaminan diturunkan bobotnya: ia keterangan kaki, dan sebelumnya empat
+       blok berikon sebesar itu bersaing dengan tombol tepat di atasnya. */
     .ph-hero .ph-jaminan {
-        display: flex; flex-wrap: wrap; gap: 14px 30px; margin-top: 8px;
+        display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 14px;
+        padding-top: 20px; border-top: 1px solid rgba(242, 101, 34, .12);
     }
     .ph-hero .ph-jaminan-butir {
         flex: 1 1 176px; min-width: 0;
         display: flex; align-items: center; gap: 11px;
     }
     .ph-hero .ph-jaminan-ikon {
-        flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px;
+        flex: 0 0 auto; width: 28px; height: 28px; border-radius: 9px;
         display: inline-flex; align-items: center; justify-content: center;
-        background: #fff2ea; font-size: 1rem;
+        background: #fff2ea; font-size: .82rem;
     }
     /* !important terpaksa: aturan lama .ph-trust-ico i memakai color:#fff
        !important untuk latar gradient. Latar di sini lembut, jadi glif putih
        akan hilang sama sekali. */
     .ph-hero .ph-jaminan-ikon i.bi { line-height: 1; color: #f26522 !important; }
     .ph-hero .ph-jaminan-butir > span { display: flex; flex-direction: column; min-width: 0; }
+    .ph-hero .ph-jaminan-butir { gap: 9px; }
     .ph-hero .ph-jaminan-butir strong {
-        font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .87rem;
-        color: #1c1f26; line-height: 1.25;
+        font-family: 'Poppins', sans-serif; font-weight: 600; font-size: .8rem;
+        color: #3f4652; line-height: 1.25;
     }
-    .ph-hero .ph-jaminan-butir small { font-size: .76rem; color: #8b94a3; line-height: 1.35; }
+    .ph-hero .ph-jaminan-butir small { font-size: .72rem; color: #a0a8b4; line-height: 1.35; }
 
     @media (max-width: 575.98px) {
         .ph-hero .ph-jaminan { gap: 12px 18px; }
@@ -279,7 +310,33 @@
     }
 
     /* --- Sisi teks --- */
-    .ph-hero .ph-hero-text { gap: 16px; }
+    .ph-hero .ph-hero-text { gap: 18px; }
+
+    /* Hirarki tipografi dipertegas. Sebelumnya judul dan deskripsi hanya
+       berbeda sedikit bobotnya, jadi keduanya terbaca sama penting — dan blok
+       teks yang semuanya sama penting selalu terbaca datar. */
+    .ph-hero .ph-hero-title { letter-spacing: -.03em; line-height: 1.04; }
+    .ph-hero .ph-hero-desc { font-size: 1rem; line-height: 1.65; color: #7b8493; }
+
+    /* Lencana ditenangkan: ia keterangan, bukan pengumuman. */
+    .ph-hero .ph-hero-eyebrow {
+        font-size: .72rem; letter-spacing: .14em; padding: 6px 13px;
+        background: #fff; border-color: #f3ddcc;
+    }
+
+    /* SATU aksi utama. Dua tombol berbobot sama membuat pengunjung memilih
+       lebih dulu sebelum bertindak, dan sebagian memilih untuk tidak
+       keduanya. "Lihat Katalog" diturunkan jadi tautan — tetap ada bagi yang
+       memang mencarinya, tanpa menyaingi tombol belanja. */
+    .ph-hero .ph-hero-actions { gap: 8px; align-items: center; margin-top: 4px; }
+    .ph-hero .ph-btn-primary { font-size: 1.02rem; padding: 15px 32px; }
+    .ph-hero .ph-btn-ghost {
+        background: none; border: 0; padding: 15px 18px;
+        font-size: 1rem; color: #6b7280 !important; box-shadow: none;
+    }
+    .ph-hero .ph-btn-ghost:hover {
+        background: none; color: #f26522 !important; text-decoration: underline; text-underline-offset: 4px;
+    }
     /* Deskripsi dua baris: isinya mengulang kalimat yang sudah tercetak
        besar-besar di posternya sendiri. */
     .ph-hero .ph-hero-desc { -webkit-line-clamp: 2; line-clamp: 2; }
@@ -302,12 +359,20 @@
 
     @media (max-width: 991.98px) {
         .ph-hero .ph-hero-media { padding: 24px 22px 18px; }
+        /* Padding kiri 50px / kanan 26px hanya masuk akal saat teks berdampingan
+           dengan gambar. Begitu tata letaknya menumpuk, ketimpangan itu terbaca
+           sebagai teks yang melenceng ke kanan. */
+        .ph-hero .ph-hero-text { padding: 28px 24px 32px; }
         /* Tegak lurus di layar sempit: kemiringan memakan lebar yang sudah
            tidak ada sisanya, dan poster di dalamnya jadi makin kecil. */
         .ph-laptop { max-width: 420px; transform: none; }
     }
     @media (max-width: 575.98px) {
         .ph-hero .ph-hero-media { padding: 18px 16px 14px; }
+        .ph-hero .ph-hero-text { padding: 24px 20px 28px; }
+        /* Tombol tautan sejajar dengan tombol utama di layar sempit; dengan
+           padding 18px ia terlihat menjorok tanpa sebab. */
+        .ph-hero .ph-btn-ghost { padding: 12px 4px; }
         .ph-laptop-layar { padding: 8px 8px 14px; border-radius: 11px 11px 5px 5px; }
         .ph-laptop-alas { height: 11px; width: calc(100% + 16px); left: -8px; }
         .ph-laptop-alas span { width: 62px; height: 3px; }
@@ -447,10 +512,13 @@
             </div>
 
             <div class="ph-kartu ph-kartu-c">
+                {{-- Tiga, bukan empat. Daftar di kartu mengambang bukan tempat
+                     memuat semua keunggulan — ia hanya isyarat. Empat baris
+                     membuat kartunya setinggi seperempat hero dan berhenti
+                     terbaca sebagai catatan tempel. --}}
                 @foreach ([
                     'Harga lebih hemat',
                     'Akses produk premium',
-                    'Promo khusus member',
                     'Poin reward tiap transaksi',
                 ] as $butir)
                 <span class="ph-centang"><i class="bi bi-check-circle-fill"></i> {{ $butir }}</span>
