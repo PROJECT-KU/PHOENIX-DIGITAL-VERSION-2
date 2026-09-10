@@ -13,10 +13,14 @@
            satu bidang gelap, satu warna aksen, ruang kosong yang berani, dan
            SATU hal yang bergerak — jamnya, karena ia memang sedang berjalan.
 
-           Karena itu bagian ini dibuat gelap seperti hero di atasnya: dua
-           bidang gelap yang berurutan membaca sebagai satu bahasa, sementara
-           pita krem di antara keduanya akan terbaca seperti sisipan dari
-           halaman lain. */
+           Bidangnya TERANG, sementara hero di atasnya gelap. Dua bidang gelap
+           beruntun terasa berat dan iramanya mati; terang-gelap-terang memberi
+           halaman ini napas.
+
+           Yang menahan supaya bagian terang tidak jadi hambar: SATU benda gelap
+           di dalamnya — panel jamnya. Satu benda gelap di atas bidang terang
+           selalu jadi titik jatuh mata, dan di sini yang paling pantas dilihat
+           lebih dulu memang jamnya. */
         #call-to-action.section { padding: 24px 0 30px; background: none; }
 
         /* Kepala bagian di dalam promo disamakan dengan kepala bagian lain di
@@ -31,18 +35,27 @@
             display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
             align-items: center; gap: 30px 40px;
             background:
-                radial-gradient(62% 86% at 88% 16%, rgba(251, 169, 25, .26) 0%, rgba(251, 169, 25, 0) 62%),
-                radial-gradient(56% 74% at 8% 96%, rgba(242, 101, 34, .24) 0%, rgba(242, 101, 34, 0) 60%),
-                linear-gradient(120deg, #171b23 0%, #232937 56%, #171b23 100%);
-            border: 1px solid #2b3240; border-radius: 26px;
+                radial-gradient(58% 80% at 92% 12%, rgba(251, 169, 25, .16) 0%, rgba(251, 169, 25, 0) 62%),
+                radial-gradient(52% 70% at 4% 98%, rgba(242, 101, 34, .10) 0%, rgba(242, 101, 34, 0) 60%),
+                linear-gradient(122deg, #ffffff 0%, #fffaf4 58%, #fff5ea 100%);
+            border: 1px solid #f6e3d2; border-radius: 26px;
             padding: 40px 44px 30px;
+            box-shadow: 0 18px 44px rgba(180, 110, 60, .10);
+        }
+
+        /* Rel jingga tipis di tepi kiri. Satu garis sudah cukup menandai
+           "bagian ini berbeda" — jauh lebih tenang daripada mewarnai seluruh
+           bidangnya, dan tidak menutupi apa pun. */
+        #call-to-action .fsx-hero::before {
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+            background: linear-gradient(180deg, #f26522, #fba919);
         }
 
         /* Butiran halus, sama seperti di hero: gradien selebar ini selalu
            memperlihatkan pita warna di layar 8-bit. */
         #call-to-action .fsx-hero::after {
             content: ""; position: absolute; inset: 0; pointer-events: none;
-            opacity: .26; mix-blend-mode: overlay;
+            opacity: .30; mix-blend-mode: multiply;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
         }
 
@@ -51,25 +64,25 @@
         /* --- Penanda status --- */
         #call-to-action .fsx-lencana {
             display: inline-flex; align-items: center; gap: 9px;
-            background: rgba(242, 101, 34, .16); border: 1px solid rgba(242, 101, 34, .34);
-            color: #fba919; font-size: .74rem; font-weight: 700;
+            background: #fff3ea; border: 1px solid #f8d9c2;
+            color: #d9531a; font-size: .74rem; font-weight: 700;
             letter-spacing: .12em; text-transform: uppercase;
             padding: 7px 15px; border-radius: 999px; margin-bottom: 18px;
         }
         #call-to-action .fsx-titik {
-            width: 7px; height: 7px; border-radius: 50%; background: #fba919;
-            box-shadow: 0 0 0 0 rgba(251, 169, 25, .6);
+            width: 7px; height: 7px; border-radius: 50%; background: #f26522;
+            box-shadow: 0 0 0 0 rgba(242, 101, 34, .6);
             animation: fsxDenyut 2s ease-out infinite;
         }
         @keyframes fsxDenyut {
-            0%   { box-shadow: 0 0 0 0 rgba(251, 169, 25, .55); }
-            70%  { box-shadow: 0 0 0 9px rgba(251, 169, 25, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(251, 169, 25, 0); }
+            0%   { box-shadow: 0 0 0 0 rgba(242, 101, 34, .5); }
+            70%  { box-shadow: 0 0 0 9px rgba(242, 101, 34, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(242, 101, 34, 0); }
         }
 
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #fff;
+            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
             font-size: 2.6rem; line-height: 1.06; letter-spacing: -.03em; margin: 0 0 14px;
         }
         #call-to-action .fsx-judul-panjang { font-size: 1.95rem; line-height: 1.14; }
@@ -82,7 +95,7 @@
         }
         #call-to-action .fsx-diskon-label {
             font-size: .88rem; font-weight: 600; letter-spacing: .04em;
-            text-transform: uppercase; color: rgba(255, 255, 255, .52);
+            text-transform: uppercase; color: #9aa2ae;
         }
         #call-to-action .fsx-diskon-angka {
             font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.4rem;
@@ -93,7 +106,7 @@
         }
 
         #call-to-action .fsx-ket {
-            margin: 0 0 24px; color: rgba(255, 255, 255, .62);
+            margin: 0 0 24px; color: #78808c;
             font-size: .96rem; line-height: 1.65; max-width: 48ch;
         }
 
@@ -113,15 +126,19 @@
         #call-to-action .fsx-tombol i.bi::before { display: block; line-height: 1; }
 
         /* --- Jam --- */
+        /* Panel jam sengaja gelap di tengah kartu terang. Satu benda gelap di
+           atas bidang terang selalu jadi titik jatuh mata — dan di bagian ini
+           yang paling pantas dilihat lebih dulu memang jamnya. Ia juga
+           menyambung ke hero gelap di atasnya, jadi halaman tetap satu bahasa. */
         #call-to-action .fsx-jam {
-            background: rgba(255, 255, 255, .05);
-            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, .10); border-radius: 20px;
+            background: linear-gradient(140deg, #232937 0%, #171b23 100%);
+            border: 1px solid #2b3240; border-radius: 20px;
             padding: 24px 26px;
+            box-shadow: 0 18px 40px rgba(28, 31, 38, .22);
         }
         #call-to-action .fsx-hitung-label {
             display: block; font-size: .72rem; font-weight: 700; letter-spacing: .16em;
-            text-transform: uppercase; color: rgba(255, 255, 255, .42); margin-bottom: 16px;
+            text-transform: uppercase; color: rgba(255, 255, 255, .45); margin-bottom: 16px;
         }
         #call-to-action .fsx-hitung { display: flex; align-items: flex-start; gap: 4px; }
         #call-to-action .fsx-satuan { flex: 1 1 0; min-width: 0; text-align: center; }
@@ -160,10 +177,10 @@
             grid-column: 1 / -1; position: relative; z-index: 1;
             display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
             margin: 6px 0 0; padding-top: 22px;
-            border-top: 1px solid rgba(255, 255, 255, .09);
-            font-size: .82rem; color: rgba(255, 255, 255, .46);
+            border-top: 1px solid #f4e5d8;
+            font-size: .82rem; color: #8b939f;
         }
-        #call-to-action .fsx-fakta span { color: rgba(255, 255, 255, .22); }
+        #call-to-action .fsx-fakta span { color: #d6c3b4; }
 
         @media (prefers-reduced-motion: reduce) {
             #call-to-action .fsx-titik { animation: none; }
@@ -189,6 +206,77 @@
             #call-to-action .fsx-satuan small { font-size: .58rem; letter-spacing: .06em; }
         }
 
+        /* ----- Kartu produk promo: sistem kartu yang seragam -----
+           Kartunya mewarisi gaya .fs-card dari CSS lama di server, yang tidak
+           bisa disunting lewat git. Yang di bawah ini menimpanya supaya kartu
+           promo memakai bahasa visual yang sama dengan kartu lain di beranda:
+           bingkai tipis, sudut sama, dan angkat halus saat disentuh. */
+        #call-to-action .fsx-deret-produk .fs-card {
+            background: #fff; border: 1px solid #eceff4; border-radius: 18px;
+            overflow: hidden;
+            transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+        }
+        #call-to-action .fsx-deret-produk .fs-card:hover {
+            border-color: #f7c9ae; transform: translateY(-3px);
+            box-shadow: 0 14px 32px rgba(242, 101, 34, .12);
+        }
+
+        /* Latar netral untuk area gambar: logo produk datang dengan warna
+           latar yang berbeda-beda, dan tanpa bidang penenang ini deretan
+           kartunya terlihat seperti tambal sulam. */
+        #call-to-action .fsx-deret-produk .fs-card-media { background: #fbfcfd; }
+
+        /* Lencana diskon: satu warna padat, di pojok, tanpa bayangan tebal. */
+        #call-to-action .fsx-deret-produk .fs-badge {
+            background: #f26522; color: #fff; border: 0;
+            font-size: .7rem; font-weight: 700; letter-spacing: .02em;
+            padding: 5px 11px; border-radius: 999px;
+            box-shadow: 0 4px 12px rgba(242, 101, 34, .3);
+        }
+
+        #call-to-action .fsx-deret-produk .fs-name {
+            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem;
+            color: #1c1f26; line-height: 1.3; text-decoration: none;
+        }
+        #call-to-action .fsx-deret-produk .fs-name:hover { color: #f26522; }
+
+        /* Harga: yang berlaku besar dan berwarna, yang lama kecil dan redup.
+           Sebelumnya keduanya hampir sebesar, jadi mata harus membandingkan
+           dulu sebelum tahu mana yang harus dibayar. */
+        #call-to-action .fsx-deret-produk .fs-price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+        #call-to-action .fsx-deret-produk .fs-price-sale {
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.4rem;
+            color: #f26522; letter-spacing: -.02em; line-height: 1.1;
+        }
+        #call-to-action .fsx-deret-produk .fs-price-orig {
+            font-size: .85rem; color: #a8b0bb; text-decoration: line-through;
+        }
+        #call-to-action .fsx-deret-produk .fs-price small { font-size: .78rem; color: #9aa2ae; }
+
+        #call-to-action .fsx-hemat-chip {
+            display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+            background: #eefaf1; border: 1px solid #cdeed8; color: #17803d;
+            font-size: .76rem; font-weight: 700; padding: 5px 11px; border-radius: 999px;
+        }
+        #call-to-action .fsx-hemat-chip i.bi { font-size: .82rem; line-height: 1; }
+
+        /* Satu tombol utama, satu tombol tenang — sama seperti di hero. */
+        #call-to-action .fsx-deret-produk .fs-btn-cart {
+            background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff; border: 0;
+            font-weight: 700; font-size: .88rem; padding: 11px 18px; border-radius: 11px;
+            box-shadow: 0 8px 18px rgba(242, 101, 34, .26);
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        #call-to-action .fsx-deret-produk .fs-btn-cart:hover {
+            transform: translateY(-1px); box-shadow: 0 12px 24px rgba(242, 101, 34, .34);
+        }
+        #call-to-action .fsx-deret-produk .fs-btn-view {
+            background: #fff; border: 1px solid #e6e9ef; color: #4b5563;
+            font-weight: 600; font-size: .88rem; padding: 11px 18px; border-radius: 11px;
+            text-decoration: none; transition: border-color .18s ease, color .18s ease;
+        }
+        #call-to-action .fsx-deret-produk .fs-btn-view:hover { border-color: #f26522; color: #f26522; }
+
         /* ----- Kartu produk promo: melebar, gambar di samping -----
            Hanya untuk baris produk promo (.fsx-deret-produk); baris paket
            bundling di bawahnya tetap memakai kartu tegak yang lama.
@@ -212,8 +300,8 @@
             width: 100%; height: 100%; object-fit: contain; padding: 18px;
         }
         #call-to-action .fsx-deret-produk .fs-card-body {
-            flex: 1 1 auto; min-width: 0;
-            display: flex; flex-direction: column; justify-content: center; gap: 8px;
+            flex: 1 1 auto; min-width: 0; padding: 18px 20px;
+            display: flex; flex-direction: column; justify-content: center; gap: 9px;
         }
         #call-to-action .fsx-ringkas {
             margin: 0; font-size: .84rem; line-height: 1.55; color: #7b8493;
@@ -415,6 +503,18 @@
                                     @endif
                                     <small>/bln</small>
                                 </div>
+
+                                {{-- Nilai promo dalam RUPIAH, bukan hanya persen.
+                                     "Diskon 17%" menuntut pembeli menghitung
+                                     sendiri; "Hemat Rp11.900" sudah selesai
+                                     dihitung, dan angka yang sudah selesai
+                                     dihitung jauh lebih cepat meyakinkan. --}}
+                                @if ($discountedPrice < $originalPrice)
+                                    <span class="fsx-hemat-chip">
+                                        <i class="bi bi-piggy-bank-fill"></i>
+                                        Hemat Rp{{ number_format($originalPrice - $discountedPrice, 0, ',', '.') }}/bln
+                                    </span>
+                                @endif
                                 <div class="fs-actions">
                                     <button type="button" wire:click="openDuration('{{ $product->id }}')"
                                         wire:loading.attr="disabled" wire:target="openDuration('{{ $product->id }}')"
