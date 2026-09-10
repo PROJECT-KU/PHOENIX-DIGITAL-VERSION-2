@@ -149,3 +149,24 @@ it('produk yang tidak masuk kategori mana pun tidak dipaksakan', function () {
         ->and(KategoriBeranda::untukProduk(''))->toBeNull()
         ->and(KategoriBeranda::untukProduk(null))->toBeNull();
 });
+
+it('label kategori berada di dalam area gambar, bukan menimpa lencana promo', function () {
+    // Lencana promo menempati pojok kiri ATAS area gambar (top:12 left:12 di
+    // public-custom-styles.css). Label kategori harus berada di dalam area
+    // gambar yang sama supaya bisa menempel tepi bawahnya — di luar itu, ia
+    // kembali ke pojok kartu dan menimpa lencana promo begitu produknya
+    // sedang berpromo.
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/public/shop-page/index.blade.php')
+    );
+
+    $media = mb_strpos($blade, 'class="fs-card-media"');
+    $kat = mb_strpos($blade, 'class="shop-kat"');
+    $badge = mb_strpos($blade, 'class="fs-badge fs-badge-flash"');
+
+    expect($kat)->toBeGreaterThan($media)
+        ->and($kat)->toBeLessThan($badge)
+        // Berseberangan dengan lencana promo yang di pojok KIRI atas.
+        ->and($blade)->toContain('.shop-kat {
+            position: absolute; top: 10px; right: 10px;');
+});

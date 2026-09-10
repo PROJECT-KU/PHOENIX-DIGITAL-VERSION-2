@@ -79,21 +79,44 @@
 
         /* Label kategori di pojok kartu. Kecil dan tenang: ia keterangan, dan
            keterangan yang menyaingi nama produk membuat keduanya sulit dibaca. */
+        .fs-card-media { position: relative; }
         .shop-kat {
-            position: absolute; top: 10px; left: 10px; z-index: 2;
+            position: absolute; top: 10px; right: 10px; z-index: 2;
             display: inline-flex; align-items: center; gap: 5px;
             background: color-mix(in srgb, var(--c) 12%, #fff);
             border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
             color: var(--c); border-radius: 999px; padding: 4px 10px;
             font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
             font-weight: 700; font-size: .68rem; line-height: 1.3; white-space: nowrap;
-            max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis;
+            /* 46%, bukan separuh: lencana promo di seberangnya memakan sekitar
+               separuh lebar kartu, jadi tepat setengah-setengah membuat
+               keduanya bersentuhan persis di tengah. */
+            max-width: 46%; overflow: hidden; text-overflow: ellipsis;
         }
         .shop-kat i.bi { display: block; line-height: 1; font-size: .72rem; }
         .shop-kat i.bi::before { display: block; line-height: 1; }
 
+        /* Di kartu yang menyempit, label kategori menyusut jadi IKON SAJA.
+
+           Lencana promo memakai white-space: nowrap, jadi "Diskon s.d. 30%"
+           memanjang melintasi kartu selebar 200px dan menyentuh label di
+           seberangnya — berseberangan saja tidak cukup. Diperiksa: di 900px dan
+           390px keduanya bertabrakan pada DUA BELAS dari dua belas kartu.
+
+           Sebagai ikon bulat ia tetap mengerjakan tugasnya — warnanya memberi
+           tahu kelompok produknya — tanpa memakan lebar. Nama kategorinya tetap
+           terbaca lewat atribut title dan pembaca layar. */
+        @media (max-width: 1319.98px) {
+            .shop-kat-teks { display: none; }
+            .shop-kat {
+                max-width: none; padding: 0; border-radius: 50%;
+                width: 28px; height: 28px; justify-content: center;
+            }
+            .shop-kat i.bi { font-size: .8rem; }
+        }
         @media (max-width: 575.98px) {
-            .shop-kat { font-size: .62rem; padding: 3px 8px; top: 8px; left: 8px; }
+            .shop-kat { width: 24px; height: 24px; top: 8px; right: 8px; }
+            .shop-kat i.bi { font-size: .7rem; }
         }
 
         /* --- Bilah saring jadi satu papan --- */
@@ -264,9 +287,6 @@
                                          memakai warna merek — bukan abu-abu, yang
                                          akan terbaca seperti produk nonaktif. --}}
                                     <div class="fs-card shop-kartu" style="--c: {{ $kat['warna'] ?? '#f26522' }}">
-                                        @if ($kat)
-                                            <span class="shop-kat"><i class="bi {{ $kat['ikon'] }}"></i> {{ $kat['label'] }}</span>
-                                        @endif
                                         <div class="fs-card-media">
                                             @if ($item->image)
                                                 <img loading="lazy" src="{{ asset('storage/img/Product/' . $item->image) }}"
@@ -274,6 +294,24 @@
                                             @else
                                                 <img loading="lazy" src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
                                                     alt="{{ $item->nama_akun }}">
+                                            @endif
+
+                                            {{-- Label kategori di pojok KANAN ATAS.
+
+                                                 Lencana promo menempati pojok KIRI atas
+                                                 (top:12 left:12 di public-custom-styles.css), jadi
+                                                 keduanya berseberangan dan tidak mungkin bertemu.
+
+                                                 Sempat ditaruh di tepi bawah area gambar; di
+                                                 ponsel area itu menyusut sampai 100-an piksel dan
+                                                 keduanya kembali bertabrakan — dua belas dari dua
+                                                 belas kartu. Berseberangan aman di lebar berapa
+                                                 pun, dan pojok atas juga yang pertama dilihat. --}}
+                                            @if ($kat)
+                                                <span class="shop-kat" title="{{ $kat['label'] }}">
+                                                    <i class="bi {{ $kat['ikon'] }}"></i>
+                                                    <span class="shop-kat-teks">{{ $kat['label'] }}</span>
+                                                </span>
                                             @endif
 
                                             @if ($bestDiscount)
