@@ -96,6 +96,21 @@ class MerekDipercaya
         });
     }
 
+    /**
+     * Berapa produk yang benar-benar dijual saat ini.
+     *
+     * Dipakai pita kepercayaan untuk menutup kalimatnya dengan angka, bukan
+     * dengan "dan banyak lagi". "Banyak" adalah kata yang tidak bisa diperiksa
+     * siapa pun dan karena itu tidak menambah kepercayaan apa pun; "22 tools"
+     * bisa dihitung sendiri oleh pengunjung begitu ia membuka katalog.
+     */
+    public static function jumlahProduk(): int
+    {
+        return Cache::remember('beranda.jumlah-produk', now()->addMinutes(self::SIMPAN_MENIT), fn () => Product::query()
+            ->where(fn ($q) => $q->whereNull('dijeda')->orWhere('dijeda', false))
+            ->count());
+    }
+
     /** Nama merek dari nama produk lengkap. */
     public static function merek(string $namaProduk): string
     {

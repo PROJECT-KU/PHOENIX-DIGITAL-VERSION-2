@@ -1,4 +1,12 @@
-@php $merek = App\Support\MerekDipercaya::ambil(7); @endphp
+@php
+    // Delapan, bukan tujuh: pita ini bekerja lewat JUMLAH nama yang dikenali,
+    // dan tiap merek tambahan menambah peluang pengunjung menemukan satu yang
+    // ia kenal. Yang berkas gambarnya tidak ada tersaring sendiri, jadi angka
+    // ini batas atas, bukan janji.
+    $merek = App\Support\MerekDipercaya::ambil(8);
+    $totalProduk = App\Support\MerekDipercaya::jumlahProduk();
+    $sisaProduk = max(0, $totalProduk - count($merek));
+@endphp
 
 @if (count($merek) >= 4)
 {{-- Pita merek. Muncul hanya bila ada CUKUP merek untuk membentuk deretan —
@@ -24,9 +32,17 @@
         /* Logonya menggulir mendatar di layar sempit, bukan membungkus jadi
            beberapa baris: pita yang tiba-tiba setinggi tiga baris merusak
            irama halaman, sedangkan menggulir tetap terbaca sebagai satu pita. */
+        /* space-between, bukan gap tetap. Deret ini melebar mengisi ruang yang
+           tersisa, tapi isinya hanya lima sampai delapan merek — dengan jarak
+           tetap, sisa ruangnya menumpuk jadi satu celah menganga di ujung
+           kanan. Dibagi rata, celah itu berubah jadi jarak antar merek dan
+           deretnya terbaca sebagai satu barisan yang disengaja.
+
+           Saat isinya melebihi lebar (di layar sempit), space-between tidak
+           berpengaruh apa-apa dan gap minimumnya yang berlaku. */
         .dp-deret {
             flex: 1 1 320px; min-width: 0;
-            display: flex; align-items: center; gap: 26px;
+            display: flex; align-items: center; justify-content: space-between; gap: 26px;
             overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
             padding-bottom: 2px;
             list-style: none; margin: 0;
@@ -70,17 +86,20 @@
         .dp-merek:hover span { color: #1c1f26; }
 
         .dp-lagi {
-            flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px;
-            color: #f26522; font-weight: 700; font-size: .88rem; text-decoration: none;
+            flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+            color: #f26522; font-weight: 600; font-size: .88rem; text-decoration: none;
             white-space: nowrap;
+            padding-left: 26px; border-left: 1px solid #eef1f5;
         }
+        .dp-lagi b { font-weight: 800; }
         .dp-lagi:hover { color: #d9531a; }
         .dp-lagi i.bi { line-height: 1; }
 
         @media (max-width: 767.98px) {
             .dp-kotak { padding: 16px 18px; gap: 12px 18px; }
             .dp-label { max-width: none; flex: 1 1 100%; font-size: .9rem; }
-            .dp-deret { gap: 20px; }
+            .dp-deret { gap: 20px; justify-content: flex-start; }
+            .dp-lagi { padding-left: 0; border-left: 0; }
             .dp-merek span { font-size: .92rem; }
         }
     </style>
@@ -112,7 +131,20 @@
                 @endforeach
             </ul>
 
-            <a class="dp-lagi" href="{{ route('shop.index') }}">dan banyak lagi <i class="bi bi-arrow-right"></i></a>
+            {{-- Ditutup ANGKA, bukan "dan banyak lagi".
+
+                 "Banyak" tidak bisa diperiksa siapa pun dan karena itu tidak
+                 menambah kepercayaan apa pun — ia hanya mengisi ruang. Jumlah
+                 yang sebenarnya bisa dihitung sendiri oleh pengunjung begitu ia
+                 membuka katalog, dan justru itulah yang membuatnya dipercaya. --}}
+            <a class="dp-lagi" href="{{ route('shop.index') }}">
+                @if ($sisaProduk > 0)
+                    <b>+{{ $sisaProduk }}</b> tools lainnya
+                @else
+                    Lihat katalog
+                @endif
+                <i class="bi bi-arrow-right"></i>
+            </a>
         </div>
     </div>
 </section>
