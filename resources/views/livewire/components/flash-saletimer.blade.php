@@ -45,8 +45,8 @@
                 radial-gradient(58% 80% at 92% 12%, rgba(251, 169, 25, .16) 0%, rgba(251, 169, 25, 0) 62%),
                 radial-gradient(52% 70% at 4% 98%, rgba(242, 101, 34, .10) 0%, rgba(242, 101, 34, 0) 60%),
                 linear-gradient(122deg, #ffffff 0%, #fffaf4 58%, #fff5ea 100%);
-            border: 1px solid #f6e3d2; border-radius: 26px;
-            box-shadow: 0 18px 44px rgba(180, 110, 60, .10);
+            border: 1px solid #eceff4; border-radius: 26px;
+            box-shadow: 0 18px 44px rgba(120, 100, 90, .09);
         }
 
         /* --- Pita kepala --- */
@@ -65,19 +65,19 @@
             /* Dipisah garis tipis dari kolom sebelahnya: tanpa itu angka besar
                ini menempel pada judul dan terbaca sebagai bagian dari kalimat,
                bukan sebagai tawarannya. */
-            padding-right: 32px; border-right: 1px solid #f2ddc9;
+            padding-right: 32px; border-right: 1px solid #eef1f5;
         }
         #call-to-action .fsx-kanan { grid-column: 3; }
         #call-to-action .fsx-kaki { grid-column: 1 / -1; }
 
-        /* Rel jingga di tepi kiri, seperti semula. Ia dan garis atas
-           mengerjakan hal berbeda: rel menandai "bagian ini berbeda" di
-           sepanjang tinggi kartu, garis atas jadi alas label. */
-        #call-to-action .fsx-hero::before {
-            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
-            background: linear-gradient(180deg, #f26522, #fba919);
-            z-index: 2;
-        }
+        /* Rel jingga di tepi kiri dicabut, dan bingkai kartu dibuat netral.
+           Sejak label FLASH SALE duduk di garis atas, penanda "bagian ini
+           berbeda" sudah dikerjakan olehnya — rel di tepi kiri jadi penanda
+           kedua yang mengatakan hal yang sama, dan dua penanda untuk satu
+           pesan membuat keduanya terbaca sebagai hiasan.
+
+           Yang tersisa satu garis di tepi atas: itu pun bukan bingkai,
+           melainkan alas tempat labelnya berdiri. */
 
         #call-to-action .fsx-pita-atas {
             position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
@@ -266,7 +266,7 @@
             grid-column: 1 / -1; position: relative; z-index: 1;
             display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
             margin: 0; padding-top: 14px;
-            border-top: 1px solid #f6e8dc;
+            border-top: 1px solid #eef1f5;
             font-size: .82rem; color: #8b939f;
         }
         #call-to-action .fsx-fakta span { color: #d6c3b4; }
@@ -308,7 +308,7 @@
             #call-to-action .fsx-kepala { grid-template-columns: 1fr; gap: 16px; padding: 48px 20px 16px; }
             #call-to-action .fsx-tengah {
                 grid-column: 1; padding-right: 0; border-right: 0;
-                padding-bottom: 14px; border-bottom: 1px solid #f2ddc9;
+                padding-bottom: 14px; border-bottom: 1px solid #eef1f5;
             }
             #call-to-action .fsx-kanan { grid-column: 1; justify-self: stretch; }
             #call-to-action .fsx-isi { padding: 20px 22px 24px; }
@@ -335,7 +335,7 @@
         /* --- Bagian isi: kisi produk di dalam kartu yang sama --- */
         #call-to-action .fsx-isi {
             position: relative; z-index: 1;
-            background: #fff; border-top: 1px solid #f6e8dc;
+            background: #fff; border-top: 1px solid #eef1f5;
             padding: 22px 34px 28px;
         }
         #call-to-action .fsx-isi-kepala {
