@@ -73,12 +73,32 @@ it('banner tetap pembuka halaman, promo menyusul di bawahnya', function () {
     expect(strpos($isi, 'id="hero"'))->toBeLessThan(strpos($isi, 'id="call-to-action"'));
 });
 
-it('etalase promo membawa kepala bagian rekomendasi', function () {
+it('pengumuman dan produknya berada dalam satu kartu', function () {
     produkPromo(promoBerjalan());
 
-    $this->get('/')
-        ->assertSee('Rekomendasi Hari Ini', false)
-        ->assertSee('Berakhir dalam', false);
+    // Dipisah jadi dua kartu, pembeli tidak otomatis tahu bahwa produk di bawah
+    // adalah yang kena promo di atas — hubungan itu lalu harus dijelaskan
+    // dengan kalimat, dan kalimat penjelas selalu lebih lemah daripada susunan
+    // yang sudah menjelaskan dirinya sendiri.
+    $isi = $this->get('/')
+        ->assertSee('Berakhir dalam', false)
+        ->assertSee('Produk yang ikut promo', false)
+        ->getContent();
+
+    // Dicari lewat atribut class yang lengkap, bukan nama kelasnya saja:
+    // nama kelas juga muncul di blok <style> yang berada jauh di atas markup,
+    // dan mencocokkannya begitu saja membuat urutannya selalu salah.
+    //
+    // Penanda penutupnya TIDAK bisa berupa komentar Blade — komentar dibuang
+    // saat dikompilasi dan tidak pernah sampai ke HTML. Yang dipakai: .fsx-isi
+    // hanya dirender di dalam .fsx-hero, jadi keberadaannya sesudah pembuka
+    // kartu sudah membuktikan produknya berada di dalam kartu yang sama.
+    $kartu = strpos($isi, 'class="fsx-hero"');
+    $isiKartu = strpos($isi, 'class="fsx-isi"');
+    $produk = strpos($isi, 'featured-products-row fsx-deret-produk');
+
+    expect($isiKartu)->toBeGreaterThan($kartu)
+        ->and($produk)->toBeGreaterThan($isiKartu);
 });
 
 it('tanpa promo berjalan, beranda tidak menyisakan pita kosong', function () {
