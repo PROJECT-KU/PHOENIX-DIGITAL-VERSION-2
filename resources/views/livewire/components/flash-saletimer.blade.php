@@ -47,12 +47,20 @@
         /* --- Pita kepala --- */
         #call-to-action .fsx-kepala {
             position: relative; z-index: 1;
-            display: grid; grid-template-columns: minmax(0, 1fr) auto;
-            align-items: center; gap: 22px 36px;
-            padding: 30px 34px 22px;
+            display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+            align-items: center; gap: 18px 32px;
+            padding: 22px 30px 18px;
         }
-        #call-to-action .fsx-kiri { grid-column: 1; }
-        #call-to-action .fsx-kanan { grid-column: 2; }
+        #call-to-action .fsx-kiri { grid-column: 1; min-width: 0; }
+        #call-to-action .fsx-tengah {
+            grid-column: 2; display: flex; flex-direction: column; align-items: flex-end;
+            /* Dipisah garis tipis dari kolom sebelahnya: tanpa itu angka besar
+               ini menempel pada judul dan terbaca sebagai bagian dari kalimat,
+               bukan sebagai tawarannya. */
+            padding-right: 32px; border-right: 1px solid #f2ddc9;
+        }
+        #call-to-action .fsx-kanan { grid-column: 3; }
+        #call-to-action .fsx-kaki { grid-column: 1 / -1; }
 
         /* Rel jingga tipis di tepi kiri. Satu garis sudah cukup menandai
            "bagian ini berbeda" — jauh lebih tenang daripada mewarnai seluruh
@@ -78,7 +86,7 @@
             background: #fff3ea; border: 1px solid #f8d9c2;
             color: #d9531a; font-size: .74rem; font-weight: 700;
             letter-spacing: .12em; text-transform: uppercase;
-            padding: 7px 15px; border-radius: 999px; margin-bottom: 18px;
+            padding: 6px 13px; border-radius: 999px; margin-bottom: 10px;
         }
         #call-to-action .fsx-titik {
             width: 7px; height: 7px; border-radius: 50%; background: #f26522;
@@ -93,24 +101,28 @@
 
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
-            font-size: 1.85rem; line-height: 1.12; letter-spacing: -.03em; margin: 0 0 10px;
+            font-family: 'Poppins', sans-serif; font-weight: 700; color: #4b5563;
+            font-size: 1.05rem; line-height: 1.4; letter-spacing: -.01em; margin: 0;
+            /* Nama promo dikecilkan dan dibuat paling banyak dua baris.
+               Isinya hampir selalu sudah menyebut angka diskonnya sendiri
+               ("Merdeka Sale! Diskon 17% ..."), jadi menampilkannya sebesar
+               judul berarti mengumumkan angka yang sama dua kali bersebelahan —
+               dan yang besar sebelah kanan jadi kehilangan tenaganya. */
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
-        #call-to-action .fsx-judul-panjang { font-size: 1.45rem; line-height: 1.2; }
+        /* Tidak ada lagi pembedaan judul panjang: ukurannya sudah kecil dan
+           dibatasi dua baris, jadi panjangnya tidak lagi merusak apa pun. */
 
         /* Angka diskon dibuat sebesar mungkin dan satuannya dikecilkan. Inilah
            satu-satunya angka yang benar-benar menentukan orang jadi membeli
            atau tidak, jadi ia yang paling besar di bidang ini. */
-        #call-to-action .fsx-diskon {
-            display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 14px;
-        }
         #call-to-action .fsx-diskon-label {
             font-size: .88rem; font-weight: 600; letter-spacing: .04em;
-            text-transform: uppercase; color: #9aa2ae;
+            text-transform: uppercase; color: #9aa2ae; white-space: nowrap; margin-bottom: 2px;
         }
         #call-to-action .fsx-diskon-angka {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 2.5rem;
-            line-height: 1; letter-spacing: -.04em;
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.1rem;
+            line-height: 1; letter-spacing: -.045em; white-space: nowrap;
             background: linear-gradient(120deg, #fba919, #f26522);
             -webkit-background-clip: text; background-clip: text;
             -webkit-text-fill-color: transparent; color: #fba919;
@@ -122,8 +134,13 @@
            layar lewat judulnya. */
         #call-to-action .fsx-ket { display: none; }
 
+        /* Tombol "Belanja Sekarang" dicabut dari pita. Produk yang ditawarkan
+           ada tepat di bawahnya lengkap dengan tombol keranjangnya sendiri;
+           satu tombol lagi di atas hanya menambah pilihan tanpa menambah
+           kemungkinan. Tautan "Lihat Semua Produk" di kepala isi sudah
+           mengurus yang ingin melihat selebihnya. */
         #call-to-action .fsx-tombol {
-            display: inline-flex; align-items: center; gap: 9px;
+            display: none; align-items: center; gap: 9px;
             background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff;
             font-weight: 700; font-size: .92rem; text-decoration: none;
             padding: 12px 24px; border-radius: 12px;
@@ -153,10 +170,10 @@
             text-transform: uppercase; color: rgba(255, 255, 255, .45); margin-bottom: 11px;
         }
         #call-to-action .fsx-hitung { display: flex; align-items: flex-start; gap: 4px; }
-        #call-to-action .fsx-satuan { flex: 0 0 auto; min-width: 44px; text-align: center; }
+        #call-to-action .fsx-satuan { flex: 0 0 auto; min-width: 46px; text-align: center; }
         #call-to-action .fsx-satuan b {
             display: block; font-family: 'Poppins', sans-serif; font-weight: 800;
-            font-size: 1.85rem; line-height: 1; color: #fff; letter-spacing: -.03em;
+            font-size: 1.95rem; line-height: 1; color: #fff; letter-spacing: -.03em;
             /* Angka detik berganti tiap detik. Tanpa lebar angka yang seragam,
                seluruh jam ikut bergoyang tiap kali angkanya berubah. */
             font-variant-numeric: tabular-nums;
@@ -167,8 +184,13 @@
         }
         #call-to-action .fsx-titik-dua {
             font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.4rem;
-            line-height: 1.25; color: rgba(255, 255, 255, .22); flex: 0 0 auto;
+            line-height: 1.25; color: rgba(255, 255, 255, .30); flex: 0 0 auto;
+            /* Titik dua berkedip adalah tanda universal jam yang sedang
+               berjalan — satu-satunya gerakan di panel ini yang benar-benar
+               menyampaikan sesuatu. */
+            animation: fsxKedip 1s steps(1, end) infinite;
         }
+        @keyframes fsxKedip { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .18; } }
 
         /* --- Sisa kuota (hanya bila dipasang admin) --- */
         #call-to-action .fsx-kuota { margin-top: 20px; }
@@ -188,34 +210,54 @@
         #call-to-action .fsx-fakta {
             grid-column: 1 / -1; position: relative; z-index: 1;
             display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
-            margin: 4px 0 0; padding-top: 16px;
+            margin: 0; padding-top: 14px;
             border-top: 1px solid #f6e8dc;
             font-size: .82rem; color: #8b939f;
         }
         #call-to-action .fsx-fakta span { color: #d6c3b4; }
 
         @media (prefers-reduced-motion: reduce) {
-            #call-to-action .fsx-titik { animation: none; }
+            #call-to-action .fsx-titik, #call-to-action .fsx-titik-dua { animation: none; }
+            #call-to-action .fsx-titik-dua { opacity: 1; }
+        }
+
+        @media (max-width: 1199.98px) {
+            /* Tiga kolom butuh sekitar 900px untuk bernapas. Di bawah itu
+               kolom tengah dan jam bertukar jadi satu baris berdua, judulnya
+               di atas — tetap membentang, tidak langsung menumpuk semua. */
+            #call-to-action .fsx-kepala { grid-template-columns: auto 1fr; gap: 16px 26px; }
+            #call-to-action .fsx-kiri { grid-column: 1 / -1; }
+            #call-to-action .fsx-tengah { grid-column: 1; align-items: flex-start; padding-right: 26px; }
+            #call-to-action .fsx-kanan { grid-column: 2; justify-self: end; }
         }
 
         @media (max-width: 991.98px) {
-            #call-to-action .fsx-kepala { grid-template-columns: 1fr; gap: 20px; padding: 26px 22px 18px; }
-            #call-to-action .fsx-kiri, #call-to-action .fsx-kanan { grid-column: 1; }
+            /* DUA per baris, bukan empat yang dipaksakan. Di lebar ini empat
+               kartu tidak muat dan membungkus jadi 3+1 — baris terakhir berisi
+               satu kartu kesepian selalu terbaca seperti ada yang gagal dimuat,
+               bukan seperti susunan yang disengaja. */
+            #call-to-action .fsx-deret-produk.featured-products-row > [class*="col-"] {
+                flex: 1 1 calc(50% - 9px); max-width: calc(50% - 9px);
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            #call-to-action .fsx-kepala { grid-template-columns: 1fr; gap: 16px; padding: 20px 20px 16px; }
+            #call-to-action .fsx-tengah {
+                grid-column: 1; padding-right: 0; border-right: 0;
+                padding-bottom: 14px; border-bottom: 1px solid #f2ddc9;
+            }
+            #call-to-action .fsx-kanan { grid-column: 1; justify-self: stretch; }
             #call-to-action .fsx-isi { padding: 20px 22px 24px; }
-            #call-to-action .fsx-judul { font-size: 2rem; }
-            #call-to-action .fsx-judul-panjang { font-size: 1.7rem; }
-            #call-to-action .fsx-diskon-angka { font-size: 2.8rem; }
+            #call-to-action .fsx-diskon-angka { font-size: 2.6rem; }
             #call-to-action .kb-judul { font-size: 1.6rem; }
         }
         @media (max-width: 575.98px) {
             #call-to-action .fsx-hero { border-radius: 20px; }
             #call-to-action .fsx-kepala { padding: 22px 18px 16px; }
             #call-to-action .fsx-isi { padding: 18px 18px 22px; }
-            #call-to-action .fsx-judul { font-size: 1.65rem; }
-            #call-to-action .fsx-judul-panjang { font-size: 1.45rem; }
-            #call-to-action .fsx-diskon-angka { font-size: 2.4rem; }
-            #call-to-action .fsx-ket { font-size: .9rem; margin-bottom: 18px; }
-            #call-to-action .fsx-tombol { width: 100%; justify-content: center; padding: 14px 22px; }
+            #call-to-action .fsx-judul { font-size: .95rem; }
+            #call-to-action .fsx-diskon-angka { font-size: 2.3rem; }
             #call-to-action .fsx-jam { padding: 18px 16px; }
             #call-to-action .fsx-satuan b { font-size: 1.75rem; }
             #call-to-action .fsx-titik-dua { font-size: 1.3rem; }
@@ -262,7 +304,10 @@
         /* Latar netral untuk area gambar: logo produk datang dengan warna
            latar yang berbeda-beda, dan tanpa bidang penenang ini deretan
            kartunya terlihat seperti tambal sulam. */
-        #call-to-action .fsx-deret-produk .fs-card-media { background: #fbfcfd; }
+        /* Rona hangat sangat tipis, bukan abu netral: ia mengikat kartu-kartu
+           ini pada promo yang menaunginya tanpa perlu satu kalimat pun. Cukup
+           terang supaya logo produk berlatar putih tetap terbaca. */
+        #call-to-action .fsx-deret-produk .fs-card-media { background: #fffaf4; }
 
         /* Lencana diskon: satu warna padat, di pojok, tanpa bayangan tebal. */
         #call-to-action .fsx-deret-produk .fs-badge {
@@ -322,8 +367,13 @@
            memakai lebarnya untuk gambar dan tingginya untuk teks — bentuk yang
            memang dipakai seluruh kartu produk lain di beranda ini. */
         #call-to-action .fsx-deret-produk { justify-content: flex-start; gap: 18px; }
+        /* width: auto WAJIB disebut. Bootstrap memberi col-lg-3 lebar 25%
+           tetap, dan 25% x 4 ditambah tiga jarak 18px melebihi lebar barisnya —
+           kartu keempat terlempar ke baris berikutnya, dan di 1100px modulnya
+           membengkak dari 707px jadi 1.596px. Dengan width: auto, flex-basis
+           yang memegang kendali dan jaraknya ikut diperhitungkan. */
         #call-to-action .fsx-deret-produk > [class*="col-"] {
-            flex: 1 1 220px; max-width: none; width: auto;
+            flex: 1 1 0; min-width: 180px; max-width: none; width: auto;
         }
         #call-to-action .fsx-deret-produk .fs-card {
             display: flex; flex-direction: column; height: 100%;
@@ -456,28 +506,28 @@
             @endphp
 
             <div class="fsx-hero">
+                {{-- Pita kepala membentang KE SAMPING, tiga kolom: siapa —
+                     apa tawarannya — sampai kapan.
+
+                     Sebelumnya keempat unsurnya menumpuk ke bawah dan pitanya
+                     setinggi 304px, hampir empat puluh persen seluruh modul,
+                     untuk keterangan yang muat dalam separuhnya. Pita yang
+                     lebih tinggi daripada barang yang diumumkannya bukan lagi
+                     pita. --}}
                 <div class="fsx-kepala">
                 <div class="fsx-kiri">
                     {{-- Titik berdenyut: penanda status, bukan hiasan. Ia
                          mengatakan "sedang berlangsung sekarang", dan itu
                          satu-satunya hal yang perlu disampaikan gerakan di
                          bagian ini. --}}
-                    <span class="fsx-lencana"><i class="fsx-titik"></i> {{ $lencana }} sedang berlangsung</span>
+                    <span class="fsx-lencana"><i class="fsx-titik"></i> {{ $lencana }}</span>
 
-                    <h2 class="fsx-judul {{ mb_strlen($nama) > 26 ? 'fsx-judul-panjang' : '' }}">{{ $nama }}</h2>
+                    <h2 class="fsx-judul">{{ $nama }}</h2>
+                </div>
 
-                    <p class="fsx-diskon">
-                        <span class="fsx-diskon-label">Diskon sampai</span>
-                        <span class="fsx-diskon-angka">{{ $awalanDiskon }}{{ $angkaDiskon }}{{ $satuanDiskon }}</span>
-                    </p>
-
-                    @if ($ket)
-                        <p class="fsx-ket">{{ $ket }}</p>
-                    @endif
-
-                    <a href="{{ route('shop.index') }}" class="fsx-tombol">
-                        Belanja Sekarang <i class="bi bi-arrow-right"></i>
-                    </a>
+                <div class="fsx-tengah">
+                    <span class="fsx-diskon-label">Diskon sampai</span>
+                    <span class="fsx-diskon-angka">{{ $awalanDiskon }}{{ $angkaDiskon }}{{ $satuanDiskon }}</span>
                 </div>
 
                 <div class="fsx-kanan">
@@ -513,11 +563,13 @@
                     </div>
                 </div>
 
-                    <p class="fsx-fakta">
-                        @foreach ($fakta as $f)
-                            @if (! $loop->first)<span aria-hidden="true">·</span>@endif{{ $f }}
-                        @endforeach
-                    </p>
+                    <div class="fsx-kaki">
+                        <p class="fsx-fakta">
+                            @foreach ($fakta as $f)
+                                @if (! $loop->first)<span aria-hidden="true">·</span>@endif{{ $f }}
+                            @endforeach
+                        </p>
+                    </div>
                 </div>{{-- /.fsx-kepala --}}
 
                 {{-- Bagian produk berada DI DALAM kartu yang sama dengan
