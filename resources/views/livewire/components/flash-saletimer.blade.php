@@ -53,7 +53,8 @@
         }
         #call-to-action .fsx-kiri { grid-column: 1; min-width: 0; }
         #call-to-action .fsx-tengah {
-            grid-column: 2; display: flex; flex-direction: column; align-items: flex-end;
+            grid-column: 2; display: flex; flex-direction: column; align-items: center;
+            text-align: center;
             /* Dipisah garis tipis dari kolom sebelahnya: tanpa itu angka besar
                ini menempel pada judul dan terbaca sebagai bagian dari kalimat,
                bukan sebagai tawarannya. */
@@ -117,7 +118,13 @@
            atau tidak, jadi ia yang paling besar di bidang ini. */
         #call-to-action .fsx-diskon-label {
             font-size: .88rem; font-weight: 600; letter-spacing: .04em;
-            text-transform: uppercase; color: #9aa2ae; white-space: nowrap; margin-bottom: 2px;
+            text-transform: uppercase; color: #9aa2ae; white-space: nowrap; margin-bottom: 1px;
+        }
+        /* Siapa yang berhak, tepat di bawah angkanya. Pertanyaan "saya dapat
+           tidak?" muncul persis setelah orang melihat angka diskon. */
+        #call-to-action .fsx-diskon-berhak {
+            margin-top: 4px; font-size: .76rem; font-weight: 600; color: #c07a3f;
+            white-space: nowrap;
         }
         #call-to-action .fsx-diskon-angka {
             font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.1rem;
@@ -517,6 +524,29 @@
                 $satuanDiskon = $persen ? '%' : '';
                 $awalanDiskon = $persen ? '' : 'Rp';
 
+                // "Sampai" hanya dipakai bila potongannya MEMANG berbeda antara
+                // member dan non-member. Kalau keduanya sama — dan di promo ini
+                // keduanya 17% — kata itu pagar tanpa isi: ia membuat tawaran
+                // terdengar lebih ragu daripada kenyataannya, padahal setiap
+                // pembeli pasti mendapat angka yang tertulis.
+                $nilaiMember = $persen ? (float) $flashSale->diskon_member_persen : (float) $flashSale->diskon_member_nominal;
+                $nilaiUmum = $persen ? (float) $flashSale->diskon_non_member_persen : (float) $flashSale->diskon_non_member_nominal;
+                $labelDiskon = ($nilaiUmum > 0 && abs($nilaiMember - $nilaiUmum) > 0.001) ? 'Diskon sampai' : 'Diskon';
+
+                // Siapa yang berhak. Pertanyaan "saya dapat tidak?" muncul di
+                // kepala pembeli tepat setelah ia melihat angkanya, dan
+                // menjawabnya di tempat itu juga jauh lebih berguna daripada
+                // membiarkannya mencari sendiri di syarat & ketentuan.
+                $berhak = match ($flashSale->untuk_member) {
+                    'member_only' => 'khusus member',
+                    'non_member_only' => 'khusus non-member',
+                    default => 'untuk semua pembeli',
+                };
+
+                if ($flashSale->untuk_pembeli_pertama) {
+                    $berhak = 'khusus pembeli pertama';
+                }
+
                 // Keterangan kaki dirakit dari angka yang BENAR-BENAR ADA di
                 // basis data. Tidak ada satu pun yang dikarang: berapa produk
                 // yang ikut, berapa kali promo ini sudah dipakai, dan sampai
@@ -573,8 +603,9 @@
                 </div>
 
                 <div class="fsx-tengah">
-                    <span class="fsx-diskon-label">Diskon sampai</span>
+                    <span class="fsx-diskon-label">{{ $labelDiskon }}</span>
                     <span class="fsx-diskon-angka">{{ $awalanDiskon }}{{ $angkaDiskon }}{{ $satuanDiskon }}</span>
+                    <span class="fsx-diskon-berhak">{{ $berhak }}</span>
                 </div>
 
                 <div class="fsx-kanan">

@@ -109,6 +109,16 @@
 
                                     // Tentukan apakah yang terbesar itu persen atau nominal
                                     $isNominal = ($maxVal == $promo->diskon_member_nominal || $maxVal == $promo->diskon_non_member_nominal) && $maxVal > 0;
+
+                                    // "Sampai" hanya dipakai bila potongan member dan non-member
+                                    // MEMANG berbeda. Kalau keduanya sama, kata itu pagar tanpa
+                                    // isi: ia membuat tawaran terdengar lebih ragu daripada
+                                    // kenyataannya, padahal setiap pembeli pasti mendapat angka
+                                    // yang tertulis. Aturannya disamakan dengan etalase flash
+                                    // sale di beranda supaya kedua tempat tidak berbeda kata.
+                                    $nMember = $isNominal ? (float) $promo->diskon_member_nominal : (float) $promo->diskon_member_persen;
+                                    $nUmum = $isNominal ? (float) $promo->diskon_non_member_nominal : (float) $promo->diskon_non_member_persen;
+                                    $pakaiSampai = $nUmum > 0 && abs($nMember - $nUmum) > 0.001;
                                     @endphp
 
                                     {!! $iconPromo !!}
@@ -124,9 +134,9 @@
 
                                     <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-2 ms-1">
                                         @if ($promo->tipe_diskon === 'nominal' || $isNominal)
-                                        Hemat sampai Rp {{ number_format($maxVal, 0, ',', '.') }}
+                                        Hemat{{ $pakaiSampai ? ' sampai' : '' }} Rp{{ number_format($maxVal, 0, ',', '.') }}
                                         @else
-                                        Diskon sampai {{ $maxVal }}%
+                                        Diskon{{ $pakaiSampai ? ' sampai' : '' }} {{ $maxVal }}%
                                         @endif
                                     </span>
 

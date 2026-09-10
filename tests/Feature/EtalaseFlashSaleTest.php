@@ -154,3 +154,40 @@ it('kaki promo hanya menyebut angka yang ada di basis data', function () {
         // ditampilkan seolah-olah ada.
         ->assertDontSee('min. belanja', false);
 });
+
+it('kata "sampai" hanya dipakai bila potongannya memang berbeda', function () {
+    // Member dan non-member sama-sama 17%: setiap pembeli pasti mendapat angka
+    // yang tertulis, jadi "sampai" adalah pagar tanpa isi yang membuat tawaran
+    // terdengar lebih ragu daripada kenyataannya.
+    produkPromo(promoBerjalan([
+        'tipe_diskon' => 'persen',
+        'diskon_member_persen' => 17,
+        'diskon_non_member_persen' => 17,
+        'diskon_member_nominal' => 0,
+        'diskon_non_member_nominal' => 0,
+    ]));
+
+    $this->get('/')->assertDontSee('Diskon sampai', false)->assertSee('17%', false);
+});
+
+it('kata "sampai" muncul lagi bila member dapat lebih besar', function () {
+    produkPromo(promoBerjalan([
+        'tipe_diskon' => 'persen',
+        'diskon_member_persen' => 25,
+        'diskon_non_member_persen' => 10,
+        'diskon_member_nominal' => 0,
+        'diskon_non_member_nominal' => 0,
+    ]));
+
+    // Di sini "sampai" benar: hanya sebagian pembeli yang mendapat 25%.
+    $this->get('/')->assertSee('Diskon sampai', false);
+});
+
+it('menyebut siapa yang berhak, tepat di bawah angkanya', function () {
+    produkPromo(promoBerjalan(['untuk_member' => 'member_only']));
+
+    // Pertanyaan "saya dapat tidak?" muncul persis setelah orang melihat angka
+    // diskon; menjawabnya di tempat itu lebih berguna daripada membiarkannya
+    // mencari sendiri di syarat & ketentuan.
+    $this->get('/')->assertSee('khusus member', false);
+});
