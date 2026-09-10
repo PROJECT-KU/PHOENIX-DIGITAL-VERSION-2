@@ -59,6 +59,43 @@
         }
         .shop-aktif-chip button:hover { background: #d9531a; color: #fff; }
 
+        /* --- Kartu produk berwarna menurut kategorinya ---
+           Perlakuan yang sama dengan kartu Cara Pesan dan Kategori Populer:
+           sapuan warna samar di pojok, bingkai dan bayangan senada saat
+           disentuh. Satu bahasa untuk seluruh situs. */
+        .shop-kartu { position: relative; overflow: hidden; }
+        .shop-kartu::before {
+            content: ""; position: absolute; top: -40px; right: -40px; z-index: 0;
+            width: 110px; height: 110px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 11%, transparent);
+            transition: transform .3s ease; pointer-events: none;
+        }
+        .shop-kartu:hover::before { transform: scale(1.3); }
+        .shop-kartu:hover {
+            border-color: color-mix(in srgb, var(--c) 34%, #fff) !important;
+            box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 16%, transparent) !important;
+        }
+        .shop-kartu > * { position: relative; z-index: 1; }
+
+        /* Label kategori di pojok kartu. Kecil dan tenang: ia keterangan, dan
+           keterangan yang menyaingi nama produk membuat keduanya sulit dibaca. */
+        .shop-kat {
+            position: absolute; top: 10px; left: 10px; z-index: 2;
+            display: inline-flex; align-items: center; gap: 5px;
+            background: color-mix(in srgb, var(--c) 12%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
+            color: var(--c); border-radius: 999px; padding: 4px 10px;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .68rem; line-height: 1.3; white-space: nowrap;
+            max-width: calc(100% - 20px); overflow: hidden; text-overflow: ellipsis;
+        }
+        .shop-kat i.bi { display: block; line-height: 1; font-size: .72rem; }
+        .shop-kat i.bi::before { display: block; line-height: 1; }
+
+        @media (max-width: 575.98px) {
+            .shop-kat { font-size: .62rem; padding: 3px 8px; top: 8px; left: 8px; }
+        }
+
         /* --- Bilah saring jadi satu papan --- */
         /* Sebelumnya dua kotak pilih dan satu angka mengambang di atas kisi
            produk tanpa bidang sendiri, jadi ia terbaca sebagai baris pertama
@@ -210,9 +247,26 @@
                                     } else {
                                         $discountedPrice = $originalPrice;
                                     }
+
+                                    // Kategori produk, untuk mewarnai kartunya.
+                                    $kat = App\Support\KategoriBeranda::untukProduk($item->nama_akun);
                                 @endphp
                                 <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $item->id }}">
-                                    <div class="fs-card">
+                                    {{-- Warna kartu mengikuti KATEGORI produknya,
+                                         memakai taksonomi yang sama dengan kartu
+                                         kategori di beranda. Warna di sini bukan
+                                         hiasan: ia memberi tahu produk ini masuk
+                                         kelompok apa tanpa menambah satu baris
+                                         teks pun, dan membuat katalog panjang
+                                         bisa disusuri lewat bentuk warna saja.
+
+                                         Produk yang tidak cocok kategori mana pun
+                                         memakai warna merek — bukan abu-abu, yang
+                                         akan terbaca seperti produk nonaktif. --}}
+                                    <div class="fs-card shop-kartu" style="--c: {{ $kat['warna'] ?? '#f26522' }}">
+                                        @if ($kat)
+                                            <span class="shop-kat"><i class="bi {{ $kat['ikon'] }}"></i> {{ $kat['label'] }}</span>
+                                        @endif
                                         <div class="fs-card-media">
                                             @if ($item->image)
                                                 <img loading="lazy" src="{{ asset('storage/img/Product/' . $item->image) }}"

@@ -172,6 +172,40 @@ class KategoriBeranda
         });
     }
 
+    /**
+     * Kategori sebuah produk, dari namanya.
+     *
+     * Dipakai halaman /shop untuk mewarnai tiap kartu menurut kategorinya.
+     * Warnanya di sana bukan hiasan: ia memberi tahu produk itu masuk kelompok
+     * apa tanpa menambah satu baris teks pun, dan membuat katalog yang panjang
+     * bisa disusuri berdasarkan bentuk warna saja.
+     *
+     * Yang PERTAMA cocok yang dipakai — sebuah produk bisa masuk lebih dari
+     * satu kelompok ("Scopus AI" cocok jurnal dan AI), dan warna yang berganti
+     * tergantung urutan pencarian akan membuat kartu yang sama berwarna
+     * berbeda di halaman berbeda.
+     *
+     * @return array{kunci: string, label: string, ikon: string, warna: string}|null
+     */
+    public static function untukProduk(?string $namaProduk): ?array
+    {
+        $nama = mb_strtolower(trim((string) $namaProduk));
+
+        if ($nama === '') {
+            return null;
+        }
+
+        foreach (self::PETA as $kunci => $k) {
+            foreach ($k['kata'] as $kata) {
+                if (str_contains($nama, mb_strtolower($kata))) {
+                    return ['kunci' => $kunci] + $k;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /** Kata kunci sebuah kategori, atau null bila kuncinya tidak dikenal. */
     public static function kata(?string $kunci): ?array
     {

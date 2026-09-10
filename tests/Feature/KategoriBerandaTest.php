@@ -135,3 +135,17 @@ it('tanpa kategori, chip penyaring tidak muncul', function () {
 
     $this->get('/shop')->assertDontSee('class="shop-aktif-chip"', false);
 });
+
+it('kategori produk dikenali dari namanya untuk mewarnai kartunya', function () {
+    expect(KategoriBeranda::untukProduk('Chat Gpt Plus Sharing')['label'])->toBe('AI Tools')
+        ->and(KategoriBeranda::untukProduk('Canva Premium')['label'])->toBe('Desain & Kreatif')
+        ->and(KategoriBeranda::untukProduk('Microsoft Office 365')['label'])->toBe('Produktivitas');
+});
+
+it('produk yang tidak masuk kategori mana pun tidak dipaksakan', function () {
+    // Dipaksa masuk kategori terdekat, kartunya akan berwarna dan berlabel
+    // salah — dan label yang salah lebih merugikan daripada tidak ada label.
+    expect(KategoriBeranda::untukProduk('Produk Tanpa Nama Merek'))->toBeNull()
+        ->and(KategoriBeranda::untukProduk(''))->toBeNull()
+        ->and(KategoriBeranda::untukProduk(null))->toBeNull();
+});
