@@ -313,6 +313,69 @@
         .ph-laptop-alas span { width: 62px; height: 3px; }
     }
 
+    /* ===== GAYA PRATINJAU (hanya aktif lewat ?gaya=) =====
+       Ketiganya memakai markup yang sama persis; yang berbeda hanya warnanya.
+       Begitu satu dipilih, dua sisanya dibuang dan yang terpilih jadi bawaan. */
+
+    /* --- Gaya 2: gelap & tegas --- */
+    .ph-gaya-2 .phoenix-hero-swiper { border-color: #232937; }
+    .ph-gaya-2 .ph-hero-slide {
+        background:
+            radial-gradient(120% 120% at 8% 0%, rgba(242, 101, 34, .22) 0%, rgba(242, 101, 34, 0) 52%),
+            linear-gradient(120deg, #1b2029 0%, #232937 58%, #1b2029 100%);
+    }
+    .ph-gaya-2 .ph-hero-title { color: #fff; }
+    .ph-gaya-2 .ph-hero-title .ph-aksen { color: #fba919; }
+    .ph-gaya-2 .ph-hero-desc { color: rgba(255, 255, 255, .70); }
+    .ph-gaya-2 .ph-hero-eyebrow {
+        background: rgba(242, 101, 34, .16); border-color: rgba(242, 101, 34, .38); color: #fba919;
+    }
+    .ph-gaya-2 .ph-btn-ghost {
+        background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .22); color: #fff !important;
+    }
+    .ph-gaya-2 .ph-btn-ghost:hover { background: rgba(255, 255, 255, .12); color: #fff !important; }
+    .ph-gaya-2 .ph-jaminan-ikon { background: rgba(242, 101, 34, .16); }
+    .ph-gaya-2 .ph-jaminan-ikon i.bi { color: #fba919 !important; }
+    .ph-gaya-2 .ph-jaminan-butir strong { color: #fff; }
+    .ph-gaya-2 .ph-jaminan-butir small { color: rgba(255, 255, 255, .55); }
+    /* Layar laptop jadi satu-satunya bidang terang di kartu gelap — poster
+       Anda praktis menyala sendiri, dan ke situlah mata jatuh lebih dulu. */
+    .ph-gaya-2 .ph-laptop-layar { box-shadow: 0 30px 60px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .07); }
+    .ph-gaya-2 .ph-kartu-b { background: #fff; border-color: #eceff4; }
+    .ph-gaya-2 .ph-kartu-b b { color: #1c1f26; }
+    .ph-gaya-2 .ph-kartu-b b small, .ph-gaya-2 .ph-kartu-b > small { color: #8b94a3; }
+    .ph-gaya-2 .ph-tulisan { color: #fba919; }
+
+    /* --- Gaya 3: jingga penuh, warna merek --- */
+    .ph-gaya-3 .phoenix-hero-swiper { border-color: #e0571b; }
+    .ph-gaya-3 .ph-hero-slide {
+        background:
+            radial-gradient(110% 110% at 92% 8%, rgba(255, 255, 255, .30) 0%, rgba(255, 255, 255, 0) 55%),
+            linear-gradient(122deg, #f26522 0%, #fb8b3c 54%, #fba919 100%);
+    }
+    .ph-gaya-3 .ph-hero-title { color: #fff; }
+    .ph-gaya-3 .ph-hero-title .ph-aksen { color: #23272f; }
+    .ph-gaya-3 .ph-hero-desc { color: rgba(255, 255, 255, .88); }
+    .ph-gaya-3 .ph-hero-eyebrow {
+        background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .42); color: #fff;
+    }
+    /* Tombol utama dibalik jadi putih. Tombol jingga di atas latar jingga
+       hilang sama sekali — itu kesalahan paling sering pada hero berwarna. */
+    .ph-gaya-3 .ph-btn-primary {
+        background: #fff; color: #d9531a !important; box-shadow: 0 12px 28px rgba(120, 45, 8, .28);
+    }
+    .ph-gaya-3 .ph-btn-ghost {
+        background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .55); color: #fff !important;
+    }
+    .ph-gaya-3 .ph-btn-ghost:hover { background: rgba(255, 255, 255, .22); color: #fff !important; }
+    .ph-gaya-3 .ph-jaminan-ikon { background: rgba(255, 255, 255, .20); }
+    .ph-gaya-3 .ph-jaminan-ikon i.bi { color: #fff !important; }
+    .ph-gaya-3 .ph-jaminan-butir strong { color: #fff; }
+    .ph-gaya-3 .ph-jaminan-butir small { color: rgba(255, 255, 255, .78); }
+    .ph-gaya-3 .ph-laptop-layar { box-shadow: 0 30px 58px rgba(120, 45, 8, .38); }
+    .ph-gaya-3 .ph-tulisan { color: #fff; }
+    .ph-gaya-3 .phoenix-hero-swiper::before { display: none; }
+
     /* ===== Aksen jingga pada ekor judul =====
        Judul hero satu-satunya tulisan sebesar itu di halaman; membiarkannya
        satu warna membuat mata membacanya sebagai balok, bukan sebagai kalimat
@@ -327,7 +390,16 @@
     }
 </style>
 
-<section id="hero" class="ph-hero section">
+@php
+    // Sakelar PRATINJAU, sementara. Tanpa ?gaya= di alamat, halaman tampil
+    // persis seperti biasa — jadi pengunjung tidak pernah melihat apa pun yang
+    // berubah. Dipakai supaya pemilik toko bisa membandingkan tiga arah desain
+    // langsung di halaman aslinya, bukan lewat gambar contoh yang belum tentu
+    // sama dengan hasil jadinya. Dihapus begitu satu gaya dipilih.
+    $gaya = in_array(request('gaya'), ['2', '3'], true) ? 'ph-gaya-'.request('gaya') : '';
+@endphp
+
+<section id="hero" class="ph-hero section {{ $gaya }}">
     <div class="container">
         {{-- Chip mengambang (ala flip.id) untuk mengisi area kosong --}}
         <div class="ph-hero-deco" aria-hidden="true">
