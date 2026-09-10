@@ -8,7 +8,66 @@
         /* Popup "Tulis Testimoni" bisa di-scroll bila kontennya lebih tinggi dari
            layar (mis. di HP). Scoped ke modal testimoni saja; tutup tetap bisa
            via tombol X, klik area luar (backdrop), atau tombol Escape. */
-        .fs-modal.tm-form-modal{max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+        /* ===== Popup testimoni ===== */
+        .tm-kunci-gulir { overflow: hidden !important; }
+
+        .fs-modal.tm-form-modal {
+            max-height: 90vh; max-height: 90dvh;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            /* Bilah gulir popup dibuat tipis dan sewarna latar: bilah tebal
+               bawaan sistem di dalam kotak semungil ini merebut perhatian dari
+               isian formulirnya. */
+            scrollbar-width: thin; scrollbar-color: #e6d7c8 transparent;
+            padding: 24px;
+        }
+        .fs-modal.tm-form-modal::-webkit-scrollbar { width: 8px; }
+        .fs-modal.tm-form-modal::-webkit-scrollbar-thumb {
+            background: #ecdccd; border-radius: 999px;
+            border: 2px solid #fff; background-clip: padding-box;
+        }
+
+        /* Tombol tutup IKUT BERGULIR KE ATAS bila ia absolut biasa — pada
+           formulir yang lebih tinggi daripada layar, ia lenyap begitu
+           pengunjung menggulir dan satu-satunya jalan keluar yang terlihat
+           hilang. Dibuat menempel di puncak popup. */
+        .fs-modal.tm-form-modal .fs-modal-close {
+            position: sticky; top: 0; float: right; z-index: 3;
+            margin: -6px -6px 0 0;
+        }
+
+        /* Ikon di tengah — glif Bootstrap Icons membawa tinggi baris bawaannya
+           sendiri, jadi di dalam wadah bulat ia duduk sedikit di bawah pusat. */
+        .fs-modal-close i.bi, .tm-thanks-ic i.bi, .fs-modal-eyebrow i.bi,
+        .tm-privacy i.bi, .tm-ok i.bi { display: block; line-height: 1; }
+        .fs-modal-close i.bi::before, .tm-thanks-ic i.bi::before, .fs-modal-eyebrow i.bi::before,
+        .tm-privacy i.bi::before, .tm-ok i.bi::before { display: block; line-height: 1; }
+        .fs-modal-close { display: inline-flex !important; align-items: center; justify-content: center; }
+        .tm-thanks-ic { display: inline-flex !important; align-items: center; justify-content: center; }
+
+        /* Kepala popup: garis pemisah tipis supaya isian di bawahnya punya
+           awalan yang jelas. */
+        .tm-form-modal .fs-modal-head {
+            padding-bottom: 16px; margin-bottom: 20px;
+            border-bottom: 1px solid #f2f4f7;
+        }
+        .tm-form-modal .fs-modal-title h4 {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
+            letter-spacing: -.02em;
+        }
+
+        /* Jarak antar isian dilonggarkan. Formulir dengan label, isian,
+           keterangan, dan pesan galat yang berdempetan terbaca sebagai satu
+           blok abu — pengunjung berhenti tahu mana milik mana. */
+        .tm-form .tm-form-row + .tm-form-row { margin-top: 18px; }
+        .tm-form label { display: block; margin-bottom: 6px; font-weight: 700; font-size: .88rem; color: #3f4652; }
+        .tm-form .form-control {
+            border-radius: 12px; border: 1px solid #e6e9ef; padding: 11px 14px; font-size: .95rem;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .tm-form .form-control:focus {
+            border-color: #f7c9ae; box-shadow: 0 0 0 3px rgba(242, 101, 34, .12); outline: none;
+        }
+        .tm-form .req { color: #dc2626; }
 
         /* ===== IKON BENAR-BENAR DI TENGAH =====
 
@@ -153,7 +212,23 @@
     </section>
 
     {{-- ===== Modal: Tulis Testimoni (pelanggan) — kontrol Alpine, tak re-render slider ===== --}}
+    {{-- Halaman di belakang DIKUNCI selama popup terbuka.
+
+         Tanpa ini keduanya bergulir sekaligus: menggulir di dalam popup sampai
+         mentok lalu meneruskan gulirannya ke halaman di belakang, sehingga
+         posisi baca pengunjung hilang begitu popup ditutup.
+
+         Lebar bilah gulir digantikan padding senilai lebarnya. Tanpa itu,
+         begitu bilah gulir hilang, seluruh halaman melompat beberapa piksel ke
+         kanan — dan lompatan itu terjadi tepat saat popup muncul, jadi
+         terbacanya seperti popupnya yang rusak. --}}
     <div class="fs-modal-overlay" x-show="open" x-cloak x-transition.opacity style="display:none"
+        x-effect="
+            document.documentElement.classList.toggle('tm-kunci-gulir', open);
+            document.body.style.paddingRight = open
+                ? (window.innerWidth - document.documentElement.clientWidth) + 'px'
+                : '';
+        "
         @click.self="open = false" @keydown.escape.window="open = false">
         <div class="fs-modal tm-form-modal" x-show="open" x-transition>
             <button type="button" class="fs-modal-close" @click="open = false" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
