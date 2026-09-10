@@ -32,6 +32,13 @@
         }
     </style>
 
+    {{-- banner ==========================================================
+         Pembuka halaman. Banner adalah satu-satunya bagian beranda yang isinya
+         diatur admin lewat panel, dan itulah tempat kabar terpenting hari itu
+         dipasang — jadi ia yang pertama terlihat, bukan yang harus dicari. --}}
+    @include('livewire.pages.public.homepage.partials.banner')
+    {{-- end banner --}}
+
     {{-- jaminan atas ====================================================
          Empat jaminan sebelum apa pun yang lain. Pertanyaan pertama pengunjung
          baru adalah "toko ini bisa dipercaya tidak", bukan "apa yang dijual";
@@ -51,14 +58,6 @@
     @include('livewire.pages.public.homepage.partials.flash-sale')
     {{-- end flash sale --}}
 
-
-    {{-- banner ==========================================================
-         Turun ke bawah flash sale. Saat promo sedang berjalan, promolah pembuka
-         halaman — ia punya batas waktu, banner tidak. Saat tidak ada promo,
-         komponen flash sale kosong sama sekali dan banner kembali jadi
-         pembukanya tanpa ada yang perlu diubah. --}}
-    @include('livewire.pages.public.homepage.partials.banner')
-    {{-- end banner --}}
 
     {{-- dipercaya =======================================================
          Pita merek langsung di bawah hero. Pertanyaan pertama pengunjung baru

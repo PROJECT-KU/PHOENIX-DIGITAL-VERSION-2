@@ -61,14 +61,16 @@ it('potongan persen tetap ditulis sebagai persen', function () {
     $this->get('/')->assertSee('30%', false);
 });
 
-it('promo yang berjalan mendahului banner di beranda', function () {
+it('banner tetap pembuka halaman, promo menyusul di bawahnya', function () {
     produkPromo(promoBerjalan());
 
     $isi = $this->get('/')->getContent();
 
-    // Promo punya batas waktu, banner tidak. Yang berbatas waktu harus lebih
-    // dulu terlihat, sebelum pengunjung menutup halaman.
-    expect(strpos($isi, 'id="call-to-action"'))->toBeLessThan(strpos($isi, 'id="hero"'));
+    // Banner satu-satunya bagian beranda yang isinya diatur admin lewat panel,
+    // dan di situlah kabar terpenting hari itu dipasang. Urutan ini diuji
+    // karena ia pernah dibalik dua kali; tanpa penjaga, ia akan terbalik lagi
+    // pada perubahan berikutnya tanpa ada yang menyadarinya.
+    expect(strpos($isi, 'id="hero"'))->toBeLessThan(strpos($isi, 'id="call-to-action"'));
 });
 
 it('etalase promo membawa kepala bagian rekomendasi', function () {
