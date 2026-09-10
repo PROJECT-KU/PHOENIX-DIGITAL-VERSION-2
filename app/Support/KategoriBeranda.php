@@ -92,11 +92,23 @@ class KategoriBeranda
      * "Paket Bundling" disisipkan sebagai kategori tersendiri karena ia memang
      * bagian katalog yang berdiri sendiri — bukan hasil pencocokan nama.
      *
-     * @return array<int, array{kunci: string, label: string, ikon: string, jumlah: int, url: string}>
+     * ALAMATNYA DIRAKIT SAAT DIRENDER, bukan ikut disimpan di tembolok.
+     *
+     * route() menghasilkan alamat lengkap berikut host dan portnya. Disimpan
+     * di tembolok, alamat itu ikut membeku: tembolok yang terisi saat aplikasi
+     * berjalan di localhost:8000 akan terus mengirim pengunjung ke sana meski
+     * aplikasinya sudah pindah — dan di sinilah "AI Tools" berujung 404.
+     *
+     * Bahayanya sama di server: tembolok yang dihangatkan lewat perintah CLI
+     * atau lewat permintaan dengan host berbeda akan mengunci seluruh tautan
+     * kategori ke host yang salah, dan tidak ada yang menyadarinya sampai ada
+     * yang mengklik. Yang disimpan cukup KUNCI-nya; alamat dirakit tiap kali.
+     *
+     * @return array<int, array{kunci: string, label: string, ikon: string, warna: string, jumlah: int, url: string}>
      */
     public static function tersedia(): array
     {
-        return Cache::remember('beranda.kategori', now()->addMinutes(self::SIMPAN_MENIT), function () {
+        $daftar = Cache::remember('beranda.kategori', now()->addMinutes(self::SIMPAN_MENIT), function () {
             $hasil = [];
 
             foreach (self::PETA as $kunci => $k) {
@@ -112,7 +124,6 @@ class KategoriBeranda
                     'ikon' => $k['ikon'],
                     'warna' => $k['warna'],
                     'jumlah' => $jumlah,
-                    'url' => route('shop.index', ['kategori' => $kunci]),
                 ];
             }
 
@@ -125,12 +136,17 @@ class KategoriBeranda
                     'ikon' => 'bi-box-seam',
                     'warna' => '#f26522',
                     'jumlah' => $bundling,
-                    'url' => route('bundling.product-bundlings'),
                 ];
             }
 
             return $hasil;
         });
+
+        return array_map(fn ($k) => $k + [
+            'url' => $k['kunci'] === 'bundling'
+                ? route('bundling.product-bundlings')
+                : route('shop.index', ['kategori' => $k['kunci']]),
+        ], $daftar);
     }
 
     /** Produk yang cocok dengan salah satu kata kunci, tanpa yang dijeda. */

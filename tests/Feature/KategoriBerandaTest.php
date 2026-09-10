@@ -82,3 +82,31 @@ it('logo merek tidak mengulang nama yang sudah tercetak di sebelahnya', function
     expect($blade)->toContain('alt="" aria-hidden="true"')
         ->and($blade)->not->toContain("alt=\"{{ \$m['nama'] }}\"");
 });
+
+it('tembolok kategori tidak menyimpan alamat lengkap', function () {
+    Product::query()->delete();
+    Product::create(['nama_akun' => 'Chat Gpt Plus Sharing', 'tipe_akun' => 'sharing', 'harga_perbulan' => 35000]);
+
+    KategoriBeranda::tersedia();
+
+    // route() menghasilkan alamat lengkap berikut host dan portnya. Ikut
+    // disimpan di tembolok, alamat itu membeku: tembolok yang terisi saat
+    // aplikasi berjalan di localhost:8000 terus mengirim pengunjung ke sana
+    // meski aplikasinya sudah pindah — dan tautan kategori berujung 404.
+    //
+    // Bahayanya sama di server: tembolok yang dihangatkan lewat CLI atau lewat
+    // permintaan dengan host berbeda mengunci seluruh tautan ke host yang
+    // salah, dan tak ada yang menyadarinya sampai ada yang mengklik.
+    foreach (Cache::get('beranda.kategori') as $baris) {
+        expect($baris)->not->toHaveKey('url');
+    }
+});
+
+it('alamat kategori mengikuti host permintaan saat itu', function () {
+    Product::query()->delete();
+    Product::create(['nama_akun' => 'Chat Gpt Plus Sharing', 'tipe_akun' => 'sharing', 'harga_perbulan' => 35000]);
+
+    $ai = collect(KategoriBeranda::tersedia())->firstWhere('kunci', 'ai-tools');
+
+    expect($ai['url'])->toStartWith(url('/'))->toContain('kategori=ai-tools');
+});
