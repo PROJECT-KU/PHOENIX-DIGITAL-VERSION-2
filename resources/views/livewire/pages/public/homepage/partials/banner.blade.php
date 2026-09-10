@@ -86,7 +86,10 @@
         position: relative;
         background: linear-gradient(160deg, #2b313d 0%, #1b2029 60%, #232937 100%);
         border-radius: 14px 14px 6px 6px;
-        padding: 12px 12px 14px;
+        /* Bibir bawah lebih tebal daripada tiga sisi lainnya — begitulah bezel
+           laptop sungguhan, dan mata mengenali proporsi itu sebelum mengenali
+           detail apa pun. */
+        padding: 11px 11px 20px;
         box-shadow:
             0 26px 50px rgba(28, 31, 38, .28),
             0 2px 0 rgba(255, 255, 255, .12) inset;
@@ -121,21 +124,33 @@
         background: linear-gradient(112deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 34%);
     }
 
-    /* --- Alas --- */
+    /* --- Engsel & alas --- */
+    /* Garis engsel tipis di bawah tutup. Tanpa itu tutup dan alas terlihat
+       seperti dua benda terpisah yang kebetulan bertumpuk. */
+    .ph-laptop-layar::after {
+        content: ""; position: absolute; left: 22%; right: 22%; bottom: 3px; height: 2px;
+        border-radius: 2px; background: rgba(255, 255, 255, .10);
+    }
+
     .ph-laptop-alas {
-        position: relative; height: 13px; margin: 0 auto;
+        position: relative; height: 14px; margin: 0 auto;
         /* Julurannya dipatok piksel, bukan persen. Dengan 116% alas ikut
            membesar seiring layar dan di ponsel ia melebihi lebar kartunya
            sendiri — ujungnya lalu terpotong tepi kartu dan terlihat rusak. */
         width: calc(100% + 24px); max-width: none; left: -12px;
-        background: linear-gradient(180deg, #d8dde6 0%, #aeb6c4 55%, #8f97a6 100%);
-        border-radius: 0 0 12px 12px;
+        background: linear-gradient(180deg, #e3e7ee 0%, #c2c9d5 42%, #9aa2b1 100%);
+        /* MENIRUS, bukan kotak. Alas laptop selalu lebih lebar di bagian bawah
+           karena tutupnya bersandar di tepi belakang — dan siluet menirus
+           itulah yang membuat orang langsung mengenalinya sebagai laptop.
+           Sebelumnya alasnya balok lurus, jadi bentuknya terbaca seperti
+           bingkai foto bertumpu papan, bukan laptop. */
+        clip-path: polygon(1.6% 0, 98.4% 0, 100% 100%, 0 100%);
         box-shadow: 0 16px 26px rgba(28, 31, 38, .22);
     }
-    /* Takik pembuka layar. */
+    /* Takik pembuka layar di tepi depan. */
     .ph-laptop-alas span {
-        position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-        width: 86px; height: 5px; border-radius: 0 0 6px 6px; background: #9aa2b1;
+        position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+        width: 84px; height: 4px; border-radius: 4px 4px 0 0; background: #8b93a2;
     }
 
     /* --- Chip mengambang: dua, di tepi, tidak menimpa layar --- */
@@ -171,9 +186,9 @@
     }
     @media (max-width: 575.98px) {
         .ph-hero .ph-hero-media { padding: 18px 16px 14px; }
-        .ph-laptop-layar { padding: 8px 8px 10px; border-radius: 11px 11px 5px 5px; }
-        .ph-laptop-alas { height: 10px; width: calc(100% + 16px); left: -8px; }
-        .ph-laptop-alas span { width: 62px; height: 4px; }
+        .ph-laptop-layar { padding: 8px 8px 14px; border-radius: 11px 11px 5px 5px; }
+        .ph-laptop-alas { height: 11px; width: calc(100% + 16px); left: -8px; }
+        .ph-laptop-alas span { width: 62px; height: 3px; }
     }
 
     /* ===== Aksen jingga pada ekor judul =====
