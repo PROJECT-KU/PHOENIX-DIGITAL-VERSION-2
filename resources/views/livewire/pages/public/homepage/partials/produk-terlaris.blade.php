@@ -87,7 +87,7 @@
            Tanpa itu, nama yang pecah jadi dua baris menggeser seluruh isi kartu
            ke bawah, dan kelima kartu berhenti sejajar meski tinggi luarnya sama. */
         .pt-nama {
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
             color: #23272f; line-height: 1.3; margin: 0 0 8px; min-height: 2.6em;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
@@ -102,7 +102,7 @@
 
         .pt-harga { border-top: 1px solid #f2f4f7; padding-top: 14px; margin-top: auto; text-align: left; }
         .pt-harga small { display: block; font-size: .76rem; color: #9ca3af; margin-bottom: 2px; }
-        .pt-harga b { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.28rem; color: #f26522; }
+        .pt-harga b { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.28rem; color: #f26522; }
         .pt-harga span { font-size: .8rem; color: #9ca3af; font-weight: 600; }
 
         /* Tautan teks, bukan tombol berbingkai. Lima tombol sekaligus dalam satu

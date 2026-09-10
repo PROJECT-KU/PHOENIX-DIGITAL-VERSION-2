@@ -35,7 +35,7 @@
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
             background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
         .pd-desc-head { display:flex; align-items:center; gap:9px;
-            font-family:'Poppins', sans-serif; font-weight:800; font-size:1rem;
+            font-family:'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight:800; font-size:1rem;
             color:var(--ph-ink); margin:0 0 12px; }
         .pd-desc-head i { color:var(--ph-orange); font-size:1.05rem; }
         .pd-desc-card .pd-desc { margin-bottom:12px; }

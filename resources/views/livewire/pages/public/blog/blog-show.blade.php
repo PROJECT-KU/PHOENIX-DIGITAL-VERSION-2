@@ -22,31 +22,31 @@
         /* Head */
         .ph-article .art-cat {
             display: inline-flex; align-items: center; gap: .4rem; background: var(--soft); color: var(--o);
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .72rem; padding: .34rem .85rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .72rem; padding: .34rem .85rem;
             border-radius: 999px; text-transform: uppercase; letter-spacing: .06em;
         }
         .ph-article h1.art-title {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: clamp(1.8rem, 3.4vw, 2.5rem);
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: clamp(1.8rem, 3.4vw, 2.5rem);
             color: var(--ink); line-height: 1.2; letter-spacing: -.015em; margin: .9rem 0 .9rem;
         }
         .ph-article .art-meta { display: flex; flex-wrap: wrap; gap: 1.2rem; color: var(--muted); font-size: .88rem; padding-bottom: 1.3rem; border-bottom: 1px solid var(--line); margin-bottom: 1.6rem; }
         .ph-article .art-meta i { color: var(--o); }
         .ph-article .art-cover { border-radius: 18px; overflow: hidden; margin-bottom: 1.8rem; box-shadow: 0 12px 30px rgba(35,39,47,.10); aspect-ratio: 16/9; background: var(--ph-grad-soft, linear-gradient(135deg,#fff5e9,#fff9f3)); }
         .ph-article .art-cover img { width: 100%; height: 100%; object-fit: cover; }
-        .ph-article .art-lead { font-family: 'Poppins', sans-serif; font-size: 1.16rem; line-height: 1.65; color: var(--ink); font-weight: 500; margin-bottom: 1.6rem; }
+        .ph-article .art-lead { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-size: 1.16rem; line-height: 1.65; color: var(--ink); font-weight: 500; margin-bottom: 1.6rem; }
 
         /* Prose */
         .ph-article .prose { color: #3a3f4a; font-size: 1.06rem; line-height: 1.85; }
         .ph-article .prose > p:first-of-type::first-letter {
-            float: left; font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.2rem; line-height: .82;
+            float: left; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 3.2rem; line-height: .82;
             padding: .3rem .55rem 0 0; color: var(--o);
         }
         .ph-article .prose h2 {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--ink);
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem; color: var(--ink);
             line-height: 1.3; margin: 2.1rem 0 .9rem; padding-left: 14px; position: relative;
         }
         .ph-article .prose h2::before { content: ""; position: absolute; left: 0; top: .18em; bottom: .18em; width: 5px; border-radius: 4px; background: var(--grad); }
-        .ph-article .prose h3 { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.25rem; color: var(--ink); margin: 1.7rem 0 .7rem; }
+        .ph-article .prose h3 { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.25rem; color: var(--ink); margin: 1.7rem 0 .7rem; }
         .ph-article .prose p { margin-bottom: 1.2rem; }
         .ph-article .prose ul, .ph-article .prose ol { margin: 0 0 1.2rem 1.3rem; }
         .ph-article .prose li { margin-bottom: .5rem; padding-left: .2rem; }
@@ -65,21 +65,21 @@
         /* Share + back (inline di bawah artikel) */
         .ph-article .art-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-top: 2.4rem; padding-top: 1.4rem; border-top: 1px solid var(--line); }
         .ph-article .share { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
-        .ph-article .share .lbl { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--ink); font-size: .9rem; margin-right: .2rem; }
+        .ph-article .share .lbl { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; color: var(--ink); font-size: .9rem; margin-right: .2rem; }
         .ph-article .share a, .ph-article .share button { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 1.02rem; transition: transform .2s ease; border: none; }
         .ph-article .share a:hover, .ph-article .share button:hover { transform: translateY(-3px); }
         .ph-article .share .wa { background: #25d366; }
         .ph-article .share .fb { background: #1877f2; }
         .ph-article .share .tw { background: #111827; }
         .ph-article .share .cp { background: var(--grad); cursor: pointer; }
-        .ph-article .back-cta { display: inline-flex; align-items: center; gap: .45rem; color: var(--o); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .9rem; text-decoration: none; }
+        .ph-article .back-cta { display: inline-flex; align-items: center; gap: .45rem; color: var(--o); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .9rem; text-decoration: none; }
         .ph-article .back-cta:hover i { transform: translateX(-4px); }
         .ph-article .back-cta i { transition: transform .2s ease; }
 
         /* Sidebar */
         .ph-article .art-side { position: sticky; top: 92px; display: flex; flex-direction: column; gap: 22px; }
         .ph-article .side-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 1.3rem 1.3rem 1.4rem; box-shadow: 0 8px 24px rgba(35,39,47,.05); }
-        .ph-article .side-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.02rem; color: var(--ink); display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+        .ph-article .side-title { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.02rem; color: var(--ink); display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
         .ph-article .side-title i { color: var(--o); }
         .ph-article .side-post { display: flex; gap: .8rem; align-items: center; text-decoration: none; padding: .55rem 0; border-top: 1px solid var(--line); }
         .ph-article .side-post:first-of-type { border-top: none; padding-top: 0; }
@@ -87,14 +87,14 @@
         .ph-article .side-post .sp-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .ph-article .side-post .sp-thumb .fb { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #f0a35f; }
         .ph-article .side-post .sp-date { font-size: .72rem; color: var(--muted); display: block; margin-bottom: 2px; }
-        .ph-article .side-post .sp-name { font-family: 'Poppins', sans-serif; font-weight: 600; font-size: .88rem; color: var(--ink); line-height: 1.35; }
+        .ph-article .side-post .sp-name { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 600; font-size: .88rem; color: var(--ink); line-height: 1.35; }
         .ph-article .side-post:hover .sp-name { color: var(--o); }
 
         .ph-article .cta-card { position: relative; overflow: hidden; border-radius: 18px; padding: 1.5rem 1.4rem; color: #fff; background: var(--grad); box-shadow: 0 12px 30px rgba(242,101,34,.28); }
         .ph-article .cta-card::after { content: ""; position: absolute; right: -40px; top: -40px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,.14); }
-        .ph-article .cta-card h4 { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: .4rem; position: relative; }
+        .ph-article .cta-card h4 { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.1rem; margin-bottom: .4rem; position: relative; }
         .ph-article .cta-card p { font-size: .86rem; opacity: .95; margin-bottom: 1rem; position: relative; }
-        .ph-article .cta-card .cta-btn { position: relative; display: inline-flex; align-items: center; gap: .45rem; background: #fff; color: var(--o); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .88rem; padding: .6rem 1.1rem; border-radius: 999px; text-decoration: none; }
+        .ph-article .cta-card .cta-btn { position: relative; display: inline-flex; align-items: center; gap: .45rem; background: #fff; color: var(--o); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .88rem; padding: .6rem 1.1rem; border-radius: 999px; text-decoration: none; }
         .ph-article .cta-card .cta-wa { position: relative; display: inline-flex; align-items: center; gap: .4rem; color: #fff; font-size: .82rem; margin-top: .7rem; text-decoration: none; opacity: .95; }
 
         @media (max-width: 991.98px) {

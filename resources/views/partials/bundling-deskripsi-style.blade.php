@@ -43,7 +43,7 @@
         box-shadow: 0 3px 10px rgba(180, 90, 30, .08); }
     .bh-av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff;
         font-size: .8rem; font-weight: 800; flex: 0 0 auto; }
-    .bh-name { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem; color: #23272f;
+    .bh-name { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem; color: #23272f;
         line-height: 1.15; text-wrap: balance; margin: 0; }
     @media (max-width: 575.98px) { .bh-name { font-size: 1.25rem; } .bh-pill { font-size: .8rem; } }
 

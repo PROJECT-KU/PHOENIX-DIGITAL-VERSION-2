@@ -4,7 +4,7 @@
         .cke-ic { width: 78px; height: 78px; border-radius: 50%; margin: 0 auto 16px;
             display: grid; place-items: center; font-size: 2.1rem; color: #b45309;
             background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1px solid #fde68a; }
-        .cke-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: #23272f;
+        .cke-title { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; color: #23272f;
             font-size: 1.5rem; margin: 0 0 8px; }
         .cke-sub { color: #6b7280; font-size: .95rem; line-height: 1.65; margin: 0 auto 6px; max-width: 460px; }
         .cke-order { font-family: 'Courier New', monospace; font-weight: 700; color: #f26522; }

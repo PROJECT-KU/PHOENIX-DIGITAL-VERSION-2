@@ -32,7 +32,7 @@
         }
         .jb-ikon i.bi { line-height: 1; }
         .jb-butir strong {
-            display: block; font-family: 'Poppins', sans-serif; font-weight: 700;
+            display: block; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
             font-size: .88rem; color: #1c1f26; line-height: 1.3;
         }
         .jb-butir span { display: block; font-size: .78rem; color: #8b7c6d; line-height: 1.4; }
@@ -50,7 +50,7 @@
         }
         .jb-sosial-ikon i.bi { line-height: 1; }
         .jb-sosial strong {
-            display: block; font-family: 'Poppins', sans-serif; font-weight: 700;
+            display: block; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
             font-size: .88rem; color: #1c1f26; line-height: 1.3;
         }
         .jb-sosial span { display: block; font-size: .78rem; color: #8b7c6d; }

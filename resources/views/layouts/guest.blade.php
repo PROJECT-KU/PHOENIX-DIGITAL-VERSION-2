@@ -38,7 +38,7 @@
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Caveat:wght@600;700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
         rel="stylesheet">
 
     <!-- Vendor CSS Files -->
@@ -59,6 +59,52 @@
     <link href="{{ 'niceshop/assets/css/custom.css' }}" rel="stylesheet"> --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     @vite(['resources/css/public-custom-styles.css', 'resources/js/public-custom-scripts.js'])
+
+    {{-- ===== Huruf tampilan =====
+
+         Judul dan angka besar pindah dari Poppins ke Plus Jakarta Sans.
+
+         Poppins geometris murni: semua hurufnya dibangun dari lingkaran yang
+         nyaris sama, dan pada ukuran besar keseragaman itu membuat judul
+         terbaca rata tanpa watak. Ia juga huruf bawaan hampir semua templat,
+         jadi mata pengunjung sudah terbiasa mengaitkannya dengan halaman yang
+         dibuat cepat.
+
+         Plus Jakarta Sans lebih sempit dan sedikit humanis — huruf 'a', 'g',
+         dan 'y'-nya punya bentuk yang berbeda satu sama lain, jadi kata-kata
+         punya siluet yang bisa dikenali. Pada judul tebal ia terlihat lebih
+         padat dan lebih mahal, dan pada angka besar (diskon, penghitung
+         mundur) digitnya lebih tegas.
+
+         Ditulis di sini, bukan di berkas CSS: public/build masuk .gitignore
+         dan salinannya di server beku sejak 19 Agustus, jadi aturan yang
+         ditulis di sana tidak akan pernah sampai ke pengunjung.
+
+         Hanya HURUF TAMPILAN yang diganti. Teks isi dibiarkan seperti semula:
+         mengganti huruf paragraf mengubah panjang tiap baris di seluruh situs,
+         dan itu risiko yang tidak sebanding dengan hasilnya. --}}
+    <style>
+        h1, h2, h3, h4, h5, h6,
+        .ph-hero-title, .ph-hero-eyebrow,
+        .kb-judul, .kb-kicker,
+        .fsx-judul, .fsx-sapaan, .fsx-diskon-angka, .fsx-diskon-label,
+        .fsx-satuan b, .fsx-titik-dua, .fsx-pita-atas,
+        .fs-name, .fs-price-sale, .fsx-hemat-chip,
+        .kp-nama, .dp-label, .dp-merek span,
+        .jb-butir strong, .jb-sosial strong,
+        .ph-jaminan-butir strong, .ph-kartu b, .ph-ubin span,
+        .ph-btn-primary, .ph-btn-ghost, .fsx-tombol, .kb-tautan {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+        }
+
+        /* Plus Jakarta Sans lebih sempit daripada Poppins pada ukuran yang
+           sama, jadi jarak hurufnya tidak perlu serapat sebelumnya — nilai
+           negatif yang dulu pas untuk Poppins kini membuat huruf saling
+           menempel. Dilonggarkan sedikit di tiga judul terbesar. */
+        .ph-hero-title { letter-spacing: -.022em; }
+        .kb-judul { letter-spacing: -.024em; }
+        .fsx-judul { letter-spacing: -.026em; }
+    </style>
     @stack('styles')
     @livewireStyles
 </head>

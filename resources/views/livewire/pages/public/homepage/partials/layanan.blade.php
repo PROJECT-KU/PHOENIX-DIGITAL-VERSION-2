@@ -36,13 +36,13 @@
         }
         .ly-ikon i.bi { line-height: 1; }
         .ly-ikon i.bi::before { display: block; line-height: 1; }
-        .ly-nama { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem; color: #23272f; margin: 0; line-height: 1.3; }
+        .ly-nama { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem; color: #23272f; margin: 0; line-height: 1.3; }
         .ly-ket {
             color: #6b7280; font-size: .86rem; line-height: 1.6; margin: 0;
             display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
         }
         .ly-kaki { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid #f1f3f6; }
-        .ly-harga b { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.15rem; color: #f26522; }
+        .ly-harga b { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.15rem; color: #f26522; }
         .ly-harga span { font-size: .78rem; color: #9ca3af; font-weight: 600; }
         .ly-aksi { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; font-weight: 700; color: var(--ly-warna); }
         .ly-aksi i.bi { line-height: 1; }

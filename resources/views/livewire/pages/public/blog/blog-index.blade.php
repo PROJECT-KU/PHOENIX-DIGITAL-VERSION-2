@@ -14,7 +14,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         .ph-blog .blog-search { position: relative; width: 100%; max-width: 480px; }
         .ph-blog .blog-search input {
             width: 100%; border: 1.5px solid var(--line); border-radius: 999px; padding: .85rem 2.8rem;
-            font-family: 'Poppins', sans-serif; font-size: .96rem; color: var(--ink); background: #fff;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-size: .96rem; color: var(--ink); background: #fff;
             transition: border-color .2s ease, box-shadow .2s ease; outline: none;
         }
         .ph-blog .blog-search input:focus { border-color: var(--o); box-shadow: 0 0 0 4px rgba(242,101,34,.10); }
@@ -24,7 +24,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
 
         .ph-blog .cat-chips { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
         .ph-blog .cat-chip {
-            border: 1.5px solid var(--line); background: #fff; color: var(--muted); font-family: 'Poppins', sans-serif;
+            border: 1.5px solid var(--line); background: #fff; color: var(--muted); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
             font-weight: 600; font-size: .85rem; padding: .42rem 1.05rem; border-radius: 999px; cursor: pointer;
             transition: all .2s ease; letter-spacing: .01em;
         }
@@ -55,13 +55,13 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
             margin-bottom: 1.1rem; text-transform: uppercase; letter-spacing: .06em;
         }
         .ph-blog .feat .body h2 {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 2.6vw, 2.15rem);
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: clamp(1.5rem, 2.6vw, 2.15rem);
             color: var(--ink); line-height: 1.22; letter-spacing: -.01em; margin-bottom: .85rem;
         }
         .ph-blog .feat .body p { color: var(--muted); font-size: 1rem; line-height: 1.7; margin-bottom: 1.5rem; }
         .ph-blog .feat .meta { display: flex; gap: 1.1rem; flex-wrap: wrap; font-size: .82rem; color: var(--muted); margin-bottom: 1.1rem; }
         .ph-blog .feat .meta i { color: var(--o); }
-        .ph-blog .feat .read { align-self: flex-start; color: var(--o); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; display: inline-flex; align-items: center; gap: .5rem; }
+        .ph-blog .feat .read { align-self: flex-start; color: var(--o); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .95rem; display: inline-flex; align-items: center; gap: .5rem; }
         .ph-blog .feat:hover .read i { transform: translateX(4px); }
         .ph-blog .feat .read i { transition: transform .2s ease; }
 
@@ -85,9 +85,9 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         .ph-blog .bcard .body { padding: 1.3rem 1.35rem 1.4rem; display: flex; flex-direction: column; flex-grow: 1; }
         .ph-blog .bcard .meta { font-size: .78rem; color: var(--muted); margin-bottom: .6rem; display: flex; gap: .9rem; flex-wrap: wrap; }
         .ph-blog .bcard .meta i { color: var(--o); }
-        .ph-blog .bcard h3 { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.12rem; color: var(--ink); line-height: 1.4; letter-spacing: -.005em; margin-bottom: .55rem; }
+        .ph-blog .bcard h3 { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.12rem; color: var(--ink); line-height: 1.4; letter-spacing: -.005em; margin-bottom: .55rem; }
         .ph-blog .bcard p { color: var(--muted); font-size: .9rem; line-height: 1.65; margin-bottom: 1.05rem; flex-grow: 1; }
-        .ph-blog .bcard .more { color: var(--o); font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .86rem; display: inline-flex; align-items: center; gap: .4rem; }
+        .ph-blog .bcard .more { color: var(--o); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .86rem; display: inline-flex; align-items: center; gap: .4rem; }
         .ph-blog .bcard:hover .more i { transform: translateX(4px); }
         .ph-blog .bcard .more i { transition: transform .2s ease; }
 
@@ -96,7 +96,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         .blg-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
         .blg-empty-art { margin-bottom: 6px; }
         .blg-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
-        .blg-empty-title { font-family: 'Poppins', sans-serif; font-weight: 800; color: var(--ink); font-size: 1.35rem; margin: 4px 0 6px; }
+        .blg-empty-title { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; color: var(--ink); font-size: 1.35rem; margin: 4px 0 6px; }
         .blg-empty-sub { color: var(--muted); font-size: .95rem; line-height: 1.6; margin: 0 auto 18px; max-width: 400px; }
         .blg-empty-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fba919, #f26522); color: #fff; font-weight: 700; padding: .7rem 1.4rem; border-radius: 12px; box-shadow: 0 8px 20px rgba(242, 101, 34, .28); text-decoration: none; border: 0; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
         .blg-empty-btn:hover { color: #fff; transform: translateY(-2px); filter: brightness(1.04); box-shadow: 0 10px 24px rgba(242, 101, 34, .36); }

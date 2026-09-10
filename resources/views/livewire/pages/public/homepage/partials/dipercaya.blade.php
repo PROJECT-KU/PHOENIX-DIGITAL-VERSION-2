@@ -25,7 +25,7 @@
 
         .dp-label {
             flex: 0 0 auto; max-width: 190px;
-            font-family: 'Poppins', sans-serif; font-weight: 700; color: #1c1f26;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; color: #1c1f26;
             font-size: .95rem; line-height: 1.35; margin: 0;
         }
 
@@ -77,7 +77,7 @@
            lima nama tebal berjajar akan menyaingi judul bagian mana pun yang
            ada di dekatnya. */
         .dp-merek span {
-            font-family: 'Poppins', sans-serif; font-weight: 600;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 600;
             font-size: .95rem; color: #6b7280; letter-spacing: -.01em;
             transition: color .25s ease;
         }

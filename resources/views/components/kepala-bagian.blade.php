@@ -48,7 +48,7 @@
        Jarak hurufnya dirapatkan -.02em jadi -.032em: makin besar huruf, makin
        renggang jarak bawaannya terlihat. Leading pun ikut dirapatkan. */
     .kb-judul {
-        font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
         font-size: 2.4rem; line-height: 1.06; letter-spacing: -.032em; margin: 0 0 12px;
         /* Judul dua baris terbagi rata, bukan satu baris penuh dengan satu kata
            menggantung sendirian di bawahnya. */

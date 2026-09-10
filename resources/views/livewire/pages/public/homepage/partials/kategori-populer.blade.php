@@ -61,7 +61,7 @@
         .kp-teks { position: relative; z-index: 1; }
         .kp-nama {
             display: block;
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .95rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .95rem;
             color: #1c1f26; line-height: 1.3; letter-spacing: -.01em;
         }
         /* Jumlahnya disebut, bukan disembunyikan: "9 produk" memberi tahu

@@ -83,7 +83,7 @@
             position: absolute; z-index: 3; top: 0; left: 50%; transform: translateX(-50%);
             display: inline-flex; align-items: center; gap: 9px;
             background: linear-gradient(135deg, #f26522, #fb8b3c);
-            color: #fff; font-family: 'Poppins', sans-serif;
+            color: #fff; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
             /* Huruf kapital berjarak lebar. Pada label sependek ini jarak antar
                huruf yang longgar membuatnya terbaca sebagai PENANDA, bukan
                sebagai kata biasa yang kebetulan ditulis besar. */
@@ -141,7 +141,7 @@
 
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
             font-size: 2.75rem; line-height: 1.02; letter-spacing: -.035em; margin: 0;
             /* Pada ukuran sebesar ini, jarak antar huruf bawaan terlihat
                renggang — makin besar huruf, makin perlu dirapatkan. Dan
@@ -199,7 +199,7 @@
         }
         #call-to-action .fsx-diskon-angka {
             display: block;
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.4rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 3.4rem;
             line-height: 1; letter-spacing: -.05em; white-space: nowrap;
             /* Angka berjajar rata: tanpa ini, angka lama (17%) dan angka baru
                (25.000) memakai lebar digit berbeda dan kolomnya bergeser tiap
@@ -265,7 +265,7 @@
         #call-to-action .fsx-hitung { display: flex; align-items: flex-start; gap: 4px; }
         #call-to-action .fsx-satuan { flex: 0 0 auto; min-width: 46px; text-align: center; }
         #call-to-action .fsx-satuan b {
-            display: block; font-family: 'Poppins', sans-serif; font-weight: 800;
+            display: block; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
             font-size: 1.95rem; line-height: 1; color: #fff; letter-spacing: -.03em;
             /* Angka detik berganti tiap detik. Tanpa lebar angka yang seragam,
                seluruh jam ikut bergoyang tiap kali angkanya berubah. */
@@ -276,7 +276,7 @@
             letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .40);
         }
         #call-to-action .fsx-titik-dua {
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.4rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.4rem;
             line-height: 1.25; color: rgba(255, 255, 255, .30); flex: 0 0 auto;
             /* Titik dua berkedip adalah tanda universal jam yang sedang
                berjalan — satu-satunya gerakan di panel ini yang benar-benar
@@ -389,7 +389,7 @@
             gap: 16px; margin-bottom: 18px;
         }
         #call-to-action .fsx-isi-kepala h3 {
-            margin: 0; font-family: 'Poppins', sans-serif; font-weight: 700;
+            margin: 0; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
             font-size: 1rem; color: #1c1f26; letter-spacing: -.01em;
         }
         #call-to-action .fsx-isi-kepala a {
@@ -432,7 +432,7 @@
         }
 
         #call-to-action .fsx-deret-produk .fs-name {
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1rem;
             color: #1c1f26; line-height: 1.3; text-decoration: none;
         }
         #call-to-action .fsx-deret-produk .fs-name:hover { color: #f26522; }
@@ -442,7 +442,7 @@
            dulu sebelum tahu mana yang harus dibayar. */
         #call-to-action .fsx-deret-produk .fs-price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
         #call-to-action .fsx-deret-produk .fs-price-sale {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.4rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.4rem;
             color: #f26522; letter-spacing: -.02em; line-height: 1.1;
         }
         #call-to-action .fsx-deret-produk .fs-price-orig {

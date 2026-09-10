@@ -201,7 +201,7 @@
     }
     .ph-ubin img { width: 30px; height: 30px; object-fit: contain; border-radius: 8px; }
     .ph-ubin span {
-        font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .84rem; color: #1c1f26;
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .84rem; color: #1c1f26;
     }
     /* Ditaruh menempel tepi poster, bukan menimpa tengahnya: yang ingin
        ditunjukkan tetap posternya. */
@@ -274,7 +274,7 @@
     .ph-hero .ph-jaminan-ikon i.bi { line-height: 1; color: #fba919 !important; }
     .ph-hero .ph-jaminan-butir > span { display: flex; flex-direction: column; min-width: 0; }
     .ph-hero .ph-jaminan-butir strong {
-        font-family: 'Poppins', sans-serif; font-weight: 600; font-size: .8rem;
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 600; font-size: .8rem;
         color: rgba(255, 255, 255, .92); line-height: 1.25;
     }
     .ph-hero .ph-jaminan-butir small { font-size: .72rem; color: rgba(255, 255, 255, .48); line-height: 1.35; }

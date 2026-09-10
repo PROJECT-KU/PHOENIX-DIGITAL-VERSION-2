@@ -48,14 +48,14 @@
            terpangkas terbaca sebagai kesalahan susun, bukan sebagai gaya. */
         .cp-nomor {
             position: absolute; top: 14px; right: 18px; z-index: 0;
-            font-family: 'Poppins', sans-serif; font-weight: 800;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
             font-size: 3.4rem; line-height: 1; letter-spacing: -.05em;
             color: #fdeee0; user-select: none;
         }
 
         .cp-judul, .cp-ket { position: relative; z-index: 1; }
         .cp-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.02rem;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.02rem;
             color: #1c1f26; margin: 0 0 7px; line-height: 1.3; letter-spacing: -.01em;
         }
         /* Garis pendek di bawah judul: penanda kecil yang mengikat keempat kartu
