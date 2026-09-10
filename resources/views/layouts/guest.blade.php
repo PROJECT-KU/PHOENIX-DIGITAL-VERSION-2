@@ -291,12 +291,60 @@
 
         #footer .fsv-cta { align-self: center; }
 
-        /* --- Kaki paling bawah --- */
+        /* --- Kaki paling bawah ---
+
+           Empat hal berbeda berdesakan di satu baris tanpa hierarki: hak
+           cipta, kredit perancang, metode pembayaran, dan tautan legal.
+           Dipisah jadi dua kelompok yang jelas — siapa kami di kiri, apa yang
+           perlu diketahui di kanan — dan yang di kanan diberi pemisah titik
+           tengah supaya kelompoknya terbaca, bukan sekadar berjajar. */
         #footer .footer-bottom {
-            margin-top: 26px; padding-top: 20px;
+            margin-top: 26px; padding-top: 22px; padding-bottom: 6px;
             border-top: 1px solid rgba(255, 255, 255, .09);
         }
-        #footer .copyright p { color: rgba(255, 255, 255, .6); font-size: .86rem; margin: 0; }
+        #footer .copyright p {
+            color: rgba(255, 255, 255, .62); font-size: .86rem; margin: 0; line-height: 1.5;
+        }
+        #footer .credits {
+            color: rgba(255, 255, 255, .38); font-size: .78rem; line-height: 1.5;
+        }
+        #footer .credits strong { color: rgba(255, 255, 255, .55); font-weight: 700; }
+
+        /* Label kecil sebelum chip: tanpa itu "Transfer" dan "QRIS" berdiri
+           sendiri tanpa keterangan, dan pengunjung harus menebak keduanya
+           metode pembayaran. */
+        #footer .fb-label {
+            font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+            color: rgba(255, 255, 255, .38);
+        }
+        #footer .payment-icons { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        #footer .pay-chip {
+            display: inline-flex !important; align-items: center; gap: 7px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 10px; padding: 7px 13px;
+            color: rgba(255, 255, 255, .82); font-size: .8rem; font-weight: 600;
+        }
+        #footer .pay-chip i.bi { display: block; line-height: 1; color: #fbaf45; font-size: .95rem; }
+        #footer .pay-chip i.bi::before { display: block; line-height: 1; }
+
+        /* Tautan legal dipisah titik tengah, bukan jarak kosong: dua tautan
+           yang hanya berjarak terbaca sebagai satu kalimat terputus. */
+        #footer .legal-links { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        #footer .legal-links a {
+            color: rgba(255, 255, 255, .62); font-size: .82rem; text-decoration: none;
+            transition: color .2s ease;
+        }
+        #footer .legal-links a + a { position: relative; padding-left: 14px; }
+        #footer .legal-links a + a::before {
+            content: "·"; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+            color: rgba(255, 255, 255, .25);
+        }
+
+        @media (max-width: 991.98px) {
+            #footer .footer-bottom .row > div { text-align: center; }
+            #footer .payment-icons, #footer .legal-links { justify-content: center; }
+        }
 
         @media (max-width: 767.98px) {
             #footer .footer-widget { padding: 20px 18px; border-radius: 16px; }
@@ -620,12 +668,14 @@
                             <p>© {{ date('Y') }} <strong class="sitename">Phoenix Digital</strong>. Semua hak dilindungi.
                             </p>
                         </div>
+                        {{-- Tautan "Designed by Phoenix" sebelumnya menuju
+                             https://phoenix.com/ — perusahaan lain yang sama
+                             sekali tidak berhubungan dengan toko ini. Baris
+                             kredit yang mengirim pengunjung ke situs asing
+                             adalah kebocoran, bukan kredit. Dijadikan teks
+                             biasa; tidak ada tempat yang perlu dituju. --}}
                         <div class="mt-1 credits">
-                            <!-- All the links in the footer should remain intact. -->
-                            <!-- You can delete the links only if you've purchased the pro version. -->
-                            <!-- Licensing information: https://bootstrapmade.com/license/ -->
-                            <!-- Purchase the pro version with working PHP/AJAX contact form: [buy-url] -->
-                            Designed by <a href="https://phoenix.com/">Phoenix</a>
+                            Dirancang &amp; dikembangkan oleh <strong>Phoenix Digital</strong>
                         </div>
                     </div>
 
@@ -634,6 +684,7 @@
                             class="flex-wrap gap-4 d-flex justify-content-lg-end justify-content-center align-items-center">
                             <div class="payment-methods">
                                 <div class="payment-icons">
+                                    <span class="fb-label">Pembayaran</span>
                                     <span class="pay-chip"><i class="bi bi-bank"></i> Transfer</span>
                                     <span class="pay-chip"><i class="bi bi-qr-code"></i> QRIS</span>
                                 </div>
