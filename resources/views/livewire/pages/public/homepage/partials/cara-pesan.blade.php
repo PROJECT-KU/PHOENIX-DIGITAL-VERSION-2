@@ -39,32 +39,65 @@
         }
 
         .cp-langkah {
-            position: relative; z-index: 1;
+            position: relative; z-index: 1; overflow: hidden;
             background: #fff; border: 1px solid #eceff3; border-radius: 16px;
             padding: 26px 22px 24px;
-            transition: border-color .18s ease;
+            transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
         }
-        .cp-langkah:hover { border-color: #f7c9a3; }
+        .cp-langkah:hover {
+            border-color: color-mix(in srgb, var(--c) 35%, #fff);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent);
+        }
+
+        /* Sapuan warna sangat samar di pojok kanan atas — perlakuan yang sama
+           persis dengan kartu Kategori Populer, supaya kedua bagian terbaca
+           sebagai satu bahasa dan bukan dua percobaan yang berbeda. */
+        .cp-langkah::before {
+            content: ""; position: absolute; top: -34px; right: -34px;
+            width: 96px; height: 96px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
+            transition: transform .3s ease;
+        }
+        .cp-langkah:hover::before { transform: scale(1.35); }
 
         /* Perhentian: bulatan bernomor. Menggantikan angka pucat raksasa di
            pojok — angka itu hiasan, bulatan ini penanda posisi pada jalur.
            Ukurannya dipatok supaya semua bulatan duduk di ketinggian yang
            sama persis dengan garisnya. */
+        /* Bulatan bernomor: penanda posisi pada jalur, berwarna sesuai
+           langkahnya. Latarnya PEKAT (putih dicampur warnanya), bukan tembus
+           pandang — ia harus menutupi garis jalur yang lewat di belakangnya. */
         .cp-nomor {
+            position: relative; z-index: 1;
             display: flex; align-items: center; justify-content: center;
             width: 44px; height: 44px; border-radius: 50%; margin-bottom: 16px;
-            background: #fff; border: 2px solid #f26522; color: #f26522;
+            background: color-mix(in srgb, var(--c) 10%, #fff);
+            border: 2px solid color-mix(in srgb, var(--c) 32%, #fff);
+            color: var(--c);
             font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
             font-weight: 800; font-size: 1.15rem; line-height: 1;
             font-variant-numeric: tabular-nums;
-            transition: background .22s ease, color .22s ease, box-shadow .22s ease;
+            transition: background .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease;
         }
         /* Perhentian yang disentuh terisi penuh — menandai "Anda di sini". */
         .cp-langkah:hover .cp-nomor {
-            background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff;
-            border-color: transparent;
-            box-shadow: 0 8px 18px rgba(242, 101, 34, .3);
+            background: var(--c); color: #fff; border-color: transparent;
+            box-shadow: 0 8px 18px color-mix(in srgb, var(--c) 32%, transparent);
         }
+
+        /* Ikon menemani angka, tidak menggantikannya: angka menjaga urutan,
+           ikon memberi tahu isi langkahnya sebelum judulnya sempat dibaca.
+           Ditaruh di pojok berhadapan dengan angkanya supaya keduanya tidak
+           berebut satu titik. */
+        .cp-ikon {
+            position: absolute; top: 26px; right: 22px; z-index: 1;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 10px;
+            background: color-mix(in srgb, var(--c) 12%, #fff);
+            color: var(--c); font-size: 1rem;
+        }
+        .cp-ikon i.bi { line-height: 1; }
 
         .cp-judul {
             font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
@@ -83,10 +116,11 @@
             .cp-deret { grid-template-columns: 1fr; gap: 12px; }
             .cp-langkah { padding: 20px 18px 18px; }
             .cp-nomor { width: 38px; height: 38px; font-size: 1rem; margin-bottom: 12px; }
+            .cp-ikon { top: 20px; right: 18px; width: 30px; height: 30px; font-size: .9rem; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .cp-langkah, .cp-nomor { transition: none; }
+            .cp-langkah, .cp-langkah::before, .cp-nomor { transition: none; }
         }
     </style>
 
@@ -98,14 +132,24 @@
             sub="Empat langkah dari memilih sampai akun atau hasil ada di tangan Anda." />
 
         <div class="cp-deret">
+            {{-- Warnanya BERURUTAN, bukan acak: ungu (menjelajah) ke biru
+                 (membayar) ke kuning (dikerjakan) ke hijau (selesai). Hijau di
+                 langkah terakhir bukan pilihan selera — di mana pun, hijau
+                 berarti beres, dan itu tepat kabar yang ingin disampaikan
+                 perhentian penghabisan.
+
+                 Ikonnya menemani angka, tidak menggantikan: angka menjaga
+                 urutan, ikon memberi tahu isi langkahnya sebelum judulnya
+                 sempat dibaca. --}}
             @foreach ([
-                ['Pilih produk', 'Telusuri akun premium, paket bundling, atau layanan cek & parafrase yang Anda butuhkan.'],
-                ['Bayar', 'Transfer atau QRIS. Pembayaran terverifikasi otomatis, tanpa perlu mengirim bukti.'],
-                ['Kami proses', 'Akun disiapkan seketika. Untuk layanan cek & parafrase, naskah Anda mulai dikerjakan tim kami.'],
-                ['Terima hasilnya', 'Akun dikirim lewat email & WhatsApp; hasil pengerjaan diunduh dari halaman pribadi Anda.'],
-            ] as $i => [$judul, $ket])
-                <div class="cp-langkah">
+                ['#7c3aed', 'bi-search', 'Pilih produk', 'Telusuri akun premium, paket bundling, atau layanan cek & parafrase yang Anda butuhkan.'],
+                ['#2563eb', 'bi-credit-card-2-front-fill', 'Bayar', 'Transfer atau QRIS. Pembayaran terverifikasi otomatis, tanpa perlu mengirim bukti.'],
+                ['#d97706', 'bi-gear-fill', 'Kami proses', 'Akun disiapkan seketika. Untuk layanan cek & parafrase, naskah Anda mulai dikerjakan tim kami.'],
+                ['#16a34a', 'bi-inbox-fill', 'Terima hasilnya', 'Akun dikirim lewat email & WhatsApp; hasil pengerjaan diunduh dari halaman pribadi Anda.'],
+            ] as $i => [$warna, $ikon, $judul, $ket])
+                <div class="cp-langkah" style="--c: {{ $warna }}">
                     <span class="cp-nomor">{{ $i + 1 }}</span>
+                    <span class="cp-ikon"><i class="bi {{ $ikon }}"></i></span>
                     <h3 class="cp-judul">{{ $judul }}</h3>
                     <p class="cp-ket">{{ $ket }}</p>
                 </div>
