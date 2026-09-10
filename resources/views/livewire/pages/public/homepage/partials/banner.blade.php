@@ -72,12 +72,17 @@
        langsung dikenali. */
 
     /* --- Latar: dua bola cahaya, bukan satu bidang rata --- */
+    /* Latar gelap. Poster yang diunggah jadi satu-satunya bidang terang di
+       kartu — ia praktis menyala sendiri, dan ke situlah mata jatuh lebih dulu.
+       Pada latar krem, poster dan latarnya sama-sama pucat sehingga tidak ada
+       yang menonjol; itu keluhan "monoton" yang sebenarnya. */
+    .phoenix-hero-swiper { border-color: #232937; }
     .ph-hero .ph-hero-slide {
         position: relative; overflow: hidden;
         background:
-            radial-gradient(58% 78% at 88% 18%, rgba(251, 169, 25, .26) 0%, rgba(251, 169, 25, 0) 62%),
-            radial-gradient(52% 70% at 60% 96%, rgba(242, 101, 34, .18) 0%, rgba(242, 101, 34, 0) 60%),
-            linear-gradient(118deg, #fffaf4 0%, #fff3e6 52%, #fffaf5 100%);
+            radial-gradient(58% 78% at 88% 18%, rgba(251, 169, 25, .20) 0%, rgba(251, 169, 25, 0) 62%),
+            radial-gradient(52% 70% at 60% 96%, rgba(242, 101, 34, .22) 0%, rgba(242, 101, 34, 0) 60%),
+            linear-gradient(120deg, #1b2029 0%, #232937 58%, #1b2029 100%);
     }
 
     /* --- Kolom gambar --- */
@@ -98,8 +103,8 @@
         /* Bayangan berlapis: satu rapat untuk tepi, satu lebar dan hangat untuk
            jarak. Satu bayangan saja selalu terbaca sebagai stiker. */
         box-shadow:
-            0 2px 6px rgba(120, 60, 20, .08),
-            0 26px 60px rgba(120, 60, 20, .20);
+            0 2px 6px rgba(0, 0, 0, .30),
+            0 30px 64px rgba(0, 0, 0, .48);
         transform: rotate(-2.5deg);
     }
     .ph-poster img {
@@ -114,10 +119,11 @@
         border-radius: 22px;
         background: #fff var(--berikut, none) center / cover no-repeat;
         transform: rotate(5deg) translate(14px, 8px);
-        box-shadow: 0 18px 40px rgba(120, 60, 20, .14);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
         /* Diredupkan supaya jelas ia yang di BELAKANG; tanpa ini dua poster
-           berwarna penuh saling berebut dan tumpukannya terbaca berantakan. */
-        filter: brightness(1.06) saturate(.35); opacity: .55;
+           berwarna penuh saling berebut dan tumpukannya terbaca berantakan.
+           Di latar gelap ia digelapkan, bukan diputihkan. */
+        filter: brightness(.55) saturate(.4); opacity: .7;
     }
 
     /* Posternya bisa diklik — ia sedang menawarkan sesuatu, jadi wajar kalau
@@ -129,7 +135,7 @@
     }
     .ph-poster-tautan:hover { transform: translateY(-6px); }
     .ph-poster-tautan:hover .ph-poster {
-        box-shadow: 0 4px 10px rgba(120, 60, 20, .10), 0 34px 70px rgba(120, 60, 20, .26);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, .34), 0 38px 76px rgba(0, 0, 0, .55);
     }
     .ph-poster { transition: box-shadow .35s ease; }
 
@@ -140,7 +146,9 @@
        gradien yang digarap. Digambar SVG, bukan berkas gambar. */
     .ph-hero .ph-hero-slide::after {
         content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-        opacity: .35; mix-blend-mode: multiply;
+        /* overlay, bukan multiply: di latar gelap multiply hanya menggelapkan
+           lagi dan butirannya hilang sama sekali. */
+        opacity: .28; mix-blend-mode: overlay;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
     }
     .ph-hero .ph-hero-text, .ph-hero .ph-hero-media { position: relative; z-index: 2; }
@@ -204,7 +212,7 @@
     /* --- Tulisan tangan --- */
     .ph-hero .ph-tulisan {
         position: absolute; z-index: 5; top: 4%; right: 1%; width: 170px;
-        color: #f26522; text-align: center; transform: rotate(-6deg);
+        color: #fba919; text-align: center; transform: rotate(-6deg);
     }
     .ph-hero .ph-tulisan span {
         display: block;
@@ -232,40 +240,44 @@
 
     /* --- Sisi teks --- */
     .ph-hero .ph-hero-text { gap: 18px; }
-    .ph-hero .ph-hero-title { letter-spacing: -.03em; line-height: 1.04; }
-    .ph-hero .ph-hero-desc { font-size: 1rem; line-height: 1.65; color: #7b8493; -webkit-line-clamp: 2; line-clamp: 2; }
+    .ph-hero .ph-hero-title { letter-spacing: -.03em; line-height: 1.04; color: #fff; }
+    .ph-hero .ph-hero-title .ph-aksen { color: #fba919; }
+    .ph-hero .ph-hero-desc {
+        font-size: 1rem; line-height: 1.65; color: rgba(255, 255, 255, .68);
+        -webkit-line-clamp: 2; line-clamp: 2;
+    }
     .ph-hero .ph-hero-eyebrow {
         font-size: .72rem; letter-spacing: .14em; padding: 6px 13px;
-        background: #fff; border-color: #f3ddcc;
+        background: rgba(242, 101, 34, .16); border-color: rgba(242, 101, 34, .38); color: #fba919;
     }
     .ph-hero .ph-hero-actions { gap: 8px; align-items: center; margin-top: 4px; }
     .ph-hero .ph-btn-primary { font-size: 1.02rem; padding: 15px 32px; }
     .ph-hero .ph-btn-ghost {
         background: none; border: 0; padding: 15px 18px;
-        font-size: 1rem; color: #6b7280 !important; box-shadow: none;
+        font-size: 1rem; color: rgba(255, 255, 255, .72) !important; box-shadow: none;
     }
     .ph-hero .ph-btn-ghost:hover {
-        background: none; color: #f26522 !important; text-decoration: underline; text-underline-offset: 4px;
+        background: none; color: #fba919 !important; text-decoration: underline; text-underline-offset: 4px;
     }
 
     /* --- Jaminan di kaki hero --- */
     .ph-hero .ph-jaminan {
         display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 14px;
-        padding-top: 20px; border-top: 1px solid rgba(242, 101, 34, .12);
+        padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, .12);
     }
     .ph-hero .ph-jaminan-butir { flex: 1 1 176px; min-width: 0; display: flex; align-items: center; gap: 9px; }
     .ph-hero .ph-jaminan-ikon {
         flex: 0 0 auto; width: 28px; height: 28px; border-radius: 9px;
         display: inline-flex; align-items: center; justify-content: center;
-        background: #fff2ea; font-size: .82rem;
+        background: rgba(242, 101, 34, .18); font-size: .82rem;
     }
-    .ph-hero .ph-jaminan-ikon i.bi { line-height: 1; color: #f26522 !important; }
+    .ph-hero .ph-jaminan-ikon i.bi { line-height: 1; color: #fba919 !important; }
     .ph-hero .ph-jaminan-butir > span { display: flex; flex-direction: column; min-width: 0; }
     .ph-hero .ph-jaminan-butir strong {
         font-family: 'Poppins', sans-serif; font-weight: 600; font-size: .8rem;
-        color: #3f4652; line-height: 1.25;
+        color: rgba(255, 255, 255, .92); line-height: 1.25;
     }
-    .ph-hero .ph-jaminan-butir small { font-size: .72rem; color: #a0a8b4; line-height: 1.35; }
+    .ph-hero .ph-jaminan-butir small { font-size: .72rem; color: rgba(255, 255, 255, .48); line-height: 1.35; }
 
     @media (max-width: 991.98px) {
         .ph-hero .ph-hero-media { padding: 26px 22px 10px; }
@@ -281,67 +293,6 @@
         .ph-hero .ph-jaminan-butir { flex: 1 1 44%; }
     }
 
-    /* ===== GAYA PRATINJAU (hanya aktif lewat ?gaya=) =====
-       Markupnya sama persis untuk ketiganya; yang berbeda hanya warna. Tanpa
-       ?gaya= di alamat, halaman tampil seperti biasa. Sakelar ini SEMENTARA —
-       begitu satu gaya dipilih, dua sisanya dibuang. */
-
-    /* --- Gaya 2: gelap & tegas --- */
-    .ph-gaya-2 .phoenix-hero-swiper { border-color: #232937; }
-    .ph-gaya-2 .ph-hero-slide {
-        background:
-            radial-gradient(58% 78% at 88% 18%, rgba(251, 169, 25, .20) 0%, rgba(251, 169, 25, 0) 62%),
-            radial-gradient(52% 70% at 60% 96%, rgba(242, 101, 34, .22) 0%, rgba(242, 101, 34, 0) 60%),
-            linear-gradient(120deg, #1b2029 0%, #232937 58%, #1b2029 100%);
-    }
-    .ph-gaya-2 .ph-hero-title { color: #fff; }
-    .ph-gaya-2 .ph-hero-title .ph-aksen { color: #fba919; }
-    .ph-gaya-2 .ph-hero-desc { color: rgba(255, 255, 255, .68); }
-    .ph-gaya-2 .ph-hero-eyebrow {
-        background: rgba(242, 101, 34, .16); border-color: rgba(242, 101, 34, .38); color: #fba919;
-    }
-    .ph-gaya-2 .ph-btn-ghost { color: rgba(255, 255, 255, .72) !important; }
-    .ph-gaya-2 .ph-btn-ghost:hover { color: #fba919 !important; }
-    .ph-gaya-2 .ph-jaminan { border-top-color: rgba(255, 255, 255, .12); }
-    .ph-gaya-2 .ph-jaminan-ikon { background: rgba(242, 101, 34, .18); }
-    .ph-gaya-2 .ph-jaminan-ikon i.bi { color: #fba919 !important; }
-    .ph-gaya-2 .ph-jaminan-butir strong { color: rgba(255, 255, 255, .92); }
-    .ph-gaya-2 .ph-jaminan-butir small { color: rgba(255, 255, 255, .48); }
-    /* Poster jadi satu-satunya bidang terang di kartu gelap — ia praktis
-       menyala sendiri, dan ke situlah mata jatuh lebih dulu. */
-    .ph-gaya-2 .ph-poster { box-shadow: 0 2px 6px rgba(0, 0, 0, .3), 0 30px 64px rgba(0, 0, 0, .48); }
-    .ph-gaya-2 .ph-poster::after { background: rgba(255, 255, 255, .10); box-shadow: none; }
-    .ph-gaya-2 .ph-tulisan { color: #fba919; }
-
-    /* --- Gaya 3: jingga penuh, warna merek --- */
-    .ph-gaya-3 .phoenix-hero-swiper { border-color: #e0571b; }
-    .ph-gaya-3 .ph-hero-slide {
-        background:
-            radial-gradient(110% 110% at 92% 8%, rgba(255, 255, 255, .28) 0%, rgba(255, 255, 255, 0) 55%),
-            linear-gradient(122deg, #f26522 0%, #fb8b3c 54%, #fba919 100%);
-    }
-    .ph-gaya-3 .ph-hero-title { color: #fff; }
-    .ph-gaya-3 .ph-hero-title .ph-aksen { color: #23272f; }
-    .ph-gaya-3 .ph-hero-desc { color: rgba(255, 255, 255, .88); }
-    .ph-gaya-3 .ph-hero-eyebrow {
-        background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .42); color: #fff;
-    }
-    /* Tombol utama dibalik jadi putih. Tombol jingga di atas latar jingga
-       hilang sama sekali — kesalahan paling sering pada hero berwarna. */
-    .ph-gaya-3 .ph-btn-primary {
-        background: #fff; color: #d9531a !important; box-shadow: 0 12px 28px rgba(120, 45, 8, .28);
-    }
-    .ph-gaya-3 .ph-btn-ghost { color: rgba(255, 255, 255, .85) !important; }
-    .ph-gaya-3 .ph-btn-ghost:hover { color: #fff !important; }
-    .ph-gaya-3 .ph-jaminan { border-top-color: rgba(255, 255, 255, .28); }
-    .ph-gaya-3 .ph-jaminan-ikon { background: rgba(255, 255, 255, .22); }
-    .ph-gaya-3 .ph-jaminan-ikon i.bi { color: #fff !important; }
-    .ph-gaya-3 .ph-jaminan-butir strong { color: #fff; }
-    .ph-gaya-3 .ph-jaminan-butir small { color: rgba(255, 255, 255, .78); }
-    .ph-gaya-3 .ph-poster { box-shadow: 0 2px 6px rgba(120, 45, 8, .2), 0 30px 60px rgba(120, 45, 8, .38); }
-    .ph-gaya-3 .ph-tulisan { color: #fff; }
-    .ph-gaya-3 .phoenix-hero-swiper::before { display: none; }
-
     /* ===== Aksen jingga pada ekor judul =====
        Judul hero satu-satunya tulisan sebesar itu di halaman; membiarkannya
        satu warna membuat mata membacanya sebagai balok, bukan sebagai kalimat
@@ -356,16 +307,7 @@
     }
 </style>
 
-@php
-    // Sakelar PRATINJAU, sementara. Tanpa ?gaya= di alamat, halaman tampil
-    // persis seperti biasa — jadi pengunjung tidak pernah melihat apa pun yang
-    // berubah. Dipakai supaya pemilik toko bisa membandingkan tiga arah desain
-    // langsung di halaman aslinya, bukan lewat gambar contoh yang belum tentu
-    // sama dengan hasil jadinya. Dihapus begitu satu gaya dipilih.
-    $gaya = in_array(request('gaya'), ['2', '3'], true) ? 'ph-gaya-'.request('gaya') : '';
-@endphp
-
-<section id="hero" class="ph-hero section {{ $gaya }}">
+<section id="hero" class="ph-hero section">
     <div class="container">
         {{-- Chip mengambang (ala flip.id) untuk mengisi area kosong --}}
         {{-- Lapis mengambang.
