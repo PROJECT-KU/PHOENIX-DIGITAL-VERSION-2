@@ -112,6 +112,33 @@
          terdeploy (salinannya di server beku sejak 19 Agustus), jadi
          pembenahannya harus ditulis inline di sini. --}}
     <style>
+        /* --- LATAR KAKI HALAMAN ---
+
+           Sebelumnya satu bidang cokelat arang (#201b18) — dan sejak hero
+           dijadikan biru-gelap, dua nada gelap dari keluarga warna yang berbeda
+           membuat halaman berhenti terasa satu bahasa. Kaki halaman disamakan
+           ke keluarga hero.
+
+           Bidangnya juga tidak lagi rata: dua bola cahaya hangat sangat samar
+           memberi kedalaman, dan satu lapis butiran menghapus pita warna yang
+           selalu muncul pada gradien selebar ini di layar 8-bit. Persis
+           perlakuan yang dipakai hero dan kartu promo, jadi ketiganya satu
+           bahasa. */
+        #footer.footer.dark-background {
+            background:
+                radial-gradient(52% 62% at 14% 0%, rgba(242, 101, 34, .16) 0%, rgba(242, 101, 34, 0) 60%),
+                radial-gradient(46% 58% at 88% 96%, rgba(251, 169, 25, .12) 0%, rgba(251, 169, 25, 0) 62%),
+                linear-gradient(160deg, #232937 0%, #1b2029 52%, #171b23 100%);
+        }
+        #footer.footer.dark-background::after {
+            content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+            opacity: .22; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+        }
+        /* Isinya harus berada DI ATAS lapisan butiran, kalau tidak seluruh
+           tulisan ikut teredam olehnya. */
+        #footer .footer-main, #footer .footer-services, #footer .footer-bottom { position: relative; z-index: 1; }
+
         /* --- IKON BENAR-BENAR DI TENGAH ---
            Glif Bootstrap Icons membawa tinggi baris bawaannya sendiri, jadi di
            dalam bulatan sosial dan ubin kontak ia duduk sedikit di bawah pusat.
