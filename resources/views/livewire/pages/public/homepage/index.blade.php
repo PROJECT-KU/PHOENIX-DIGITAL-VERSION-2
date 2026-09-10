@@ -32,7 +32,31 @@
         }
     </style>
 
-    {{-- banner --}}
+    {{-- jaminan atas ====================================================
+         Empat jaminan sebelum apa pun yang lain. Pertanyaan pertama pengunjung
+         baru adalah "toko ini bisa dipercaya tidak", bukan "apa yang dijual";
+         menjawabnya setelah ia melewati seluruh hero berarti terlambat. --}}
+    @include('livewire.pages.public.homepage.partials.jaminan-atas')
+    {{-- end jaminan atas --}}
+
+    {{-- flash sale =====================================================
+         Didahulukan atas Produk Terlaris: flash sale punya batas waktu,
+         sedangkan produk terlaris ada setiap hari. Menaruh yang berbatas waktu
+         di bawah berarti sebagian pengunjung menutup halaman sebelum sempat
+         melihatnya, dan penawarannya keburu habis.
+
+         Aman ditaruh paling atas: komponennya kosong tanpa latar apa pun saat
+         tidak ada flash sale yang sedang berjalan, jadi tidak meninggalkan
+         pita kosong di puncak beranda. --}}
+    @include('livewire.pages.public.homepage.partials.flash-sale')
+    {{-- end flash sale --}}
+
+
+    {{-- banner ==========================================================
+         Turun ke bawah flash sale. Saat promo sedang berjalan, promolah pembuka
+         halaman — ia punya batas waktu, banner tidak. Saat tidak ada promo,
+         komponen flash sale kosong sama sekali dan banner kembali jadi
+         pembukanya tanpa ada yang perlu diubah. --}}
     @include('livewire.pages.public.homepage.partials.banner')
     {{-- end banner --}}
 
@@ -50,18 +74,6 @@
          kehabisan produk hilang sendiri — lihat App\Support\KategoriBeranda. --}}
     @include('livewire.pages.public.homepage.partials.kategori-populer')
     {{-- end kategori populer --}}
-
-    {{-- flash sale =====================================================
-         Didahulukan atas Produk Terlaris: flash sale punya batas waktu,
-         sedangkan produk terlaris ada setiap hari. Menaruh yang berbatas waktu
-         di bawah berarti sebagian pengunjung menutup halaman sebelum sempat
-         melihatnya, dan penawarannya keburu habis.
-
-         Aman ditaruh paling atas: komponennya kosong tanpa latar apa pun saat
-         tidak ada flash sale yang sedang berjalan, jadi tidak meninggalkan
-         pita kosong di puncak beranda. --}}
-    @include('livewire.pages.public.homepage.partials.flash-sale')
-    {{-- end flash sale --}}
 
     {{-- produk terlaris --}}
     @include('livewire.pages.public.homepage.partials.produk-terlaris')
@@ -88,6 +100,13 @@
          muncul di kepala pengunjung. --}}
     @include('livewire.pages.public.homepage.partials.cara-pesan')
     {{-- end cara pesan --}}
+
+    {{-- jaminan bawah ===================================================
+         Menjawab pertanyaan yang baru muncul SETELAH orang melihat harga: soal
+         keaslian lisensi dan keamanan transaksi. Kalimatnya sengaja berbeda
+         dari pita jaminan di puncak halaman. --}}
+    @include('livewire.pages.public.homepage.partials.jaminan-bawah')
+    {{-- end jaminan bawah --}}
 
     {{-- testimoni --}}
     <livewire:components.testimonials />

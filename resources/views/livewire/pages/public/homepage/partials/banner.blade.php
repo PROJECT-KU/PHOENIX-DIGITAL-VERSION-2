@@ -61,48 +61,6 @@
        dengan penekanan. */
     .ph-hero-title .ph-aksen { color: #f26522; }
 
-    /* ===== Baris kepercayaan =====
-       Sebelumnya tiga kartu berbingkai sendiri-sendiri, terpisah dari hero dan
-       terbaca sebagai bagian keempat halaman. Padahal isinya bukan bagian —
-       melainkan keterangan kaki hero. Dijadikan datar tanpa bingkai supaya
-       menempel pada hero di atasnya, dan butirnya digenapkan jadi empat agar
-       tidak ada ruang menganga di ujung baris.
-
-       Ditulis dengan kekhususan tinggi karena aturan berkartu yang lama ada di
-       public-custom-styles.css, dan salinan berkas itu di server beku sejak 19
-       Agustus — tidak bisa disunting lewat git pull. */
-    .ph-hero .ph-hero-trust {
-        display: flex; flex-wrap: wrap; gap: 14px 38px;
-        background: none; border: 0; box-shadow: none; padding: 4px 0 0; margin: 14px 0 0;
-    }
-    .ph-hero .ph-hero-trust .ph-trust-item {
-        flex: 1 1 190px; min-width: 0;
-        display: flex; align-items: center; gap: 12px;
-        background: none; border: 0; box-shadow: none; padding: 0;
-    }
-    .ph-hero .ph-hero-trust .ph-trust-ico {
-        flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px;
-        display: inline-flex; align-items: center; justify-content: center;
-        background: #fff2ea; color: #f26522; font-size: 1.05rem;
-    }
-    /* !important terpaksa dipakai: aturan lama .ph-trust-ico i memakai
-       `color: #fff !important` untuk latar gradient jingga. Latarnya kini
-       lembut, jadi glif putih di atasnya menghilang sama sekali. */
-    .ph-hero .ph-hero-trust .ph-trust-ico i.bi { line-height: 1; color: #f26522 !important; }
-    .ph-hero .ph-hero-trust .ph-trust-item > div { display: flex; flex-direction: column; min-width: 0; }
-    .ph-hero .ph-hero-trust .ph-trust-item strong {
-        font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .88rem;
-        color: #1c1f26; line-height: 1.25;
-    }
-    .ph-hero .ph-hero-trust .ph-trust-item span {
-        font-size: .78rem; color: #8b94a3; line-height: 1.35;
-    }
-
-    @media (max-width: 575.98px) {
-        .ph-hero .ph-hero-trust { gap: 14px 20px; }
-        .ph-hero .ph-hero-trust .ph-trust-item { flex: 1 1 44%; }
-    }
-
     /* Hanya jarak luar bagian hero yang dirapatkan. Padding di dalam slide
        SENGAJA tidak disentuh: slide diatur Swiper dengan lebar tetap, dan
        mengubah paddingnya membuat teks meluber keluar lalu terpotong tepi. */
@@ -182,24 +140,5 @@
             @endif
         </div>
 
-        {{-- Baris kepercayaan (konsisten berapa pun jumlah banner) --}}
-        <div class="ph-hero-trust" data-aos="fade-up" data-aos-delay="100">
-            <div class="ph-trust-item">
-                <span class="ph-trust-ico"><i class="bi bi-lightning-charge"></i></span>
-                <div><strong>Proses Instan</strong><span>Langsung aktif</span></div>
-            </div>
-            <div class="ph-trust-item">
-                <span class="ph-trust-ico"><i class="bi bi-shield-check"></i></span>
-                <div><strong>Aman &amp; Terpercaya</strong><span>Garansi uang kembali</span></div>
-            </div>
-            <div class="ph-trust-item">
-                <span class="ph-trust-ico"><i class="bi bi-headset"></i></span>
-                <div><strong>Bantuan 24/7</strong><span>Siap membantu</span></div>
-            </div>
-            <div class="ph-trust-item">
-                <span class="ph-trust-ico"><i class="bi bi-people-fill"></i></span>
-                <div><strong>5.000+ Pelanggan</strong><span>Telah bergabung</span></div>
-            </div>
-        </div>
     </div>
 </section>
