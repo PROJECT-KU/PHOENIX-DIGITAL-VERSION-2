@@ -89,11 +89,13 @@ it('tanpa promo berjalan, beranda tidak menyisakan pita kosong', function () {
         ->assertDontSee('fsx-hero', false);
 });
 
-it('jaminan atas dan jaminan bawah tidak mengulang kalimat yang sama', function () {
+it('jaminan di hero dan panel penutup tidak mengulang kalimat yang sama', function () {
     $isi = $this->get('/')->getContent();
 
     // Empat kalimat identik dua kali dalam satu halaman membuat keduanya
     // berhenti dibaca; itulah keluhan yang pernah muncul soal pita ganda.
-    expect(substr_count($isi, 'Akun langsung aktif'))->toBe(1)
+    // Jaminan kini hanya hidup di kaki hero, panel penutup memakai kalimat
+    // yang berbeda.
+    expect(substr_count($isi, 'Garansi uang kembali'))->toBe(1)
         ->and(substr_count($isi, 'Lisensi resmi &amp; legal'))->toBe(1);
 });

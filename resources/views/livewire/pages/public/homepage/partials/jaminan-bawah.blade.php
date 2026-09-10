@@ -1,12 +1,14 @@
 {{-- Panel penutup.
 
-     Isinya sengaja TIDAK mengulang pita jaminan di atas halaman. Yang di atas
+     Isinya sengaja TIDAK mengulang baris jaminan di kaki hero. Yang di hero
      menjawab "aman tidak belanja di sini" sebelum orang melihat barangnya; yang
      di sini menjawab pertanyaan yang baru muncul SETELAH ia melihat harga —
      soal keaslian lisensi dan keamanan transaksinya.
 
      Mengulang empat kalimat yang sama persis dua kali dalam satu halaman
-     membuat keduanya berhenti dibaca. --}}
+     membuat keduanya berhenti dibaca. "Garansi uang kembali" sempat muncul di
+     kedua tempat; sekarang ia hanya hidup di hero, dan itu dijaga uji supaya
+     tidak kembali kembar. --}}
 <section class="jaminan-bawah" aria-label="Jaminan Phoenix Digital">
     <style>
         /* Inline: public/build masuk .gitignore dan tidak ikut terdeploy. */
@@ -65,7 +67,7 @@
     <div class="container">
         <div class="jb-panel">
             @foreach ([
-                ['bi-tag-fill', 'Harga Terbaik', 'Garansi uang kembali'],
+                ['bi-tag-fill', 'Harga Terbaik', 'Tanpa biaya tersembunyi'],
                 ['bi-patch-check-fill', 'Produk Original', 'Lisensi resmi & legal'],
                 ['bi-lock-fill', 'Transaksi Aman', 'Data terlindungi'],
                 ['bi-arrow-repeat', 'Garansi Penggantian', 'Bila akun bermasalah'],

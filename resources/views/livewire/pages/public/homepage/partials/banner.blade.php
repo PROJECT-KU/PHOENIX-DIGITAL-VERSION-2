@@ -153,10 +153,100 @@
         width: 84px; height: 4px; border-radius: 4px 4px 0 0; background: #8b93a2;
     }
 
-    /* --- Chip mengambang: dua, di tepi, tidak menimpa layar --- */
-    .ph-hero .ph-chip.c3, .ph-hero .ph-chip.c4 { display: none; }
-    .ph-hero .ph-chip.c1 { top: 8%; right: 2%; }
-    .ph-hero .ph-chip.c2 { top: auto; bottom: 10%; right: 1%; }
+    /* --- Kartu mengambang di sekeliling laptop --- */
+    .ph-hero-deco { pointer-events: none; }
+    .ph-hero .ph-kartu {
+        position: absolute; z-index: 5;
+        background: #fff; border: 1px solid #eceff4; border-radius: 14px;
+        padding: 11px 14px;
+        box-shadow: 0 16px 34px rgba(35, 39, 47, .16);
+        animation: phChipFloat 5s ease-in-out infinite;
+    }
+
+    /* Kartu A — angka pelanggan */
+    .ph-hero .ph-kartu-a {
+        top: 9%; left: 48%;
+        display: flex; align-items: center; gap: 10px; white-space: nowrap;
+        animation-delay: 0s;
+    }
+    .ph-hero .ph-kartu-ikon {
+        width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff; font-size: .95rem;
+    }
+    .ph-hero .ph-kartu-a b {
+        display: block; font-family: 'Poppins', sans-serif; font-weight: 800;
+        font-size: 1.05rem; color: #1c1f26; line-height: 1.15;
+    }
+    .ph-hero .ph-kartu-a small { display: block; font-size: .74rem; color: #8b94a3; }
+    .ph-hero .ph-kartu-naik { color: #16a34a; font-size: 1rem; }
+
+    /* Kartu B — nilai ulasan. Sengaja GELAP: tiga kartu putih berjajar akan
+       kembali terbaca sebagai satu hiasan yang diulang. */
+    .ph-hero .ph-kartu-b {
+        top: 4%; right: 2%;
+        background: #1c2029; border-color: #1c2029; text-align: center;
+        padding: 13px 18px; animation-delay: .9s;
+    }
+    .ph-hero .ph-bintang { display: block; color: #fbbf24; font-size: .82rem; letter-spacing: 1px; }
+    .ph-hero .ph-kartu-b b {
+        display: block; margin-top: 4px;
+        font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 1.5rem;
+        color: #fff; line-height: 1.1;
+    }
+    .ph-hero .ph-kartu-b b small { font-size: .85rem; font-weight: 700; color: rgba(255, 255, 255, .55); }
+    .ph-hero .ph-kartu-b > small { display: block; font-size: .68rem; color: rgba(255, 255, 255, .6); }
+
+    /* Kartu C — daftar keuntungan */
+    .ph-hero .ph-kartu-c {
+        bottom: 8%; right: 0;
+        display: flex; flex-direction: column; gap: 7px;
+        padding: 14px 16px; animation-delay: 1.6s;
+    }
+    .ph-hero .ph-centang {
+        display: flex; align-items: center; gap: 8px; white-space: nowrap;
+        font-size: .8rem; font-weight: 600; color: #3f4652;
+    }
+    .ph-hero .ph-centang i.bi { color: #16a34a; font-size: .9rem; line-height: 1; }
+
+    /* Di bawah 1200px laptopnya menyempit dan kartu mulai saling menimpa.
+       Yang paling besar dilepas lebih dulu, bukan semuanya sekaligus. */
+    @media (max-width: 1199.98px) {
+        .ph-hero .ph-kartu-c { display: none; }
+        .ph-hero .ph-kartu-a { left: 42%; }
+    }
+
+    /* --- Baris jaminan di kaki hero --- */
+    /* Datar, tanpa bingkai. Empat kartu berbingkai di sini akan menyaingi
+       kartu hero yang menampungnya — kotak di dalam kotak. Yang dibutuhkan
+       hanya keterangan kaki, jadi cukup ikon dan dua baris teks. */
+    .ph-hero .ph-jaminan {
+        display: flex; flex-wrap: wrap; gap: 14px 30px; margin-top: 8px;
+    }
+    .ph-hero .ph-jaminan-butir {
+        flex: 1 1 176px; min-width: 0;
+        display: flex; align-items: center; gap: 11px;
+    }
+    .ph-hero .ph-jaminan-ikon {
+        flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px;
+        display: inline-flex; align-items: center; justify-content: center;
+        background: #fff2ea; font-size: 1rem;
+    }
+    /* !important terpaksa: aturan lama .ph-trust-ico i memakai color:#fff
+       !important untuk latar gradient. Latar di sini lembut, jadi glif putih
+       akan hilang sama sekali. */
+    .ph-hero .ph-jaminan-ikon i.bi { line-height: 1; color: #f26522 !important; }
+    .ph-hero .ph-jaminan-butir > span { display: flex; flex-direction: column; min-width: 0; }
+    .ph-hero .ph-jaminan-butir strong {
+        font-family: 'Poppins', sans-serif; font-weight: 700; font-size: .87rem;
+        color: #1c1f26; line-height: 1.25;
+    }
+    .ph-hero .ph-jaminan-butir small { font-size: .76rem; color: #8b94a3; line-height: 1.35; }
+
+    @media (max-width: 575.98px) {
+        .ph-hero .ph-jaminan { gap: 12px 18px; }
+        .ph-hero .ph-jaminan-butir { flex: 1 1 44%; }
+    }
 
     /* --- Sisi teks --- */
     .ph-hero .ph-hero-text { gap: 16px; }
@@ -209,10 +299,40 @@
     <div class="container">
         {{-- Chip mengambang (ala flip.id) untuk mengisi area kosong --}}
         <div class="ph-hero-deco" aria-hidden="true">
-            <span class="ph-chip c1"><span class="ph-chip-ic" style="--c:#f59e0b"><i class="bi bi-star-fill"></i></span> <b>4.9</b>&nbsp;Rating</span>
-            <span class="ph-chip c2"><span class="ph-chip-ic" style="--c:#16a34a"><i class="bi bi-shield-check"></i></span> Akun Resmi &amp; Aman</span>
-            <span class="ph-chip c3"><span class="ph-chip-ic" style="--c:#f26522"><i class="bi bi-lightning-charge-fill"></i></span> Proses Instan</span>
-            <span class="ph-chip c4"><span class="ph-chip-ic" style="--c:#7c3aed"><i class="bi bi-emoji-smile-fill"></i></span> 5.000+ Pelanggan</span>
+            {{-- Kartu mengambang di sekeliling laptop.
+
+                 Sebelumnya empat pil putih berisi satu kalimat pendek. Pil
+                 seragam yang berulang empat kali terbaca sebagai hiasan yang
+                 sama diulang-ulang, bukan sebagai empat keterangan berbeda.
+                 Diganti tiga kartu yang MASING-MASING beda bentuk dan beda
+                 isi: satu angka, satu nilai, satu daftar. --}}
+            <div class="ph-kartu ph-kartu-a">
+                <span class="ph-kartu-ikon"><i class="bi bi-people-fill"></i></span>
+                <span>
+                    <b>5.000+</b>
+                    <small>Pelanggan aktif</small>
+                </span>
+                <i class="bi bi-graph-up-arrow ph-kartu-naik"></i>
+            </div>
+
+            <div class="ph-kartu ph-kartu-b">
+                <span class="ph-bintang">
+                    <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </span>
+                <b>4.9<small>/5</small></b>
+                <small>Dari 5.000+ pelanggan</small>
+            </div>
+
+            <div class="ph-kartu ph-kartu-c">
+                @foreach ([
+                    'Harga lebih hemat',
+                    'Akses produk premium',
+                    'Promo khusus member',
+                    'Poin reward tiap transaksi',
+                ] as $butir)
+                <span class="ph-centang"><i class="bi bi-check-circle-fill"></i> {{ $butir }}</span>
+                @endforeach
+            </div>
         </div>
 
         <div class="swiper phoenix-hero-swiper" data-aos="fade-up" data-multi="{{ $multiBanner ? '1' : '0' }}">
@@ -231,6 +351,23 @@
                                     Belanja Sekarang <i class="bi bi-arrow-right"></i>
                                 </a>
                                 <a href="{{ route('shop.index') }}" class="ph-btn-ghost">Lihat Katalog</a>
+                            </div>
+
+                            <div class="ph-jaminan">
+                                @foreach ([
+                                    ['bi-lightning-charge-fill', 'Proses Instan', 'Langsung aktif'],
+                                    ['bi-shield-check', 'Aman &amp; Terpercaya', 'Garansi uang kembali'],
+                                    ['bi-headset', 'Bantuan 24/7', 'Siap membantu'],
+                                    ['bi-people-fill', '5.000+ Pelanggan', 'Telah bergabung'],
+                                ] as [$ikon, $judulJ, $subJ])
+                                <div class="ph-jaminan-butir">
+                                    <span class="ph-jaminan-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                    <span>
+                                        <strong>{!! $judulJ !!}</strong>
+                                        <small>{{ $subJ }}</small>
+                                    </span>
+                                </div>
+                                @endforeach
                             </div>
                         </div>
                         <div class="ph-hero-media">
@@ -272,6 +409,23 @@
                             <div class="ph-hero-actions">
                                 <a href="{{ route('shop.index') }}" class="ph-btn-primary">Belanja Sekarang <i class="bi bi-arrow-right"></i></a>
                                 <a href="{{ route('shop.index') }}" class="ph-btn-ghost">Lihat Katalog</a>
+                            </div>
+
+                            <div class="ph-jaminan">
+                                @foreach ([
+                                    ['bi-lightning-charge-fill', 'Proses Instan', 'Langsung aktif'],
+                                    ['bi-shield-check', 'Aman &amp; Terpercaya', 'Garansi uang kembali'],
+                                    ['bi-headset', 'Bantuan 24/7', 'Siap membantu'],
+                                    ['bi-people-fill', '5.000+ Pelanggan', 'Telah bergabung'],
+                                ] as [$ikon, $judulJ, $subJ])
+                                <div class="ph-jaminan-butir">
+                                    <span class="ph-jaminan-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                    <span>
+                                        <strong>{!! $judulJ !!}</strong>
+                                        <small>{{ $subJ }}</small>
+                                    </span>
+                                </div>
+                                @endforeach
                             </div>
                         </div>
                         <div class="ph-hero-media ph-hero-media--empty">

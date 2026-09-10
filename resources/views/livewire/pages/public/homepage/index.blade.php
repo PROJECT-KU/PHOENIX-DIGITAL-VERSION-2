@@ -39,12 +39,6 @@
     @include('livewire.pages.public.homepage.partials.banner')
     {{-- end banner --}}
 
-    {{-- jaminan atas ====================================================
-         Empat jaminan sebelum apa pun yang lain. Pertanyaan pertama pengunjung
-         baru adalah "toko ini bisa dipercaya tidak", bukan "apa yang dijual";
-         menjawabnya setelah ia melewati seluruh hero berarti terlambat. --}}
-    @include('livewire.pages.public.homepage.partials.jaminan-atas')
-    {{-- end jaminan atas --}}
 
     {{-- flash sale =====================================================
          Didahulukan atas Produk Terlaris: flash sale punya batas waktu,
