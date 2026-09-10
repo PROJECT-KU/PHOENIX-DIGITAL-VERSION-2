@@ -93,15 +93,23 @@ class AppServiceProvider extends ServiceProvider
             return auth()->check() && auth()->user()->hasRole($role);
         });
 
-        // memanggil data pormos di $headerPromos
+        // Promo yang diumumkan di pita puncak SETIAP halaman.
+        //
+        // Sebelumnya penyaringnya hanya `is_active` dan "ada potongannya" —
+        // TANPA memeriksa tanggal sama sekali. Promo yang jadwalnya sudah lewat
+        // berbulan-bulan tetap diumumkan di puncak halaman, dan pengunjung yang
+        // mengkliknya menemukan potongan yang tidak berlaku lagi. Diperbaiki
+        // dengan scope active(): jendela tanggal DAN sisa kuota sekaligus,
+        // aturan yang sama yang dipakai seluruh perhitungan promo lain.
         View::composer('layouts.guest', function ($view) {
-            $promos = Promo::where('is_active', true)
+            $promos = Promo::active()
                 ->where(function ($query) {
                     $query->where('diskon_member_nominal', '>', 0)
                         ->orWhere('diskon_member_persen', '>', 0)
                         ->orWhere('diskon_non_member_nominal', '>', 0)
                         ->orWhere('diskon_non_member_persen', '>', 0);
                 })
+                ->orderByDesc('prioritas')
                 ->get();
 
             $view->with('headerPromos', $promos);

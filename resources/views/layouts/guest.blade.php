@@ -418,22 +418,27 @@
                                     $pakaiSampai = $nUmum > 0 && abs($nMember - $nUmum) > 0.001;
                                     @endphp
 
+                                    {{-- Jenis promo TIDAK lagi dicetak dalam kurung.
+                                         Ikon di sebelah kiri sudah mengatakannya
+                                         (petir untuk flash sale, tiket untuk kode
+                                         promo), dan badge di kanan sudah mengatakan
+                                         besarannya. "(Flash Sale)" di antara
+                                         keduanya hanya mengulang, dan pengulangan
+                                         di pita setinggi 34px memakan ruang yang
+                                         justru dibutuhkan nama promonya. --}}
                                     {!! $iconPromo !!}
 
-                                    <span class="fw-bold">{{ $promo->nama_promo }}</span>
-                                    <small class="opacity-75 mx-2 text-capitalize">
-                                        ({{ $promo->tipe_promo === 'flash_sale' ? 'Flash Sale' : str_replace('_', ' ', $promo->tipe_promo) }})
-                                    </small>
+                                    <span class="tb-nama">{{ $promo->nama_promo }}</span>
 
                                     @if ($promo->tipe_promo === 'kode_promo' && $promo->kode_promo)
                                     <span class="promo-code-chip"><i class="bi bi-tag-fill"></i>{{ strtoupper($promo->kode_promo) }}</span>
                                     @endif
 
-                                    <span class="badge bg-warning text-dark fw-bold rounded-pill px-3 py-2 ms-1">
+                                    <span class="tb-nilai">
                                         @if ($promo->tipe_diskon === 'nominal' || $isNominal)
-                                        Hemat{{ $pakaiSampai ? ' sampai' : '' }} Rp{{ number_format($maxVal, 0, ',', '.') }}
+                                        Hemat{{ $pakaiSampai ? ' s/d' : '' }} <b>Rp{{ number_format($maxVal, 0, ',', '.') }}</b>
                                         @else
-                                        Diskon{{ $pakaiSampai ? ' sampai' : '' }} {{ $maxVal }}%
+                                        Diskon{{ $pakaiSampai ? ' s/d' : '' }} <b>{{ $maxVal }}%</b>
                                         @endif
                                     </span>
 
@@ -496,9 +501,42 @@
             .top-bar .tb-cta:hover { background: #d9531a; color: #fff; transform: translateY(-1px); }
             .top-bar .tb-cta i.bi { font-size: .85rem; line-height: 1; }
 
+            /* Nama promo dipotong dengan elipsis, bukan dibiarkan mendorong
+               badge keluar. Nama sepanjang "Merdeka Sale! Diskon 17% All Item
+               Spesial HUT RI ke-81" akan mendesak nilai diskonnya keluar dari
+               pita — dan nilai diskon justru satu-satunya hal yang harus
+               selamat di baris ini. */
+            .top-bar .tb-nama {
+                font-weight: 700; min-width: 0;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            }
+
+            /* Nilai diskon: pil pekat, angkanya lebih tebal daripada
+               kalimatnya. Badge kuning bawaan Bootstrap terlalu terang di atas
+               pita jingga — keduanya sama-sama hangat, jadi pilnya tidak
+               terbaca sebagai sesuatu yang terpisah. */
+            .top-bar .tb-nilai {
+                display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
+                background: rgba(36, 26, 18, .82); color: #ffe6c9;
+                border-radius: 999px; padding: 4px 13px;
+                font-size: .78rem; font-weight: 600; line-height: 1.5; white-space: nowrap;
+            }
+            .top-bar .tb-nilai b { color: #fff; font-weight: 800; }
+
+            /* Ikon di tengah: glif Bootstrap Icons membawa tinggi baris
+               bawaannya sendiri, jadi di dalam pita setipis ini ia duduk
+               sedikit di bawah garis teks di sebelahnya. */
+            .top-bar i.bi { display: block; line-height: 1; }
+            .top-bar i.bi::before { display: block; line-height: 1; }
+            .top-bar .announcement-slider .swiper-slide { gap: 10px; }
+
             @media (max-width: 991.98px) {
                 .top-bar .tb-kanan { display: none; }
                 .top-bar .announcement-slider .swiper-slide { justify-content: center !important; text-align: center !important; }
+            }
+            @media (max-width: 575.98px) {
+                .top-bar .tb-nilai { font-size: .72rem; padding: 3px 10px; }
+                .top-bar .tb-nama { font-size: .82rem; }
             }
         </style>
 
