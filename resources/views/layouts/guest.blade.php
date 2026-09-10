@@ -105,6 +105,145 @@
         .kb-judul { letter-spacing: -.024em; }
         .fsx-judul { letter-spacing: -.026em; }
     </style>
+
+    {{-- ===== Kaki halaman =====
+
+         Gayanya berasal dari public-custom-styles.css yang tidak ikut
+         terdeploy (salinannya di server beku sejak 19 Agustus), jadi
+         pembenahannya harus ditulis inline di sini. --}}
+    <style>
+        /* --- IKON BENAR-BENAR DI TENGAH ---
+           Glif Bootstrap Icons membawa tinggi baris bawaannya sendiri, jadi di
+           dalam bulatan sosial dan ubin kontak ia duduk sedikit di bawah pusat.
+           Selisihnya beberapa piksel, tapi pada tiga bulatan berjajar mata
+           langsung menangkapnya. Keduanya perlu: line-height dinolkan DAN
+           ::before dijadikan block. */
+        #footer .social-icons a i.bi,
+        #footer .contact-item i.bi,
+        #footer .fsv-chip i.bi,
+        #footer .fsv-cta i.bi { display: block; line-height: 1; }
+        #footer .social-icons a i.bi::before,
+        #footer .contact-item i.bi::before,
+        #footer .fsv-chip i.bi::before,
+        #footer .fsv-cta i.bi::before { display: block; line-height: 1; }
+
+        /* Ikon dibiarkan SATU warna. Warnanya dipindah ke kartu kolomnya —
+           mewarnai keduanya membuat kartu dan ikonnya saling berebut, dan yang
+           menandai kolom jadi tidak jelas yang mana. */
+        #footer .social-icons { display: flex; gap: 10px; }
+        #footer .social-icons a {
+            display: inline-flex !important; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 12px;
+            background: rgba(255, 255, 255, .07);
+            border: 1px solid rgba(255, 255, 255, .12);
+            color: #fff; font-size: 1.05rem;
+            transition: background .2s ease, transform .2s ease;
+        }
+        #footer .social-icons a:hover {
+            background: color-mix(in srgb, var(--c) 30%, transparent);
+            border-color: color-mix(in srgb, var(--c) 45%, transparent);
+            transform: translateY(-2px);
+        }
+
+        /* --- Kontak: ikon diberi ubinnya sendiri ---
+           Glif telanjang di samping alamat dua baris menggantung di tengah
+           kalimat; sebagai ubin yang disejajarkan ke baris pertama, ia jadi
+           penanda awal baris — sama seperti ubin ikon di seluruh beranda. */
+        #footer .footer-contact { display: flex; flex-direction: column; gap: 12px; }
+        #footer .contact-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            color: rgba(255, 255, 255, .78); font-size: .9rem; line-height: 1.55;
+            transition: color .2s ease;
+        }
+        #footer a.contact-item:hover { color: #fff; }
+        #footer .contact-item i.bi {
+            flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px;
+            display: flex !important; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 16%, transparent);
+            color: var(--c); font-size: .95rem;
+            margin-top: 1px;
+        }
+
+        /* --- Daftar tautan ---
+           Bergeser sedikit ke kanan saat disentuh: penanda paling murah bahwa
+           barisnya menanggapi, tanpa menambah warna atau bentuk apa pun. */
+        #footer .footer-links li { margin-bottom: 9px; }
+        #footer .footer-links a {
+            display: inline-block; color: rgba(255, 255, 255, .72);
+            font-size: .9rem; line-height: 1.5; text-decoration: none;
+            transition: color .2s ease, transform .2s ease;
+        }
+        #footer .footer-links a:hover { transform: translateX(3px); }
+
+        /* --- KEEMPAT KOLOM JADI KARTU BERWARNA ---
+           Perlakuan yang sama dengan kartu Kategori Populer: bidang bergaris
+           tipis, sapuan warna samar di pojok kanan atas, bingkai yang menyala
+           saat disentuh. Bedanya di sini latarnya gelap, jadi kartunya dibuat
+           dari cahaya (putih transparan) dan bukan dari bayangan.
+
+           Sebelumnya keempat kolom hanya teks mengambang di bidang gelap —
+           tidak ada yang menandai di mana satu kolom berakhir dan kolom
+           berikutnya dimulai, dan di layar lebar keempatnya melebur jadi satu
+           bidang teks. */
+        #footer .footer-widget {
+            position: relative; overflow: hidden; height: 100%;
+            background: rgba(255, 255, 255, .035);
+            border: 1px solid rgba(255, 255, 255, .09);
+            border-radius: 18px; padding: 24px 22px;
+            transition: border-color .25s ease, background .25s ease;
+        }
+        #footer .footer-widget:hover {
+            border-color: color-mix(in srgb, var(--c) 34%, transparent);
+            background: color-mix(in srgb, var(--c) 6%, rgba(255, 255, 255, .035));
+        }
+        #footer .footer-widget::before {
+            content: ""; position: absolute; top: -40px; right: -40px;
+            width: 118px; height: 118px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 16%, transparent);
+            transition: transform .3s ease; pointer-events: none;
+        }
+        #footer .footer-widget:hover::before { transform: scale(1.3); }
+        #footer .footer-widget > * { position: relative; z-index: 1; }
+
+        /* Garis-bawah judul mengikuti warna kolomnya, bukan gradient merek —
+           dengan begitu penanda kolom dan warna kartunya satu suara. */
+        #footer .footer-widget h4 {
+            font-size: 1rem; letter-spacing: -.01em; margin-bottom: 18px;
+        }
+        #footer .footer-widget h4::after { background: var(--c) !important; width: 32px; }
+        #footer .footer-about p {
+            color: rgba(255, 255, 255, .68); font-size: .92rem; line-height: 1.7; max-width: 46ch;
+        }
+        #footer .social-links h5 {
+            font-size: .78rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+            color: rgba(255, 255, 255, .5); margin-bottom: 12px;
+        }
+
+        /* --- Pita layanan lain --- */
+        #footer .footer-services { padding: 18px 0 6px; }
+        #footer .footer-services .fsv-inner {
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .10);
+        }
+        #footer .fsv-chip i.bi { font-size: .9rem; color: var(--c) !important; }
+
+        /* --- Kaki paling bawah --- */
+        #footer .footer-bottom {
+            margin-top: 26px; padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, .09);
+        }
+        #footer .copyright p { color: rgba(255, 255, 255, .6); font-size: .86rem; margin: 0; }
+
+        @media (max-width: 767.98px) {
+            #footer .footer-widget { padding: 20px 18px; border-radius: 16px; }
+            #footer .footer-widget h4 { margin-bottom: 14px; }
+            #footer .social-icons a { width: 38px; height: 38px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            #footer .footer-links a, #footer .contact-item { transition: none; }
+        }
+    </style>
     @stack('styles')
     @livewireStyles
 </head>
@@ -313,7 +452,7 @@
             <div class="container">
                 <div class="row gy-4">
                     <div class="col-lg-4 col-md-12">
-                        <div class="footer-widget footer-about">
+                        <div class="footer-widget footer-about" style="--c: #fbaf45">
                             <a href="/" class="logo phoenix-logo phoenix-logo--light d-inline-flex align-items-center">
                                 <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
                                 <span class="phoenix-wordmark">
@@ -336,7 +475,7 @@
                     </div>
 
                     <div class="col-lg-2 col-md-4 col-sm-6">
-                        <div class="footer-widget">
+                        <div class="footer-widget" style="--c: #7fb3ff">
                             <h4>Menu</h4>
                             <ul class="footer-links">
                                 <li><a href="{{ route('homepage') }}">Beranda</a></li>
@@ -353,7 +492,7 @@
                     </div>
 
                     <div class="col-lg-3 col-md-4 col-sm-6">
-                        <div class="footer-widget">
+                        <div class="footer-widget" style="--c: #a78bfa">
                             <h4>Bantuan &amp; Legal</h4>
                             <ul class="footer-links">
                                 <li><a href="{{ route('faq') }}">FAQ — Pertanyaan Umum</a></li>
@@ -367,7 +506,7 @@
                     </div>
 
                     <div class="col-lg-3 col-md-4">
-                        <div class="footer-widget">
+                        <div class="footer-widget" style="--c: #4ade80">
                             <h4>Kontak</h4>
                             <div class="footer-contact">
                                 <div class="contact-item">
@@ -397,9 +536,9 @@
                         <h3>Butuh lebih dari sekadar akun digital?</h3>
                         <p>Kami juga melayani pembuatan solusi digital untuk kebutuhan bisnis &amp; instansi Anda.</p>
                         <div class="fsv-chips">
-                            <span class="fsv-chip"><i class="bi bi-code-slash"></i> Pengembangan Website</span>
-                            <span class="fsv-chip"><i class="bi bi-phone"></i> Aplikasi Mobile</span>
-                            <span class="fsv-chip"><i class="bi bi-camera-reels"></i> Konten Sosial Media</span>
+                            <span class="fsv-chip" style="--c: #a78bfa"><i class="bi bi-code-slash"></i> Pengembangan Website</span>
+                            <span class="fsv-chip" style="--c: #7fb3ff"><i class="bi bi-phone"></i> Aplikasi Mobile</span>
+                            <span class="fsv-chip" style="--c: #f76ea8"><i class="bi bi-camera-reels"></i> Konten Sosial Media</span>
                         </div>
                     </div>
                     <a class="fsv-cta" href="{{ route('services') }}">
