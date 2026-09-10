@@ -188,18 +188,23 @@
            satu-satunya angka yang benar-benar menentukan orang jadi membeli
            atau tidak, jadi ia yang paling besar di bidang ini. */
         #call-to-action .fsx-diskon-label {
-            font-size: .88rem; font-weight: 600; letter-spacing: .04em;
-            text-transform: uppercase; color: #9aa2ae; white-space: nowrap; margin-bottom: 1px;
+            font-size: .78rem; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: #a8b0bb; white-space: nowrap; margin-bottom: 4px;
         }
         /* Siapa yang berhak, tepat di bawah angkanya. Pertanyaan "saya dapat
            tidak?" muncul persis setelah orang melihat angka diskon. */
         #call-to-action .fsx-diskon-berhak {
-            margin-top: 4px; font-size: .76rem; font-weight: 600; color: #c07a3f;
+            margin-top: 7px; font-size: .82rem; font-weight: 600; color: #8b939f;
             white-space: nowrap;
         }
         #call-to-action .fsx-diskon-angka {
-            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.1rem;
-            line-height: 1; letter-spacing: -.045em; white-space: nowrap;
+            display: block;
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.4rem;
+            line-height: 1; letter-spacing: -.05em; white-space: nowrap;
+            /* Angka berjajar rata: tanpa ini, angka lama (17%) dan angka baru
+               (25.000) memakai lebar digit berbeda dan kolomnya bergeser tiap
+               kali promonya berganti. */
+            font-variant-numeric: lining-nums tabular-nums;
             background: linear-gradient(120deg, #fba919, #f26522);
             -webkit-background-clip: text; background-clip: text;
             -webkit-text-fill-color: transparent; color: #fba919;
@@ -209,6 +214,17 @@
            mengulang nama promonya, dan di pita yang harus ringkas ia hanya
            menambah baris tanpa menambah keterangan. Tetap terbaca pembaca
            layar lewat judulnya. */
+        /* Satuan dikecilkan jadi separuh dan diangkat ke atas garis dasar —
+           cara baku menyusun angka harga, dan yang membuat "17%" terbaca
+           sebagai satu angka utuh, bukan dua lambang bersebelahan. */
+        #call-to-action .fsx-diskon-satuan {
+            font-size: .46em; font-style: normal; font-weight: 800;
+            letter-spacing: 0; vertical-align: .62em; margin-left: .04em;
+        }
+        #call-to-action .fsx-diskon-angka i.fsx-diskon-satuan:first-child {
+            margin: 0 .1em 0 0; vertical-align: .5em;
+        }
+
         #call-to-action .fsx-ket { display: none; }
 
         /* Tombol "Belanja Sekarang" dicabut dari pita. Produk yang ditawarkan
@@ -622,10 +638,20 @@
                 // Angka besar dipisah dari satuannya supaya bisa diberi ukuran
                 // berbeda. Yang harus tertangkap dalam sekejap adalah BESAR
                 // potongannya; kata "diskon" dan tanda persen boleh kecil.
-                $persen = $flashSale->tipe_diskon === 'persen';
-                $angkaDiskon = $persen
-                    ? number_format($flashSale->diskon_member_persen, 0)
-                    : number_format($flashSale->diskon_member_nominal, 0, ',', '.');
+                // Nilai TERBESAR dari keempat kolom diskon (persen/nominal x
+                // member/non-member), lewat getBestDiscount() — metode yang sama
+                // yang dipakai lencana pada kartu produk di bawahnya. Dipakai
+                // bersama supaya kepala promo dan lencana produknya tidak
+                // mungkin menyebut angka yang berbeda; sebelumnya kepala promo
+                // membaca kolom member saja dan bisa berselisih dengan lencana.
+                $terbaik = $this->getBestDiscount();
+
+                $persen = $terbaik ? ! $terbaik['isNominal'] : $flashSale->tipe_diskon === 'persen';
+                $nilaiDiskon = $terbaik
+                    ? $terbaik['value']
+                    : ($persen ? $flashSale->diskon_member_persen : $flashSale->diskon_member_nominal);
+
+                $angkaDiskon = number_format($nilaiDiskon, 0, ',', '.');
                 $satuanDiskon = $persen ? '%' : '';
                 $awalanDiskon = $persen ? '' : 'Rp';
 
@@ -634,6 +660,9 @@
                 // keduanya 17% — kata itu pagar tanpa isi: ia membuat tawaran
                 // terdengar lebih ragu daripada kenyataannya, padahal setiap
                 // pembeli pasti mendapat angka yang tertulis.
+                // Dibandingkan pada JENIS yang sama dengan nilai terbesarnya;
+                // membandingkan persen member dengan nominal non-member akan
+                // selalu menyimpulkan "berbeda".
                 $nilaiMember = $persen ? (float) $flashSale->diskon_member_persen : (float) $flashSale->diskon_member_nominal;
                 $nilaiUmum = $persen ? (float) $flashSale->diskon_non_member_persen : (float) $flashSale->diskon_non_member_nominal;
                 $labelDiskon = ($nilaiUmum > 0 && abs($nilaiMember - $nilaiUmum) > 0.001) ? 'Diskon sampai' : 'Diskon';
@@ -723,7 +752,14 @@
 
                 <div class="fsx-tengah">
                     <span class="fsx-diskon-label">{{ $labelDiskon }}</span>
-                    <span class="fsx-diskon-angka">{{ $awalanDiskon }}{{ $angkaDiskon }}{{ $satuanDiskon }}</span>
+                    {{-- Awalan "Rp" dan satuan "%" dipisah dari angkanya supaya
+                         bisa dikecilkan. Pada tipografi harga, satuan yang
+                         sebesar angkanya mencuri perhatian dari angka itu
+                         sendiri — padahal yang ingin ditangkap pembaca adalah
+                         BESARNYA, bukan satuannya. --}}
+                    <span class="fsx-diskon-angka">
+                        @if ($awalanDiskon)<i class="fsx-diskon-satuan">{{ $awalanDiskon }}</i>@endif{{ $angkaDiskon }}@if ($satuanDiskon)<i class="fsx-diskon-satuan">{{ $satuanDiskon }}</i>@endif
+                    </span>
                     <span class="fsx-diskon-berhak">{{ $berhak }}</span>
                 </div>
 

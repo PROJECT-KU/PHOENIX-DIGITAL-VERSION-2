@@ -235,3 +235,19 @@ it('kalimat promo yang kembar dengan nama promonya tidak dicetak dua kali', func
 
     expect(substr_count($kartu, 'Promo Kilat'))->toBe(1);
 });
+
+it('menampilkan nilai potongan yang paling besar dari keempat kolomnya', function () {
+    produkPromo(promoBerjalan([
+        'tipe_diskon' => 'persen',
+        'diskon_member_persen' => 10,
+        'diskon_non_member_persen' => 25,
+        'diskon_member_nominal' => 0,
+        'diskon_non_member_nominal' => 0,
+    ]));
+
+    // Sebelumnya kepala promo membaca kolom member saja dan akan menulis 10%,
+    // sementara lencana pada kartu produk di bawahnya menulis 25% — satu kartu
+    // menyebut dua angka berbeda untuk potongan yang sama. Keduanya kini
+    // membaca sumber yang sama, getBestDiscount().
+    $this->get('/')->assertSee('25', false)->assertDontSee('>10<', false);
+});
