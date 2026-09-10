@@ -106,13 +106,77 @@
         width: 100%; height: 100%; object-fit: cover; display: block;
         -webkit-mask-image: none; mask-image: none; padding: 0;
     }
-    /* Kartu bayangan di belakang — memberi kesan ada lebih dari satu promo,
-       yang memang benar bila admin memasang lebih dari satu banner. */
+    /* Kartu di belakang berisi banner BERIKUTNYA, bukan bidang putih kosong.
+       Bidang kosong hanya hiasan yang berpura-pura jadi tumpukan; berisi promo
+       yang sungguh menyusul, ia mulai memberi tahu sesuatu. */
     .ph-poster::after {
         content: ""; position: absolute; inset: 0; z-index: -1;
-        border-radius: 22px; background: #fff;
+        border-radius: 22px;
+        background: #fff var(--berikut, none) center / cover no-repeat;
         transform: rotate(5deg) translate(14px, 8px);
         box-shadow: 0 18px 40px rgba(120, 60, 20, .14);
+        /* Diredupkan supaya jelas ia yang di BELAKANG; tanpa ini dua poster
+           berwarna penuh saling berebut dan tumpukannya terbaca berantakan. */
+        filter: brightness(1.06) saturate(.35); opacity: .55;
+    }
+
+    /* Posternya bisa diklik — ia sedang menawarkan sesuatu, jadi wajar kalau
+       menuju ke suatu tempat. Angkatnya halus: poster sebesar ini kalau
+       melompat saat disentuh justru terasa murah. */
+    .ph-poster-tautan {
+        display: block; text-decoration: none;
+        transition: transform .35s cubic-bezier(.2, .7, .3, 1);
+    }
+    .ph-poster-tautan:hover { transform: translateY(-6px); }
+    .ph-poster-tautan:hover .ph-poster {
+        box-shadow: 0 4px 10px rgba(120, 60, 20, .10), 0 34px 70px rgba(120, 60, 20, .26);
+    }
+    .ph-poster { transition: box-shadow .35s ease; }
+
+    /* --- Butiran halus di seluruh kartu ---
+       Gradien lebar selalu memperlihatkan pita-pita warna di layar 8-bit.
+       Satu lapis butiran sangat samar menghapusnya, sekaligus memberi permukaan
+       yang terasa "ada" — inilah yang membedakan gradien buatan cepat dari
+       gradien yang digarap. Digambar SVG, bukan berkas gambar. */
+    .ph-hero .ph-hero-slide::after {
+        content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+        opacity: .35; mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+    .ph-hero .ph-hero-text, .ph-hero .ph-hero-media { position: relative; z-index: 2; }
+
+    /* --- Teks masuk bertahap ---
+       Bukan demi animasi. Urutan munculnya memberi tahu mata urutan membacanya:
+       label dulu, judul, keterangan, baru ajakan. Muncul serentak menyerahkan
+       urutan itu kepada kebetulan. */
+    @keyframes phNaik {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: none; }
+    }
+    .ph-hero .swiper-slide-active .ph-hero-text > * {
+        animation: phNaik .62s cubic-bezier(.2, .7, .3, 1) both;
+    }
+    .ph-hero .swiper-slide-active .ph-hero-text > *:nth-child(1) { animation-delay: .05s; }
+    .ph-hero .swiper-slide-active .ph-hero-text > *:nth-child(2) { animation-delay: .13s; }
+    .ph-hero .swiper-slide-active .ph-hero-text > *:nth-child(3) { animation-delay: .21s; }
+    .ph-hero .swiper-slide-active .ph-hero-text > *:nth-child(4) { animation-delay: .29s; }
+    .ph-hero .swiper-slide-active .ph-hero-text > *:nth-child(5) { animation-delay: .37s; }
+
+    /* --- Penunjuk jalannya promo ---
+       Titik-titik kecil di dasar kartu praktis tak terlihat, jadi sebagian
+       besar pengunjung tidak pernah tahu ada promo kedua. Diganti bilah tipis
+       yang MENGISI seiring waktu tayang: ia memberi tahu ada yang menyusul
+       sekaligus kapan gantinya. */
+    .phoenix-hero-swiper .swiper-pagination-progressbar {
+        top: 0; left: 0; height: 4px; background: rgba(242, 101, 34, .14); z-index: 6;
+    }
+    .phoenix-hero-swiper .swiper-pagination-progressbar .swiper-pagination-progressbar-fill {
+        background: linear-gradient(90deg, #f26522, #fba919);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .ph-hero .swiper-slide-active .ph-hero-text > * { animation: none; opacity: 1; transform: none; }
+        .ph-poster-tautan { transition: none; }
     }
 
     /* --- Ubin produk sungguhan --- */
@@ -156,18 +220,14 @@
         .ph-hero .ph-tulisan { display: none; }
     }
 
-    /* --- Pita aksen di puncak kartu --- */
-    .phoenix-hero-swiper::before {
-        background: linear-gradient(90deg, #f26522, #fba919, #f26522, #fba919);
-        background-size: 300% 100%;
-        animation: phPitaGeser 9s linear infinite;
-    }
-    @keyframes phPitaGeser {
-        0% { background-position: 0% 0; }
-        100% { background-position: 300% 0; }
-    }
+    /* Pita pelangi bergeser di puncak kartu dicabut. Ia bergerak terus tanpa
+       menyampaikan apa pun — gerakan yang tidak berarti hanya menarik mata
+       menjauh dari isinya. Tempatnya diambil bilah kemajuan promo, yang
+       bergerak karena memang ada yang sedang berjalan. */
+    .phoenix-hero-swiper::before { display: none; }
+
     @media (prefers-reduced-motion: reduce) {
-        .phoenix-hero-swiper::before, .ph-ubin { animation: none; }
+        .ph-ubin { animation: none; }
     }
 
     /* --- Sisi teks --- */
@@ -395,21 +455,31 @@
                                  Mockup sebagai berkas berarti satu unduhan besar
                                  lagi, dan ia akan ikut buram di layar retina.
                                  Bentuk sesederhana ini lebih baik dilukis. --}}
-                            {{-- Poster ditampilkan sebagai KARTU, bukan di dalam
-                                 bingkai laptop.
+                            @php
+                                // Banner BERIKUTNYA dipakai sebagai kartu di
+                                // belakang. Sebelumnya kartu itu putih kosong —
+                                // hiasan yang berpura-pura jadi tumpukan. Diisi
+                                // promo yang sungguh menyusul, ia berhenti jadi
+                                // hiasan dan mulai memberi tahu sesuatu: masih
+                                // ada satu promo lagi di balik yang ini.
+                                $berikut = $banners->count() > 1
+                                    ? $banners[($loop->index + 1) % $banners->count()]
+                                    : null;
+                            @endphp
 
-                                 Poster ini berbentuk persegi. Bingkai laptop
-                                 berbentuk mendatar, jadi memasukkannya ke sana
-                                 selalu menyisakan bilah kosong di kiri-kanan —
-                                 dan bingkai di dalam bingkai membuat poster
-                                 tampil dua tingkat lebih kecil daripada
-                                 seharusnya. Sebagai kartu persegi, ia memakai
-                                 seluruh ruang yang ada. --}}
-                            <figure class="ph-poster">
-                                <img src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
-                                    alt="{{ $banner->judul ?? 'Banner' }}"
-                                    @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
-                            </figure>
+                            {{-- Poster sebagai KARTU, bukan di dalam bingkai.
+                                 Poster ini persegi; bingkai apa pun yang
+                                 mendatar akan menyisakan bilah kosong di
+                                 kiri-kanan dan mengecilkannya dua tingkat. --}}
+                            <a class="ph-poster-tautan" href="{{ route('shop.index') }}"
+                               aria-label="{{ $banner->judul ?? 'Lihat promo' }}">
+                                <figure class="ph-poster"
+                                    @if ($berikut) style="--berikut: url('{{ asset('storage/img/banners/'.$berikut->gambar) }}')" @endif>
+                                    <img src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
+                                        alt="{{ $banner->judul ?? 'Banner' }}"
+                                        @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                                </figure>
+                            </a>
                         </div>
                     </article>
                 </div>

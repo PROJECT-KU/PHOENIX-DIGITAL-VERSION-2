@@ -431,7 +431,12 @@
                         grabCursor: true,
                         slidesPerView: 1,
                         autoplay: multi ? { delay: 5500, disableOnInteraction: false } : false,
-                        pagination: { el: el.querySelector('.swiper-pagination'), type: 'bullets', clickable: true }
+                        // Bilah kemajuan, bukan titik. Titik kecil di dasar kartu
+                        // praktis tak terlihat, jadi sebagian besar pengunjung
+                        // tidak pernah tahu ada banner kedua. Bilah yang mengisi
+                        // seiring waktu tayang memberi tahu keduanya sekaligus:
+                        // ada yang menyusul, dan kapan gantinya.
+                        pagination: { el: el.querySelector('.swiper-pagination'), type: 'progressbar' }
                     });
                 });
             }
