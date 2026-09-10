@@ -142,7 +142,7 @@
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
             font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
-            font-size: 2.05rem; line-height: 1.1; letter-spacing: -.03em; margin: 0;
+            font-size: 2.5rem; line-height: 1.08; letter-spacing: -.03em; margin: 0;
             /* Hanya bagian depan nama promo yang tampil di sini, jadi ia boleh
                besar tanpa memakan tiga baris. Sisanya turun ke .fsx-ekor. */
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -152,13 +152,13 @@
            yang bentuknya sudah pil, dan dua pil dalam satu kartu membuat
            keduanya kehilangan arti. */
         #call-to-action .fsx-sapaan {
-            margin: 0 0 8px; font-size: .82rem; font-weight: 700; color: #d9531a;
+            margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: #d9531a;
             letter-spacing: .01em; line-height: 1.45;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
 
         #call-to-action .fsx-ekor {
-            margin: 6px 0 0; font-size: .88rem; line-height: 1.5; color: #78808c;
+            margin: 8px 0 0; font-size: 1.05rem; line-height: 1.5; color: #6b7280;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
 
@@ -312,7 +312,9 @@
             }
             #call-to-action .fsx-kanan { grid-column: 1; justify-self: stretch; }
             #call-to-action .fsx-isi { padding: 20px 22px 24px; }
-            #call-to-action .fsx-judul { font-size: 1.75rem; }
+            #call-to-action .fsx-sapaan { font-size: .95rem; }
+            #call-to-action .fsx-judul { font-size: 2.1rem; }
+            #call-to-action .fsx-ekor { font-size: .98rem; }
             #call-to-action .fsx-diskon-angka { font-size: 2.6rem; }
             #call-to-action .kb-judul { font-size: 1.6rem; }
         }
@@ -323,8 +325,9 @@
                kode — hanya saat mengukur jarak keduanya. */
             #call-to-action .fsx-kepala { padding: 46px 18px 16px; }
             #call-to-action .fsx-isi { padding: 18px 18px 22px; }
-            #call-to-action .fsx-judul { font-size: 1.55rem; }
-            #call-to-action .fsx-ekor { font-size: .82rem; -webkit-line-clamp: 1; }
+            #call-to-action .fsx-sapaan { font-size: .9rem; }
+            #call-to-action .fsx-judul { font-size: 1.8rem; }
+            #call-to-action .fsx-ekor { font-size: .92rem; -webkit-line-clamp: 2; }
             #call-to-action .fsx-diskon-angka { font-size: 2.3rem; }
             #call-to-action .fsx-jam { padding: 18px 16px; }
             #call-to-action .fsx-satuan b { font-size: 1.75rem; }
