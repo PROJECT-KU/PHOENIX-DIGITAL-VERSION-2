@@ -7,71 +7,94 @@
            Ditulis inline: public/build masuk .gitignore, jadi markup bisa sampai
            ke server tanpa CSS-nya.
 
-           Promo dikembalikan ke ukuran pembuka halaman. Bentuk pita tipis
-           sebelumnya memang rapi, tapi ia menyamarkan hal yang justru paling
-           ingin ditonjolkan: promo berbatas waktu. Pita setinggi 90 piksel
-           terbaca sebagai pengumuman, bukan sebagai kesempatan yang akan habis.
+           Yang membuat pita promo terlihat murah hampir selalu sama: warna
+           berteriak, lencana bertumpuk, dan gerakan yang tidak menyampaikan
+           apa-apa. Yang membuatnya terasa mahal juga sama di mana-mana:
+           satu bidang gelap, satu warna aksen, ruang kosong yang berani, dan
+           SATU hal yang bergerak — jamnya, karena ia memang sedang berjalan.
 
-           Latarnya persik lembut, bukan jingga pekat: angka penghitung mundur
-           dan harga coret perlu kontras tinggi untuk terbaca, dan keduanya
-           hilang di atas jingga penuh. */
-        #call-to-action.section { padding: 20px 0 28px; background: none; }
+           Karena itu bagian ini dibuat gelap seperti hero di atasnya: dua
+           bidang gelap yang berurutan membaca sebagai satu bahasa, sementara
+           pita krem di antara keduanya akan terbaca seperti sisipan dari
+           halaman lain. */
+        #call-to-action.section { padding: 24px 0 30px; background: none; }
 
-        /* Kepala bagian di dalam promo harus sama persis dengan kepala bagian
-           lain di halaman. Aturan lama .call-to-action mewarnainya cokelat dan
-           membesarkannya, sehingga "Rekomendasi Hari Ini" terlihat seperti
-           berasal dari halaman yang berbeda. */
+        /* Kepala bagian di dalam promo disamakan dengan kepala bagian lain di
+           halaman; aturan lama .call-to-action mewarnainya cokelat dan
+           membesarkannya. */
         #call-to-action .kb-kepala { text-align: left; }
         #call-to-action .kb-judul { color: #1c1f26; font-size: 2.1rem; text-align: left; }
         #call-to-action .kb-sub { color: #6b7280; text-align: left; }
 
         #call-to-action .fsx-hero {
             position: relative; overflow: hidden;
-            display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
-            align-items: center; gap: 28px;
-            background: linear-gradient(120deg, #fdf1e6 0%, #fde6d4 52%, #fdf3ea 100%);
-            border: 1px solid #f8dfcb; border-radius: 26px;
-            padding: 40px 44px;
+            display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+            align-items: center; gap: 30px 40px;
+            background:
+                radial-gradient(62% 86% at 88% 16%, rgba(251, 169, 25, .26) 0%, rgba(251, 169, 25, 0) 62%),
+                radial-gradient(56% 74% at 8% 96%, rgba(242, 101, 34, .24) 0%, rgba(242, 101, 34, 0) 60%),
+                linear-gradient(120deg, #171b23 0%, #232937 56%, #171b23 100%);
+            border: 1px solid #2b3240; border-radius: 26px;
+            padding: 40px 44px 30px;
         }
 
-        /* Lingkaran samar di belakang — memberi kedalaman tanpa menambah
-           gambar yang harus diunduh. */
-        #call-to-action .fsx-hero::before {
-            content: ""; position: absolute; right: -90px; top: -110px;
-            width: 340px; height: 340px; border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(253,214,178,0));
-            pointer-events: none;
+        /* Butiran halus, sama seperti di hero: gradien selebar ini selalu
+           memperlihatkan pita warna di layar 8-bit. */
+        #call-to-action .fsx-hero::after {
+            content: ""; position: absolute; inset: 0; pointer-events: none;
+            opacity: .26; mix-blend-mode: overlay;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
         }
 
-        #call-to-action .fsx-kiri { position: relative; z-index: 1; min-width: 0; }
+        #call-to-action .fsx-kiri, #call-to-action .fsx-kanan { position: relative; z-index: 1; min-width: 0; }
 
+        /* --- Penanda status --- */
         #call-to-action .fsx-lencana {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff;
-            font-size: .76rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-            padding: 8px 16px; border-radius: 999px; margin-bottom: 16px;
-            box-shadow: 0 8px 18px rgba(242, 101, 34, .3);
+            display: inline-flex; align-items: center; gap: 9px;
+            background: rgba(242, 101, 34, .16); border: 1px solid rgba(242, 101, 34, .34);
+            color: #fba919; font-size: .74rem; font-weight: 700;
+            letter-spacing: .12em; text-transform: uppercase;
+            padding: 7px 15px; border-radius: 999px; margin-bottom: 18px;
         }
-        #call-to-action .fsx-lencana i.bi { font-size: .82rem; line-height: 1; animation: fsx-denyut 1.8s ease-in-out infinite; }
-        #call-to-action .fsx-lencana i.bi::before { display: block; line-height: 1; }
-        @keyframes fsx-denyut { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
-        @media (prefers-reduced-motion: reduce) {
-            #call-to-action .fsx-lencana i.bi { animation: none; }
+        #call-to-action .fsx-titik {
+            width: 7px; height: 7px; border-radius: 50%; background: #fba919;
+            box-shadow: 0 0 0 0 rgba(251, 169, 25, .6);
+            animation: fsxDenyut 2s ease-out infinite;
+        }
+        @keyframes fsxDenyut {
+            0%   { box-shadow: 0 0 0 0 rgba(251, 169, 25, .55); }
+            70%  { box-shadow: 0 0 0 9px rgba(251, 169, 25, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(251, 169, 25, 0); }
         }
 
+        /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
-            font-size: 2.9rem; line-height: 1.06; letter-spacing: -.03em; margin: 0 0 6px;
+            font-family: 'Poppins', sans-serif; font-weight: 800; color: #fff;
+            font-size: 2.6rem; line-height: 1.06; letter-spacing: -.03em; margin: 0 0 14px;
         }
-        #call-to-action .fsx-judul-panjang { font-size: 2rem; line-height: 1.14; }
-        #call-to-action .fsx-hemat {
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
-            font-size: 1.9rem; line-height: 1.15; letter-spacing: -.02em; margin: 0 0 14px;
+        #call-to-action .fsx-judul-panjang { font-size: 1.95rem; line-height: 1.14; }
+
+        /* Angka diskon dibuat sebesar mungkin dan satuannya dikecilkan. Inilah
+           satu-satunya angka yang benar-benar menentukan orang jadi membeli
+           atau tidak, jadi ia yang paling besar di bidang ini. */
+        #call-to-action .fsx-diskon {
+            display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 14px;
         }
-        #call-to-action .fsx-hemat b { color: #f26522; font-weight: 800; }
+        #call-to-action .fsx-diskon-label {
+            font-size: .88rem; font-weight: 600; letter-spacing: .04em;
+            text-transform: uppercase; color: rgba(255, 255, 255, .52);
+        }
+        #call-to-action .fsx-diskon-angka {
+            font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 3.4rem;
+            line-height: 1; letter-spacing: -.04em;
+            background: linear-gradient(120deg, #fba919, #f26522);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: #fba919;
+        }
 
         #call-to-action .fsx-ket {
-            margin: 0 0 24px; color: #6f7683; font-size: .98rem; line-height: 1.65; max-width: 46ch;
+            margin: 0 0 24px; color: rgba(255, 255, 255, .62);
+            font-size: .96rem; line-height: 1.65; max-width: 48ch;
         }
 
         #call-to-action .fsx-tombol {
@@ -79,108 +102,91 @@
             background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff;
             font-weight: 700; font-size: 1rem; text-decoration: none;
             padding: 15px 30px; border-radius: 14px;
-            box-shadow: 0 14px 30px rgba(242, 101, 34, .3);
+            box-shadow: 0 16px 34px rgba(242, 101, 34, .34);
             transition: transform .2s ease, box-shadow .2s ease;
         }
         #call-to-action .fsx-tombol:hover {
             color: #fff; transform: translateY(-2px);
-            box-shadow: 0 18px 36px rgba(242, 101, 34, .38);
+            box-shadow: 0 20px 42px rgba(242, 101, 34, .44);
         }
         #call-to-action .fsx-tombol i.bi { line-height: 1; }
         #call-to-action .fsx-tombol i.bi::before { display: block; line-height: 1; }
 
-        /* ----- Sisi kanan: penghitung mundur ----- */
-        #call-to-action .fsx-kanan { position: relative; z-index: 1; min-width: 0; }
-
+        /* --- Jam --- */
+        #call-to-action .fsx-jam {
+            background: rgba(255, 255, 255, .05);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, .10); border-radius: 20px;
+            padding: 24px 26px;
+        }
         #call-to-action .fsx-hitung-label {
-            display: block; font-size: .76rem; font-weight: 800; letter-spacing: .14em;
-            text-transform: uppercase; color: #9a8674; margin-bottom: 12px;
+            display: block; font-size: .72rem; font-weight: 700; letter-spacing: .16em;
+            text-transform: uppercase; color: rgba(255, 255, 255, .42); margin-bottom: 16px;
         }
-        #call-to-action .fsx-kotak-deret { display: flex; gap: 12px; flex-wrap: wrap; }
-        #call-to-action .fsx-kotak {
-            flex: 0 1 92px; min-width: 76px; text-align: center;
-            background: #fff; border: 1px solid #f6e2d1; border-radius: 16px;
-            padding: 14px 8px 11px;
-            box-shadow: 0 6px 16px rgba(184, 122, 74, .10);
-        }
-        #call-to-action .fsx-kotak b {
+        #call-to-action .fsx-hitung { display: flex; align-items: flex-start; gap: 4px; }
+        #call-to-action .fsx-satuan { flex: 1 1 0; min-width: 0; text-align: center; }
+        #call-to-action .fsx-satuan b {
             display: block; font-family: 'Poppins', sans-serif; font-weight: 800;
-            font-size: 2rem; line-height: 1; color: #f26522; letter-spacing: -.02em;
+            font-size: 2.5rem; line-height: 1; color: #fff; letter-spacing: -.03em;
             /* Angka detik berganti tiap detik. Tanpa lebar angka yang seragam,
-               seluruh kotak ikut bergoyang tiap kali angkanya berubah. */
+               seluruh jam ikut bergoyang tiap kali angkanya berubah. */
             font-variant-numeric: tabular-nums;
         }
-        #call-to-action .fsx-kotak span {
-            display: block; margin-top: 5px; font-size: .66rem; font-weight: 700;
-            letter-spacing: .08em; text-transform: uppercase; color: #a8886c;
+        #call-to-action .fsx-satuan small {
+            display: block; margin-top: 8px; font-size: .64rem; font-weight: 700;
+            letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .40);
+        }
+        #call-to-action .fsx-titik-dua {
+            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.9rem;
+            line-height: 1.25; color: rgba(255, 255, 255, .22); flex: 0 0 auto;
         }
 
-        /* ----- Keterangan pelanggan ----- */
-        #call-to-action .fsx-sosial {
-            display: flex; align-items: center; gap: 13px; margin-top: 22px;
+        /* --- Sisa kuota (hanya bila dipasang admin) --- */
+        #call-to-action .fsx-kuota { margin-top: 20px; }
+        #call-to-action .fsx-kuota-bilah {
+            height: 5px; border-radius: 999px; background: rgba(255, 255, 255, .10); overflow: hidden;
         }
-        #call-to-action .fsx-sosial-ikon {
-            flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: #fff; border: 1px solid #f6e2d1; color: #f26522; font-size: 1.15rem;
-            box-shadow: 0 6px 16px rgba(184, 122, 74, .10);
+        #call-to-action .fsx-kuota-bilah span {
+            display: block; height: 100%; border-radius: 999px;
+            background: linear-gradient(90deg, #f26522, #fba919);
         }
-        #call-to-action .fsx-sosial-ikon i.bi { line-height: 1; }
-        #call-to-action .fsx-sosial strong {
-            display: block; font-family: 'Poppins', sans-serif; font-weight: 700;
-            font-size: .95rem; color: #1c1f26; line-height: 1.3;
+        #call-to-action .fsx-kuota-teks {
+            display: block; margin-top: 9px; font-size: .76rem; color: rgba(255, 255, 255, .48);
         }
-        #call-to-action .fsx-sosial span { display: block; font-size: .82rem; color: #8b7c6d; }
+        #call-to-action .fsx-kuota-teks b { color: #fba919; }
 
-        /* ----- Dua kartu kecil ----- */
-        #call-to-action .fsx-kartu-kecil {
-            display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px; margin-top: 18px;
+        /* --- Kaki: angka nyata, dipisah titik tengah --- */
+        #call-to-action .fsx-fakta {
+            grid-column: 1 / -1; position: relative; z-index: 1;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+            margin: 6px 0 0; padding-top: 22px;
+            border-top: 1px solid rgba(255, 255, 255, .09);
+            font-size: .82rem; color: rgba(255, 255, 255, .46);
         }
-        #call-to-action .fsx-kk {
-            display: flex; align-items: center; gap: 11px;
-            background: #fff; border: 1px solid #f6e2d1; border-radius: 14px;
-            padding: 13px 15px; text-decoration: none; min-width: 0;
-            box-shadow: 0 6px 16px rgba(184, 122, 74, .09);
+        #call-to-action .fsx-fakta span { color: rgba(255, 255, 255, .22); }
+
+        @media (prefers-reduced-motion: reduce) {
+            #call-to-action .fsx-titik { animation: none; }
         }
-        #call-to-action .fsx-kk strong {
-            display: block; font-family: 'Poppins', sans-serif; font-weight: 700;
-            font-size: .85rem; color: #1c1f26; line-height: 1.3;
-        }
-        #call-to-action .fsx-kk > span > span { display: block; font-size: .75rem; color: #8b7c6d; line-height: 1.4; }
-        #call-to-action .fsx-kk-ikon {
-            flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: #fff2ea; color: #f26522; font-size: .95rem;
-        }
-        #call-to-action .fsx-kk-ikon i.bi { line-height: 1; }
-        #call-to-action .fsx-kk-aksi { justify-content: space-between; transition: border-color .2s ease, transform .2s ease; }
-        #call-to-action .fsx-kk-aksi:hover { border-color: #f26522; transform: translateY(-2px); }
-        #call-to-action .fsx-kk-panah {
-            flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
-            display: inline-flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #f26522, #fb8b3c); color: #fff; font-size: .85rem;
-        }
-        #call-to-action .fsx-kk-panah i.bi { line-height: 1; }
 
         @media (max-width: 991.98px) {
-            #call-to-action .fsx-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 26px; }
-            #call-to-action .fsx-judul { font-size: 2.2rem; }
-            #call-to-action .fsx-judul-panjang { font-size: 1.75rem; }
-            #call-to-action .fsx-hemat { font-size: 1.5rem; }
+            #call-to-action .fsx-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 26px 24px; }
+            #call-to-action .fsx-judul { font-size: 2rem; }
+            #call-to-action .fsx-judul-panjang { font-size: 1.7rem; }
+            #call-to-action .fsx-diskon-angka { font-size: 2.8rem; }
             #call-to-action .kb-judul { font-size: 1.6rem; }
         }
         @media (max-width: 575.98px) {
-            #call-to-action .fsx-hero { padding: 24px 20px; border-radius: 20px; }
-            #call-to-action .fsx-judul { font-size: 1.8rem; }
-            #call-to-action .fsx-judul-panjang { font-size: 1.5rem; }
-            #call-to-action .fsx-hemat { font-size: 1.25rem; }
-            #call-to-action .fsx-ket { font-size: .92rem; margin-bottom: 18px; }
+            #call-to-action .fsx-hero { padding: 24px 20px 20px; border-radius: 20px; }
+            #call-to-action .fsx-judul { font-size: 1.65rem; }
+            #call-to-action .fsx-judul-panjang { font-size: 1.45rem; }
+            #call-to-action .fsx-diskon-angka { font-size: 2.4rem; }
+            #call-to-action .fsx-ket { font-size: .9rem; margin-bottom: 18px; }
             #call-to-action .fsx-tombol { width: 100%; justify-content: center; padding: 14px 22px; }
-            #call-to-action .fsx-kotak-deret { gap: 8px; }
-            #call-to-action .fsx-kotak { flex: 1 1 0; min-width: 0; padding: 11px 4px 9px; }
-            #call-to-action .fsx-kotak b { font-size: 1.5rem; }
-            #call-to-action .fsx-kartu-kecil { grid-template-columns: 1fr; }
+            #call-to-action .fsx-jam { padding: 18px 16px; }
+            #call-to-action .fsx-satuan b { font-size: 1.75rem; }
+            #call-to-action .fsx-titik-dua { font-size: 1.3rem; }
+            #call-to-action .fsx-satuan small { font-size: .58rem; letter-spacing: .06em; }
         }
 
         /* ----- Kartu produk promo: melebar, gambar di samping -----
@@ -256,17 +262,66 @@
                 // ditangkap dalam sekejap adalah BESAR potongannya, bukan kata
                 // "hemat". Dirakit di sini, bukan di Blade, supaya angka yang
                 // sudah diformat tidak perlu dipecah lagi belakangan.
-                $hematHtml = $flashSale->tipe_diskon === 'persen'
-                    ? 'Diskon <b>sampai '.e(number_format($flashSale->diskon_member_persen, 0)).'%</b>'
-                    : 'Hemat <b>sampai Rp'.e(number_format($flashSale->diskon_member_nominal, 0, ',', '.')).'</b>';
+                // Angka besar dipisah dari satuannya supaya bisa diberi ukuran
+                // berbeda. Yang harus tertangkap dalam sekejap adalah BESAR
+                // potongannya; kata "diskon" dan tanda persen boleh kecil.
+                $persen = $flashSale->tipe_diskon === 'persen';
+                $angkaDiskon = $persen
+                    ? number_format($flashSale->diskon_member_persen, 0)
+                    : number_format($flashSale->diskon_member_nominal, 0, ',', '.');
+                $satuanDiskon = $persen ? '%' : '';
+                $awalanDiskon = $persen ? '' : 'Rp';
+
+                // Keterangan kaki dirakit dari angka yang BENAR-BENAR ADA di
+                // basis data. Tidak ada satu pun yang dikarang: berapa produk
+                // yang ikut, berapa kali promo ini sudah dipakai, dan sampai
+                // kapan berlakunya. Angka nyata yang sederhana lebih meyakinkan
+                // daripada klaim besar yang tidak bisa diperiksa siapa pun.
+                $fakta = [];
+
+                $jumlahIkut = $flashSale->products()->count() + $flashSale->bundlings()->count();
+                if ($jumlahIkut > 0) {
+                    $fakta[] = $jumlahIkut.' produk ikut promo';
+                }
+
+                if ((int) $flashSale->total_penggunaan > 0) {
+                    $fakta[] = number_format($flashSale->total_penggunaan, 0, ',', '.').' kali sudah dipakai';
+                }
+
+                if ((int) $flashSale->min_pembelian > 0) {
+                    $fakta[] = 'min. belanja Rp'.number_format($flashSale->min_pembelian, 0, ',', '.');
+                }
+
+                $fakta[] = 'berakhir '.$flashSale->selesai_promo->locale('id')->translatedFormat('d M Y');
+
+                // Sisa kuota hanya ditampilkan bila kuotanya memang dipasang.
+                // Bilah kelangkaan yang angkanya dikarang adalah kebohongan
+                // yang paling menggoda untuk dibuat, dan paling merusak begitu
+                // ketahuan.
+                $kuota = (int) $flashSale->kuota;
+                $terpakai = min((int) $flashSale->total_penggunaan, $kuota);
+                $sisaKuota = $kuota > 0 ? max(0, $kuota - $terpakai) : null;
+                $persenTerpakai = $kuota > 0 ? round($terpakai / $kuota * 100) : 0;
             @endphp
 
             <div class="fsx-hero">
                 <div class="fsx-kiri">
-                    <span class="fsx-lencana"><i class="bi bi-lightning-charge-fill"></i> {{ $lencana }}</span>
+                    {{-- Titik berdenyut: penanda status, bukan hiasan. Ia
+                         mengatakan "sedang berlangsung sekarang", dan itu
+                         satu-satunya hal yang perlu disampaikan gerakan di
+                         bagian ini. --}}
+                    <span class="fsx-lencana"><i class="fsx-titik"></i> {{ $lencana }} sedang berlangsung</span>
+
                     <h2 class="fsx-judul {{ mb_strlen($nama) > 26 ? 'fsx-judul-panjang' : '' }}">{{ $nama }}</h2>
-                    <p class="fsx-hemat">{!! $hematHtml !!}</p>
-                    <p class="fsx-ket">{{ $ket ?: 'Dapatkan produk digital premium dengan harga lebih hemat. Promo terbatas, jangan sampai terlewat!' }}</p>
+
+                    <p class="fsx-diskon">
+                        <span class="fsx-diskon-label">Diskon sampai</span>
+                        <span class="fsx-diskon-angka">{{ $awalanDiskon }}{{ $angkaDiskon }}{{ $satuanDiskon }}</span>
+                    </p>
+
+                    @if ($ket)
+                        <p class="fsx-ket">{{ $ket }}</p>
+                    @endif
 
                     <a href="{{ route('shop.index') }}" class="fsx-tombol">
                         Belanja Sekarang <i class="bi bi-arrow-right"></i>
@@ -274,53 +329,43 @@
                 </div>
 
                 <div class="fsx-kanan">
-                    <span class="fsx-hitung-label">Berakhir dalam</span>
-                    <div class="fsx-kotak-deret">
-                        @foreach ([
-                            ['days', 'Hari'], ['hours', 'Jam'], ['minutes', 'Menit'], ['seconds', 'Detik'],
-                        ] as [$kunci, $label])
-                            <div class="fsx-kotak">
-                                <b>{{ str_pad($timeRemaining[$kunci] ?? 0, 2, '0', STR_PAD_LEFT) }}</b>
-                                <span>{{ $label }}</span>
-                            </div>
-                        @endforeach
-                    </div>
+                    <div class="fsx-jam">
+                        <span class="fsx-hitung-label">Berakhir dalam</span>
 
-                    {{-- Tanpa foto wajah. Rancangannya memakai tumpukan avatar
-                         pelanggan, tapi tidak ada satu pun foto pelanggan yang
-                         boleh dipakai di sini — dan memasang wajah stok sebagai
-                         "pelanggan kami" adalah kebohongan yang paling mudah
-                         ketahuan. Angkanya saja sudah cukup. --}}
-                    <div class="fsx-sosial">
-                        <span class="fsx-sosial-ikon"><i class="bi bi-people-fill"></i></span>
-                        <span>
-                            <strong>5.000+ pelanggan</strong>
-                            <span>telah bergabung bersama kami</span>
-                        </span>
-                    </div>
-
-                    {{-- Dua kartu kecil penutup kolom kanan. Rancangannya menaruh
-                         ilustrasi tas belanja di sini; gambarnya tidak ada, dan
-                         menempelkan gambar stok yang bukan milik toko ini lebih
-                         buruk daripada tidak ada gambar. Ruangnya dipakai untuk
-                         dua hal yang justru dibaca orang. --}}
-                    <div class="fsx-kartu-kecil">
-                        <div class="fsx-kk">
-                            <span class="fsx-kk-ikon"><i class="bi bi-patch-check-fill"></i></span>
-                            <span>
-                                <strong>Produk Original</strong>
-                                <span>Lisensi resmi &amp; legal</span>
-                            </span>
+                        {{-- Jam, bukan empat kotak. Angka besar dengan titik dua
+                             tipis di antaranya terbaca sebagai waktu yang sedang
+                             berjalan; empat kotak terpisah terbaca sebagai empat
+                             lencana yang kebetulan berisi angka. --}}
+                        <div class="fsx-hitung">
+                            @foreach ([
+                                ['days', 'Hari'], ['hours', 'Jam'], ['minutes', 'Menit'], ['seconds', 'Detik'],
+                            ] as $i => [$kunci, $label])
+                                @if ($i > 0)<span class="fsx-titik-dua">:</span>@endif
+                                <span class="fsx-satuan">
+                                    <b>{{ str_pad($timeRemaining[$kunci] ?? 0, 2, '0', STR_PAD_LEFT) }}</b>
+                                    <small>{{ $label }}</small>
+                                </span>
+                            @endforeach
                         </div>
-                        <a class="fsx-kk fsx-kk-aksi" href="{{ route('shop.index') }}">
-                            <span>
-                                <strong>Upgrade Produktivitasmu</strong>
-                                <span>Lihat semua produk promo</span>
-                            </span>
-                            <span class="fsx-kk-panah"><i class="bi bi-arrow-up-right"></i></span>
-                        </a>
+
+                        @if ($sisaKuota !== null)
+                            {{-- Hanya muncul bila kuotanya memang dipasang admin.
+                                 Bilah kelangkaan berangka karangan adalah
+                                 kebohongan yang paling menggoda dibuat dan paling
+                                 merusak begitu ketahuan. --}}
+                            <div class="fsx-kuota">
+                                <div class="fsx-kuota-bilah"><span style="width: {{ min(100, $persenTerpakai) }}%"></span></div>
+                                <span class="fsx-kuota-teks">Sisa <b>{{ number_format($sisaKuota, 0, ',', '.') }}</b> dari {{ number_format($kuota, 0, ',', '.') }} kuota</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
+
+                <p class="fsx-fakta">
+                    @foreach ($fakta as $f)
+                        @if (! $loop->first)<span aria-hidden="true">·</span>@endif{{ $f }}
+                    @endforeach
+                </p>
             </div>
 
             <x-kepala-bagian

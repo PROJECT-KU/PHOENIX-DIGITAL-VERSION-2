@@ -99,3 +99,38 @@ it('jaminan di hero dan panel penutup tidak mengulang kalimat yang sama', functi
     expect(substr_count($isi, 'Garansi uang kembali'))->toBe(1)
         ->and(substr_count($isi, 'Lisensi resmi &amp; legal'))->toBe(1);
 });
+
+it('bilah kuota tidak muncul bila kuotanya tidak dipasang', function () {
+    produkPromo(promoBerjalan(['kuota' => null, 'total_penggunaan' => 164]));
+
+    // Kelangkaan berangka karangan adalah kebohongan yang paling menggoda
+    // dibuat di halaman promo, dan paling merusak begitu ketahuan. Bilahnya
+    // hanya boleh ada kalau admin benar-benar memasang kuotanya.
+    //
+    // Diperiksa lewat atribut class, bukan kata "kuota": kata itu juga muncul
+    // di nama kelas CSS dan komentarnya, jadi mencarinya begitu saja akan
+    // selalu ketemu dan ujinya tidak pernah benar-benar menguji apa pun.
+    $this->get('/')->assertDontSee('class="fsx-kuota"', false);
+});
+
+it('bilah kuota menghitung sisa dari kuota yang benar-benar dipasang', function () {
+    produkPromo(promoBerjalan(['kuota' => 200, 'total_penggunaan' => 164]));
+
+    $this->get('/')
+        ->assertSee('class="fsx-kuota"', false)
+        ->assertSee('Sisa', false)
+        // 200 - 164 = 36 tersisa, dan bilahnya terisi 82%.
+        ->assertSee('36', false)
+        ->assertSee('width: 82%', false);
+});
+
+it('kaki promo hanya menyebut angka yang ada di basis data', function () {
+    produkPromo(promoBerjalan(['total_penggunaan' => 164]));
+
+    $this->get('/')
+        ->assertSee('1 produk ikut promo', false)
+        ->assertSee('164 kali sudah dipakai', false)
+        // min_pembelian 0 tidak disebut: syarat yang tidak ada tidak boleh
+        // ditampilkan seolah-olah ada.
+        ->assertDontSee('min. belanja', false);
+});
