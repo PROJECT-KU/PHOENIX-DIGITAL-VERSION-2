@@ -147,14 +147,23 @@
                besar tanpa memakan tiga baris. Sisanya turun ke .fsx-ekor. */
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
-        /* Kalimat ajakan dari admin. Dibuat sebagai baris kecil berwarna
-           jingga, bukan pil berbingkai: pil akan menyaingi label di garis atas
-           yang bentuknya sudah pil, dan dua pil dalam satu kartu membuat
-           keduanya kehilangan arti. */
+        /* Kalimat ajakan dari admin, kembali berbentuk pil.
+           
+           Pil ini dan label di garis atas sengaja DIBEDAKAN supaya tidak saling
+           menyaingi: label atas berlatar jingga pekat dengan teks putih dan
+           huruf kapital berjarak lebar — bentuk penanda; pil ini berlatar
+           persik muda dengan teks jingga dan huruf biasa — bentuk kalimat.
+           Kalau keduanya dibuat serupa, mata membacanya sebagai dua tombol
+           dan berhenti membedakan mana yang penanda dan mana yang pesan.
+
+           Huruf kapital TIDAK dipakai di sini. Kalimat sepanjang 41 karakter
+           yang dikapitalkan seluruhnya jauh lebih lambat dibaca, dan pilnya
+           melebar hampir dua kali lipat. */
         #call-to-action .fsx-sapaan {
-            margin: 0 0 10px; font-size: 1rem; font-weight: 700; color: #d9531a;
-            letter-spacing: .01em; line-height: 1.45;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            display: inline-block; margin: 0 0 12px;
+            background: #fff3ea; border: 1px solid #f8d9c2; color: #d9531a;
+            font-size: 1rem; font-weight: 700; letter-spacing: .01em; line-height: 1.4;
+            padding: 8px 18px; border-radius: 999px;
         }
 
         #call-to-action .fsx-ekor {
@@ -325,7 +334,12 @@
                kode — hanya saat mengukur jarak keduanya. */
             #call-to-action .fsx-kepala { padding: 46px 18px 16px; }
             #call-to-action .fsx-isi { padding: 18px 18px 22px; }
-            #call-to-action .fsx-sapaan { font-size: .9rem; }
+            /* Sudutnya dirapatkan di layar sempit: begitu kalimatnya membungkus
+               jadi dua baris, sudut sepenuhnya bulat membuat pilnya terlihat
+               seperti gelembung yang salah bentuk, bukan seperti label. */
+            #call-to-action .fsx-sapaan {
+                font-size: .9rem; padding: 7px 14px; border-radius: 14px;
+            }
             #call-to-action .fsx-judul { font-size: 1.8rem; }
             #call-to-action .fsx-ekor { font-size: .92rem; -webkit-line-clamp: 2; }
             #call-to-action .fsx-diskon-angka { font-size: 2.3rem; }
@@ -685,7 +699,7 @@
                 <div class="fsx-kepala">
                 <div class="fsx-kiri">
                     @if ($sapaan)
-                        <p class="fsx-sapaan">{{ $sapaan }}</p>
+                        <span class="fsx-sapaan">{{ $sapaan }}</span>
                     @endif
 
                     <h2 class="fsx-judul">{{ $judul }}</h2>
