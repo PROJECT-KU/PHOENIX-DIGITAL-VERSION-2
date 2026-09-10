@@ -37,6 +37,11 @@
         #call-to-action .fsx-hero {
             position: relative; overflow: hidden;
             background:
+                /* Garis jingga melintang di tepi atas — alas tempat label
+                   kartu berdiri. Digambar sebagai LAPISAN LATAR, bukan
+                   pseudo-element, supaya ::before tetap bebas dipakai rel di
+                   tepi kiri dan keduanya bisa ada bersamaan. */
+                linear-gradient(90deg, #f26522, #fba919, #f26522) top left / 100% 4px no-repeat,
                 radial-gradient(58% 80% at 92% 12%, rgba(251, 169, 25, .16) 0%, rgba(251, 169, 25, 0) 62%),
                 radial-gradient(52% 70% at 4% 98%, rgba(242, 101, 34, .10) 0%, rgba(242, 101, 34, 0) 60%),
                 linear-gradient(122deg, #ffffff 0%, #fffaf4 58%, #fff5ea 100%);
@@ -65,12 +70,13 @@
         #call-to-action .fsx-kanan { grid-column: 3; }
         #call-to-action .fsx-kaki { grid-column: 1 / -1; }
 
-        /* Garis jingga melintang di tepi ATAS, bukan di tepi kiri. Label
-           kartunya duduk di tengah garis itu, jadi garisnya bukan sekadar
-           hiasan — ia alas tempat nama kartu berdiri. */
+        /* Rel jingga di tepi kiri, seperti semula. Ia dan garis atas
+           mengerjakan hal berbeda: rel menandai "bagian ini berbeda" di
+           sepanjang tinggi kartu, garis atas jadi alas label. */
         #call-to-action .fsx-hero::before {
-            content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px;
-            background: linear-gradient(90deg, #f26522, #fba919, #f26522);
+            content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+            background: linear-gradient(180deg, #f26522, #fba919);
+            z-index: 2;
         }
 
         #call-to-action .fsx-pita-atas {
