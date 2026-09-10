@@ -98,6 +98,20 @@ class Index extends Component
         }
     }
 
+    /**
+     * Lepas penyaring kategori yang datang dari beranda.
+     *
+     * Tanpa jalan keluar ini, pengunjung yang mengklik kartu "AI Tools"
+     * terkurung di daftar yang tersaring: penyaringnya tidak terlihat di
+     * halaman, dan satu-satunya cara keluar adalah menyunting alamat sendiri.
+     */
+    public function clearKategori()
+    {
+        $this->kategori = '';
+        $this->resetPage();
+        $this->redirect('/shop', navigate: true);
+    }
+
     public function clearSearch()
     {
         $this->search = '';

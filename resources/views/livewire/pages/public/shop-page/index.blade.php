@@ -11,6 +11,65 @@
         /* Ditulis inline: public/build tidak ikut terdeploy ke server. */
         .fs-btn-cart:disabled { opacity: .55; cursor: not-allowed; filter: grayscale(.4); }
 
+        /* --- IKON DI TENGAH ---
+           Glif Bootstrap Icons membawa tinggi baris bawaannya sendiri, jadi di
+           dalam tombol ia duduk sedikit di bawah pusat. Pada tombol Reset
+           selisihnya mencapai 10 piksel — cukup untuk membuat tombolnya
+           terlihat salah susun. */
+        .shop-reset i.bi, .fs-btn-cart i.bi, .shp-empty-btn i.bi,
+        .shop-aktif-chip i.bi, .fs-btn-view i.bi { display: block; line-height: 1; }
+        .shop-reset i.bi::before, .fs-btn-cart i.bi::before, .shp-empty-btn i.bi::before,
+        .shop-aktif-chip i.bi::before, .fs-btn-view i.bi::before { display: block; line-height: 1; }
+        .shop-reset, .fs-btn-cart, .shp-empty-btn {
+            display: inline-flex !important; align-items: center; justify-content: center;
+        }
+        /* Pembungkus isi tombol ikut dijadikan baris lentur.
+           
+           display:block pada glif hanya benar bila glif itu SENDIRIAN di dalam
+           wadah yang menengahkan. Di tombol ini glif duduk sebaris dengan
+           teksnya di dalam <span> biasa — dijadikan block, ia turun ke barisnya
+           sendiri dan tombolnya jadi dua baris dengan ikon menggantung di atas.
+           Pembungkusnya dijadikan inline-flex supaya glif tetap sebaris DAN
+           tetap tertengahkan. */
+        .fs-btn-cart > span, .shop-reset > span, .shp-empty-btn > span {
+            display: inline-flex; align-items: center; gap: 7px;
+        }
+
+        /* --- Penyaring kategori yang sedang berlaku --- */
+        .shop-aktif {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .shop-aktif-label {
+            font-size: .74rem; font-weight: 700; letter-spacing: .14em;
+            text-transform: uppercase; color: #9aa2ae;
+        }
+        .shop-aktif-chip {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #fff3ea; border: 1px solid #f8d9c2; color: #d9531a;
+            border-radius: 999px; padding: 6px 8px 6px 15px;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .86rem;
+        }
+        .shop-aktif-chip button {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 22px; height: 22px; border-radius: 50%; border: 0; cursor: pointer;
+            background: rgba(217, 83, 26, .12); color: #d9531a; font-size: .8rem;
+            transition: background .18s ease;
+        }
+        .shop-aktif-chip button:hover { background: #d9531a; color: #fff; }
+
+        /* --- Bilah saring jadi satu papan --- */
+        /* Sebelumnya dua kotak pilih dan satu angka mengambang di atas kisi
+           produk tanpa bidang sendiri, jadi ia terbaca sebagai baris pertama
+           kisi — bukan sebagai alat. */
+        .shop-filter {
+            background: #fff; border: 1px solid #eceff4; border-radius: 14px;
+            padding: 12px 16px; margin-bottom: 22px;
+        }
+        .shop-filter-count { color: #6b7280; }
+        .shop-filter-count b { color: #1c1f26; font-weight: 800; }
+
         .shp-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
         .shp-empty-art { margin-bottom: 6px; }
         .shp-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
@@ -75,11 +134,37 @@
                 <section style="padding-top: 0;" id="category-product-list" class="category-product-list section">
                     <div class="container">
                         {{-- Filter & urutkan (opsional) --}}
+                        {{-- Kategori yang datang dari beranda DITAMPILKAN dan
+                             bisa dilepas.
+
+                             Sebelumnya penyaringnya bekerja diam-diam: daftar
+                             produk menyusut tanpa satu pun keterangan kenapa,
+                             dan satu-satunya jalan keluar adalah menyunting
+                             alamat sendiri. Penyaring yang tidak terlihat sama
+                             saja dengan halaman yang kehilangan barang. --}}
+                        @if ($kategori)
+                            <div class="shop-aktif">
+                                <span class="shop-aktif-label">Kategori</span>
+                                <span class="shop-aktif-chip">
+                                    {{ App\Support\KategoriBeranda::label($kategori) }}
+                                    <button type="button" wire:click="clearKategori" aria-label="Lepas penyaring kategori">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </span>
+                            </div>
+                        @endif
+
                         <div class="shop-filter">
                             <div class="shop-filter-controls">
                                 @if (count($categories))
+                                    {{-- Isinya sharing/private — TIPE AKUN, bukan
+                                         kategori. Menamainya "Semua Kategori"
+                                         membuat pengunjung mengira ini penyaring
+                                         yang sama dengan kartu kategori di
+                                         beranda, padahal keduanya menyaring hal
+                                         yang berbeda. --}}
                                     <select wire:model.live="tipe" class="shop-select">
-                                        <option value="">Semua Kategori</option>
+                                        <option value="">Semua Tipe Akun</option>
                                         @foreach ($categories as $c)
                                             <option value="{{ $c }}">{{ $c }}</option>
                                         @endforeach
@@ -96,7 +181,7 @@
                                     <button type="button" wire:click="resetFilters" class="shop-reset"><i class="bi bi-x-circle"></i> Reset</button>
                                 @endif
                             </div>
-                            <div class="shop-filter-count">{{ $products->total() }} produk</div>
+                            <div class="shop-filter-count"><b>{{ $products->total() }}</b> produk</div>
                         </div>
 
                         <div class="row g-3 g-lg-4">

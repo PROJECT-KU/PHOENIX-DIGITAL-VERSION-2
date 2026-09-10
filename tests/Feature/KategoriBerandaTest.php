@@ -110,3 +110,28 @@ it('alamat kategori mengikuti host permintaan saat itu', function () {
 
     expect($ai['url'])->toStartWith(url('/'))->toContain('kategori=ai-tools');
 });
+
+it('halaman shop menampilkan kategori yang sedang menyaring', function () {
+    Product::query()->delete();
+    Product::create(['nama_akun' => 'Chat Gpt Plus Sharing', 'tipe_akun' => 'sharing', 'harga_perbulan' => 35000]);
+    Product::create(['nama_akun' => 'Canva Premium', 'tipe_akun' => 'sharing', 'harga_perbulan' => 15000]);
+
+    // Penyaring yang bekerja diam-diam sama saja dengan halaman yang kehilangan
+    // barang: daftar menyusut tanpa keterangan, dan satu-satunya jalan keluar
+    // adalah menyunting alamat sendiri.
+    $this->get('/shop?kategori=ai-tools')
+        // Dicari lewat atribut class yang lengkap: nama kelasnya juga muncul
+        // di blok <style> yang selalu dirender, jadi mencarinya begitu saja
+        // akan selalu ketemu dan ujinya tidak menguji apa pun.
+        ->assertSee('class="shop-aktif-chip"', false)
+        ->assertSee('AI Tools', false)
+        ->assertSee('Chat Gpt Plus Sharing', false)
+        ->assertDontSee('Canva Premium', false);
+});
+
+it('tanpa kategori, chip penyaring tidak muncul', function () {
+    Product::query()->delete();
+    Product::create(['nama_akun' => 'Canva Premium', 'tipe_akun' => 'sharing', 'harga_perbulan' => 15000]);
+
+    $this->get('/shop')->assertDontSee('class="shop-aktif-chip"', false);
+});
