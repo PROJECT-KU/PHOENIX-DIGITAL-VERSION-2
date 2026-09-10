@@ -101,17 +101,16 @@
 
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
-            font-family: 'Poppins', sans-serif; font-weight: 700; color: #4b5563;
-            font-size: 1.05rem; line-height: 1.4; letter-spacing: -.01em; margin: 0;
-            /* Nama promo dikecilkan dan dibuat paling banyak dua baris.
-               Isinya hampir selalu sudah menyebut angka diskonnya sendiri
-               ("Merdeka Sale! Diskon 17% ..."), jadi menampilkannya sebesar
-               judul berarti mengumumkan angka yang sama dua kali bersebelahan —
-               dan yang besar sebelah kanan jadi kehilangan tenaganya. */
+            font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
+            font-size: 2.05rem; line-height: 1.1; letter-spacing: -.03em; margin: 0;
+            /* Hanya bagian depan nama promo yang tampil di sini, jadi ia boleh
+               besar tanpa memakan tiga baris. Sisanya turun ke .fsx-ekor. */
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
-        /* Tidak ada lagi pembedaan judul panjang: ukurannya sudah kecil dan
-           dibatasi dua baris, jadi panjangnya tidak lagi merusak apa pun. */
+        #call-to-action .fsx-ekor {
+            margin: 6px 0 0; font-size: .88rem; line-height: 1.5; color: #78808c;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
 
         /* Angka diskon dibuat sebesar mungkin dan satuannya dikecilkan. Inilah
            satu-satunya angka yang benar-benar menentukan orang jadi membeli
@@ -236,8 +235,13 @@
                kartu tidak muat dan membungkus jadi 3+1 — baris terakhir berisi
                satu kartu kesepian selalu terbaca seperti ada yang gagal dimuat,
                bukan seperti susunan yang disengaja. */
+            /* min-width WAJIB dinolkan di sini. Aturan dasarnya memasang
+               min-width: 180px supaya kartu tidak menyempit berlebihan di
+               layar lebar — tapi di layar 390px dua kartu 180px ditambah
+               jaraknya melebihi lebar yang tersedia, dan keduanya terlempar
+               jadi satu per baris. */
             #call-to-action .fsx-deret-produk.featured-products-row > [class*="col-"] {
-                flex: 1 1 calc(50% - 9px); max-width: calc(50% - 9px);
+                flex: 1 1 calc(50% - 9px); max-width: calc(50% - 9px); min-width: 0;
             }
         }
 
@@ -249,6 +253,7 @@
             }
             #call-to-action .fsx-kanan { grid-column: 1; justify-self: stretch; }
             #call-to-action .fsx-isi { padding: 20px 22px 24px; }
+            #call-to-action .fsx-judul { font-size: 1.75rem; }
             #call-to-action .fsx-diskon-angka { font-size: 2.6rem; }
             #call-to-action .kb-judul { font-size: 1.6rem; }
         }
@@ -256,7 +261,8 @@
             #call-to-action .fsx-hero { border-radius: 20px; }
             #call-to-action .fsx-kepala { padding: 22px 18px 16px; }
             #call-to-action .fsx-isi { padding: 18px 18px 22px; }
-            #call-to-action .fsx-judul { font-size: .95rem; }
+            #call-to-action .fsx-judul { font-size: 1.55rem; }
+            #call-to-action .fsx-ekor { font-size: .82rem; -webkit-line-clamp: 1; }
             #call-to-action .fsx-diskon-angka { font-size: 2.3rem; }
             #call-to-action .fsx-jam { padding: 18px 16px; }
             #call-to-action .fsx-satuan b { font-size: 1.75rem; }
@@ -373,7 +379,14 @@
            membengkak dari 707px jadi 1.596px. Dengan width: auto, flex-basis
            yang memegang kendali dan jaraknya ikut diperhitungkan. */
         #call-to-action .fsx-deret-produk > [class*="col-"] {
-            flex: 1 1 0; min-width: 180px; max-width: none; width: auto;
+            flex: 1 1 0; max-width: none; width: auto;
+        }
+        /* Batas menyempit hanya dipasang di layar lebar, lewat min-width media
+           query — bukan sebagai aturan dasar yang lalu harus dinolkan lagi di
+           tiap layar sempit. Aturan yang dipasang lalu dicabut berulang kali
+           adalah cara paling mudah membuat satu di antaranya terlewat. */
+        @media (min-width: 992px) {
+            #call-to-action .fsx-deret-produk > [class*="col-"] { min-width: 180px; }
         }
         #call-to-action .fsx-deret-produk .fs-card {
             display: flex; flex-direction: column; height: 100%;
@@ -414,7 +427,7 @@
                ia berada LEBIH BAWAH di berkas, jadi pada kekhususan yang sama
                ia yang menang. Baris paket bundling tetap memakai aturan lama. */
             #call-to-action .fsx-deret-produk.featured-products-row > [class*="col-"] {
-                flex: 1 1 calc(50% - 6px); max-width: calc(50% - 6px);
+                flex: 1 1 calc(50% - 6px); max-width: calc(50% - 6px); min-width: 0;
             }
             #call-to-action .fsx-deret-produk .fs-card-body { padding: 12px 12px 13px; gap: 6px; }
             #call-to-action .fsx-deret-produk .fs-name { font-size: .86rem; }
@@ -450,6 +463,37 @@
                 $nama = trim((string) $flashSale->nama_promo);
                 $lencana = trim((string) $flashSale->badge_text);
                 $lencana = ($lencana === '' || strcasecmp($lencana, $nama) === 0) ? 'Flash Sale' : $lencana;
+
+                // Nama promo dipecah jadi JUDUL dan EKOR.
+                //
+                // Admin menulis nama promo sebagai satu kalimat penuh
+                // ("Merdeka Sale! Diskon 17% All Item Spesial HUT RI ke-81").
+                // Ditampilkan utuh sebesar judul ia memakan tiga baris;
+                // dikecilkan supaya muat, ia jadi tidak terbaca. Keduanya salah.
+                //
+                // Yang benar: bagian depannya hampir selalu nama promonya
+                // ("Merdeka Sale!") dan sisanya keterangan. Dipisah, judulnya
+                // bisa besar tanpa memakan tiga baris, dan keterangannya tetap
+                // ada di bawahnya.
+                $judul = $nama;
+                $ekor = '';
+
+                foreach (['!', '—', '–', ':', ','] as $pisah) {
+                    if (($pos = mb_strpos($nama, $pisah)) !== false && $pos < mb_strlen($nama) - 1) {
+                        $judul = trim(mb_substr($nama, 0, $pos + ($pisah === '!' ? 1 : 0)));
+                        $ekor = trim(mb_substr($nama, $pos + 1), " \t-–—:,");
+                        break;
+                    }
+                }
+
+                // Tanpa tanda pisah apa pun: nama yang panjang dipotong di kata
+                // ketiga. Tiga kata cukup untuk mengenali sebuah promo, dan
+                // sisanya tetap tampil sebagai keterangan.
+                if ($ekor === '' && str_word_count($nama) > 5) {
+                    $kata = preg_split('/\s+/', $nama) ?: [];
+                    $judul = implode(' ', array_slice($kata, 0, 3));
+                    $ekor = implode(' ', array_slice($kata, 3));
+                }
 
                 $ket = trim((string) $flashSale->deskripsi);
                 if ($ket !== '' && (strcasecmp($ket, $nama) === 0 || strcasecmp($ket, $lencana) === 0)) {
@@ -522,7 +566,10 @@
                          bagian ini. --}}
                     <span class="fsx-lencana"><i class="fsx-titik"></i> {{ $lencana }}</span>
 
-                    <h2 class="fsx-judul">{{ $nama }}</h2>
+                    <h2 class="fsx-judul">{{ $judul }}</h2>
+                    @if ($ekor)
+                        <p class="fsx-ekor">{{ $ekor }}</p>
+                    @endif
                 </div>
 
                 <div class="fsx-tengah">
