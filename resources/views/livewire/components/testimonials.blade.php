@@ -9,22 +9,88 @@
            layar (mis. di HP). Scoped ke modal testimoni saja; tutup tetap bisa
            via tombol X, klik area luar (backdrop), atau tombol Escape. */
         .fs-modal.tm-form-modal{max-height:90vh;max-height:90dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+        /* ===== IKON BENAR-BENAR DI TENGAH =====
+
+           Glif Bootstrap Icons dibungkus baris teks dengan tinggi baris
+           bawaannya sendiri, jadi di dalam wadah bulat atau kotak ia selalu
+           duduk sedikit di bawah pusat. Selisihnya beberapa piksel — cukup
+           untuk membuat lencana terlihat miring tanpa bisa ditunjuk sebabnya.
+
+           Tinggi barisnya dinolkan DAN ::before dijadikan block: yang kedua
+           perlu karena tanpa itu glifnya masih membawa ruang bawah dari
+           metrik fontnya sendiri. */
+        .tm-verified i.bi,
+        .tm-avatar i.bi,
+        .tm-thanks-ic i.bi,
+        .tm-tulis i.bi,
+        .tm-empty i.bi { display: block; line-height: 1; }
+        .tm-verified i.bi::before,
+        .tm-avatar i.bi::before,
+        .tm-thanks-ic i.bi::before,
+        .tm-tulis i.bi::before,
+        .tm-empty i.bi::before { display: block; line-height: 1; }
+
+        /* Lencana "Pembeli Asli" dijajarkan ke tengah dan ikonnya diberi ubin
+           sendiri, bukan glif telanjang yang menempel pada teks. */
+        .tm-verified i.bi {
+            width: 26px; height: 26px; border-radius: 8px;
+            display: flex !important; align-items: center; justify-content: center;
+            background: rgba(15, 123, 63, .12); font-size: 1rem;
+        }
+
+        /* Tombol tulis testimoni: setenang tautan "Lihat Semua" di bagian lain,
+           bukan tombol penuh. Ia ajakan sekunder — yang utama di halaman ini
+           tetap membaca testimoninya. */
+        .tm-tulis {
+            display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+            background: #fff; border: 1px solid #eceff4; border-radius: 12px;
+            padding: 10px 18px; cursor: pointer; white-space: nowrap;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .88rem; color: #4b5563;
+            transition: border-color .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+        .tm-tulis:hover {
+            border-color: #f26522; color: #f26522;
+            box-shadow: 0 8px 20px rgba(242, 101, 34, .12);
+        }
+        .tm-tulis i.bi { font-size: .95rem; }
+
+        /* Kartu testimoni disamakan dengan kartu lain di beranda: angkat 3px,
+           bayangan lembut. Lompatan 6px dengan bayangan pekat membuat kartu
+           ini satu-satunya yang berperilaku berbeda di seluruh halaman. */
+        .tm-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(242, 101, 34, .12);
+            border-color: #f7c9ae;
+        }
+
+        @media (max-width: 767.98px) {
+            .tm-tulis { width: 100%; justify-content: center; }
+        }
     </style>
     <section id="testimoni" class="tm-section section">
         <div class="container">
+            {{-- Tombol "Tulis Testimoni" masuk ke SISI KANAN kepala bagian,
+                 sejajar judulnya — tempat yang sama dengan "Lihat Semua Produk"
+                 dan "Lihat Semua Kategori" di bagian-bagian lain.
+
+                 Sebelumnya ia berdiri sendiri di bawah kepala dengan margin
+                 negatif, dan satu-satunya ajakan di halaman ini yang letaknya
+                 berbeda dari semua ajakan lain akan terbaca sebagai tempelan,
+                 bukan sebagai bagian dari susunannya. --}}
             <x-kepala-bagian
                 ikon="bi-chat-quote-fill"
                 kicker="Testimoni"
                 judul="Apa Kata Pelanggan Kami"
-                sub="Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital." />
-            {{-- Tanpa .ph-sec-head: kelas itu memusatkan isinya, sehingga tombolnya
-                 berdiri di tengah sementara judul di atasnya rata kiri. --}}
-            <div class="tm-kepala-aksi" style="margin: -8px 0 26px;">
-                <button type="button" class="ph-empty-btn tm-share-btn"
-                    @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
-                    <i class="bi bi-pencil-square"></i> Tulis Testimoni
-                </button>
-            </div>
+                sub="Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital.">
+                <x-slot:aksi>
+                    <button type="button" class="tm-tulis"
+                        @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
+                        <i class="bi bi-pencil-square"></i> Tulis Testimoni
+                    </button>
+                </x-slot:aksi>
+            </x-kepala-bagian>
 
             @if ($testimonials->isNotEmpty())
                 <div class="phoenix-tm-swiper swiper" wire:ignore>
