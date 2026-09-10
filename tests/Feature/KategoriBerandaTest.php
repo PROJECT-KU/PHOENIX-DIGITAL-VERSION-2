@@ -67,3 +67,18 @@ it('nama merek dipendekkan jadi nama yang dikenali pengunjung', function () {
 it('produk yang namanya hanya imbuhan tidak menghasilkan merek kosong', function () {
     expect(MerekDipercaya::merek('Akun Premium'))->toBe('');
 });
+
+it('logo merek tidak mengulang nama yang sudah tercetak di sebelahnya', function () {
+    // Diuji dari SUMBER, bukan dari halaman: pita merek hanya dirender bila
+    // berkas gambar produknya benar-benar ada di penyimpanan, dan basis data
+    // uji tidak punya berkas apa pun.
+    $blade = file_get_contents(
+        resource_path('views/livewire/pages/public/homepage/partials/dipercaya.blade.php')
+    );
+
+    // Nama merek sudah tercetak dalam <span> tepat di sebelah gambarnya.
+    // Mengisi alt dengan nama yang sama membuat pembaca layar melafalkannya
+    // dua kali ("ChatGPT ChatGPT") dan teks yang disalin ikut terbawa dobel.
+    expect($blade)->toContain('alt="" aria-hidden="true"')
+        ->and($blade)->not->toContain("alt=\"{{ \$m['nama'] }}\"");
+});

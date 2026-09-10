@@ -29,8 +29,10 @@
             display: flex; align-items: center; gap: 26px;
             overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
             padding-bottom: 2px;
+            list-style: none; margin: 0;
         }
         .dp-deret::-webkit-scrollbar { display: none; }
+        .dp-deret > li { flex: 0 0 auto; }
 
         .dp-merek {
             flex: 0 0 auto;
@@ -38,18 +40,29 @@
             text-decoration: none; white-space: nowrap;
         }
 
+        /* Ubin seukuran untuk semua logo. Gambar produk datang dengan rasio
+           yang berbeda-beda — ada yang persegi, ada yang memanjang — dan tanpa
+           ubin bersama, garis dasar tiap merek naik-turun sendiri dan deretnya
+           terlihat goyah. */
         .dp-merek img {
-            width: 30px; height: 30px; object-fit: contain; border-radius: 7px;
+            width: 34px; height: 34px; object-fit: contain; border-radius: 8px;
+            padding: 2px; background: #fff;
             /* Warna logo yang beraneka ragam akan mengalahkan seluruh halaman.
                Diredam ke abu-abu, lalu kembali berwarna saat disentuh — pita
-               ini penanda kepercayaan, bukan etalase kedua. */
-            filter: grayscale(1); opacity: .62;
+               ini penanda kepercayaan, bukan etalase kedua.
+
+               Keabuan penuh membuat logo bergaris tipis nyaris lenyap, jadi
+               disisakan sedikit warna dan opasitasnya dinaikkan. */
+            filter: grayscale(.85); opacity: .78;
             transition: filter .25s ease, opacity .25s ease;
         }
 
+        /* Bobot 600, bukan 700: nama merek di sini keterangan gambar, dan
+           lima nama tebal berjajar akan menyaingi judul bagian mana pun yang
+           ada di dekatnya. */
         .dp-merek span {
-            font-family: 'Poppins', sans-serif; font-weight: 700;
-            font-size: 1rem; color: #7b8493; letter-spacing: -.01em;
+            font-family: 'Poppins', sans-serif; font-weight: 600;
+            font-size: .95rem; color: #6b7280; letter-spacing: -.01em;
             transition: color .25s ease;
         }
 
@@ -76,14 +89,28 @@
         <div class="dp-kotak">
             <p class="dp-label">Dipercaya oleh ribuan pelanggan</p>
 
-            <div class="dp-deret">
+            {{-- Daftar, bukan sekadar deretan <a>. Pembaca layar mengumumkan
+                 "daftar 5 butir" sebelum membacanya, jadi pendengarnya tahu
+                 sedang menghadapi kumpulan merek, bukan tautan acak. --}}
+            <ul class="dp-deret">
                 @foreach ($merek as $m)
-                <a class="dp-merek" href="{{ route('shop.index', ['search' => $m['nama']]) }}">
-                    <img loading="lazy" src="{{ asset('storage/img/Product/'.$m['gambar']) }}" alt="{{ $m['nama'] }}">
-                    <span>{{ $m['nama'] }}</span>
-                </a>
+                <li>
+                    <a class="dp-merek" href="{{ route('shop.index', ['search' => $m['nama']]) }}">
+                        {{-- alt KOSONG, bukan nama mereknya.
+
+                             Namanya sudah tercetak tepat di sebelah gambar ini.
+                             Mengisi alt dengan nama yang sama membuat pembaca
+                             layar melafalkannya dua kali ("ChatGPT ChatGPT"),
+                             dan teks yang disalin dari halaman pun ikut terbawa
+                             dobel. Gambar yang isinya sudah dikatakan teks di
+                             sebelahnya adalah gambar HIASAN. --}}
+                        <img loading="lazy" alt="" aria-hidden="true"
+                             src="{{ asset('storage/img/Product/'.$m['gambar']) }}">
+                        <span>{{ $m['nama'] }}</span>
+                    </a>
+                </li>
                 @endforeach
-            </div>
+            </ul>
 
             <a class="dp-lagi" href="{{ route('shop.index') }}">dan banyak lagi <i class="bi bi-arrow-right"></i></a>
         </div>
