@@ -55,66 +55,99 @@
         .ph-hero-deco { display: none !important; }
     }
 
-    /* ===== Banner: dua blok padat, bukan satu wash =====
+    /* ===== Banner: poster tampil di dalam layar laptop =====
 
-       Gambar banner di toko ini berukuran 1254x1254 — POSTER PERSEGI yang sudah
-       lengkap sendiri: judul, badge, dan ilustrasinya sudah tercetak di dalam
-       gambar. Sementara itu hero menampilkan judul dan deskripsi yang sama
-       persis di sebelahnya. Satu pesan tampil dua kali bersebelahan dan saling
-       berebut perhatian; itulah sumber kesan monoton, bukan kurangnya hiasan.
+       Gambar banner di toko ini adalah POSTER LENGKAP (1254x1254): judul,
+       badge, dan ilustrasinya sudah tercetak di dalam gambar. Menempelkannya
+       apa adanya di samping judul hero membuat satu pesan tampil dua kali
+       bersebelahan dan saling berebut — itu sumber kesan monoton sebelumnya.
 
-       Karena itu pembagiannya dipertegas, bukan diperhalus:
-       - poster mengisi PENUH separuh kartu sampai ke tepi, tanpa jarak dan
-         tanpa pudar, sehingga ia terbaca sebagai satu blok padat;
-       - sisi teks dibersihkan dari hiasan dan hanya menyisakan tiga hal:
-         label, judul, tombol.
+       Dibingkai sebagai layar laptop, posternya berubah peran: ia bukan lagi
+       pesaing judul di sebelahnya, melainkan "yang sedang tampil di layar".
+       Dua hal yang tadinya bertabrakan jadi satu adegan.
 
-       Percobaan sebelumnya menambahkan panel melengkung, garis, dan lapisan
-       titik-titik. Semuanya dicabut: menambah elemen pada bidang yang sudah
-       berebut hanya menambah keramaian, dan yang diminta justru clean. */
+       Laptopnya DILUKIS dengan CSS, bukan berkas gambar: mockup sebagai berkas
+       berarti satu unduhan besar lagi dan akan ikut buram di layar retina.
 
-    /* --- Poster mengisi penuh, tepinya tegas --- */
+       Isi layar dan seluruh teks di kiri tetap datang dari data banner yang
+       diunggah admin — tidak ada satu pun yang dipatok di sini. */
+
     .ph-hero .ph-hero-media {
-        background: linear-gradient(135deg, #ffe9d2, #fff6ec);
-        border: 0; border-radius: 0; margin: 0; padding: 0;
-        /* Poster nyaris persegi dan kolomnya pun nyaris persegi, jadi cover
-           hampir tidak memotong apa pun — tapi ia menghapus bingkai kosong di
-           sekeliling gambar yang selama ini membuat poster tampak mengambang. */
-        overflow: hidden;
+        background: none; border: 0; border-radius: 0; margin: 0;
+        display: flex; align-items: center; justify-content: center;
+        padding: 26px 34px 26px 10px;
     }
-    .ph-hero .ph-hero-media img {
-        -webkit-mask-image: none; mask-image: none;
-        object-fit: cover; object-position: center;
-        width: 100%; height: 100%; padding: 0;
-    }
-
-    /* Peralihan ke sisi teks dikerjakan oleh satu lapis gradien tipis DI ATAS
-       poster, bukan dengan memudarkan posternya sendiri. Bedanya: poster tetap
-       punya bentuk, dan hanya 14% tepinya yang melunak. */
-    .ph-hero .ph-hero-media::before {
-        content: ""; position: absolute; inset: 0; z-index: 2;
-        background: linear-gradient(90deg, #fff6ec 0%, rgba(255, 246, 236, .55) 7%, rgba(255, 246, 236, 0) 14%);
-        pointer-events: none;
-    }
-    /* Bola cahaya bawaan di pojok kanan atas dimatikan: di atas poster yang
-       sudah penuh warna, ia hanya membuat sudutnya tampak pudar. */
     .ph-hero .ph-hero-media::after { display: none; }
 
-    /* --- Sisi teks: tiga hal saja --- */
-    .ph-hero .ph-hero-text { gap: 16px; }
-    /* Deskripsi dipendekkan jadi dua baris. Isinya mengulang kalimat yang sudah
-       tercetak besar-besar di posternya; membiarkannya tiga baris berarti
-       memakai ruang untuk mengatakan hal yang sama tiga kali. */
-    .ph-hero .ph-hero-desc { -webkit-line-clamp: 2; line-clamp: 2; }
+    .ph-laptop { width: 100%; max-width: 520px; }
 
-    /* --- Chip mengambang: dua, bukan empat --- */
-    /* Empat pil putih melayang di atas poster adalah unsur paling tidak rapi di
-       halaman ini — mereka menutupi gambar yang justru ingin ditunjukkan.
-       Disisakan dua, dan keduanya digeser ke tepi supaya tidak menimpa isi
-       poster. */
+    /* --- Tutup layar --- */
+    .ph-laptop-layar {
+        position: relative;
+        background: linear-gradient(160deg, #2b313d 0%, #1b2029 60%, #232937 100%);
+        border-radius: 14px 14px 6px 6px;
+        padding: 12px 12px 14px;
+        box-shadow:
+            0 26px 50px rgba(28, 31, 38, .28),
+            0 2px 0 rgba(255, 255, 255, .12) inset;
+    }
+    /* Kamera kecil. Tanpa ini bidang gelap di atas layar terbaca sebagai
+       kesalahan jarak, bukan sebagai bingkai. */
+    .ph-laptop-layar::before {
+        content: ""; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+        width: 5px; height: 5px; border-radius: 50%; background: #4b5364;
+    }
+
+    .ph-laptop-isi {
+        position: relative; overflow: hidden; border-radius: 5px;
+        /* 16:10 — bentuk layar laptop yang paling dikenali. */
+        aspect-ratio: 16 / 10;
+        background: linear-gradient(135deg, #ffeeda, #fff7ef);
+    }
+    .ph-laptop-isi img {
+        width: 100%; height: 100%; display: block;
+        /* contain, BUKAN cover. Poster persegi yang dipaksa memenuhi layar 16:10
+           kehilangan sekitar sepertiga tingginya — dan pada poster ini yang
+           terpotong justru judul di atas dan ajakan di bawah. Lebih baik
+           tersisa bidang kosong di kiri-kanan daripada memotong isinya.
+           (Banner mendatar — misalnya 1600x1000 — akan memenuhi layar penuh.) */
+        object-fit: contain; object-position: center;
+        -webkit-mask-image: none; mask-image: none;
+        padding: 0;
+    }
+    /* Pantulan cahaya tipis melintang layar. */
+    .ph-laptop-isi::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(112deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 34%);
+    }
+
+    /* --- Alas --- */
+    .ph-laptop-alas {
+        position: relative; height: 13px; margin: 0 auto;
+        /* Julurannya dipatok piksel, bukan persen. Dengan 116% alas ikut
+           membesar seiring layar dan di ponsel ia melebihi lebar kartunya
+           sendiri — ujungnya lalu terpotong tepi kartu dan terlihat rusak. */
+        width: calc(100% + 24px); max-width: none; left: -12px;
+        background: linear-gradient(180deg, #d8dde6 0%, #aeb6c4 55%, #8f97a6 100%);
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 16px 26px rgba(28, 31, 38, .22);
+    }
+    /* Takik pembuka layar. */
+    .ph-laptop-alas span {
+        position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+        width: 86px; height: 5px; border-radius: 0 0 6px 6px; background: #9aa2b1;
+    }
+
+    /* --- Chip mengambang: dua, di tepi, tidak menimpa layar --- */
     .ph-hero .ph-chip.c3, .ph-hero .ph-chip.c4 { display: none; }
-    .ph-hero .ph-chip.c1 { top: 6%; right: 3%; }
-    .ph-hero .ph-chip.c2 { top: auto; bottom: 8%; right: 3%; }
+    .ph-hero .ph-chip.c1 { top: 8%; right: 2%; }
+    .ph-hero .ph-chip.c2 { top: auto; bottom: 10%; right: 1%; }
+
+    /* --- Sisi teks --- */
+    .ph-hero .ph-hero-text { gap: 16px; }
+    /* Deskripsi dua baris: isinya mengulang kalimat yang sudah tercetak
+       besar-besar di posternya sendiri. */
+    .ph-hero .ph-hero-desc { -webkit-line-clamp: 2; line-clamp: 2; }
 
     /* --- Pita aksen di puncak kartu: bergerak, bukan diam --- */
     .phoenix-hero-swiper::before {
@@ -127,19 +160,20 @@
         100% { background-position: 300% 0; }
     }
 
-    /* Gerakan selalu bisa dimatikan. Bagi sebagian orang animasi yang berjalan
-       terus-menerus bukan hiasan melainkan gangguan. */
     @media (prefers-reduced-motion: reduce) {
         .phoenix-hero-swiper::before { animation: none; }
         .ph-hero .ph-chip { animation: none; }
     }
 
     @media (max-width: 991.98px) {
-        /* Susunan menumpuk: peralihan lembutnya pindah ke tepi BAWAH poster,
-           karena di sinilah teks berada — di sisi kiri sudah tidak ada apa pun. */
-        .ph-hero .ph-hero-media::before {
-            background: linear-gradient(180deg, rgba(255, 246, 236, 0) 78%, #fff6ec 100%);
-        }
+        .ph-hero .ph-hero-media { padding: 24px 22px 18px; }
+        .ph-laptop { max-width: 420px; }
+    }
+    @media (max-width: 575.98px) {
+        .ph-hero .ph-hero-media { padding: 18px 16px 14px; }
+        .ph-laptop-layar { padding: 8px 8px 10px; border-radius: 11px 11px 5px 5px; }
+        .ph-laptop-alas { height: 10px; width: calc(100% + 16px); left: -8px; }
+        .ph-laptop-alas span { width: 62px; height: 4px; }
     }
 
     /* ===== Aksen jingga pada ekor judul =====
@@ -196,9 +230,20 @@
 
                                  Slide kedua dan seterusnya belum terlihat sampai
                                  pengunjung menggeser, jadi itu yang di-lazy. --}}
-                            <img src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
-                                alt="{{ $banner->judul ?? 'Banner' }}"
-                                @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                            {{-- Laptop digambar dengan CSS, bukan berkas gambar.
+                                 Mockup sebagai berkas berarti satu unduhan besar
+                                 lagi, dan ia akan ikut buram di layar retina.
+                                 Bentuk sesederhana ini lebih baik dilukis. --}}
+                            <div class="ph-laptop">
+                                <div class="ph-laptop-layar">
+                                    <div class="ph-laptop-isi">
+                                        <img src="{{ asset('storage/img/banners/' . $banner->gambar) }}"
+                                            alt="{{ $banner->judul ?? 'Banner' }}"
+                                            @if ($loop->first) fetchpriority="high" @else loading="lazy" @endif>
+                                    </div>
+                                </div>
+                                <div class="ph-laptop-alas" aria-hidden="true"><span></span></div>
+                            </div>
                         </div>
                     </article>
                 </div>
