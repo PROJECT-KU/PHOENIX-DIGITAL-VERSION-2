@@ -46,7 +46,7 @@
         .pt-kartu {
             display: flex; flex-direction: column; text-align: left;
             background: #fff; border: 1px solid #eceff3; border-radius: 14px;
-            padding: 20px 18px 18px; position: relative; overflow: hidden;
+            padding: 16px 16px 18px; position: relative; overflow: hidden;
             text-decoration: none; color: inherit;
             transition: border-color .25s ease;
         }
@@ -69,50 +69,91 @@
             .pt-kartu::after { transition: none; }
         }
 
-        /* Lencana hanya untuk peringkat satu, dan tanpa pil: cukup teks kecil
-           berwarna merek. Kartu lain tidak lagi bernomor — angka #2 sampai #5
-           tidak memberi tahu apa pun yang berguna bagi pembeli. */
-        .pt-lencana {
-            display: flex; height: 16px; align-items: center; gap: 6px; margin-bottom: 10px;
-            color: #f26522; font-size: .68rem; font-weight: 800;
-            letter-spacing: .1em; text-transform: uppercase;
+        /* --- Pelat logo --- */
+        /* Gambar produk datang dengan bentuk dan warna latar berbeda-beda;
+           ditaruh langsung di atas kartu putih, kelimanya melayang di
+           ketinggian berbeda dan barisnya terlihat goyah. Pelat memberi mereka
+           satu bidang yang sama, dan rasio tetap menjaga tingginya seragam. */
+        .pt-pelat {
+            position: relative; margin-bottom: 16px;
+            aspect-ratio: 4 / 3; border-radius: 12px;
+            background: #f8fafc; border: 1px solid #f1f4f8;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            transition: background .25s ease, border-color .25s ease;
         }
-        .pt-lencana i.bi { font-size: .72rem; line-height: 1; }
-        .pt-lencana i.bi::before { display: block; line-height: 1; }
+        .pt-kartu:hover .pt-pelat { background: #fff8f2; border-color: #f9e0cc; }
+        .pt-pelat img {
+            max-width: 76%; max-height: 72%; object-fit: contain; display: block;
+        }
 
-        .pt-logo { height: 84px; display: flex; align-items: center; justify-content: flex-start; margin: 4px 0 16px; }
-        .pt-logo img { max-height: 88px; max-width: 100%; object-fit: contain; }
+        /* --- Peringkat --- */
+        /* Bagian ini sebuah TANGGA, dan angka 1 sampai 5 yang membuatnya
+           terbaca begitu. Ditaruh di pojok pelat, bukan di atas kartu: ia
+           keterangan produknya, bukan judul barisnya. */
+        .pt-peringkat {
+            position: absolute; top: 8px; left: 8px;
+            display: inline-flex; align-items: center; gap: 4px;
+            min-width: 24px; height: 24px; padding: 0 8px;
+            border-radius: 999px; background: #fff; border: 1px solid #eceff3;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 800; font-size: .78rem; color: #98a1b0;
+            font-variant-numeric: tabular-nums;
+        }
+        .pt-peringkat.pt-juara {
+            background: linear-gradient(135deg, #f26522, #fb8b3c);
+            border-color: transparent; color: #fff;
+            box-shadow: 0 4px 12px rgba(242, 101, 34, .3);
+        }
+        .pt-peringkat i.bi { font-size: .68rem; line-height: 1; }
 
-        /* Nama, keterangan, dan jumlah pesanan dipatok tingginya masing-masing.
-           Tanpa itu, nama yang pecah jadi dua baris menggeser seluruh isi kartu
-           ke bawah, dan kelima kartu berhenti sejajar meski tinggi luarnya sama. */
+        /* --- Nama --- */
+        /* Keterangan produk DIBUANG dari kartu. Isinya kalimat pemasaran yang
+           mirip satu sama lain, dan dua baris abu dikali lima kartu jadi
+           sepuluh baris yang tidak membantu siapa pun memilih. Yang menentukan
+           pilihan di sini: logonya, namanya, berapa kali dibeli, dan harganya. */
         .pt-nama {
-            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem;
-            color: #23272f; line-height: 1.3; margin: 0 0 8px; min-height: 2.6em;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: 1.02rem;
+            color: #23272f; line-height: 1.35; margin: 0 0 10px; min-height: 2.7em;
+            letter-spacing: -.015em;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
-        .pt-ket {
-            color: #6b7280; font-size: .84rem; line-height: 1.55; margin: 0 0 10px; min-height: 3.1em;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
-        /* Bukti bahwa "terlaris" bukan klaim kosong. Dibuat kecil dan redup:
-           yang menjual adalah produknya, angka ini hanya menguatkan. */
-        .pt-laku { font-size: .76rem; color: #9ca3af; font-weight: 600; margin: 0 0 14px; min-height: 1.2em; }
-        .pt-laku b { color: #f26522; font-weight: 700; }
 
-        .pt-harga { border-top: 1px solid #f2f4f7; padding-top: 14px; margin-top: auto; text-align: left; }
-        .pt-harga small { display: block; font-size: .76rem; color: #9ca3af; margin-bottom: 2px; }
-        .pt-harga b { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.28rem; color: #f26522; }
-        .pt-harga span { font-size: .8rem; color: #9ca3af; font-weight: 600; }
+        /* --- Bukti laku --- */
+        /* Angka inilah SATU-SATUNYA alasan bagian ini bernama "terlaris".
+           Sebagai baris abu kecil ia terbaca sebagai catatan kaki, dan judul
+           bagiannya jadi klaim kosong. Sebagai chip, ia jadi bukti. */
+        .pt-laku {
+            display: inline-flex; align-items: center; gap: 6px; min-height: 26px;
+            font-size: .76rem; font-weight: 600; color: #5b6472;
+        }
+        .pt-laku:not(:empty) {
+            background: #f1f7f3; border: 1px solid #d8ebe0; border-radius: 999px;
+            padding: 4px 11px;
+        }
+        .pt-laku b { color: #17803d; font-weight: 800; }
+        .pt-laku i.bi { color: #17803d; font-size: .8rem; line-height: 1; }
+
+        /* --- Harga --- */
+        .pt-harga { border-top: 1px solid #f2f4f7; padding-top: 14px; margin-top: auto; }
+        .pt-harga small { display: block; font-size: .74rem; color: #9ca3af; margin-bottom: 2px; }
+        .pt-nominal { display: flex; align-items: baseline; gap: 5px; }
+        .pt-harga b {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
+            font-size: 1.32rem; color: #f26522; letter-spacing: -.03em;
+            font-variant-numeric: lining-nums tabular-nums;
+        }
+        .pt-harga span { font-size: .78rem; color: #9ca3af; font-weight: 600; }
 
         /* Tautan teks, bukan tombol berbingkai. Lima tombol sekaligus dalam satu
            baris membuat semuanya terasa sama mendesak, padahal seluruh kartunya
            memang sudah bisa diklik. */
         .pt-tombol {
-            display: inline-flex; align-items: center; gap: 7px; margin-top: 14px;
-            color: #f26522; font-weight: 700; font-size: .86rem;
+            display: inline-flex; align-items: center; gap: 7px; margin-top: 12px;
+            color: #f26522; font-weight: 700; font-size: .84rem;
+            transition: gap .2s ease;
         }
-        .pt-kartu:hover .pt-tombol { color: #d9531a; }
+        .pt-kartu:hover .pt-tombol { color: #d9531a; gap: 11px; }
         .pt-tombol i.bi { line-height: 1; }
         .pt-tombol i.bi::before { display: block; line-height: 1; }
 
@@ -122,9 +163,9 @@
             .pt-head h2 { font-size: 1.6rem; }
             .pt-deret { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .pt-kartu { padding: 18px 14px 16px; }
-            .pt-logo { height: 72px; }
-            .pt-logo img { max-height: 66px; }
-            .pt-nama { font-size: .95rem; }
+            .pt-nama { font-size: .94rem; min-height: 2.6em; }
+            .pt-harga b { font-size: 1.18rem; }
+            .pt-laku { font-size: .72rem; }
         }
     </style>
 
@@ -144,33 +185,51 @@
                     {{-- Selalu dirender, meski kosong: lencana ini kini elemen biasa,
                          jadi tanpa slot yang tetap ada kartu pertama akan lebih tinggi
                          daripada empat kartu di sebelahnya. --}}
-                    <span class="pt-lencana">
-                        @if ($i === 0)<i class="bi bi-star-fill"></i> Terlaris @endif
-                    </span>
+                    {{-- Logo duduk di atas PELAT bersama.
 
-                    <div class="pt-logo">
-                        @if ($p->image)
-                            <img loading="lazy" src="{{ asset('storage/img/Product/'.$p->image) }}" alt="{{ $p->nama_akun }}">
-                        @else
-                            <img loading="lazy" src="{{ asset('niceshop/assets/img/product/scopus.png') }}" alt="{{ $p->nama_akun }}">
-                        @endif
+                         Gambar produk datang dengan bentuk dan warna latar yang
+                         berbeda-beda; ditaruh langsung di atas kartu putih,
+                         kelimanya melayang di ketinggian yang berbeda dan
+                         barisnya terlihat goyah. Pelat memberi mereka satu
+                         bidang yang sama. --}}
+                    <div class="pt-pelat">
+                        <img loading="lazy" alt=""
+                             src="{{ $p->image
+                                ? asset('storage/img/Product/'.$p->image)
+                                : asset('niceshop/assets/img/product/scopus.png') }}">
+
+                        {{-- Peringkat, bukan hanya juara satu.
+
+                             Bagian ini sebuah TANGGA — angka 1 sampai 5 justru
+                             yang membuatnya terbaca begitu, dan tangga jauh
+                             lebih menarik disusuri daripada lima kartu setara.
+                             Juara satu diberi warna merek, sisanya netral. --}}
+                        <span class="pt-peringkat {{ $i === 0 ? 'pt-juara' : '' }}">
+                            @if ($i === 0)<i class="bi bi-star-fill"></i>@endif{{ $i + 1 }}
+                        </span>
                     </div>
 
                     <h3 class="pt-nama">{{ $p->nama_akun }}</h3>
 
-                    @if ($p->deskripsi)
-                        <p class="pt-ket">{{ \Illuminate\Support\Str::limit(strip_tags($p->deskripsi), 80) }}</p>
-                    @endif
+                    {{-- Selalu dirender, meski kosong: ruangnya harus tetap ada
+                         supaya kartu tanpa angka pesanan tidak naik sendiri.
 
-                    {{-- Selalu dirender, meski kosong: ruangnya harus tetap ada supaya
-                         kartu tanpa angka pesanan tidak naik sendiri. --}}
-                    <p class="pt-laku">
-                        @if ($p->pesanan > 0)<b>{{ $p->pesanan }}×</b> dipesan bulan ini @endif
-                    </p>
+                         Dijadikan chip, bukan baris teks kecil berwarna abu.
+                         Angka inilah SATU-SATUNYA alasan bagian ini bernama
+                         "terlaris" — menyembunyikannya sebagai catatan kaki
+                         membuat judulnya jadi klaim kosong. --}}
+                    <span class="pt-laku">
+                        @if ($p->pesanan > 0)
+                            <i class="bi bi-graph-up-arrow"></i> <b>{{ $p->pesanan }}×</b> dipesan
+                        @endif
+                    </span>
 
                     <div class="pt-harga">
                         <small>Mulai dari</small>
-                        <b>Rp{{ number_format($h['nilai'], 0, ',', '.') }}</b> <span>{{ $h['satuan'] }}</span>
+                        <span class="pt-nominal">
+                            <b>Rp{{ number_format($h['nilai'], 0, ',', '.') }}</b>
+                            <span>{{ $h['satuan'] }}</span>
+                        </span>
                     </div>
 
                     <span class="pt-tombol">Lihat Produk <i class="bi bi-arrow-right"></i></span>
