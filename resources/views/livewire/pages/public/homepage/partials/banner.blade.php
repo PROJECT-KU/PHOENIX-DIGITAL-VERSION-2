@@ -55,6 +55,86 @@
         .ph-hero-deco { display: none !important; }
     }
 
+    /* ===== Banner diberi STRUKTUR =====
+
+       Keluhannya: banner terlihat monoton. Sebabnya bukan warnanya kurang,
+       melainkan tidak ada satu pun BENTUK yang tegas di dalamnya. Seluruh kartu
+       memakai satu wash krem yang sama, dan tepi kiri gambar sengaja dibuat
+       memudar hilang ke latar — jadi mata tidak menemukan batas apa pun untuk
+       dipegang, dan yang tersisa hanya bidang lebar berwarna sama.
+
+       Yang diperbaiki: sisi gambar diberi panelnya sendiri dengan tepi yang
+       terlihat, sisi teks diberi kedalaman tipis, dan pita aksen di puncak
+       kartu dibuat bergerak. Bukan menambah warna — menambah bentuk. */
+
+    /* --- Sisi gambar: panel tersendiri, bukan bidang yang memudar --- */
+    .ph-hero .ph-hero-media {
+        /* Lebih pekat daripada sisi teks. Perbedaan inilah yang membelah kartu
+           jadi dua bagian yang jelas; sebelumnya keduanya nyaris sewarna. */
+        background:
+            radial-gradient(90% 90% at 78% 18%, rgba(255, 255, 255, .92) 0%, rgba(255, 255, 255, 0) 58%),
+            linear-gradient(135deg, #ffdfc0 0%, #ffeed9 52%, #fff6ec 100%);
+        border-radius: 34px 0 0 34px;
+        margin: 14px 0 14px 0;
+        border: 1px solid rgba(242, 101, 34, .10);
+        border-right: 0;
+    }
+
+    /* Topeng pemudar dilepas. Ia dulu dipakai supaya gambar menyatu dengan latar
+       — dan itu persis yang membuat kartunya kehilangan bentuk. Sekarang gambar
+       duduk DI ATAS panel, jadi batasnya memang harus terlihat. */
+    .ph-hero .ph-hero-media img {
+        -webkit-mask-image: none; mask-image: none;
+        padding: 10px 14px;
+    }
+
+    /* --- Sisi teks: kedalaman tipis, bukan bidang kosong --- */
+    .ph-hero .ph-hero-slide { position: relative; }
+    .ph-hero .ph-hero-text { position: relative; z-index: 1; }
+    .ph-hero .ph-hero-slide::before {
+        content: "";
+        position: absolute; left: 0; top: 0; bottom: 0; width: 52%;
+        /* Titik-titik sangat samar. Cukup untuk membuat bidang krem terasa
+           punya permukaan, tidak cukup untuk terbaca sebagai pola. */
+        background-image: radial-gradient(rgba(242, 101, 34, .12) 1px, transparent 1px);
+        background-size: 22px 22px;
+        -webkit-mask-image: radial-gradient(120% 90% at 6% 12%, #000 0%, transparent 62%);
+        mask-image: radial-gradient(120% 90% at 6% 12%, #000 0%, transparent 62%);
+        pointer-events: none;
+    }
+
+    /* --- Pita aksen di puncak kartu: bergerak, bukan diam --- */
+    .phoenix-hero-swiper::before {
+        background: linear-gradient(90deg, #f26522, #fba919, #f26522, #fba919);
+        background-size: 300% 100%;
+        animation: phPitaGeser 9s linear infinite;
+    }
+    @keyframes phPitaGeser {
+        0% { background-position: 0% 0; }
+        100% { background-position: 300% 0; }
+    }
+
+    /* Gerakan selalu bisa dimatikan. Bagi sebagian orang animasi yang berjalan
+       terus-menerus bukan hiasan, melainkan gangguan yang membuat halaman sulit
+       dibaca — dan itu berlaku untuk chip mengambang juga. */
+    @media (prefers-reduced-motion: reduce) {
+        .phoenix-hero-swiper::before { animation: none; }
+        .ph-hero .ph-chip { animation: none; }
+    }
+
+    @media (max-width: 991.98px) {
+        /* Tata letaknya menumpuk: gambar pindah ke atas, jadi lengkungannya
+           ikut pindah ke sisi atas. Lengkung di kiri pada susunan bertumpuk
+           hanya terlihat seperti salah pasang. */
+        .ph-hero .ph-hero-media {
+            border-radius: 26px 26px 0 0;
+            margin: 12px 12px 0;
+            border-right: 1px solid rgba(242, 101, 34, .10);
+            border-bottom: 0;
+        }
+        .ph-hero .ph-hero-slide::before { display: none; }
+    }
+
     /* ===== Aksen jingga pada ekor judul =====
        Judul hero satu-satunya tulisan sebesar itu di halaman; membiarkannya
        satu warna membuat mata membacanya sebagai balok, bukan sebagai kalimat
