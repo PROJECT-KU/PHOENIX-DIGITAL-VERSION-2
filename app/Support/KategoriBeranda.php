@@ -30,42 +30,55 @@ class KategoriBeranda
      * Kata kuncinya sengaja nama merek, bukan istilah umum: "AI" cocok dengan
      * hampir semua deskripsi dan akan membuat setiap kategori berisi segalanya.
      *
-     * @var array<string, array{label: string, ikon: string, kata: array<int, string>}>
+     * Tiap kategori juga punya WARNANYA sendiri. Sebelumnya kedelapan kartu
+     * memakai ikon berlatar persik yang sama persis, dan delapan kartu identik
+     * berjajar terbaca sebagai satu tekstur — bukan sebagai delapan pilihan
+     * yang berbeda. Warna di sini bukan hiasan: ia yang membuat mata bisa
+     * kembali ke kategori yang sama tanpa membaca ulang labelnya.
+     *
+     * @var array<string, array{label: string, ikon: string, warna: string, kata: array<int, string>}>
      */
     public const PETA = [
         'ai-tools' => [
             'label' => 'AI Tools',
             'ikon' => 'bi-robot',
+            'warna' => '#7c3aed',
             'kata' => ['chat gpt', 'chatgpt', 'gemini', 'gamma', 'humata', 'super ai', 'jenni'],
         ],
         'cek-plagiasi' => [
             'label' => 'Cek Plagiasi',
             'ikon' => 'bi-search',
+            'warna' => '#2563eb',
             'kata' => ['plagiasi', 'plagiarism', 'turnitin'],
         ],
         'jurnal-riset' => [
             'label' => 'Jurnal & Riset',
             'ikon' => 'bi-journal-text',
+            'warna' => '#0d9488',
             'kata' => ['scopus', 'consensus', 'research rabbit', 'scite', 'paperpal'],
         ],
         'desain-kreatif' => [
             'label' => 'Desain & Kreatif',
             'ikon' => 'bi-palette',
+            'warna' => '#db2777',
             'kata' => ['canva', 'story tribe'],
         ],
         'parafrase' => [
             'label' => 'Jasa Parafrase',
             'ikon' => 'bi-chat-quote',
+            'warna' => '#d97706',
             'kata' => ['quillbot', 'parafrase', 'paraphrase'],
         ],
         'edukasi' => [
             'label' => 'Edukasi',
             'ikon' => 'bi-mortarboard',
+            'warna' => '#4f46e5',
             'kata' => ['kahoot', 'edukasi'],
         ],
         'produktivitas' => [
             'label' => 'Produktivitas',
             'ikon' => 'bi-gear',
+            'warna' => '#475569',
             'kata' => ['office', 'grammarly', 'deepl', 'notion'],
         ],
     ];
@@ -97,6 +110,7 @@ class KategoriBeranda
                     'kunci' => $kunci,
                     'label' => $k['label'],
                     'ikon' => $k['ikon'],
+                    'warna' => $k['warna'],
                     'jumlah' => $jumlah,
                     'url' => route('shop.index', ['kategori' => $kunci]),
                 ];
@@ -109,6 +123,7 @@ class KategoriBeranda
                     'kunci' => 'bundling',
                     'label' => 'Paket Bundling',
                     'ikon' => 'bi-box-seam',
+                    'warna' => '#f26522',
                     'jumlah' => $bundling,
                     'url' => route('bundling.product-bundlings'),
                 ];
