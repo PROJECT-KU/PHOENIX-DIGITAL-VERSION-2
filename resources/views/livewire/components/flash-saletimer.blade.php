@@ -147,6 +147,16 @@
                besar tanpa memakan tiga baris. Sisanya turun ke .fsx-ekor. */
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
+        /* Kalimat ajakan dari admin. Dibuat sebagai baris kecil berwarna
+           jingga, bukan pil berbingkai: pil akan menyaingi label di garis atas
+           yang bentuknya sudah pil, dan dua pil dalam satu kartu membuat
+           keduanya kehilangan arti. */
+        #call-to-action .fsx-sapaan {
+            margin: 0 0 8px; font-size: .82rem; font-weight: 700; color: #d9531a;
+            letter-spacing: .01em; line-height: 1.45;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+
         #call-to-action .fsx-ekor {
             margin: 6px 0 0; font-size: .88rem; line-height: 1.5; color: #78808c;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -513,24 +523,27 @@
                 // nama yang sama muncul tiga kali berturut-turut dan memakan
                 // separuh layar. Yang kembar disaring di sini.
                 $nama = trim((string) $flashSale->nama_promo);
-                // Label di garis atas HARUS pendek. Ia legend kartu — tugasnya
-                // memberi tahu jenis kartunya dalam sekali lihat, bukan
-                // menyampaikan kalimat.
+                // DUA PERAN YANG BERBEDA, jangan dicampur.
                 //
-                // badge_text sering diisi kalimat utuh oleh admin (di promo ini:
-                // "Rayakan Kemerdekaan, Belanja Makin Hemat!"), dan dipasang di
-                // garis atas dengan huruf kapital berjarak lebar ia jadi selebar
-                // 478 piksel — pada lebar itu ia berhenti terbaca sebagai label
-                // dan mulai terbaca sebagai judul kedua yang menyaingi judul
-                // aslinya.
+                // Label di garis atas selalu berbunyi "Flash Sale". Ia legend
+                // kartu — tugasnya memberi tahu JENIS kartunya dalam sekali
+                // lihat, dan legend yang isinya berubah-ubah berhenti berfungsi
+                // sebagai legend. Ia juga harus pendek: kalimat utuh dengan
+                // huruf kapital berjarak lebar melebar sampai 478 piksel dan
+                // mulai menyaingi judul aslinya.
                 //
-                // Jadi: dipakai HANYA bila memang sependek label. Selebihnya
-                // "Flash Sale", yang justru kata yang paling ingin dikenali
-                // pengunjung di sini.
-                $lencana = trim((string) $flashSale->badge_text);
+                // badge_text punya perannya sendiri. Admin mengisinya kalimat
+                // ajakan ("Rayakan Kemerdekaan, Belanja Makin Hemat!") — itu
+                // suara promonya, dan membuangnya berarti membuang satu-satunya
+                // kalimat yang ditulis khusus untuk promo ini. Ia tampil di
+                // kolom kiri, di atas judul, sebagai kalimat penuh.
+                $lencana = 'Flash Sale';
 
-                if ($lencana === '' || mb_strlen($lencana) > 18 || strcasecmp($lencana, $nama) === 0) {
-                    $lencana = 'Flash Sale';
+                $sapaan = trim((string) $flashSale->badge_text);
+
+                // Kembar dengan nama promonya → tidak perlu dicetak dua kali.
+                if ($sapaan !== '' && strcasecmp($sapaan, $nama) === 0) {
+                    $sapaan = '';
                 }
 
                 // Nama promo dipecah jadi JUDUL dan EKOR.
@@ -668,6 +681,10 @@
 
                 <div class="fsx-kepala">
                 <div class="fsx-kiri">
+                    @if ($sapaan)
+                        <p class="fsx-sapaan">{{ $sapaan }}</p>
+                    @endif
+
                     <h2 class="fsx-judul">{{ $judul }}</h2>
                     @if ($ekor)
                         <p class="fsx-ekor">{{ $ekor }}</p>
