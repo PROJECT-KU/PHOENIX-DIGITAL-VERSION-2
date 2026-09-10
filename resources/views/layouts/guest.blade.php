@@ -68,8 +68,8 @@
         <!-- Top Bar -->
         <div class="py-2 top-bar">
             <div class="container-fluid container-xl">
-                <div class="row align-items-center">
-                    <div class="text-center col-lg-4 col-lg-12">
+                <div class="tb-baris">
+                    <div class="tb-promo">
                         <div class="announcement-slider swiper init-swiper">
                             <script type="application/json" class="swiper-config">
                                 {
@@ -140,9 +140,60 @@
                         </div>
                     </div>
 
+                    {{-- Sisi kanan: janji layanan + satu ajakan.
+
+                         Pita atas sebelumnya hanya berisi promo yang berputar di
+                         tengah, menyisakan dua pertiga lebar layar kosong. Ruang
+                         itu kini dipakai untuk tiga janji yang paling sering
+                         ditanyakan sebelum orang berani memesan, dan satu tombol
+                         menuju promonya.
+
+                         Disembunyikan di bawah 992px: di ponsel pita ini harus
+                         menyisakan tempat untuk promonya sendiri, dan tiga janji
+                         yang mengecil jadi tak terbaca sama saja dengan sampah. --}}
+                    <div class="tb-kanan">
+                        <span class="tb-janji"><i class="bi bi-lightning-charge-fill"></i> Proses Instan</span>
+                        <span class="tb-janji"><i class="bi bi-shield-check"></i> Garansi Aman</span>
+                        <span class="tb-janji"><i class="bi bi-headset"></i> Bantuan 24/7</span>
+                        <a href="{{ route('shop.index') }}" class="tb-cta"><i class="bi bi-fire"></i> Klaim Promo</a>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <style>
+            /* Inline: public/build masuk .gitignore dan tidak ikut terdeploy. */
+            .top-bar .tb-baris {
+                display: flex; align-items: center; justify-content: space-between; gap: 18px;
+            }
+            .top-bar .tb-promo { min-width: 0; flex: 1 1 auto; }
+            /* Promonya rata kiri sekarang, bukan rata tengah: begitu ada isi di
+               sisi kanan, teks yang tetap rata tengah terbaca seperti salah
+               tempat — tidak sejajar dengan apa pun di sekitarnya. */
+            .top-bar .announcement-slider .swiper-slide { justify-content: flex-start !important; text-align: left !important; }
+
+            .top-bar .tb-kanan { display: flex; align-items: center; gap: 18px; flex: 0 0 auto; }
+            .top-bar .tb-janji {
+                display: inline-flex; align-items: center; gap: 6px;
+                font-size: .78rem; font-weight: 600; white-space: nowrap; opacity: .92;
+            }
+            .top-bar .tb-janji i.bi { font-size: .85rem; line-height: 1; }
+            .top-bar .tb-cta {
+                display: inline-flex; align-items: center; gap: 6px;
+                background: #f26522; color: #fff; text-decoration: none;
+                font-size: .78rem; font-weight: 700; white-space: nowrap;
+                padding: 5px 14px; border-radius: 999px; line-height: 1.4;
+                box-shadow: 0 4px 12px rgba(242, 101, 34, .28);
+                transition: background .2s ease, transform .2s ease;
+            }
+            .top-bar .tb-cta:hover { background: #d9531a; color: #fff; transform: translateY(-1px); }
+            .top-bar .tb-cta i.bi { font-size: .85rem; line-height: 1; }
+
+            @media (max-width: 991.98px) {
+                .top-bar .tb-kanan { display: none; }
+                .top-bar .announcement-slider .swiper-slide { justify-content: center !important; text-align: center !important; }
+            }
+        </style>
 
         <!-- Main Header -->
         <div class="main-header">
@@ -154,19 +205,19 @@
                         <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
                         <span class="phoenix-wordmark">
                             <span class="pw-top">Phoenix</span>
-                            <span class="pw-sub">Digital</span>
+                            <span class="pw-sub">Digital Warehouse</span>
                         </span>
                     </a>
 
                     <!-- Menu utama — desktop: inline di bar; mobile: off-canvas (hamburger) -->
                     <nav id="navmenu" class="navmenu">
                         <ul>
-                            <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Home</a></li>
+                            <li><a href="/" class="{{request()->routeIs('homepage') ? 'active' : ''}}">Beranda</a></li>
                                                         <li><a class="{{request()->routeIs('shop.*') ? 'active' : ''}}" href="{{ route('shop.index') }}">Shop</a></li>
                                                         <li><a class="{{request()->routeIs('bundling.*') ? 'active' : ''}}" href="{{ route('bundling.product-bundlings') }}">Bundling</a></li>
                                                         <li><a class="{{request()->routeIs('services') ? 'active' : ''}}" href="{{ route('services') }}">Layanan</a></li>
                             <li><a class="{{request()->routeIs('about') ? 'active' : ''}}" href="/about">About</a></li>
-                                                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Contact</a></li>
+                                                        <li><a class="{{request()->routeIs('contact') ? 'active' : ''}}" href="{{route('contact')}}">Kontak</a></li>
                         </ul>
                     </nav>
 
@@ -211,7 +262,7 @@
                                 <img src="{{ asset('storage/img/phoenix-mark.png') }}" alt="Phoenix Digital" class="phoenix-mark">
                                 <span class="phoenix-wordmark">
                                     <span class="pw-top">Phoenix</span>
-                                    <span class="pw-sub">Digital</span>
+                                    <span class="pw-sub">Digital Warehouse</span>
                                 </span>
                             </a>
                             <p>Toko akun premium, lisensi, &amp; tools AI untuk riset dan produktivitas.

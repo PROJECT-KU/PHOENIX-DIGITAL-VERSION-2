@@ -36,6 +36,21 @@
     @include('livewire.pages.public.homepage.partials.banner')
     {{-- end banner --}}
 
+    {{-- dipercaya =======================================================
+         Pita merek langsung di bawah hero. Pertanyaan pertama pengunjung baru
+         bukan "apa yang dijual", melainkan "toko ini benar atau tidak" — dan
+         deretan merek yang ia kenali menjawabnya lebih cepat daripada kalimat
+         apa pun. Isinya dibaca dari katalog, jadi tidak bisa basi. --}}
+    @include('livewire.pages.public.homepage.partials.dipercaya')
+    {{-- end dipercaya --}}
+
+    {{-- kategori populer =================================================
+         Ditaruh sebelum daftar produk: pengunjung yang sudah tahu kebutuhannya
+         bisa langsung menyaring, tanpa menggulir seluruh etalase. Kategori yang
+         kehabisan produk hilang sendiri — lihat App\Support\KategoriBeranda. --}}
+    @include('livewire.pages.public.homepage.partials.kategori-populer')
+    {{-- end kategori populer --}}
+
     {{-- flash sale =====================================================
          Didahulukan atas Produk Terlaris: flash sale punya batas waktu,
          sedangkan produk terlaris ada setiap hari. Menaruh yang berbatas waktu

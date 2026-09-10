@@ -131,8 +131,8 @@
     <div class="container" data-aos="fade-up" data-aos-delay="100">
         <x-kepala-bagian
             ikon="bi-fire"
-            kicker="Paling Dicari"
-            judul="Produk Terlaris"
+            kicker="Produk Terlaris"
+            judul="Pilihan Terbaik untuk Kamu"
             sub="Tools pilihan untuk riset, skripsi & produktivitas yang paling banyak dipesan pelanggan."
             :tautan-url="route('shop.index')"
             tautan-teks="Lihat Semua Produk" />

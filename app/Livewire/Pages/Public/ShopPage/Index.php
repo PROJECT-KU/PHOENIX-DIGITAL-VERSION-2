@@ -24,6 +24,11 @@ class Index extends Component
     // Filter & urutkan (opsional). Bila kosong → perilaku daftar produk IDENTIK seperti semula.
     public $tipe = '';
 
+    // Kategori dari beranda (?kategori=ai-tools). Kosong → tidak menyaring apa
+    // pun, jadi halaman /shop tanpa parameter ini berperilaku persis seperti
+    // sebelumnya. Kunci yang tidak dikenal juga diperlakukan sebagai kosong.
+    public $kategori = '';
+
     public $sortBy = '';
 
     public function updatedTipe()
@@ -78,6 +83,7 @@ class Index extends Component
     public function mount()
     {
         $this->search = request('search', '');
+        $this->kategori = \App\Support\KategoriBeranda::kata(request('kategori')) ? request('kategori') : '';
     }
 
     #[On('search-updated')]
@@ -380,6 +386,8 @@ class Index extends Component
             });
         })
             ->when($this->tipe, fn ($q) => $q->where('tipe_akun', $this->tipe))
+            ->when(\App\Support\KategoriBeranda::kata($this->kategori),
+                fn ($q, $kata) => \App\Support\KategoriBeranda::saring($q, $kata))
             ->when($this->sortBy, function ($q) {
                 match ($this->sortBy) {
                     'termurah' => $q->orderBy('harga_perbulan', 'asc'),

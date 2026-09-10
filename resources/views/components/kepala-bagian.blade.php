@@ -49,6 +49,7 @@
     .kb-tautan:hover { color: #d9531a; }
     .kb-tautan i.bi { line-height: 1; }
     .kb-tautan i.bi::before { display: block; line-height: 1; }
+    .kb-kanan { display: flex; align-items: center; gap: 16px; flex: 0 0 auto; }
 
     @media (max-width: 767.98px) {
         .kb-kepala { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 18px; }
@@ -69,7 +70,16 @@
         @if ($sub)<p class="kb-sub">{{ $sub }}</p>@endif
     </div>
 
-    @if ($tautanUrl)
-        <a href="{{ $tautanUrl }}" class="kb-tautan">{{ $tautanTeks }} <i class="bi bi-arrow-right"></i></a>
+    {{-- Sisi kanan kepala bagian: tautan "Lihat Semua" dan, bila bagiannya
+         memang bisa digeser, tombol panahnya. Keduanya dikelompokkan dalam satu
+         pembungkus agar tetap sebaris dan tidak saling menjauh saat judulnya
+         panjang. --}}
+    @if ($tautanUrl || isset($aksi))
+        <div class="kb-kanan">
+            @if ($tautanUrl)
+                <a href="{{ $tautanUrl }}" class="kb-tautan">{{ $tautanTeks }} <i class="bi bi-arrow-right"></i></a>
+            @endif
+            {{ $aksi ?? '' }}
+        </div>
     @endif
 </div>
