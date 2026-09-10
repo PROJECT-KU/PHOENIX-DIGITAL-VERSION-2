@@ -484,12 +484,46 @@
                tempat — tidak sejajar dengan apa pun di sekitarnya. */
             .top-bar .announcement-slider .swiper-slide { justify-content: flex-start !important; text-align: left !important; }
 
-            .top-bar .tb-kanan { display: flex; align-items: center; gap: 18px; flex: 0 0 auto; }
+            .top-bar .tb-kanan { display: flex; align-items: center; gap: 20px; flex: 0 0 auto; }
+
+            /* Tiga janji layanan.
+
+               Sebelumnya tiga potong teks berikon yang mengambang tanpa
+               struktur: tidak ada yang menandai di mana satu janji berakhir
+               dan janji berikutnya dimulai, jadi ketiganya terbaca sebagai satu
+               kalimat panjang yang aneh — "Proses Instan Garansi Aman Bantuan
+               24/7".
+
+               Dua penambahan kecil menyelesaikannya: garis pemisah setipis
+               rambut di antara ketiganya, dan ikon yang diberi bulatan sendiri
+               supaya tiap janji punya titik awal yang jelas. */
             .top-bar .tb-janji {
-                display: inline-flex; align-items: center; gap: 6px;
-                font-size: .78rem; font-weight: 600; white-space: nowrap; opacity: .92;
+                position: relative;
+                display: inline-flex; align-items: center; gap: 7px;
+                font-size: .78rem; font-weight: 600; white-space: nowrap;
+                color: #2b1d12;
             }
-            .top-bar .tb-janji i.bi { font-size: .85rem; line-height: 1; }
+            /* Ditulis dengan #header supaya menang atas aturan lama
+               `#header .top-bar i { font-size: 1.05rem }` — selektor ber-ID
+               selalu mengalahkan berapa pun kelas yang ditumpuk, jadi tanpa ini
+               glifnya tetap 16,8px dan berdesakan di dalam bulatan 22px.
+               Bayangan jatuh bawaannya juga dimatikan: pada glif sekecil ini ia
+               hanya membuatnya tampak kabur. */
+            #header .top-bar .tb-janji i.bi {
+                width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto;
+                display: flex !important; align-items: center; justify-content: center;
+                background: rgba(255, 255, 255, .58);
+                color: #b3490f !important; font-size: .72rem; filter: none;
+            }
+            /* Pemisah diletakkan di TENGAH celah (setengah dari gap 20px), jadi
+               ia berjarak sama ke kiri dan ke kanan — pemisah yang menempel
+               pada salah satu sisi terbaca sebagai milik janji itu, bukan
+               sebagai batas di antara keduanya. */
+            .top-bar .tb-janji + .tb-janji::before {
+                content: ""; position: absolute; left: -10px; top: 50%;
+                transform: translateY(-50%);
+                width: 1px; height: 15px; background: rgba(43, 29, 18, .20);
+            }
             .top-bar .tb-cta {
                 display: inline-flex; align-items: center; gap: 6px;
                 background: #f26522; color: #fff; text-decoration: none;
