@@ -79,7 +79,21 @@
     }
     .ph-hero .ph-hero-media::after { display: none; }
 
-    .ph-laptop { width: 100%; max-width: 520px; }
+    /* Laptop dilihat sedikit menyerong, bukan tegak lurus dari depan.
+
+       Persegi panjang yang dilihat lurus dari depan tidak pernah terbaca
+       sebagai benda — ia terbaca sebagai bingkai. Kemiringan kecil inilah yang
+       membedakan "gambar laptop" dari "kotak berisi gambar", dan itu perbedaan
+       yang paling terasa dibanding rancangan.
+
+       Sudutnya sengaja kecil (7 derajat): lebih dari itu, poster di dalam
+       layarnya ikut menyerong sampai tulisannya sulit dibaca — padahal justru
+       poster itu yang ingin ditunjukkan. */
+    .ph-laptop {
+        width: 100%; max-width: 520px;
+        transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
+        transform-style: preserve-3d;
+    }
 
     /* --- Tutup layar --- */
     .ph-laptop-layar {
@@ -209,10 +223,26 @@
     }
     .ph-hero .ph-centang i.bi { color: #16a34a; font-size: .9rem; line-height: 1; }
 
+    /* Tulisan tangan di tepi kanan, di antara kartu nilai dan kartu daftar —
+       urutan yang sama seperti pada rancangan. */
+    .ph-hero .ph-tulisan {
+        position: absolute; z-index: 5; top: 27%; right: 0; width: 168px;
+        color: #f26522; text-align: center; transform: rotate(-6deg);
+    }
+    .ph-hero .ph-tulisan span {
+        display: block;
+        font-family: 'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
+        font-weight: 700; font-size: 1.5rem; line-height: 1.15;
+    }
+    .ph-hero .ph-tulisan svg {
+        display: block; width: 60px; height: auto; margin: 2px 0 0 auto;
+        transform: rotate(6deg);
+    }
+
     /* Di bawah 1200px laptopnya menyempit dan kartu mulai saling menimpa.
        Yang paling besar dilepas lebih dulu, bukan semuanya sekaligus. */
     @media (max-width: 1199.98px) {
-        .ph-hero .ph-kartu-c { display: none; }
+        .ph-hero .ph-kartu-c, .ph-hero .ph-tulisan { display: none; }
         .ph-hero .ph-kartu-a { left: 42%; }
     }
 
@@ -272,7 +302,9 @@
 
     @media (max-width: 991.98px) {
         .ph-hero .ph-hero-media { padding: 24px 22px 18px; }
-        .ph-laptop { max-width: 420px; }
+        /* Tegak lurus di layar sempit: kemiringan memakan lebar yang sudah
+           tidak ada sisanya, dan poster di dalamnya jadi makin kecil. */
+        .ph-laptop { max-width: 420px; transform: none; }
     }
     @media (max-width: 575.98px) {
         .ph-hero .ph-hero-media { padding: 18px 16px 14px; }
@@ -321,6 +353,25 @@
                 </span>
                 <b>4.9<small>/5</small></b>
                 <small>Dari 5.000+ pelanggan</small>
+            </div>
+
+            {{-- Tulisan tangan + panah, seperti pada rancangan.
+
+                 Ditulis dengan huruf sambung dan dimiringkan sedikit supaya
+                 terbaca sebagai catatan tangan di atas gambar, bukan sebagai
+                 satu label lagi. Kalau ia memakai huruf yang sama dengan
+                 sisanya, ia hanya jadi teks kelima yang ikut berebut.
+
+                 Panahnya SVG, bukan berkas gambar: satu garis lengkung tidak
+                 pantas dibayar dengan satu unduhan. --}}
+            <div class="ph-tulisan">
+                <span>Upgrade Produktivitasmu Sekarang!</span>
+                <svg viewBox="0 0 88 54" fill="none" aria-hidden="true">
+                    <path d="M79 5c3 16-4 30-18 37C46 49 28 46 15 36"
+                          stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+                    <path d="M8 41c2.6-2.4 5-4 8-5.2M21 28c-3 3-5 5.6-6.6 8.6"
+                          stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+                </svg>
             </div>
 
             <div class="ph-kartu ph-kartu-c">
