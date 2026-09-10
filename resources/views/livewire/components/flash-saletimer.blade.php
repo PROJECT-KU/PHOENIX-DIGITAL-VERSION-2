@@ -142,7 +142,12 @@
         /* --- Judul & besar diskon --- */
         #call-to-action .fsx-judul {
             font-family: 'Poppins', sans-serif; font-weight: 800; color: #1c1f26;
-            font-size: 2.5rem; line-height: 1.08; letter-spacing: -.03em; margin: 0;
+            font-size: 2.75rem; line-height: 1.02; letter-spacing: -.035em; margin: 0;
+            /* Pada ukuran sebesar ini, jarak antar huruf bawaan terlihat
+               renggang — makin besar huruf, makin perlu dirapatkan. Dan
+               text-wrap: balance membuat judul dua baris terbagi rata, bukan
+               satu baris penuh dengan satu kata menggantung di bawahnya. */
+            text-wrap: balance;
             /* Hanya bagian depan nama promo yang tampil di sini, jadi ia boleh
                besar tanpa memakan tiga baris. Sisanya turun ke .fsx-ekor. */
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -160,14 +165,22 @@
            yang dikapitalkan seluruhnya jauh lebih lambat dibaca, dan pilnya
            melebar hampir dua kali lipat. */
         #call-to-action .fsx-sapaan {
-            display: inline-block; margin: 0 0 12px;
+            display: inline-block; margin: 0 0 14px;
             background: #fff3ea; border: 1px solid #f8d9c2; color: #d9531a;
-            font-size: 1rem; font-weight: 700; letter-spacing: .01em; line-height: 1.4;
+            /* Ukurannya tetap, BOBOTNYA yang diturunkan 700 ke 600. Tiga
+               tingkat teks yang semuanya tebal terbaca sebagai satu blok
+               tebal; yang membedakan tingkat bukan cuma besar huruf. */
+            font-size: 1rem; font-weight: 600; letter-spacing: .015em; line-height: 1.4;
             padding: 8px 18px; border-radius: 999px;
         }
 
         #call-to-action .fsx-ekor {
-            margin: 8px 0 0; font-size: 1.05rem; line-height: 1.5; color: #6b7280;
+            /* Bobot 400, bukan tebal: ia keterangan judul, dan keterangan yang
+               setebal judulnya berhenti jadi keterangan. Lebarnya dibatasi 46
+               karakter — di kolom selebar 750px satu baris teks bisa mencapai
+               90 karakter, dan mata kehilangan awal baris berikutnya. */
+            margin: 10px 0 0; font-size: 1.15rem; font-weight: 400; line-height: 1.55;
+            color: #6b7280; max-width: 46ch; text-wrap: pretty;
             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
         }
 
@@ -322,8 +335,8 @@
             #call-to-action .fsx-kanan { grid-column: 1; justify-self: stretch; }
             #call-to-action .fsx-isi { padding: 20px 22px 24px; }
             #call-to-action .fsx-sapaan { font-size: .95rem; }
-            #call-to-action .fsx-judul { font-size: 2.1rem; }
-            #call-to-action .fsx-ekor { font-size: .98rem; }
+            #call-to-action .fsx-judul { font-size: 2.25rem; }
+            #call-to-action .fsx-ekor { font-size: 1.05rem; }
             #call-to-action .fsx-diskon-angka { font-size: 2.6rem; }
             #call-to-action .kb-judul { font-size: 1.6rem; }
         }
@@ -338,10 +351,10 @@
                jadi dua baris, sudut sepenuhnya bulat membuat pilnya terlihat
                seperti gelembung yang salah bentuk, bukan seperti label. */
             #call-to-action .fsx-sapaan {
-                font-size: .9rem; padding: 7px 14px; border-radius: 14px;
+                font-size: .92rem; padding: 7px 14px; border-radius: 14px;
             }
-            #call-to-action .fsx-judul { font-size: 1.8rem; }
-            #call-to-action .fsx-ekor { font-size: .92rem; -webkit-line-clamp: 2; }
+            #call-to-action .fsx-judul { font-size: 2rem; letter-spacing: -.03em; }
+            #call-to-action .fsx-ekor { font-size: 1rem; -webkit-line-clamp: 2; }
             #call-to-action .fsx-diskon-angka { font-size: 2.3rem; }
             #call-to-action .fsx-jam { padding: 18px 16px; }
             #call-to-action .fsx-satuan b { font-size: 1.75rem; }
