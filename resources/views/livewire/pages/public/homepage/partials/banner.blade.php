@@ -55,53 +55,66 @@
         .ph-hero-deco { display: none !important; }
     }
 
-    /* ===== Banner diberi STRUKTUR =====
+    /* ===== Banner: dua blok padat, bukan satu wash =====
 
-       Keluhannya: banner terlihat monoton. Sebabnya bukan warnanya kurang,
-       melainkan tidak ada satu pun BENTUK yang tegas di dalamnya. Seluruh kartu
-       memakai satu wash krem yang sama, dan tepi kiri gambar sengaja dibuat
-       memudar hilang ke latar — jadi mata tidak menemukan batas apa pun untuk
-       dipegang, dan yang tersisa hanya bidang lebar berwarna sama.
+       Gambar banner di toko ini berukuran 1254x1254 — POSTER PERSEGI yang sudah
+       lengkap sendiri: judul, badge, dan ilustrasinya sudah tercetak di dalam
+       gambar. Sementara itu hero menampilkan judul dan deskripsi yang sama
+       persis di sebelahnya. Satu pesan tampil dua kali bersebelahan dan saling
+       berebut perhatian; itulah sumber kesan monoton, bukan kurangnya hiasan.
 
-       Yang diperbaiki: sisi gambar diberi panelnya sendiri dengan tepi yang
-       terlihat, sisi teks diberi kedalaman tipis, dan pita aksen di puncak
-       kartu dibuat bergerak. Bukan menambah warna — menambah bentuk. */
+       Karena itu pembagiannya dipertegas, bukan diperhalus:
+       - poster mengisi PENUH separuh kartu sampai ke tepi, tanpa jarak dan
+         tanpa pudar, sehingga ia terbaca sebagai satu blok padat;
+       - sisi teks dibersihkan dari hiasan dan hanya menyisakan tiga hal:
+         label, judul, tombol.
 
-    /* --- Sisi gambar: panel tersendiri, bukan bidang yang memudar --- */
+       Percobaan sebelumnya menambahkan panel melengkung, garis, dan lapisan
+       titik-titik. Semuanya dicabut: menambah elemen pada bidang yang sudah
+       berebut hanya menambah keramaian, dan yang diminta justru clean. */
+
+    /* --- Poster mengisi penuh, tepinya tegas --- */
     .ph-hero .ph-hero-media {
-        /* Lebih pekat daripada sisi teks. Perbedaan inilah yang membelah kartu
-           jadi dua bagian yang jelas; sebelumnya keduanya nyaris sewarna. */
-        background:
-            radial-gradient(90% 90% at 78% 18%, rgba(255, 255, 255, .92) 0%, rgba(255, 255, 255, 0) 58%),
-            linear-gradient(135deg, #ffdfc0 0%, #ffeed9 52%, #fff6ec 100%);
-        border-radius: 34px 0 0 34px;
-        margin: 14px 0 14px 0;
-        border: 1px solid rgba(242, 101, 34, .10);
-        border-right: 0;
+        background: linear-gradient(135deg, #ffe9d2, #fff6ec);
+        border: 0; border-radius: 0; margin: 0; padding: 0;
+        /* Poster nyaris persegi dan kolomnya pun nyaris persegi, jadi cover
+           hampir tidak memotong apa pun — tapi ia menghapus bingkai kosong di
+           sekeliling gambar yang selama ini membuat poster tampak mengambang. */
+        overflow: hidden;
     }
-
-    /* Topeng pemudar dilepas. Ia dulu dipakai supaya gambar menyatu dengan latar
-       — dan itu persis yang membuat kartunya kehilangan bentuk. Sekarang gambar
-       duduk DI ATAS panel, jadi batasnya memang harus terlihat. */
     .ph-hero .ph-hero-media img {
         -webkit-mask-image: none; mask-image: none;
-        padding: 10px 14px;
+        object-fit: cover; object-position: center;
+        width: 100%; height: 100%; padding: 0;
     }
 
-    /* --- Sisi teks: kedalaman tipis, bukan bidang kosong --- */
-    .ph-hero .ph-hero-slide { position: relative; }
-    .ph-hero .ph-hero-text { position: relative; z-index: 1; }
-    .ph-hero .ph-hero-slide::before {
-        content: "";
-        position: absolute; left: 0; top: 0; bottom: 0; width: 52%;
-        /* Titik-titik sangat samar. Cukup untuk membuat bidang krem terasa
-           punya permukaan, tidak cukup untuk terbaca sebagai pola. */
-        background-image: radial-gradient(rgba(242, 101, 34, .12) 1px, transparent 1px);
-        background-size: 22px 22px;
-        -webkit-mask-image: radial-gradient(120% 90% at 6% 12%, #000 0%, transparent 62%);
-        mask-image: radial-gradient(120% 90% at 6% 12%, #000 0%, transparent 62%);
+    /* Peralihan ke sisi teks dikerjakan oleh satu lapis gradien tipis DI ATAS
+       poster, bukan dengan memudarkan posternya sendiri. Bedanya: poster tetap
+       punya bentuk, dan hanya 14% tepinya yang melunak. */
+    .ph-hero .ph-hero-media::before {
+        content: ""; position: absolute; inset: 0; z-index: 2;
+        background: linear-gradient(90deg, #fff6ec 0%, rgba(255, 246, 236, .55) 7%, rgba(255, 246, 236, 0) 14%);
         pointer-events: none;
     }
+    /* Bola cahaya bawaan di pojok kanan atas dimatikan: di atas poster yang
+       sudah penuh warna, ia hanya membuat sudutnya tampak pudar. */
+    .ph-hero .ph-hero-media::after { display: none; }
+
+    /* --- Sisi teks: tiga hal saja --- */
+    .ph-hero .ph-hero-text { gap: 16px; }
+    /* Deskripsi dipendekkan jadi dua baris. Isinya mengulang kalimat yang sudah
+       tercetak besar-besar di posternya; membiarkannya tiga baris berarti
+       memakai ruang untuk mengatakan hal yang sama tiga kali. */
+    .ph-hero .ph-hero-desc { -webkit-line-clamp: 2; line-clamp: 2; }
+
+    /* --- Chip mengambang: dua, bukan empat --- */
+    /* Empat pil putih melayang di atas poster adalah unsur paling tidak rapi di
+       halaman ini — mereka menutupi gambar yang justru ingin ditunjukkan.
+       Disisakan dua, dan keduanya digeser ke tepi supaya tidak menimpa isi
+       poster. */
+    .ph-hero .ph-chip.c3, .ph-hero .ph-chip.c4 { display: none; }
+    .ph-hero .ph-chip.c1 { top: 6%; right: 3%; }
+    .ph-hero .ph-chip.c2 { top: auto; bottom: 8%; right: 3%; }
 
     /* --- Pita aksen di puncak kartu: bergerak, bukan diam --- */
     .phoenix-hero-swiper::before {
@@ -115,24 +128,18 @@
     }
 
     /* Gerakan selalu bisa dimatikan. Bagi sebagian orang animasi yang berjalan
-       terus-menerus bukan hiasan, melainkan gangguan yang membuat halaman sulit
-       dibaca — dan itu berlaku untuk chip mengambang juga. */
+       terus-menerus bukan hiasan melainkan gangguan. */
     @media (prefers-reduced-motion: reduce) {
         .phoenix-hero-swiper::before { animation: none; }
         .ph-hero .ph-chip { animation: none; }
     }
 
     @media (max-width: 991.98px) {
-        /* Tata letaknya menumpuk: gambar pindah ke atas, jadi lengkungannya
-           ikut pindah ke sisi atas. Lengkung di kiri pada susunan bertumpuk
-           hanya terlihat seperti salah pasang. */
-        .ph-hero .ph-hero-media {
-            border-radius: 26px 26px 0 0;
-            margin: 12px 12px 0;
-            border-right: 1px solid rgba(242, 101, 34, .10);
-            border-bottom: 0;
+        /* Susunan menumpuk: peralihan lembutnya pindah ke tepi BAWAH poster,
+           karena di sinilah teks berada — di sisi kiri sudah tidak ada apa pun. */
+        .ph-hero .ph-hero-media::before {
+            background: linear-gradient(180deg, rgba(255, 246, 236, 0) 78%, #fff6ec 100%);
         }
-        .ph-hero .ph-hero-slide::before { display: none; }
     }
 
     /* ===== Aksen jingga pada ekor judul =====
