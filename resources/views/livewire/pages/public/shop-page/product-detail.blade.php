@@ -107,88 +107,153 @@
         .jd-step-txt b { font-size:.87rem; color:#1e293b; }
         .jd-step-txt small { font-size:.75rem; color:var(--ph-muted); line-height:1.35; }
 
-        /* Chip bagian dokumen yang dikecualikan (cover / daftar isi / daftar pustaka) */
-        .jd-bagian { display:flex; flex-wrap:wrap; gap:8px; }
-        .jd-bagian-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:99px;
-            border:1.5px solid var(--ph-line); background:#fff; color:#64748b; font-size:.82rem; font-weight:600;
-            cursor:pointer; user-select:none; transition:border-color .18s, background .18s, color .18s; }
-        .jd-bagian-chip:hover { border-color:#fcd9a8; color:#b45309; }
-        .jd-bagian-chip.is-on { border-color:#f59e0b; background:#fffbeb; color:#b45309; }
+        /* ===== Pengaturan dokumen, add-on & rincian biaya (jasa) =====
+           Tiap blok = kartu putih dengan kepala berikon warna (--k), pola yang
+           sama dengan langkah "Cara Pesan". Ikon tunggal di dalam ubin selalu
+           display:block + line-height:1 supaya benar-benar di tengah. */
+        .jd-kartu { --k:#d97706; margin-top:14px; padding:16px 18px 18px; border-radius:18px;
+            border:1px solid color-mix(in srgb, var(--k) 16%, #eceff4);
+            background:linear-gradient(180deg, color-mix(in srgb, var(--k) 5%, #fff) 0, #fff 76px); }
+        .jd-kepala { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+        .jd-kepala-ic { width:40px; height:40px; flex-shrink:0; border-radius:13px; display:flex; align-items:center; justify-content:center;
+            background:color-mix(in srgb, var(--k) 13%, #fff); color:var(--k); font-size:1.05rem;
+            box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--k) 18%, transparent); }
+        .jd-kepala-ic i.bi, .jd-kepala-ic i.bi::before { display:block; line-height:1; }
+        .jd-kepala-txt { display:flex; flex-direction:column; gap:3px; min-width:0; padding-top:1px; }
+        .jd-kepala-txt > b { font-family:'Plus Jakarta Sans','Poppins',sans-serif; font-size:.94rem; font-weight:800; color:#0f172a; line-height:1.3; }
+        .jd-kepala-txt > small { font-size:.78rem; color:#64748b; line-height:1.5; }
+        .jd-kepala-txt > small b { color:#334155; }
+
+        /* Bagian dokumen yang dilewati: tiga ubin pilihan, warna per bagian (--o) */
+        .jd-bagian { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; }
+        .jd-bagian-chip { --o:#2563eb; position:relative; display:flex; flex-direction:column; align-items:center; gap:7px;
+            padding:15px 8px 12px; border-radius:15px; border:1.5px solid #e8ecf2; background:#fff; text-align:center;
+            cursor:pointer; user-select:none; transition:border-color .18s, background .18s, box-shadow .18s, transform .18s; }
+        .jd-bagian-chip:hover { border-color:color-mix(in srgb, var(--o) 40%, #fff); transform:translateY(-1px); }
+        .jd-bagian-chip.is-on { border-color:var(--o); background:color-mix(in srgb, var(--o) 6%, #fff);
+            box-shadow:0 8px 18px -12px color-mix(in srgb, var(--o) 70%, transparent); }
         .jd-bagian-chip input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
-        .jd-bagian-box { width:17px; height:17px; flex-shrink:0; border:1.5px solid #cbd5e1; border-radius:5px;
-            background:#fff; display:flex; align-items:center; justify-content:center; transition:background .18s, border-color .18s; }
-        .jd-bagian-box i.bi { font-size:.62rem; color:#fff; opacity:0; display:flex; line-height:1; }
+        .jd-bagian-chip:has(input:focus-visible) { outline:2px solid var(--o); outline-offset:2px; }
+        .jd-bagian-ic { width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center;
+            background:color-mix(in srgb, var(--o) 12%, #fff); color:var(--o); font-size:1.08rem; transition:background .18s, color .18s; }
+        .jd-bagian-chip.is-on .jd-bagian-ic { background:var(--o); color:#fff; }
+        .jd-bagian-ic i.bi, .jd-bagian-ic i.bi::before { display:block; line-height:1; }
+        .jd-bagian-nama { font-size:.82rem; font-weight:800; color:#0f172a; line-height:1.25; }
+        .jd-bagian-status { font-size:.7rem; font-weight:700; color:#94a3b8; }
+        .jd-bagian-chip.is-on .jd-bagian-status { color:color-mix(in srgb, var(--o) 78%, #0f172a); }
+        .jd-bagian-box { position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%;
+            border:1.5px solid #cbd5e1; background:#fff; display:flex; align-items:center; justify-content:center;
+            transition:background .18s, border-color .18s; }
+        .jd-bagian-box i.bi { font-size:.58rem; color:#fff; opacity:0; display:block; line-height:1; }
         .jd-bagian-box i.bi::before { display:block; line-height:1; }
-        .jd-bagian-chip.is-on .jd-bagian-box { background:#f59e0b; border-color:#f59e0b; }
+        .jd-bagian-chip.is-on .jd-bagian-box { background:var(--o); border-color:var(--o); }
         .jd-bagian-chip.is-on .jd-bagian-box i.bi { opacity:1; }
 
         /* Halaman yang dikecualikan (tidak ditagih) */
-        .jd-exc { margin-top:12px; padding:14px 15px; border:1px solid var(--ph-line); border-radius:14px; background:#fcfcfd; }
-        .jd-exc-head { display:flex; flex-direction:column; gap:2px; margin-bottom:10px; }
-        .jd-exc-head b { font-size:.86rem; color:#1e293b; }
-        .jd-exc-head small { font-size:.77rem; color:var(--ph-muted); line-height:1.45; }
-        .jd-exc-input { width:100%; font-size:.88rem; padding:10px 12px; border:1px solid var(--ph-line);
-            border-radius:10px; background:#fff; color:#334155; outline:none; transition:border-color .18s, box-shadow .18s; }
-        .jd-exc-input::placeholder { color:#cbd5e1; }
-        .jd-exc-input:focus { border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.13); }
-        .jd-exc-quick { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
-        .jd-exc-btn { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:99px;
-            border:1px solid var(--ph-line); background:#fff; color:#64748b; font-size:.76rem; font-weight:600;
-            cursor:pointer; transition:border-color .18s, background .18s, color .18s; }
-        .jd-exc-btn:hover { border-color:#fcd9a8; background:#fffdf8; color:#b45309; }
-        .jd-exc-btn.is-clear:hover { border-color:#fecaca; background:#fef2f2; color:#dc2626; }
-        .jd-exc-btn i.bi { display:flex; align-items:center; line-height:1; font-size:.62rem; }
-        .jd-exc-btn i.bi::before { display:block; line-height:1; }
-        .jd-exc-info { display:flex; align-items:flex-start; gap:7px; margin-top:10px; font-size:.79rem;
-            color:#15803d; line-height:1.5; }
-        .jd-exc-info i.bi { flex-shrink:0; margin-top:.15rem; display:flex; line-height:1; }
-        .jd-exc-info i.bi::before { display:block; line-height:1; }
+        .jd-exc-field { position:relative; display:block; margin:0; }
+        .jd-exc-field > i.bi { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--k);
+            font-size:.95rem; pointer-events:none; }
+        .jd-exc-field > i.bi, .jd-exc-field > i.bi::before { display:block; line-height:1; }
+        .jd-exc-input { width:100%; font-size:.9rem; padding:12px 14px 12px 40px; border:1.5px solid #e8ecf2;
+            border-radius:12px; background:#fff; color:#0f172a; outline:none; transition:border-color .18s, box-shadow .18s; }
+        .jd-exc-input::placeholder { color:#94a3b8; }
+        .jd-exc-input:focus { border-color:var(--k); box-shadow:0 0 0 4px color-mix(in srgb, var(--k) 14%, transparent); }
+        .jd-exc-quick { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .jd-exc-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:99px;
+            border:1px solid color-mix(in srgb, var(--k) 22%, #e8ecf2); background:color-mix(in srgb, var(--k) 5%, #fff);
+            color:color-mix(in srgb, var(--k) 78%, #0f172a); font-size:.77rem; font-weight:700;
+            cursor:pointer; transition:border-color .18s, background .18s; }
+        .jd-exc-btn:hover { border-color:color-mix(in srgb, var(--k) 45%, #fff); background:color-mix(in srgb, var(--k) 12%, #fff); }
+        .jd-exc-btn.is-clear { border-color:#fecaca; background:#fff5f5; color:#dc2626; }
+        .jd-exc-btn.is-clear:hover { border-color:#fca5a5; background:#fee2e2; }
+        .jd-exc-btn i.bi, .jd-exc-btn i.bi::before { display:block; line-height:1; font-size:.72rem; }
+        .jd-exc-info { display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 12px; border-radius:12px;
+            border:1px solid #bbf7d0; background:#f0fdf4; font-size:.8rem; color:#166534; line-height:1.5; }
+        .jd-exc-info-ic { width:26px; height:26px; flex-shrink:0; border-radius:8px; background:#16a34a; color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:.8rem; }
+        .jd-exc-info-ic i.bi, .jd-exc-info-ic i.bi::before { display:block; line-height:1; }
 
-        /* Add-on — dipisah jelas dari blok paket di atasnya */
+        /* Add-on — dipisah jelas dari blok paket di atasnya. Warna kartu (--a)
+           dari App\Support\IkonAddon. */
         .jd-addon-sec { margin-top:26px; padding-top:22px; border-top:1px solid var(--ph-line); }
-        /* min(280px,100%) & minmax(0,1fr): kolom tidak boleh melebar mengikuti
-           nama add-on yang nowrap — dulu di HP kartunya luber ±30px ke kanan. */
-        .jd-addons { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:10px; }
-        .jd-addon {
-            display:flex; align-items:center; gap:12px; width:100%; min-width:0; text-align:left;
-            padding:14px 16px; border:1.5px solid var(--ph-line); border-radius:14px; background:#fff;
-            cursor:pointer; transition:border-color .18s, background .18s, box-shadow .18s;
-        }
-        .jd-addon:hover { border-color:#fcd9a8; background:#fffdf8; }
-        .jd-addon.is-on { border-color:#f59e0b; background:#fffbeb; box-shadow:0 3px 12px rgba(245,158,11,.13); }
-        .jd-addon-box {
-            width:21px; height:21px; flex-shrink:0; border:1.5px solid #cbd5e1;
-            border-radius:7px; background:#fff; display:flex; align-items:center; justify-content:center;
-            transition:background .18s, border-color .18s;
-        }
-        .jd-addon-box i.bi { font-size:.68rem; color:#fff; opacity:0; display:flex; line-height:1; }
+        .jd-addon-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-bottom:6px; }
+        .jd-addon-head .pd-sub { margin-bottom:0; }
+        .jd-addon-mode { display:inline-flex; align-items:center; gap:6px; height:26px; padding:0 11px; border-radius:99px;
+            background:#f1f5f9; color:#475569; font-size:.72rem; font-weight:700; }
+        .jd-addon-mode i.bi, .jd-addon-mode i.bi::before { display:block; line-height:1; font-size:.72rem; }
+        /* min(250px,100%) & min-width:0: kolom tidak melebar mengikuti isinya —
+           dulu di HP kartunya luber ±30px ke kanan. */
+        .jd-addons { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap:12px; }
+        .jd-addon { --a:#d97706; position:relative; display:flex; flex-direction:column; gap:12px; width:100%; min-width:0;
+            text-align:left; padding:15px 16px 13px; border:1.5px solid #e8ecf2; border-radius:16px; background:#fff;
+            cursor:pointer; transition:border-color .18s, background .18s, box-shadow .18s, transform .18s; }
+        .jd-addon:hover { border-color:color-mix(in srgb, var(--a) 40%, #fff); transform:translateY(-1px);
+            box-shadow:0 12px 24px -18px color-mix(in srgb, var(--a) 70%, transparent); }
+        .jd-addon.is-on { border-color:var(--a); background:linear-gradient(180deg, color-mix(in srgb, var(--a) 7%, #fff), #fff 70%);
+            box-shadow:0 12px 26px -16px color-mix(in srgb, var(--a) 70%, transparent); }
+        .jd-addon-atas { display:flex; align-items:flex-start; gap:12px; padding-right:28px; }
+        .jd-addon-ic { width:40px; height:40px; flex-shrink:0; border-radius:13px; display:flex; align-items:center; justify-content:center;
+            background:color-mix(in srgb, var(--a) 12%, #fff); color:var(--a); font-size:1.1rem; transition:background .18s, color .18s; }
+        .jd-addon.is-on .jd-addon-ic { background:var(--a); color:#fff; }
+        .jd-addon-ic i.bi, .jd-addon-ic i.bi::before { display:block; line-height:1; }
+        .jd-addon-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+        .jd-addon-txt b { font-size:.88rem; font-weight:800; color:#0f172a; line-height:1.35;
+            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+        .jd-addon-txt small { font-size:.76rem; color:#64748b; line-height:1.45; }
+        .jd-addon-box { position:absolute; top:14px; right:14px; width:22px; height:22px; border-radius:50%;
+            border:1.5px solid #cbd5e1; background:#fff; display:flex; align-items:center; justify-content:center;
+            transition:background .18s, border-color .18s; }
+        .jd-addon-box i.bi { font-size:.66rem; color:#fff; opacity:0; display:block; line-height:1; }
         .jd-addon-box i.bi::before { display:block; line-height:1; }
-        .jd-addon.is-on .jd-addon-box { background:#f59e0b; border-color:#f59e0b; }
+        .jd-addon.is-on .jd-addon-box { background:var(--a); border-color:var(--a); }
         .jd-addon.is-on .jd-addon-box i.bi { opacity:1; }
-        .jd-addon-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
-        .jd-addon-txt b {
-            font-size:.89rem; font-weight:700; color:#1e293b; line-height:1.35;
-            overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-        }
-        .jd-addon.is-on .jd-addon-txt b { color:#92400e; }
-        .jd-addon-txt small { font-size:.76rem; color:var(--ph-muted); line-height:1.4; }
-        .jd-addon-harga {
-            flex-shrink:0; padding:6px 13px; border-radius:99px;
-            background:#f1f5f9; color:#64748b; font-size:.81rem; font-weight:800;
-            white-space:nowrap; transition:background .18s, color .18s;
-        }
-        .jd-addon.is-on .jd-addon-harga { background:#f59e0b; color:#fff; }
+        .jd-addon-bawah { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:auto;
+            padding-top:11px; border-top:1px dashed #e8ecf2; }
+        .jd-addon-harga { font-size:.9rem; font-weight:800; color:#0f172a; white-space:nowrap; }
+        .jd-addon-harga.is-gratis { color:#15803d; }
+        .jd-addon-aksi { display:inline-flex; align-items:center; gap:5px; font-size:.74rem; font-weight:700;
+            color:color-mix(in srgb, var(--a) 80%, #0f172a); white-space:nowrap; }
+        .jd-addon-aksi i.bi, .jd-addon-aksi i.bi::before { display:block; line-height:1; font-size:.72rem; }
+
+        /* Rincian biaya: struk kecil — tiap baris berikon, total menonjol */
+        .jd-rincian { margin:18px 0 4px; border-radius:18px; overflow:hidden; background:#fff;
+            border:1px solid color-mix(in srgb, var(--c) 20%, #eceff4);
+            box-shadow:0 16px 34px -26px color-mix(in srgb, var(--c) 70%, transparent); }
+        .jd-rincian-head { --k:var(--c); display:flex; align-items:center; gap:12px; padding:14px 18px;
+            background:linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, #fff), #fff);
+            border-bottom:1px solid color-mix(in srgb, var(--c) 12%, #eceff4); }
+        .jd-rincian-list { list-style:none; margin:0; padding:4px 18px; }
+        .jd-rincian-row { --r:#64748b; display:flex; align-items:center; gap:11px; padding:10px 0; font-size:.85rem; color:#334155; }
+        .jd-rincian-row + .jd-rincian-row { border-top:1px solid #f1f5f9; }
+        .jd-rincian-ic { width:30px; height:30px; flex-shrink:0; border-radius:10px; display:flex; align-items:center; justify-content:center;
+            background:color-mix(in srgb, var(--r) 12%, #fff); color:var(--r); font-size:.85rem; }
+        .jd-rincian-ic i.bi, .jd-rincian-ic i.bi::before { display:block; line-height:1; }
+        .jd-rincian-lbl { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; font-weight:600; color:#1e293b; line-height:1.35; }
+        .jd-rincian-lbl small { font-size:.73rem; font-weight:500; color:#94a3b8; }
+        .jd-rincian-nilai { font-weight:800; color:#0f172a; white-space:nowrap; }
+        .jd-rincian-nilai.is-hijau { color:#15803d; }
+        .jd-rincian-total { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px;
+            background:color-mix(in srgb, var(--c) 6%, #fff); border-top:1px dashed color-mix(in srgb, var(--c) 35%, #fff); }
+        .jd-rincian-total > span { display:flex; flex-direction:column; font-size:.88rem; font-weight:800; color:#0f172a; }
+        .jd-rincian-total > span small { font-size:.72rem; font-weight:500; color:#64748b; }
+        .jd-rincian-total > b { font-family:'Plus Jakarta Sans','Poppins',sans-serif; font-size:1.35rem; font-weight:800;
+            color:#ea580c; letter-spacing:-.01em; white-space:nowrap; }
+
         @media (max-width:575.98px) {
+            .jd-kartu { padding:14px 14px 16px; }
+            .jd-bagian { gap:8px; }
+            .jd-bagian-chip { padding:13px 6px 11px; }
+            .jd-bagian-ic { width:36px; height:36px; border-radius:12px; font-size:1rem; }
             .jd-addon-sec { margin-top:22px; padding-top:18px; }
             .jd-addons { grid-template-columns:minmax(0, 1fr); }
-            .jd-addon { padding:13px 14px; gap:10px; }
-            .jd-addon-harga { padding:5px 11px; font-size:.78rem; }
+            .jd-rincian-list { padding:4px 14px; }
+            .jd-rincian-head, .jd-rincian-total { padding:13px 14px; }
+            .jd-rincian-total > b { font-size:1.2rem; }
         }
-        /* Ringkasan total */
-        .jd-total { margin:14px 0 4px; padding:13px 15px; border:1px solid #fde68a; border-radius:14px; background:linear-gradient(180deg,#fffbeb,#fff); }
-        .jd-total-row { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:.85rem; color:#78350f; padding:3px 0; }
-        .jd-total-row.is-final { border-top:1px dashed #fcd34d; margin-top:6px; padding-top:9px; font-size:.95rem; }
-        .jd-total-row.is-final b { color:#b45309; font-size:1.05rem; }
+        @media (prefers-reduced-motion: reduce) {
+            .jd-bagian-chip, .jd-addon { transition:none; }
+            .jd-bagian-chip:hover, .jd-addon:hover { transform:none; }
+        }
 
         /* ===================================================================
            TAMPILAN BARU HALAMAN DETAIL PRODUK
@@ -654,7 +719,7 @@
 
                         @if (! $draftUploadId)
                         <label class="jd-drop">
-                            <input type="file" wire:model="dokumenJasa" accept=".pdf" class="jd-drop-input">
+                            <input type="file" wire:model="dokumenJasa" accept=".pdf" class="jd-drop-input" title="">
                             <span wire:loading wire:target="dokumenJasa" class="jd-drop-state">
                                 <i class="bi bi-arrow-repeat jd-spin"></i> Menghitung halaman…
                             </span>
@@ -688,7 +753,7 @@
 
                         @if (! $draftNamaKerja)
                         <label class="jd-drop">
-                            <input type="file" wire:model="dokumenKerja" accept=".docx" class="jd-drop-input">
+                            <input type="file" wire:model="dokumenKerja" accept=".docx" class="jd-drop-input" title="">
                             <span wire:loading wire:target="dokumenKerja" class="jd-drop-state">
                                 <i class="bi bi-arrow-repeat jd-spin"></i> Mengunggah…
                             </span>
@@ -713,47 +778,58 @@
                         @endif
 
                         {{-- Bagian dokumen yang tak perlu diparafrase --}}
-                        <div class="jd-exc" style="margin-top:16px;">
-                            <div class="jd-exc-head">
-                                <b>Bagian yang tidak perlu diparafrase</b>
-                                <small>Biasanya bagian ini dibiarkan apa adanya. Hilangkan centang bila Anda ingin bagian itu tetap dikerjakan.</small>
+                        @php
+                            $bagianDok = [
+                                ['model' => 'excludeCover', 'on' => $excludeCover, 'label' => 'Cover', 'ikon' => 'bi-journal-bookmark', 'warna' => '#2563eb'],
+                                ['model' => 'excludeDaftarIsi', 'on' => $excludeDaftarIsi, 'label' => 'Daftar Isi', 'ikon' => 'bi-list-ol', 'warna' => '#7c3aed'],
+                                ['model' => 'excludeDaftarPustaka', 'on' => $excludeDaftarPustaka, 'label' => 'Daftar Pustaka', 'ikon' => 'bi-book', 'warna' => '#0d9488'],
+                            ];
+                        @endphp
+                        <div class="jd-kartu" style="--k: #d97706; margin-top:16px;">
+                            <div class="jd-kepala">
+                                <span class="jd-kepala-ic"><i class="bi bi-bookmark-x"></i></span>
+                                <span class="jd-kepala-txt">
+                                    <b>Bagian yang tidak perlu diparafrase</b>
+                                    <small>Bagian yang dicentang dibiarkan apa adanya. Hilangkan centang bila Anda ingin bagian itu tetap dikerjakan.</small>
+                                </span>
                             </div>
                             <div class="jd-bagian">
-                                <label class="jd-bagian-chip {{ $excludeCover ? 'is-on' : '' }}">
-                                    <input type="checkbox" wire:model.live="excludeCover">
+                                @foreach ($bagianDok as $bg)
+                                <label class="jd-bagian-chip {{ $bg['on'] ? 'is-on' : '' }}" style="--o: {{ $bg['warna'] }}">
+                                    <input type="checkbox" wire:model.live="{{ $bg['model'] }}">
                                     <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
-                                    <span>Cover</span>
+                                    <span class="jd-bagian-ic"><i class="bi {{ $bg['ikon'] }}"></i></span>
+                                    <span class="jd-bagian-nama">{{ $bg['label'] }}</span>
+                                    <small class="jd-bagian-status">{{ $bg['on'] ? 'Dilewati' : 'Diparafrase' }}</small>
                                 </label>
-                                <label class="jd-bagian-chip {{ $excludeDaftarIsi ? 'is-on' : '' }}">
-                                    <input type="checkbox" wire:model.live="excludeDaftarIsi">
-                                    <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
-                                    <span>Daftar Isi</span>
-                                </label>
-                                <label class="jd-bagian-chip {{ $excludeDaftarPustaka ? 'is-on' : '' }}">
-                                    <input type="checkbox" wire:model.live="excludeDaftarPustaka">
-                                    <span class="jd-bagian-box"><i class="bi bi-check-lg"></i></span>
-                                    <span>Daftar Pustaka</span>
-                                </label>
+                                @endforeach
                             </div>
                         </div>
 
                         {{-- Halaman yang tak perlu dikerjakan (tidak ditagih) --}}
-                        <div class="jd-exc">
-                            <div class="jd-exc-head">
-                                <b>Ada halaman yang tidak perlu diparafrase?</b>
-                                <small>Mis. cover, daftar isi, atau daftar pustaka. Halaman ini <b>tidak dihitung</b> dalam harga.</small>
+                        <div class="jd-kartu" style="--k: #2563eb">
+                            <div class="jd-kepala">
+                                <span class="jd-kepala-ic"><i class="bi bi-file-earmark-minus"></i></span>
+                                <span class="jd-kepala-txt">
+                                    <b>Ada halaman yang tidak perlu diparafrase?</b>
+                                    <small>Mis. cover, daftar isi, atau daftar pustaka. Halaman ini <b>tidak dihitung</b> dalam harga.</small>
+                                </span>
                             </div>
 
-                            <input type="text" class="jd-exc-input"
-                                wire:model.live.debounce.500ms="halamanDikecualikan"
-                                placeholder="Contoh: 1,2,12  atau  1-3,12">
+                            <label class="jd-exc-field">
+                                <i class="bi bi-hash"></i>
+                                <input type="text" class="jd-exc-input"
+                                    wire:model.live.debounce.500ms="halamanDikecualikan"
+                                    aria-label="Nomor halaman yang tidak perlu diparafrase"
+                                    placeholder="Contoh: 1,2,12  atau  1-3,12">
+                            </label>
 
                             <div class="jd-exc-quick">
                                 <button type="button" wire:click="tandaiHalamanPertama" class="jd-exc-btn">
-                                    <i class="bi bi-plus-lg"></i> Halaman pertama
+                                    <i class="bi bi-skip-start"></i> Halaman pertama
                                 </button>
                                 <button type="button" wire:click="tandaiHalamanTerakhir" class="jd-exc-btn">
-                                    <i class="bi bi-plus-lg"></i> Halaman terakhir
+                                    <i class="bi bi-skip-end"></i> Halaman terakhir
                                 </button>
                                 @if (count($this->halamanExclude))
                                 <button type="button" wire:click="hapusHalamanExclude" class="jd-exc-btn is-clear">
@@ -764,7 +840,7 @@
 
                             @if (count($this->halamanExclude))
                             <div class="jd-exc-info">
-                                <i class="bi bi-check-circle-fill"></i>
+                                <span class="jd-exc-info-ic"><i class="bi bi-check-lg"></i></span>
                                 <span>
                                     Dikecualikan <b>{{ count($this->halamanExclude) }} halaman</b>
                                     (nomor {{ implode(', ', $this->halamanExclude) }}) —
@@ -864,48 +940,92 @@
                     {{-- ===== Add-on opsional (produk jasa) ===== --}}
                     @if ($product->butuh_file && $product->addonAktif()->count())
                     <div class="pd-packages jd-addon-sec">
-                        <h4 class="pd-sub"><i class="bi bi-plus-circle"></i> Tambahan Opsional</h4>
-                        <p class="jd-hint">
-                            {{ $product->addonPilihSatu() ? 'Pilih salah satu, atau lewati saja.' : 'Boleh pilih lebih dari satu, atau lewati saja.' }}
-                        </p>
+                        <div class="jd-addon-head">
+                            <h4 class="pd-sub"><i class="bi bi-plus-circle"></i> Tambahan Opsional</h4>
+                            <span class="jd-addon-mode">
+                                <i class="bi {{ $product->addonPilihSatu() ? 'bi-record-circle' : 'bi-ui-checks-grid' }}"></i>
+                                {{ $product->addonPilihSatu() ? 'Pilih salah satu' : 'Boleh lebih dari satu' }}
+                            </span>
+                        </div>
+                        <p class="jd-hint">Tidak wajib — lewati saja bila tidak diperlukan.</p>
                         <div class="jd-addons">
                             @foreach ($product->addonAktif() as $ad)
-                            @php $aktif = in_array($ad->id, $selectedAddons, true); @endphp
+                            @php
+                                $aktif = in_array($ad->id, $selectedAddons, true);
+                                $ia = \App\Support\IkonAddon::untuk($ad->nama, (bool) $ad->cek_ai);
+                            @endphp
                             <button type="button" wire:click="toggleAddon('{{ $ad->id }}')"
-                                class="jd-addon {{ $aktif ? 'is-on' : '' }}">
-                                <span class="jd-addon-box"><i class="bi bi-check-lg"></i></span>
-                                <span class="jd-addon-txt">
-                                    <b>{{ $ad->nama }}</b>
-                                    @if ($ad->keterangan)<small>{{ $ad->keterangan }}</small>@endif
+                                class="jd-addon {{ $aktif ? 'is-on' : '' }}" style="--a: {{ $ia['warna'] }}"
+                                aria-pressed="{{ $aktif ? 'true' : 'false' }}">
+                                <span class="jd-addon-atas">
+                                    <span class="jd-addon-ic"><i class="bi {{ $ia['ikon'] }}"></i></span>
+                                    <span class="jd-addon-txt">
+                                        <b>{{ $ad->nama }}</b>
+                                        @if ($ad->keterangan)<small>{{ $ad->keterangan }}</small>@endif
+                                    </span>
                                 </span>
-                                <span class="jd-addon-harga">+Rp&nbsp;{{ number_format($ad->harga, 0, ',', '.') }}</span>
+                                <span class="jd-addon-box"><i class="bi bi-check-lg"></i></span>
+                                <span class="jd-addon-bawah">
+                                    <span class="jd-addon-harga {{ $ad->harga ? '' : 'is-gratis' }}">{{ $ad->harga ? '+Rp '.number_format($ad->harga, 0, ',', '.') : 'Gratis' }}</span>
+                                    <span class="jd-addon-aksi"><i class="bi {{ $aktif ? 'bi-check2-circle' : 'bi-plus-lg' }}"></i> {{ $aktif ? 'Ditambahkan' : 'Tambahkan' }}</span>
+                                </span>
                             </button>
                             @endforeach
                         </div>
                     </div>
                     @endif
 
-                    {{-- Ringkasan harga jasa per halaman --}}
-                    @if ($product->jasaPerHalaman() && $jumlahHalaman > 0)
-                    <div class="jd-total">
-                        <div class="jd-total-row">
-                            <span>{{ $this->halamanDihitung }} halaman × Rp {{ number_format($product->hargaPerHalaman(), 0, ',', '.') }}</span>
-                            <b>Rp {{ number_format($this->hargaPerHalamanTotal, 0, ',', '.') }}</b>
+                    {{-- Rincian biaya jasa per halaman: tiap add-on terpilih dirinci,
+                         bukan digabung jadi satu baris "Tambahan". --}}
+                    @if ($product->jasaPerHalaman() && $jumlahHalaman)
+                    @php
+                        $addonDipilih = $product->addonAktif()->whereIn('id', $selectedAddons);
+                        $jmlKecuali = count($this->halamanExclude);
+                    @endphp
+                    <div class="jd-rincian">
+                        <div class="jd-rincian-head">
+                            <span class="jd-kepala-ic"><i class="bi bi-receipt"></i></span>
+                            <span class="jd-kepala-txt">
+                                <b>Rincian Biaya</b>
+                                <small>Dari {{ $jumlahHalaman }} halaman yang terbaca di PDF Anda.</small>
+                            </span>
                         </div>
-                        @if (count($this->halamanExclude))
-                        <div class="jd-total-row" style="color:#15803d;">
-                            <span>{{ count($this->halamanExclude) }} halaman dikecualikan</span>
-                            <b>tidak ditagih</b>
-                        </div>
-                        @endif
-                        @if ($this->addonsTotal > 0)
-                        <div class="jd-total-row">
-                            <span>Tambahan</span>
-                            <b>+Rp {{ number_format($this->addonsTotal, 0, ',', '.') }}</b>
-                        </div>
-                        @endif
-                        <div class="jd-total-row is-final">
-                            <span>Total</span>
+                        <ul class="jd-rincian-list">
+                            <li class="jd-rincian-row" style="--r: #2563eb">
+                                <span class="jd-rincian-ic"><i class="bi bi-file-earmark-text"></i></span>
+                                <span class="jd-rincian-lbl">
+                                    Parafrase {{ $this->halamanDihitung }} halaman
+                                    <small>Rp {{ number_format($product->hargaPerHalaman(), 0, ',', '.') }} / halaman</small>
+                                </span>
+                                <b class="jd-rincian-nilai">Rp {{ number_format($this->hargaPerHalamanTotal, 0, ',', '.') }}</b>
+                            </li>
+                            @if ($jmlKecuali)
+                            <li class="jd-rincian-row" style="--r: #16a34a">
+                                <span class="jd-rincian-ic"><i class="bi bi-dash-circle"></i></span>
+                                <span class="jd-rincian-lbl">
+                                    {{ $jmlKecuali }} halaman dikecualikan
+                                    <small>Nomor {{ implode(', ', $this->halamanExclude) }}</small>
+                                </span>
+                                <b class="jd-rincian-nilai is-hijau">Tidak ditagih</b>
+                            </li>
+                            @endif
+                            @foreach ($addonDipilih as $ad)
+                            @php $ia = \App\Support\IkonAddon::untuk($ad->nama, (bool) $ad->cek_ai); @endphp
+                            <li class="jd-rincian-row" style="--r: {{ $ia['warna'] }}">
+                                <span class="jd-rincian-ic"><i class="bi {{ $ia['ikon'] }}"></i></span>
+                                <span class="jd-rincian-lbl">
+                                    {{ $ad->nama }}
+                                    <small>Tambahan</small>
+                                </span>
+                                <b class="jd-rincian-nilai {{ $ad->harga ? '' : 'is-hijau' }}">{{ $ad->harga ? '+Rp '.number_format($ad->harga, 0, ',', '.') : 'Gratis' }}</b>
+                            </li>
+                            @endforeach
+                        </ul>
+                        <div class="jd-rincian-total">
+                            <span>
+                                Total bayar
+                                <small>{{ $addonDipilih->count() ? 'Sudah termasuk tambahan' : 'Belum ada tambahan' }}</small>
+                            </span>
                             <b>Rp {{ number_format($this->hargaPerHalamanTotal + $this->addonsTotal, 0, ',', '.') }}</b>
                         </div>
                     </div>
