@@ -59,12 +59,26 @@ it('rata-rata 4,3 tampil dengan setengah bintang, bukan dibulatkan', function ()
         ->assertSeeHtml('bi-star-half');
 });
 
-it('tanpa ulasan tampil ajakan menulis ulasan pertama, tanpa ringkasan kosong', function () {
+it('tanpa ulasan, formulir langsung terbuka di samping ajakan — tanpa ringkasan kosong', function () {
     $p = produkUntukUlasan();
 
+    // Formulir TIDAK dilipat (tanpa x-show): menulis ulasan adalah satu-satunya
+    // hal yang bisa dilakukan di bagian ini, jadi tidak perlu diklik dulu.
     Livewire::test(ProductReviews::class, ['productId' => $p->id])
         ->assertSeeHtml('class="ul-kosong"')
+        ->assertSeeHtml('class="ul-form" x-ref="form" >')
+        ->assertDontSeeHtml('x-show="showForm"')
         ->assertDontSeeHtml('class="ul-ringkas"');
+});
+
+it('sesudah ada ulasan, formulir dilipat di balik tombol Tulis Ulasan', function () {
+    $p = produkUntukUlasan();
+    ulasanUji($p, 5, 'Mantap sekali');
+
+    Livewire::test(ProductReviews::class, ['productId' => $p->id])
+        ->assertSeeHtml('class="ul-ringkas"')
+        ->assertSeeHtml('x-show="showForm"')
+        ->assertSee('Tulis Ulasan');
 });
 
 it('ulasan baru masuk sebagai pending dan pengirim melihat ucapan terima kasih', function () {
@@ -77,7 +91,7 @@ it('ulasan baru masuk sebagai pending dan pengirim melihat ucapan terima kasih',
         ->call('submit')
         ->assertHasNoErrors()
         ->assertSeeHtml('class="ul-terima"')
-        ->assertDontSeeHtml('class="ul-kosong"');
+        ->assertDontSeeHtml('class="ul-form"');
 
     expect(ProductReview::where('product_id', $p->id)->sole()->status)->toBe('pending');
 });
