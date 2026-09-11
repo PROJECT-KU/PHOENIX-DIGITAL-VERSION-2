@@ -65,6 +65,8 @@ class ProductReviews extends Component
             'reviews' => (clone $base)->latest()->take(20)->get(),
             'avg' => (clone $base)->avg('rating'),
             'count' => (clone $base)->count(),
+            // Jumlah ulasan per bintang (5 => 12, 4 => 3, …) untuk batang sebaran.
+            'sebaran' => (clone $base)->selectRaw('rating, count(*) as n')->groupBy('rating')->pluck('n', 'rating')->all(),
         ]);
     }
 }

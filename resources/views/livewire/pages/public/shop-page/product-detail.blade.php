@@ -805,11 +805,13 @@
     </section>
 
     {{-- Ulasan & rating produk --}}
-    <section class="rev-section">
+    {{-- Selebar kontainer, bukan dikurung 800px di tengah: kepala bagiannya
+         kini sama dengan "Produk Terkait" di bawahnya, dan dua kepala bagian
+         yang tepi kirinya berbeda terbaca sebagai dua halaman. Warna kategori
+         diteruskan lewat --c supaya aksen ulasan sewarna dengan produknya. --}}
+    <section class="rev-section" style="--c: {{ $warnaKat ?? '#f26522' }}">
         <div class="container">
-            <div style="max-width: 800px; margin: 0 auto;">
-                @livewire(\App\Livewire\Components\ProductReviews::class, ['productId' => $product->id], key('rev-'.$product->id))
-            </div>
+            @livewire(\App\Livewire\Components\ProductReviews::class, ['productId' => $product->id], key('rev-'.$product->id))
         </div>
     </section>
 
