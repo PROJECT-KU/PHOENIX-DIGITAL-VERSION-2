@@ -116,28 +116,63 @@
          lain. Gaya lamanya ada di public-custom-styles.css yang tidak ikut
          terdeploy, jadi pembenahannya harus inline. --}}
     <style>
+        /* PITA JADI KARTU.
+
+           Sebelumnya judul halaman berupa pita selebar layar setinggi ~200px:
+           pada layar lebar, bidang persiknya membentang dari tepi ke tepi dan
+           isinya — tiga baris teks dan satu remah roti — mengambang kecil di
+           tengah bidang yang terlalu besar untuknya.
+
+           Kini pitanya bening dan KONTAINERNYA yang jadi kartu: selebar isi
+           halaman di bawahnya, sejajar dengan kartu-kartu lain, dengan tinggi
+           yang mengikuti isinya sendiri. */
         .ph-page-title {
             --c: #f26522;
-            position: relative; overflow: hidden;
-            background:
-                radial-gradient(55% 130% at 100% 0%, color-mix(in srgb, var(--c) 11%, transparent) 0%, transparent 62%),
-                radial-gradient(45% 110% at 0% 100%, rgba(251, 169, 25, .08) 0%, transparent 60%),
-                #fffdfa !important;
-            border-bottom: 1px solid #f1ece6;
-            padding: 38px 0 34px;
+            background: transparent !important; border: 0 !important;
+            padding: 20px 0 4px !important;
         }
-        /* Titik-titik samar di sisi kanan: memberi bidangnya permukaan tanpa
-           menambah satu unsur pun yang harus dibaca. Dipudarkan ke kiri supaya
-           tidak pernah menyentuh judul. */
-        .ph-page-title::after {
-            content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 42%;
-            background-image: radial-gradient(color-mix(in srgb, var(--c) 22%, transparent) 1px, transparent 1px);
-            background-size: 20px 20px;
+        /* KARTUNYA DIGAMBAR DI DALAM CELAH KONTAINER, bukan pada kontainernya.
+
+           Versi sebelumnya menjadikan .container itu sendiri kartu — termasuk
+           celah 12px di kiri-kanannya yang mestinya kosong. Hasilnya kartu
+           24px lebih lebar daripada isi halaman di bawahnya (1320px vs 1296px
+           di layar lebar), dan tepi-tepinya tidak pernah sejajar dengan bilah
+           saring atau kisi produk: persis yang membuatnya terasa terlalu lebar.
+
+           Bidang kartunya kini ::before yang menjorok 12px dari kiri-kanan —
+           tepat selebar celahnya — jadi kartu otomatis sejajar dengan isi
+           halaman di SETIAP ukuran kontainer Bootstrap (540, 720, 960, 1140,
+           1320), tanpa satu angka lebar pun yang harus dipatok. */
+        .ph-page-title > .container {
+            position: relative; gap: 24px;
+            padding: 22px 40px;  /* 12px celah + 28px ruang dalam kartu */
+        }
+        .ph-page-title > .container::before {
+            content: ""; position: absolute; top: 0; bottom: 0; left: 12px; right: 12px; z-index: 0;
+            border-radius: 22px; border: 1px solid #f1e6da;
+            box-shadow: 0 14px 34px rgba(150, 100, 60, .07);
+            background:
+                /* Bola cahaya berwarna di pojok kanan atas — perlakuan kartu
+                   Cara Pesan dalam skala yang lebih besar. Digambar sebagai
+                   lapisan latar supaya ikut terpotong sudut kartu. */
+                radial-gradient(38% 120% at 100% 0%, color-mix(in srgb, var(--c) 15%, transparent) 0%, transparent 70%),
+                radial-gradient(50% 120% at 0% 100%, rgba(251, 169, 25, .09) 0%, transparent 60%),
+                #fff;
+            pointer-events: none;
+        }
+        /* Titik-titik samar di sisi kanan kartu, memudar ke kiri supaya tidak
+           pernah menyentuh judul. Sudut kanannya ikut membulat supaya titiknya
+           tidak menyembul keluar dari lengkung kartu. */
+        .ph-page-title > .container::after {
+            content: ""; position: absolute; top: 1px; bottom: 1px; right: 13px; width: 40%; z-index: 0;
+            border-radius: 0 21px 21px 0;
+            background-image: radial-gradient(color-mix(in srgb, var(--c) 24%, transparent) 1px, transparent 1px);
+            background-size: 18px 18px;
             -webkit-mask-image: linear-gradient(270deg, #000 0%, transparent 100%);
             mask-image: linear-gradient(270deg, #000 0%, transparent 100%);
             pointer-events: none;
         }
-        .ph-page-title > .container { position: relative; z-index: 1; gap: 24px; }
+        .ph-page-title > .container > * { position: relative; z-index: 1; }
 
         /* Label pembuka: ubin ikon berwarna + teks berjarak lebar, bahasa yang
            sama dengan kartu Cara Pesan dan Kategori Populer. Pil lamanya
@@ -146,7 +181,7 @@
         .ph-page-head .ph-sec-eyebrow {
             display: inline-flex !important; align-items: center; gap: 10px;
             background: none !important; border: 0 !important; padding: 0 !important;
-            margin-bottom: 12px !important;
+            margin-bottom: 9px !important;
             font-size: .74rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
             color: var(--c) !important;
         }
@@ -166,12 +201,12 @@
         .ph-page-head h1 {
             font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif !important;
             font-weight: 800; color: #1c1f26;
-            font-size: clamp(1.9rem, 3.4vw, 2.6rem); line-height: 1.08;
-            letter-spacing: -.032em; margin: 0;
+            font-size: clamp(1.65rem, 2.6vw, 2.2rem); line-height: 1.08;
+            letter-spacing: -.03em; margin: 0;
         }
         .ph-page-head p {
-            color: #6b7280; font-size: 1rem; line-height: 1.6;
-            margin: 10px 0 0; max-width: 54ch;
+            color: #6b7280; font-size: .96rem; line-height: 1.55;
+            margin: 6px 0 0; max-width: 54ch;
         }
 
         /* Remah roti jadi satu pil, bukan teks lepas di pojok. Sebagai teks
@@ -203,8 +238,9 @@
             .ph-page-title .breadcrumbs { margin-top: 16px; }
         }
         @media (max-width: 575.98px) {
-            .ph-page-title { padding: 26px 0 24px; }
-            .ph-page-title::after { width: 60%; opacity: .6; }
+            .ph-page-title > .container { padding: 20px 30px; }
+            .ph-page-title > .container::before { border-radius: 18px; }
+            .ph-page-title > .container::after { width: 55%; opacity: .6; border-radius: 0 17px 17px 0; }
             .ph-page-head p { font-size: .94rem; }
             .ph-page-title .breadcrumbs ol { font-size: .8rem; padding: 7px 14px; }
         }
