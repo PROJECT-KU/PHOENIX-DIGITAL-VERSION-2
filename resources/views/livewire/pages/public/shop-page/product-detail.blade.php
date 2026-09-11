@@ -52,7 +52,7 @@
 
             /* Gambar ikut tinggi kotaknya. object-fit:contain dipakai (bukan
                cover) supaya logo produk tidak terpotong saat kotaknya memendek. */
-            .pd-col-media .pd-media { flex:1; min-height:0; display:flex; }
+            .pd-col-media .pd-media { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; }
             .pd-col-media .pd-media img { width:100%; height:100%; aspect-ratio:auto; object-fit:contain; }
         }
 
@@ -146,9 +146,11 @@
 
         /* Add-on — dipisah jelas dari blok paket di atasnya */
         .jd-addon-sec { margin-top:26px; padding-top:22px; border-top:1px solid var(--ph-line); }
-        .jd-addons { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
+        /* min(280px,100%) & minmax(0,1fr): kolom tidak boleh melebar mengikuti
+           nama add-on yang nowrap — dulu di HP kartunya luber ±30px ke kanan. */
+        .jd-addons { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap:10px; }
         .jd-addon {
-            display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+            display:flex; align-items:center; gap:12px; width:100%; min-width:0; text-align:left;
             padding:14px 16px; border:1.5px solid var(--ph-line); border-radius:14px; background:#fff;
             cursor:pointer; transition:border-color .18s, background .18s, box-shadow .18s;
         }
@@ -178,7 +180,7 @@
         .jd-addon.is-on .jd-addon-harga { background:#f59e0b; color:#fff; }
         @media (max-width:575.98px) {
             .jd-addon-sec { margin-top:22px; padding-top:18px; }
-            .jd-addons { grid-template-columns:1fr; }
+            .jd-addons { grid-template-columns:minmax(0, 1fr); }
             .jd-addon { padding:13px 14px; gap:10px; }
             .jd-addon-harga { padding:5px 11px; font-size:.78rem; }
         }
@@ -218,6 +220,29 @@
             box-shadow: 0 20px 48px color-mix(in srgb, var(--c) 12%, transparent);
         }
         .pd-section .pd-media img { mix-blend-mode: multiply; }
+
+        /* Tanpa gambar (atau berkasnya hilang): ubin besar ikon kategori,
+           bukan teks alt mentah di pojok kotak kosong. Sama dengan detail paket. */
+        .pd-ubin { display: none; }
+        .pd-media.is-kosong { display: flex; align-items: center; justify-content: center; min-height: 300px; }
+        /* position+z-index: .pd-media::after (kilau putih, absolut) menutupi
+           ubin dan membuatnya pucat bila ubin tidak diangkat di atasnya. */
+        .pd-media.is-kosong .pd-ubin {
+            position: relative; z-index: 1;
+            display: flex; align-items: center; justify-content: center;
+            width: 112px; height: 112px; border-radius: 34px;
+            background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff));
+            color: #fff; font-size: 2.8rem;
+            box-shadow: 0 0 0 6px #fff, 0 24px 44px -18px color-mix(in srgb, var(--c) 85%, transparent);
+            transform: rotate(-6deg); transition: transform .35s ease;
+        }
+        .pd-media.is-kosong:hover .pd-ubin { transform: rotate(0deg) translateY(-4px); }
+        .pd-ubin i.bi, .pd-ubin i.bi::before { display: block; line-height: 1; }
+        @media (max-width: 575.98px) {
+            .pd-media.is-kosong { min-height: 240px; }
+            .pd-media.is-kosong .pd-ubin { width: 88px; height: 88px; border-radius: 28px; font-size: 2.2rem; }
+        }
+        @media (prefers-reduced-motion: reduce) { .pd-ubin { transition: none; } }
 
         /* Lencana diskon DITENANGKAN — sama dengan lencana kartu di beranda
            (partials/media-produk-style): tanpa miring, tanpa denyut, jingga
@@ -482,6 +507,13 @@
         // memakai jingga merek.
         $kat = \App\Support\KategoriBeranda::untukProduk($product->nama_akun);
         $warnaKat = $kat['warna'] ?? '#f26522';
+        $ikonKat = $kat['ikon'] ?? 'bi-box-seam';
+
+        // Gambar hanya dipakai bila berkasnya benar-benar ada; selain itu
+        // kotak gambar menampilkan ubin ikon kategori.
+        $gambarProduk = $product->image && is_file(public_path('storage/img/Product/' . $product->image))
+            ? asset('storage/img/Product/' . $product->image)
+            : null;
     @endphp
 
     <!-- Page Title -->
@@ -502,12 +534,12 @@
     </div>
     <!-- End Page Title -->
 
-    <section class="pd-section" style="--c: {{ $warnaKat }}">
+    <section class="pd-section" data-pd-beku style="--c: {{ $warnaKat }}">
         <div class="container">
             <div class="row g-4 g-lg-5 pd-row">
                 {{-- Media --}}
                 <div class="col-lg-6 pd-col-media">
-                    <div class="pd-media">
+                    <div class="pd-media {{ $gambarProduk ? '' : 'is-kosong' }}">
                         @if ($best)
                             <span class="pd-badge {{ $isFlash ? 'is-flash' : '' }}">
                                 @if ($isFlash)<i class="bi bi-lightning-charge-fill"></i> @endif
@@ -518,12 +550,10 @@
                                 @endif
                             </span>
                         @endif
-                        @if ($product->image)
-                            <img src="{{ asset('storage/img/Product/' . $product->image) }}" alt="{{ $product->nama_akun }}">
-                        @else
-                            <img src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                alt="{{ $product->nama_akun }}">
+                        @if ($gambarProduk)
+                            <img src="{{ $gambarProduk }}" alt="{{ $product->nama_akun }}" onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                         @endif
+                        <span class="pd-ubin" aria-hidden="true"><i class="bi {{ $ikonKat }}"></i></span>
                     </div>
 
                 </div>
@@ -996,6 +1026,62 @@
             </div>
         </section>
     @endif
+    {{-- Kotak gambar (≥992px) setinggi kolom kanan SAAT DIMUAT, lalu tingginya
+         dibekukan. Tanpa ini, di produk jasa kotak gambar ikut memanjang ratusan
+         piksel begitu file diunggah (kolom kanan bertambah langkah DOCX, pilihan
+         bagian, dan ringkasan harga).
+
+         Gaya ditaruh di <head>, bukan atribut style: morph Livewire akan
+         menghapus atribut yang tidak ada di HTML server. Diukur ulang hanya saat
+         lebar layar berubah DAN belum ada file terunggah (.jd-file). Pemilihnya
+         dibatasi [data-pd-beku] supaya tidak terbawa ke halaman lain lewat
+         wire:navigate. --}}
+    <script>
+        (function () {
+            var gaya = document.getElementById('pd-beku-media');
+            if (!gaya) {
+                gaya = document.createElement('style');
+                gaya.id = 'pd-beku-media';
+                document.head.appendChild(gaya);
+            }
+            gaya.textContent = '';
+            var lebarTerukur = 0;
+
+            function ukur(paksa) {
+                var media = document.querySelector('[data-pd-beku] .pd-col-media .pd-media');
+                if (!media) return;
+                if (window.innerWidth < 992) { gaya.textContent = ''; lebarTerukur = 0; return; }
+                if (!paksa && window.innerWidth === lebarTerukur) return;
+                if (lebarTerukur && document.querySelector('[data-pd-beku] .jd-file')) return;
+
+                gaya.textContent = '';
+                var tinggi = Math.round(media.getBoundingClientRect().height);
+                lebarTerukur = window.innerWidth;
+                var s = '[data-pd-beku] ';
+                gaya.textContent = [
+                    '@media (min-width: 992px) {',
+                    s + '.pd-row { grid-template-rows: auto auto 1fr; }',
+                    s + '.pd-row > .pd-col-media, ' + s + '.pd-row > .pd-col-trust { align-self: start; }',
+                    s + '.pd-col-media .pd-media { flex: none; width: 100%; height: ' + tinggi + 'px; }',
+                    '}'
+                ].join('\n');
+            }
+
+            window.__pdBekuUkur = ukur;
+            ukur(true);
+            if (document.readyState !== 'complete') window.addEventListener('load', function () { ukur(true); }, { once: true });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ukur(true); });
+            if (!window.__pdBekuResize) {
+                var jeda;
+                window.__pdBekuResize = true;
+                window.addEventListener('resize', function () {
+                    clearTimeout(jeda);
+                    jeda = setTimeout(function () { window.__pdBekuUkur && window.__pdBekuUkur(false); }, 150);
+                });
+            }
+        })();
+    </script>
+
     {{-- Meta Pixel: ViewContent.
          Dipasang sebagai skrip halaman (bukan lewat dispatch Livewire) karena ini
          peristiwa saat halaman DIMUAT. Saat pengunjung berpindah produk lewat
