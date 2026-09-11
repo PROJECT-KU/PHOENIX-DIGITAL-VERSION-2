@@ -237,6 +237,157 @@
         .jd-total-row { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:.85rem; color:#78350f; padding:3px 0; }
         .jd-total-row.is-final { border-top:1px dashed #fcd34d; margin-top:6px; padding-top:9px; font-size:.95rem; }
         .jd-total-row.is-final b { color:#b45309; font-size:1.05rem; }
+
+        /* ===================================================================
+           TAMPILAN BARU HALAMAN DETAIL PRODUK
+
+           Warna halaman mengikuti KATEGORI produknya (--c, dipasang di kartu
+           judul dan .pd-section). Unsur identitas — gambar, label kategori,
+           paket terpilih, ikon subjudul — memakai warna itu. Harga dan tombol
+           beli tetap jingga merek: di seluruh toko, jingga berarti "bayar di
+           sini", dan tombol beli yang berganti warna tiap produk membuat orang
+           harus mencarinya lagi di tiap halaman.
+           =================================================================== */
+
+        /* --- Gambar produk: latar diwarnai kategorinya --- */
+        .pd-section .pd-media {
+            background:
+                radial-gradient(70% 90% at 100% 0%, color-mix(in srgb, var(--c) 16%, transparent) 0%, transparent 62%),
+                radial-gradient(60% 80% at 0% 100%, color-mix(in srgb, var(--c) 9%, transparent) 0%, transparent 60%),
+                #fff;
+            border-color: color-mix(in srgb, var(--c) 18%, #eceff4);
+            box-shadow: 0 20px 48px color-mix(in srgb, var(--c) 12%, transparent);
+        }
+        .pd-section .pd-media img { mix-blend-mode: multiply; }
+
+        /* Lencana diskon DITENANGKAN — sama dengan lencana kartu di beranda
+           (partials/media-produk-style): tanpa miring, tanpa denyut, jingga
+           padat.
+
+           Animasi fsBadgePop memutarnya -6 derajat terus-menerus. Selain
+           terbaca sebagai stiker cetakan, kemiringan itu yang membuat ikonnya
+           tampak turun 5 piksel: ikon duduk di ujung kiri lencana, dan ujung
+           kiri itulah yang terangkat-turun oleh putarannya. Diukur datar,
+           ikonnya tepat di tengah. Animasi mengalahkan deklarasi biasa di
+           dalam cascade, jadi `animation: none` wajib ditulis — `transform:
+           none` saja tidak pernah menang. */
+        .pd-section .pd-badge,
+        .pd-section .pd-badge.is-flash {
+            animation: none; transform: none;
+            background: #f26522;
+            box-shadow: 0 6px 16px rgba(242, 101, 34, .28);
+        }
+        .pd-badge i.bi { display: block; line-height: 1; }
+        .pd-badge i.bi::before { display: block; line-height: 1; }
+
+        /* --- Label kategori di atas nama produk --- */
+        .pd-kat {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: color-mix(in srgb, var(--c) 11%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
+            color: var(--c); text-decoration: none;
+            border-radius: 999px; padding: 6px 14px 6px 8px;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .8rem; line-height: 1;
+            transition: background .2s ease, border-color .2s ease;
+        }
+        a.pd-kat:hover { color: var(--c); background: color-mix(in srgb, var(--c) 18%, #fff); }
+        .pd-kat i.bi {
+            width: 24px; height: 24px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--c); color: #fff; font-size: .72rem; line-height: 1;
+        }
+        .pd-kat i.bi::before { display: block; line-height: 1; }
+
+        /* --- Nama produk tidak dicetak dua kali ---
+           Di layar lebar nama produk sudah tampil besar di kartu judul, tepat
+           100px di atasnya; mengulangnya di kolom beli membuat dua judul
+           identik bertumpuk. Di layar sempit keduanya terpisah ~670px, dan
+           di sanalah pengulangan justru berguna: pembeli yang menggulir sampai
+           tombol beli masih melihat produk apa yang ia pilih. */
+        .pd-title {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif !important;
+            letter-spacing: -.025em;
+        }
+        @media (min-width: 992px) {
+            .pd-col-info .pd-title { display: none; }
+            .pd-col-info .pd-kat { margin-bottom: 14px; }
+        }
+        @media (max-width: 991.98px) {
+            .pd-col-info .pd-title { margin-top: 12px; }
+        }
+
+        .pd-price-now, .pd-sub { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif !important; }
+        .pd-price-now { letter-spacing: -.03em; font-variant-numeric: lining-nums tabular-nums; }
+        .pd-sub i.bi { color: var(--c); display: block; line-height: 1; }
+        .pd-sub i.bi::before { display: block; line-height: 1; }
+
+        /* --- Paket: yang terpilih berwarna kategori --- */
+        .pd-pkg:hover { border-color: color-mix(in srgb, var(--c) 45%, #fff) !important; }
+        .pd-pkg.is-active {
+            border-color: var(--c) !important;
+            background: color-mix(in srgb, var(--c) 7%, #fff) !important;
+            box-shadow: 0 10px 24px color-mix(in srgb, var(--c) 18%, transparent) !important;
+        }
+        .pd-pkg-check { color: var(--c) !important; }
+        .pd-stepper button:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--c) 9%, #fff) !important; color: var(--c) !important;
+        }
+
+        /* --- Kartu jaminan: warna per butir seperti Cara Pesan ---
+           Sebelumnya ketiganya ubin gradien jingga identik; tiga kotak sama
+           persis berjajar terbaca sebagai satu hiasan yang diulang, bukan tiga
+           jaminan berbeda. */
+        .pd-feature {
+            position: relative; overflow: hidden;
+            border-color: #eceff4 !important;
+        }
+        .pd-feature::before {
+            content: ""; position: absolute; top: -34px; right: -34px;
+            width: 92px; height: 92px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
+            transition: transform .3s ease; pointer-events: none;
+        }
+        .pd-feature:hover::before { transform: scale(1.35); }
+        .pd-feature:hover {
+            border-color: color-mix(in srgb, var(--c) 35%, #fff) !important;
+            box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent) !important;
+        }
+        .pd-feature > * { position: relative; z-index: 1; }
+        .pd-feature-ic {
+            background: color-mix(in srgb, var(--c) 12%, #fff) !important;
+            color: var(--c) !important; box-shadow: none !important;
+        }
+        .pd-feature-ic i.bi { display: block; line-height: 1; }
+        .pd-feature-ic i.bi::before { display: block; line-height: 1; }
+
+        /* --- Produk terkait: tiap kartu berwarna kategorinya --- */
+        .rel-card { position: relative; }
+        .rel-card:hover {
+            border-color: color-mix(in srgb, var(--c) 40%, #fff) !important;
+            box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--c) 45%, transparent) !important;
+        }
+        .rel-thumb {
+            position: relative;
+            background:
+                radial-gradient(80% 90% at 100% 0%, color-mix(in srgb, var(--c) 14%, transparent) 0%, transparent 65%),
+                #fff !important;
+        }
+        .rel-kat {
+            position: absolute; top: 8px; right: 8px; z-index: 2;
+            width: 26px; height: 26px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 14%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 26%, #fff);
+            color: var(--c); font-size: .74rem;
+        }
+        .rel-kat i.bi { display: block; line-height: 1; }
+        .rel-kat i.bi::before { display: block; line-height: 1; }
+        .rel-name { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .pd-feature::before, .pd-kat { transition: none; }
+        }
     </style>
     @php
         $best = $this->bestDiscount;
@@ -244,10 +395,17 @@
         $selOrig = $this->selectedHarga();
         $selDisc = $this->applyDiscount($selOrig);
         $selSave = max(0, $selOrig - $selDisc);
+
+        // Kategori produk menentukan WARNA halaman ini — memakai taksonomi yang
+        // sama dengan kartu kategori di beranda dan kartu di /shop, jadi produk
+        // yang sama berwarna sama di mana pun ia muncul. Produk tanpa kategori
+        // memakai jingga merek.
+        $kat = \App\Support\KategoriBeranda::untukProduk($product->nama_akun);
+        $warnaKat = $kat['warna'] ?? '#f26522';
     @endphp
 
     <!-- Page Title -->
-    <div class="page-title ph-page-title">
+    <div class="page-title ph-page-title" style="--c: {{ $warnaKat }}">
         <div class="container d-lg-flex justify-content-between align-items-center">
             <div class="ph-page-head">
                 <span class="ph-sec-eyebrow"><i class="bi bi-box-seam"></i> Detail Produk</span>
@@ -264,7 +422,7 @@
     </div>
     <!-- End Page Title -->
 
-    <section class="pd-section">
+    <section class="pd-section" style="--c: {{ $warnaKat }}">
         <div class="container">
             <div class="row g-4 g-lg-5 pd-row">
                 {{-- Media --}}
@@ -294,21 +452,21 @@
                      ditempatkan SETELAH deskripsi pada layar lebar. --}}
                 <div class="col-lg-6 pd-col-trust">
                     <div class="pd-features">
-                        <div class="pd-feature">
+                        <div class="pd-feature" style="--c: #2563eb">
                             <span class="pd-feature-ic"><i class="bi bi-shield-check"></i></span>
                             <span class="pd-feature-txt">
                                 <b>Bergaransi</b>
                                 <small>Selama masa aktif paket</small>
                             </span>
                         </div>
-                        <div class="pd-feature">
+                        <div class="pd-feature" style="--c: #16a34a">
                             <span class="pd-feature-ic"><i class="bi bi-whatsapp"></i></span>
                             <span class="pd-feature-txt">
                                 <b>Dukungan Cepat</b>
                                 <small>Bantuan &amp; respons via WhatsApp</small>
                             </span>
                         </div>
-                        <div class="pd-feature">
+                        <div class="pd-feature" style="--c: #7c3aed">
                             <span class="pd-feature-ic"><i class="bi bi-shield-lock-fill"></i></span>
                             <span class="pd-feature-txt">
                                 <b>Pembayaran Aman</b>
@@ -360,7 +518,21 @@
 
                 {{-- Info --}}
                 <div class="col-lg-6 pd-col-info">
-                    <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Akun Premium</span>
+                    {{-- Label di atas nama produk sebelumnya selalu "Akun
+                         Premium" — untuk SEMUA produk, termasuk layanan cek
+                         plagiasi yang sama sekali bukan akun. Kini diambil dari
+                         kategorinya, sehingga ia benar-benar memberi tahu
+                         sesuatu. --}}
+                    @if ($kat)
+                        <a class="pd-kat" href="{{ route('shop.index', ['kategori' => $kat['kunci']]) }}">
+                            <i class="bi {{ $kat['ikon'] }}"></i> {{ $kat['label'] }}
+                        </a>
+                    @else
+                        <span class="pd-kat pd-kat-polos">
+                            <i class="bi {{ $product->butuh_file ? 'bi-file-earmark-check' : 'bi-stars' }}"></i>
+                            {{ $product->butuh_file ? 'Layanan' : 'Akun Premium' }}
+                        </span>
+                    @endif
                     <h2 class="pd-title">{{ $product->nama_akun }}</h2>
 
                     <div class="pd-price">
@@ -710,14 +882,23 @@
     @if (count($this->relatedProducts))
         <section class="rel-section">
             <div class="container">
-                <div class="ph-sec-head" style="text-align:center;">
-                    <span class="ph-sec-eyebrow"><i class="bi bi-grid-3x3-gap"></i> Produk Lainnya</span>
-                    <h2 class="ph-sec-title">Mungkin Anda juga suka</h2>
-                </div>
+                {{-- Kepala bagian yang sama dengan seluruh bagian beranda,
+                     bukan kepala tengah bergaya lama — satu bagian yang
+                     judulnya tersusun berbeda terbaca sebagai halaman lain. --}}
+                <x-kepala-bagian
+                    ikon="bi-grid-3x3-gap-fill"
+                    kicker="Produk Lainnya"
+                    judul="Mungkin Anda juga suka"
+                    :tautan-url="route('shop.index')"
+                    tautan-teks="Lihat Semua Produk" />
                 <div class="rel-grid rel-scroll">
                     @foreach ($this->relatedProducts as $rp)
-                        <a href="{{ route('shop.detail-product', $rp->id) }}" class="rel-card">
+                        @php $rk = \App\Support\KategoriBeranda::untukProduk($rp->nama_akun); @endphp
+                        <a href="{{ route('shop.detail-product', $rp->id) }}" class="rel-card" style="--c: {{ $rk['warna'] ?? '#f26522' }}">
                             <div class="rel-thumb">
+                                @if ($rk)
+                                    <span class="rel-kat" title="{{ $rk['label'] }}"><i class="bi {{ $rk['ikon'] }}"></i></span>
+                                @endif
                                 @if ($rp->image)
                                     <img src="{{ asset('storage/img/Product/'.basename($rp->image)) }}" alt="{{ $rp->nama_akun }}" loading="lazy">
                                 @else
