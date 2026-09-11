@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Public\Bundling;
 use App\Livewire\Concerns\MengirimPixel;
 use App\Models\ProductBundlings as ModelsProductBundlings;
 use App\Support\HargaPaket;
+use App\Support\KartuPaket;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -68,6 +69,8 @@ class Detail extends Component
         $harga = (int) preg_replace('/[^0-9]/', '', (string) $this->paket->harga_bundling);
 
         return ModelsProductBundlings::tayang()
+            // Isi paket dimuat sekaligus: kartunya menampilkan ikon tiap produk.
+            ->with(['product1', 'product2', 'product3', 'product4', 'product5'])
             ->where('id', '!=', $this->paket->id)
             ->get()
             ->sortBy(fn ($p) => abs((int) preg_replace('/[^0-9]/', '', (string) $p->harga_bundling) - $harga))
@@ -156,8 +159,10 @@ class Detail extends Component
     {
         return view('livewire.pages.public.bundling.detail', [
             'hp' => HargaPaket::untuk($this->paket),
-            'isi' => $this->isiPaket(),
-            'lainnya' => $this->paketLain(),
+            // Data tampilan dari aturan yang sama dengan daftar paket
+            // (KartuPaket) — Blade di halaman ini tidak menghitung apa pun.
+            'kartu' => KartuPaket::data($this->paket),
+            'lainnya' => $this->paketLain()->map(fn ($p) => KartuPaket::data($p))->all(),
         ]);
     }
 }

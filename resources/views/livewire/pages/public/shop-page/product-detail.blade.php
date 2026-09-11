@@ -199,6 +199,15 @@
            harus mencarinya lagi di tiap halaman.
            =================================================================== */
 
+        /* Gutter vertikal Bootstrap .g-lg-5 memberi .pd-row margin atas -48px,
+           lebih besar dari jarak atas .pd-section (40px, CSS publik beku):
+           isinya naik 4px MENIMPA tepi bawah kartu judul. Dinolkan, lalu jarak
+           atas section diatur ulang supaya ada celah rapi ±22px. */
+        @media (min-width: 992px) {
+            .pd-section { padding-top: 18px; }
+            .pd-section .pd-row { margin-top: 0; }
+        }
+
         /* --- Gambar produk: latar diwarnai kategorinya --- */
         .pd-section .pd-media {
             background:

@@ -246,7 +246,7 @@ it('halaman detail paket memakai bagian yang sama dengan detail produk shop', fu
 
     // Bagian yang sama: remah roti, media, harga, jaminan, beli, wishlist.
     foreach ([
-        'pd-pkg-grid',
+        'pd-isi-grid',
         'page-title ph-page-title',
         'breadcrumbs',
         'pd-section',
@@ -259,7 +259,7 @@ it('halaman detail paket memakai bagian yang sama dengan detail produk shop', fu
         'pd-add',
         'pd-wish',
         'rel-section',
-        'rel-card',
+        'rk-kartu',
     ] as $bagian) {
         expect($html)->toContain($bagian);
     }
@@ -281,6 +281,42 @@ it('paket bisa disimpan ke wishlist dan muncul di halaman wishlist', function ()
         ->and($wishlist)->toContain('/bundling/paket/'.$paket->id);
 });
 
+it('isi paket tampil sebagai kartu berwarna kategori yang menuju halaman produknya', function () {
+    $canva = App\Models\Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+    $paket = paketUji();
+    $paket->update(['product_1' => $canva->id]);
+
+    $html = Livewire::test(Detail::class, ['id' => $paket->id])->html();
+
+    // Canva masuk Desain & Kreatif: kartunya berwarna & berlabel kategori itu,
+    // dan membawa ke halaman produknya.
+    expect($html)->toContain('class="pd-isi-kartu" style="--p: #db2777"')
+        ->and($html)->toContain('<span class="pd-isi-kat">Desain &amp; Kreatif</span>')
+        ->and($html)->toContain(route('shop.detail-product', $canva->id))
+        // Aksen halaman mengikuti produk berwarna itu.
+        ->and($html)->toContain('class="pd-section" style="--c: #db2777"');
+});
+
+it('paket tanpa gambar menampilkan tumpukan ubin produk isinya', function () {
+    $canva = App\Models\Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+    $paket = paketUji();
+    $paket->update(['product_1' => $canva->id, 'gambar' => null]);
+
+    $html = Livewire::test(Detail::class, ['id' => $paket->id])->html();
+
+    expect($html)->toContain('class="pd-media is-kosong"')
+        ->and($html)->toContain('--p: #db2777; --r: -7deg');
+});
+
+it('paket yang seluruh isinya abu memakai aksen jingga merek', function () {
+    $a = App\Models\Product::create(['nama_akun' => 'Grammarly Premium', 'harga_perbulan' => 15000]);
+    $b = App\Models\Product::create(['nama_akun' => 'DeepL Premium', 'harga_perbulan' => 15000]);
+    $paket = paketUji();
+    $paket->update(['product_1' => $a->id, 'product_2' => $b->id]);
+
+    expect(App\Support\KartuPaket::data($paket->fresh(['product1', 'product2']))['warna'])->toBe('#f26522');
+});
+
 it('paket yang jadwalnya berakhir tidak ikut muncul di wishlist', function () {
     $paket = paketUji();
     $paket->update(['selesai_tayang' => now()->subHour()]);
@@ -295,14 +331,15 @@ it('paket yang jadwalnya berakhir tidak ikut muncul di wishlist', function () {
 it('halaman detail paket tidak memakai kelas gaya buatan sendiri', function () {
     $blade = file_get_contents(resource_path('views/livewire/pages/public/bundling/detail.blade.php'));
 
-    // Seluruh gayanya milik bersama dengan halaman produk (pd-*/rel-*), supaya
-    // ukuran dan jaraknya tidak bisa melenceng sendiri.
+    // Seluruh gayanya milik bersama dengan halaman produk (pd-*/rel-*, dan
+    // rk-* — kartu "Produk Lainnya" halaman produk yang dipakai juga untuk
+    // "Paket Lainnya"), supaya ukuran dan jaraknya tidak bisa melenceng sendiri.
     preg_match('#<style>(.*?)</style>#s', $blade, $m);
     preg_match_all('#^\s*\.([a-z][a-z0-9-]*)#m', $m[1] ?? '', $kelas);
 
     $bukanBersama = array_values(array_filter(
         array_unique($kelas[1] ?? []),
-        fn ($k) => ! str_starts_with($k, 'pd-') && ! str_starts_with($k, 'rel-')
+        fn ($k) => ! str_starts_with($k, 'pd-') && ! str_starts_with($k, 'rel-') && ! str_starts_with($k, 'rk-')
     ));
 
     expect($bukanBersama)->toBe([]);
