@@ -315,6 +315,105 @@ class Index extends Component
         ];
     }
 
+    /**
+     * Data jendela pilih durasi, siap cetak.
+     *
+     * Hanya MERAKIT tampilan dari state yang sudah ada (pickPackages,
+     * customPricing, pickBest) — harga, promo, dan isi keranjang tidak diubah.
+     * Semua perbandingan dilakukan di sini supaya Blade tidak memuat ">" di
+     * sela direktif blok (jebakan penanda morph Livewire).
+     *
+     * @return array<string, mixed>
+     */
+    public function dataModal(): array
+    {
+        $kat = \App\Support\KategoriBeranda::untukProduk($this->pickProductName);
+        $rupiah = fn ($v) => 'Rp'.number_format((int) $v, 0, ',', '.');
+        $bulanDari = fn ($tipe, $nilai) => match (strtolower((string) $tipe)) {
+            'bulan' => (int) $nilai,
+            'tahun' => (int) $nilai * 12,
+            default => null,
+        };
+
+        $opsi = [];
+        $perBulan = [];
+        foreach ($this->pickPackages as $i => $p) {
+            $akhir = (int) ($p['discounted'] ?? $p['price']);
+            $asli = (int) $p['price'];
+            $bln = $bulanDari($p['duration_type'], $p['duration_value']);
+            $perBulan[$i] = $bln ? $akhir / $bln : null;
+
+            $opsi[$i] = [
+                'kunci' => $p['duration_type'].'-'.$p['duration_value'],
+                'tipe' => $p['duration_type'],
+                'nilai' => (int) $p['duration_value'],
+                'label' => $p['label'],
+                'akhir' => $rupiah($akhir),
+                'asli' => $akhir < $asli ? $rupiah($asli) : null,
+                'hemat' => ! empty($p['savings']) ? 'Hemat '.$rupiah($p['savings']) : null,
+                // Setara per bulan hanya untuk paket lebih dari sebulan — itulah
+                // yang sulit dibandingkan pembeli di kepalanya sendiri.
+                'perBulan' => $bln && $bln > 1 ? '≈ '.$rupiah(round($akhir / $bln)).'/bulan' : null,
+                'aktif' => ! $this->pickIsCustom
+                    && $this->pickType === $p['duration_type']
+                    && (int) $this->pickValue === (int) $p['duration_value'],
+                'terhemat' => false,
+            ];
+        }
+
+        // "Paling hemat" hanya bila benar-benar ada selisih per bulan di antara
+        // setidaknya dua paket — label yang menempel ke semua paket tak berarti.
+        $sah = array_filter($perBulan, fn ($v) => $v !== null);
+        if (count($sah) >= 2 && min($sah) < max($sah)) {
+            $opsi[array_search(min($sah), $sah, true)]['terhemat'] = true;
+        }
+
+        $custom = null;
+        if ($this->pickPerBulan > 0) {
+            $cp = $this->customPricing();
+            $bulan = (int) $this->pickCustomMonths;
+            $custom = [
+                'bulan' => $bulan,
+                'sub' => $cp['matched'] ? 'Sesuai paket '.$bulan.' bulan' : $rupiah($this->pickPerBulan).'/bulan',
+                'akhir' => $cp['discounted'],
+                'asli' => $cp['discounted'] < $cp['base'] ? $cp['base'] : null,
+                'bisaKurang' => $bulan > 1,
+                'bisaTambah' => $bulan < 60,
+            ];
+        }
+
+        $terpilih = collect($opsi)->firstWhere('aktif', true);
+        if ($this->pickIsCustom && $custom) {
+            $total = ['label' => $custom['bulan'].' bulan', 'akhir' => $rupiah($custom['akhir']), 'asli' => $custom['asli'] ? $rupiah($custom['asli']) : null];
+        } elseif ($terpilih) {
+            $total = ['label' => $terpilih['label'], 'akhir' => $terpilih['akhir'], 'asli' => $terpilih['asli']];
+        } else {
+            $total = null;
+        }
+
+        $diskon = null;
+        if ($this->pickBest && ! empty($this->pickBest['value'])) {
+            $diskon = ($this->pickBest['type'] ?? '') === 'persen'
+                ? number_format($this->pickBest['value'], 0).'%'
+                : $rupiah($this->pickBest['value']);
+        }
+
+        return [
+            'warna' => $kat['warna'] ?? '#f26522',
+            'ikon' => $kat['ikon'] ?? 'bi-box-seam',
+            'kategori' => $kat['label'] ?? null,
+            'gambar' => $this->pickProductImage && Storage::disk('public')->exists('img/Product/'.$this->pickProductImage)
+                ? asset('storage/img/Product/'.$this->pickProductImage)
+                : null,
+            'diskon' => $diskon,
+            'flash' => $this->pickIsFlash,
+            'opsi' => array_values($opsi),
+            'custom' => $custom,
+            'total' => $total,
+            'aktifKunci' => $this->pickIsCustom ? 'custom' : ($terpilih['kunci'] ?? ''),
+        ];
+    }
+
     public function addToCart($productId, $durationType, $durationValue)
     {
         $product = Product::findOrFail($productId);
