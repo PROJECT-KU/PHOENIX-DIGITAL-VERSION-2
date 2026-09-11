@@ -43,7 +43,8 @@ class KategoriBeranda
             'label' => 'AI Tools',
             'ikon' => 'bi-robot',
             'warna' => '#7c3aed',
-            'kata' => ['chat gpt', 'chatgpt', 'gemini', 'gamma', 'humata', 'super ai', 'jenni'],
+            // "notebooklm"/"notebook lm", bukan "notebook": kata itu terlalu umum.
+            'kata' => ['chat gpt', 'chatgpt', 'gemini', 'gamma', 'humata', 'super ai', 'jenni', 'notebooklm', 'notebook lm'],
         ],
         'cek-plagiasi' => [
             'label' => 'Cek Plagiasi',
@@ -73,7 +74,7 @@ class KategoriBeranda
             'label' => 'Edukasi',
             'ikon' => 'bi-mortarboard',
             'warna' => '#4f46e5',
-            'kata' => ['kahoot', 'edukasi'],
+            'kata' => ['kahoot', 'mentimeter', 'edukasi'],
         ],
         'produktivitas' => [
             'label' => 'Produktivitas',

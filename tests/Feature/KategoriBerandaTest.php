@@ -145,6 +145,14 @@ it('kategori produk dikenali dari namanya untuk mewarnai kartunya', function () 
         ->and(KategoriBeranda::untukProduk('Microsoft Office 365')['label'])->toBe('Produktivitas');
 });
 
+it('mentimeter masuk edukasi dan notebooklm masuk ai tools', function () {
+    expect(KategoriBeranda::untukProduk('Mentimeter Premium')['kunci'])->toBe('edukasi')
+        ->and(KategoriBeranda::untukProduk('NotebookLM')['kunci'])->toBe('ai-tools')
+        ->and(KategoriBeranda::untukProduk('Notebook LM Plus')['kunci'])->toBe('ai-tools')
+        // "notebook" saja terlalu umum untuk dijadikan kata kunci AI.
+        ->and(KategoriBeranda::untukProduk('Notebook Jurnal Kuliah'))->toBeNull();
+});
+
 it('produk yang tidak masuk kategori mana pun tidak dipaksakan', function () {
     // Dipaksa masuk kategori terdekat, kartunya akan berwarna dan berlabel
     // salah — dan label yang salah lebih merugikan daripada tidak ada label.
