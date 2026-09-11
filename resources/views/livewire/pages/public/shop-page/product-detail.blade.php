@@ -21,41 +21,6 @@
         .rel-thumb { background: var(--ph-grad-soft); }
         .rel-thumb img { object-fit: contain !important; padding: 12px; mix-blend-mode: multiply; }
 
-        /* ===== Daftar fitur produk (pecahan dari deskripsi ber-"✅") =====
-           Sengaja inline di blade, bukan di public-custom-styles.css: berkas di
-           public/build/ tidak ikut git pull sehingga gaya bisa tertinggal di
-           server. Lihat catatan aset di README. */
-        .pd-feat { list-style:none; margin:0 0 22px; padding:0;
-            display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:9px 18px; }
-        .pd-feat li { display:flex; align-items:flex-start; gap:9px;
-            font-size:.92rem; line-height:1.55; color:var(--ph-ink); }
-        .pd-feat li i { color:#16a34a; font-size:1rem; line-height:1.45; flex:0 0 auto; }
-        .pd-feat li span { min-width:0; }
-        @media (max-width: 767.98px) { .pd-feat { grid-template-columns:1fr; gap:8px; } }
-
-        /* ===== Denyut pada ikon centang =====
-           Berdenyut terus-menerus supaya daftar terasa hidup. Tidak ada animasi
-           masuk: teksnya langsung terbaca begitu halaman tampil.
-
-           Jeda tiap ikon dihitung dari --i yang ditulis blade, jadi denyutnya
-           bergelombang (tidak serempak) dan otomatis menyesuaikan berapa pun
-           jumlah poinnya. */
-        .pd-feat li i {
-            transform-origin: center;
-            animation: pdCheckPulse 2.4s ease-in-out infinite;
-            animation-delay: calc(var(--i, 0) * 200ms);
-            will-change: transform;
-        }
-        @keyframes pdCheckPulse {
-            0%, 100% { transform:scale(1);    filter:drop-shadow(0 0 0 rgba(22, 163, 74, 0)); }
-            50%      { transform:scale(1.16); filter:drop-shadow(0 0 5px rgba(22, 163, 74, .45)); }
-        }
-
-        /* Hormati pengguna yang meminta animasi dikurangi: diamkan denyutnya. */
-        @media (prefers-reduced-motion: reduce) {
-            .pd-feat li i { animation:none; transform:none; filter:none; }
-        }
-
         /* ===== Kartu deskripsi ===== */
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
             background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
@@ -63,13 +28,6 @@
             font-family:'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight:800; font-size:1rem;
             color:var(--ph-ink); margin:0 0 12px; }
         .pd-desc-head i { color:var(--ph-orange); font-size:1.05rem; }
-        .pd-desc-card .pd-desc { margin-bottom:12px; }
-        .pd-desc-card .pd-desc.is-lead { color:var(--ph-ink); font-weight:600; }
-        .pd-desc-card .pd-desc:last-child { margin-bottom:0; }
-        .pd-desc-card .pd-feat { margin-bottom:0; padding-top:4px; }
-        .pd-desc-notes { margin-top:14px; padding-top:12px; border-top:1px dashed var(--ph-line); display:grid; gap:8px; }
-        .pd-desc-note { display:flex; gap:9px; align-items:flex-start; margin:0; font-size:.88rem; line-height:1.55; color:var(--ph-muted); }
-        .pd-desc-note span:first-child { flex:0 0 auto; font-size:1rem; line-height:1.4; }
         @media (max-width: 575.98px) { .pd-desc-card { padding:16px 16px; border-radius:15px; } }
 
         /* ===== Tata letak kolom kiri: gambar di ATAS, lalu deskripsi, lalu
@@ -480,38 +438,15 @@
                      kolom kiri ATAS gambar pada layar lebar (lihat .pd-row di
                      <style> atas). Dikeluarkan dari kolom info agar kolom kanan
                      memendek dan tombol Wishlist sejajar dengan kartu jaminan. --}}
-                @php $desk = \App\Support\DeskripsiProduk::pisah($product->deskripsi); @endphp
-                @if ($desk['paragraf'] || $desk['poin'] || $desk['ekstra'])
+                {{-- Deskripsi dirapikan OTOMATIS dari teks mentahnya — admin cukup
+                     mengetik atau menempel dari ChatGPT. Lihat App\Support\DeskripsiProduk
+                     dan partials/deskripsi-rapi (dipakai juga oleh pratinjau admin). --}}
+                @php $desk = \App\Support\DeskripsiProduk::blok($product->deskripsi); @endphp
+                @if ($desk)
                     <div class="col-lg-6 pd-col-desc">
                         <div class="pd-desc-card">
                             <h3 class="pd-desc-head"><i class="bi bi-card-text"></i> Deskripsi Produk</h3>
-
-                            {{-- Teks biasa: TANPA centang. --}}
-                            @foreach ($desk['paragraf'] as $i => $par)
-                                <p class="pd-desc {{ $i === 0 ? 'is-lead' : '' }}">{{ $par }}</p>
-                            @endforeach
-
-                            {{-- Hanya bagian yang ditandai admin (✅ dsb) yang bercentang. --}}
-                            @if ($desk['poin'])
-                                {{-- --i dipakai CSS untuk menjeda animasi tiap poin
-                                     secara bertingkat, berapa pun jumlah poinnya. --}}
-                                <ul class="pd-feat">
-                                    @foreach ($desk['poin'] as $poin)
-                                        <li style="--i: {{ $loop->index }}">
-                                            <i class="bi bi-check-circle-fill"></i><span>{{ $poin }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            @endif
-
-                            {{-- Catatan (📌/🎯/⚡): baris tersendiri, ikon dipertahankan. --}}
-                            @if ($desk['ekstra'])
-                                <div class="pd-desc-notes">
-                                    @foreach ($desk['ekstra'] as $e)
-                                        <p class="pd-desc-note"><span>{{ $e['ikon'] }}</span><span>{{ $e['teks'] }}</span></p>
-                                    @endforeach
-                                </div>
-                            @endif
+                            @include('partials.deskripsi-rapi', ['blok' => $desk])
                         </div>
                     </div>
                 @endif
