@@ -28,7 +28,7 @@ class ReviewModeration extends Component
     public function approve($id): void
     {
         ProductReview::whereKey($id)->update(['status' => 'approved']);
-        $this->dispatch('swal-success', message: 'Ulasan disetujui & kini tampil di produk.');
+        $this->dispatch('swal-success', message: 'Ulasan disetujui & kini tampil di halamannya.');
         // Sidebar komponen terpisah — beritahu agar badge langsung berkurang
         // tanpa perlu refresh halaman.
         $this->dispatch('sidebar-badge-updated');
@@ -50,14 +50,16 @@ class ReviewModeration extends Component
 
     public function render()
     {
-        $reviews = ProductReview::with('product')
+        // Ulasan bisa untuk produk atau paket; keduanya dimuat sekaligus.
+        $reviews = ProductReview::with(['product', 'paket'])
             ->when($this->filter !== 'all', fn ($q) => $q->where('status', $this->filter))
             ->when($this->search !== '', function ($q) {
                 $term = '%'.$this->search.'%';
                 $q->where(function ($sub) use ($term) {
                     $sub->where('nama', 'like', $term)
                         ->orWhere('ulasan', 'like', $term)
-                        ->orWhereHas('product', fn ($p) => $p->where('nama_akun', 'like', $term));
+                        ->orWhereHas('product', fn ($p) => $p->where('nama_akun', 'like', $term))
+                        ->orWhereHas('paket', fn ($p) => $p->where('nama_paket', 'like', $term));
                 });
             })
             ->latest()

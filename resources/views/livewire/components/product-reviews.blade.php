@@ -384,7 +384,7 @@
         ikon="bi-star-fill"
         kicker="Ulasan"
         judul="Ulasan Pelanggan"
-        :sub="$count > 0 ? 'Pengalaman pembeli yang sudah memakai produk ini.' : 'Pendapat jujur dari pembeli, untuk pembeli.'" />
+        :sub="$count > 0 ? 'Pengalaman pembeli yang sudah memakai '.$sebutan.' ini.' : 'Pendapat jujur dari pembeli, untuk pembeli.'" />
 
     <div class="ul-grid">
         @if ($count > 0)
@@ -433,7 +433,7 @@
             <aside class="ul-kosong">
                 <span class="ul-ubin ul-ubin-utama"><i class="bi bi-chat-heart-fill"></i></span>
                 <h3 class="ul-panel-judul">Belum ada ulasan</h3>
-                <p class="ul-panel-teks">Jadilah yang pertama berbagi pengalaman memakai produk ini.</p>
+                <p class="ul-panel-teks">Jadilah yang pertama berbagi pengalaman memakai {{ $sebutan }} ini.</p>
 
                 <ul class="ul-manfaat">
                     <li style="--m: #2563eb">
@@ -446,7 +446,7 @@
                     </li>
                     <li style="--m: #7c3aed">
                         <span class="ul-manfaat-ic"><i class="bi bi-people-fill"></i></span>
-                        <span><b>Membantu pembeli lain</b> memilih produk</span>
+                        <span><b>Membantu pembeli lain</b> memilih {{ $sebutan }}</span>
                     </li>
                 </ul>
             </aside>

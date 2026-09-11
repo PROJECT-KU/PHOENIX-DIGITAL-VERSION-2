@@ -461,6 +461,14 @@
         </div>
     </section>
 
+    {{-- Ulasan paket — komponen yang sama dengan halaman produk, berjenis
+         "paket": ulasannya milik paket ini sendiri, bukan produk isinya. --}}
+    <section class="rev-section" style="--c: {{ $kartu['warna'] }}">
+        <div class="container">
+            @livewire(\App\Livewire\Components\ProductReviews::class, ['productId' => $paket->id, 'jenis' => 'paket'], key('rev-paket-'.$paket->id))
+        </div>
+    </section>
+
     {{-- Paket lainnya — kartu yang sama dengan "Produk Lainnya" di halaman produk. --}}
     @if (count($lainnya))
         <section class="rel-section">

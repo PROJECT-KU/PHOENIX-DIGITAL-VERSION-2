@@ -128,7 +128,7 @@ Moderasi Ulasan Produk || lemon
                             @forelse ($reviews as $item)
                             <tr style="text-align: center;">
                                 <td>{{ $loop->iteration + ($reviews->currentPage() - 1) * $reviews->perPage() }}</td>
-                                <td class="fw-bold text-start">{{ $item->product->nama_akun ?? '—' }}</td>
+                                <td class="fw-bold text-start">{{ $item->namaTarget() }}@if ($item->jenis === 'paket') <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis ms-1">Paket</span>@endif</td>
                                 <td>{{ $item->nama }}</td>
                                 <td class="text-warning text-nowrap">
                                     @for ($i = 1; $i <= 5; $i++)
@@ -143,7 +143,7 @@ Moderasi Ulasan Produk || lemon
                                             title="Baca ulasan lengkap"
                                             data-ulasan="{{ $item->ulasan }}"
                                             data-nama="{{ $item->nama }}"
-                                            data-produk="{{ $item->product->nama_akun ?? '—' }}"
+                                            data-produk="{{ $item->namaTarget() }}"
                                             data-rating="{{ (int) $item->rating }}"
                                             data-tanggal="{{ $item->created_at->translatedFormat('d M Y, H:i') }}">
                                             <i class="bi bi-eye"></i>

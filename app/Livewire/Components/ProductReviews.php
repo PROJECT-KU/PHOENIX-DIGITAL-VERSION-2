@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Components;
 
+use App\Models\ProductBundlings;
 use App\Models\ProductReview;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ProductReviews extends Component
@@ -20,7 +22,16 @@ class ProductReviews extends Component
 
     public const URUTAN = ['terbaru', 'tertinggi', 'terendah'];
 
+    /**
+     * Id target ulasan dan jenisnya ('produk' atau 'paket'). DIKUNCI: nilainya
+     * datang dari halaman yang memasang komponen ini, bukan dari peramban —
+     * tanpa kunci, ulasan bisa dialihkan ke produk atau paket lain.
+     */
+    #[Locked]
     public $productId;
+
+    #[Locked]
+    public string $jenis = ProductReview::JENIS_PRODUK;
 
     public $nama = '';
 
@@ -37,9 +48,11 @@ class ProductReviews extends Component
 
     public string $urut = 'terbaru';
 
-    public function mount($productId)
+    public function mount($productId, string $jenis = ProductReview::JENIS_PRODUK)
     {
         $this->productId = $productId;
+        // Jenis yang tidak dikenal diperlakukan sebagai ulasan produk.
+        $this->jenis = $jenis === ProductReview::JENIS_PAKET ? ProductReview::JENIS_PAKET : ProductReview::JENIS_PRODUK;
     }
 
     protected function rules(): array
@@ -53,7 +66,7 @@ class ProductReviews extends Component
 
     public function submit()
     {
-        $key = 'product-review:'.request()->ip().':'.$this->productId;
+        $key = 'product-review:'.request()->ip().':'.$this->jenis.':'.$this->productId;
         if (RateLimiter::tooManyAttempts($key, 3)) {
             $this->addError('ulasan', 'Terlalu banyak ulasan dari perangkat ini. Coba lagi nanti.');
 
@@ -61,10 +74,20 @@ class ProductReviews extends Component
         }
 
         $this->validate();
+
+        // Paket bisa berakhir jadwalnya sementara halamannya masih terbuka;
+        // ulasan untuk paket yang tak lagi dijual tidak diterima.
+        if ($this->jenis === ProductReview::JENIS_PAKET && ! ProductBundlings::find($this->productId)?->sedangTayang()) {
+            $this->addError('ulasan', 'Paket ini sudah tidak tersedia.');
+
+            return;
+        }
+
         RateLimiter::hit($key, 3600);
 
         ProductReview::create([
             'product_id' => $this->productId,
+            'jenis' => $this->jenis,
             'nama' => trim($this->nama),
             'rating' => (int) $this->rating,
             'ulasan' => trim($this->ulasan),
@@ -105,7 +128,9 @@ class ProductReviews extends Component
         }
         $this->tampil = max(self::PER_MUAT, min($this->tampil, self::TAMPIL_MAKS));
 
-        $base = ProductReview::approved()->where('product_id', $this->productId);
+        // Hanya ulasan milik target ini: halaman paket tidak menampilkan ulasan
+        // produk isinya, dan sebaliknya.
+        $base = ProductReview::approved()->untuk($this->jenis, $this->productId);
 
         // Skor, jumlah, dan sebaran selalu dari SEMUA ulasan — saringan hanya
         // mengubah daftar yang dibaca, bukan ringkasannya.
@@ -124,6 +149,7 @@ class ProductReviews extends Component
             'count' => (clone $base)->count(),
             // Jumlah ulasan per bintang (5 => 12, 4 => 3, …) untuk batang sebaran.
             'sebaran' => (clone $base)->selectRaw('rating, count(*) as n')->groupBy('rating')->pluck('n', 'rating')->all(),
+            'sebutan' => $this->jenis === ProductReview::JENIS_PAKET ? 'paket' : 'produk',
         ]);
     }
 }
