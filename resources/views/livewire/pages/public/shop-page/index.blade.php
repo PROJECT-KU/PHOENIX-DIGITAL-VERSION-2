@@ -255,6 +255,99 @@
             .sk-kartu, .sk-media::before, .sk-media img, .sk-cadangan, .sk-lihat, .sk-beli, .sf-chip, .sf-chip-ic { transition: none; }
         }
 
+        /* ===== Tipografi halaman shop =====
+           SATU keluarga huruf untuk seluruh antarmuka katalog. Sebelumnya judul,
+           chip, nama, dan harga memakai Plus Jakarta Sans sementara label, tombol
+           segmen, urutan, satuan, dan tombol Keranjang memakai Roboto — dua huruf
+           berbeda di elemen yang bersebelahan terbaca sebagai halaman tambalan.
+           Bobot 500 jadi bobot teks biasa (Jakarta dimuat 500–800). */
+        .sf-papan, .sk-kartu, .shp-empty, .ph-pagination, .shop-judul .ph-page-head p, .shop-judul .breadcrumbs,
+        .shop-judul .ph-page-head .ph-sec-eyebrow {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+        }
+        .sf-seg { font-weight: 700; letter-spacing: -.005em; }
+        .sf-urut select { font-weight: 700; }
+        .sf-info { font-weight: 500; }
+        .sf-info b { font-variant-numeric: tabular-nums; }
+
+        /* Kepala katalog rata tengah. Pengubah khusus halaman ini — aturan dasar
+           .ph-page-title di layout tetap dipakai halaman lain apa adanya. */
+        .ph-page-title.shop-judul > .container {
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            padding: 28px 40px 28px;
+        }
+        /* Titik-titik di KEDUA sisi, memudar ke tengah — judul di tengah tidak
+           boleh tertimpa pola. */
+        .ph-page-title.shop-judul > .container::after {
+            left: 13px; right: 13px; width: auto; border-radius: 21px;
+            -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 28%, transparent 72%, #000 100%);
+            mask-image: linear-gradient(90deg, #000 0%, transparent 28%, transparent 72%, #000 100%);
+        }
+        .shop-judul .breadcrumbs { margin: 0 0 14px; }
+        .shop-judul .breadcrumbs ol { padding: 6px 14px; font-size: .78rem; box-shadow: none; }
+        .shop-judul .ph-page-head { display: flex; flex-direction: column; align-items: center; max-width: 760px; }
+        .shop-judul .ph-page-head .ph-sec-eyebrow { margin-bottom: 12px !important; }
+        .shop-judul .ph-page-head h1 {
+            font-size: clamp(2rem, 3.6vw, 2.9rem); line-height: 1.08; letter-spacing: -.035em;
+            text-wrap: balance;
+        }
+        /* Satu frasa bergradasi merek — titik tekan judul, bukan hiasan di mana-mana. */
+        .shop-sorot {
+            background: linear-gradient(135deg, #fba919 0%, #f26522 70%);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; -webkit-text-fill-color: transparent;
+        }
+        .shop-judul .ph-page-head p {
+            margin: 12px auto 0; max-width: 64ch;
+            font-weight: 500; font-size: 1.02rem; line-height: 1.65; color: #6b7280;
+            text-wrap: pretty;
+        }
+        .shop-fakta {
+            list-style: none; padding: 0; margin: 18px 0 0;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+        }
+        .shop-fakta li {
+            display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 15px 0 5px;
+            border-radius: 99px; background: #fff; border: 1px solid #eceff4;
+            box-shadow: 0 6px 16px -12px rgba(15, 23, 42, .28);
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 600; font-size: .84rem; color: #4b5563;
+        }
+        .shop-fakta li b { font-weight: 800; color: #1c1f26; font-variant-numeric: tabular-nums; }
+        .shop-fakta-ic {
+            flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--f) 12%, #fff); color: var(--f); font-size: .8rem;
+        }
+        .shop-fakta-ic i.bi { display: block; line-height: 1; }
+        .shop-fakta-ic i.bi::before { display: block; line-height: 1; }
+
+        /* Kartu: hierarki huruf yang jelas — label jenis kecil berjarak lebar,
+           nama rapat, harga paling berat dengan "Rp" dikecilkan dan angka
+           berlebar sama supaya harga di kartu-kartu sejajar dibaca sekilas. */
+        .sk-jenis { font-weight: 700; font-size: .64rem; letter-spacing: .14em; }
+        .sk-nama { font-size: 1.02rem; letter-spacing: -.015em; }
+        .sk-harga b {
+            font-size: 1.16rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+        }
+        .sk-rp { font-size: .68em; font-weight: 700; letter-spacing: 0; margin-right: 2px; color: #4b5563; }
+        .sk-harga small { font-weight: 600; letter-spacing: .01em; }
+        .sk-harga s { font-weight: 500; font-variant-numeric: tabular-nums; }
+        .sk-beli { font-weight: 700; letter-spacing: .005em; }
+
+        @media (max-width: 575.98px) {
+            .ph-page-title.shop-judul > .container { padding: 26px 26px 24px; }
+            .shop-judul .breadcrumbs { margin-bottom: 14px; }
+            .shop-judul .ph-page-head h1 { font-size: 1.8rem; letter-spacing: -.03em; }
+            .shop-judul .ph-page-head p { font-size: .93rem; }
+            .shop-fakta { gap: 8px; margin-top: 16px; }
+            .shop-fakta li { height: 34px; padding: 0 12px 0 4px; font-size: .78rem; gap: 6px; }
+            .shop-fakta-ic { width: 26px; height: 26px; font-size: .74rem; }
+            /* Ditulis ulang di sini karena blok ini datang SESUDAH aturan kartu
+               untuk HP, dan aturan dasarnya di atas akan menimpanya. */
+            .sk-nama { font-size: .9rem; }
+            .sk-harga b { font-size: 1.02rem; }
+        }
+
         .shp-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
         .shp-empty-art { margin-bottom: 6px; }
         .shp-empty-art svg { width: 260px; max-width: 82%; height: auto; overflow: visible; }
@@ -285,19 +378,29 @@
     </style>
 
     <!-- Page Title -->
-    <div class="page-title ph-page-title">
-        <div class="container d-lg-flex justify-content-between align-items-center">
-            <div class="ph-page-head">
-                <span class="ph-sec-eyebrow"><i class="bi bi-bag-fill"></i> Katalog</span>
-                <h1>Shop</h1>
-                <p>Pilihan akun premium &amp; tools AI untuk riset dan produktivitas Anda.</p>
-            </div>
-            <nav class="breadcrumbs">
+    {{-- Kepala katalog RATA TENGAH, memakai kartu judul yang sama dengan halaman
+         lain (shop-judul hanya pengubah). Halaman ini gerbang ke seluruh katalog,
+         jadi judulnya mengundang, bukan sekadar label "Shop" di pojok kiri. --}}
+    <div class="page-title ph-page-title shop-judul">
+        <div class="container">
+            <nav class="breadcrumbs" aria-label="Remah roti">
                 <ol>
                     <li><a href="/">Beranda</a></li>
                     <li class="current">Shop</li>
                 </ol>
             </nav>
+            <div class="ph-page-head">
+                <span class="ph-sec-eyebrow"><i class="bi bi-bag-fill"></i> Katalog Produk</span>
+                <h1>Tools premium untuk <span class="shop-sorot">kerja &amp; riset</span></h1>
+                <p>Akun premium &amp; tools AI bergaransi untuk kuliah, riset, dan produktivitas harianmu.</p>
+                {{-- Angka dihitung dari katalog, bukan ditulis mati: begitu produk
+                     atau kategori bertambah, kalimatnya ikut benar sendiri. --}}
+                <ul class="shop-fakta">
+                    <li style="--f: #2563eb"><span class="shop-fakta-ic"><i class="bi bi-grid-fill"></i></span><span><b>{{ $jumlahProduk }}</b> produk</span></li>
+                    <li style="--f: #16a34a"><span class="shop-fakta-ic"><i class="bi bi-tags-fill"></i></span><span><b>{{ count($daftarKategori) }}</b> kategori</span></li>
+                    <li style="--f: #7c3aed"><span class="shop-fakta-ic"><i class="bi bi-shield-check"></i></span>Bergaransi</li>
+                </ul>
+            </div>
         </div>
     </div>
     <!-- End Page Title -->
@@ -400,7 +503,7 @@
                                                 @if ($k['mulai'])
                                                     <small>Mulai</small>
                                                 @endif
-                                                <b>Rp{{ number_format($k['harga'], 0, ',', '.') }}</b>
+                                                <b><span class="sk-rp">Rp</span>{{ number_format($k['harga'], 0, ',', '.') }}</b>
                                                 <small>{{ $k['satuan'] }}</small>
                                                 @if ($k['hargaAsli'])
                                                     <s>Rp{{ number_format($k['hargaAsli'], 0, ',', '.') }}</s>
