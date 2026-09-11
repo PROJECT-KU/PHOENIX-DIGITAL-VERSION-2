@@ -308,13 +308,12 @@
                 </div>
 
                 <div class="col-12">
-                    <label for="deskripsi" class="form-label fw-semibold text-muted">Deskripsi</label>
-                    <textarea id="deskripsi" wire:model.defer="deskripsi" rows="4"
-                        class="form-control @error('deskripsi') is-invalid @enderror"
-                        placeholder="Masukkan deskripsi produk..."></textarea>
-                    @error('deskripsi')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    {{-- Kolom deskripsi yang SAMA dengan form produk: ketik biasa atau
+                         tempel dari ChatGPT, dirapikan otomatis, dengan pratinjau
+                         persis seperti di halaman detail paket. --}}
+                    @include('partials.admin-deskripsi', [
+                        'contoh' => "Contoh:\nCombo Sat-Set Skripsi – Grammarly Premium + Consensus\n\nParagraf pembuka yang menjelaskan manfaat paket.\n\n✅ Grammarly Premium — tulisan rapi, bebas typo\n✅ Consensus — cari & rangkum referensi jurnal\n\n📌 Yang kamu dapat:\nGrammarly & Consensus aktif 1 tahun\nPanduan login + garansi selama masa aktif",
+                    ])
                 </div>
             </div>
         </div>

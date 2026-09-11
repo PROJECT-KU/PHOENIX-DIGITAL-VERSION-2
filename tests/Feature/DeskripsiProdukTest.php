@@ -186,6 +186,31 @@ it('form admin menampilkan pratinjau dari partial yang sama dengan halaman toko'
         ->assertDontSeeHtml('class="dr-pratinjau-kosong"');
 });
 
+it('form admin paket bundling menampilkan pratinjau yang sama dengan halaman toko', function () {
+    Livewire\Livewire::test(App\Livewire\Pages\Admin\ProductBundlings\ProductBundlingsForm::class)
+        ->assertSeeHtml('class="dr-pratinjau-kosong"')
+        ->assertSeeHtml('wire:model.blur="deskripsi"')
+        ->set('deskripsi', "Combo Sat-Set Skripsi – Grammarly Premium + Consensus\n\nDuo wajib buat skripsi.\n\n✅ Grammarly Premium\n\n📌 Yang kamu dapat:\n\nGrammarly & Consensus aktif 1 tahun")
+        ->assertSeeHtml('class="dr-tagline"')
+        ->assertSeeHtml('class="dr-poin"')
+        // "📌 Yang kamu dapat:" jadi kepala daftar, bukan catatan panjang.
+        ->assertSeeHtml('class="dr-sub dr-sub-ikon"')
+        ->assertDontSeeHtml('class="dr-pratinjau-kosong"');
+});
+
+it('form produk dan form paket memakai kolom deskripsi yang sama', function () {
+    // Dua salinan markup pasti menyimpang cepat atau lambat; satu partial tidak.
+    foreach ([
+        'views/livewire/pages/admin/product/product-form.blade.php',
+        'views/livewire/pages/admin/ProductBundlings/ProductBundlings-form.blade.php',
+    ] as $jalur) {
+        $blade = file_get_contents(resource_path($jalur));
+
+        expect($blade)->toContain("@include('partials.admin-deskripsi'")
+            ->and($blade)->not->toContain('wire:model.defer="deskripsi"');
+    }
+});
+
 it('deskripsi kosong menghasilkan daftar kosong', function () {
     expect(DeskripsiProduk::blok(null))->toBe([])
         ->and(DeskripsiProduk::blok("  \n\n  "))->toBe([]);
