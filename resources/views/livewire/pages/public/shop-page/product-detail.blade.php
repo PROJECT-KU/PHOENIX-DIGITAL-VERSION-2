@@ -6,12 +6,44 @@
        Jarak atas 22px menyamai .pd-buy di public-custom-styles.css, sehingga
        kotak ini mengikuti ritme halaman dan tidak menempel ke kartu paket di
        atasnya; jarak bawahnya diserahkan ke margin .pd-buy itu sendiri. */
-    .pd-jeda{display:flex;gap:11px;align-items:flex-start;padding:13px 15px;margin:22px 0 0;
-        border:1px solid #f0c36d;background:#fdf6e3;border-radius:12px;color:#7a5a12}
-    .pd-jeda > i{font-size:1.15rem;line-height:1.35;flex-shrink:0}
-    .pd-jeda b{display:block;font-size:.92rem}
-    .pd-jeda span{display:block;font-size:.85rem;opacity:.9;margin-top:1px}
-    .pd-add:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.35)}
+    .pd-jeda { margin:22px 0 0; border:1px solid #fde68a; border-radius:18px; overflow:hidden;
+        background:linear-gradient(135deg, #fffbeb 0%, #fff 72%);
+        box-shadow:0 16px 34px -26px rgba(217,119,6,.55); }
+    .pd-jeda-isi { display:flex; align-items:flex-start; gap:14px; padding:16px 18px; }
+    /* Ubin ikon: glif tunggal di tengah — display:block + line-height:1 */
+    .pd-jeda-ic { width:46px; height:46px; flex-shrink:0; border-radius:15px; display:flex; align-items:center; justify-content:center;
+        background:linear-gradient(140deg, #f59e0b, #d97706); color:#fff; font-size:1.3rem;
+        box-shadow:0 0 0 5px #fef3c7, 0 12px 22px -12px rgba(217,119,6,.9); }
+    .pd-jeda-ic i.bi, .pd-jeda-ic i.bi::before { display:block; line-height:1; }
+    .pd-jeda-txt { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+    .pd-jeda-lencana { display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 9px; border-radius:99px;
+        background:#fef3c7; color:#92400e; font-size:.66rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+    .pd-jeda-titik { width:7px; height:7px; border-radius:50%; background:#d97706; animation:pdJedaDenyut 1.8s ease-out infinite; }
+    @keyframes pdJedaDenyut { 0% { box-shadow:0 0 0 0 rgba(217,119,6,.5); } 70%, 100% { box-shadow:0 0 0 7px rgba(217,119,6,0); } }
+    .pd-jeda-judul { font-family:'Plus Jakarta Sans','Poppins',sans-serif; font-size:.98rem; font-weight:800; color:#78350f; line-height:1.35; }
+    .pd-jeda-pesan { font-size:.85rem; color:#92400e; line-height:1.6; }
+    .pd-jeda-aksi { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding:12px 18px;
+        border-top:1px dashed #fcd34d; background:rgba(254,243,199,.35); }
+    .pd-jeda-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:38px; padding:0 15px;
+        border-radius:11px; font-size:.8rem; font-weight:700; text-decoration:none; transition:background .18s, border-color .18s, color .18s; }
+    .pd-jeda-btn i.bi, .pd-jeda-btn i.bi::before { display:block; line-height:1; font-size:.95rem; }
+    .pd-jeda-btn.is-wa { background:#16a34a; color:#fff; box-shadow:0 8px 16px -10px rgba(22,163,74,.9); }
+    .pd-jeda-btn.is-wa:hover { background:#15803d; color:#fff; }
+    .pd-jeda-btn.is-lain { background:#fff; color:#92400e; border:1px solid #fcd34d; }
+    .pd-jeda-btn.is-lain:hover { background:#fffbeb; border-color:#f59e0b; color:#78350f; }
+    /* Tombol beli saat dijeda: netral & jelas nonaktif — dulu jingga pudar
+       (opacity+grayscale) sehingga terlihat seperti tombol yang rusak. */
+    .pd-buy .pd-add.is-jeda, .pd-buy .pd-add.is-jeda:hover {
+        background:#f1f5f9 !important; color:#64748b !important; border:1.5px dashed #cbd5e1 !important;
+        box-shadow:none !important; transform:none !important; filter:none !important; text-shadow:none !important;
+        opacity:1 !important; cursor:not-allowed; }
+    .pd-add:disabled:not(.is-jeda) { opacity:.55; cursor:not-allowed; filter:grayscale(.35); }
+    @media (max-width:575.98px) {
+        .pd-jeda-isi { padding:14px; gap:12px; }
+        .pd-jeda-aksi { padding:12px 14px; }
+        .pd-jeda-btn { flex:1 1 auto; }
+    }
+    @media (prefers-reduced-motion: reduce) { .pd-jeda-titik { animation:none; } }
 
         /* ===== Kartu deskripsi ===== */
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
@@ -1036,22 +1068,38 @@
                     @if ($dijeda)
                     {{-- Layanan dijeda: halaman tetap utuh supaya calon pembeli tahu
                          layanan ini ada, hanya pintu belinya yang ditutup. --}}
-                    <div class="pd-jeda">
-                        <i class="bi bi-pause-circle"></i>
-                        <div>
-                            <b>Sedang tidak menerima pesanan baru</b>
-                            <span>{{ \App\Support\JedaLayanan::pesanProduk($product) }}</span>
+                    @php
+                        $waJeda = 'https://wa.me/6289505967995?text='.rawurlencode(
+                            'Halo Phoenix Digital, saya ingin bertanya tentang '.trim((string) $product->nama_akun).' yang sedang ditutup sementara.'
+                        );
+                    @endphp
+                    <div class="pd-jeda" role="status">
+                        <div class="pd-jeda-isi">
+                            <span class="pd-jeda-ic"><i class="bi bi-pause-fill"></i></span>
+                            <div class="pd-jeda-txt">
+                                <span class="pd-jeda-lencana"><span class="pd-jeda-titik"></span> Ditutup sementara</span>
+                                <b class="pd-jeda-judul">Sedang tidak menerima pesanan baru</b>
+                                <span class="pd-jeda-pesan">{{ \App\Support\JedaLayanan::pesanProduk($product) }}</span>
+                            </div>
+                        </div>
+                        <div class="pd-jeda-aksi">
+                            <a class="pd-jeda-btn is-wa" href="{{ $waJeda }}" target="_blank" rel="noopener">
+                                <i class="bi bi-whatsapp"></i> Tanya via WhatsApp
+                            </a>
+                            <a class="pd-jeda-btn is-lain" href="{{ route('shop.index') }}">
+                                <i class="bi bi-grid"></i> Lihat layanan lain
+                            </a>
                         </div>
                     </div>
                     @endif
 
                     {{-- Beli --}}
                     <div class="pd-buy">
-                        <button type="button" class="pd-add" wire:click="addToCart"
+                        <button type="button" class="pd-add {{ $dijeda ? 'is-jeda' : '' }}" wire:click="addToCart"
                             wire:loading.attr="disabled" wire:target="addToCart"
                             @disabled($dijeda)>
                             @if ($dijeda)
-                            <span><i class="bi bi-pause-circle"></i> Pesanan Ditutup Sementara</span>
+                            <span><i class="bi bi-lock"></i> Pesanan Ditutup Sementara</span>
                             @else
                             <span wire:loading.remove wire:target="addToCart"><i class="bi bi-cart-plus"></i> Tambah ke Keranjang</span>
                             <span wire:loading wire:target="addToCart"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
