@@ -48,6 +48,16 @@ class DeskripsiProduk
     /** Baris biasa di bawah label bertitik dua sepanjang ini masih dianggap butir daftar. */
     public const BUTIR_MAKS = 120;
 
+    /** Baris pendek tepat di atas daftar ("Fitur Utama") sepanjang ini dianggap judul bagian. */
+    public const LABEL_MAKS = 48;
+
+    /**
+     * Emoji di AWAL baris, termasuk varian (️), warna kulit, dan gabungan ZWJ
+     * seperti 👨‍💻. Hanya di awal baris: emoji di tengah kalimat ("belajar jadi
+     * seru 🎮 bareng teman") adalah bagian kalimat, bukan penanda poin.
+     */
+    private const POLA_EMOJI = '/^((?:[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}\x{2B00}-\x{2BFF}])(?:\x{FE0F}|[\x{1F3FB}-\x{1F3FF}]|\x{200D}[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}])*)\s*(\S.*)$/u';
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -69,7 +79,9 @@ class DeskripsiProduk
         // paragraf abu yang tercerai dari labelnya.
         $daftar = false;
 
-        foreach (explode("\n", $teks) as $mentah) {
+        $semua = explode("\n", $teks);
+
+        foreach ($semua as $n => $mentah) {
             $baris = trim($mentah);
 
             // Baris kosong dan garis pemisah (---, ***, ___) hanya jeda.
@@ -105,6 +117,17 @@ class DeskripsiProduk
                 continue;
             }
 
+            // Baris yang diawali emoji bebas ("🎮 Membuat kuis interaktif")
+            // adalah poin, dan emojinya dipakai sebagai ikon poin itu —
+            // begitulah ChatGPT biasa menulis daftar fitur. Penanda yang sudah
+            // punya arti sendiri (✅ poin, 📌 catatan) tetap lewat jalur lama.
+            if (! self::diawaliPenanda($baris) && preg_match(self::POLA_EMOJI, $baris, $m)) {
+                self::tambahButir($blok, 'poin', $m[2], $m[1]);
+                $sesudahKosong = false;
+
+                continue;
+            }
+
             // Langkah bernomor: "1. Bayar", "2) Terima akun".
             if (preg_match('/^\d{1,2}[.)]\s+(.+)$/u', $baris, $m)) {
                 self::tambahButir($blok, 'langkah', $m[1]);
@@ -125,6 +148,22 @@ class DeskripsiProduk
             // tengahnya ("✅ A ✅ B" dalam satu baris), perilaku lama.
             $bagian = preg_split($pola, $baris, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$baris];
             $awal = trim((string) array_shift($bagian));
+
+            // Baris pendek tanpa tanda akhir TEPAT di atas sebuah daftar
+            // ("Fitur Utama") adalah judul bagian, meski ditulis tanpa ## atau
+            // titik dua. Baris pertama yang ber-slogan ("Nama – Slogan")
+            // dibiarkan untuk ditebak sebagai judul produk.
+            // Di dalam daftar "Yang kamu dapat:" baris pendek adalah butir,
+            // bukan judul bagian baru.
+            if ($awal !== '' && ! $bagian && ! $daftar && self::labelPendek($awal)
+                && ($blok || ! preg_match('/\s[–—-]\s/u', $awal))
+                && self::barisDaftar(self::barisBerikutnya($semua, $n))) {
+                $blok[] = ['jenis' => 'subjudul', 'teks' => self::rapikanLabel($awal), 'asal' => 'label'];
+                $sesudahKosong = false;
+                $daftar = false;
+
+                continue;
+            }
 
             if ($awal !== '' && $daftar && ! $bagian && mb_strlen($awal) <= self::BUTIR_MAKS) {
                 self::tambahButir($blok, 'poin', $awal);
@@ -270,7 +309,11 @@ class DeskripsiProduk
             : [$judul, null];
     }
 
-    private static function tambahButir(array &$blok, string $jenis, string $teks): void
+    /**
+     * Butir ditambahkan ke daftar terakhir bila jenisnya sama. `ikon` sejajar
+     * dengan `butir`: emoji dari baris "🎮 …", atau null untuk centang biasa.
+     */
+    private static function tambahButir(array &$blok, string $jenis, string $teks, ?string $ikon = null): void
     {
         $teks = trim($teks);
 
@@ -282,11 +325,59 @@ class DeskripsiProduk
 
         if ($n > 0 && $blok[$n - 1]['jenis'] === $jenis) {
             $blok[$n - 1]['butir'][] = $teks;
+            $blok[$n - 1]['ikon'][] = $ikon;
 
             return;
         }
 
-        $blok[] = ['jenis' => $jenis, 'butir' => [$teks]];
+        $blok[] = ['jenis' => $jenis, 'butir' => [$teks], 'ikon' => [$ikon]];
+    }
+
+    private static function diawaliPenanda(string $baris): bool
+    {
+        foreach (array_merge(self::PENANDA_POIN, self::PENANDA_CATATAN) as $penanda) {
+            if (str_starts_with($baris, $penanda)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Baris yang akan dibaca sebagai butir daftar oleh blok(). */
+    private static function barisDaftar(?string $baris): bool
+    {
+        if ($baris === null) {
+            return false;
+        }
+
+        // Catatan (🎯 📌 …) BUKAN daftar: baris pendek di atas "🎯 Cocok
+        // buat …" adalah butir terakhir sebuah daftar, bukan judul bagian.
+        foreach (self::PENANDA_POIN as $penanda) {
+            if (str_starts_with($baris, $penanda)) {
+                return true;
+            }
+        }
+
+        return preg_match('/^([-*+•●▪]|\d{1,2}[.)])\s+\S/u', $baris)
+            || (! self::diawaliPenanda($baris) && preg_match(self::POLA_EMOJI, $baris));
+    }
+
+    /** Baris tak kosong pertama sesudah baris ke-$n, atau null. */
+    private static function barisBerikutnya(array $semua, int $n): ?string
+    {
+        for ($i = $n + 1; $i < count($semua); $i++) {
+            if (trim($semua[$i]) !== '') {
+                return trim($semua[$i]);
+            }
+        }
+
+        return null;
+    }
+
+    private static function labelPendek(string $baris): bool
+    {
+        return mb_strlen($baris) <= self::LABEL_MAKS && ! preg_match('/[.!?,;…]$/u', $baris);
     }
 
     private static function butirTerakhir(array $blok): bool

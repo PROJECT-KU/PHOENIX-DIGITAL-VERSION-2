@@ -95,6 +95,46 @@ it('kalimat panjang sesudah label tetap paragraf dan menutup daftarnya', functio
         ->toBe(['subjudul', 'paragraf', 'paragraf']);
 });
 
+it('gaya tulis admin Kahoot: judul bagian polos dan poin ber-emoji', function () {
+    // Persis seperti yang ditulis admin: tanpa ##, tanpa titik dua, tanpa ✅,
+    // tanpa baris kosong.
+    $blok = DeskripsiProduk::blok(
+        "Kahoot! adalah platform pembelajaran interaktif berbasis kuis yang membantu guru, dosen, dan perusahaan menciptakan pengalaman belajar yang lebih menarik.\n"
+        ."Fitur Utama\n"
+        ."🎮 Membuat kuis interaktif dengan mudah.\n"
+        ."📊 Hasil dan laporan peserta secara real-time.\n"
+        ."👥 Mendukung pembelajaran tatap muka maupun online.\n"
+        .'🤖 Didukung fitur AI (pada paket tertentu).'
+    );
+
+    expect(jenisDeskripsi($blok))->toBe(['paragraf', 'subjudul', 'poin'])
+        ->and($blok[1]['teks'])->toBe('Fitur Utama')
+        ->and($blok[2]['ikon'])->toBe(['🎮', '📊', '👥', '🤖'])
+        ->and($blok[2]['butir'][0])->toBe('Membuat kuis interaktif dengan mudah.');
+});
+
+it('emoji gabungan dan bervarian tetap utuh sebagai ikon poin', function () {
+    $blok = DeskripsiProduk::blok("👨‍💻 Cocok untuk developer\n❤️ Disukai pengguna");
+
+    expect($blok[0]['ikon'])->toBe(['👨‍💻', '❤️'])
+        ->and($blok[0]['butir'])->toBe(['Cocok untuk developer', 'Disukai pengguna']);
+});
+
+it('emoji di tengah kalimat tidak memecah kalimatnya', function () {
+    expect(jenisDeskripsi(DeskripsiProduk::blok("Belajar jadi seru 🎮 bareng teman.\nParagraf kedua.")))
+        ->toBe(['paragraf', 'paragraf']);
+});
+
+it('baris pertama ber-slogan di atas daftar tetap jadi judul produk', function () {
+    expect(jenisDeskripsi(DeskripsiProduk::blok("Canva Premium – Akun Siap Pakai\n✅ Satu\n✅ Dua")))
+        ->toBe(['judul', 'poin']);
+});
+
+it('baris pendek yang tidak diikuti daftar tetap paragraf', function () {
+    expect(jenisDeskripsi(DeskripsiProduk::blok("Pembuka yang panjang dan diakhiri titik.\nSiap pakai\nPenutup.")))
+        ->toBe(['paragraf', 'paragraf', 'paragraf']);
+});
+
 it('baris tebal berupa pertanyaan tetap subjudul, bukan judul', function () {
     expect(jenisDeskripsi(DeskripsiProduk::blok("**Kenapa pilih kami?**\n- Proses cepat")))
         ->toBe(['subjudul', 'poin']);

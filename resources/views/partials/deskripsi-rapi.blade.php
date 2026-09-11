@@ -89,6 +89,16 @@
         50% { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(22, 163, 74, .12); }
     }
 
+    /* Poin yang ditulis dengan emoji ("🎮 Membuat kuis"): emojinya jadi ikon
+       di ubin lembut bernada aksen, menggantikan centang. Ubin 26px sedikit
+       dinaikkan supaya pusatnya sejajar dengan baris teks pertama. */
+    .dr-emoji {
+        flex: 0 0 auto; width: 26px; height: 26px; border-radius: 8px; margin-top: -2px;
+        display: flex; align-items: center; justify-content: center;
+        background: color-mix(in srgb, var(--dr-c) 9%, #fff);
+        font-size: .9rem; line-height: 1;
+    }
+
     /* Langkah bernomor, angkanya berwarna aksen. */
     .dr-langkah { list-style: none; padding: 0; display: grid; gap: 10px; counter-reset: dr; }
     .dr-langkah li {
@@ -133,7 +143,7 @@
             @elseif ($__b['jenis'] === 'poin')
                 <ul class="dr-poin">
                     @foreach ($__b['butir'] as $__i => $__x)
-                        <li style="--i: {{ $__i }}"><i class="bi bi-check-lg"></i><span>{!! \App\Support\DeskripsiProduk::inline($__x) !!}</span></li>
+                        <li style="--i: {{ $__i }}">@if ($__b['ikon'][$__i] ?? null)<span class="dr-emoji">{{ $__b['ikon'][$__i] }}</span>@else<i class="bi bi-check-lg"></i>@endif<span>{!! \App\Support\DeskripsiProduk::inline($__x) !!}</span></li>
                     @endforeach
                 </ul>
             @elseif ($__b['jenis'] === 'langkah')

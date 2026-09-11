@@ -832,7 +832,8 @@
                                     <ul>
                                         <li>Baris pertama pendek, misalnya <code>Nama – Akun Siap Pakai</code>: tampil sebagai slogan.</li>
                                         <li>Paragraf biasa: ketik saja, pisahkan dengan baris kosong.</li>
-                                        <li>Poin fitur: awali dengan <code>✅</code> atau <code>-</code>.</li>
+                                        <li>Poin fitur: awali dengan <code>✅</code> atau <code>-</code>, atau dengan emoji apa pun (<code>🎮</code> <code>📊</code> <code>👥</code>) — emojinya jadi ikon poin.</li>
+                                        <li>Judul pendek tepat di atas daftar, misalnya <code>Fitur Utama</code>, otomatis jadi judul bagian.</li>
                                         <li>Langkah berurutan: <code>1.</code> <code>2.</code> <code>3.</code></li>
                                         <li>Judul bagian: <code>## Fitur Utama</code> atau baris yang diakhiri titik dua, misalnya <code>Cocok untuk:</code></li>
                                         <li>Catatan: awali dengan <code>📌</code> <code>🎯</code> <code>⚡</code> atau <code>💡</code>.</li>
