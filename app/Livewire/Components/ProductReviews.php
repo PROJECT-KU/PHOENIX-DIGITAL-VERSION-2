@@ -23,6 +23,20 @@ class ProductReviews extends Component
     public const URUTAN = ['terbaru', 'tertinggi', 'terendah'];
 
     /**
+     * Batas kiriman ulasan per alamat IP, dalam jendela satu jam.
+     *
+     * Dua lapis: per target (satu produk/paket) dan TOTAL untuk semua target.
+     * Tanpa batas total, satu perangkat bisa mengirim 3 ulasan ke setiap
+     * produk dan paket — puluhan ulasan per jam yang menumpuk di antrean
+     * moderasi admin.
+     */
+    public const BATAS_PER_TARGET = 3;
+
+    public const BATAS_TOTAL = 10;
+
+    public const JENDELA_DETIK = 3600;
+
+    /**
      * Id target ulasan dan jenisnya ('produk' atau 'paket'). DIKUNCI: nilainya
      * datang dari halaman yang memasang komponen ini, bukan dari peramban —
      * tanpa kunci, ulasan bisa dialihkan ke produk atau paket lain.
@@ -66,9 +80,23 @@ class ProductReviews extends Component
 
     public function submit()
     {
-        $key = 'product-review:'.request()->ip().':'.$this->jenis.':'.$this->productId;
-        if (RateLimiter::tooManyAttempts($key, 3)) {
-            $this->addError('ulasan', 'Terlalu banyak ulasan dari perangkat ini. Coba lagi nanti.');
+        $ip = request()->ip();
+        // Format kunci per target sengaja tidak diubah, supaya hitungan yang
+        // sedang berjalan saat kode ini dipasang tetap berlaku.
+        $kunciTarget = 'product-review:'.$ip.':'.$this->jenis.':'.$this->productId;
+        $kunciTotal = 'product-review-total:'.$ip;
+
+        if (RateLimiter::tooManyAttempts($kunciTotal, self::BATAS_TOTAL)) {
+            $this->addError('ulasan', 'Anda sudah mengirim '.self::BATAS_TOTAL.' ulasan dalam satu jam terakhir. '
+                .'Coba lagi dalam '.$this->menitTunggu($kunciTotal).' menit.');
+
+            return;
+        }
+
+        if (RateLimiter::tooManyAttempts($kunciTarget, self::BATAS_PER_TARGET)) {
+            $sebutan = $this->jenis === ProductReview::JENIS_PAKET ? 'paket' : 'produk';
+            $this->addError('ulasan', 'Terlalu banyak ulasan untuk '.$sebutan.' ini dari perangkat Anda. '
+                .'Coba lagi dalam '.$this->menitTunggu($kunciTarget).' menit.');
 
             return;
         }
@@ -83,7 +111,10 @@ class ProductReviews extends Component
             return;
         }
 
-        RateLimiter::hit($key, 3600);
+        // Dihitung SETELAH lolos validasi & cek paket: kiriman yang ditolak
+        // tidak menghabiskan jatah.
+        RateLimiter::hit($kunciTarget, self::JENDELA_DETIK);
+        RateLimiter::hit($kunciTotal, self::JENDELA_DETIK);
 
         ProductReview::create([
             'product_id' => $this->productId,
@@ -97,6 +128,12 @@ class ProductReviews extends Component
         $this->reset(['nama', 'ulasan']);
         $this->rating = 5;
         $this->submitted = true;
+    }
+
+    /** Sisa waktu tunggu sebuah kunci batas, dibulatkan ke atas, minimal 1 menit. */
+    private function menitTunggu(string $kunci): int
+    {
+        return max(1, (int) ceil(RateLimiter::availableIn($kunci) / 60));
     }
 
     public function muatLagi(): void
