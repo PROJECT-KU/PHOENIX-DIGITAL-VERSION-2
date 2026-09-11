@@ -100,25 +100,49 @@ it('reset mengembalikan filter ke keadaan semula', function () {
         ->and($t->get('isi'))->toBe('');
 });
 
-it('bilah filter memakai kelas yang sama dengan shop', function () {
+it('papan saring memakai bahasa visual yang sama dengan shop', function () {
     $produk = Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
     buatPaket('Paket A', 100000, $produk->id);
 
     $html = Livewire::test(HalamanPaket::class)->html();
 
-    foreach (['shop-filter', 'shop-filter-controls', 'shop-select', 'shop-filter-count'] as $kelas) {
-        expect($html)->toContain($kelas);
+    // Dicari lewat atribut class lengkap: nama kelasnya juga ada di blok <style>.
+    foreach (['sf-papan', 'sf-kategori', 'sf-urut', 'sf-info'] as $kelas) {
+        expect($html)->toContain('class="'.$kelas.'"');
     }
 });
 
-it('gambar paket memakai gaya yang sama dengan produk satuan', function () {
-    buatPaket('Paket A', 100000);
+it('chip isi paket menandai produk yang sedang menyaring', function () {
+    $canva = Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+    buatPaket('Paket Desain', 100000, $canva->id);
 
-    $html = Livewire::test(HalamanPaket::class)->html();
+    Livewire::test(HalamanPaket::class)
+        ->assertSeeHtml('data-isi="" aria-pressed="true"')
+        ->set('isi', $canva->id)
+        ->assertSeeHtml('data-isi="'.$canva->id.'" aria-pressed="true"')
+        ->assertSeeHtml('data-isi="" aria-pressed="false"');
+});
 
-    // Penanda dari partials/media-produk-style, yang juga dipakai kartu shop.
-    expect($html)->toContain('.fs-card-media')
-        ->and($html)->toContain('mediaGlow');
+it('paket tanpa gambar menampilkan tumpukan ikon produk isinya, bukan gambar rusak', function () {
+    $canva = Product::create(['nama_akun' => 'Canva Pro', 'harga_perbulan' => 20000]);
+    buatPaket('Paket Desain', 100000, $canva->id);
+
+    Livewire::test(HalamanPaket::class)
+        ->assertSeeHtml('class="pb-media is-kosong"')
+        // Canva masuk kategori Desain & Kreatif: ubinnya berwarna & berikon kategori itu.
+        ->assertSeeHtml('--p: #db2777')
+        ->assertSeeHtml('<span class="pb-daftar-nama">Canva Pro</span>')
+        ->assertSeeHtml('<span class="pb-daftar-dur">1 Bulan</span>');
+});
+
+it('harga kartu paket memakai HargaPaket, sumber yang sama dengan keranjang', function () {
+    buatPaket('Paket A', 100000); // awal 150.000, paket 100.000, tanpa promo
+
+    Livewire::test(HalamanPaket::class)
+        ->assertSeeHtml('<span class="pb-rp">Rp</span>100.000</b>')
+        ->assertSeeHtml('<s>Rp150.000</s>')
+        ->assertSeeHtml('<span class="pb-hemat">Hemat Rp50.000</span>')
+        ->assertSeeHtml('<i class="bi bi-tag-fill"></i>-33%');
 });
 
 it('jarak dan grid halaman paket sama dengan halaman shop', function () {
