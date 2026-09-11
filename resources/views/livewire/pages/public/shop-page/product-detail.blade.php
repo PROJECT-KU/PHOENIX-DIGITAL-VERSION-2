@@ -13,14 +13,6 @@
     .pd-jeda span{display:block;font-size:.85rem;opacity:.9;margin-top:1px}
     .pd-add:disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.35)}
 
-        /* Gambar produk terkait ("Mungkin Anda juga suka"): tampilkan UTUH,
-           jangan ke-crop. Override object-fit:cover dari public-custom-styles.css
-           (berkas build tak ikut deploy). mix-blend-mode:multiply membuat latar
-           PUTIH bawaan gambar (mis. Gemini Advance, Office 365) menyatu ke bg
-           kartu — seragam dengan gambar utama & kartu shop. */
-        .rel-thumb { background: var(--ph-grad-soft); }
-        .rel-thumb img { object-fit: contain !important; padding: 12px; mix-blend-mode: multiply; }
-
         /* ===== Kartu deskripsi ===== */
         .pd-desc-card { border:1px solid var(--ph-line); border-radius:18px; padding:20px 22px;
             background:linear-gradient(180deg, #fffdfa 0%, #fff 60%); }
@@ -319,32 +311,141 @@
         .pd-feature-ic i.bi { display: block; line-height: 1; }
         .pd-feature-ic i.bi::before { display: block; line-height: 1; }
 
-        /* --- Produk terkait: tiap kartu berwarna kategorinya --- */
-        .rel-card { position: relative; }
-        .rel-card:hover {
-            border-color: color-mix(in srgb, var(--c) 40%, #fff) !important;
-            box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--c) 45%, transparent) !important;
+        /* ===== Produk lainnya =====
+           Kelas rk-*, bukan rel-* lama: aturan .rel-* di public-custom-styles.css
+           di server sudah beku (kartu 150px, gambar dipotong cover) dan akan
+           terus menempel ke kelas lama. Warna tiap kartu = warna kategorinya,
+           sama dengan kartu di /shop dan kategori di beranda. */
+        .rk-deret { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; }
+        .rk-kartu {
+            position: relative; display: flex; flex-direction: column; min-width: 0;
+            background: #fff; border: 1px solid #eceff4; border-radius: 18px; overflow: hidden;
+            text-decoration: none; color: inherit;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
         }
-        .rel-thumb {
-            position: relative;
-            background:
-                radial-gradient(80% 90% at 100% 0%, color-mix(in srgb, var(--c) 14%, transparent) 0%, transparent 65%),
-                #fff !important;
+        .rk-kartu:hover {
+            transform: translateY(-4px); color: inherit;
+            border-color: color-mix(in srgb, var(--c) 35%, #fff);
+            box-shadow: 0 18px 34px -22px color-mix(in srgb, var(--c) 75%, transparent);
         }
-        .rel-kat {
-            position: absolute; top: 8px; right: 8px; z-index: 2;
-            width: 26px; height: 26px; border-radius: 50%;
+
+        /* Area gambar bernada kategori dengan sapuan pojok seperti Cara Pesan.
+           Gambar produk kebanyakan logo berlatar putih: multiply melarutkan
+           putihnya ke latar, bukan kotak putih yang menempel. */
+        .rk-media {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            aspect-ratio: 16 / 10; overflow: hidden;
+            background: linear-gradient(160deg, color-mix(in srgb, var(--c) 11%, #fff) 0%, #fff 78%);
+        }
+        .rk-media::before {
+            content: ""; position: absolute; top: -42px; right: -42px;
+            width: 124px; height: 124px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
+            transition: transform .35s ease;
+        }
+        .rk-kartu:hover .rk-media::before { transform: scale(1.3); }
+        .rk-media img {
+            position: relative; max-width: 64%; max-height: 72%; object-fit: contain;
+            mix-blend-mode: multiply; transition: transform .35s ease;
+        }
+        .rk-kartu:hover .rk-media img { transform: scale(1.06); }
+
+        /* Cadangan saat gambar tidak ada / gagal dimuat: ubin penuh warna
+           kategori — bukan ikon gambar rusak dengan teks alt mentah. */
+        .rk-cadangan {
+            display: none; position: relative; align-items: center; justify-content: center;
+            width: 62px; height: 62px; border-radius: 19px;
+            background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff));
+            color: #fff; font-size: 1.6rem;
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--c) 85%, transparent);
+            transition: transform .35s ease;
+        }
+        .rk-media.is-kosong .rk-cadangan { display: flex; }
+        .rk-kartu:hover .rk-cadangan { transform: scale(1.06) rotate(-4deg); }
+
+        /* Kategori di kanan atas, diskon di kiri atas — konvensi yang sama
+           dengan kartu /shop, jadi keduanya berseberangan dan tak bertabrakan. */
+        .rk-kat {
+            position: absolute; top: 10px; right: 10px; z-index: 1;
+            display: inline-flex; align-items: center; gap: 5px;
+            max-width: calc(100% - 20px); height: 26px; padding: 0 10px 0 8px; border-radius: 99px;
+            background: rgba(255, 255, 255, .92); border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: var(--c); font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        .rk-kat span { overflow: hidden; text-overflow: ellipsis; }
+        .rk-media:has(.rk-diskon) .rk-kat { max-width: calc(100% - 92px); }
+        /* Pil putih bertinta merah muda, bukan blok merah pekat: saat promo
+           berlaku untuk semua produk, sepuluh lencana merah berjajar menjadi
+           dinding merah yang menenggelamkan nama dan harga. */
+        .rk-diskon {
+            position: absolute; top: 10px; left: 10px; z-index: 1;
+            display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px;
+            border-radius: 99px; background: rgba(255, 255, 255, .95); border: 1px solid #fecdd3;
+            color: #e11d48; font-size: .72rem; font-weight: 800;
+        }
+        .rk-diskon.is-flash { background: #fff1f2; }
+
+        .rk-isi { display: flex; flex-direction: column; flex: 1 1 auto; gap: 4px; padding: 14px 16px 16px; }
+        .rk-jenis {
+            font-size: .66rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--c);
+        }
+        /* Dua baris dipesan untuk setiap nama, supaya harga semua kartu dalam
+           satu baris sejajar meski panjang namanya berbeda. */
+        .rk-nama {
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            min-height: 2.7em;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
+            font-size: .98rem; line-height: 1.35; letter-spacing: -.01em; color: #1c1f26;
+        }
+        .rk-kaki {
+            display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+            margin-top: auto; padding-top: 12px;
+        }
+        .rk-harga { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+        .rk-harga s { font-size: .74rem; color: #9aa2ae; }
+        .rk-harga b {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
+            font-size: 1.02rem; color: #1c1f26; white-space: nowrap;
+        }
+        .rk-harga small { margin-left: 2px; font-size: .72rem; font-weight: 600; color: #9aa2ae; }
+        .rk-harga .rk-mulai { margin: 0 3px 0 0; }
+        .rk-panah {
+            flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            background: color-mix(in srgb, var(--c) 14%, #fff);
-            border: 1px solid color-mix(in srgb, var(--c) 26%, #fff);
-            color: var(--c); font-size: .74rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); font-size: .9rem;
+            transition: background .2s ease, color .2s ease, transform .2s ease;
         }
-        .rel-kat i.bi { display: block; line-height: 1; }
-        .rel-kat i.bi::before { display: block; line-height: 1; }
-        .rel-name { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .rk-kartu:hover .rk-panah { background: var(--c); color: #fff; transform: rotate(45deg); }
+        .rk-kat i.bi, .rk-diskon i.bi, .rk-panah i.bi, .rk-cadangan i.bi { line-height: 1; }
+        .rk-kat i.bi::before, .rk-diskon i.bi::before, .rk-panah i.bi::before, .rk-cadangan i.bi::before { display: block; line-height: 1; }
+
+        /* Jumlah kartu dipotong mengikuti kolom, supaya baris terakhir penuh:
+           5 kolom × 2 = 10, 4 × 2 = 8, 3 × 3 = 9. */
+        @media (max-width: 1199.98px) {
+            .rk-deret { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .rk-kartu:nth-child(n+9) { display: none; }
+        }
+        @media (max-width: 991.98px) {
+            .rk-deret { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+            .rk-kartu:nth-child(n+9) { display: flex; }
+            .rk-kartu:nth-child(n+10) { display: none; }
+        }
+        /* HP: digeser mendatar, kartu berikutnya mengintip sebagai petunjuk
+           bahwa deretan ini bisa digeser. */
+        @media (max-width: 767.98px) {
+            .rk-deret {
+                grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 72%;
+                overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+                gap: 14px; padding-bottom: 4px;
+            }
+            .rk-deret::-webkit-scrollbar { display: none; }
+            .rk-kartu, .rk-kartu:nth-child(n+9), .rk-kartu:nth-child(n+10) { display: flex; scroll-snap-align: start; }
+            .rk-kartu:hover { transform: none; }
+        }
 
         @media (prefers-reduced-motion: reduce) {
             .pd-feature::before, .pd-kat { transition: none; }
+            .rk-kartu, .rk-media::before, .rk-media img, .rk-cadangan, .rk-panah { transition: none; }
         }
     </style>
     @php
@@ -815,8 +916,10 @@
         </div>
     </section>
 
-    {{-- Produk terkait / rekomendasi --}}
-    @if (count($this->relatedProducts))
+    {{-- Produk lainnya / rekomendasi. Data kartu dirakit di
+         ProductDetail::kartuTerkait() — harga, promo, kategori, dan gambar yang
+         benar-benar ada — supaya Blade di sini tidak menghitung apa pun. --}}
+    @if (count($this->kartuTerkait))
         <section class="rel-section">
             <div class="container">
                 {{-- Kepala bagian yang sama dengan seluruh bagian beranda,
@@ -828,26 +931,41 @@
                     judul="Mungkin Anda juga suka"
                     :tautan-url="route('shop.index')"
                     tautan-teks="Lihat Semua Produk" />
-                <div class="rel-grid rel-scroll">
-                    @foreach ($this->relatedProducts as $rp)
-                        @php $rk = \App\Support\KategoriBeranda::untukProduk($rp->nama_akun); @endphp
-                        <a href="{{ route('shop.detail-product', $rp->id) }}" class="rel-card" style="--c: {{ $rk['warna'] ?? '#f26522' }}">
-                            <div class="rel-thumb">
-                                @if ($rk)
-                                    <span class="rel-kat" title="{{ $rk['label'] }}"><i class="bi {{ $rk['ikon'] }}"></i></span>
+                <div class="rk-deret">
+                    @foreach ($this->kartuTerkait as $k)
+                        <a href="{{ $k['url'] }}" class="rk-kartu" style="--c: {{ $k['warna'] }}" wire:key="rk-{{ $k['id'] }}">
+                            <span class="rk-media {{ $k['gambar'] ? '' : 'is-kosong' }}">
+                                @if ($k['gambar'])
+                                    {{-- alt kosong: namanya tercetak tepat di bawah. Gagal dimuat
+                                         di peramban pun, gambar diganti ubin ikon kategori. --}}
+                                    <img src="{{ $k['gambar'] }}" alt="" loading="lazy"
+                                        onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                                 @endif
-                                @if ($rp->image)
-                                    <img src="{{ asset('storage/img/Product/'.basename($rp->image)) }}" alt="{{ $rp->nama_akun }}" loading="lazy">
-                                @else
-                                    <span class="rel-noimg"><i class="bi bi-box-seam"></i></span>
+                                <span class="rk-cadangan" aria-hidden="true"><i class="bi {{ $k['ikon'] }}"></i></span>
+                                @if ($k['kategori'])
+                                    <span class="rk-kat"><i class="bi {{ $k['ikon'] }}"></i><span>{{ $k['kategori'] }}</span></span>
                                 @endif
-                            </div>
-                            <div class="rel-body">
-                                <h3 class="rel-name">{{ $rp->nama_akun }}</h3>
-                                @if ($rp->harga_perbulan)
-                                    <div class="rel-price"><small>Mulai</small> Rp {{ number_format($rp->harga_perbulan, 0, ',', '.') }}</div>
+                                @if ($k['diskon'])
+                                    <span class="rk-diskon {{ $k['flash'] ? 'is-flash' : '' }}"><i class="bi {{ $k['flash'] ? 'bi-lightning-charge-fill' : 'bi-tag-fill' }}"></i>{{ $k['diskon'] }}</span>
                                 @endif
-                            </div>
+                            </span>
+                            <span class="rk-isi">
+                                <span class="rk-jenis">{{ $k['jenis'] }}</span>
+                                <span class="rk-nama">{{ $k['nama'] }}</span>
+                                <span class="rk-kaki">
+                                    <span class="rk-harga">
+                                        @if ($k['hargaAsli'])
+                                            <s>Rp{{ number_format($k['hargaAsli'], 0, ',', '.') }}</s>
+                                        @endif
+                                        @if ($k['harga'])
+                                            <b>@if ($k['mulai'])<small class="rk-mulai">Mulai</small>@endif Rp{{ number_format($k['harga'], 0, ',', '.') }}<small>{{ $k['satuan'] }}</small></b>
+                                        @else
+                                            <b>Lihat detail</b>
+                                        @endif
+                                    </span>
+                                    <span class="rk-panah" aria-hidden="true"><i class="bi bi-arrow-up-right"></i></span>
+                                </span>
+                            </span>
                         </a>
                     @endforeach
                 </div>

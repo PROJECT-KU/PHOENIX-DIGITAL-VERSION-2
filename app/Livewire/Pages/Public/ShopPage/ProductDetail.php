@@ -6,6 +6,8 @@ use App\Livewire\Concerns\MengirimPixel;
 use App\Models\JasaDraftUpload;
 use App\Models\Product;
 use App\Services\PromoService;
+use App\Support\JedaLayanan;
+use App\Support\KategoriBeranda;
 use App\Support\PdfPageCounter;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -137,6 +139,88 @@ class ProductDetail extends Component
             ->orderByRaw('ABS(COALESCE(harga_perbulan, 0) - ?) asc', [$price])
             ->take(10)
             ->get();
+    }
+
+    /**
+     * Kartu "Produk Lainnya", siap cetak.
+     *
+     * Semua perhitungan dilakukan di sini, bukan di Blade: halaman ini komponen
+     * Livewire, dan perbandingan ">" di sela direktif blok membuat Livewire
+     * melewati penanda morph-nya sehingga pembaruan halaman rusak.
+     *
+     * - Produk yang DIJEDA tidak direkomendasikan — menawarkan barang yang tak
+     *   bisa dibeli hanya membuang satu klik pengunjung (aturan JedaLayanan
+     *   yang sama dengan tombol di /shop).
+     * - Harga mengikuti /shop: jasa per halaman atau per cek, akun per bulan;
+     *   potongan promo dihitung seperti applyDiscount() supaya angka di kartu
+     *   sama dengan yang terlihat setelah kartunya diklik.
+     * - Gambar hanya dipakai bila berkasnya ADA — gambar rusak dengan teks alt
+     *   mentah terbaca seperti toko yang tidak terurus.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    #[Computed]
+    public function kartuTerkait(): array
+    {
+        $harga = (int) ($this->product->harga_perbulan ?? 0);
+
+        $calon = Product::where('id', '!=', $this->product->id)
+            ->orderByRaw('ABS(COALESCE(harga_perbulan, 0) - ?) asc', [$harga])
+            ->take(16)
+            ->get();
+
+        $kartu = [];
+
+        foreach ($calon as $p) {
+            if (JedaLayanan::produkDijeda($p)) {
+                continue;
+            }
+
+            $isJasa = (bool) $p->butuh_file;
+            $perHalaman = $isJasa && $p->jasaPerHalaman();
+            $asli = $perHalaman
+                ? (int) $p->hargaPerHalaman()
+                : ($isJasa ? (int) ($p->hargaSekali() ?? 0) : (int) $p->harga_perbulan);
+
+            $diskon = $this->promoService->getBestProductDiscount($p->id, null);
+            $akhir = $asli;
+            if ($diskon && ! empty($diskon['value']) && $asli > 0) {
+                $akhir = ($diskon['type'] ?? '') === 'persen'
+                    ? (int) ($asli - floor($asli * $diskon['value'] / 100))
+                    : (int) max(0, $asli - $diskon['value']);
+            }
+            $adaDiskon = $akhir < $asli;
+
+            $berkas = $p->image ? basename($p->image) : null;
+            $kat = KategoriBeranda::untukProduk($p->nama_akun);
+
+            $kartu[] = [
+                'id' => $p->id,
+                'nama' => $p->nama_akun,
+                'url' => route('shop.detail-product', $p->id),
+                'gambar' => $berkas && Storage::disk('public')->exists('img/Product/'.$berkas)
+                    ? asset('storage/img/Product/'.$berkas)
+                    : null,
+                'kategori' => $kat['label'] ?? null,
+                'warna' => $kat['warna'] ?? '#f26522',
+                'ikon' => $kat['ikon'] ?? 'bi-box-seam',
+                'jenis' => $isJasa ? 'Layanan' : ucfirst((string) ($p->tipe_akun ?: 'Akun')),
+                'harga' => $akhir,
+                'hargaAsli' => $adaDiskon ? $asli : null,
+                'diskon' => $adaDiskon
+                    ? (($diskon['type'] ?? '') === 'persen' ? '-'.number_format($diskon['value'], 0).'%' : 'Hemat')
+                    : null,
+                'flash' => $adaDiskon && ($diskon['promo']->tipe_promo ?? null) === 'flash_sale',
+                'mulai' => $isJasa,
+                'satuan' => $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln'),
+            ];
+
+            if (count($kartu) === 10) {
+                break;
+            }
+        }
+
+        return $kartu;
     }
 
     public function applyDiscount(int $harga): int
