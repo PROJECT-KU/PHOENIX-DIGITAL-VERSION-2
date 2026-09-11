@@ -617,8 +617,6 @@ class Index extends Component
                 fn ($k) => $k['kunci'] !== 'bundling',
             )),
             'kategoriAktif' => \App\Support\KategoriBeranda::kata($this->kategori) ? $this->kategori : '',
-            // Fakta di kepala halaman: seluruh katalog, bukan hasil saringan.
-            'jumlahProduk' => Product::count(),
             'adaFilter' => (bool) ($this->tipe || $this->sortBy || \App\Support\KategoriBeranda::kata($this->kategori)),
         ]);
     }
