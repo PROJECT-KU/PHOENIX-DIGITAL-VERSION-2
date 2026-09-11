@@ -106,6 +106,110 @@
         .fsx-judul { letter-spacing: -.026em; }
     </style>
 
+    {{-- ===== Judul halaman (dipakai 12 halaman: shop, keranjang, checkout,
+         pembayaran, riwayat, lacak, wishlist, detail produk & paket, about,
+         kontak, blog) =====
+
+         Ditulis sekali di sini, bukan di halaman shop saja: kedua belas halaman
+         memakai markup yang sama persis, dan satu halaman yang judulnya tampil
+         berbeda dari sebelas lainnya akan terbaca sebagai halaman dari situs
+         lain. Gaya lamanya ada di public-custom-styles.css yang tidak ikut
+         terdeploy, jadi pembenahannya harus inline. --}}
+    <style>
+        .ph-page-title {
+            --c: #f26522;
+            position: relative; overflow: hidden;
+            background:
+                radial-gradient(55% 130% at 100% 0%, color-mix(in srgb, var(--c) 11%, transparent) 0%, transparent 62%),
+                radial-gradient(45% 110% at 0% 100%, rgba(251, 169, 25, .08) 0%, transparent 60%),
+                #fffdfa !important;
+            border-bottom: 1px solid #f1ece6;
+            padding: 38px 0 34px;
+        }
+        /* Titik-titik samar di sisi kanan: memberi bidangnya permukaan tanpa
+           menambah satu unsur pun yang harus dibaca. Dipudarkan ke kiri supaya
+           tidak pernah menyentuh judul. */
+        .ph-page-title::after {
+            content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 42%;
+            background-image: radial-gradient(color-mix(in srgb, var(--c) 22%, transparent) 1px, transparent 1px);
+            background-size: 20px 20px;
+            -webkit-mask-image: linear-gradient(270deg, #000 0%, transparent 100%);
+            mask-image: linear-gradient(270deg, #000 0%, transparent 100%);
+            pointer-events: none;
+        }
+        .ph-page-title > .container { position: relative; z-index: 1; gap: 24px; }
+
+        /* Label pembuka: ubin ikon berwarna + teks berjarak lebar, bahasa yang
+           sama dengan kartu Cara Pesan dan Kategori Populer. Pil lamanya
+           (bidang persik + bingkai) bertumpuk di atas latar yang juga persik,
+           jadi nyaris tidak terlihat sebagai bentuk. */
+        .ph-page-head .ph-sec-eyebrow {
+            display: inline-flex !important; align-items: center; gap: 10px;
+            background: none !important; border: 0 !important; padding: 0 !important;
+            margin-bottom: 12px !important;
+            font-size: .74rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+            color: var(--c) !important;
+        }
+        .ph-page-head .ph-sec-eyebrow i.bi {
+            width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+            display: flex !important; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 13%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: var(--c); font-size: .9rem; line-height: 1;
+        }
+        /* Ikon di tengah: glif Bootstrap Icons membawa tinggi baris bawaannya
+           sendiri, jadi di dalam ubin ia duduk sedikit di bawah pusat. */
+        .ph-page-head .ph-sec-eyebrow i.bi::before { display: block; line-height: 1; }
+
+        /* Kekhususan .ph-page-head h1 dipakai supaya menang atas aturan lama
+           yang masih memaksa Poppins pada selektor yang sama. */
+        .ph-page-head h1 {
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif !important;
+            font-weight: 800; color: #1c1f26;
+            font-size: clamp(1.9rem, 3.4vw, 2.6rem); line-height: 1.08;
+            letter-spacing: -.032em; margin: 0;
+        }
+        .ph-page-head p {
+            color: #6b7280; font-size: 1rem; line-height: 1.6;
+            margin: 10px 0 0; max-width: 54ch;
+        }
+
+        /* Remah roti jadi satu pil, bukan teks lepas di pojok. Sebagai teks
+           lepas ia terbaca sebagai sisa yang lupa dirapikan; sebagai pil ia
+           terbaca sebagai alat navigasi yang disengaja. Pemisahnya panah tipis,
+           bukan garis miring: garis miring terbaca sebagai alamat berkas. */
+        .ph-page-title .breadcrumbs { flex: 0 0 auto; }
+        .ph-page-title .breadcrumbs ol {
+            display: inline-flex !important; align-items: center; flex-wrap: wrap;
+            background: #fff; border: 1px solid #eceff4; border-radius: 999px;
+            padding: 8px 16px; gap: 0;
+            box-shadow: 0 6px 18px rgba(120, 90, 60, .06);
+            font-size: .85rem;
+        }
+        .ph-page-title .breadcrumbs ol li { display: inline-flex; align-items: center; }
+        .ph-page-title .breadcrumbs ol li + li { padding-left: 10px; }
+        .ph-page-title .breadcrumbs ol li + li::before {
+            content: "\203A"; padding-right: 10px;
+            color: #c3c9d2; font-size: 1.1rem; line-height: 1;
+        }
+        .ph-page-title .breadcrumbs a {
+            color: #6b7280 !important; text-decoration: none; font-weight: 600;
+            transition: color .2s ease;
+        }
+        .ph-page-title .breadcrumbs a:hover { color: var(--c) !important; }
+        .ph-page-title .breadcrumbs .current { color: #1c1f26 !important; font-weight: 700; }
+
+        @media (max-width: 991.98px) {
+            .ph-page-title .breadcrumbs { margin-top: 16px; }
+        }
+        @media (max-width: 575.98px) {
+            .ph-page-title { padding: 26px 0 24px; }
+            .ph-page-title::after { width: 60%; opacity: .6; }
+            .ph-page-head p { font-size: .94rem; }
+            .ph-page-title .breadcrumbs ol { font-size: .8rem; padding: 7px 14px; }
+        }
+    </style>
+
     {{-- ===== Kaki halaman =====
 
          Gayanya berasal dari public-custom-styles.css yang tidak ikut
