@@ -203,7 +203,10 @@
             .pb-daftar-dur { display: none; }
             .pb-harga b { font-size: 1rem; }
             .pb-aksi { gap: 6px; padding-top: 12px; }
-            .pb-beli { height: 38px; padding: 0 8px; border-radius: 10px; font-size: .78rem; }
+            /* Kartu paket di HP ~159px: jarak & huruf tombol dirapatkan supaya
+               "Keranjang" tidak terpotong jadi "Keranjan". */
+            .pb-beli { height: 38px; padding: 0 6px; border-radius: 10px; font-size: .76rem; }
+            .pb-beli > span { gap: 5px; }
             .pb-lihat { width: 38px; height: 38px; border-radius: 10px; }
             .pb-jumlah { top: 8px; right: 8px; height: 23px; padding: 0 7px; font-size: .64rem; }
             .pb-diskon { top: 8px; left: 8px; height: 23px; padding: 0 7px; font-size: .66rem; }

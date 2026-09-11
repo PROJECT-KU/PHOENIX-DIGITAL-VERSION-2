@@ -38,6 +38,9 @@ class ProductBundlings extends Component
     /** Harga tersimpan sebagai teks berformat ("Rp 160.000"), jadi angkanya
      *  dibersihkan dulu sebelum diurutkan. Ditulis dengan REPLACE + 0 supaya
      *  jalan di MySQL maupun SQLite (yang dipakai pengujian). */
+    /** Warna kategori Produktivitas — terlalu kusam untuk jadi aksen kartu. */
+    private const WARNA_NETRAL = '#475569';
+
     private const ANGKA_HARGA = "REPLACE(REPLACE(REPLACE(harga_bundling,'Rp',''),'.',''),' ','') + 0";
 
     public function updatedIsi()
@@ -201,8 +204,10 @@ class ProductBundlings extends Component
             'gambar' => $berkas && Storage::disk('public')->exists('img/ProductBundlings/'.$berkas)
                 ? asset('storage/img/ProductBundlings/'.$berkas)
                 : null,
-            // Aksen kartu = warna kategori produk pertama di dalam paket.
-            'warna' => $isi->first()['warna'] ?? '#f26522',
+            // Aksen kartu = warna produk pertama yang BUKAN abu netral. Hampir
+            // semua paket diawali Grammarly (Produktivitas, abu slate), dan
+            // mengikuti produk pertama saja membuat deretan kartu kusam abu-abu.
+            'warna' => ($isi->first(fn ($p) => strtolower($p['warna']) !== self::WARNA_NETRAL) ?? $isi->first())['warna'] ?? '#f26522',
             'tumpuk' => $tumpuk,
             'jumlahIsi' => $isi->count(),
             'isiTampil' => $isi->take(3)->all(),
