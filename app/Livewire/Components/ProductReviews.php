@@ -8,6 +8,18 @@ use Livewire\Component;
 
 class ProductReviews extends Component
 {
+    /** Ulasan yang tampil pertama kali, dan tambahan tiap "Tampilkan lagi". */
+    public const PER_MUAT = 5;
+
+    /**
+     * Batas atas ulasan dalam satu halaman. $tampil adalah properti publik yang
+     * bisa diubah dari peramban; tanpa batas, satu permintaan bisa meminta
+     * seluruh tabel sekaligus.
+     */
+    public const TAMPIL_MAKS = 200;
+
+    public const URUTAN = ['terbaru', 'tertinggi', 'terendah'];
+
     public $productId;
 
     public $nama = '';
@@ -17,6 +29,13 @@ class ProductReviews extends Component
     public $ulasan = '';
 
     public bool $submitted = false;
+
+    public int $tampil = self::PER_MUAT;
+
+    /** Saring bintang 1–5, atau null untuk semua. */
+    public ?int $bintang = null;
+
+    public string $urut = 'terbaru';
 
     public function mount($productId)
     {
@@ -57,12 +76,50 @@ class ProductReviews extends Component
         $this->submitted = true;
     }
 
+    public function muatLagi(): void
+    {
+        $this->tampil = min($this->tampil + self::PER_MUAT, self::TAMPIL_MAKS);
+    }
+
+    /** Klik bintang yang sama sekali lagi melepas saringannya. */
+    public function saringBintang($bintang = null): void
+    {
+        $b = (int) $bintang;
+        $this->bintang = ($b >= 1 && $b <= 5 && $this->bintang !== $b) ? $b : null;
+        $this->tampil = self::PER_MUAT;
+    }
+
+    public function updatedUrut(): void
+    {
+        $this->tampil = self::PER_MUAT;
+    }
+
     public function render()
     {
+        // Nilai dari peramban dirapikan dulu sebelum menyentuh query.
+        if (! in_array($this->urut, self::URUTAN, true)) {
+            $this->urut = 'terbaru';
+        }
+        if ($this->bintang !== null && ($this->bintang < 1 || $this->bintang > 5)) {
+            $this->bintang = null;
+        }
+        $this->tampil = max(self::PER_MUAT, min($this->tampil, self::TAMPIL_MAKS));
+
         $base = ProductReview::approved()->where('product_id', $this->productId);
 
+        // Skor, jumlah, dan sebaran selalu dari SEMUA ulasan — saringan hanya
+        // mengubah daftar yang dibaca, bukan ringkasannya.
+        $daftar = (clone $base)->when($this->bintang, fn ($q) => $q->where('rating', $this->bintang));
+
+        match ($this->urut) {
+            'tertinggi' => $daftar->orderByDesc('rating')->latest()->orderByDesc('id'),
+            'terendah' => $daftar->orderBy('rating')->latest()->orderByDesc('id'),
+            default => $daftar->latest()->orderByDesc('id'),
+        };
+
         return view('livewire.components.product-reviews', [
-            'reviews' => (clone $base)->latest()->take(20)->get(),
+            'reviews' => (clone $daftar)->take($this->tampil)->get(),
+            'jumlahTersaring' => (clone $daftar)->reorder()->count(),
             'avg' => (clone $base)->avg('rating'),
             'count' => (clone $base)->count(),
             // Jumlah ulasan per bintang (5 => 12, 4 => 3, …) untuk batang sebaran.

@@ -15,6 +15,20 @@
     // di balik tombol hanya menambah satu klik tanpa memberi apa-apa. Setelah
     // ada ulasan, yang dicari pengunjung adalah membacanya — formulir dilipat.
     $formLipat = $count > 0;
+
+    // Dihitung DI SINI, bukan dalam @php di sela direktif blok. Livewire
+    // melewati penanda morph sebuah direktif bila teks sesudahnya sampai tag
+    // berikutnya memuat ">" (misal "$n > 0"), dan penanda yang timpang membuat
+    // setiap pembaruan daftar (muat lagi, saring, urut) rusak.
+    $lipat = fn ($teks) => mb_strlen((string) $teks) > 240 || substr_count((string) $teks, "\n") >= 4;
+    $sisa = $jumlahTersaring - $reviews->count();
+
+    // Semua perbandingan dirakit jadi boolean di sini, supaya ekspresi direktif
+    // blok di bawah tidak pernah memuat ">" (lihat catatan di atas).
+    $perMuat = \App\Livewire\Components\ProductReviews::PER_MUAT;
+    $adaAlat = $count > $perMuat;
+    $adaSisa = $sisa > 0;
+    $semuaTampil = ! $adaSisa && $jumlahTersaring > $perMuat;
 @endphp
 
 <div class="ul" x-data="{ rating: @entangle('rating'), showForm: false }">
@@ -35,7 +49,11 @@
             display: grid; grid-template-columns: 360px minmax(0, 1fr);
             gap: 24px; align-items: start;
         }
-        .ul-kanan { display: grid; gap: 14px; min-width: 0; }
+        /* Kolom grid EKSPLISIT minmax(0, 1fr). Tanpa itu, kolom implisit
+           berukuran auto ikut melebar selebar isi terlebarnya — deretan chip
+           bintang yang sengaja tidak dibungkus di HP — dan seluruh kolom
+           kanan terdorong keluar layar. */
+        .ul-kanan { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 
         /* ===== Panel kiri (ringkasan / ajakan) =====
            Bernada warna kategori produk, dengan sapuan pojok seperti Cara
@@ -102,11 +120,21 @@
 
         /* Sebaran 5→1. Satu angka rata-rata tidak memberi tahu apakah semua
            orang puas, atau separuh sangat puas dan separuh kecewa. */
-        .ul-sebaran { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 9px; }
-        .ul-sebaran li {
+        .ul-sebaran { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 1px; }
+        /* Tiap batang juga penyaring: klik "4 ★" untuk membaca hanya ulasan
+           bintang empat. Diperlebar 6px ke kiri-kanan supaya latar sorotnya
+           punya ruang tanpa menggeser batang dari tepi panel. */
+        .ul-sebaran-btn {
+            width: calc(100% + 12px); margin: 0 -6px; padding: 5px 6px;
             display: grid; grid-template-columns: 30px minmax(0, 1fr) 20px;
-            align-items: center; gap: 10px; font-size: .8rem; color: #6b7280;
+            align-items: center; gap: 10px; border: 0; border-radius: 9px; background: transparent;
+            font: inherit; font-size: .8rem; color: #6b7280; text-align: left; cursor: pointer;
+            transition: background .15s ease;
         }
+        .ul-sebaran-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--uc) 7%, transparent); }
+        .ul-sebaran-btn.is-aktif { background: color-mix(in srgb, var(--uc) 13%, #fff); }
+        .ul-sebaran-btn:disabled { cursor: default; opacity: .55; }
+        .ul-sebaran-btn:focus-visible { outline: 2px solid var(--uc); outline-offset: 1px; }
         .ul-lbl { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: #374151; }
         .ul-lbl i.bi { color: #f59e0b; font-size: .72rem; }
         .ul-bar { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--uc) 8%, #f1f3f6); overflow: hidden; }
@@ -265,6 +293,58 @@
         .ul-terima-teks b { display: block; color: #14532d; font-size: .98rem; }
         .ul-terima-teks p { margin: 2px 0 0; font-size: .86rem; line-height: 1.55; color: #166534; }
 
+        /* ===== Bila ulasannya banyak =====
+           Saring bintang + urutan di atas daftar, lima ulasan per muatan, dan
+           ulasan panjang dilipat empat baris. Tanpa ini, seratus ulasan
+           menjadi kolom setinggi belasan layar yang tak bisa disaring. */
+        .ul-alat { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+        .ul-chip-deret { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; }
+        .ul-chip {
+            flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+            height: 36px; padding: 0 14px; border-radius: 99px;
+            border: 1px solid #e5e7eb; background: #fff; color: #374151;
+            font-size: .82rem; font-weight: 700; white-space: nowrap; cursor: pointer;
+            transition: border-color .15s ease, background .15s ease, color .15s ease;
+        }
+        .ul-chip i.bi { color: #f59e0b; font-size: .76rem; }
+        .ul-chip span { font-weight: 600; color: #9aa2ae; font-variant-numeric: tabular-nums; }
+        .ul-chip:hover { border-color: color-mix(in srgb, var(--uc) 40%, #e5e7eb); }
+        .ul-chip.is-aktif {
+            background: var(--uc); border-color: var(--uc); color: #fff;
+            box-shadow: 0 8px 16px -10px color-mix(in srgb, var(--uc) 85%, transparent);
+        }
+        .ul-chip.is-aktif i.bi, .ul-chip.is-aktif span { color: rgba(255, 255, 255, .85); }
+        .ul-urut {
+            display: inline-flex; align-items: center; gap: 8px; height: 36px; margin: 0; padding: 0 6px 0 12px;
+            border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #6b7280; font-size: .82rem;
+        }
+        .ul-urut select {
+            border: 0; background: transparent; font: inherit; font-weight: 700; color: #1c1f26;
+            padding: 0 2px; cursor: pointer; outline: none;
+        }
+        .ul-urut:focus-within { border-color: var(--uc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--uc) 14%, transparent); }
+
+        .ul-teks.is-lipat {
+            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .ul-baca {
+            margin-top: 8px; padding: 0; border: 0; background: none;
+            color: var(--uc); font-weight: 700; font-size: .82rem; cursor: pointer;
+        }
+        .ul-baca:hover { text-decoration: underline; }
+
+        .ul-lagi {
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 50px;
+            border: 1.5px dashed color-mix(in srgb, var(--uc) 35%, #e5e7eb); border-radius: 14px;
+            background: color-mix(in srgb, var(--uc) 4%, #fff); color: var(--uc);
+            font-weight: 700; font-size: .9rem; cursor: pointer;
+            transition: background .15s ease, border-color .15s ease;
+        }
+        .ul-lagi:hover { background: color-mix(in srgb, var(--uc) 9%, #fff); border-style: solid; }
+        .ul-lagi:disabled { opacity: .7; cursor: wait; }
+        .ul-lagi small { font-weight: 600; font-size: .8rem; color: #9aa2ae; }
+        .ul-habis { margin: 2px 0 0; text-align: center; font-size: .8rem; color: #9aa2ae; }
+
         @media (max-width: 1199.98px) {
             .ul-grid { grid-template-columns: 320px minmax(0, 1fr); }
             .ul-baris { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -284,9 +364,19 @@
             .ul-aksi .ul-tombol { flex: 1 1 0; }
             .ul-terima { flex-wrap: wrap; }
             .ul-terima .ul-tombol { width: 100%; }
+            /* Chip bintang menggulir mendatar, bukan membungkus jadi dua baris. */
+            /* nowrap: pada flex berarah kolom yang boleh membungkus, lebar
+               tiap baris mengikuti isinya, bukan wadahnya — deretan chip
+               lalu melebar keluar layar alih-alih menggulir. */
+            .ul-alat { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
+            .ul-chip-deret { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding: 2px; margin: -2px; }
+            .ul-chip-deret::-webkit-scrollbar { display: none; }
+            .ul-urut select { flex: 1 1 auto; min-width: 0; }
+            .ul-lagi small { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .ul-kartu, .ul-tombol, .ul-rate button, .ul-field .form-control { transition: none; }
+            .ul-kartu, .ul-tombol, .ul-rate button, .ul-field .form-control,
+            .ul-chip, .ul-lagi, .ul-sebaran-btn { transition: none; }
         }
     </style>
 
@@ -315,9 +405,14 @@
                     @for ($b = 5; $b >= 1; $b--)
                         @php $n = $sebaran[$b] ?? 0; @endphp
                         <li>
-                            <span class="ul-lbl">{{ $b }} <i class="bi bi-star-fill"></i></span>
-                            <span class="ul-bar"><span style="--w: {{ round($n / $count * 100) }}%"></span></span>
-                            <span class="ul-n">{{ $n }}</span>
+                            <button type="button" class="ul-sebaran-btn {{ $bintang === $b ? 'is-aktif' : '' }}"
+                                wire:click="saringBintang({{ $b }})" @disabled($n === 0)
+                                aria-pressed="{{ $bintang === $b ? 'true' : 'false' }}"
+                                aria-label="Tampilkan ulasan bintang {{ $b }} ({{ $n }})">
+                                <span class="ul-lbl">{{ $b }} <i class="bi bi-star-fill"></i></span>
+                                <span class="ul-bar"><span style="--w: {{ round($n / $count * 100) }}%"></span></span>
+                                <span class="ul-n">{{ $n }}</span>
+                            </button>
                         </li>
                     @endfor
                 </ul>
@@ -368,7 +463,11 @@
                     <button type="button" class="ul-tombol ul-tombol-garis" wire:click="$set('submitted', false)">Tulis lagi</button>
                 </div>
             @else
-                <form wire:submit="submit" class="ul-form" x-ref="form" @if ($formLipat) x-show="showForm" x-cloak @endif>
+                {{-- Sengaja tanpa direktif blok di dalam tag: Livewire tidak
+                     memasang penanda morph untuk direktif yang disangkanya di
+                     dalam tag, dan pasangannya jadi timpang. Nilainya dicetak
+                     biasa lewat kurung kurawal ganda. --}}
+                <form wire:submit="submit" class="ul-form" x-ref="form" x-show="{{ $formLipat ? 'showForm' : 'true' }}" {{ $formLipat ? 'x-cloak' : '' }}>
                     <div class="ul-form-kepala">
                         <span class="ul-ubin"><i class="bi bi-pencil-square"></i></span>
                         <div>
@@ -424,8 +523,38 @@
                 </form>
             @endif
 
+            {{-- Alat daftar hanya muncul bila ulasannya lebih banyak dari yang
+                 tampil sekaligus — untuk lima ulasan atau kurang, semuanya
+                 sudah terlihat dan penyaring hanya menambah kerumitan. --}}
+            @if ($adaAlat)
+                <div class="ul-alat">
+                    <div class="ul-chip-deret" role="group" aria-label="Saring menurut bintang">
+                        <button type="button" class="ul-chip {{ $bintang === null ? 'is-aktif' : '' }}"
+                            wire:click="saringBintang" aria-pressed="{{ $bintang === null ? 'true' : 'false' }}">
+                            Semua <span>{{ $count }}</span>
+                        </button>
+                        @foreach ([5, 4, 3, 2, 1] as $b)
+                            @if (! empty($sebaran[$b]))
+                                <button type="button" class="ul-chip {{ $bintang === $b ? 'is-aktif' : '' }}"
+                                    wire:click="saringBintang({{ $b }})" aria-pressed="{{ $bintang === $b ? 'true' : 'false' }}">
+                                    <i class="bi bi-star-fill"></i> {{ $b }} <span>{{ $sebaran[$b] }}</span>
+                                </button>
+                            @endif
+                        @endforeach
+                    </div>
+                    <label class="ul-urut">
+                        <i class="bi bi-sort-down"></i>
+                        <select wire:model.live="urut" aria-label="Urutkan ulasan">
+                            <option value="terbaru">Terbaru</option>
+                            <option value="tertinggi">Rating tertinggi</option>
+                            <option value="terendah">Rating terendah</option>
+                        </select>
+                    </label>
+                </div>
+            @endif
+
             @foreach ($reviews as $r)
-                <article class="ul-kartu" style="--a: {{ $warnaPengulas($r->nama) }}">
+                <article class="ul-kartu" style="--a: {{ $warnaPengulas($r->nama) }}" wire:key="ulasan-{{ $r->id }}" x-data="{ buka: false, lebih: false }">
                     <i class="bi bi-quote ul-kutip" aria-hidden="true"></i>
                     <div class="ul-kepala">
                         <span class="ul-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr(trim($r->nama), 0, 1)) }}</span>
@@ -443,9 +572,30 @@
                             </span>
                         </div>
                     </div>
-                    <p class="ul-teks">{{ $r->ulasan }}</p>
+                    @if ($lipat($r->ulasan))
+                        {{-- Tombolnya muncul hanya bila teks BENAR-BENAR terpotong, diukur
+                             di peramban: ulasan 300 karakter muat tiga baris di desktop
+                             tetapi tujuh baris di HP, dan tombol yang tidak membuka apa-apa
+                             hanya membuat orang ragu apakah tautannya rusak. --}}
+                        <p class="ul-teks is-lipat" :class="{ 'is-lipat': !buka }"
+                            x-init="$nextTick(() => lebih = $el.scrollHeight > $el.clientHeight + 1)">{{ $r->ulasan }}</p>
+                        <button type="button" class="ul-baca" x-show="lebih" x-cloak @click="buka = !buka" x-text="buka ? 'Tutup' : 'Baca selengkapnya'">Baca selengkapnya</button>
+                    @else
+                        <p class="ul-teks">{{ $r->ulasan }}</p>
+                    @endif
                 </article>
             @endforeach
+
+            @if ($adaSisa)
+                <button type="button" class="ul-lagi" wire:click="muatLagi" wire:loading.attr="disabled" wire:target="muatLagi">
+                    <span wire:loading.remove wire:target="muatLagi"><i class="bi bi-chevron-down"></i></span>
+                    <span wire:loading wire:target="muatLagi"><span class="spinner-border spinner-border-sm"></span></span>
+                    Tampilkan {{ min($perMuat, $sisa) }} ulasan lagi
+                    <small>· {{ $sisa }} tersisa</small>
+                </button>
+            @elseif ($semuaTampil)
+                <p class="ul-habis">Semua {{ $jumlahTersaring }} ulasan sudah ditampilkan.</p>
+            @endif
         </div>
     </div>
 </div>
