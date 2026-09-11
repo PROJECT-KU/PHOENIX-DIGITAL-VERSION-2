@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Services\PromoService;
 use App\Support\JedaLayanan;
 use App\Support\KategoriBeranda;
+use App\Support\PaketHemat;
 use App\Support\PdfPageCounter;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Computed;
@@ -221,6 +222,51 @@ class ProductDetail extends Component
         }
 
         return $kartu;
+    }
+
+    /**
+     * Kartu "Pilih Paket", siap cetak.
+     *
+     * Harga & diskon tetap dari applyDiscount(), dan aturan kartu aktif sama
+     * persis dengan yang sebelumnya dihitung di Blade. Yang baru hanya label
+     * "Paling hemat" dan harga setara per bulan — aturannya sama dengan jendela
+     * durasi di /shop (PaketHemat). Dihitung di sini supaya Blade tidak memuat
+     * ">" di sela direktif blok (jebakan penanda morph Livewire).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    #[Computed]
+    public function paketTampil(): array
+    {
+        $rupiah = fn ($v) => 'Rp '.number_format((int) $v, 0, ',', '.');
+        $opsi = [];
+        $perBulan = [];
+
+        foreach ($this->product->daftarHarga()->values() as $i => $pkg) {
+            $asli = (int) $pkg['harga'];
+            $akhir = $this->applyDiscount($asli);
+            $bulan = PaketHemat::bulan($pkg['durasi_type'], $pkg['durasi_value']);
+            $perBulan[$i] = $bulan ? $akhir / $bulan : null;
+
+            $opsi[$i] = [
+                'tipe' => $pkg['durasi_type'],
+                'nilai' => (int) $pkg['durasi_value'],
+                'label' => $pkg['durasi_value'].' '.ucfirst($pkg['durasi_type']),
+                'akhir' => $rupiah($akhir),
+                'asli' => $akhir < $asli ? $rupiah($asli) : null,
+                'hemat' => $asli > $akhir ? 'Hemat '.$rupiah($asli - $akhir) : null,
+                'perBulan' => PaketHemat::setaraPerBulan($akhir, $bulan, 'Rp '),
+                'aktif' => $this->durationType === $pkg['durasi_type'] && (int) $this->durationValue === (int) $pkg['durasi_value'],
+                'terhemat' => false,
+            ];
+        }
+
+        $terhemat = PaketHemat::terhemat($perBulan);
+        if ($terhemat !== null) {
+            $opsi[$terhemat]['terhemat'] = true;
+        }
+
+        return array_values($opsi);
     }
 
     public function applyDiscount(int $harga): int

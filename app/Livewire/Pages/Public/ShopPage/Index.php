@@ -329,18 +329,13 @@ class Index extends Component
     {
         $kat = \App\Support\KategoriBeranda::untukProduk($this->pickProductName);
         $rupiah = fn ($v) => 'Rp'.number_format((int) $v, 0, ',', '.');
-        $bulanDari = fn ($tipe, $nilai) => match (strtolower((string) $tipe)) {
-            'bulan' => (int) $nilai,
-            'tahun' => (int) $nilai * 12,
-            default => null,
-        };
 
         $opsi = [];
         $perBulan = [];
         foreach ($this->pickPackages as $i => $p) {
             $akhir = (int) ($p['discounted'] ?? $p['price']);
             $asli = (int) $p['price'];
-            $bln = $bulanDari($p['duration_type'], $p['duration_value']);
+            $bln = \App\Support\PaketHemat::bulan($p['duration_type'], $p['duration_value']);
             $perBulan[$i] = $bln ? $akhir / $bln : null;
 
             $opsi[$i] = [
@@ -351,9 +346,7 @@ class Index extends Component
                 'akhir' => $rupiah($akhir),
                 'asli' => $akhir < $asli ? $rupiah($asli) : null,
                 'hemat' => ! empty($p['savings']) ? 'Hemat '.$rupiah($p['savings']) : null,
-                // Setara per bulan hanya untuk paket lebih dari sebulan — itulah
-                // yang sulit dibandingkan pembeli di kepalanya sendiri.
-                'perBulan' => $bln && $bln > 1 ? '≈ '.$rupiah(round($akhir / $bln)).'/bulan' : null,
+                'perBulan' => \App\Support\PaketHemat::setaraPerBulan($akhir, $bln),
                 'aktif' => ! $this->pickIsCustom
                     && $this->pickType === $p['duration_type']
                     && (int) $this->pickValue === (int) $p['duration_value'],
@@ -361,11 +354,10 @@ class Index extends Component
             ];
         }
 
-        // "Paling hemat" hanya bila benar-benar ada selisih per bulan di antara
-        // setidaknya dua paket — label yang menempel ke semua paket tak berarti.
-        $sah = array_filter($perBulan, fn ($v) => $v !== null);
-        if (count($sah) >= 2 && min($sah) < max($sah)) {
-            $opsi[array_search(min($sah), $sah, true)]['terhemat'] = true;
+        // Aturan yang sama dengan kartu paket di halaman produk.
+        $terhemat = \App\Support\PaketHemat::terhemat($perBulan);
+        if ($terhemat !== null) {
+            $opsi[$terhemat]['terhemat'] = true;
         }
 
         $custom = null;

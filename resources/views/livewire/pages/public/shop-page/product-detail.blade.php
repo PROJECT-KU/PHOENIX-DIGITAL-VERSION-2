@@ -280,6 +280,18 @@
             box-shadow: 0 10px 24px color-mix(in srgb, var(--c) 18%, transparent) !important;
         }
         .pd-pkg-check { color: var(--c) !important; }
+
+        /* "Paling hemat" + harga setara per bulan di kartu paket — aturan yang
+           sama dengan jendela durasi di /shop (App\Support\PaketHemat). Pil memakai
+           warna kategori halaman ini; ruang kanan label dipesan untuk ikon
+           centang kartu terpilih di pojok kanan atas. */
+        .pd-pkg-dur { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px 8px; padding-right: 22px; }
+        .pd-pkg-hemat {
+            display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px;
+            background: var(--c, #f26522); color: #fff; line-height: 1; white-space: nowrap;
+            font-size: .6rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+        }
+        .pd-pkg-per { font-size: .74rem; font-weight: 500; color: #6b7280; }
         .pd-stepper button:hover:not(:disabled) {
             background: color-mix(in srgb, var(--c) 9%, #fff) !important; color: var(--c) !important;
         }
@@ -731,31 +743,34 @@
                     <div class="pd-packages">
                         <h4 class="pd-sub"><i class="bi bi-calendar2-week"></i> Pilih Paket</h4>
                         <div class="pd-pkg-grid">
-                            @foreach ($product->daftarHarga() as $pkg)
-                                @php
-                                    $isActive = ($durationType === $pkg['durasi_type'] && (int) $durationValue === (int) $pkg['durasi_value']);
-                                    $pOrig = (int) $pkg['harga'];
-                                    $pDisc = $this->applyDiscount($pOrig);
-                                @endphp
+                            {{-- Data kartu dari ProductDetail::paketTampil(); "Paling hemat" memakai
+                                 aturan yang sama dengan jendela durasi di /shop. --}}
+                            @foreach ($this->paketTampil as $pkg)
                                 <button type="button"
-                                    class="pd-pkg {{ $isActive ? 'is-active' : '' }}"
-                                    wire:click="selectPackage('{{ $pkg['durasi_type'] }}', {{ $pkg['durasi_value'] }})">
-                                    <span class="pd-pkg-dur">{{ $pkg['durasi_value'] }} {{ ucfirst($pkg['durasi_type']) }}</span>
+                                    class="pd-pkg {{ $pkg['aktif'] ? 'is-active' : '' }}"
+                                    wire:click="selectPackage('{{ $pkg['tipe'] }}', {{ $pkg['nilai'] }})">
+                                    <span class="pd-pkg-dur">{{ $pkg['label'] }}@if ($pkg['terhemat'])<span class="pd-pkg-hemat">Paling hemat</span>@endif</span>
                                     <span class="pd-pkg-price">
-                                        @if ($pDisc < $pOrig)
-                                            <span class="pd-pkg-old">Rp {{ number_format($pOrig, 0, ',', '.') }}</span>
+                                        @if ($pkg['asli'])
+                                            <span class="pd-pkg-old">{{ $pkg['asli'] }}</span>
                                         @endif
-                                        <span class="pd-pkg-now">Rp {{ number_format($pDisc, 0, ',', '.') }}</span>
+                                        <span class="pd-pkg-now">{{ $pkg['akhir'] }}</span>
                                     </span>
-                                    @if ($pOrig - $pDisc > 0)
-                                        <span class="pd-pkg-save">Hemat Rp {{ number_format($pOrig - $pDisc, 0, ',', '.') }}</span>
+                                    @if ($pkg['hemat'])
+                                        <span class="pd-pkg-save">{{ $pkg['hemat'] }}</span>
+                                    @endif
+                                    @if ($pkg['perBulan'])
+                                        <span class="pd-pkg-per">{{ $pkg['perBulan'] }}</span>
                                     @endif
                                     <i class="bi bi-check-circle-fill pd-pkg-check"></i>
                                 </button>
                             @endforeach
 
                             {{-- Durasi custom (seperti flash sale) --}}
-                            @if ((int) ($product->harga_perbulan ?? 0) > 0)
+                            {{-- Tanpa tanda lebih-besar di ekspresi ini: tanda itu sesudah direktif
+                                 blok membuat Livewire melewati penanda morph-nya (juga bila ia ada
+                                 di dalam komentar Blade). Harga per bulan tidak pernah negatif. --}}
+                            @if ((int) ($product->harga_perbulan ?? 0))
                                 @php $cp = $this->customPricing(); @endphp
                                 <div class="pd-pkg pd-pkg-custom {{ $isCustom ? 'is-active' : '' }}">
                                     <button type="button" class="pd-pkg-custom-head" wire:click="chooseCustom">
