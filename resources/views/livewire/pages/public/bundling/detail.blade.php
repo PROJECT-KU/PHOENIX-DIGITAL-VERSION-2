@@ -175,10 +175,16 @@
             font-weight: 700; font-size: .92rem; line-height: 1.3; color: #1c1f26;
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
+        /* Latar PUTIH PADAT, bukan tinta tipis warna produk: pil ini duduk di
+           atas sapuan pojok kartu yang juga bertinta warna produk, dan untuk
+           produk abu (Grammarly, DeepL) teks, pil, dan sapuannya melebur jadi
+           satu — "1 Tahun" tak terbaca. */
         .pd-isi-dur {
             flex: 0 0 auto; height: 26px; padding: 0 10px; border-radius: 99px;
             display: inline-flex; align-items: center;
-            background: color-mix(in srgb, var(--p) 10%, #fff); color: color-mix(in srgb, var(--p) 80%, #111827);
+            background: #fff; border: 1px solid color-mix(in srgb, var(--p) 28%, #e5e7eb);
+            color: color-mix(in srgb, var(--p) 70%, #111827);
+            box-shadow: 0 2px 6px -2px rgba(15, 23, 42, .14);
             font-size: .74rem; font-weight: 800; white-space: nowrap;
         }
 
