@@ -35,100 +35,225 @@
             display: inline-flex; align-items: center; gap: 7px;
         }
 
-        /* --- Penyaring kategori yang sedang berlaku --- */
-        .shop-aktif {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            margin-bottom: 14px;
+        /* ===== Papan saring =====
+           Kategori sebagai chip berwarna (bahasa yang sama dengan Kategori
+           Populer di beranda), tipe akun sebagai tombol segmen, urutan sebagai
+           satu kotak pilih berikon. Sebelumnya dua kotak pilih polos yang di HP
+           terpotong jadi "Semua Tipe Akı" dan "Urutkan: Terbar". */
+        .sf-papan {
+            display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px;
+            background: #fff; border: 1px solid #eceff4; border-radius: 18px;
+            padding: 16px 18px; margin-bottom: 24px;
         }
-        .shop-aktif-label {
-            font-size: .74rem; font-weight: 700; letter-spacing: .14em;
-            text-transform: uppercase; color: #9aa2ae;
+        .sf-kategori { display: flex; gap: 8px; flex-wrap: wrap; min-width: 0; }
+        .sf-chip {
+            --c: #f26522;
+            flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px;
+            height: 40px; padding: 0 15px 0 5px; border-radius: 99px;
+            border: 1px solid #eceff4; background: #fff; color: #4b5563;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .84rem;
+            white-space: nowrap; cursor: pointer;
+            transition: border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
         }
-        .shop-aktif-chip {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: #fff3ea; border: 1px solid #f8d9c2; color: #d9531a;
-            border-radius: 999px; padding: 6px 8px 6px 15px;
-            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
-            font-weight: 700; font-size: .86rem;
+        .sf-chip-ic {
+            flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); font-size: .85rem;
+            transition: background .18s ease, color .18s ease;
         }
-        .shop-aktif-chip button {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 22px; height: 22px; border-radius: 50%; border: 0; cursor: pointer;
-            background: rgba(217, 83, 26, .12); color: #d9531a; font-size: .8rem;
-            transition: background .18s ease;
+        .sf-chip:hover { border-color: color-mix(in srgb, var(--c) 40%, #eceff4); color: #1c1f26; }
+        .sf-chip.is-aktif {
+            background: color-mix(in srgb, var(--c) 9%, #fff);
+            border-color: color-mix(in srgb, var(--c) 45%, #fff);
+            color: color-mix(in srgb, var(--c) 75%, #111827);
+            box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--c) 85%, transparent);
         }
-        .shop-aktif-chip button:hover { background: #d9531a; color: #fff; }
+        .sf-chip.is-aktif .sf-chip-ic { background: var(--c); color: #fff; }
 
-        /* --- Kartu produk berwarna menurut kategorinya ---
-           Perlakuan yang sama dengan kartu Cara Pesan dan Kategori Populer:
-           sapuan warna samar di pojok, bingkai dan bayangan senada saat
-           disentuh. Satu bahasa untuk seluruh situs. */
-        .shop-kartu { position: relative; overflow: hidden; }
-        .shop-kartu::before {
-            content: ""; position: absolute; top: -40px; right: -40px; z-index: 0;
-            width: 110px; height: 110px; border-radius: 50%;
-            background: color-mix(in srgb, var(--c) 11%, transparent);
-            transition: transform .3s ease; pointer-events: none;
+        .sf-bawah {
+            display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+            padding-top: 14px; border-top: 1px dashed #eceff4;
         }
-        .shop-kartu:hover::before { transform: scale(1.3); }
-        .shop-kartu:hover {
-            border-color: color-mix(in srgb, var(--c) 34%, #fff) !important;
-            box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 16%, transparent) !important;
+        .sf-tipe { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: #f4f5f8; }
+        .sf-seg {
+            height: 34px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent;
+            color: #6b7280; font-weight: 700; font-size: .82rem; cursor: pointer;
+            transition: background .15s ease, color .15s ease, box-shadow .15s ease;
         }
-        .shop-kartu > * { position: relative; z-index: 1; }
+        .sf-seg:hover { color: #1c1f26; }
+        .sf-seg.is-aktif { background: #fff; color: #1c1f26; box-shadow: 0 1px 3px rgba(15, 23, 42, .14); }
+        .sf-urut {
+            display: inline-flex; align-items: center; gap: 8px; height: 40px; margin: 0; padding: 0 8px 0 12px;
+            border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; color: #6b7280; font-size: .82rem;
+        }
+        .sf-urut select {
+            border: 0; background: transparent; font: inherit; font-weight: 700; color: #1c1f26;
+            padding: 0 2px; outline: none; cursor: pointer;
+        }
+        .sf-urut:focus-within { border-color: #f26522; box-shadow: 0 0 0 3px rgba(242, 101, 34, .14); }
+        .sf-info { margin-left: auto; display: inline-flex; align-items: center; gap: 12px; font-size: .85rem; color: #6b7280; }
+        .sf-info b { color: #1c1f26; font-weight: 800; }
+        .sf-reset {
+            display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+            border-radius: 99px; border: 1px solid #fecdd3; background: #fff1f2; color: #e11d48;
+            font-weight: 700; font-size: .78rem; cursor: pointer; transition: background .15s ease, color .15s ease;
+        }
+        .sf-reset:hover { background: #e11d48; border-color: #e11d48; color: #fff; }
+        .sf-cari { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .84rem; color: #6b7280; }
+        .sf-cari-chip {
+            display: inline-flex; align-items: center; gap: 8px; max-width: 100%; height: 32px; padding: 0 5px 0 12px;
+            border-radius: 99px; background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; font-weight: 700;
+        }
+        .sf-cari-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sf-cari-chip button {
+            flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(194, 65, 12, .12); color: #c2410c; font-size: .8rem;
+        }
+        .sf-cari-chip button:hover { background: #c2410c; color: #fff; }
 
-        /* Label kategori di pojok kartu. Kecil dan tenang: ia keterangan, dan
-           keterangan yang menyaingi nama produk membuat keduanya sulit dibaca. */
-        .fs-card-media { position: relative; }
+        /* ===== Kartu produk =====
+           Kelas sk-*, bukan fs-* bawaan: aturan .fs-card di
+           public-custom-styles.css server beku, dan dipakai bersama kartu flash
+           sale di beranda. Bahasanya sama dengan kartu "Produk Lainnya" di
+           halaman produk: warna kategori, sapuan pojok seperti Cara Pesan. */
+        .sk-kartu {
+            position: relative; display: flex; flex-direction: column; height: 100%; min-width: 0;
+            background: #fff; border: 1px solid #eceff4; border-radius: 18px; overflow: hidden;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+        .sk-kartu:hover {
+            transform: translateY(-4px);
+            border-color: color-mix(in srgb, var(--c) 35%, #fff);
+            box-shadow: 0 18px 34px -22px color-mix(in srgb, var(--c) 75%, transparent);
+        }
+        .sk-media {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            aspect-ratio: 16 / 11; overflow: hidden; text-decoration: none;
+            background: linear-gradient(160deg, color-mix(in srgb, var(--c) 11%, #fff) 0%, #fff 78%);
+        }
+        .sk-media::before {
+            content: ""; position: absolute; top: -44px; right: -44px;
+            width: 132px; height: 132px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
+            transition: transform .35s ease;
+        }
+        .sk-kartu:hover .sk-media::before { transform: scale(1.3); }
+        .sk-media img {
+            position: relative; max-width: 70%; max-height: 66%; object-fit: contain;
+            mix-blend-mode: multiply; transition: transform .35s ease;
+        }
+        .sk-kartu:hover .sk-media img { transform: scale(1.05); }
+        .sk-cadangan {
+            display: none; position: relative; align-items: center; justify-content: center;
+            width: 64px; height: 64px; border-radius: 20px;
+            background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff));
+            color: #fff; font-size: 1.65rem;
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--c) 85%, transparent);
+            transition: transform .35s ease;
+        }
+        .sk-media.is-kosong .sk-cadangan { display: flex; }
+        .sk-kartu:hover .sk-cadangan { transform: scale(1.06) rotate(-4deg); }
+
+        /* Kategori di pojok KANAN atas, diskon di pojok KIRI atas: berseberangan,
+           jadi tak mungkin bertemu di lebar berapa pun. */
         .shop-kat {
-            position: absolute; top: 10px; right: 10px; z-index: 2;
+            position: absolute; top: 10px; right: 10px; z-index: 1;
             display: inline-flex; align-items: center; gap: 5px;
-            background: color-mix(in srgb, var(--c) 12%, #fff);
-            border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
-            color: var(--c); border-radius: 999px; padding: 4px 10px;
-            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
-            font-weight: 700; font-size: .68rem; line-height: 1.3; white-space: nowrap;
-            /* 46%, bukan separuh: lencana promo di seberangnya memakan sekitar
-               separuh lebar kartu, jadi tepat setengah-setengah membuat
-               keduanya bersentuhan persis di tengah. */
-            max-width: 46%; overflow: hidden; text-overflow: ellipsis;
+            max-width: calc(100% - 20px); height: 26px; padding: 0 10px 0 8px; border-radius: 99px;
+            background: rgba(255, 255, 255, .92); border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: var(--c); font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .7rem; white-space: nowrap;
         }
-        .shop-kat i.bi { display: block; line-height: 1; font-size: .72rem; }
-        .shop-kat i.bi::before { display: block; line-height: 1; }
+        .shop-kat-teks { overflow: hidden; text-overflow: ellipsis; }
+        .sk-media:has(.sk-diskon) .shop-kat { max-width: calc(100% - 108px); }
+        .sk-diskon {
+            position: absolute; top: 10px; left: 10px; z-index: 1;
+            display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px;
+            border-radius: 99px; background: rgba(255, 255, 255, .95); border: 1px solid #fecdd3;
+            color: #e11d48; font-size: .72rem; font-weight: 800; white-space: nowrap;
+        }
+        .sk-diskon.is-flash { background: #fff1f2; }
 
-        /* Di kartu yang menyempit, label kategori menyusut jadi IKON SAJA.
+        .sk-isi { display: flex; flex-direction: column; flex: 1 1 auto; gap: 4px; padding: 14px 16px 16px; }
+        .sk-jenis { font-size: .66rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--c); }
+        .sk-nama {
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+            min-height: 2.7em; text-decoration: none;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
+            font-size: 1rem; line-height: 1.35; letter-spacing: -.01em; color: #1c1f26;
+        }
+        .sk-nama:hover { color: var(--c); }
+        .sk-harga { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 6px; margin-top: 6px; line-height: 1.3; }
+        .sk-harga b { font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800; font-size: 1.12rem; color: #1c1f26; }
+        .sk-harga small { font-size: .74rem; font-weight: 600; color: #9aa2ae; }
+        .sk-harga s { font-size: .78rem; color: #9aa2ae; }
 
-           Lencana promo memakai white-space: nowrap, jadi "Diskon s.d. 30%"
-           memanjang melintasi kartu selebar 200px dan menyentuh label di
-           seberangnya — berseberangan saja tidak cukup. Diperiksa: di 900px dan
-           390px keduanya bertabrakan pada DUA BELAS dari dua belas kartu.
+        /* Keranjang + Lihat dalam SATU baris, juga di HP. Sebelumnya di kartu
+           selebar 170px keduanya bertumpuk dan setiap kartu jadi setinggi layar. */
+        .sk-aksi { display: flex; gap: 8px; margin-top: auto; padding-top: 14px; }
+        .sk-beli {
+            flex: 1 1 auto; min-width: 0; height: 42px; padding: 0 12px; border: 0; border-radius: 12px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff;
+            font-weight: 700; font-size: .86rem; cursor: pointer;
+            box-shadow: 0 10px 20px -12px rgba(242, 101, 34, .7);
+            transition: filter .16s ease, transform .16s ease;
+        }
+        .sk-beli > span { display: inline-flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; overflow: hidden; }
+        .sk-beli:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+        .sk-beli:disabled { background: #f1f3f6; color: #9aa2ae; box-shadow: none; cursor: not-allowed; }
+        .sk-lihat {
+            flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c); font-size: .95rem;
+            text-decoration: none; transition: background .2s ease, color .2s ease;
+        }
+        .sk-lihat:hover { background: var(--c); color: #fff; }
+        .sk-pendek { display: none; }
+        .sk-kartu.is-jeda .sk-media > img, .sk-kartu.is-jeda .sk-cadangan { filter: grayscale(.6); opacity: .75; }
 
-           Sebagai ikon bulat ia tetap mengerjakan tugasnya — warnanya memberi
-           tahu kelompok produknya — tanpa memakan lebar. Nama kategorinya tetap
-           terbaca lewat atribut title dan pembaca layar. */
-        @media (max-width: 1319.98px) {
-            .shop-kat-teks { display: none; }
-            .shop-kat {
-                max-width: none; padding: 0; border-radius: 50%;
-                width: 28px; height: 28px; justify-content: center;
+        /* Glif sendirian di wadah penengah → block; glif sebaris teks → cukup line-height. */
+        .sf-chip-ic i.bi, .sk-lihat i.bi, .sk-cadangan i.bi, .sf-cari-chip button i.bi { display: block; line-height: 1; }
+        .sf-chip-ic i.bi::before, .sk-lihat i.bi::before, .sk-cadangan i.bi::before, .sf-cari-chip button i.bi::before { display: block; line-height: 1; }
+        .shop-kat i.bi, .sk-diskon i.bi, .sk-beli i.bi, .sf-urut i.bi, .sf-reset i.bi { line-height: 1; }
+        .shop-kat i.bi::before, .sk-diskon i.bi::before, .sk-beli i.bi::before, .sf-urut i.bi::before, .sf-reset i.bi::before { display: block; line-height: 1; }
+
+        @media (max-width: 767.98px) {
+            .sf-papan { padding: 14px; border-radius: 16px; }
+            /* Chip kategori menggulir mendatar selebar papan (grid kolom eksplisit
+               di atas mencegahnya mendorong papan keluar layar). */
+            .sf-kategori {
+                flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+                margin: 0 -14px; padding: 0 14px 2px;
             }
-            .shop-kat i.bi { font-size: .8rem; }
+            .sf-kategori::-webkit-scrollbar { display: none; }
+            .sf-tipe { flex: 1 1 100%; }
+            .sf-seg { flex: 1 1 0; }
+            .sf-urut { flex: 1 1 auto; min-width: 0; }
+            .sf-urut select { flex: 1 1 auto; min-width: 0; }
+            .sf-info { margin-left: 0; }
         }
         @media (max-width: 575.98px) {
-            .shop-kat { width: 24px; height: 24px; top: 8px; right: 8px; }
-            .shop-kat i.bi { font-size: .7rem; }
+            .sk-kartu { border-radius: 16px; }
+            .sk-isi { padding: 12px 12px 13px; }
+            .sk-nama { font-size: .9rem; }
+            .sk-harga b { font-size: 1rem; }
+            .sk-aksi { gap: 6px; padding-top: 12px; }
+            .sk-beli { height: 38px; padding: 0 8px; border-radius: 10px; font-size: .78rem; }
+            .sk-lihat { width: 38px; height: 38px; border-radius: 10px; }
+            .shop-kat { width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 50%; top: 8px; right: 8px; }
+            .shop-kat-teks { display: none; }
+            .sk-diskon { height: 23px; padding: 0 7px; font-size: .66rem; top: 8px; left: 8px; }
+            .sk-cadangan { width: 54px; height: 54px; border-radius: 17px; font-size: 1.4rem; }
+            .sk-media { aspect-ratio: 4 / 3; }
+            /* Tombol selebar ~95px: label panjang terpotong jadi "Tidak Ters". */
+            .sk-panjang { display: none; }
+            .sk-pendek { display: inline; }
         }
-
-        /* --- Bilah saring jadi satu papan --- */
-        /* Sebelumnya dua kotak pilih dan satu angka mengambang di atas kisi
-           produk tanpa bidang sendiri, jadi ia terbaca sebagai baris pertama
-           kisi — bukan sebagai alat. */
-        .shop-filter {
-            background: #fff; border: 1px solid #eceff4; border-radius: 14px;
-            padding: 12px 16px; margin-bottom: 22px;
+        @media (prefers-reduced-motion: reduce) {
+            .sk-kartu, .sk-media::before, .sk-media img, .sk-cadangan, .sk-lihat, .sk-beli, .sf-chip, .sf-chip-ic { transition: none; }
         }
-        .shop-filter-count { color: #6b7280; }
-        .shop-filter-count b { color: #1c1f26; font-weight: 800; }
 
         .shp-empty { text-align: center; padding: 30px 16px 20px; max-width: 480px; margin: 0 auto; }
         .shp-empty-art { margin-bottom: 6px; }
@@ -181,206 +306,127 @@
         <div class="container">
             <section style="padding-top: 0;" id="category-header" class="category-header section">
                 <div class="container">
-                    @if ($search)
-                        <div class="mb-4 alert alert-info" role="alert">
-                            Menampilkan hasil pencarian untuk: <strong>{{ $search }}</strong>
-                            <button wire:click="$set('search', '')" class="btn-close float-end"
-                                aria-label="Clear search"></button>
-                        </div>
-                    @endif
+                    {{-- Pencarian aktif kini tampil sebagai chip di papan saring. --}}
                 </div>
 
                 <!-- Category Product List Section -->
                 <section style="padding-top: 0;" id="category-product-list" class="category-product-list section">
                     <div class="container">
-                        {{-- Filter & urutkan (opsional) --}}
-                        {{-- Kategori yang datang dari beranda DITAMPILKAN dan
-                             bisa dilepas.
-
-                             Sebelumnya penyaringnya bekerja diam-diam: daftar
-                             produk menyusut tanpa satu pun keterangan kenapa,
-                             dan satu-satunya jalan keluar adalah menyunting
-                             alamat sendiri. Penyaring yang tidak terlihat sama
-                             saja dengan halaman yang kehilangan barang. --}}
-                        @if ($kategori)
-                            <div class="shop-aktif">
-                                <span class="shop-aktif-label">Kategori</span>
-                                <span class="shop-aktif-chip">
-                                    {{ App\Support\KategoriBeranda::label($kategori) }}
-                                    <button type="button" wire:click="clearKategori" aria-label="Lepas penyaring kategori">
-                                        <i class="bi bi-x"></i>
+                        {{-- Papan saring. Kategori yang datang dari beranda tampil sebagai
+                             chip AKTIF dan bisa diganti atau dilepas di sini — penyaring
+                             yang bekerja diam-diam sama saja dengan halaman yang
+                             kehilangan barang. --}}
+                        <div class="sf-papan">
+                            @if (count($daftarKategori))
+                                <div class="sf-kategori" role="group" aria-label="Kategori">
+                                    <button type="button" class="sf-chip {{ $kategoriAktif === '' ? 'is-aktif' : '' }}"
+                                        wire:click="pilihKategori('')" data-kategori="" aria-pressed="{{ $kategoriAktif === '' ? 'true' : 'false' }}">
+                                        <span class="sf-chip-ic"><i class="bi bi-grid-fill"></i></span>Semua
                                     </button>
-                                </span>
-                            </div>
-                        @endif
+                                    @foreach ($daftarKategori as $kk)
+                                        <button type="button" class="sf-chip {{ $kategoriAktif === $kk['kunci'] ? 'is-aktif' : '' }}" style="--c: {{ $kk['warna'] }}"
+                                            wire:click="pilihKategori('{{ $kk['kunci'] }}')"
+                                            data-kategori="{{ $kk['kunci'] }}" aria-pressed="{{ $kategoriAktif === $kk['kunci'] ? 'true' : 'false' }}">
+                                            <span class="sf-chip-ic"><i class="bi {{ $kk['ikon'] }}"></i></span>{{ $kk['label'] }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
 
-                        <div class="shop-filter">
-                            <div class="shop-filter-controls">
+                            <div class="sf-bawah">
                                 @if (count($categories))
-                                    {{-- Isinya sharing/private — TIPE AKUN, bukan
-                                         kategori. Menamainya "Semua Kategori"
-                                         membuat pengunjung mengira ini penyaring
-                                         yang sama dengan kartu kategori di
-                                         beranda, padahal keduanya menyaring hal
-                                         yang berbeda. --}}
-                                    <select wire:model.live="tipe" class="shop-select">
-                                        <option value="">Semua Tipe Akun</option>
+                                    {{-- Isinya sharing/private — TIPE AKUN, bukan kategori. --}}
+                                    <div class="sf-tipe" role="group" aria-label="Tipe akun">
+                                        <button type="button" class="sf-seg {{ $tipe ? '' : 'is-aktif' }}" wire:click="$set('tipe', '')">Semua</button>
                                         @foreach ($categories as $c)
-                                            <option value="{{ $c }}">{{ $c }}</option>
+                                            <button type="button" class="sf-seg {{ $tipe === $c ? 'is-aktif' : '' }}" wire:click="$set('tipe', '{{ $c }}')">{{ ucfirst($c) }}</button>
                                         @endforeach
+                                    </div>
+                                @endif
+                                <label class="sf-urut">
+                                    <i class="bi bi-sort-down"></i>
+                                    <select wire:model.live="sortBy" aria-label="Urutkan produk">
+                                        <option value="">Terbaru</option>
+                                        <option value="termurah">Harga termurah</option>
+                                        <option value="termahal">Harga termahal</option>
+                                        <option value="nama">Nama A–Z</option>
+                                        <option value="terlama">Terlama</option>
                                     </select>
-                                @endif
-                                <select wire:model.live="sortBy" class="shop-select">
-                                    <option value="">Urutkan: Terbaru</option>
-                                    <option value="termurah">Harga: Termurah</option>
-                                    <option value="termahal">Harga: Termahal</option>
-                                    <option value="nama">Nama: A–Z</option>
-                                    <option value="terlama">Terlama</option>
-                                </select>
-                                @if ($tipe || $sortBy)
-                                    <button type="button" wire:click="resetFilters" class="shop-reset"><i class="bi bi-x-circle"></i> Reset</button>
-                                @endif
+                                </label>
+                                <div class="sf-info">
+                                    <span><b>{{ $products->total() }}</b> produk</span>
+                                    @if ($adaFilter)
+                                        <button type="button" wire:click="resetFilters" class="sf-reset"><i class="bi bi-x-circle"></i> Reset</button>
+                                    @endif
+                                </div>
                             </div>
-                            <div class="shop-filter-count"><b>{{ $products->total() }}</b> produk</div>
+
+                            @if ($search)
+                                <div class="sf-cari">
+                                    Hasil pencarian
+                                    <span class="sf-cari-chip">
+                                        <span>{{ $search }}</span>
+                                        <button type="button" wire:click="clearSearch" aria-label="Hapus pencarian"><i class="bi bi-x"></i></button>
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         <div class="row g-3 g-lg-4">
-                            @forelse ($products as $item)
-                                @php
-                                    $bestDiscount = $this->getBestDiscount($item->id);
-                                    $isFlash = $bestDiscount && ($bestDiscount['promo']->tipe_promo ?? null) === 'flash_sale';
-                                    // Produk JASA harga per bulannya 0. Ada DUA cara tagihnya:
-                                    // per pengecekan (paket 'kali') dan per halaman. Sebelumnya
-                                    // hanya yang per pengecekan diambil, sehingga jasa per halaman
-                                    // tampil "Rp 0".
-                                    $isJasa = (bool) $item->butuh_file;
-                                    $perHalaman = $isJasa && $item->jasaPerHalaman();
-                                    $satuanHarga = $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln');
-                                    $originalPrice = $perHalaman
-                                        ? (int) $item->hargaPerHalaman()
-                                        : ($isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan);
-                                    if ($bestDiscount) {
-                                        if ($bestDiscount['type'] === 'persen') {
-                                            $discountedPrice = (int) round(
-                                                $originalPrice - ($originalPrice * $bestDiscount['value']) / 100,
-                                            );
-                                        } else {
-                                            $discountedPrice = (int) max(0, $originalPrice - $bestDiscount['value']);
-                                        }
-                                    } else {
-                                        $discountedPrice = $originalPrice;
-                                    }
-
-                                    // Kategori produk, untuk mewarnai kartunya.
-                                    $kat = App\Support\KategoriBeranda::untukProduk($item->nama_akun);
-                                @endphp
-                                <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $item->id }}">
-                                    {{-- Warna kartu mengikuti KATEGORI produknya,
-                                         memakai taksonomi yang sama dengan kartu
-                                         kategori di beranda. Warna di sini bukan
-                                         hiasan: ia memberi tahu produk ini masuk
-                                         kelompok apa tanpa menambah satu baris
-                                         teks pun, dan membuat katalog panjang
-                                         bisa disusuri lewat bentuk warna saja.
-
-                                         Produk yang tidak cocok kategori mana pun
-                                         memakai warna merek — bukan abu-abu, yang
-                                         akan terbaca seperti produk nonaktif. --}}
-                                    <div class="fs-card shop-kartu" style="--c: {{ $kat['warna'] ?? '#f26522' }}">
-                                        <div class="fs-card-media">
-                                            @if ($item->image)
-                                                <img loading="lazy" src="{{ asset('storage/img/Product/' . $item->image) }}"
-                                                    alt="{{ $item->nama_akun }}">
-                                            @else
-                                                <img loading="lazy" src="https://fastly.picsum.photos/id/77/450/300.jpg?hmac=V_LawevwSaVitpQs2t7AnuBi84UPSNl1Qp3PmKkmaXc"
-                                                    alt="{{ $item->nama_akun }}">
+                            @forelse ($kartu as $k)
+                                <div class="col-6 col-md-4 col-lg-3" wire:key="product-{{ $k['id'] }}">
+                                    {{-- Warna kartu = warna KATEGORI produknya (taksonomi yang sama
+                                         dengan beranda). Produk tanpa kategori memakai warna merek,
+                                         bukan abu-abu yang terbaca seperti produk nonaktif. --}}
+                                    <article class="sk-kartu {{ $k['dijeda'] ? 'is-jeda' : '' }}" style="--c: {{ $k['warna'] }}">
+                                        <a href="{{ $k['url'] }}" class="sk-media {{ $k['gambar'] ? '' : 'is-kosong' }}" tabindex="-1" aria-hidden="true">
+                                            @if ($k['gambar'])
+                                                <img loading="lazy" src="{{ $k['gambar'] }}" alt=""
+                                                    onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                                             @endif
-
-                                            {{-- Label kategori di pojok KANAN ATAS.
-
-                                                 Lencana promo menempati pojok KIRI atas
-                                                 (top:12 left:12 di public-custom-styles.css), jadi
-                                                 keduanya berseberangan dan tidak mungkin bertemu.
-
-                                                 Sempat ditaruh di tepi bawah area gambar; di
-                                                 ponsel area itu menyusut sampai 100-an piksel dan
-                                                 keduanya kembali bertabrakan — dua belas dari dua
-                                                 belas kartu. Berseberangan aman di lebar berapa
-                                                 pun, dan pojok atas juga yang pertama dilihat. --}}
-                                            @if ($kat)
-                                                <span class="shop-kat" title="{{ $kat['label'] }}">
-                                                    <i class="bi {{ $kat['ikon'] }}"></i>
-                                                    <span class="shop-kat-teks">{{ $kat['label'] }}</span>
-                                                </span>
+                                            <span class="sk-cadangan"><i class="bi {{ $k['ikon'] }}"></i></span>
+                                            @if ($k['kategori'])
+                                                <span class="shop-kat" title="{{ $k['kategori'] }}"><i class="bi {{ $k['ikon'] }}"></i><span class="shop-kat-teks">{{ $k['kategori'] }}</span></span>
                                             @endif
-
-                                            @if ($bestDiscount)
-                                                @if ($isFlash)
-                                                    <span class="fs-badge fs-badge-flash"><i
-                                                            class="bi bi-lightning-charge-fill"></i>
-                                                        @if ($bestDiscount['type'] === 'persen')
-                                                            Diskon s.d. {{ number_format($bestDiscount['value'], 0) }}%
-                                                        @else
-                                                            Diskon s.d. Rp{{ number_format($bestDiscount['value'], 0, ',', '.') }}
-                                                        @endif
-                                                    </span>
-                                                @else
-                                                    <span class="fs-badge">
-                                                        @if ($bestDiscount['type'] === 'persen')
-                                                            @if ($bestDiscount['member_value'] != $bestDiscount['non_member_value'])
-                                                                Diskon {{ number_format($bestDiscount['non_member_value'], 0) }}–{{ number_format($bestDiscount['member_value'], 0) }}%
-                                                            @else
-                                                                Diskon {{ number_format($bestDiscount['value'], 0) }}%
-                                                            @endif
-                                                        @else
-                                                            Diskon Rp{{ number_format($bestDiscount['value'], 0, ',', '.') }}
-                                                        @endif
-                                                    </span>
-                                                @endif
+                                            @if ($k['diskon'])
+                                                <span class="sk-diskon {{ $k['flash'] ? 'is-flash' : '' }}"><i class="bi {{ $k['flash'] ? 'bi-lightning-charge-fill' : 'bi-tag-fill' }}"></i>{{ $k['diskon'] }}</span>
                                             @endif
-                                        </div>
+                                        </a>
 
-                                        <div class="fs-card-body">
-                                            <a href="{{ route('shop.detail-product', $item->id) }}"
-                                                class="fs-name">{{ $item->nama_akun }}</a>
-
-                                            <div class="fs-price">
-                                                @if ($isJasa)
-                                                    <small class="text-muted me-1">Mulai</small>
+                                        <div class="sk-isi">
+                                            <span class="sk-jenis">{{ $k['jenis'] }}</span>
+                                            <a href="{{ $k['url'] }}" class="sk-nama">{{ $k['nama'] }}</a>
+                                            <div class="sk-harga">
+                                                @if ($k['mulai'])
+                                                    <small>Mulai</small>
                                                 @endif
-                                                <span class="fs-price-sale">Rp{{ number_format($discountedPrice, 0, ',', '.') }}</span>
-                                                @if ($discountedPrice < $originalPrice)
-                                                    <span class="fs-price-orig">Rp{{ number_format($originalPrice, 0, ',', '.') }}</span>
+                                                <b>Rp{{ number_format($k['harga'], 0, ',', '.') }}</b>
+                                                <small>{{ $k['satuan'] }}</small>
+                                                @if ($k['hargaAsli'])
+                                                    <s>Rp{{ number_format($k['hargaAsli'], 0, ',', '.') }}</s>
                                                 @endif
-                                                <small>{{ $satuanHarga }}</small>
                                             </div>
 
-                                            @php $dijeda = \App\Support\JedaLayanan::produkDijeda($item); @endphp
-                                            <div class="fs-actions">
-                                                <button type="button" wire:click="openDuration('{{ $item->id }}')"
-                                                    wire:loading.attr="disabled"
-                                                    wire:target="openDuration('{{ $item->id }}')" class="fs-btn-cart"
-                                                    @disabled($dijeda)>
-                                                    <span wire:loading.remove
-                                                        wire:target="openDuration('{{ $item->id }}')">
-                                                        @if ($dijeda)
+                                            <div class="sk-aksi">
+                                                <button type="button" class="sk-beli" wire:click="openDuration('{{ $k['id'] }}')"
+                                                    wire:loading.attr="disabled" wire:target="openDuration('{{ $k['id'] }}')" @disabled($k['dijeda'])>
+                                                    <span wire:loading.remove wire:target="openDuration('{{ $k['id'] }}')">
+                                                        @if ($k['dijeda'])
                                                             {{-- Dikatakan di kartu supaya pembeli tak mengklik sia-sia --}}
-                                                            <i class="bi bi-pause-circle"></i> Tidak Tersedia
-                                                        @elseif ($isJasa)
+                                                            <i class="bi bi-pause-circle"></i><span class="sk-panjang">Tidak Tersedia</span><span class="sk-pendek">Tutup</span>
+                                                        @elseif ($k['jasa'])
                                                             {{-- Jasa: harga ditentukan di halaman produk (unggah file / add-on) --}}
-                                                            <i class="bi bi-sliders"></i> Atur Pesanan
+                                                            <i class="bi bi-sliders"></i><span class="sk-panjang">Atur Pesanan</span><span class="sk-pendek">Atur</span>
                                                         @else
                                                             <i class="bi bi-cart-plus"></i> Keranjang
                                                         @endif
                                                     </span>
-                                                    <span wire:loading wire:target="openDuration('{{ $item->id }}')"><span
-                                                            class="spinner-border spinner-border-sm"></span></span>
+                                                    <span wire:loading wire:target="openDuration('{{ $k['id'] }}')"><span class="spinner-border spinner-border-sm"></span></span>
                                                 </button>
-                                                <a href="{{ route('shop.detail-product', $item->id) }}"
-                                                    class="fs-btn-view">Lihat</a>
+                                                <a href="{{ $k['url'] }}" class="sk-lihat" aria-label="Lihat detail {{ $k['nama'] }}" title="Lihat detail"><i class="bi bi-arrow-up-right"></i></a>
                                             </div>
                                         </div>
-                                    </div>
+                                    </article>
                                 </div>
                             @empty
                                 <div class="col-12">
@@ -444,12 +490,11 @@
                                             <button type="button" class="shp-empty-btn" wire:click="$set('search', '')">
                                                 <i class="bi bi-arrow-counterclockwise"></i> Reset Pencarian
                                             </button>
-                                        @elseif ($tipe || $sortBy)
+                                        @elseif ($adaFilter)
                                             <h3 class="shp-empty-title">Tidak ada yang cocok</h3>
                                             <p class="shp-empty-sub">Filter yang dipilih belum menemukan produk apa pun.
                                                 Coba longgarkan filternya, ya.</p>
-                                            <button type="button" class="shp-empty-btn"
-                                                wire:click="$set('tipe', ''); $set('sortBy', '')">
+                                            <button type="button" class="shp-empty-btn" wire:click="resetFilters">
                                                 <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
                                             </button>
                                         @else

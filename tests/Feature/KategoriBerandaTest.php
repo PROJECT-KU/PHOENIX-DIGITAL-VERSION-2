@@ -123,17 +123,20 @@ it('halaman shop menampilkan kategori yang sedang menyaring', function () {
         // Dicari lewat atribut class yang lengkap: nama kelasnya juga muncul
         // di blok <style> yang selalu dirender, jadi mencarinya begitu saja
         // akan selalu ketemu dan ujinya tidak menguji apa pun.
-        ->assertSee('class="shop-aktif-chip"', false)
+        // Chip kategori yang menyaring tampil AKTIF di papan saring.
+        ->assertSee('data-kategori="ai-tools" aria-pressed="true"', false)
         ->assertSee('AI Tools', false)
         ->assertSee('Chat Gpt Plus Sharing', false)
         ->assertDontSee('Canva Premium', false);
 });
 
-it('tanpa kategori, chip penyaring tidak muncul', function () {
+it('tanpa kategori, chip "Semua" yang aktif', function () {
     Product::query()->delete();
     Product::create(['nama_akun' => 'Canva Premium', 'tipe_akun' => 'sharing', 'harga_perbulan' => 15000]);
 
-    $this->get('/shop')->assertDontSee('class="shop-aktif-chip"', false);
+    $this->get('/shop')
+        ->assertSee('data-kategori="" aria-pressed="true"', false)
+        ->assertDontSee('data-kategori="desain-kreatif" aria-pressed="true"', false);
 });
 
 it('kategori produk dikenali dari namanya untuk mewarnai kartunya', function () {
@@ -151,22 +154,21 @@ it('produk yang tidak masuk kategori mana pun tidak dipaksakan', function () {
 });
 
 it('label kategori berada di dalam area gambar, bukan menimpa lencana promo', function () {
-    // Lencana promo menempati pojok kiri ATAS area gambar (top:12 left:12 di
-    // public-custom-styles.css). Label kategori harus berada di dalam area
-    // gambar yang sama supaya bisa menempel tepi bawahnya — di luar itu, ia
-    // kembali ke pojok kartu dan menimpa lencana promo begitu produknya
-    // sedang berpromo.
+    // Lencana diskon (.sk-diskon) menempati pojok KIRI atas area gambar dan
+    // label kategori pojok KANAN atas — keduanya di dalam area gambar yang
+    // sama dan berseberangan, jadi tak mungkin bertabrakan di lebar berapa pun.
     $blade = file_get_contents(
         resource_path('views/livewire/pages/public/shop-page/index.blade.php')
     );
 
-    $media = mb_strpos($blade, 'class="fs-card-media"');
+    $media = mb_strpos($blade, 'class="sk-media');
     $kat = mb_strpos($blade, 'class="shop-kat"');
-    $badge = mb_strpos($blade, 'class="fs-badge fs-badge-flash"');
+    $badge = mb_strpos($blade, 'class="sk-diskon');
 
     expect($kat)->toBeGreaterThan($media)
         ->and($kat)->toBeLessThan($badge)
-        // Berseberangan dengan lencana promo yang di pojok KIRI atas.
         ->and($blade)->toContain('.shop-kat {
-            position: absolute; top: 10px; right: 10px;');
+            position: absolute; top: 10px; right: 10px;')
+        ->and($blade)->toContain('.sk-diskon {
+            position: absolute; top: 10px; left: 10px;');
 });

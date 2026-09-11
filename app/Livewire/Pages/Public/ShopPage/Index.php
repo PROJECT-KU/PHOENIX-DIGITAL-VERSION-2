@@ -5,8 +5,10 @@ namespace App\Livewire\Pages\Public\ShopPage;
 use App\Livewire\Concerns\MengirimPixel;
 use App\Models\Product;
 use App\Services\PromoService;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -24,9 +26,12 @@ class Index extends Component
     // Filter & urutkan (opsional). Bila kosong → perilaku daftar produk IDENTIK seperti semula.
     public $tipe = '';
 
-    // Kategori dari beranda (?kategori=ai-tools). Kosong → tidak menyaring apa
-    // pun, jadi halaman /shop tanpa parameter ini berperilaku persis seperti
-    // sebelumnya. Kunci yang tidak dikenal juga diperlakukan sebagai kosong.
+    // Kategori dari beranda (?kategori=ai-tools) atau dari chip kategori di
+    // halaman ini. Kosong → tidak menyaring apa pun, jadi /shop tanpa parameter
+    // berperilaku persis seperti sebelumnya. Kunci yang tidak dikenal juga
+    // diperlakukan sebagai kosong. Disinkronkan ke alamat supaya daftar yang
+    // tersaring bisa dibagikan dan tombol Kembali mengembalikannya.
+    #[Url(as: 'kategori', except: '')]
     public $kategori = '';
 
     public $sortBy = '';
@@ -45,6 +50,17 @@ class Index extends Component
     {
         $this->tipe = '';
         $this->sortBy = '';
+        $this->kategori = '';
+        $this->resetPage();
+    }
+
+    /**
+     * Pilih kategori dari chip di papan saring. Kunci yang tidak dikenal
+     * diperlakukan sebagai "Semua" — nilainya datang dari peramban.
+     */
+    public function pilihKategori(string $kunci = ''): void
+    {
+        $this->kategori = \App\Support\KategoriBeranda::kata($kunci) ? $kunci : '';
         $this->resetPage();
     }
 
@@ -390,6 +406,81 @@ class Index extends Component
         return $this->promoService->getBestProductDiscount($productId, null);
     }
 
+    /**
+     * Data satu kartu produk, siap cetak.
+     *
+     * Aturan harga & promonya SAMA PERSIS dengan yang sebelumnya dihitung di
+     * Blade — hanya dipindah ke sini. Halaman ini komponen Livewire, dan
+     * perbandingan ">" di sela direktif blok membuat Livewire melewati penanda
+     * morph-nya sehingga pembaruan daftar (saring, urut, halaman) bisa rusak.
+     *
+     * @return array<string, mixed>
+     */
+    private function dataKartu(Product $item): array
+    {
+        $best = $this->getBestDiscount($item->id);
+        $isFlash = $best && ($best['promo']->tipe_promo ?? null) === 'flash_sale';
+
+        // Produk JASA harga per bulannya 0: ditagih per pengecekan atau per halaman.
+        $isJasa = (bool) $item->butuh_file;
+        $perHalaman = $isJasa && $item->jasaPerHalaman();
+        $asli = $perHalaman
+            ? (int) $item->hargaPerHalaman()
+            : ($isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan);
+
+        $akhir = $asli;
+        if ($best) {
+            $akhir = $best['type'] === 'persen'
+                ? (int) round($asli - ($asli * $best['value']) / 100)
+                : (int) max(0, $asli - $best['value']);
+        }
+
+        // Lencana diskon diringkas: "Diskon s.d. 30%" di setiap kartu memanjang
+        // melintasi kartu dan menabrak label kategori di seberangnya.
+        $diskon = null;
+        if ($best) {
+            $nilai = fn ($v) => number_format($v, 0);
+            $rupiah = fn ($v) => 'Rp'.number_format($v, 0, ',', '.');
+            if ($isFlash) {
+                // Flash sale menyebut nilai TERBESARNYA, seperti lencana lama.
+                $diskon = 's.d. '.($best['type'] === 'persen' ? $nilai($best['value']).'%' : $rupiah($best['value']));
+            } elseif ($best['type'] === 'persen') {
+                // Rentang member/non-member selalu dari kecil ke besar — urutan
+                // data promo tidak menjamin mana yang lebih besar.
+                $bawah = min($best['member_value'], $best['non_member_value']);
+                $atas = max($best['member_value'], $best['non_member_value']);
+                $diskon = $bawah != $atas ? $nilai($bawah).'–'.$nilai($atas).'%' : '-'.$nilai($best['value']).'%';
+            } else {
+                $diskon = '-'.$rupiah($best['value']);
+            }
+        }
+
+        $kat = \App\Support\KategoriBeranda::untukProduk($item->nama_akun);
+
+        return [
+            'id' => $item->id,
+            'nama' => $item->nama_akun,
+            'url' => route('shop.detail-product', $item->id),
+            // Hanya bila berkasnya ADA: gambar rusak menampilkan teks alt mentah
+            // yang terpotong di balik lencana — terbaca seperti toko tak terurus.
+            'gambar' => $item->image && Storage::disk('public')->exists('img/Product/'.$item->image)
+                ? asset('storage/img/Product/'.$item->image)
+                : null,
+            'kategori' => $kat['label'] ?? null,
+            'warna' => $kat['warna'] ?? '#f26522',
+            'ikon' => $kat['ikon'] ?? 'bi-box-seam',
+            'jenis' => $isJasa ? 'Layanan' : ucfirst((string) ($item->tipe_akun ?: 'Akun')),
+            'harga' => $akhir,
+            'hargaAsli' => $akhir < $asli ? $asli : null,
+            'satuan' => $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln'),
+            'mulai' => $isJasa,
+            'jasa' => $isJasa,
+            'diskon' => $diskon,
+            'flash' => $isFlash,
+            'dijeda' => \App\Support\JedaLayanan::produkDijeda($item),
+        ];
+    }
+
     #[Layout('layouts.guest')]
     public function render()
     {
@@ -419,6 +510,15 @@ class Index extends Component
         return view('livewire.pages.public.shop-page.index', [
             'products' => $products,
             'categories' => $categories,
+            'kartu' => $products->getCollection()->map(fn ($p) => $this->dataKartu($p))->all(),
+            // Chip kategori: hanya yang ada isinya (KategoriBeranda). "Paket
+            // Bundling" dilewati — ia halaman tersendiri, bukan penyaring katalog.
+            'daftarKategori' => array_values(array_filter(
+                \App\Support\KategoriBeranda::tersedia(),
+                fn ($k) => $k['kunci'] !== 'bundling',
+            )),
+            'kategoriAktif' => \App\Support\KategoriBeranda::kata($this->kategori) ? $this->kategori : '',
+            'adaFilter' => (bool) ($this->tipe || $this->sortBy || \App\Support\KategoriBeranda::kata($this->kategori)),
         ]);
     }
 }
