@@ -139,6 +139,74 @@
         }
         .rw-promo-amt { flex-shrink: 0; font-weight: 800; color: #15803d; white-space: nowrap; }
 
+        /* ===== Jendela pemulihan ===== */
+        .rw-modal .modal-content { border: 0; border-radius: 24px; overflow: hidden; box-shadow: 0 40px 80px -40px rgba(15, 23, 42, .6); }
+        .rw-modal-kepala {
+            position: relative; display: flex; align-items: flex-start; gap: 14px; padding: 22px 24px 20px;
+            background:
+                radial-gradient(70% 130% at 100% 0%, rgba(251, 169, 25, .18), transparent 62%),
+                linear-gradient(150deg, #fff7ef 0%, #fff 72%);
+            border-bottom: 1px solid #f7e7d7;
+        }
+        .rw-modal-teks { min-width: 0; flex: 1 1 auto; padding-right: 30px; }
+        .rw-modal-label {
+            display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 99px;
+            background: #fff1e4; color: #c2410c; font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+        }
+        .rw-modal-kepala h5 { margin: 8px 0 4px; font-family: var(--rw-font); font-weight: 800; font-size: 1.15rem; color: var(--rw-ink); }
+        .rw-modal-kepala p { margin: 0; font-size: .85rem; line-height: 1.6; color: var(--rw-muted); }
+        .rw-modal-tutup {
+            position: absolute; top: 16px; right: 16px; display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .8); color: #64748b;
+            cursor: pointer; transition: background .18s ease, color .18s ease;
+        }
+        .rw-modal-tutup:hover { background: #fee2e2; color: #dc2626; }
+        .rw-modal-tutup i.bi, .rw-modal-tutup i.bi::before { display: block; line-height: 1; font-size: .85rem; }
+        .rw-modal-isi { padding: 20px 24px 24px; }
+        .rw-medan + .rw-medan { margin-top: 14px; }
+        .rw-label { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; font-size: .83rem; font-weight: 700; color: #334155; }
+        .rw-wajib, .rw-opsional {
+            display: inline-flex; align-items: center; height: 19px; padding: 0 7px; border-radius: 99px;
+            font-size: .66rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+        }
+        .rw-wajib { background: #fef2f2; color: #b91c1c; }
+        .rw-opsional { background: #f1f5f9; color: #475569; }
+        .rw-kolom { position: relative; display: flex; align-items: center; }
+        .rw-kolom > i.bi {
+            position: absolute; left: 14px; display: block; line-height: 1; font-size: .95rem; color: #94a3b8; pointer-events: none;
+        }
+        .rw-kolom .form-control {
+            width: 100%; height: 50px; padding: 0 14px 0 40px; border: 1.5px solid #e8ecf2; border-radius: 13px;
+            background: #fff; color: #0f172a; font-size: .92rem; box-shadow: none;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+        .rw-kolom .form-control::placeholder { color: #94a3b8; }
+        .rw-kolom .form-control:focus { border-color: #f26522; box-shadow: 0 0 0 4px rgba(242, 101, 34, .14); }
+        .rw-kolom .form-control.is-invalid { border-color: #dc2626; background-image: none; }
+        .rw-galat { display: block; margin-top: 6px; font-size: .78rem; font-weight: 600; color: #dc2626; }
+        .rw-catatan {
+            display: flex; align-items: flex-start; gap: 11px; margin-top: 16px; padding: 12px 14px; border-radius: 14px;
+            background: color-mix(in srgb, var(--c) 7%, #fff); border: 1px solid color-mix(in srgb, var(--c) 20%, #eceff4);
+            font-size: .82rem; line-height: 1.6; color: #475569;
+        }
+        .rw-catatan b { color: #334155; }
+        .rw-kirim {
+            display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; height: 50px;
+            margin-top: 18px; border: 0; border-radius: 14px; cursor: pointer;
+            background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff;
+            font-weight: 700; font-size: .95rem; box-shadow: 0 14px 26px -14px rgba(242, 101, 34, .85);
+            transition: filter .16s ease, transform .16s ease;
+        }
+        .rw-kirim:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+        .rw-kirim:disabled { opacity: .7; cursor: progress; }
+        .rw-kirim i.bi, .rw-kirim i.bi::before { display: block; line-height: 1; }
+        .rw-privasi {
+            display: flex; align-items: center; justify-content: center; gap: 7px; margin: 12px 0 0;
+            /* #94a3b8 hanya 2,6 : 1 — terlalu pucat untuk teks sekecil ini. */
+            font-size: .76rem; color: #64748b; text-align: center;
+        }
+        .rw-privasi i.bi, .rw-privasi i.bi::before { display: block; line-height: 1; font-size: .8rem; }
+
         @media (max-width: 767.98px) {
             .rw-kepala { flex-wrap: wrap; gap: 10px; padding: 14px; }
             .rw-kepala-isi { flex: 1 1 60%; }
@@ -147,6 +215,8 @@
             .rw-baris { align-items: flex-start; }
             .rw-bar { padding: 14px; }
             .rw-bar .rw-btn { width: 100%; }
+            .rw-modal-kepala { padding: 18px 18px 16px; }
+            .rw-modal-isi { padding: 16px 18px 20px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .rw-btn:hover, .rw-panah { transition: none; transform: none; }
@@ -398,51 +468,61 @@
         </div>
             @endif
 
-        <div wire:ignore.self class="modal fade restore-modal" id="restoreModal" tabindex="-1">
+        {{-- Jendela pemulihan. Kelas rw-modal-*: gaya .restore-modal ada di
+             public-custom-styles.css yang beku di server. Penanda yang dipakai
+             skrip DIPERTAHANKAN: id restoreModal, wire:submit restoreSession,
+             serta wire:model phoneNumber & invoiceCode. --}}
+        <div wire:ignore.self class="modal fade rw-modal" id="restoreModal" tabindex="-1" aria-labelledby="rwModalJudul">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
-                    <div class="modal-head">
-                        <span class="re-eyebrow"><i class="bi bi-arrow-repeat"></i> Pulihkan</span>
-                        <h5>Pulihkan Riwayat Pesanan</h5>
-                        <p>Tampilkan pesanan Anda di perangkat ini menggunakan Nomor HP.</p>
-                        <button type="button" class="modal-close-x" data-bs-dismiss="modal" aria-label="Tutup"><i
-                                class="bi bi-x-lg"></i></button>
+                    <div class="rw-modal-kepala">
+                        <span class="rw-ubin is-padat" style="--c: #f26522"><i class="bi bi-arrow-repeat"></i></span>
+                        <div class="rw-modal-teks">
+                            <span class="rw-modal-label">Pulihkan</span>
+                            <h5 id="rwModalJudul">Pulihkan Riwayat Pesanan</h5>
+                            <p>Tampilkan pesanan Anda di perangkat ini memakai Nomor HP yang dipakai saat memesan.</p>
+                        </div>
+                        <button type="button" class="rw-modal-tutup" data-bs-dismiss="modal" aria-label="Tutup">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
-                    <div class="modal-body">
+
+                    <div class="rw-modal-isi">
                         <form wire:submit.prevent="restoreSession">
-                            <div class="mb-3">
-                                <label class="form-label">Nomor WhatsApp <span class="req">*wajib</span></label>
-                                <input type="number" wire:model="phoneNumber"
-                                    class="form-control {{ $errors->has('phoneNumber') ? 'is-invalid' : '' }}"
-                                    placeholder="0821*********">
-                                @error('phoneNumber')
-                                    <span class="text-danger small">{{ $message }}</span>
-                                @enderror
+                            <div class="rw-medan">
+                                <label class="rw-label" for="rw-hp">Nomor WhatsApp <span class="rw-wajib">wajib</span></label>
+                                <div class="rw-kolom">
+                                    <i class="bi bi-whatsapp"></i>
+                                    <input type="number" id="rw-hp" wire:model="phoneNumber"
+                                        class="form-control {{ $errors->has('phoneNumber') ? 'is-invalid' : '' }}"
+                                        placeholder="0821*********" inputmode="numeric">
+                                </div>
+                                @error('phoneNumber') <span class="rw-galat">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Kode Pesanan <span class="opt">(opsional)</span></label>
-                                <input type="text" wire:model="invoiceCode"
-                                    class="form-control {{ $errors->has('invoiceCode') ? 'is-invalid' : '' }}"
-                                    placeholder="Kosongkan untuk melihat semua pesanan">
-                                @error('invoiceCode')
-                                    <span class="text-danger small">{{ $message }}</span>
-                                @enderror
+                            <div class="rw-medan">
+                                <label class="rw-label" for="rw-kode">Kode Pesanan <span class="rw-opsional">opsional</span></label>
+                                <div class="rw-kolom">
+                                    <i class="bi bi-receipt"></i>
+                                    <input type="text" id="rw-kode" wire:model="invoiceCode"
+                                        class="form-control {{ $errors->has('invoiceCode') ? 'is-invalid' : '' }}"
+                                        placeholder="Kosongkan untuk melihat semua pesanan">
+                                </div>
+                                @error('invoiceCode') <span class="rw-galat">{{ $message }}</span> @enderror
                             </div>
 
-                            <div class="re-hint">
-                                <i class="bi bi-info-circle"></i>
-                                <span>Isi <b>Nomor HP saja</b> untuk melihat <b>semua riwayat</b> pesanan Anda. Tambahkan
-                                    <b>Kode Pesanan</b> bila ingin menampilkan <b>satu pesanan</b> tertentu saja.</span>
+                            <div class="rw-catatan" style="--c: #2563eb">
+                                <span class="rw-ubin is-kecil"><i class="bi bi-info-circle-fill"></i></span>
+                                <span>Isi <b>Nomor HP saja</b> untuk melihat <b>semua riwayat</b> pesanan Anda.
+                                    Tambahkan <b>Kode Pesanan</b> bila ingin menampilkan <b>satu pesanan</b> tertentu.</span>
                             </div>
 
-                            <button type="submit" class="re-submit">
-                                <span wire:loading.remove wire:target="restoreSession"><i class="bi bi-arrow-repeat"></i>
-                                    Tampilkan Riwayat</span>
-                                <span wire:loading wire:target="restoreSession">
-                                    <span class="spinner-border spinner-border-sm me-2"></span>Memproses...
-                                </span>
+                            <button type="submit" class="rw-kirim" wire:loading.attr="disabled" wire:target="restoreSession">
+                                <span wire:loading.remove wire:target="restoreSession"><i class="bi bi-arrow-repeat"></i> Tampilkan Riwayat</span>
+                                <span wire:loading wire:target="restoreSession"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
                             </button>
+
+                            <p class="rw-privasi"><i class="bi bi-shield-lock-fill"></i> Nomor Anda hanya dipakai untuk mencocokkan pesanan di perangkat ini.</p>
                         </form>
                     </div>
                 </div>
