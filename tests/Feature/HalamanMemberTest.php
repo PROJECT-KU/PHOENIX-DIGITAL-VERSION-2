@@ -43,7 +43,10 @@ it('tiap keuntungan, langkah, dan syarat punya warna serta ikonnya sendiri', fun
 
     Livewire::test(MemberPage::class)
         ->assertSeeHtml('<span class="mbr-ubin is-padat"><i class="bi bi-coin"></i></span>')
-        ->assertSeeHtml('<span class="mbr-ubin is-padat"><i class="bi bi-bag-check"></i></span>')
+        // Langkah memakai pola "Cara Pesan" di beranda: bulatan bernomor pada
+        // jalur, dengan ikon di pojok berhadapan.
+        ->assertSeeHtml('<span class="mbr-nomor">1</span>')
+        ->assertSeeHtml('<span class="mbr-ikon-pojok"><i class="bi bi-bag-check"></i></span>')
         // Nilai balik dihitung dari rumus poin: 500 / 50.000 = 1%.
         ->assertSee('≈ 1% belanja kembali')
         ->assertSee('Poin belanja');

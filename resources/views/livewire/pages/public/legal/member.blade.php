@@ -5,157 +5,221 @@
 <main class="main mbr-page">
     <style>
         /* ===== Halaman Member =====
-           Bahasa visual sama dengan Beranda, Shop, Bundling, Layanan, Tentang,
-           Kontak, dan FAQ: kartu judul bersama (.ph-page-title), kartu putih
-           bersudut 18px dengan warna per kartu (--c), ubin ikon berwarna.
-           Kelas mbr-*: gaya .legal-*/.lg-* dipakai bersama Syarat, Privasi, dan
-           FAQ (sebagian beku di server), jadi halaman ini berdiri sendiri. */
-        .mbr-page { --mbr-ink: #1c1f26; --mbr-muted: #64748b; --mbr-line: #eceff4; --mbr-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
-        .mbr-section { padding: 18px 0 64px; }
+           Bahasa visualnya mengikuti BERANDA, bukan halaman hukum: kepala
+           bagian rata tengah (.ph-sec-head), jalur langkah putus-putus dengan
+           bulatan bernomor seperti "Cara Pesan", kartu bersapuan warna di
+           pojok, dan latar seksi berselang-seling supaya berirama.
+
+           Kelas mbr-*: gaya .legal-*/.lg-* dipakai bersama Syarat, Privasi,
+           dan FAQ (sebagian beku di server), jadi halaman ini berdiri sendiri. */
+        .mbr-page { --mbr-ink: #1c1f26; --mbr-muted: #6b7280; --mbr-line: #eceff3; --mbr-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .mbr-sec { padding: 46px 0; }
+        .mbr-sec.is-pita { background: linear-gradient(180deg, #fff8f1 0%, #fffdfb 100%); border-block: 1px solid #f7e7d7; }
+        .mbr-sec.is-atas { padding-top: 24px; }
+        .mbr-sec .ph-sec-head { margin-bottom: 28px; }
 
         /* Ubin ikon — glif tunggal selalu display:block + line-height:1 */
         .mbr-ubin {
             display: flex; align-items: center; justify-content: center; flex-shrink: 0;
             width: 44px; height: 44px; border-radius: 14px; font-size: 1.15rem;
             background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 85%, #0f172a);
+            transition: background .22s ease, color .22s ease;
         }
         .mbr-ubin.is-padat {
             background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff)); color: #fff;
             box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--c) 85%, transparent);
         }
-        .mbr-ubin.is-kecil { width: 34px; height: 34px; border-radius: 11px; font-size: .92rem; }
+        .mbr-ubin.is-kecil { width: 34px; height: 34px; border-radius: 11px; font-size: .95rem; }
         .mbr-ubin i.bi, .mbr-ubin i.bi::before { display: block; line-height: 1; }
 
-        .mbr-grid { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 2fr); gap: 24px; align-items: start; }
-
-        /* Daftar isi */
-        .mbr-toc { position: sticky; top: 96px; }
-        .mbr-toc-kartu { padding: 20px 18px; background: #fff; border: 1px solid var(--mbr-line); border-radius: 20px; box-shadow: 0 18px 40px -34px rgba(15, 23, 42, .5); }
-        .mbr-toc-kepala { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
-        .mbr-toc-kepala b { font-family: var(--mbr-font); font-weight: 800; font-size: 1rem; color: var(--mbr-ink); }
-        .mbr-toc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-        .mbr-toc-list a {
-            display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px;
-            color: #475569; font-size: .85rem; line-height: 1.4; text-decoration: none;
-            transition: background .18s ease, color .18s ease;
+        /* ===== Strip sorotan di bawah kartu judul ===== */
+        .mbr-sorot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+        .mbr-sorot-item {
+            position: relative; display: flex; align-items: center; gap: 13px; padding: 16px 18px; overflow: hidden;
+            background: #fff; border: 1px solid var(--mbr-line); border-radius: 16px;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
         }
-        .mbr-toc-list a:hover { background: color-mix(in srgb, var(--c) 8%, #fff); color: color-mix(in srgb, var(--c) 80%, #0f172a); }
-        .mbr-diperbarui {
-            display: flex; flex-direction: column; gap: 2px; margin-top: 14px; padding-top: 13px;
-            border-top: 1px dashed #e8ecf2; font-size: .78rem; color: var(--mbr-muted);
+        .mbr-sorot-item::before {
+            content: ""; position: absolute; top: -34px; right: -34px; width: 96px; height: 96px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent); transition: transform .3s ease;
         }
-        .mbr-diperbarui b { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+        .mbr-sorot-item:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, #fff); box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent); }
+        .mbr-sorot-item:hover::before { transform: scale(1.35); }
+        .mbr-sorot-item > * { position: relative; }
+        .mbr-sorot-item b { display: block; font-family: var(--mbr-font); font-weight: 800; font-size: 1rem; color: var(--mbr-ink); line-height: 1.3; }
+        .mbr-sorot-item small { display: block; margin-top: 2px; font-size: .8rem; color: var(--mbr-muted); }
 
-        /* Kepala bagian */
-        .mbr-blok { scroll-margin-top: 100px; }
-        .mbr-blok + .mbr-blok { margin-top: 40px; }
-        .mbr-kepala { display: flex; align-items: center; gap: 13px; margin-bottom: 16px; }
-        .mbr-kepala h2 { margin: 0; font-family: var(--mbr-font); font-weight: 800; font-size: 1.25rem; letter-spacing: -.01em; color: var(--mbr-ink); }
-        .mbr-kepala p { margin: 2px 0 0; font-size: .86rem; color: var(--mbr-muted); line-height: 1.5; }
+        /* Pita lompat bagian — menggantikan daftar isi ala halaman hukum */
+        .mbr-lompat { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin-top: 26px; }
+        .mbr-lompat a {
+            display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 15px 0 7px; border-radius: 99px;
+            background: #fff; border: 1px solid var(--mbr-line); color: #475569;
+            font-size: .85rem; font-weight: 700; text-decoration: none;
+            transition: border-color .2s ease, color .2s ease, transform .2s ease;
+        }
+        .mbr-lompat a:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c) 45%, #fff); color: color-mix(in srgb, var(--c) 80%, #0f172a); }
+        .mbr-lompat .mbr-ubin { width: 28px; height: 28px; border-radius: 9px; font-size: .82rem; }
 
-        /* Kartu umum */
+        /* ===== Jalur langkah (pola "Cara Pesan" di beranda) ===== */
+        .mbr-deret { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        /* Garis jalur: digambar di lapisan belakang, hanya terlihat di CELAH
+           antar kartu — persis seperti .cp-deret::before di beranda. */
+        .mbr-deret::before {
+            content: ""; position: absolute; z-index: 0; top: 48px; left: 22%; right: 22%;
+            border-top: 2px dashed #f8d8bf;
+        }
+        .mbr-langkah {
+            position: relative; z-index: 1; overflow: hidden;
+            background: #fff; border: 1px solid var(--mbr-line); border-radius: 16px; padding: 26px 22px 24px;
+            transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+        }
+        .mbr-langkah::before {
+            content: ""; position: absolute; top: -34px; right: -34px; width: 96px; height: 96px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent); transition: transform .3s ease;
+        }
+        .mbr-langkah:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, #fff); box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent); }
+        .mbr-langkah:hover::before { transform: scale(1.35); }
+        /* Bulatan bernomor: perhentian pada jalur. Latarnya PEKAT supaya
+           menutupi garis yang lewat di belakangnya. */
+        .mbr-nomor {
+            position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; border-radius: 50%; margin-bottom: 16px;
+            background: color-mix(in srgb, var(--c) 10%, #fff);
+            border: 2px solid color-mix(in srgb, var(--c) 32%, #fff);
+            /* Angkanya digelapkan & sedikit dibesarkan: var(--c) polos di atas
+               latar mudanya hanya 3,6 : 1, di bawah 4,5 : 1 untuk ukuran ini. */
+            color: color-mix(in srgb, var(--c) 62%, #0f172a);
+            font-family: var(--mbr-font); font-weight: 800; font-size: 1.18rem; line-height: 1;
+            font-variant-numeric: tabular-nums;
+            transition: background .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+        .mbr-langkah:hover .mbr-nomor { background: var(--c); color: #fff; border-color: transparent; box-shadow: 0 8px 18px color-mix(in srgb, var(--c) 32%, transparent); }
+        /* Ikon menemani angka, ditaruh di pojok berhadapan supaya tidak berebut tempat */
+        .mbr-ikon-pojok {
+            position: absolute; top: 26px; right: 22px; z-index: 1;
+            display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 85%, #0f172a); font-size: 1rem;
+        }
+        .mbr-ikon-pojok i.bi, .mbr-ikon-pojok i.bi::before { display: block; line-height: 1; }
+        .mbr-judul { margin: 0 0 8px; font-family: var(--mbr-font); font-weight: 700; font-size: 1.05rem; line-height: 1.3; letter-spacing: -.015em; color: var(--mbr-ink); }
+        .mbr-ket { margin: 0; font-size: .89rem; line-height: 1.65; color: var(--mbr-muted); }
+        .mbr-ket b { color: #334155; }
+
+        .mbr-aktif {
+            display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 18px 20px; border-radius: 18px;
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #eceff4);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--c) 10%, #fff) 0%, #fff 68%);
+        }
+        .mbr-aktif-teks b { display: block; font-family: var(--mbr-font); font-weight: 800; font-size: 1rem; color: var(--mbr-ink); }
+        .mbr-aktif-teks span { display: block; margin-top: 3px; font-size: .87rem; line-height: 1.6; color: #475569; }
+
+        /* ===== Keuntungan ===== */
+        .mbr-untung { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
         .mbr-kartu {
-            position: relative; background: #fff; border: 1px solid var(--mbr-line); border-radius: 18px; padding: 20px;
-            overflow: hidden; transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+            position: relative; overflow: hidden; padding: 26px 22px 24px;
+            background: #fff; border: 1px solid var(--mbr-line); border-radius: 16px;
+            transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
         }
         .mbr-kartu::before {
-            content: ""; position: absolute; top: -38px; right: -38px; width: 108px; height: 108px; border-radius: 50%;
-            background: color-mix(in srgb, var(--c) 10%, transparent); transition: transform .35s ease;
+            content: ""; position: absolute; top: -34px; right: -34px; width: 96px; height: 96px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent); transition: transform .3s ease;
         }
-        .mbr-kartu:hover {
-            transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 35%, #fff);
-            box-shadow: 0 18px 34px -22px color-mix(in srgb, var(--c) 75%, transparent);
-        }
-        .mbr-kartu:hover::before { transform: scale(1.25); }
+        .mbr-kartu:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, #fff); box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent); }
+        .mbr-kartu:hover::before { transform: scale(1.35); }
+        .mbr-kartu:hover .mbr-ubin.is-padat { transform: scale(1.06) rotate(-4deg); }
         .mbr-kartu > * { position: relative; }
-
-        /* Langkah */
-        .mbr-langkah { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-        .mbr-lk-atas { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
-        .mbr-lk-no { font-family: var(--mbr-font); font-weight: 800; font-size: 1.7rem; line-height: 1; color: var(--c); }
-        .mbr-kartu h3 { margin: 0 0 5px; font-family: var(--mbr-font); font-weight: 800; font-size: 1.02rem; color: var(--mbr-ink); }
-        .mbr-kartu p { margin: 0; font-size: .87rem; line-height: 1.65; color: var(--mbr-muted); }
-        .mbr-kartu p b { color: #334155; }
-        .mbr-aktif {
-            display: flex; align-items: center; gap: 13px; margin-top: 16px; padding: 16px 18px; border-radius: 18px;
-            border: 1px solid color-mix(in srgb, var(--c) 22%, #eceff4);
-            background: linear-gradient(135deg, color-mix(in srgb, var(--c) 9%, #fff) 0%, #fff 68%);
-        }
-        /* Dipersempit ke .mbr-aktif-teks: ditulis sebagai .mbr-aktif span, aturan
-           ini ikut mengenai ubin ikon dan mematahkan display:flex-nya. */
-        .mbr-aktif-teks b { display: block; font-family: var(--mbr-font); font-weight: 800; font-size: .98rem; color: var(--mbr-ink); }
-        .mbr-aktif-teks span { display: block; margin-top: 3px; font-size: .86rem; line-height: 1.6; color: #475569; }
-
-        /* Keuntungan */
-        .mbr-untung { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .mbr-kartu .mbr-ubin.is-padat { transition: transform .3s ease; }
         .mbr-chip {
-            display: inline-flex; align-items: center; height: 24px; padding: 0 10px; margin-top: 12px; border-radius: 99px;
+            display: inline-flex; align-items: center; height: 26px; padding: 0 11px; margin-top: 14px; border-radius: 99px;
             background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 55%, #0f172a);
-            font-size: .73rem; font-weight: 800;
+            font-size: .74rem; font-weight: 800;
         }
 
-        /* Contoh hitungan */
-        .mbr-hitung { display: grid; gap: 14px; }
-        .mbr-alur { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
-        .mbr-alur-item {
-            display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 16px;
-            background: #fff; border: 1px solid var(--mbr-line); text-align: center; align-items: center;
+        /* ===== Alur hitungan poin ===== */
+        .mbr-alur { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+        .mbr-alur::before {
+            content: ""; position: absolute; z-index: 0; top: 52px; left: 15%; right: 15%;
+            border-top: 2px dashed #f8d8bf;
         }
-        .mbr-alur-label { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--mbr-muted); }
-        .mbr-alur-nilai { font-family: var(--mbr-font); font-weight: 800; font-size: 1.25rem; line-height: 1.2; color: var(--c); }
-        .mbr-alur-ket { font-size: .78rem; color: var(--mbr-muted); line-height: 1.45; }
+        .mbr-alur-item {
+            position: relative; z-index: 1; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+            gap: 7px; padding: 24px 18px 22px; text-align: center;
+            background: #fff; border: 1px solid var(--mbr-line); border-radius: 16px;
+            transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+        }
+        .mbr-alur-item:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, #fff); box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent); }
+        .mbr-alur-item.is-hasil { background: linear-gradient(160deg, color-mix(in srgb, var(--c) 10%, #fff) 0%, #fff 72%); border-color: color-mix(in srgb, var(--c) 30%, #fff); }
+        .mbr-alur-item .mbr-ubin { margin-bottom: 4px; }
+        .mbr-alur-label { font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--mbr-muted); }
+        .mbr-alur-nilai { font-family: var(--mbr-font); font-weight: 800; font-size: 1.35rem; line-height: 1.2; letter-spacing: -.02em; color: color-mix(in srgb, var(--c) 70%, #0f172a); }
+        .mbr-alur-ket { font-size: .79rem; color: var(--mbr-muted); line-height: 1.5; }
         .mbr-sisa {
-            display: flex; align-items: center; gap: 13px; padding: 15px 17px; border-radius: 16px;
-            border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; font-size: .88rem; line-height: 1.6;
+            display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 16px 18px; border-radius: 16px;
+            border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; font-size: .89rem; line-height: 1.6;
         }
         .mbr-sisa b { color: #14532d; }
 
-        /* Syarat */
-        .mbr-syarat { display: grid; gap: 10px; }
+        /* ===== Syarat ===== */
+        .mbr-syarat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .mbr-syarat-item {
-            display: flex; align-items: flex-start; gap: 13px; padding: 14px 16px;
+            display: flex; align-items: flex-start; gap: 13px; padding: 16px 18px;
             background: #fff; border: 1px solid var(--mbr-line); border-radius: 16px;
             font-size: .87rem; line-height: 1.65; color: #475569;
+            transition: border-color .22s ease, box-shadow .22s ease;
         }
+        .mbr-syarat-item:hover { border-color: color-mix(in srgb, var(--c) 32%, #fff); box-shadow: 0 12px 26px -22px color-mix(in srgb, var(--c) 85%, transparent); }
         .mbr-syarat-item b { color: #334155; }
 
-        /* Ajakan penutup */
+        /* ===== Ajakan penutup ===== */
         .mbr-cta {
-            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px;
-            margin-top: 24px; padding: 24px 26px; border-radius: 20px; overflow: hidden; color: #fff;
+            position: relative; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+            gap: 18px 26px; padding: 28px 30px; border-radius: 22px; overflow: hidden; color: #fff;
             background:
                 radial-gradient(70% 130% at 100% 0%, rgba(251, 169, 25, .32), transparent 60%),
                 linear-gradient(135deg, #23272f 0%, #3a2a20 100%);
         }
-        .mbr-cta-kiri { display: flex; align-items: center; gap: 15px; flex: 1 1 340px; min-width: 0; }
+        .mbr-cta-kiri { display: flex; align-items: center; gap: 16px; flex: 1 1 340px; min-width: 0; }
         .mbr-cta .mbr-ubin { background: rgba(251, 169, 25, .18); color: #fbbf24; }
-        .mbr-cta-teks b { display: block; font-family: var(--mbr-font); font-weight: 800; font-size: 1.1rem; color: #fff; }
-        .mbr-cta-teks span { display: block; margin-top: 3px; font-size: .88rem; color: rgba(255, 255, 255, .8); line-height: 1.55; }
+        .mbr-cta-teks b { display: block; font-family: var(--mbr-font); font-weight: 800; font-size: 1.15rem; color: #fff; }
+        .mbr-cta-teks span { display: block; margin-top: 3px; font-size: .89rem; color: rgba(255, 255, 255, .82); line-height: 1.55; }
+        .mbr-cta-aksi { display: flex; flex-wrap: wrap; gap: 10px; }
         .mbr-btn {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 20px;
-            border-radius: 13px; background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff;
-            font-weight: 700; font-size: .9rem; text-decoration: none; white-space: nowrap;
-            box-shadow: 0 12px 22px -12px rgba(242, 101, 34, .85); transition: filter .16s ease, transform .16s ease;
+            border-radius: 13px; border: 1.5px solid transparent; font-weight: 700; font-size: .9rem;
+            text-decoration: none; white-space: nowrap; transition: filter .16s ease, transform .16s ease, background .16s ease, border-color .16s ease;
         }
-        .mbr-btn:hover { color: #fff; filter: brightness(1.05); transform: translateY(-1px); }
+        .mbr-btn.is-utama { background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff; box-shadow: 0 12px 22px -12px rgba(242, 101, 34, .85); }
+        .mbr-btn.is-utama:hover { color: #fff; filter: brightness(1.05); transform: translateY(-1px); }
+        .mbr-btn.is-tembus { background: rgba(255, 255, 255, .1); color: #fff; border-color: rgba(255, 255, 255, .3); }
+        .mbr-btn.is-tembus:hover { background: rgba(255, 255, 255, .18); color: #fff; border-color: rgba(255, 255, 255, .5); transform: translateY(-1px); }
         .mbr-btn i.bi, .mbr-btn i.bi::before { display: block; line-height: 1; font-size: 1.02rem; }
 
         @media (max-width: 991.98px) {
-            .mbr-grid { grid-template-columns: minmax(0, 1fr); }
-            .mbr-toc { position: static; }
-            .mbr-toc-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .mbr-sorot { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
             .mbr-untung { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            /* Dua baris: garis lurus tidak lagi menggambarkan jalurnya dengan benar. */
+            .mbr-alur { grid-template-columns: minmax(0, 1fr); }
+            .mbr-alur::before { display: none; }
+        }
+        @media (max-width: 767.98px) {
+            .mbr-sorot { grid-template-columns: minmax(0, 1fr); }
+            .mbr-syarat { grid-template-columns: minmax(0, 1fr); }
         }
         @media (max-width: 575.98px) {
-            .mbr-toc-list { grid-template-columns: minmax(0, 1fr); }
-            .mbr-langkah, .mbr-untung, .mbr-alur { grid-template-columns: minmax(0, 1fr); }
-            .mbr-kepala h2 { font-size: 1.12rem; }
-            .mbr-cta { padding: 20px 16px; }
-            .mbr-cta .mbr-btn { width: 100%; }
+            .mbr-sec { padding: 34px 0; }
+            .mbr-deret { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+            .mbr-deret::before { display: none; }
+            .mbr-untung { grid-template-columns: minmax(0, 1fr); }
+            .mbr-langkah, .mbr-kartu { padding: 20px 18px 18px; }
+            .mbr-nomor { width: 38px; height: 38px; font-size: 1rem; margin-bottom: 12px; }
+            .mbr-ikon-pojok { top: 20px; right: 18px; width: 30px; height: 30px; font-size: .9rem; }
+            .mbr-cta { padding: 22px 18px; }
+            .mbr-cta-aksi .mbr-btn { flex: 1 1 auto; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .mbr-kartu, .mbr-kartu:hover, .mbr-btn:hover { transform: none; }
-            .mbr-kartu::before { transition: none; }
+            .mbr-langkah, .mbr-kartu, .mbr-sorot-item, .mbr-alur-item, .mbr-btn { transition: none; }
+            .mbr-langkah:hover, .mbr-kartu:hover, .mbr-sorot-item:hover, .mbr-alur-item:hover, .mbr-btn:hover { transform: none; }
+            .mbr-langkah::before, .mbr-kartu::before, .mbr-sorot-item::before { transition: none; }
         }
     </style>
 
@@ -178,164 +242,161 @@
     </div>
     <!-- End Page Title -->
 
-    <section class="mbr-section">
+    {{-- Sorotan + pita lompat bagian --}}
+    <section class="mbr-sec is-atas">
         <div class="container">
-            <div class="mbr-grid">
-                {{-- Daftar isi --}}
-                <aside class="mbr-toc">
-                    <div class="mbr-toc-kartu" style="--c: #f26522">
-                        <div class="mbr-toc-kepala">
-                            <span class="mbr-ubin is-kecil"><i class="bi bi-list-ul"></i></span>
-                            <b>Daftar Isi</b>
-                        </div>
-                        <ul class="mbr-toc-list">
-                            @foreach ($bagian as $i => $b)
-                                <li>
-                                    <a href="#mb-{{ $i + 1 }}" style="--c: {{ $b['warna'] }}">
-                                        <span class="mbr-ubin is-kecil"><i class="bi {{ $b['ikon'] }}"></i></span>
-                                        <span>{{ $b['judul'] }}</span>
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                        <span class="mbr-diperbarui">
-                            <b>Terakhir diperbarui</b>
-                            <span>{{ \App\Livewire\Pages\Public\Legal\MemberPage::DIPERBARUI }}</span>
-                        </span>
+            <div class="mbr-sorot">
+                <div class="mbr-sorot-item" style="--c: #16a34a">
+                    <span class="mbr-ubin"><i class="bi bi-cash-coin"></i></span>
+                    <span><b>Gratis selamanya</b><small>Tanpa biaya daftar & iuran</small></span>
+                </div>
+                <div class="mbr-sorot-item" style="--c: #d97706">
+                    <span class="mbr-ubin"><i class="bi bi-coin"></i></span>
+                    <span><b>≈ {{ rtrim(rtrim(number_format($persenBalik, 1, ',', '.'), '0'), ',') }}% belanja kembali</b><small>Rp {{ number_format($perPoin, 0, ',', '.') }} = 1 poin = Rp {{ number_format($nilaiPoin, 0, ',', '.') }}</small></span>
+                </div>
+                <div class="mbr-sorot-item" style="--c: #2563eb">
+                    <span class="mbr-ubin"><i class="bi bi-piggy-bank-fill"></i></span>
+                    <span><b>Sisa belanja tidak hangus</b><small>Ditumpuk ke belanja berikutnya</small></span>
+                </div>
+            </div>
+
+            <nav class="mbr-lompat" aria-label="Lompat ke bagian">
+                @foreach ($bagian as $i => $b)
+                    <a href="#mb-{{ $i + 1 }}" style="--c: {{ $b['warna'] }}">
+                        <span class="mbr-ubin"><i class="bi {{ $b['ikon'] }}"></i></span> {{ $b['judul'] }}
+                    </a>
+                @endforeach
+            </nav>
+        </div>
+    </section>
+
+    {{-- 1. Caranya cuma 2 langkah --}}
+    <section class="mbr-sec is-pita" id="mb-1">
+        <div class="container">
+            <div class="ph-sec-head">
+                <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[0]['ikon'] }}"></i> Cara jadi member</span>
+                <h2 class="ph-sec-title">{{ $bagian[0]['judul'] }}</h2>
+                <p class="ph-sec-sub">Tanpa formulir pendaftaran — cukup belanja, lalu ceritakan pengalamanmu.</p>
+            </div>
+
+            <div class="mbr-deret">
+                @foreach ($langkah as $i => $l)
+                    <div class="mbr-langkah" style="--c: {{ $l['warna'] }}">
+                        <span class="mbr-nomor">{{ $i + 1 }}</span>
+                        <span class="mbr-ikon-pojok"><i class="bi {{ $l['ikon'] }}"></i></span>
+                        <h3 class="mbr-judul">{{ $l['judul'] }}</h3>
+                        <p class="mbr-ket">{!! $l['teks'] !!}</p>
                     </div>
-                </aside>
+                @endforeach
+            </div>
 
-                <div>
-                    {{-- 1. Caranya --}}
-                    <div class="mbr-blok" id="mb-1">
-                        <div class="mbr-kepala">
-                            <span class="mbr-ubin is-padat" style="--c: {{ $bagian[0]['warna'] }}"><i class="bi {{ $bagian[0]['ikon'] }}"></i></span>
-                            <div>
-                                <h2>{{ $bagian[0]['judul'] }}</h2>
-                                <p>Tanpa formulir pendaftaran — cukup belanja lalu ceritakan pengalamanmu.</p>
-                            </div>
-                        </div>
+            <div class="mbr-aktif" style="--c: #16a34a">
+                <span class="mbr-ubin is-padat"><i class="bi bi-patch-check-fill"></i></span>
+                <div class="mbr-aktif-teks">
+                    <b>Status member langsung aktif</b>
+                    <span>Begitu testimonimu disetujui admin, status Member menyala otomatis — tanpa perlu
+                        menghubungi siapa pun. Kode referral pun langsung kamu terima.</span>
+                </div>
+            </div>
+        </div>
+    </section>
 
-                        <div class="mbr-langkah">
-                            @foreach ($langkah as $i => $l)
-                                <div class="mbr-kartu" style="--c: {{ $l['warna'] }}">
-                                    <div class="mbr-lk-atas">
-                                        <span class="mbr-ubin is-padat"><i class="bi {{ $l['ikon'] }}"></i></span>
-                                        <span class="mbr-lk-no">{{ sprintf('%02d', $i + 1) }}</span>
-                                    </div>
-                                    <h3>{{ $l['judul'] }}</h3>
-                                    <p>{!! $l['teks'] !!}</p>
-                                </div>
-                            @endforeach
-                        </div>
+    {{-- 2. Keuntungan --}}
+    <section class="mbr-sec" id="mb-2">
+        <div class="container">
+            <div class="ph-sec-head">
+                <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[1]['ikon'] }}"></i> Keuntungan member</span>
+                <h2 class="ph-sec-title">{{ $bagian[1]['judul'] }}</h2>
+                <p class="ph-sec-sub">Tiga keuntungan yang berlaku selama kamu jadi member.</p>
+            </div>
 
-                        <div class="mbr-aktif" style="--c: #16a34a">
-                            <span class="mbr-ubin"><i class="bi bi-patch-check-fill"></i></span>
-                            <div class="mbr-aktif-teks">
-                                <b>Status member langsung aktif</b>
-                                <span>Begitu testimonimu disetujui admin, status Member menyala otomatis — tanpa perlu
-                                    menghubungi siapa pun. Kode referral pun langsung kamu terima.</span>
-                            </div>
-                        </div>
+            <div class="mbr-untung">
+                @foreach ($keuntungan as $k)
+                    <div class="mbr-kartu" style="--c: {{ $k['warna'] }}">
+                        <span class="mbr-ubin is-padat"><i class="bi {{ $k['ikon'] }}"></i></span>
+                        <h3 class="mbr-judul" style="margin-top:14px;">{{ $k['judul'] }}</h3>
+                        <p class="mbr-ket">{!! $k['teks'] !!}</p>
+                        <span class="mbr-chip">{{ $k['chip'] }}</span>
                     </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
 
-                    {{-- 2. Keuntungan --}}
-                    <div class="mbr-blok" id="mb-2">
-                        <div class="mbr-kepala">
-                            <span class="mbr-ubin is-padat" style="--c: {{ $bagian[1]['warna'] }}"><i class="bi {{ $bagian[1]['ikon'] }}"></i></span>
-                            <div>
-                                <h2>{{ $bagian[1]['judul'] }}</h2>
-                                <p>Tiga keuntungan yang berlaku selama kamu jadi member.</p>
-                            </div>
-                        </div>
+    {{-- 3. Contoh hitungan --}}
+    <section class="mbr-sec is-pita" id="mb-3">
+        <div class="container">
+            <div class="ph-sec-head">
+                <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[2]['ikon'] }}"></i> Hitungan poin</span>
+                <h2 class="ph-sec-title">{{ $bagian[2]['judul'] }}</h2>
+                <p class="ph-sec-sub">Misal kamu belanja Rp {{ number_format($contohBelanja, 0, ',', '.') }} — begini poinnya terkumpul.</p>
+            </div>
 
-                        <div class="mbr-untung">
-                            @foreach ($keuntungan as $k)
-                                <div class="mbr-kartu" style="--c: {{ $k['warna'] }}">
-                                    <span class="mbr-ubin is-padat"><i class="bi {{ $k['ikon'] }}"></i></span>
-                                    <h3 style="margin-top:13px;">{{ $k['judul'] }}</h3>
-                                    <p>{!! $k['teks'] !!}</p>
-                                    <span class="mbr-chip">{{ $k['chip'] }}</span>
-                                </div>
-                            @endforeach
-                        </div>
+            <div class="mbr-alur">
+                <div class="mbr-alur-item" style="--c: #2563eb">
+                    <span class="mbr-ubin is-padat"><i class="bi bi-bag"></i></span>
+                    <span class="mbr-alur-label">Belanja</span>
+                    <span class="mbr-alur-nilai">Rp {{ number_format($contohBelanja, 0, ',', '.') }}</span>
+                    <span class="mbr-alur-ket">Dibagi Rp {{ number_format($perPoin, 0, ',', '.') }} per poin</span>
+                </div>
+                <div class="mbr-alur-item" style="--c: #d97706">
+                    <span class="mbr-ubin is-padat"><i class="bi bi-coin"></i></span>
+                    <span class="mbr-alur-label">Poin didapat</span>
+                    <span class="mbr-alur-nilai">{{ $contohPoin }} poin</span>
+                    <span class="mbr-alur-ket">1 poin = Rp {{ number_format($nilaiPoin, 0, ',', '.') }}</span>
+                </div>
+                <div class="mbr-alur-item is-hasil" style="--c: #16a34a">
+                    <span class="mbr-ubin is-padat"><i class="bi bi-ticket-perforated"></i></span>
+                    <span class="mbr-alur-label">Jadi potongan</span>
+                    <span class="mbr-alur-nilai">Rp {{ number_format($contohNilai, 0, ',', '.') }}</span>
+                    <span class="mbr-alur-ket">Dipakai kapan saja</span>
+                </div>
+            </div>
+
+            <div class="mbr-sisa">
+                <span class="mbr-ubin is-kecil" style="--c: #16a34a"><i class="bi bi-piggy-bank-fill"></i></span>
+                <span>Sisa <b>Rp {{ number_format($contohSisa, 0, ',', '.') }}</b> <b>tidak hangus</b> —
+                    disimpan dan dijumlahkan ke belanja berikutnya. Jadi belanja kecil pun tidak sia-sia.</span>
+            </div>
+        </div>
+    </section>
+
+    {{-- 4. Syarat & ketentuan --}}
+    <section class="mbr-sec" id="mb-4">
+        <div class="container">
+            <div class="ph-sec-head">
+                <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[3]['ikon'] }}"></i> Aturan main</span>
+                <h2 class="ph-sec-title">{{ $bagian[3]['judul'] }}</h2>
+                <p class="ph-sec-sub">Ringkas dan tanpa huruf kecil tersembunyi.</p>
+            </div>
+
+            <div class="mbr-syarat">
+                @foreach ($syarat as $s)
+                    <div class="mbr-syarat-item" style="--c: {{ $s['warna'] }}">
+                        <span class="mbr-ubin is-kecil"><i class="bi {{ $s['ikon'] }}"></i></span>
+                        <span>{!! $s['teks'] !!}</span>
                     </div>
+                @endforeach
+            </div>
 
-                    {{-- 3. Contoh hitungan --}}
-                    <div class="mbr-blok" id="mb-3">
-                        <div class="mbr-kepala">
-                            <span class="mbr-ubin is-padat" style="--c: {{ $bagian[2]['warna'] }}"><i class="bi {{ $bagian[2]['ikon'] }}"></i></span>
-                            <div>
-                                <h2>{{ $bagian[2]['judul'] }}</h2>
-                                <p>Misal kamu belanja Rp {{ number_format($contohBelanja, 0, ',', '.') }}.</p>
-                            </div>
-                        </div>
-
-                        <div class="mbr-hitung">
-                            <div class="mbr-alur">
-                                <div class="mbr-alur-item" style="--c: #2563eb">
-                                    <span class="mbr-ubin is-kecil"><i class="bi bi-bag"></i></span>
-                                    <span class="mbr-alur-label">Belanja</span>
-                                    <span class="mbr-alur-nilai">Rp {{ number_format($contohBelanja, 0, ',', '.') }}</span>
-                                    <span class="mbr-alur-ket">Dibagi Rp {{ number_format($perPoin, 0, ',', '.') }} per poin</span>
-                                </div>
-                                <div class="mbr-alur-item" style="--c: #d97706">
-                                    <span class="mbr-ubin is-kecil"><i class="bi bi-coin"></i></span>
-                                    <span class="mbr-alur-label">Poin didapat</span>
-                                    <span class="mbr-alur-nilai">{{ $contohPoin }} poin</span>
-                                    <span class="mbr-alur-ket">1 poin = Rp {{ number_format($nilaiPoin, 0, ',', '.') }}</span>
-                                </div>
-                                <div class="mbr-alur-item" style="--c: #16a34a">
-                                    <span class="mbr-ubin is-kecil"><i class="bi bi-ticket-perforated"></i></span>
-                                    <span class="mbr-alur-label">Jadi potongan</span>
-                                    <span class="mbr-alur-nilai">Rp {{ number_format($contohNilai, 0, ',', '.') }}</span>
-                                    <span class="mbr-alur-ket">Dipakai kapan saja</span>
-                                </div>
-                            </div>
-
-                            <div class="mbr-sisa">
-                                <span class="mbr-ubin is-kecil" style="--c: #16a34a"><i class="bi bi-piggy-bank-fill"></i></span>
-                                <span>Sisa <b>Rp {{ number_format($contohSisa, 0, ',', '.') }}</b> <b>tidak hangus</b> —
-                                    disimpan dan dijumlahkan ke belanja berikutnya. Jadi belanja kecil pun tidak sia-sia.</span>
-                            </div>
-                        </div>
+            {{-- Rute checkout dipakai langsung, BUKAN url()->previous() — kalau halaman
+                 ini dibuka dari tempat lain, previous() melempar ke sana padahal
+                 tombolnya jelas-jelas bertuliskan "Kembali ke Checkout". --}}
+            <div class="mbr-cta" style="margin-top:26px;">
+                <div class="mbr-cta-kiri">
+                    <span class="mbr-ubin is-padat" style="--c: #fba919"><i class="bi bi-bag-check-fill"></i></span>
+                    <div class="mbr-cta-teks">
+                        <b>Siap lanjut belanja?</b>
+                        <span>Selesaikan pesananmu — poinnya mulai terkumpul begitu pesanan dibayar.</span>
                     </div>
-
-                    {{-- 4. Syarat --}}
-                    <div class="mbr-blok" id="mb-4">
-                        <div class="mbr-kepala">
-                            <span class="mbr-ubin is-padat" style="--c: {{ $bagian[3]['warna'] }}"><i class="bi {{ $bagian[3]['ikon'] }}"></i></span>
-                            <div>
-                                <h2>{{ $bagian[3]['judul'] }}</h2>
-                                <p>Ringkas dan tanpa huruf kecil tersembunyi.</p>
-                            </div>
-                        </div>
-
-                        <div class="mbr-syarat">
-                            @foreach ($syarat as $s)
-                                <div class="mbr-syarat-item" style="--c: {{ $s['warna'] }}">
-                                    <span class="mbr-ubin is-kecil"><i class="bi {{ $s['ikon'] }}"></i></span>
-                                    <span>{!! $s['teks'] !!}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    {{-- Rute checkout dipakai langsung, BUKAN url()->previous() — kalau halaman
-                         ini dibuka dari tempat lain, previous() melempar ke sana padahal
-                         tombolnya jelas-jelas bertuliskan "Kembali ke Checkout". --}}
-                    <div class="mbr-cta">
-                        <div class="mbr-cta-kiri">
-                            <span class="mbr-ubin is-kecil" style="--c: #fba919"><i class="bi bi-bag-check-fill"></i></span>
-                            <div class="mbr-cta-teks">
-                                <b>Siap lanjut belanja?</b>
-                                <span>Selesaikan pesananmu — poinnya mulai terkumpul begitu pesanan dibayar.</span>
-                            </div>
-                        </div>
-                        <a class="mbr-btn" href="{{ route('checkout') }}">
-                            <i class="bi bi-arrow-left"></i> Kembali ke Checkout
-                        </a>
-                    </div>
+                </div>
+                <div class="mbr-cta-aksi">
+                    <a class="mbr-btn is-utama" href="{{ route('checkout') }}">
+                        <i class="bi bi-arrow-left"></i> Kembali ke Checkout
+                    </a>
+                    <a class="mbr-btn is-tembus" href="{{ route('shop.index') }}">
+                        <i class="bi bi-bag"></i> Lihat Produk
+                    </a>
                 </div>
             </div>
         </div>
