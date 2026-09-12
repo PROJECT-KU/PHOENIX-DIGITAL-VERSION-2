@@ -85,3 +85,13 @@ it('pita lompat bagian menggulir sendiri', function () {
         ->assertSee("document.querySelectorAll('.mbr-lompat a')", false)
         ->assertSee('scrollIntoView', false);
 });
+
+it('kepala halaman memakai kartu judul bersama & seluruh halaman putih', function () {
+    // Kartu judulnya dibiarkan apa adanya seperti halaman FAQ (digambar layout),
+    // dan halaman ini tidak lagi memakai pita berwarna.
+    $html = Livewire::test(MemberPage::class);
+
+    $html->assertSeeHtml('<div class="page-title ph-page-title">')
+        ->assertDontSeeHtml('.mbr-page .ph-page-title')
+        ->assertDontSeeHtml('is-pita');
+});

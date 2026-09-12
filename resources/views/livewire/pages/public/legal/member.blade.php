@@ -13,13 +13,11 @@
            Kelas mbr-*: gaya .legal-*/.lg-* dipakai bersama Syarat, Privasi,
            dan FAQ (sebagian beku di server), jadi halaman ini berdiri sendiri. */
         .mbr-page { --mbr-ink: #1c1f26; --mbr-muted: #6b7280; --mbr-line: #eceff3; --mbr-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        /* Seluruh halaman berlatar putih penuh — tanpa pita berwarna. Yang
+           memisahkan kepala halaman dari isinya adalah kartu judul bersama
+           (bingkai + bayangan), sama seperti halaman FAQ. */
         .mbr-sec { padding: 46px 0; }
-        .mbr-sec.is-pita { background: linear-gradient(180deg, #fff8f1 0%, #fffdfb 100%); border-block: 1px solid #f7e7d7; }
-        /* Pita teratas: kartu judul di atasnya berlatar PUTIH, jadi pita krem
-           inilah yang memisahkan keduanya — tanpa itu blok putih penuh-lebar
-           menyambung tepat di bawah kartu dan keduanya terbaca menyatu. */
-        .mbr-sec.is-atas.is-pita { background: linear-gradient(180deg, #fff4e9 0%, #fffaf4 100%); }
-        /* Strip sorotan diberi jarak lebih lega dari kartu judul: keduanya
+
            sama-sama kartu putih, jadi dengan jarak sempit mereka terbaca
            sebagai satu blok yang menempel. */
         .mbr-sec.is-atas { padding-top: 40px; }
@@ -345,7 +343,7 @@
     <!-- End Page Title -->
 
     {{-- Sorotan + pita lompat bagian --}}
-    <section class="mbr-sec is-atas is-pita">
+    <section class="mbr-sec is-atas">
         <div class="container">
             {{-- Panel pembuka: jangkar visual halaman, sekaligus tiruan kartu
                  member supaya keuntungannya terlihat, bukan hanya terbaca. --}}
@@ -445,7 +443,7 @@
     </section>
 
     {{-- 2. Keuntungan --}}
-    <section class="mbr-sec is-pita" id="mb-2">
+    <section class="mbr-sec" id="mb-2">
         <div class="container">
             <div class="ph-sec-head">
                 <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[1]['ikon'] }}"></i> Keuntungan member</span>
@@ -523,7 +521,7 @@
     </section>
 
     {{-- 4. Syarat & ketentuan --}}
-    <section class="mbr-sec is-pita" id="mb-4">
+    <section class="mbr-sec" id="mb-4">
         <div class="container">
             <div class="ph-sec-head">
                 <span class="ph-sec-eyebrow"><i class="bi {{ $bagian[3]['ikon'] }}"></i> Aturan main</span>
