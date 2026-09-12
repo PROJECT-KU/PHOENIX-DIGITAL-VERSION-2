@@ -4,15 +4,35 @@
 
 <main class="legal-page lg-lebar">
     @include('partials.gaya-legal-daftar-isi')
-    <div class="legal-hero">
-        <div class="container">
-            <span class="ph-sec-eyebrow"><i class="bi bi-file-earmark-text"></i> Legal</span>
-            <h1>Syarat &amp; Ketentuan</h1>
-            <p>Ketentuan penggunaan layanan Phoenix Digital. Dengan bertransaksi, Anda dianggap menyetujui poin-poin berikut.</p>
+    <style>
+        /* Jarak kartu isi dari kartu judul — disamakan dengan Shop, FAQ,
+           Member, Layanan, dan Tentang Kami (22px). .legal-card menarik
+           dirinya 18px ke atas (dulu sengaja menumpuk judul gaya lama), jadi
+           tarikan itu dinolkan di sini. */
+        .lg-jarak-judul { padding-top: 22px; }
+        .lg-jarak-judul .legal-card { margin-top: 0; }
+    </style>
+    {{-- Kartu judul BERSAMA (.ph-page-title), sama dengan Shop, FAQ, dan
+         Member: judulnya berdiri sendiri dan terpisah jelas dari kartu isi
+         di bawahnya. Versi lama (.legal-hero) menempel hanya 9px sehingga
+         keduanya terbaca sebagai satu blok. --}}
+    <div class="page-title ph-page-title">
+        <div class="container d-lg-flex justify-content-between align-items-center">
+            <div class="ph-page-head">
+                <span class="ph-sec-eyebrow"><i class="bi bi-file-earmark-text"></i> Legal</span>
+                <h1>Syarat &amp; Ketentuan</h1>
+                <p>Ketentuan penggunaan layanan Phoenix Digital. Dengan bertransaksi, Anda dianggap menyetujui poin-poin berikut.</p>
+            </div>
+            <nav class="breadcrumbs">
+                <ol>
+                    <li><a href="{{ route('homepage') }}">Beranda</a></li>
+                    <li class="current">Syarat &amp; Ketentuan</li>
+                </ol>
+            </nav>
         </div>
     </div>
 
-    <div class="container">
+    <div class="container lg-jarak-judul">
         <div class="legal-card">
             @php
                 // Urutannya HARUS sama dengan urutan blok di bawah; id-nya sk-1..sk-9.
