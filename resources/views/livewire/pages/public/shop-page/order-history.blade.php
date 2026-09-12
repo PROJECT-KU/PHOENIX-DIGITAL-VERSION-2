@@ -1,7 +1,158 @@
 <div>
-    {{-- Sembunyikan garis background di halaman riwayat --}}
     <style>
+        /* ===== Riwayat Pesanan =====
+           Bahasa visual sama dengan Beranda, Shop, Bundling, dan halaman lain
+           yang sudah ditata: kartu putih bersudut 18px dengan warna per kartu
+           (--c), ubin ikon berwarna, dan sapuan warna tipis di pojok.
+           Kelas rw-*: aturan .oh-* ada di public-custom-styles.css yang beku
+           di server, jadi tampilan ini tidak bergantung padanya. */
+        .rw-page { --rw-ink: #1c1f26; --rw-muted: #64748b; --rw-line: #eceff3; --rw-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .rw-sec { padding: 22px 0 64px; }
+
+        /* Ubin ikon — glif tunggal selalu display:block + line-height:1 */
+        .rw-ubin {
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 42px; height: 42px; border-radius: 13px; font-size: 1.1rem;
+            background: color-mix(in srgb, var(--c) 13%, #fff); color: color-mix(in srgb, var(--c) 85%, #0f172a);
+        }
+        .rw-ubin.is-kecil { width: 32px; height: 32px; border-radius: 10px; font-size: .9rem; }
+        .rw-ubin i.bi, .rw-ubin i.bi::before { display: block; line-height: 1; }
+
+        /* ===== Bilah atas: catatan + tombol pulihkan ===== */
+        .rw-bar {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px 20px;
+            padding: 16px 18px; margin-bottom: 18px; border-radius: 18px;
+            background: linear-gradient(135deg, color-mix(in srgb, var(--c) 8%, #fff) 0%, #fff 70%);
+            border: 1px solid color-mix(in srgb, var(--c) 20%, #eceff4);
+        }
+        .rw-bar-kiri { display: flex; align-items: center; gap: 13px; flex: 1 1 420px; min-width: 0; }
+        .rw-bar-teks b { display: block; font-family: var(--rw-font); font-weight: 800; font-size: .95rem; color: var(--rw-ink); }
+        .rw-bar-teks span { display: block; margin-top: 2px; font-size: .84rem; line-height: 1.55; color: var(--rw-muted); }
+        .rw-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px;
+            border-radius: 13px; border: 1.5px solid #e5e0d8; background: #fff; color: var(--rw-ink);
+            font-weight: 700; font-size: .87rem; text-decoration: none; white-space: nowrap; cursor: pointer;
+            transition: border-color .18s ease, color .18s ease, transform .18s ease, background .18s ease;
+        }
+        .rw-btn:hover { border-color: #f26522; color: #c2410c; transform: translateY(-1px); }
+        .rw-btn.is-utama {
+            border-color: transparent; background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff;
+            box-shadow: 0 12px 22px -12px rgba(242, 101, 34, .8);
+        }
+        .rw-btn.is-utama:hover { color: #fff; filter: brightness(1.05); }
+        .rw-btn i.bi, .rw-btn i.bi::before { display: block; line-height: 1; font-size: 1rem; }
+
+        .rw-jumlah { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: .85rem; color: var(--rw-muted); }
+        .rw-jumlah b { color: var(--rw-ink); font-weight: 800; }
+        .rw-jumlah i.bi, .rw-jumlah i.bi::before { display: block; line-height: 1; }
+
+        /* ===== Kartu pesanan (akordeon) ===== */
+        .rw-list { display: grid; gap: 12px; }
+        .rw-order {
+            position: relative; overflow: hidden; background: #fff; border: 1px solid var(--rw-line); border-radius: 18px;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .rw-order:hover { border-color: color-mix(in srgb, var(--c) 32%, #fff); }
+        .rw-order[open] {
+            border-color: color-mix(in srgb, var(--c) 38%, #fff);
+            box-shadow: 0 18px 36px -30px color-mix(in srgb, var(--c) 85%, transparent);
+        }
+        .rw-kepala {
+            display: flex; align-items: center; gap: 14px; padding: 15px 18px; cursor: pointer; list-style: none;
+        }
+        .rw-kepala::-webkit-details-marker { display: none; }
+        .rw-kepala:hover .rw-ubin, .rw-order[open] .rw-ubin { background: var(--c); color: #fff; }
+        .rw-kepala-isi { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+        .rw-nomor { font-family: var(--rw-font); font-weight: 800; font-size: .95rem; color: var(--rw-ink); line-height: 1.3; }
+        .rw-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .78rem; color: var(--rw-muted); }
+        .rw-meta i.bi, .rw-meta i.bi::before { display: inline-block; line-height: 1; }
+        .rw-kanan { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .rw-status {
+            display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 99px;
+            background: color-mix(in srgb, var(--c) 13%, #fff); color: color-mix(in srgb, var(--c) 62%, #0f172a);
+            font-size: .73rem; font-weight: 800; white-space: nowrap;
+        }
+        .rw-status i.bi, .rw-status i.bi::before { display: block; line-height: 1; font-size: .75rem; }
+        .rw-total { font-family: var(--rw-font); font-weight: 800; font-size: 1rem; color: var(--rw-ink); white-space: nowrap; }
+        .rw-panah {
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+            border-radius: 50%; background: #f8fafc; color: #64748b; font-size: .78rem;
+            transition: transform .25s ease, background .2s ease, color .2s ease;
+        }
+        .rw-panah i.bi, .rw-panah i.bi::before { display: block; line-height: 1; }
+        .rw-order[open] .rw-panah { transform: rotate(180deg); background: color-mix(in srgb, var(--c) 13%, #fff); color: color-mix(in srgb, var(--c) 70%, #0f172a); }
+
+        /* Lencana peringatan masa aktif */
+        .rw-tanda {
+            display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px;
+            font-size: .72rem; font-weight: 800; white-space: nowrap;
+        }
+        .rw-tanda i.bi, .rw-tanda i.bi::before { display: block; line-height: 1; font-size: .72rem; }
+        .rw-tanda.is-habis { background: #fef2f2; color: #b91c1c; }
+        .rw-tanda.is-campur { background: #fff7ed; color: #b45309; }
+        .rw-tanda.is-segera { background: #fffbeb; color: #a16207; }
+        .rw-tanda.is-aktif { background: #f0fdf4; color: #15803d; }
+        .rw-tanda.is-tunggu { background: #f8fafc; color: #475569; }
+
+        /* ===== Isi pesanan ===== */
+        .rw-isi { padding: 0 18px 18px; }
+        .rw-baris {
+            display: flex; align-items: center; gap: 13px; padding: 13px 0;
+            border-top: 1px dashed #e8ecf2;
+        }
+        .rw-baris-isi { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1 1 auto; }
+        .rw-produk { font-family: var(--rw-font); font-weight: 700; font-size: .9rem; color: var(--rw-ink); line-height: 1.35; }
+        .rw-baris-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: .77rem; color: var(--rw-muted); }
+        .rw-baris-meta i.bi, .rw-baris-meta i.bi::before { display: inline-block; line-height: 1; }
+        .rw-durasi {
+            display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px;
+            background: #f1f5f9; color: #475569; font-size: .72rem; font-weight: 700; white-space: nowrap;
+        }
+        .rw-harga { flex-shrink: 0; font-family: var(--rw-font); font-weight: 800; font-size: .9rem; color: var(--rw-ink); white-space: nowrap; }
+
+        /* Ringkasan biaya */
+        .rw-struk { margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #fcfcfd; border: 1px solid var(--rw-line); }
+        .rw-struk-baris { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: .85rem; color: #475569; padding: 4px 0; }
+        .rw-struk-baris.is-hijau { color: #15803d; }
+        .rw-struk-baris.is-akhir {
+            margin-top: 8px; padding-top: 10px; border-top: 1px dashed #e2e8f0;
+            font-family: var(--rw-font); font-weight: 800; font-size: .98rem; color: var(--rw-ink);
+        }
+        .rw-struk-baris.is-akhir b { color: #ea580c; font-size: 1.08rem; }
+
+        /* Promo */
+        .rw-promo { margin-top: 14px; padding: 14px 16px; border-radius: 14px; background: #fffdf7; border: 1px solid #fde68a; }
+        .rw-promo-judul { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; font-family: var(--rw-font); font-weight: 800; font-size: .87rem; color: #92400e; }
+        .rw-promo-judul i.bi, .rw-promo-judul i.bi::before { display: block; line-height: 1; }
+        .rw-promo-item { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; padding: 7px 0; font-size: .83rem; color: #475569; }
+        .rw-promo-item + .rw-promo-item { border-top: 1px dashed #fde68a; }
+        .rw-promo-tag {
+            display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px;
+            background: color-mix(in srgb, var(--p) 14%, #fff); color: color-mix(in srgb, var(--p) 60%, #0f172a);
+            font-size: .71rem; font-weight: 800; white-space: nowrap;
+        }
+        .rw-promo-tag i.bi, .rw-promo-tag i.bi::before { display: block; line-height: 1; font-size: .72rem; }
+        .rw-promo-nama { flex: 1 1 auto; min-width: 0; }
+        .rw-kode {
+            display: inline-block; padding: 1px 7px; border-radius: 6px; background: #fff7ed; border: 1px dashed #fcd34d;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem; color: #92400e;
+        }
+        .rw-promo-amt { flex-shrink: 0; font-weight: 800; color: #15803d; white-space: nowrap; }
+
+        @media (max-width: 767.98px) {
+            .rw-kepala { flex-wrap: wrap; gap: 10px; padding: 14px; }
+            .rw-kepala-isi { flex: 1 1 60%; }
+            .rw-kanan { width: 100%; justify-content: space-between; }
+            .rw-isi { padding: 0 14px 14px; }
+            .rw-baris { align-items: flex-start; }
+            .rw-bar { padding: 14px; }
+            .rw-bar .rw-btn { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .rw-btn:hover, .rw-panah { transition: none; transform: none; }
+        }
     </style>
+
     <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
@@ -19,130 +170,112 @@
         </div>
     </div>
     <!-- End Page Title -->
-    <div class="container py-3">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
-            <p class="oh-note mb-0">
-                <i class="bi bi-info-circle"></i>
-                Riwayat tersimpan di perangkat ini. Pindah perangkat, ganti browser, atau hapus cookie?
-                Pulihkan lewat <b>Nomor HP</b>.
-            </p>
-            <button type="button" class="ph-empty-btn ghost flex-shrink-0" data-bs-toggle="modal"
-                data-bs-target="#restoreModal">
-                <i class="bi bi-arrow-repeat"></i> Pulihkan Riwayat
-            </button>
-        </div>
 
-        @if($this->myOrders->total() > 0)
-        <p class="small text-muted mb-2"><i class="bi bi-receipt me-1"></i>{{ $this->myOrders->total() }} pesanan ditemukan</p>
-        <div class="accordion" id="orderAccordion">
-            @foreach($this->myOrders as $order)
-            <div class="accordion-item mb-3 border rounded overflow-hidden">
-                <h2 class="accordion-header" id="heading{{ $order->id }}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ $order->id }}">
-                        <div class="d-flex w-100 justify-content-between align-items-center me-3">
-                            <div class="d-flex flex-column gap-2">
-                                <span class="fw-bold text-dark">{{ $order->order_number }}</span>
-                                <small class="text-muted">{{ $order->created_at->format('d M Y, H:i') }}</small>
-                                @php
-                                    $totalAcc = $order->items->count();
-                                    $habisCount = $order->items->filter(fn ($i) => $i->isHabis())->count();
-                                    $soonCount = $order->items->filter(fn ($i) => ! $i->isHabis() && $i->end_date && $i->isExpiringSoon())->count();
-                                @endphp
-                                @if ($habisCount > 0 && $habisCount === $totalAcc)
-                                    <span class="ph-order-badge is-habis"><i class="bi bi-x-circle-fill"></i>
-                                        {{ $totalAcc > 1 ? 'Semua Akun Habis' : 'Akun Habis' }}</span>
-                                @elseif ($habisCount > 0)
-                                    <span class="ph-order-badge is-mixed"><i class="bi bi-exclamation-triangle-fill"></i>
-                                        {{ $habisCount }}/{{ $totalAcc }} Akun Habis</span>
-                                @elseif ($soonCount > 0)
-                                    <span class="ph-order-badge is-soon"><i class="bi bi-clock-fill"></i> Segera
-                                        Berakhir</span>
-                                @endif
-                            </div>
-                            <div>
-                                @php
-                                $badgeClass = match($order->status) {
-                                'paid', 'completed' => 'bg-success',
-                                'pending' => 'bg-warning text-dark',
-                                'cancelled' => 'bg-danger',
-                                default => 'bg-secondary'
-                                };
-                                @endphp
-                                <span class="badge {{ $badgeClass }} rounded-pill me-2">
-                                    {{ ucfirst($order->status) }}
+    <section class="rw-sec rw-page">
+        <div class="container">
+            <div class="rw-bar" style="--c: #2563eb">
+                <div class="rw-bar-kiri">
+                    <span class="rw-ubin"><i class="bi bi-info-circle-fill"></i></span>
+                    <div class="rw-bar-teks">
+                        <b>Riwayat tersimpan di perangkat ini</b>
+                        <span>Pindah perangkat, ganti browser, atau hapus cookie? Pulihkan lewat <b>Nomor HP</b>.</span>
+                    </div>
+                </div>
+                <button type="button" class="rw-btn" data-bs-toggle="modal" data-bs-target="#restoreModal">
+                    <i class="bi bi-arrow-repeat"></i> Pulihkan Riwayat
+                </button>
+            </div>
+
+            @if($this->myOrders->total() > 0)
+            <p class="rw-jumlah"><i class="bi bi-receipt"></i> <b>{{ $this->myOrders->total() }} pesanan</b> ditemukan</p>
+
+            <div class="rw-list">
+                @foreach($this->myOrders as $order)
+                @php
+                    // Warna & label status pesanan — satu tempat, dipakai ubin
+                    // ikon, lencana, dan sapuan kartunya.
+                    [$warnaOrder, $ikonOrder, $labelOrder] = match ($order->status) {
+                        'paid' => ['#16a34a', 'bi-check-circle-fill', 'Lunas'],
+                        'completed' => ['#0d9488', 'bi-patch-check-fill', 'Selesai'],
+                        'pending' => ['#d97706', 'bi-hourglass-split', 'Menunggu Pembayaran'],
+                        'cancelled' => ['#e11d48', 'bi-x-circle-fill', 'Dibatalkan'],
+                        default => ['#64748b', 'bi-receipt', ucfirst((string) $order->status)],
+                    };
+                    $totalAcc = $order->items->count();
+                    $habisCount = $order->items->filter(fn ($i) => $i->isHabis())->count();
+                    $soonCount = $order->items->filter(fn ($i) => ! $i->isHabis() && $i->end_date && $i->isExpiringSoon())->count();
+                    // Ditulis tanpa tanda lebih-besar: tanda itu sesudah direktif blok
+                    // membuat Livewire melewati penanda morph-nya.
+                    $semuaHabis = $habisCount !== 0 && $habisCount === $totalAcc;
+                    $sebagianHabis = $habisCount !== 0 && ! $semuaHabis;
+                    $adaSegera = $soonCount !== 0;
+                    $adaDiskon = 0.0 !== (float) $order->total_discount;
+                    $adaKodeUnik = 0 !== (int) $order->unique_code;
+                @endphp
+                <details class="rw-order" style="--c: {{ $warnaOrder }}">
+                    <summary class="rw-kepala">
+                        <span class="rw-ubin"><i class="bi {{ $ikonOrder }}"></i></span>
+                        <span class="rw-kepala-isi">
+                            <span class="rw-nomor">{{ $order->order_number }}</span>
+                            <span class="rw-meta">
+                                <span><i class="bi bi-calendar-event"></i> {{ $order->created_at->translatedFormat('d M Y, H:i') }}</span>
+                                <span><i class="bi bi-box-seam"></i> {{ $totalAcc }} produk</span>
+                            </span>
+                            @if ($semuaHabis)
+                                <span class="rw-tanda is-habis"><i class="bi bi-x-circle-fill"></i> {{ $totalAcc > 1 ? 'Semua Akun Habis' : 'Akun Habis' }}</span>
+                            @elseif ($sebagianHabis)
+                                <span class="rw-tanda is-campur"><i class="bi bi-exclamation-triangle-fill"></i> {{ $habisCount }}/{{ $totalAcc }} Akun Habis</span>
+                            @elseif ($adaSegera)
+                                <span class="rw-tanda is-segera"><i class="bi bi-clock-fill"></i> Segera Berakhir</span>
+                            @endif
+                        </span>
+                        <span class="rw-kanan">
+                            <span class="rw-status"><i class="bi {{ $ikonOrder }}"></i> {{ $labelOrder }}</span>
+                            <span class="rw-total">Rp {{ number_format($order->total, 0, ',', '.') }}</span>
+                            <span class="rw-panah"><i class="bi bi-chevron-down"></i></span>
+                        </span>
+                    </summary>
+
+                    <div class="rw-isi">
+                        @foreach($order->items as $item)
+                        @php
+                            $habisItem = $item->isHabis();
+                            $segeraItem = ! $habisItem && $item->end_date && $item->isExpiringSoon();
+                            [$warnaItem, $ikonItem, $tandaItem, $kelasItem] = $habisItem
+                                ? ['#e11d48', 'bi-x-circle-fill', 'Habis', 'is-habis']
+                                : ($segeraItem
+                                    ? ['#d97706', 'bi-clock-fill', $item->getRemainingLabel(), 'is-segera']
+                                    : ($item->end_date
+                                        ? ['#16a34a', 'bi-check-circle-fill', 'Aktif · '.$item->getRemainingLabel(), 'is-aktif']
+                                        : ['#64748b', 'bi-hourglass-split', 'Menunggu aktivasi', 'is-tunggu']));
+                        @endphp
+                        <div class="rw-baris" style="--c: {{ $warnaItem }}">
+                            <span class="rw-ubin is-kecil"><i class="bi {{ $ikonItem }}"></i></span>
+                            <span class="rw-baris-isi">
+                                <span class="rw-produk">{{ $item->product_name }}</span>
+                                <span class="rw-baris-meta">
+                                    <span class="rw-tanda {{ $kelasItem }}"><i class="bi {{ $ikonItem }}"></i> {{ $tandaItem }}</span>
+                                    <span class="rw-durasi">{{ $item->duration_value }} {{ ucfirst($item->duration_type) }}</span>
+                                    @if ($item->end_date)
+                                        <span><i class="bi bi-calendar-event"></i>
+                                            {{ $habisItem ? 'Berakhir' : 'Berlaku s.d.' }}
+                                            {{ \Illuminate\Support\Carbon::parse($item->end_date)->translatedFormat('d M Y') }}</span>
+                                    @endif
                                 </span>
-                                <span class="fw-bold">Rp {{ number_format($order->total, 0, ',', '.') }}</span>
-                            </div>
+                            </span>
+                            <span class="rw-harga">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
                         </div>
-                    </button>
-                </h2>
-                <div id="collapse{{ $order->id }}" class="accordion-collapse collapse" data-bs-parent="#orderAccordion">
-                    <div class="accordion-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-borderless mb-0">
-                                <thead class="text-muted">
-                                    <tr>
-                                        <th>Produk</th>
-                                        <th class="text-center">Durasi</th>
-                                        <th class="text-end">Harga</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($order->items as $item)
-                                    <tr>
-                                        <td class="py-2">
-                                            <span class="fw-medium">{{ $item->product_name }}</span>
-                                            @if ($item->isHabis())
-                                                <span class="ph-sub-badge is-habis"><i class="bi bi-x-circle-fill"></i> Habis</span>
-                                            @elseif ($item->end_date && $item->isExpiringSoon())
-                                                <span class="ph-sub-badge is-soon"><i class="bi bi-clock-fill"></i> {{ $item->getRemainingLabel() }}</span>
-                                            @elseif ($item->end_date)
-                                                <span class="ph-sub-badge is-active"><i class="bi bi-check-circle-fill"></i> Aktif · {{ $item->getRemainingLabel() }}</span>
-                                            @else
-                                                <span class="ph-sub-badge is-wait"><i class="bi bi-hourglass-split"></i> Menunggu aktivasi</span>
-                                            @endif
-                                            @if ($item->end_date)
-                                                <div class="ph-sub-meta">
-                                                    <i class="bi bi-calendar-event"></i>
-                                                    {{ $item->isHabis() ? 'Berakhir' : 'Berlaku s.d.' }}
-                                                    {{ \Illuminate\Support\Carbon::parse($item->end_date)->translatedFormat('d M Y') }}
-                                                </div>
-                                            @endif
-                                        </td>
-                                        <td class="text-center py-2">
-                                            {{ $item->duration_value }} {{ ucfirst($item->duration_type) }}
-                                        </td>
-                                        <td class="text-end py-2">
-                                            Rp {{ number_format($item->subtotal, 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot class="border-top oh-summary">
-                                    <tr>
-                                        <td colspan="2" class="text-end pt-3">Subtotal</td>
-                                        <td class="text-end pt-3">Rp {{ number_format($order->subtotal, 0, ',', '.') }}</td>
-                                    </tr>
-                                    @if ((float) $order->total_discount > 0)
-                                        <tr class="oh-sum-disc">
-                                            <td colspan="2" class="text-end">Diskon</td>
-                                            <td class="text-end">− Rp {{ number_format($order->total_discount, 0, ',', '.') }}</td>
-                                        </tr>
-                                    @endif
-                                    @if ((int) $order->unique_code > 0)
-                                        <tr class="oh-sum-unique">
-                                            <td colspan="2" class="text-end">Kode Unik</td>
-                                            <td class="text-end">+ Rp {{ number_format($order->unique_code, 0, ',', '.') }}</td>
-                                        </tr>
-                                    @endif
-                                    <tr>
-                                        <td colspan="2" class="text-end fw-bold pt-2">Total Bayar</td>
-                                        <td class="text-end fw-bold pt-2 oh-total">
-                                            Rp {{ number_format($order->total, 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        @endforeach
+
+                        <div class="rw-struk">
+                            <div class="rw-struk-baris"><span>Subtotal</span><span>Rp {{ number_format($order->subtotal, 0, ',', '.') }}</span></div>
+                            @if ($adaDiskon)
+                                <div class="rw-struk-baris is-hijau"><span>Diskon</span><span>− Rp {{ number_format($order->total_discount, 0, ',', '.') }}</span></div>
+                            @endif
+                            @if ($adaKodeUnik)
+                                <div class="rw-struk-baris"><span>Kode Unik</span><span>+ Rp {{ number_format($order->unique_code, 0, ',', '.') }}</span></div>
+                            @endif
+                            <div class="rw-struk-baris is-akhir"><span>Total Bayar</span><b>Rp {{ number_format($order->total, 0, ',', '.') }}</b></div>
                         </div>
 
                         @php
@@ -153,71 +286,67 @@
                         @endphp
 
                         @if ($hasAnyPromo)
-                            <div class="oh-promo">
-                                <div class="oh-promo-title"><i class="bi bi-ticket-perforated-fill"></i> Promo Digunakan</div>
-                                    <div class="oh-promo-list">
-                                        @foreach ($promos as $p)
-                                            @php
-                                                $tipe = $p['tipe_promo'] ?? '';
-                                                [$label, $cls, $icon] = match ($tipe) {
-                                                    'flash_sale' => ['Flash Sale', 'flash', 'bi-lightning-charge-fill'],
-                                                    'kode_promo' => ['Kode Promo', 'kode', 'bi-tag-fill'],
-                                                    'auto_promo' => ['Promo Otomatis', 'auto', 'bi-magic'],
-                                                    default => ['Promo', 'auto', 'bi-gift-fill'],
-                                                };
-                                            @endphp
-                                            <div class="oh-promo-item">
-                                                <span class="oh-promo-tag {{ $cls }}"><i class="bi {{ $icon }}"></i> {{ $label }}</span>
-                                                <span class="oh-promo-name">
-                                                    {{ $p['nama_promo'] ?? '-' }}
-                                                    @if (! empty($p['kode_promo']))
-                                                        <code class="oh-code">{{ $p['kode_promo'] }}</code>
-                                                    @endif
-                                                </span>
-                                                @if (! empty($p['jumlah_diskon']))
-                                                    <span class="oh-promo-amt">− Rp {{ number_format($p['jumlah_diskon'], 0, ',', '.') }}</span>
-                                                @endif
-                                            </div>
-                                        @endforeach
-
-                                        @if ($hasReferral)
-                                            <div class="oh-promo-item">
-                                                <span class="oh-promo-tag referral"><i class="bi bi-people-fill"></i> Referral</span>
-                                                <span class="oh-promo-name">
-                                                    @if ($order->referral_code)
-                                                        <code class="oh-code">{{ $order->referral_code }}</code>
-                                                    @endif
-                                                </span>
-                                                @if ((float) $order->referral_discount > 0)
-                                                    <span class="oh-promo-amt">− Rp {{ number_format($order->referral_discount, 0, ',', '.') }}</span>
-                                                @endif
-                                            </div>
-                                        @endif
-
-                                        @if ($hasPoints)
-                                            <div class="oh-promo-item">
-                                                <span class="oh-promo-tag point"><i class="bi bi-star-fill"></i> Poin</span>
-                                                <span class="oh-promo-name">{{ number_format((int) $order->used_points, 0, ',', '.') }} poin</span>
-                                                @if ((float) ($order->points_discount ?? 0) > 0)
-                                                    <span class="oh-promo-amt">− Rp {{ number_format($order->points_discount, 0, ',', '.') }}</span>
-                                                @endif
-                                            </div>
-                                        @endif
-                                </div>
+                        <div class="rw-promo">
+                            <div class="rw-promo-judul"><i class="bi bi-ticket-perforated-fill"></i> Promo Digunakan</div>
+                            @foreach ($promos as $p)
+                            @php
+                                [$labelPromo, $warnaPromo, $ikonPromo] = match ($p['tipe_promo'] ?? '') {
+                                    'flash_sale' => ['Flash Sale', '#e11d48', 'bi-lightning-charge-fill'],
+                                    'kode_promo' => ['Kode Promo', '#2563eb', 'bi-tag-fill'],
+                                    'auto_promo' => ['Promo Otomatis', '#7c3aed', 'bi-magic'],
+                                    default => ['Promo', '#d97706', 'bi-gift-fill'],
+                                };
+                            @endphp
+                            <div class="rw-promo-item">
+                                <span class="rw-promo-tag" style="--p: {{ $warnaPromo }}"><i class="bi {{ $ikonPromo }}"></i> {{ $labelPromo }}</span>
+                                <span class="rw-promo-nama">
+                                    {{ $p['nama_promo'] ?? '-' }}
+                                    @if (! empty($p['kode_promo']))
+                                        <code class="rw-kode">{{ $p['kode_promo'] }}</code>
+                                    @endif
+                                </span>
+                                @if (! empty($p['jumlah_diskon']))
+                                    <span class="rw-promo-amt">− Rp {{ number_format($p['jumlah_diskon'], 0, ',', '.') }}</span>
+                                @endif
                             </div>
+                            @endforeach
+
+                            @if ($hasReferral)
+                            <div class="rw-promo-item">
+                                <span class="rw-promo-tag" style="--p: #0d9488"><i class="bi bi-people-fill"></i> Referral</span>
+                                <span class="rw-promo-nama">
+                                    @if ($order->referral_code)
+                                        <code class="rw-kode">{{ $order->referral_code }}</code>
+                                    @endif
+                                </span>
+                                @if ((float) $order->referral_discount > 0)
+                                    <span class="rw-promo-amt">− Rp {{ number_format($order->referral_discount, 0, ',', '.') }}</span>
+                                @endif
+                            </div>
+                            @endif
+
+                            @if ($hasPoints)
+                            <div class="rw-promo-item">
+                                <span class="rw-promo-tag" style="--p: #d97706"><i class="bi bi-star-fill"></i> Poin</span>
+                                <span class="rw-promo-nama">{{ number_format((int) $order->used_points, 0, ',', '.') }} poin</span>
+                                @if ((float) ($order->points_discount ?? 0) > 0)
+                                    <span class="rw-promo-amt">− Rp {{ number_format($order->points_discount, 0, ',', '.') }}</span>
+                                @endif
+                            </div>
+                            @endif
+                        </div>
                         @endif
                     </div>
-                </div>
+                </details>
+                @endforeach
             </div>
-            @endforeach
-        </div>
 
-        @if($this->myOrders->hasPages())
-        <div class="mt-4 ph-pagination">
-            {{ $this->myOrders->links('pagination.ph') }}
-        </div>
-        @endif
-        @else
+            @if($this->myOrders->hasPages())
+            <div class="mt-4 ph-pagination">
+                {{ $this->myOrders->links('pagination.ph') }}
+            </div>
+            @endif
+            @else
         <div class="ph-empty py-4">
             <div class="ph-empty-art">
                 <svg viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img"
@@ -267,7 +396,7 @@
                 </button>
             </div>
         </div>
-        @endif
+            @endif
 
         <div wire:ignore.self class="modal fade restore-modal" id="restoreModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -284,7 +413,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Nomor WhatsApp <span class="req">*wajib</span></label>
                                 <input type="number" wire:model="phoneNumber"
-                                    class="form-control @error('phoneNumber') is-invalid @enderror"
+                                    class="form-control {{ $errors->has('phoneNumber') ? 'is-invalid' : '' }}"
                                     placeholder="0821*********">
                                 @error('phoneNumber')
                                     <span class="text-danger small">{{ $message }}</span>
@@ -294,7 +423,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Kode Pesanan <span class="opt">(opsional)</span></label>
                                 <input type="text" wire:model="invoiceCode"
-                                    class="form-control @error('invoiceCode') is-invalid @enderror"
+                                    class="form-control {{ $errors->has('invoiceCode') ? 'is-invalid' : '' }}"
                                     placeholder="Kosongkan untuk melihat semua pesanan">
                                 @error('invoiceCode')
                                     <span class="text-danger small">{{ $message }}</span>
@@ -319,7 +448,8 @@
                 </div>
             </div>
         </div>
-    </div>
+        </div>
+    </section>
 </div>
 
 @script
@@ -350,4 +480,5 @@
         });
     });
 </script>
+
 @endscript
