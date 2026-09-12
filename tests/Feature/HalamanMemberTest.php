@@ -59,3 +59,21 @@ it('tombol kembali menunjuk langsung ke checkout', function () {
         ->assertSeeHtml('href="'.route('checkout').'"')
         ->assertSee('Kembali ke Checkout');
 });
+
+it('penghitung poin tetap utuh walau javascript mati', function () {
+    // Nilai bawaan dicetak dari server; skrip hanya memperbaruinya saat diketik.
+    Livewire::test(MemberPage::class)
+        ->assertSeeHtml('id="mbr-belanja"')
+        ->assertSeeHtml('value="170.000"')
+        ->assertSeeHtml('id="mbr-nilai-poin">3 poin</span>')
+        ->assertSeeHtml('id="mbr-nilai-potongan">Rp 1.500</span>')
+        ->assertSeeHtml('id="mbr-nilai-sisa">Rp 20.000</b>');
+});
+
+it('kartu member hanyalah contoh tampilan, bukan data sungguhan', function () {
+    // Ditandai aria-hidden + diberi keterangan, supaya tidak disangka kartu milik pengunjung.
+    Livewire::test(MemberPage::class)
+        ->assertSeeHtml('<div class="mbr-kartu-member" aria-hidden="true">')
+        ->assertSee('Contoh tampilan kartu member')
+        ->assertSee('Calon Member');
+});
