@@ -15,7 +15,10 @@
         .mbr-page { --mbr-ink: #1c1f26; --mbr-muted: #6b7280; --mbr-line: #eceff3; --mbr-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
         .mbr-sec { padding: 46px 0; }
         .mbr-sec.is-pita { background: linear-gradient(180deg, #fff8f1 0%, #fffdfb 100%); border-block: 1px solid #f7e7d7; }
-        .mbr-sec.is-atas { padding-top: 24px; }
+        /* Strip sorotan diberi jarak lebih lega dari kartu judul: keduanya
+           sama-sama kartu putih, jadi dengan jarak sempit mereka terbaca
+           sebagai satu blok yang menempel. */
+        .mbr-sec.is-atas { padding-top: 40px; }
         .mbr-sec .ph-sec-head { margin-bottom: 28px; }
 
         /* Ubin ikon — glif tunggal selalu display:block + line-height:1 */
@@ -207,6 +210,7 @@
         }
         @media (max-width: 575.98px) {
             .mbr-sec { padding: 34px 0; }
+            .mbr-sec.is-atas { padding-top: 32px; }
             .mbr-deret { grid-template-columns: minmax(0, 1fr); gap: 12px; }
             .mbr-deret::before { display: none; }
             .mbr-untung { grid-template-columns: minmax(0, 1fr); }
