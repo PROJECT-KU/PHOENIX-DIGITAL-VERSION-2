@@ -11,6 +11,10 @@ use Livewire\Component;
 
 class Contact extends Component
 {
+    public const WA = '6289505967995';
+
+    public const EMAIL = 'halo@phoenixdigitalwarehouse.com';
+
     public $name;
 
     public $email;
@@ -61,6 +65,41 @@ class Contact extends Component
         $this->dispatch('contact-success', message: 'Terima kasih! Pesan Anda telah kami terima.');
     }
 
+    /** Tautan WhatsApp admin dengan pesan pembuka yang sudah terisi. */
+    public static function wa(string $pesan): string
+    {
+        return 'https://wa.me/'.self::WA.'?text='.rawurlencode($pesan);
+    }
+
+    /**
+     * Kanal kontak. Disusun di sini, bukan di view, supaya nomor/alamatnya
+     * tidak tercecer di markup dan bisa diuji. Tiap kanal punya warnanya
+     * sendiri (--c di view), bahasa visual yang sama dengan Shop & Bundling.
+     */
+    public static function kanal(): array
+    {
+        return [
+            ['ikon' => 'bi-whatsapp', 'warna' => '#16a34a', 'label' => 'WhatsApp', 'nilai' => '0895-0596-7995',
+                'href' => self::wa('Halo Phoenix Digital, saya ingin bertanya.'), 'baru' => true],
+            ['ikon' => 'bi-envelope-fill', 'warna' => '#2563eb', 'label' => 'Email', 'nilai' => self::EMAIL,
+                'href' => 'mailto:'.self::EMAIL, 'baru' => false],
+            ['ikon' => 'bi-geo-alt-fill', 'warna' => '#db2777', 'label' => 'Alamat',
+                'nilai' => 'Jl. Durmo, Ngemplak, Mlati, Sleman, Yogyakarta', 'href' => null, 'baru' => false],
+            ['ikon' => 'bi-clock-fill', 'warna' => '#d97706', 'label' => 'Jam Operasional',
+                'nilai' => 'Setiap hari · 08.00–21.00 WIB', 'href' => null, 'baru' => false],
+        ];
+    }
+
+    /** Media sosial resmi. */
+    public static function sosial(): array
+    {
+        return [
+            ['ikon' => 'bi-facebook', 'warna' => '#1877f2', 'label' => 'Facebook', 'href' => 'https://web.facebook.com/profile.php?id=61586376808425'],
+            ['ikon' => 'bi-instagram', 'warna' => '#d62976', 'label' => 'Instagram', 'href' => 'https://www.instagram.com/phoenixdigital.id/'],
+            ['ikon' => 'bi-tiktok', 'warna' => '#111827', 'label' => 'TikTok', 'href' => 'https://www.tiktok.com/@phoenix_digitalwarehouse'],
+        ];
+    }
+
     #[Layout('layouts.guest')]
     public function render()
     {
@@ -68,6 +107,8 @@ class Contact extends Component
 
         return view('livewire.pages.public.contact.contact', [
             'banners' => $banners,
+            'kanal' => self::kanal(),
+            'sosial' => self::sosial(),
         ]);
     }
 }
