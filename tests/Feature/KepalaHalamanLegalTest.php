@@ -29,7 +29,9 @@ it('halaman privasi memakai kartu judul bersama dengan remah roti', function () 
 });
 
 it('kartu isi diberi jarak dari kartu judul, tidak menempel', function () {
-    Livewire::test(TermsPage::class)->assertSeeHtml('class="container lg-jarak-judul"');
+    // Syarat sudah punya tata letak sendiri (.syk-sec, jarak atas 22px);
+    // Privasi masih memakai kartu legal lama yang tarikan -18px-nya dinolkan.
+    Livewire::test(TermsPage::class)->assertSeeHtml('<section class="syk-sec">');
     Livewire::test(PrivacyPage::class)->assertSeeHtml('class="container lg-jarak-judul"');
 });
 
@@ -44,4 +46,27 @@ it('anchor pasal lama tetap hidup', function () {
     foreach (range(1, 6) as $n) {
         $privasi->assertSeeHtml('id="pv-'.$n.'"')->assertSeeHtml('href="#pv-'.$n.'"');
     }
+});
+
+it('tiap pasal syarat punya nomor, ikon, dan warnanya sendiri', function () {
+    $pasal = collect(TermsPage::pasal());
+
+    expect($pasal)->toHaveCount(9)
+        // Judul daftar isi dan judul pasal berasal dari satu daftar yang sama.
+        ->and($pasal->pluck('judul')->unique())->toHaveCount(9);
+
+    Livewire::test(TermsPage::class)
+        ->assertSeeHtml('<span class="syk-ubin is-kecil"><i class="bi bi-credit-card-2-front"></i></span>')
+        ->assertSeeHtml('<span class="syk-no">5</span>')
+        ->assertSee('Maksimal 2 perangkat');
+});
+
+it('pasal batas perangkat dan refund ditandai penting', function () {
+    $sorot = collect(TermsPage::pasal())->filter(fn ($p) => $p['sorot'])->pluck('judul')->values()->all();
+
+    expect($sorot)->toBe(['Batas Perangkat & Blokir Otomatis', 'Kebijakan Refund']);
+
+    Livewire::test(TermsPage::class)
+        ->assertSeeHtml('id="sk-5" style="--c: #e11d48"')
+        ->assertSeeHtml('<i class="bi bi-exclamation-triangle-fill"></i> Penting');
 });

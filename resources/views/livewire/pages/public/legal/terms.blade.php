@@ -2,20 +2,155 @@
     Syarat & Ketentuan | Phoenix Digital
 @endsection
 
-<main class="legal-page lg-lebar">
-    @include('partials.gaya-legal-daftar-isi')
+<main class="main syk-page">
     <style>
-        /* Jarak kartu isi dari kartu judul — disamakan dengan Shop, FAQ,
-           Member, Layanan, dan Tentang Kami (22px). .legal-card menarik
-           dirinya 18px ke atas (dulu sengaja menumpuk judul gaya lama), jadi
-           tarikan itu dinolkan di sini. */
-        .lg-jarak-judul { padding-top: 22px; }
-        .lg-jarak-judul .legal-card { margin-top: 0; }
+        /* ===== Halaman Syarat & Ketentuan =====
+           Bahasa visual sama dengan Beranda, Shop, Bundling, Layanan, Tentang,
+           Kontak, FAQ, dan Member: kartu judul bersama (.ph-page-title), kartu
+           putih bersudut 18px dengan warna per kartu (--c), ubin ikon berwarna.
+           Kelas syk-*: gaya .legal-*/.lg-* dipakai bersama halaman lain dan
+           sebagiannya beku di server, jadi halaman ini berdiri sendiri. */
+        .syk-page { --syk-ink: #1c1f26; --syk-muted: #6b7280; --syk-line: #eceff3; --syk-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .syk-sec { padding: 22px 0 64px; }
+
+        /* Ubin ikon — glif tunggal selalu display:block + line-height:1 */
+        .syk-ubin {
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 44px; height: 44px; border-radius: 14px; font-size: 1.15rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 85%, #0f172a);
+            transition: background .2s ease, color .2s ease;
+        }
+        .syk-ubin.is-padat {
+            background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff)); color: #fff;
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--c) 85%, transparent);
+        }
+        .syk-ubin.is-kecil { width: 34px; height: 34px; border-radius: 11px; font-size: .95rem; }
+        .syk-ubin i.bi, .syk-ubin i.bi::before { display: block; line-height: 1; }
+
+        /* ===== Ringkasan tiga poin terpenting ===== */
+        .syk-ringkas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 26px; }
+        .syk-ringkas-item {
+            position: relative; display: flex; align-items: center; gap: 13px; padding: 16px 18px; overflow: hidden;
+            background: #fff; border: 1px solid var(--syk-line); border-radius: 16px;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+        .syk-ringkas-item::before {
+            content: ""; position: absolute; top: -34px; right: -34px; width: 96px; height: 96px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent); transition: transform .3s ease;
+        }
+        .syk-ringkas-item:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--c) 35%, #fff); box-shadow: 0 12px 28px color-mix(in srgb, var(--c) 18%, transparent); }
+        .syk-ringkas-item:hover::before { transform: scale(1.35); }
+        .syk-ringkas-item > * { position: relative; }
+        .syk-ringkas-item b { display: block; font-family: var(--syk-font); font-weight: 800; font-size: .96rem; color: var(--syk-ink); line-height: 1.3; }
+        .syk-ringkas-item small { display: block; margin-top: 3px; font-size: .8rem; color: var(--syk-muted); line-height: 1.5; }
+
+        .syk-grid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 2fr); gap: 24px; align-items: start; }
+
+        /* ===== Daftar isi ===== */
+        .syk-toc { position: sticky; top: 96px; }
+        .syk-toc-kartu { padding: 20px 18px; background: #fff; border: 1px solid var(--syk-line); border-radius: 20px; box-shadow: 0 18px 40px -34px rgba(15, 23, 42, .5); }
+        .syk-toc-kepala { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+        .syk-toc-kepala b { font-family: var(--syk-font); font-weight: 800; font-size: 1rem; color: var(--syk-ink); }
+        .syk-toc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+        .syk-toc-list a {
+            display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 11px;
+            color: #475569; font-size: .84rem; line-height: 1.4; text-decoration: none;
+            transition: background .18s ease, color .18s ease;
+        }
+        .syk-toc-list a:hover { background: color-mix(in srgb, var(--c) 8%, #fff); color: color-mix(in srgb, var(--c) 80%, #0f172a); }
+        .syk-toc-no {
+            flex-shrink: 0; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--c) 13%, #fff); color: color-mix(in srgb, var(--c) 70%, #0f172a);
+            font-size: .73rem; font-weight: 800; font-variant-numeric: tabular-nums;
+        }
+        .syk-diperbarui {
+            display: flex; flex-direction: column; gap: 2px; margin-top: 14px; padding-top: 13px;
+            border-top: 1px dashed #e8ecf2; font-size: .78rem; color: var(--syk-muted);
+        }
+        .syk-diperbarui b { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+
+        /* ===== Kartu pasal ===== */
+        .syk-list { display: grid; gap: 14px; }
+        .syk-pasal {
+            position: relative; overflow: hidden; padding: 22px 24px;
+            background: #fff; border: 1px solid var(--syk-line); border-radius: 18px; scroll-margin-top: 100px;
+            transition: border-color .22s ease, box-shadow .22s ease;
+        }
+        .syk-pasal::before {
+            content: ""; position: absolute; top: -38px; right: -38px; width: 108px; height: 108px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 9%, transparent); transition: transform .3s ease;
+        }
+        .syk-pasal:hover { border-color: color-mix(in srgb, var(--c) 32%, #fff); box-shadow: 0 16px 32px -26px color-mix(in srgb, var(--c) 85%, transparent); }
+        .syk-pasal:hover::before { transform: scale(1.3); }
+        /* Pasal yang paling sering jadi sumber salah paham (batas perangkat &
+           refund) diberi latar berwarna — sama seperti .legal-highlight dulu,
+           tetapi mengikuti warna pasalnya sendiri. */
+        .syk-pasal.is-sorot {
+            border-color: color-mix(in srgb, var(--c) 30%, #fff);
+            background: linear-gradient(160deg, color-mix(in srgb, var(--c) 8%, #fff) 0%, #fff 70%);
+        }
+        .syk-pasal > * { position: relative; }
+        .syk-kepala { display: flex; align-items: center; gap: 13px; margin-bottom: 12px; }
+        .syk-no {
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 10%, #fff); border: 2px solid color-mix(in srgb, var(--c) 30%, #fff);
+            color: color-mix(in srgb, var(--c) 62%, #0f172a);
+            font-family: var(--syk-font); font-weight: 800; font-size: .88rem; line-height: 1; font-variant-numeric: tabular-nums;
+        }
+        .syk-judul { margin: 0; font-family: var(--syk-font); font-weight: 800; font-size: 1.05rem; line-height: 1.3; letter-spacing: -.015em; color: var(--syk-ink); }
+        .syk-pasal p { margin: 0; font-size: .9rem; line-height: 1.75; color: #475569; }
+        .syk-pasal p + p { margin-top: 10px; }
+        .syk-pasal p b { color: #334155; }
+        .syk-pasal a { color: #c2410c; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+        .syk-pasal a:hover { color: #9a3412; }
+        .syk-lencana {
+            display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px;
+            background: color-mix(in srgb, var(--c) 14%, #fff); color: color-mix(in srgb, var(--c) 60%, #0f172a);
+            font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+        }
+        .syk-lencana i.bi, .syk-lencana i.bi::before { display: block; line-height: 1; font-size: .72rem; }
+
+        /* ===== Ajakan penutup ===== */
+        .syk-cta {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px 24px;
+            margin-top: 16px; padding: 22px 24px; border-radius: 20px;
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #eceff4);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--c) 9%, #fff) 0%, #fff 68%);
+        }
+        .syk-cta-kiri { display: flex; align-items: center; gap: 14px; flex: 1 1 320px; min-width: 0; }
+        .syk-cta-teks b { display: block; font-family: var(--syk-font); font-weight: 800; font-size: 1.05rem; color: var(--syk-ink); }
+        .syk-cta-teks span { display: block; margin-top: 2px; font-size: .87rem; color: var(--syk-muted); line-height: 1.55; }
+        .syk-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 20px;
+            border-radius: 13px; background: #16a34a; color: #fff; font-weight: 700; font-size: .9rem; text-decoration: none;
+            white-space: nowrap; box-shadow: 0 12px 22px -12px rgba(22, 163, 74, .85);
+            transition: background .18s ease, transform .18s ease;
+        }
+        .syk-btn:hover { background: #15803d; color: #fff; transform: translateY(-1px); }
+        .syk-btn i.bi, .syk-btn i.bi::before { display: block; line-height: 1; font-size: 1.05rem; }
+
+        @media (max-width: 991.98px) {
+            .syk-grid { grid-template-columns: minmax(0, 1fr); }
+            .syk-toc { position: static; }
+            .syk-toc-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 767.98px) {
+            .syk-ringkas { grid-template-columns: minmax(0, 1fr); }
+        }
+        @media (max-width: 575.98px) {
+            .syk-toc-list { grid-template-columns: minmax(0, 1fr); }
+            .syk-pasal { padding: 18px 16px; }
+            .syk-cta { padding: 18px 16px; }
+            .syk-cta .syk-btn { width: 100%; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .syk-ringkas-item, .syk-ringkas-item:hover, .syk-btn:hover { transform: none; transition: none; }
+            .syk-pasal::before, .syk-ringkas-item::before { transition: none; }
+        }
     </style>
-    {{-- Kartu judul BERSAMA (.ph-page-title), sama dengan Shop, FAQ, dan
-         Member: judulnya berdiri sendiri dan terpisah jelas dari kartu isi
-         di bawahnya. Versi lama (.legal-hero) menempel hanya 9px sehingga
-         keduanya terbaca sebagai satu blok. --}}
+
+    <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
             <div class="ph-page-head">
@@ -31,93 +166,80 @@
             </nav>
         </div>
     </div>
+    <!-- End Page Title -->
 
-    <div class="container lg-jarak-judul">
-        <div class="legal-card">
-            @php
-                // Urutannya HARUS sama dengan urutan blok di bawah; id-nya sk-1..sk-9.
-                $pasal = [
-                    'Tentang Layanan', 'Pemesanan & Pembayaran', 'Pengiriman Akun', 'Garansi',
-                    'Batas Perangkat & Blokir Otomatis', 'Kebijakan Refund', 'Tanggung Jawab Pengguna',
-                    'Larangan', 'Perubahan Ketentuan',
-                ];
-            @endphp
-
-            <div class="lg-tata">
-                <nav class="lg-nav" aria-label="Daftar isi">
-                    <b>Daftar Isi</b>
-                    <div class="lg-nav-tautan">
-                        @foreach ($pasal as $i => $judul)
-                            <a href="#sk-{{ $i + 1 }}">{{ $i + 1 }}. {{ $judul }}</a>
-                        @endforeach
+    <section class="syk-sec">
+        <div class="container">
+            {{-- Tiga poin terpenting, ditaruh di atas supaya terbaca lebih dulu --}}
+            <div class="syk-ringkas">
+                @foreach ($ringkas as $r)
+                    <div class="syk-ringkas-item" style="--c: {{ $r['warna'] }}">
+                        <span class="syk-ubin"><i class="bi {{ $r['ikon'] }}"></i></span>
+                        <span><b>{{ $r['judul'] }}</b><small>{{ $r['ket'] }}</small></span>
                     </div>
-
-                    {{-- Tanggal perubahan ISI terakhir menurut riwayat git, bukan tanggal
-                         penyuntingan tata letak. Halaman hukum yang mengaku "diperbarui"
-                         padahal hanya gayanya yang berubah menyesatkan pembacanya. --}}
-                    <span class="lg-diperbarui">
-                        <b>Terakhir diperbarui</b>
-                        <span>11 Juli 2026</span>
-                    </span>
-                </nav>
-
-                <div>
-            <div class="legal-block" id="sk-1">
-                <h2><span>1</span> Tentang Layanan</h2>
-                <p>Phoenix Digital menyediakan akun premium, lisensi, dan tools AI untuk kebutuhan riset serta produktivitas. Kami mengutamakan layanan yang <b>terpercaya, amanah, dan respons cepat</b>. Kami juga melayani kebutuhan <b>kampus/instansi</b> — silakan <a href="https://wa.me/6289505967995" target="_blank" rel="noopener">booking melalui WhatsApp</a> untuk pemesanan kolektif.</p>
+                @endforeach
             </div>
 
-            <div class="legal-block" id="sk-2">
-                <h2><span>2</span> Pemesanan &amp; Pembayaran</h2>
-                <p>Pemesanan dilakukan melalui website. Metode pembayaran yang tersedia <b>hanya Transfer Bank dan QRIS</b>. Pesanan diproses setelah pembayaran terverifikasi.</p>
-                <p>Demi keamanan, pastikan pembayaran ditujukan <b>atas nama Phoenix Digital Warehouse</b>. Jika ragu, konfirmasikan terlebih dahulu ke admin kami melalui <a href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20konfirmasi%20pembayaran." target="_blank" rel="noopener">WhatsApp 0895-0596-7995</a>.</p>
-            </div>
+            <div class="syk-grid">
+                {{-- Daftar isi --}}
+                <aside class="syk-toc">
+                    <div class="syk-toc-kartu" style="--c: #f26522">
+                        <div class="syk-toc-kepala">
+                            <span class="syk-ubin is-kecil"><i class="bi bi-list-ul"></i></span>
+                            <b>Daftar Isi</b>
+                        </div>
+                        <ul class="syk-toc-list">
+                            @foreach ($pasal as $i => $p)
+                                <li>
+                                    <a href="#sk-{{ $i + 1 }}" style="--c: {{ $p['warna'] }}">
+                                        <span class="syk-toc-no">{{ $i + 1 }}</span>
+                                        <span>{{ $p['judul'] }}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                        {{-- Tanggal perubahan ISI terakhir menurut riwayat git, bukan tanggal
+                             penyuntingan tata letak. Halaman hukum yang mengaku "diperbarui"
+                             padahal hanya gayanya yang berubah menyesatkan pembacanya. --}}
+                        <span class="syk-diperbarui">
+                            <b>Terakhir diperbarui</b>
+                            <span>{{ \App\Livewire\Pages\Public\Legal\TermsPage::DIPERBARUI }}</span>
+                        </span>
+                    </div>
+                </aside>
 
-            <div class="legal-block" id="sk-3">
-                <h2><span>3</span> Pengiriman Akun</h2>
-                <p>Detail akun/lisensi dikirim melalui WhatsApp atau kanal yang disepakati setelah pembayaran dikonfirmasi. Kami mengusahakan proses secepat mungkin pada jam operasional.</p>
-            </div>
+                {{-- Pasal --}}
+                <div class="syk-list">
+                    @foreach ($pasal as $i => $p)
+                        <article class="syk-pasal {{ $p['sorot'] ? 'is-sorot' : '' }}" id="sk-{{ $i + 1 }}" style="--c: {{ $p['warna'] }}">
+                            <div class="syk-kepala">
+                                <span class="syk-no">{{ $i + 1 }}</span>
+                                <span class="syk-ubin is-kecil"><i class="bi {{ $p['ikon'] }}"></i></span>
+                                <h2 class="syk-judul">{{ $p['judul'] }}</h2>
+                                @if ($p['sorot'])
+                                    <span class="syk-lencana"><i class="bi bi-exclamation-triangle-fill"></i> Penting</span>
+                                @endif
+                            </div>
+                            @foreach ($p['isi'] as $paragraf)
+                                <p>{!! $paragraf !!}</p>
+                            @endforeach
+                        </article>
+                    @endforeach
 
-            <div class="legal-block" id="sk-4">
-                <h2><span>4</span> Garansi</h2>
-                <p>Setiap akun bergaransi selama masa aktif sesuai paket yang dibeli. Jika terjadi kendala pada masa garansi, hubungi kami dan tim akan membantu secepatnya.</p>
-            </div>
-
-            <div class="legal-block legal-highlight" id="sk-5">
-                <h2><span>5</span> Batas Perangkat &amp; Blokir Otomatis</h2>
-                <p>Setiap akun hanya boleh digunakan pada <b>maksimal 2 (dua) perangkat</b>. Jika digunakan pada lebih dari 2 perangkat, akun akan <b>terblokir secara otomatis</b> oleh sistem penyedia. Kondisi ini <b>menghanguskan garansi</b>, berada <b>di luar kebijakan kami</b>, serta <b>tidak ada pembaruan maupun pembukaan pemblokiran</b>. Mohon patuhi batas perangkat demi kenyamanan bersama.</p>
-            </div>
-
-            <div class="legal-block legal-highlight" id="sk-6">
-                <h2><span>6</span> Kebijakan Refund</h2>
-                <p>Jika akun <b>belum diserahkan</b>, dana dikembalikan <b>100%</b>. Namun jika akun <b>sudah diserahkan/diaktifkan</b>, pengembalian dana maksimal <b>50%</b> — karena akun telah digunakan/terpakai. Pengajuan refund menyertakan bukti pembayaran dan alasan yang jelas.</p>
-            </div>
-
-            <div class="legal-block" id="sk-7">
-                <h2><span>7</span> Tanggung Jawab Pengguna</h2>
-                <p>Pengguna wajib menjaga kerahasiaan akun yang diterima dan menggunakannya secara wajar. Kerusakan akibat pelanggaran ketentuan penyedia layanan asli di luar tanggung jawab kami.</p>
-            </div>
-
-            <div class="legal-block" id="sk-8">
-                <h2><span>8</span> Larangan</h2>
-                <p>Dilarang menjual ulang, menyalahgunakan, atau membagikan akun di luar kesepakatan tanpa izin. Pelanggaran dapat menggugurkan garansi.</p>
-            </div>
-
-            <div class="legal-block" id="sk-9">
-                <h2><span>9</span> Perubahan Ketentuan</h2>
-                <p>Syarat &amp; Ketentuan dapat diperbarui sewaktu-waktu. Versi terbaru yang berlaku adalah yang tercantum pada halaman ini.</p>
-            </div>
-
-                </div>
-            </div>
-
-            <div class="legal-contact">
-                <i class="bi bi-whatsapp"></i>
-                <div>
-                    <strong>Butuh bantuan?</strong>
-                    <span>Hubungi kami di <a href="https://wa.me/6289505967995" target="_blank" rel="noopener">0895-0596-7995</a></span>
+                    <div class="syk-cta" style="--c: #16a34a">
+                        <div class="syk-cta-kiri">
+                            <span class="syk-ubin is-padat"><i class="bi bi-whatsapp"></i></span>
+                            <div class="syk-cta-teks">
+                                <b>Butuh bantuan?</b>
+                                <span>Ada yang kurang jelas dari ketentuan di atas? Tanyakan langsung ke admin kami.</span>
+                            </div>
+                        </div>
+                        <a class="syk-btn" href="{{ $waBantuan }}" target="_blank" rel="noopener">
+                            <i class="bi bi-whatsapp"></i> 0895-0596-7995
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
