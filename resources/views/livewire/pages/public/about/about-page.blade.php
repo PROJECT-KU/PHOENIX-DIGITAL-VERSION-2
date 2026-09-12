@@ -1,4 +1,167 @@
-<div>
+<div class="tk-page">
+    <style>
+        /* ===== Halaman Tentang Kami =====
+           Bahasa visual sama dengan Beranda, Shop, Bundling, dan Layanan:
+           kartu judul bersama (.ph-page-title), kartu putih bersudut 18px
+           dengan warna per kartu (--c), ubin ikon berwarna, sapuan pojok
+           seperti Cara Pesan. Kelas tk-*: aturan .abt-* di
+           public-custom-styles.css server beku, jadi desain ini tidak
+           bergantung padanya — kecuali ilustrasi (.abt-visual/.abt-illus)
+           yang memang sudah bagus beserta animasinya, dan tetap dipakai. */
+        .tk-page { --tk-ink: #1c1f26; --tk-muted: #64748b; --tk-line: #eceff4; --tk-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .tk-section { padding: 18px 0 64px; }
+        .tk-blok { margin-top: 56px; }
+
+        /* Ubin ikon bersama — glif tunggal selalu display:block + line-height:1
+           supaya benar-benar di tengah ubinnya. */
+        .tk-ubin {
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 44px; height: 44px; border-radius: 14px; font-size: 1.15rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: var(--c);
+        }
+        .tk-ubin.is-padat {
+            background: linear-gradient(140deg, var(--c), color-mix(in srgb, var(--c) 60%, #fff)); color: #fff;
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--c) 85%, transparent);
+        }
+        .tk-ubin.is-besar { width: 56px; height: 56px; border-radius: 18px; font-size: 1.45rem; }
+        .tk-ubin i.bi, .tk-ubin i.bi::before { display: block; line-height: 1; }
+
+        .tk-kepala { margin-bottom: 22px; }
+        .tk-kepala h2 {
+            margin: 10px 0 6px; font-family: var(--tk-font); font-weight: 800; letter-spacing: -.02em;
+            font-size: clamp(1.35rem, 1.05rem + 1.1vw, 1.8rem); color: var(--tk-ink);
+        }
+        .tk-kepala p { margin: 0; max-width: 640px; color: var(--tk-muted); font-size: .95rem; line-height: 1.65; }
+
+        /* Tombol */
+        .tk-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            height: 46px; padding: 0 20px; border-radius: 13px; border: 1.5px solid transparent;
+            font-weight: 700; font-size: .9rem; text-decoration: none; white-space: nowrap;
+            transition: background .18s, border-color .18s, color .18s, transform .18s, filter .18s;
+        }
+        .tk-btn i.bi, .tk-btn i.bi::before { display: block; line-height: 1; font-size: 1.05rem; }
+        .tk-btn:hover { transform: translateY(-1px); }
+        .tk-btn.is-utama {
+            background: var(--ph-grad, linear-gradient(135deg, #fba919, #f26522)); color: #fff;
+            box-shadow: 0 12px 22px -12px rgba(242, 101, 34, .8);
+        }
+        .tk-btn.is-utama:hover { color: #fff; filter: brightness(1.05); }
+        .tk-btn.is-wa { background: #16a34a; color: #fff; box-shadow: 0 12px 22px -12px rgba(22, 163, 74, .85); }
+        .tk-btn.is-wa:hover { background: #15803d; color: #fff; }
+        .tk-btn.is-garis { background: #fff; color: var(--tk-ink); border-color: #e5e0d8; }
+        .tk-btn.is-garis:hover { border-color: #f26522; color: #c2410c; }
+        .tk-btn.is-garis .bi-whatsapp { color: #16a34a; }
+
+        /* ===== Kartu pembuka ===== */
+        .tk-intro {
+            display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 32px; align-items: center;
+            padding: 32px 34px; border: 1px solid #f7dcc6; border-radius: 22px; overflow: hidden;
+            background:
+                radial-gradient(60% 90% at 100% 0%, rgba(251, 169, 25, .14), transparent 60%),
+                linear-gradient(160deg, #fff7ef 0%, #fff 72%);
+        }
+        .tk-intro h2 {
+            margin: 10px 0; font-family: var(--tk-font); font-weight: 800; letter-spacing: -.02em;
+            font-size: clamp(1.45rem, 1.1rem + 1.3vw, 2rem); line-height: 1.25; color: var(--tk-ink);
+        }
+        .tk-lead { margin: 0 0 10px; font-size: 1rem; line-height: 1.7; color: #334155; }
+        .tk-teks { margin: 0; font-size: .93rem; line-height: 1.75; color: #4b5563; }
+        .tk-teks b { color: #334155; }
+        .tk-janji { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+        .tk-chip {
+            display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 15px 0 7px; border-radius: 99px;
+            background: #fff; border: 1px solid color-mix(in srgb, var(--c) 25%, #eceff4);
+            color: #334155; font-size: .83rem; font-weight: 700;
+        }
+        .tk-chip .tk-ubin { width: 28px; height: 28px; border-radius: 10px; font-size: .85rem; }
+        .tk-aksi { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .tk-visual { display: flex; align-items: center; justify-content: center; min-width: 0; }
+        .tk-visual .abt-visual { margin: 0; width: 100%; }
+
+        /* ===== Kartu nilai ===== */
+        .tk-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+        .tk-kartu {
+            position: relative; display: flex; flex-direction: column; gap: 12px; padding: 22px 20px;
+            background: #fff; border: 1px solid var(--tk-line); border-radius: 18px; overflow: hidden;
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+        .tk-kartu::before {
+            content: ""; position: absolute; top: -38px; right: -38px; width: 108px; height: 108px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 10%, transparent); transition: transform .35s ease;
+        }
+        .tk-kartu:hover {
+            transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 35%, #fff);
+            box-shadow: 0 18px 34px -22px color-mix(in srgb, var(--c) 75%, transparent);
+        }
+        .tk-kartu:hover::before { transform: scale(1.25); }
+        .tk-kartu > * { position: relative; }
+        .tk-kartu h3 { margin: 0; font-family: var(--tk-font); font-weight: 800; font-size: 1rem; line-height: 1.35; color: var(--tk-ink); }
+        .tk-kartu p { margin: 0; font-size: .86rem; line-height: 1.6; color: var(--tk-muted); }
+
+        /* ===== Angka ===== */
+        .tk-angka {
+            display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 26px;
+            border: 1px solid #f7dcc6; border-radius: 22px;
+            background: linear-gradient(160deg, #fff7ef 0%, #fff 70%);
+        }
+        .tk-stat {
+            display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+            padding: 18px 12px; background: #fff; border: 1px solid var(--tk-line); border-radius: 16px;
+            box-shadow: 0 12px 26px -24px rgba(15, 23, 42, .5);
+        }
+        .tk-stat-num {
+            font-family: var(--tk-font); font-weight: 800; letter-spacing: -.02em; line-height: 1;
+            font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); color: var(--c);
+        }
+        .tk-stat p { margin: 0; font-size: .83rem; font-weight: 600; color: var(--tk-muted); }
+
+        /* ===== Kampus & instansi ===== */
+        .tk-kampus {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 20px; padding: 26px 28px; border-radius: 22px;
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #eceff4);
+            background: linear-gradient(135deg, color-mix(in srgb, var(--c) 9%, #fff) 0%, #fff 68%);
+        }
+        .tk-kampus-isi { flex: 1 1 320px; min-width: 0; }
+        .tk-kampus h3 { margin: 0 0 6px; font-family: var(--tk-font); font-weight: 800; font-size: 1.15rem; color: var(--tk-ink); }
+        .tk-kampus p { margin: 0; font-size: .9rem; line-height: 1.65; color: #475569; }
+
+        /* ===== Ajakan penutup ===== */
+        .tk-cta {
+            position: relative; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+            gap: 20px 28px; padding: 30px 34px; border-radius: 22px; overflow: hidden; color: #fff;
+            background:
+                radial-gradient(70% 130% at 100% 0%, rgba(251, 169, 25, .35), transparent 60%),
+                linear-gradient(135deg, #23272f 0%, #3a2a20 100%);
+        }
+        .tk-cta-kiri { flex: 1 1 380px; min-width: 0; }
+        .tk-cta h2 { margin: 10px 0 6px; font-family: var(--tk-font); font-weight: 800; font-size: 1.5rem; color: #fff; }
+        .tk-cta p { margin: 0; color: rgba(255, 255, 255, .8); font-size: .93rem; line-height: 1.6; }
+        .tk-cta .ph-sec-eyebrow { background: rgba(251, 169, 25, .16); color: #fbbf24; border-color: transparent; }
+        .tk-cta-aksi { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tk-cta .tk-btn.is-garis { background: rgba(255, 255, 255, .1); color: #fff; border-color: rgba(255, 255, 255, .3); }
+        .tk-cta .tk-btn.is-garis:hover { background: rgba(255, 255, 255, .18); color: #fff; border-color: rgba(255, 255, 255, .5); }
+
+        @media (max-width: 991.98px) {
+            .tk-intro { grid-template-columns: minmax(0, 1fr); }
+            .tk-grid, .tk-angka { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 575.98px) {
+            .tk-blok { margin-top: 40px; }
+            .tk-intro { padding: 22px 18px; gap: 22px; }
+            .tk-intro-aksi .tk-btn, .tk-aksi .tk-btn, .tk-cta-aksi .tk-btn { flex: 1 1 auto; }
+            .tk-angka { padding: 16px; gap: 10px; }
+            .tk-stat { padding: 14px 8px; }
+            .tk-kampus { padding: 20px 18px; }
+            .tk-kampus .tk-btn { width: 100%; }
+            .tk-cta { padding: 24px 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .tk-kartu, .tk-kartu:hover, .tk-btn:hover { transform: none; }
+            .tk-kartu::before { transition: none; }
+        }
+    </style>
+
     <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
@@ -18,39 +181,39 @@
     </div>
     <!-- End Page Title -->
 
-    <!-- Intro -->
-    <section class="abt-intro">
+    <section class="tk-section">
         <div class="container">
-            <div class="row align-items-center g-4 g-lg-5">
-                <div class="col-lg-6" data-aos="fade-up">
-                    <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Siapa Kami</span>
-                    <h2 class="abt-heading">Akses tools premium jadi mudah, aman, &amp; terjangkau</h2>
-                    <p class="abt-lead">Phoenix Digital membantu pelajar, peneliti, dan profesional mendapatkan akun
-                        premium, lisensi resmi, serta tools AI untuk mempercepat riset dan pekerjaan sehari-hari.</p>
-                    <p class="abt-text">Kami mengutamakan layanan yang <b>terpercaya dan amanah</b> dengan <b>respons
-                            cepat</b>. Dari kebutuhan perorangan hingga pemesanan kolektif untuk <b>kampus &amp;
-                            instansi</b>, semuanya kami layani dengan harga yang bersahabat.</p>
 
-                    <div class="abt-trust">
-                        <span class="abt-chip"><i class="bi bi-shield-check"></i> Transaksi Aman</span>
-                        <span class="abt-chip"><i class="bi bi-lightning-charge"></i> Respons Cepat</span>
-                        <span class="abt-chip"><i class="bi bi-patch-check"></i> Bergaransi</span>
+            {{-- Kartu pembuka --}}
+            <div class="tk-intro">
+                <div>
+                    <span class="ph-sec-eyebrow"><i class="bi bi-stars"></i> Siapa Kami</span>
+                    <h2>Akses tools premium jadi mudah, aman, &amp; terjangkau</h2>
+                    <p class="tk-lead">Phoenix Digital membantu pelajar, peneliti, dan profesional mendapatkan akun
+                        premium, lisensi resmi, serta tools AI untuk mempercepat riset dan pekerjaan sehari-hari.</p>
+                    <p class="tk-teks">Kami mengutamakan layanan yang <b>terpercaya dan amanah</b> dengan
+                        <b>respons cepat</b>. Dari kebutuhan perorangan hingga pemesanan kolektif untuk
+                        <b>kampus &amp; instansi</b>, semuanya kami layani dengan harga yang bersahabat.</p>
+
+                    <div class="tk-janji">
+                        @foreach ($janji as $j)
+                            <span class="tk-chip" style="--c: {{ $j['warna'] }}">
+                                <span class="tk-ubin"><i class="bi {{ $j['ikon'] }}"></i></span> {{ $j['teks'] }}
+                            </span>
+                        @endforeach
                     </div>
 
-                    <div class="abt-actions">
-                        <a href="{{ route('shop.index') }}" class="ph-empty-btn"><i class="bi bi-bag"></i> Mulai
-                            Belanja</a>
-                        <a href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20bertanya."
-                            target="_blank" rel="noopener" class="ph-empty-btn ghost"><i class="bi bi-whatsapp"></i>
-                            Hubungi Kami</a>
+                    <div class="tk-aksi">
+                        <a class="tk-btn is-utama" href="{{ route('shop.index') }}"><i class="bi bi-bag"></i> Mulai Belanja</a>
+                        <a class="tk-btn is-garis" href="{{ $waTanya }}" target="_blank" rel="noopener">
+                            <i class="bi bi-whatsapp"></i> Hubungi Kami
+                        </a>
                     </div>
                 </div>
 
-                <div class="col-lg-6" data-aos="zoom-in" data-aos-delay="150">
+                <div class="tk-visual">
                     <div class="abt-visual">
                         <div class="abt-visual-glow"></div>
-                        {{-- Gambar AI Anda: taruh file di storage/app/public/img/about-research.png (jpg/png).
-                             Jika belum ada, otomatis pakai ilustrasi vektor di bawah sebagai fallback. --}}
                         @php $aboutImg = public_path('storage/img/about-research.png'); @endphp
                         @if (file_exists($aboutImg))
                             <img loading="lazy" src="{{ asset('storage/img/about-research.png') }}?v={{ filemtime($aboutImg) }}"
@@ -208,133 +371,76 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Values -->
-    <section class="abt-values">
-        <div class="container">
-            <div class="ph-sec-head" data-aos="fade-up">
-                <span class="ph-sec-eyebrow"><i class="bi bi-heart-fill"></i> Kenapa Phoenix Digital</span>
-                <h2 class="ph-sec-title">Alasan pelanggan mempercayai kami</h2>
-                <p class="ph-sec-sub">Komitmen kami sederhana: layanan yang jujur, cepat, dan menguntungkan Anda.</p>
+            {{-- Alasan mempercayai kami --}}
+            <div class="tk-blok">
+                <div class="tk-kepala">
+                    <span class="ph-sec-eyebrow"><i class="bi bi-heart-fill"></i> Kenapa Phoenix Digital</span>
+                    <h2>Alasan pelanggan mempercayai kami</h2>
+                    <p>Komitmen kami sederhana: layanan yang jujur, cepat, dan menguntungkan Anda.</p>
+                </div>
+                <div class="tk-grid">
+                    @foreach ($nilai as $n)
+                        <article class="tk-kartu" style="--c: {{ $n['warna'] }}">
+                            <span class="tk-ubin is-padat"><i class="bi {{ $n['ikon'] }}"></i></span>
+                            <h3>{{ $n['judul'] }}</h3>
+                            <p>{{ $n['teks'] }}</p>
+                        </article>
+                    @endforeach
+                </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-3" data-aos="fade-up">
-                    <div class="abt-card">
-                        <span class="abt-card-ic"><i class="bi bi-shield-check"></i></span>
-                        <h3>Terpercaya &amp; Amanah</h3>
-                        <p>Produk sesuai deskripsi dan transaksi yang aman. Kepercayaan Anda adalah prioritas kami.</p>
-                    </div>
+            {{-- Angka --}}
+            <div class="tk-blok">
+                <div class="tk-kepala">
+                    <span class="ph-sec-eyebrow"><i class="bi bi-graph-up-arrow"></i> Sejauh Ini</span>
+                    <h2>Phoenix Digital dalam angka</h2>
+                    <p>Dipercaya perorangan sampai kampus &amp; instansi.</p>
                 </div>
-                <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
-                    <div class="abt-card">
-                        <span class="abt-card-ic"><i class="bi bi-lightning-charge-fill"></i></span>
-                        <h3>Respons Cepat</h3>
-                        <p>Pesanan dan pertanyaan dilayani secepat mungkin pada jam operasional kami.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
-                    <div class="abt-card">
-                        <span class="abt-card-ic"><i class="bi bi-patch-check-fill"></i></span>
-                        <h3>Bergaransi</h3>
-                        <p>Setiap akun bergaransi selama masa aktif paket. Ada kendala? Kami bantu selesaikan.</p>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
-                    <div class="abt-card">
-                        <span class="abt-card-ic"><i class="bi bi-tags-fill"></i></span>
-                        <h3>Harga Hemat</h3>
-                        <p>Nikmati paket bundling dan flash sale untuk mendapatkan tools premium dengan harga terbaik.</p>
-                    </div>
+                <div class="tk-angka">
+                    @foreach ($angka as $a)
+                        <div class="tk-stat" style="--c: {{ $a['warna'] }}">
+                            <span class="tk-ubin"><i class="bi {{ $a['ikon'] }}"></i></span>
+                            <div class="tk-stat-num">
+                                <span data-purecounter-start="0" data-purecounter-end="{{ $a['nilai'] }}"
+                                    data-purecounter-duration="2" class="purecounter">{{ $a['nilai'] }}</span>+
+                            </div>
+                            <p>{{ $a['label'] }}</p>
+                        </div>
+                    @endforeach
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Stats -->
-    <section class="abt-stats">
-        <div class="container">
-            <div class="abt-stats-inner" data-aos="fade-up">
-                <div class="row gy-4">
-                    <div class="col-6 col-lg-3">
-                        <div class="abt-stat">
-                            <i class="bi bi-emoji-smile-fill"></i>
-                            <div class="abt-num">
-                                <span data-purecounter-start="0" data-purecounter-end="800"
-                                    data-purecounter-duration="2" class="purecounter">0</span><span
-                                    class="abt-plus">+</span>
-                            </div>
-                            <p>Pelanggan Puas</p>
-                        </div>
+            {{-- Kampus & instansi --}}
+            <div class="tk-blok">
+                <div class="tk-kampus" style="--c: #4f46e5">
+                    <span class="tk-ubin is-padat is-besar"><i class="bi bi-mortarboard-fill"></i></span>
+                    <div class="tk-kampus-isi">
+                        <h3>Untuk Kampus &amp; Instansi</h3>
+                        <p>Butuh banyak akun untuk kelas, laboratorium, atau tim riset? Kami melayani pemesanan
+                            kolektif dengan harga khusus — amanah dan respons cepat.</p>
                     </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="abt-stat">
-                            <i class="bi bi-box-seam-fill"></i>
-                            <div class="abt-num">
-                                <span data-purecounter-start="0" data-purecounter-end="120"
-                                    data-purecounter-duration="2" class="purecounter">0</span><span
-                                    class="abt-plus">+</span>
-                            </div>
-                            <p>Produk &amp; Tools</p>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="abt-stat">
-                            <i class="bi bi-bag-check-fill"></i>
-                            <div class="abt-num">
-                                <span data-purecounter-start="0" data-purecounter-end="1500"
-                                    data-purecounter-duration="2" class="purecounter">0</span><span
-                                    class="abt-plus">+</span>
-                            </div>
-                            <p>Transaksi Selesai</p>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="abt-stat">
-                            <i class="bi bi-mortarboard-fill"></i>
-                            <div class="abt-num">
-                                <span data-purecounter-start="0" data-purecounter-end="25"
-                                    data-purecounter-duration="2" class="purecounter">0</span><span
-                                    class="abt-plus">+</span>
-                            </div>
-                            <p>Kampus &amp; Instansi</p>
-                        </div>
-                    </div>
+                    <a class="tk-btn is-wa" href="{{ $waKampus }}" target="_blank" rel="noopener">
+                        <i class="bi bi-whatsapp"></i> Booking via WhatsApp
+                    </a>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Kampus & Instansi -->
-    <section class="abt-campus-wrap">
-        <div class="container">
-            <div class="abt-campus" data-aos="fade-up">
-                <div class="abt-campus-ic"><i class="bi bi-mortarboard-fill"></i></div>
-                <div class="abt-campus-body">
-                    <h3>Untuk Kampus &amp; Instansi</h3>
-                    <p>Butuh banyak akun untuk kelas, laboratorium, atau tim riset? Kami melayani pemesanan kolektif
-                        dengan harga khusus — amanah dan respons cepat.</p>
+            {{-- Ajakan penutup --}}
+            <div class="tk-blok">
+                <div class="tk-cta">
+                    <div class="tk-cta-kiri">
+                        <span class="ph-sec-eyebrow"><i class="bi bi-rocket-takeoff-fill"></i> Mulai Sekarang</span>
+                        <h2>Siap tingkatkan produktivitas Anda?</h2>
+                        <p>Jelajahi katalog akun premium &amp; tools AI kami, atau tanyakan apa pun langsung ke admin.</p>
+                    </div>
+                    <div class="tk-cta-aksi">
+                        <a class="tk-btn is-utama" href="{{ route('shop.index') }}"><i class="bi bi-bag"></i> Lihat Produk</a>
+                        <a class="tk-btn is-garis" href="{{ $waTanya }}" target="_blank" rel="noopener">
+                            <i class="bi bi-whatsapp"></i> Chat Admin
+                        </a>
+                    </div>
                 </div>
-                <a href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20booking%20untuk%20kampus%2Finstansi."
-                    target="_blank" rel="noopener" class="ph-empty-btn flex-shrink-0"><i class="bi bi-whatsapp"></i>
-                    Booking via WhatsApp</a>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="abt-cta">
-        <div class="container" data-aos="fade-up">
-            <span class="ph-sec-eyebrow"><i class="bi bi-rocket-takeoff-fill"></i> Mulai Sekarang</span>
-            <h2>Siap tingkatkan produktivitas Anda?</h2>
-            <p>Jelajahi katalog akun premium &amp; tools AI kami, atau tanyakan apa pun langsung ke admin.</p>
-            <div class="abt-actions">
-                <a href="{{ route('shop.index') }}" class="ph-empty-btn"><i class="bi bi-bag"></i> Lihat Produk</a>
-                <a href="https://wa.me/6289505967995?text=Halo%20Phoenix%20Digital%2C%20saya%20ingin%20bertanya."
-                    target="_blank" rel="noopener" class="ph-empty-btn ghost"><i class="bi bi-whatsapp"></i> Chat
-                    Admin</a>
             </div>
         </div>
     </section>
