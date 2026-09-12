@@ -117,6 +117,17 @@
             display: flex; align-items: center; gap: 13px; padding: 13px 0;
             border-top: 1px dashed #e8ecf2;
         }
+        /* Ubin logo produk — warnanya mengikuti KATEGORI produk (--p), sama
+           seperti kartu di Shop dan hasil pencarian. */
+        .rw-logo {
+            position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 44px; height: 44px; border-radius: 13px; overflow: hidden; font-size: 1.1rem;
+            background: linear-gradient(150deg, color-mix(in srgb, var(--p) 15%, #fff) 0%, #fff 80%);
+            color: color-mix(in srgb, var(--p) 85%, #0f172a);
+            box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--p) 16%, transparent);
+        }
+        .rw-logo img { width: 100%; height: 100%; object-fit: contain; padding: 5px; mix-blend-mode: multiply; }
+        .rw-logo i.bi, .rw-logo i.bi::before { display: block; line-height: 1; }
         .rw-baris-isi { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1 1 auto; }
         .rw-produk { font-family: var(--rw-font); font-weight: 700; font-size: .9rem; color: var(--rw-ink); line-height: 1.35; }
         .rw-baris-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: .77rem; color: var(--rw-muted); }
@@ -354,8 +365,24 @@
                                         ? ['#16a34a', 'bi-check-circle-fill', 'Aktif · '.$item->getRemainingLabel(), 'is-aktif']
                                         : ['#64748b', 'bi-hourglass-split', 'Menunggu aktivasi', 'is-tunggu']));
                         @endphp
-                        <div class="rw-baris" style="--c: {{ $warnaItem }}">
-                            <span class="rw-ubin is-kecil"><i class="bi {{ $ikonItem }}"></i></span>
+                        @php
+                            // Logo produknya sendiri, bukan ikon status: status tetap
+                            // terbaca lewat lencana di bawah namanya. Gambar dipakai
+                            // hanya bila berkasnya ada; selain itu ikon kategorinya.
+                            $prodItem = $item->product;
+                            $logoItem = $prodItem && $prodItem->image && is_file(public_path('storage/img/Product/'.$prodItem->image))
+                                ? asset('storage/img/Product/'.$prodItem->image)
+                                : null;
+                            $katItem = \App\Support\KategoriBeranda::untukProduk($item->product_name);
+                        @endphp
+                        <div class="rw-baris" style="--c: {{ $warnaItem }}; --p: {{ $katItem['warna'] ?? '#f26522' }}">
+                            <span class="rw-logo">
+                                @if ($logoItem)
+                                    <img src="{{ $logoItem }}" alt="" loading="lazy" onerror="this.remove();">
+                                @else
+                                    <i class="bi {{ $katItem['ikon'] ?? 'bi-box-seam' }}"></i>
+                                @endif
+                            </span>
                             <span class="rw-baris-isi">
                                 <span class="rw-produk">{{ $item->product_name }}</span>
                                 <span class="rw-baris-meta">

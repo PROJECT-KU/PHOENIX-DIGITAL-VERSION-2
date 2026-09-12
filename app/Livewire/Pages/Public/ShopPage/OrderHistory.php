@@ -69,7 +69,9 @@ class OrderHistory extends Component
             return Order::whereRaw('1 = 0')->paginate($this->perPage);
         }
 
-        return $kueri->with('items')->latest()->paginate($this->perPage);
+        // items.product dimuat sekalian: baris pesanan menampilkan LOGO produk,
+        // dan tanpa ini tiap baris memicu kuerinya sendiri.
+        return $kueri->with('items.product')->latest()->paginate($this->perPage);
     }
 
     /**

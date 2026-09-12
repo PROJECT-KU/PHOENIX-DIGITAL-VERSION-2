@@ -144,3 +144,15 @@ it('status pesanan bersumber satu tempat di komponen', function () {
         ->toBe(['warna' => '#16a34a', 'ikon' => 'bi-check-circle-fill', 'label' => 'Lunas'])
         ->and(App\Livewire\Pages\Public\ShopPage\OrderHistory::status('entah')['label'])->toBe('Entah');
 });
+
+it('baris pesanan memakai ubin logo produk, bukan ikon status', function () {
+    // Status tetap terbaca lewat lencana; ubinnya untuk mengenali produknya.
+    pesananRiwayat('paid', ['no_hp' => '08129990020']);
+
+    bukaRiwayat('08129990020')
+        ->assertSee('class="rw-logo"', false)
+        // Tanpa berkas logo, yang tampil ikon kategori produknya (Canva -> Desain & Kreatif).
+        ->assertSee('--p: #db2777', false)
+        ->assertSee('<i class="bi bi-palette"></i>', false)
+        ->assertSeeText('Menunggu aktivasi');
+});
