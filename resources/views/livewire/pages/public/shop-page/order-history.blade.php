@@ -42,9 +42,26 @@
         .rw-btn.is-utama:hover { color: #fff; filter: brightness(1.05); }
         .rw-btn i.bi, .rw-btn i.bi::before { display: block; line-height: 1; font-size: 1rem; }
 
-        .rw-jumlah { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: .85rem; color: var(--rw-muted); }
-        .rw-jumlah b { color: var(--rw-ink); font-weight: 800; }
-        .rw-jumlah i.bi, .rw-jumlah i.bi::before { display: block; line-height: 1; }
+        /* ===== Kartu ringkasan di atas daftar ===== */
+        .rw-ringkas {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 14px 18px;
+            padding: 16px 18px; margin-bottom: 14px; border-radius: 18px;
+            background: linear-gradient(135deg, #fff7ef 0%, #fff 68%); border: 1px solid #f7dcc6;
+        }
+        .rw-ringkas-teks { flex: 1 1 220px; min-width: 0; }
+        .rw-ringkas-teks b { display: block; font-family: var(--rw-font); font-weight: 800; font-size: 1.02rem; color: var(--rw-ink); line-height: 1.3; }
+        .rw-ringkas-teks span { display: block; margin-top: 2px; font-size: .82rem; color: var(--rw-muted); }
+        .rw-ringkas-lencana { display: flex; flex-wrap: wrap; gap: 8px; }
+        .rw-lencana {
+            display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 99px;
+            background: color-mix(in srgb, var(--c) 12%, #fff); border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: color-mix(in srgb, var(--c) 62%, #0f172a); font-size: .78rem; font-weight: 700; white-space: nowrap;
+        }
+        .rw-lencana b {
+            display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px;
+            border-radius: 99px; background: var(--c); color: #fff; font-size: .72rem; font-weight: 800;
+        }
+        .rw-lencana i.bi, .rw-lencana i.bi::before { display: block; line-height: 1; font-size: .8rem; }
 
         /* ===== Kartu pesanan (akordeon) ===== */
         .rw-list { display: grid; gap: 12px; }
@@ -215,6 +232,7 @@
             .rw-baris { align-items: flex-start; }
             .rw-bar { padding: 14px; }
             .rw-bar .rw-btn { width: 100%; }
+            .rw-ringkas { padding: 14px; }
             .rw-modal-kepala { padding: 18px 18px 16px; }
             .rw-modal-isi { padding: 16px 18px 20px; }
         }
@@ -257,20 +275,37 @@
             </div>
 
             @if($this->myOrders->total() > 0)
-            <p class="rw-jumlah"><i class="bi bi-receipt"></i> <b>{{ $this->myOrders->total() }} pesanan</b> ditemukan</p>
+            @php
+                $ring = $this->ringkasan;
+                $dari = $this->myOrders->firstItem();
+                $sampai = $this->myOrders->lastItem();
+            @endphp
+            <div class="rw-ringkas">
+                <span class="rw-ubin is-padat" style="--c: #f26522"><i class="bi bi-receipt-cutoff"></i></span>
+                <div class="rw-ringkas-teks">
+                    <b>{{ $ring['total'] }} pesanan ditemukan</b>
+                    <span>Menampilkan {{ $dari }}–{{ $sampai }} dari {{ $ring['total'] }} pesanan</span>
+                </div>
+                <div class="rw-ringkas-lencana">
+                    @foreach ($ring['status'] as $kode => $jumlah)
+                        @php $sr = \App\Livewire\Pages\Public\ShopPage\OrderHistory::status($kode); @endphp
+                        <span class="rw-lencana" style="--c: {{ $sr['warna'] }}">
+                            <i class="bi {{ $sr['ikon'] }}"></i> {{ $sr['label'] }}
+                            <b>{{ $jumlah }}</b>
+                        </span>
+                    @endforeach
+                </div>
+            </div>
 
             <div class="rw-list">
                 @foreach($this->myOrders as $order)
                 @php
-                    // Warna & label status pesanan — satu tempat, dipakai ubin
-                    // ikon, lencana, dan sapuan kartunya.
-                    [$warnaOrder, $ikonOrder, $labelOrder] = match ($order->status) {
-                        'paid' => ['#16a34a', 'bi-check-circle-fill', 'Lunas'],
-                        'completed' => ['#0d9488', 'bi-patch-check-fill', 'Selesai'],
-                        'pending' => ['#d97706', 'bi-hourglass-split', 'Menunggu Pembayaran'],
-                        'cancelled' => ['#e11d48', 'bi-x-circle-fill', 'Dibatalkan'],
-                        default => ['#64748b', 'bi-receipt', ucfirst((string) $order->status)],
-                    };
+                    // Warna, ikon & sebutan status: SATU sumber di komponen,
+                    // dipakai kartu ini sekaligus lencana di kartu ringkasan.
+                    $st = \App\Livewire\Pages\Public\ShopPage\OrderHistory::status($order->status);
+                    $warnaOrder = $st['warna'];
+                    $ikonOrder = $st['ikon'];
+                    $labelOrder = $st['label'];
                     $totalAcc = $order->items->count();
                     $habisCount = $order->items->filter(fn ($i) => $i->isHabis())->count();
                     $soonCount = $order->items->filter(fn ($i) => ! $i->isHabis() && $i->end_date && $i->isExpiringSoon())->count();

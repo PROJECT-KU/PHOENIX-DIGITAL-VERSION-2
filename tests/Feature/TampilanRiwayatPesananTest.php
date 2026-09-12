@@ -105,3 +105,42 @@ it('penanda yang dipakai jendela pemulihan tetap ada', function () {
         ->assertSee('data-bs-target="#restoreModal"', false)
         ->assertSee('wire:submit.prevent="restoreSession"', false);
 });
+
+it('ringkasan menghitung pesanan per status', function () {
+    $hp = '08129990010';
+    pesananRiwayat('paid', ['no_hp' => $hp]);
+    pesananRiwayat('pending', ['no_hp' => $hp]);
+    pesananRiwayat('cancelled', ['no_hp' => $hp]);
+
+    bukaRiwayat($hp)
+        ->assertSeeText('3 pesanan ditemukan')
+        ->assertSeeText('Menampilkan 1–3 dari 3 pesanan')
+        // Tiap status punya lencana berwarna sendiri.
+        ->assertSee('class="rw-lencana" style="--c: #16a34a"', false)
+        ->assertSee('class="rw-lencana" style="--c: #d97706"', false)
+        ->assertSee('class="rw-lencana" style="--c: #e11d48"', false);
+});
+
+it('hitungan ringkasan dari SELURUH riwayat, bukan halaman yang tampil', function () {
+    // perPage 5: kalau dihitung dari halaman, angkanya akan berhenti di 5.
+    $hp = '08129990011';
+    foreach (range(1, 7) as $i) {
+        pesananRiwayat('paid', ['no_hp' => $hp]);
+    }
+
+    $halaman = bukaRiwayat($hp);
+
+    $halaman->assertSeeText('7 pesanan ditemukan')
+        ->assertSeeText('Menampilkan 1–5 dari 7 pesanan');
+
+    // Lencana "Lunas" menyebut 7, sedangkan kartu yang tampil hanya 5.
+    expect(substr_count($halaman->getContent(), '<details class="rw-order"'))->toBe(5);
+});
+
+it('status pesanan bersumber satu tempat di komponen', function () {
+    // Dipakai kartu pesanan DAN lencana ringkasan; kalau terpisah, warnanya
+    // bisa berbeda antara keduanya.
+    expect(App\Livewire\Pages\Public\ShopPage\OrderHistory::status('paid'))
+        ->toBe(['warna' => '#16a34a', 'ikon' => 'bi-check-circle-fill', 'label' => 'Lunas'])
+        ->and(App\Livewire\Pages\Public\ShopPage\OrderHistory::status('entah')['label'])->toBe('Entah');
+});

@@ -32,37 +32,87 @@ class OrderHistory extends Component
         'phoneNumber.min_digits' => 'Nomor HP minimal 9 digit.',
     ];
 
-    #[Computed()]
-    public function myOrders()
+    /**
+     * Kueri dasar riwayat — dipakai daftar pesanan DAN ringkasannya, supaya
+     * angka di ringkasan tidak mungkin berbeda dari isi daftarnya.
+     * null = perangkat ini belum punya riwayat sama sekali.
+     */
+    private function kueriRiwayat()
     {
-        // Jika sudah pulihkan lewat No. HP → tampilkan riwayat berdasar No. HP
-        // (bila kode pesanan diisi, hanya pesanan itu yang tampil).
+        // Sudah dipulihkan lewat No. HP → riwayat berdasar No. HP (bila kode
+        // pesanan diisi, hanya pesanan itu yang tampil).
         $phone = Cookie::get('history_phone');
 
         if ($phone) {
             $code = Cookie::get('history_order');
 
-            return Order::with('items')
-                ->where('status', '!=', 'draft')
+            return Order::where('status', '!=', 'draft')
                 ->whereHas('customer', fn ($q) => $q->where('no_hp', $phone))
-                ->when($code, fn ($q) => $q->where('order_number', $code))
-                ->latest()
-                ->paginate($this->perPage);
+                ->when($code, fn ($q) => $q->where('order_number', $code));
         }
 
         // Default: berdasar token perangkat (pesanan yang dibuat di perangkat ini)
         $token = Cookie::get('guest_token');
 
-        if (! $token) {
+        return $token
+            ? Order::where('status', '!=', 'draft')->where('guest_token', $token)
+            : null;
+    }
+
+    #[Computed()]
+    public function myOrders()
+    {
+        $kueri = $this->kueriRiwayat();
+
+        if (! $kueri) {
             // Paginator kosong (agar API-nya konsisten: total(), links(), dll)
             return Order::whereRaw('1 = 0')->paginate($this->perPage);
         }
 
-        return Order::with('items')
-            ->where('status', '!=', 'draft')
-            ->where('guest_token', $token)
-            ->latest()
-            ->paginate($this->perPage);
+        return $kueri->with('items')->latest()->paginate($this->perPage);
+    }
+
+    /**
+     * Jumlah pesanan per status, untuk kartu ringkasan di atas daftar.
+     * Dihitung di database, bukan dari halaman yang sedang tampil — kalau
+     * dihitung dari halaman, angkanya hanya benar untuk 5 pesanan pertama.
+     *
+     * @return array{total: int, status: array<string, int>}
+     */
+    #[Computed()]
+    public function ringkasan(): array
+    {
+        $kueri = $this->kueriRiwayat();
+
+        if (! $kueri) {
+            return ['total' => 0, 'status' => []];
+        }
+
+        $per = $kueri->reorder()
+            ->selectRaw('status, COUNT(*) as jumlah')
+            ->groupBy('status')
+            ->pluck('jumlah', 'status')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+
+        return ['total' => array_sum($per), 'status' => $per];
+    }
+
+    /**
+     * Warna, ikon, dan sebutan sebuah status pesanan — SATU sumber, dipakai
+     * kartu pesanan sekaligus lencana di ringkasannya.
+     *
+     * @return array{warna: string, ikon: string, label: string}
+     */
+    public static function status(?string $status): array
+    {
+        return match ($status) {
+            'paid' => ['warna' => '#16a34a', 'ikon' => 'bi-check-circle-fill', 'label' => 'Lunas'],
+            'completed' => ['warna' => '#0d9488', 'ikon' => 'bi-patch-check-fill', 'label' => 'Selesai'],
+            'pending' => ['warna' => '#d97706', 'ikon' => 'bi-hourglass-split', 'label' => 'Menunggu Pembayaran'],
+            'cancelled' => ['warna' => '#e11d48', 'ikon' => 'bi-x-circle-fill', 'label' => 'Dibatalkan'],
+            default => ['warna' => '#64748b', 'ikon' => 'bi-receipt', 'label' => ucfirst((string) $status)],
+        };
     }
 
     private function normalizePhoneNumber($number)
