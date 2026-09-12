@@ -77,3 +77,11 @@ it('kartu member hanyalah contoh tampilan, bukan data sungguhan', function () {
         ->assertSee('Contoh tampilan kartu member')
         ->assertSee('Calon Member');
 });
+
+it('pita lompat bagian menggulir sendiri', function () {
+    // Tanda pagar tidak menggulir di halaman ini; lompatannya dibantu skrip.
+    $this->get(route('member.info'))
+        ->assertOk()
+        ->assertSee("document.querySelectorAll('.mbr-lompat a')", false)
+        ->assertSee('scrollIntoView', false);
+});

@@ -242,4 +242,36 @@
             </div>
         </div>
     </section>
+
+    @push('scripts')
+        <script>
+            (function () {
+                // Lompat ke pasal lewat scrollIntoView, bukan mengandalkan tanda
+                // pagar: di halaman ini navigasi tanda pagar tidak menggulir sama
+                // sekali — membuka /terms#sk-5 langsung pun berhenti di puncak
+                // halaman. scrollIntoView terbukti jalan, dan scroll-margin-top
+                // pada kartunya menjaga jarak dari kepala halaman yang menempel.
+                // Tautan dalam dari luar (mis. /terms#sk-5) juga berhenti di
+                // puncak halaman, jadi posisinya diperbaiki setelah halaman siap.
+                function keTujuanAwal() {
+                    var t0 = (location.hash || '').slice(1);
+                    var el0 = t0 && document.getElementById(t0);
+                    if (el0) el0.scrollIntoView({ block: 'start' });
+                }
+                if (document.readyState === 'complete') keTujuanAwal();
+                else window.addEventListener('load', keTujuanAwal, { once: true });
+
+                document.querySelectorAll('.syk-toc-list a').forEach(function (a) {
+                    a.addEventListener('click', function (e) {
+                        var tujuan = (a.getAttribute('href') || '').slice(1);
+                        var el = tujuan && document.getElementById(tujuan);
+                        if (!el) return;
+                        e.preventDefault();
+                        el.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                        if (history.replaceState) history.replaceState(null, '', '#' + tujuan);
+                    });
+                });
+            })();
+        </script>
+    @endpush
 </main>

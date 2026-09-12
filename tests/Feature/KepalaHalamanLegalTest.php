@@ -29,10 +29,9 @@ it('halaman privasi memakai kartu judul bersama dengan remah roti', function () 
 });
 
 it('kartu isi diberi jarak dari kartu judul, tidak menempel', function () {
-    // Syarat sudah punya tata letak sendiri (.syk-sec, jarak atas 22px);
-    // Privasi masih memakai kartu legal lama yang tarikan -18px-nya dinolkan.
+    // Keduanya kini punya tata letak sendiri dengan jarak atas 22px.
     Livewire::test(TermsPage::class)->assertSeeHtml('<section class="syk-sec">');
-    Livewire::test(PrivacyPage::class)->assertSeeHtml('class="container lg-jarak-judul"');
+    Livewire::test(PrivacyPage::class)->assertSeeHtml('<section class="prv-sec">');
 });
 
 it('anchor pasal lama tetap hidup', function () {
@@ -69,4 +68,39 @@ it('pasal batas perangkat dan refund ditandai penting', function () {
     Livewire::test(TermsPage::class)
         ->assertSeeHtml('id="sk-5" style="--c: #e11d48"')
         ->assertSeeHtml('<i class="bi bi-exclamation-triangle-fill"></i> Penting');
+});
+
+it('tiap pasal privasi punya nomor, ikon, dan warnanya sendiri', function () {
+    $pasal = collect(PrivacyPage::pasal());
+
+    expect($pasal)->toHaveCount(6)
+        ->and($pasal->pluck('judul')->unique())->toHaveCount(6);
+
+    Livewire::test(PrivacyPage::class)
+        ->assertSeeHtml('<span class="prv-ubin is-kecil"><i class="bi bi-shield-lock-fill"></i></span>')
+        ->assertSeeHtml('<span class="prv-no">4</span>')
+        ->assertSee('Data tidak dijual');
+});
+
+it('pasal berbagi data dan hak pengguna ditandai penting', function () {
+    $sorot = collect(PrivacyPage::pasal())->filter(fn ($p) => $p['sorot'])->pluck('judul')->values()->all();
+
+    expect($sorot)->toBe(['Berbagi Data', 'Hak Anda']);
+
+    Livewire::test(PrivacyPage::class)
+        ->assertSeeHtml('id="pv-4" style="--c: #e11d48"')
+        ->assertSee('tidak menjual');
+});
+
+it('daftar isi melompat sendiri, tidak mengandalkan tanda pagar', function () {
+    // Di halaman ini navigasi tanda pagar tidak menggulir sama sekali —
+    // membuka /terms#sk-5 langsung pun berhenti di puncak halaman.
+    // Diuji lewat halaman utuh: skrip halaman ada di @push('scripts'),
+    // yang hanya ikut dirender bersama layout.
+    foreach (['terms' => '.syk-toc-list a', 'privacy' => '.prv-toc-list a'] as $rute => $pemilih) {
+        $this->get(route($rute))
+            ->assertOk()
+            ->assertSee("document.querySelectorAll('".$pemilih."')", false)
+            ->assertSee('scrollIntoView', false);
+    }
 });
