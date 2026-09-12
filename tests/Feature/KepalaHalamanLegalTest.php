@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Pages\Public\Legal\FaqPage;
 use App\Livewire\Pages\Public\Legal\PrivacyPage;
 use App\Livewire\Pages\Public\Legal\TermsPage;
 use Livewire\Livewire;
@@ -102,5 +103,16 @@ it('daftar isi melompat sendiri, tidak mengandalkan tanda pagar', function () {
             ->assertOk()
             ->assertSee("document.querySelectorAll('".$pemilih."')", false)
             ->assertSee('scrollIntoView', false);
+    }
+});
+
+it('ajakan whatsapp seragam: tombol "Chat Admin", nomor tidak dicetak', function () {
+    // Diuji pada ISI halaman, bukan halaman utuh: footer situs memang
+    // menampilkan nomor kontak, dan itu memang tempatnya.
+    foreach ([TermsPage::class, PrivacyPage::class, FaqPage::class] as $kelas) {
+        Livewire::test($kelas)
+            ->assertSee('Chat Admin')
+            ->assertDontSee('0895-0596-7995')
+            ->assertSeeHtml('https://wa.me/6289505967995');
     }
 });

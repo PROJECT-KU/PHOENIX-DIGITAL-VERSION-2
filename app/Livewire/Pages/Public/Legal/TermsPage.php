@@ -61,7 +61,7 @@ class TermsPage extends Component
                 'judul' => 'Pemesanan & Pembayaran', 'ikon' => 'bi-credit-card-2-front', 'warna' => '#16a34a', 'sorot' => false,
                 'isi' => [
                     'Pemesanan dilakukan melalui website. Metode pembayaran yang tersedia <b>hanya Transfer Bank dan QRIS</b>. Pesanan diproses setelah pembayaran terverifikasi.',
-                    'Demi keamanan, pastikan pembayaran ditujukan <b>atas nama Phoenix Digital Warehouse</b>. Jika ragu, konfirmasikan terlebih dahulu ke admin kami melalui <a href="'.$waKonfirmasi.'" target="_blank" rel="noopener">WhatsApp 0895-0596-7995</a>.',
+                    'Demi keamanan, pastikan pembayaran ditujukan <b>atas nama Phoenix Digital Warehouse</b>. Jika ragu, konfirmasikan terlebih dahulu ke admin kami melalui <a href="'.$waKonfirmasi.'" target="_blank" rel="noopener">WhatsApp admin kami</a>.',
                 ],
             ],
             [

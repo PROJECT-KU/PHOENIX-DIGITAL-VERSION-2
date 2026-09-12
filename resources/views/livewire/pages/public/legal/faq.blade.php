@@ -201,7 +201,7 @@
                             <span class="fq-ubin"><i class="bi bi-whatsapp"></i></span>
                             <div class="fq-cta-teks">
                                 <b>Masih ada pertanyaan?</b>
-                                <span>Tanyakan langsung ke admin kami di 0895-0596-7995 — dibalas pada jam operasional.</span>
+                                <span>Tanyakan langsung ke admin kami lewat WhatsApp — dibalas pada jam operasional.</span>
                             </div>
                         </div>
                         <a class="fq-btn" href="{{ $waTanya }}" target="_blank" rel="noopener">

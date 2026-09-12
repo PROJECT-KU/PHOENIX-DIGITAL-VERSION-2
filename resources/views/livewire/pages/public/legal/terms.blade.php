@@ -235,7 +235,7 @@
                             </div>
                         </div>
                         <a class="syk-btn" href="{{ $waBantuan }}" target="_blank" rel="noopener">
-                            <i class="bi bi-whatsapp"></i> 0895-0596-7995
+                            <i class="bi bi-whatsapp"></i> Chat Admin
                         </a>
                     </div>
                 </div>
