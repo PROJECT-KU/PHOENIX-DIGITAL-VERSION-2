@@ -50,42 +50,58 @@
         }
         .pkt-kartu:hover::after { transform: scaleX(1); }
 
-        /* --- Pelat logo ---
-           Gambar paket datang dengan bentuk & warna latar berbeda-beda; pelat
-           netral memberi mereka satu bidang yang sama, dan rasio tetap menjaga
-           tinggi kartunya seragam. */
-        .pkt-pelat {
-            position: relative; margin-bottom: 14px;
-            aspect-ratio: 4 / 3; border-radius: 12px;
-            background: #f8fafc; border: 1px solid #f1f4f8;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-            transition: background .25s ease, border-color .25s ease;
-        }
-        .pkt-kartu:hover .pkt-pelat { background: #fff8f2; border-color: #f9e0cc; }
-        .pkt-pelat img { max-width: 76%; max-height: 72%; object-fit: contain; display: block; mix-blend-mode: multiply; }
+        /* --- Media ---
+           Perlakuan yang sama dengan kartu paket di /bundling/product (.pb-media):
+           sapuan warna KATEGORI, bola cahaya di pojok, dan — bila gambarnya
+           tidak ada — TUMPUKAN UBIN per produk isi paket, masing-masing
+           berwarna kategorinya sendiri.
 
-        /* Ubin cadangan — menyalin .sk-cadangan milik kartu produk di /shop.
-           Dulu cadangannya (logo Phoenix) hanya dipakai bila kolom `gambar`
-           bernilai NULL, padahal yang biasa terjadi adalah gambar TERISI tetapi
-           berkasnya tidak ada — dan karena alt-nya memuat nama paket, yang
-           tampil justru teks alt mentah: "Combo Riset Hemat" sebagai gambar
-           rusak. */
-        .pkt-cadangan {
-            display: none; position: relative; align-items: center; justify-content: center;
-            width: 58px; height: 58px; border-radius: 18px;
-            background: linear-gradient(140deg, var(--pktc), color-mix(in srgb, var(--pktc) 60%, #fff));
-            color: #fff; font-size: 1.5rem;
-            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--pktc) 85%, transparent);
+           Ubin tunggal berikon kotak yang dipakai sebelumnya membuat keempat
+           kartu terlihat sama persis; tumpukan ini justru memberi tahu isi
+           paketnya tanpa satu kata pun. */
+        .pkt-media {
+            position: relative; display: flex; align-items: center; justify-content: center;
+            aspect-ratio: 16 / 11; border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+            background: linear-gradient(160deg, color-mix(in srgb, var(--c) 11%, #fff) 0%, #fff 78%);
+        }
+        .pkt-media::before {
+            content: ""; position: absolute; top: -44px; right: -44px;
+            width: 132px; height: 132px; border-radius: 50%;
+            background: color-mix(in srgb, var(--c) 12%, transparent);
             transition: transform .35s ease;
         }
-        .pkt-pelat.is-kosong { background: color-mix(in srgb, var(--pktc) 8%, #fff); border-color: color-mix(in srgb, var(--pktc) 18%, #fff); }
-        .pkt-pelat.is-kosong .pkt-cadangan { display: flex; }
-        .pkt-kartu:hover .pkt-cadangan { transform: scale(1.06) rotate(-4deg); }
-        .pkt-cadangan i.bi, .pkt-cadangan i.bi::before { display: block; line-height: 1; }
+        .pkt-kartu:hover .pkt-media::before { transform: scale(1.3); }
+        .pkt-media img {
+            position: relative; max-width: 70%; max-height: 66%; object-fit: contain;
+            mix-blend-mode: multiply; transition: transform .35s ease;
+        }
+        .pkt-kartu:hover .pkt-media img { transform: scale(1.05); }
 
-        /* Lencana hemat di pojok pelat — keterangan paketnya, bukan judul
-           barisnya. */
+        .pkt-tumpuk { display: none; position: relative; align-items: center; justify-content: center; padding-left: 12px; }
+        .pkt-media.is-kosong .pkt-tumpuk { display: flex; }
+        .pkt-tumpuk > span {
+            width: 50px; height: 50px; margin-left: -12px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(140deg, var(--p), color-mix(in srgb, var(--p) 60%, #fff));
+            color: #fff; font-size: 1.25rem;
+            box-shadow: 0 0 0 3px #fff, 0 12px 22px -12px color-mix(in srgb, var(--p) 85%, transparent);
+            transform: rotate(var(--r, 0deg)); transition: transform .3s ease;
+        }
+        .pkt-kartu:hover .pkt-tumpuk > span { transform: rotate(0deg) translateY(-3px); }
+        .pkt-tumpuk i.bi, .pkt-tumpuk i.bi::before { display: block; line-height: 1; }
+
+        /* Berapa produk di dalamnya — pertanyaan pertama tentang sebuah paket. */
+        .pkt-jumlah {
+            position: absolute; top: 10px; right: 10px; z-index: 1;
+            display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px 0 8px;
+            border-radius: 99px; background: rgba(255, 255, 255, .92);
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: var(--c); font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        .pkt-jumlah i.bi, .pkt-jumlah i.bi::before { display: block; line-height: 1; font-size: .72rem; }
+
+        /* Lencana hemat di pojok KIRI media; jumlah produk di kanan, jadi
+           keduanya tidak berebut satu titik. */
         .pkt-hemat {
             position: absolute; top: 8px; left: 8px; z-index: 1;
             display: inline-flex; align-items: center; gap: 5px;
@@ -155,78 +171,74 @@
             .pkt-btn { height: 40px; font-size: .8rem; }
         }
         @media (prefers-reduced-motion: reduce) {
-            .pkt-kartu::after, .pkt-pelat, .pkt-cadangan, .pkt-btn { transition: none; }
-            .pkt-kartu:hover .pkt-cadangan { transform: none; }
+            .pkt-kartu::after, .pkt-media::before, .pkt-media img, .pkt-tumpuk > span, .pkt-btn { transition: none; }
+            .pkt-kartu:hover .pkt-media::before,
+            .pkt-kartu:hover .pkt-media img,
+            .pkt-kartu:hover .pkt-tumpuk > span { transform: none; }
         }
     </style>
 @endonce
 
 @php
-    // Harga tayang dari satu sumber yang sama dengan keranjang — lihat
-    // App\Support\HargaPaket.
-    $hp = \App\Support\HargaPaket::untuk($item);
-    $isiPaket = collect([1, 2, 3, 4, 5])
-        ->map(fn ($i) => $item->{'product'.$i})
-        ->filter();
-
-    // Warna & ikon kategori 'Paket Bundling' di KategoriBeranda — taksonomi yang
-    // sama dengan Shop, keranjang, dan checkout.
-    $katKp = collect(\App\Support\KategoriBeranda::PETA)->firstWhere('label', 'Paket Bundling');
-    $warnaKp = $katKp['warna'] ?? '#f26522';
-    $ikonKp = $katKp['ikon'] ?? 'bi-box-seam';
-
-    // Gambar dipakai HANYA bila berkasnya benar-benar ada. Storage::exists,
-    // bukan is_file, mengikuti cara /shop memeriksanya.
-    $gambarKp = $item->gambar && \Illuminate\Support\Facades\Storage::disk('public')->exists('img/ProductBundlings/'.basename($item->gambar))
-        ? asset('storage/img/ProductBundlings/'.basename($item->gambar))
-        : null;
+    /*
+     | Satu sumber untuk seluruh tampilan paket: warna aksen, tumpukan ubin isi,
+     | penjaga berkas gambar, harga, hemat, dan kode promo. Halaman
+     | /bundling/product dan halaman detail memakai helper yang sama — jadi
+     | paket yang sama tidak mungkin tampil berbeda antar halaman.
+     |
+     | Sebelumnya kartu ini menghitung sendiri, dan hasilnya menyimpang: lencana
+     | hematnya memakai 'potongan' (promo tambahan, hampir selalu 0) sehingga
+     | tidak pernah muncul, padahal /bundling/product menampilkannya dari selisih
+     | harga coret.
+     */
+    $k = \App\Support\KartuPaket::data($item);
 @endphp
 
-<div class="pkt-kartu">
-    <div class="pkt-pelat {{ $gambarKp ? '' : 'is-kosong' }}" style="--pktc: {{ $warnaKp }}">
-        {{-- Berlapis dua, sama dengan /shop: penjaga di server untuk berkas yang
-             memang tidak ada, dan onerror untuk berkas yang ada saat dirender
-             tetapi gagal diambil peramban. --}}
-        @if ($gambarKp)
-            <img loading="lazy" src="{{ $gambarKp }}" alt="{{ $item->nama_paket }}"
+<div class="pkt-kartu" style="--c: {{ $k['warna'] }}">
+    <div class="pkt-media {{ $k['gambar'] ? '' : 'is-kosong' }}">
+        {{-- Berlapis dua, sama dengan /shop & /bundling/product: penjaga di
+             server untuk berkas yang memang tidak ada, dan onerror untuk berkas
+             yang ada saat dirender tetapi gagal diambil peramban. --}}
+        @if ($k['gambar'])
+            <img loading="lazy" src="{{ $k['gambar'] }}" alt=""
                 onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
         @endif
-        <span class="pkt-cadangan"><i class="bi {{ $ikonKp }}"></i></span>
 
-        @if ($hp['potongan'] > 0)
-            <span class="pkt-hemat">
-                <i class="bi bi-lightning-charge-fill"></i>
-                Hemat Rp{{ number_format($hp['potongan'], 0, ',', '.') }}
-            </span>
+        <span class="pkt-tumpuk">
+            @foreach ($k['tumpuk'] as $t)
+                <span style="--p: {{ $t['warna'] }}; --r: {{ $t['putar'] }}deg"><i class="bi {{ $t['ikon'] }}"></i></span>
+            @endforeach
+        </span>
+
+        <span class="pkt-jumlah"><i class="bi bi-box-seam"></i>{{ $k['jumlahIsi'] }} produk</span>
+
+        @if ($k['hemat'])
+            <span class="pkt-hemat"><i class="bi bi-lightning-charge-fill"></i>{{ $k['hemat'] }}</span>
         @endif
-        {{-- Tidak ada lencana pengganti bila paketnya memang tanpa potongan.
-             "Paket Hemat" yang tertempel di semua kartu — termasuk yang harganya
-             tidak dipotong sama sekali — bukan cuma hiasan, melainkan klaim yang
-             tidak dibuktikan angka mana pun di kartu itu. --}}
     </div>
 
-    <h3 class="pkt-nama">{{ $item->nama_paket }}</h3>
+    <h3 class="pkt-nama">{{ $k['nama'] }}</h3>
 
-    @if ($isiPaket->isNotEmpty())
+    @if (! empty($k['isi']))
         <div class="pkt-isi">
             <i class="bi bi-box-seam"></i>
-            <span>{{ $isiPaket->map->nama_akun->join(' + ') }}</span>
+            <span>{{ collect($k['isi'])->pluck('nama')->join(' + ') }}</span>
         </div>
     @endif
 
-    @if ($hp['butuh_kode'])
+    @if ($k['kode'])
         {{-- Promo berkode tidak berlaku sendiri. Kodenya WAJIB terlihat, kalau
              tidak pembeli mengira harga ini otomatis lalu kecewa saat checkout
              menagih harga penuh. --}}
-        <div class="pkt-kode">pakai kode <b>{{ $hp['promo']->kode_promo }}</b></div>
+        <div class="pkt-kode">pakai kode <b>{{ $k['kode'] }}</b></div>
     @endif
 
     <div class="pkt-harga">
         <small>Mulai dari</small>
         <div class="pkt-nominal">
-            <b>Rp{{ number_format($hp['bayar'], 0, ',', '.') }}</b>
-            @if ($hp['coret'] > $hp['bayar'])
-                <span class="pkt-coret">Rp{{ number_format($hp['coret'], 0, ',', '.') }}</span>
+            <b>Rp{{ number_format($k['harga'], 0, ',', '.') }}</b>
+            @if ($k['hargaAsli'])
+                <span class="pkt-coret">Rp{{ number_format($k['hargaAsli'], 0, ',', '.') }}</span>
             @endif
             <span class="pkt-satuan">/ paket</span>
         </div>
@@ -240,6 +252,6 @@
             <span wire:loading wire:target="addToCart('{{ $item->id }}')"><span class="spinner-border spinner-border-sm"></span></span>
         </button>
 
-        <a href="{{ route('bundling.detail', $item->id) }}" class="pkt-btn pkt-btn-lihat">Lihat</a>
+        <a href="{{ $k['url'] }}" class="pkt-btn pkt-btn-lihat">Lihat</a>
     </div>
 </div>
