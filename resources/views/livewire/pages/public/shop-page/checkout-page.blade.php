@@ -119,7 +119,12 @@
         .ck-btn > span { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
         .ck-btn i.bi, .ck-btn i.bi::before { display: block; line-height: 1; font-size: .95rem; }
         .ck-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
-        .ck-btn-utama { background: linear-gradient(135deg, #fba919, #f26522); color: #fff; box-shadow: 0 10px 20px -12px rgba(242, 101, 34, .8); }
+        /* border:0 — sebab yang sama dengan bulatan perhentian di atas: cincin
+           border transparan di atas latar gradasi meninggalkan jahitan, jadi
+           jingganya berhenti sebelum tepi tombol dan menyisakan garis pucat
+           mengelilinginya. Tingginya tidak berubah (box-sizing border-box),
+           jadi tombol ini tetap sebaris dengan varian bergaris di sebelahnya. */
+        .ck-btn-utama { background: linear-gradient(135deg, #fba919, #f26522); border: 0; color: #fff; box-shadow: 0 10px 20px -12px rgba(242, 101, 34, .8); }
         .ck-btn-utama:not(:disabled):hover { filter: brightness(1.05); transform: translateY(-1px); }
         .ck-btn-garis { background: #fff; border-color: #e5e0d8; color: var(--ck-ink); }
         .ck-btn-garis:not(:disabled):hover { border-color: #f26522; color: #c2410c; transform: translateY(-1px); }
