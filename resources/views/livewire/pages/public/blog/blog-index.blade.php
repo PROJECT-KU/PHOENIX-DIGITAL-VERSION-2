@@ -39,9 +39,52 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
             margin-bottom: 46px; text-decoration: none; transition: transform .28s ease, box-shadow .28s ease;
         }
         .ph-blog .feat:hover { transform: translateY(-4px); box-shadow: 0 24px 54px rgba(242,101,34,.15); }
-        .ph-blog .feat .thumb { position: relative; aspect-ratio: 16/9; overflow: hidden; background: var(--ph-grad-soft, linear-gradient(135deg,#fff5e9,#fff9f3)); }
+        /* Di layar lebar sampulnya mengisi SETINGGI kartu. Dengan rasio 16/9 ia
+           lebih pendek dari kolom teks di sebelahnya, dan sisa tingginya tampil
+           sebagai pita persik di atas & di bawah sampul. Rasio 16/9 kembali
+           dipakai saat kartunya ditumpuk satu kolom (lihat @media di bawah). */
+        .ph-blog .feat .thumb { position: relative; align-self: stretch; min-height: 300px; overflow: hidden; background: var(--ph-grad-soft, linear-gradient(135deg,#fff5e9,#fff9f3)); }
         .ph-blog .feat .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        .ph-blog .feat .thumb .fb { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #f0a35f; font-size: 3.2rem; }
+        /* ===== Cadangan sampul =====
+           Hampir tidak ada artikel yang punya sampul, jadi kotak inilah yang
+           sebenarnya dilihat pembaca — dan dulu kedelapan kartu memakai kotak
+           persik pucat berikon sama persis, sehingga tak satu pun bisa
+           dibedakan dari yang lain.
+
+           Kini bidangnya bersapuan warna KATEGORI artikelnya dengan ubin ikon
+           di tengah, perlakuan yang sama dengan kartu produk di /shop dan kartu
+           paket di /bundling. Warnanya dipinjam dari kategori produk padanannya
+           (lihat App\Support\RagamBlog) supaya pembaca yang datang dari Shop
+           mengenali biru sebagai urusan plagiasi dan ungu sebagai urusan AI. */
+        /* Selektornya menyebut .feat/.bcard supaya spesifisitasnya MENGALAHKAN
+           latar persik bawaan ".ph-blog .bcard .thumb" yang ditulis lebih bawah. */
+        .ph-blog .feat .thumb.is-kosong,
+        .ph-blog .bcard .thumb.is-kosong { background: linear-gradient(160deg, color-mix(in srgb, var(--kb) 13%, #fff) 0%, #fff 78%); }
+        .ph-blog .thumb.is-kosong::before {
+            content: ""; position: absolute; top: -44px; right: -44px; width: 132px; height: 132px;
+            border-radius: 50%; background: color-mix(in srgb, var(--kb) 12%, transparent);
+            transition: transform .35s ease;
+        }
+        .ph-blog .feat:hover .thumb.is-kosong::before,
+        .ph-blog .bcard:hover .thumb.is-kosong::before { transform: scale(1.3); }
+        .ph-blog .thumb .fb { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; }
+        .ph-blog .thumb.is-kosong .fb { display: flex; }
+        .ph-blog .thumb .fb i {
+            display: flex; align-items: center; justify-content: center;
+            width: 64px; height: 64px; border-radius: 20px; font-size: 1.65rem; color: #fff;
+            background: linear-gradient(140deg, var(--kb), color-mix(in srgb, var(--kb) 60%, #fff));
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--kb) 85%, transparent);
+            transition: transform .35s ease;
+        }
+        .ph-blog .thumb .fb i::before { display: block; line-height: 1; }
+        .ph-blog .feat:hover .thumb .fb i,
+        .ph-blog .bcard:hover .thumb .fb i { transform: scale(1.06) rotate(-4deg); }
+        .ph-blog .feat .thumb .fb i { width: 84px; height: 84px; border-radius: 26px; font-size: 2.2rem; }
+        @media (prefers-reduced-motion: reduce) {
+            .ph-blog .thumb.is-kosong::before, .ph-blog .thumb .fb i { transition: none; }
+            .ph-blog .feat:hover .thumb.is-kosong::before, .ph-blog .bcard:hover .thumb.is-kosong::before,
+            .ph-blog .feat:hover .thumb .fb i, .ph-blog .bcard:hover .thumb .fb i { transform: none; }
+        }
         .ph-blog .feat .body {
             position: relative; padding: 2.6rem 2.3rem; display: flex; flex-direction: column; justify-content: center;
             overflow: hidden;
@@ -76,9 +119,8 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         .ph-blog .bcard .thumb { position: relative; aspect-ratio: 16/9; overflow: hidden; background: var(--ph-grad-soft, linear-gradient(135deg,#fff5e9,#fff9f3)); }
         .ph-blog .bcard .thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
         .ph-blog .bcard:hover .thumb img { transform: scale(1.05); }
-        .ph-blog .bcard .thumb .fb { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #f0a35f; font-size: 2.2rem; }
         .ph-blog .bcard .cat-badge {
-            position: absolute; top: .8rem; left: .8rem; background: rgba(255,255,255,.94); color: var(--o);
+            position: absolute; top: .8rem; left: .8rem; background: rgba(255,255,255,.94); color: var(--kb, var(--o));
             font-weight: 700; font-size: .68rem; padding: .3rem .7rem; border-radius: 999px; text-transform: uppercase;
             letter-spacing: .05em;
         }
@@ -122,6 +164,7 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
         @media (max-width: 991.98px) { .ph-blog .card-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 767.98px) {
             .ph-blog .feat { grid-template-columns: 1fr; }
+            .ph-blog .feat .thumb { min-height: 0; aspect-ratio: 16/9; }
             .ph-blog .feat .body { padding: 1.8rem 1.5rem; }
             .ph-blog .card-grid { grid-template-columns: 1fr; }
         }
@@ -167,13 +210,15 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
 
             {{-- Featured --}}
             @if ($featured)
-            <a href="{{ route('blog.show', $featured->slug) }}" wire:navigate class="feat">
-                <div class="thumb">
-                    @if ($featured->cover && \Storage::disk('public')->exists('img/blog/' . $featured->cover))
-                        <img src="{{ asset('storage/img/blog/' . $featured->cover) }}" alt="{{ $featured->title }}" loading="lazy" decoding="async">
-                    @else
-                        <div class="fb"><i class="bi bi-journal-text"></i></div>
+            @php $rbF = \App\Support\RagamBlog::untuk($featured->category); @endphp
+            <a href="{{ route('blog.show', $featured->slug) }}" wire:navigate class="feat" style="--kb: {{ $rbF['warna'] }}">
+                @php $adaSampulF = $featured->cover && \Storage::disk('public')->exists('img/blog/'.$featured->cover); @endphp
+                <div class="thumb {{ $adaSampulF ? '' : 'is-kosong' }}">
+                    @if ($adaSampulF)
+                        <img src="{{ asset('storage/img/blog/' . $featured->cover) }}" alt="{{ $featured->title }}" loading="lazy" decoding="async"
+                            onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                     @endif
+                    <div class="fb"><i class="bi {{ $rbF['ikon'] }}"></i></div>
                 </div>
                 <div class="body">
                     <span class="tag"><i class="bi bi-star-fill"></i> Artikel Terbaru</span>
@@ -263,13 +308,17 @@ Blog — Tips, Panduan & Info Akun Premium | Phoenix Digital
                 <div class="card-grid">
                     @foreach ($posts as $post)
                     @if (! ($featured && $post->id === $featured->id))
-                    <a href="{{ route('blog.show', $post->slug) }}" wire:navigate class="bcard">
-                        <div class="thumb">
-                            @if ($post->cover && \Storage::disk('public')->exists('img/blog/' . $post->cover))
-                                <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" loading="lazy" decoding="async">
-                            @else
-                                <div class="fb"><i class="bi bi-journal-text"></i></div>
+                    @php
+                        $rb = \App\Support\RagamBlog::untuk($post->category);
+                        $adaSampul = $post->cover && \Storage::disk('public')->exists('img/blog/'.$post->cover);
+                    @endphp
+                    <a href="{{ route('blog.show', $post->slug) }}" wire:navigate class="bcard" style="--kb: {{ $rb['warna'] }}">
+                        <div class="thumb {{ $adaSampul ? '' : 'is-kosong' }}">
+                            @if ($adaSampul)
+                                <img src="{{ asset('storage/img/blog/' . $post->cover) }}" alt="{{ $post->title }}" loading="lazy" decoding="async"
+                                    onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
                             @endif
+                            <div class="fb"><i class="bi {{ $rb['ikon'] }}"></i></div>
                             @if ($post->category)<span class="cat-badge">{{ $post->category }}</span>@endif
                         </div>
                         <div class="body">
