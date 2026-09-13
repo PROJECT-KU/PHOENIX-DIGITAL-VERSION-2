@@ -3,6 +3,7 @@
 use App\Livewire\Pages\Public\ShopPage\OrderSuccessPage;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
@@ -19,7 +20,7 @@ function pesananSukses(array $pelanggan = [], int $total = 155000): Order
         'email' => 'sukses'.uniqid().'@contoh.test',
     ], $pelanggan));
 
-    return Order::create([
+    $order = Order::create([
         'id' => Str::uuid(),
         'order_number' => 'INV-SUKSES-'.Str::random(6),
         'customer_id' => $customer->id,
@@ -30,7 +31,86 @@ function pesananSukses(array $pelanggan = [], int $total = 155000): Order
         'payment_method' => 'qris_dinamis',
         'expired_at' => now()->addDay(),
     ]);
+
+    OrderItem::create([
+        'order_id' => $order->id,
+        // FK-nya sudah dilepas tetapi kolomnya masih NOT NULL.
+        'product_id' => (string) Str::uuid(),
+        'product_name' => 'NotebookLM',
+        'product_image' => null,
+        'duration_type' => 'bulan',
+        'duration_value' => 1,
+        'price' => $total,
+        'quantity' => 1,
+        'subtotal' => $total,
+    ]);
+
+    return $order->fresh();
 }
+
+it('jalur langkah menutup rangkaian: tiga hijau, "Terima" masih berjalan', function () {
+    // Selama pesanannya belum 'completed', akun memang belum di tangan
+    // pembeli. Menandai "Terima" hijau lebih cepat dari kenyataan membuat
+    // pembeli mengira akunnya sudah dikirim.
+    $order = pesananSukses();
+
+    Livewire::test(OrderSuccessPage::class, ['order' => $order])
+        ->assertSeeHtml('<div class="sks-henti is-lewat">')
+        ->assertSeeHtml('<div class="sks-henti is-kini">')
+        ->assertDontSeeHtml('<div class="sks-henti is-tuntas">')
+        ->assertSee('Terima');
+
+    $order->forceFill(['status' => 'completed'])->saveQuietly();
+
+    Livewire::test(OrderSuccessPage::class, ['order' => $order->fresh()])
+        ->assertSeeHtml('<div class="sks-henti is-tuntas">');
+});
+
+it('ringkasan memasang logo produk bila berkasnya ada, ikon kategori bila tidak', function () {
+    $nama = 'Product_uji_'.uniqid().'.png';
+    $tujuan = public_path('storage/img/Product/'.$nama);
+    @mkdir(dirname($tujuan), 0777, true);
+    file_put_contents($tujuan, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    $order = pesananSukses();
+    $order->items()->first()->forceFill([
+        'product_name' => 'Grammarly Premium',
+        'product_image' => $nama,
+    ])->saveQuietly();
+
+    try {
+        Livewire::test(OrderSuccessPage::class, ['order' => $order->fresh()])
+            ->assertSeeHtml('storage/img/Product/'.$nama)
+            ->assertSeeHtml('alt="Grammarly Premium"');
+    } finally {
+        @unlink($tujuan);
+    }
+
+    // Berkasnya tidak ada: <img> TIDAK dipasang sama sekali, supaya teks alt
+    // tidak tampil sebagai gambar rusak.
+    $order->items()->first()->forceFill([
+        'product_name' => 'NotebookLM',
+        'product_image' => 'Product_64229.webp',
+    ])->saveQuietly();
+
+    Livewire::test(OrderSuccessPage::class, ['order' => $order->fresh()])
+        ->assertSeeHtml('<i class="bi bi-robot"></i>')
+        ->assertDontSeeHtml('storage/img/Product/');
+});
+
+it('id tautan pengecekan tetap utuh untuk tombol salinnya', function () {
+    /*
+     | suSalinCek() membaca elemen lewat id su-cek-link. Kalau idnya berubah
+     | saat halaman ditata ulang, tombol "Salin" berhenti bekerja TANPA galat
+     | apa pun — hanya diam. Diperiksa di sumber karena blok jasanya baru
+     | muncul bila pesanannya memuat produk berkas.
+     */
+    $sumber = file_get_contents(resource_path('views/livewire/pages/public/shop-page/order-success-page.blade.php'));
+
+    expect($sumber)->toContain('id="su-cek-link"')
+        ->and($sumber)->toContain('onclick="suSalinCek()"')
+        ->and($sumber)->toContain("getElementById('su-cek-link')");
+});
 
 it('menyebut poin yang bisa didapat dari belanja ini bagi yang belum member', function () {
     // Rp 155.000 : Rp 50.000 = 3 poin, senilai 3 × Rp 500 = Rp 1.500.
