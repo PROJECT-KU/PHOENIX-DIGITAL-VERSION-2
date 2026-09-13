@@ -66,9 +66,9 @@ class Customer extends Model
 
         $totalAmount = $totalPurchases + $this->point_balance;
 
-        $newPoints = floor($totalAmount / 50000);
+        $newPoints = floor($totalAmount / self::RUPIAH_PER_POIN);
 
-        $newBalance = $totalAmount % 50000;
+        $newBalance = $totalAmount % self::RUPIAH_PER_POIN;
 
         return [
             'points' => $newPoints,
@@ -145,6 +145,16 @@ class Customer extends Model
 
     /** Nilai tukar 1 poin dalam rupiah. */
     public const NILAI_PER_POIN = 500;
+
+    /**
+     * Belanja yang harus terkumpul untuk mendapat 1 poin.
+     *
+     * Diberi nama supaya tampilan tidak perlu menuliskan angkanya sendiri:
+     * halaman sukses menyebut "belanja ini bisa jadi N poin", dan N harus
+     * selalu dihitung dengan pembagi yang sama dengan calculateYearlyPoints()
+     * di bawah — kalau tidak, layar menjanjikan poin yang tak pernah datang.
+     */
+    public const RUPIAH_PER_POIN = 50000;
 
     /* ===== Pencocokan nomor WhatsApp (dipakai verifikasi ulasan) ===== */
 
