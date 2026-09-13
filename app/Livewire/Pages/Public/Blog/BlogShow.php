@@ -3,6 +3,9 @@
 namespace App\Livewire\Pages\Public\Blog;
 
 use App\Models\BlogPost;
+use App\Support\DaftarIsiArtikel;
+use App\Support\HtmlSanitizer;
+use App\Support\RagamBlog;
 use Livewire\Component;
 
 class BlogShow extends Component
@@ -75,8 +78,15 @@ class BlogShow extends Component
             $related = $related->concat($extra);
         }
 
+        // Isi disaring dulu, BARU diberi id jangkar untuk daftar isi — penyaring
+        // membuang atribut id, jadi urutan sebaliknya menghapus jangkarnya lagi.
+        $susunan = DaftarIsiArtikel::susun(HtmlSanitizer::bersihkan($this->post->body));
+
         return view('livewire.pages.public.blog.blog-show', [
             'related' => $related,
+            'isi' => $susunan['html'],
+            'daftarIsi' => $susunan['daftar'],
+            'ragam' => RagamBlog::untuk($this->post->category),
         ])->layout('layouts.guest');
     }
 }
