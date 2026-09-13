@@ -29,6 +29,11 @@ use App\Models\Order;
  * Sebelum mengubah warna di sini, tanyakan dulu warna apa yang diberikan
  * KategoriBeranda::untukProduk() kepada produk jasanya — itu yang sudah dilihat
  * pelanggan sejak halaman Shop.
+ *
+ * Konsekuensinya: 'plagiasi' dan 'ai' BERWARNA SAMA, karena Shop memang
+ * menaruh keduanya di kategori yang sama. Itu bukan kelalaian. Yang membedakan
+ * kedua halaman adalah kata-katanya — judul, tombol, label jatah, judul
+ * riwayat — dan keunikan itulah yang dijaga uji.
  */
 class RagamJasa
 {
@@ -85,14 +90,21 @@ class RagamJasa
             'selesaiSemua' => 'Deteksi AI Anda sudah selesai seluruhnya',
             'habis' => 'Jumlah deteksi Anda sudah maksimal',
             'kosong' => 'Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.',
-            // Shop tidak punya warna tersendiri untuk deteksi AI — produknya
-            // ("Cek Plagiasi AI") masuk kategori 'Cek Plagiasi' juga. Tetapi
-            // ketiga jasa WAJIB bisa dibedakan (dijaga RagamJasaTest), jadi
-            // dipakai indigo: tetangga terdekat biru, terbaca sebagai saudara
-            // Cek Plagiasi — memang itulah hubungannya.
-            'warna' => '#4f46e5',
-            'lembut' => '#eef0ff',
-            'tepi' => '#c7d2fe',
+            // SAMA dengan ragam plagiasi, dan itu disengaja.
+            //
+            // Kata kunci kategori 'Cek Plagiasi' di KategoriBeranda adalah
+            // plagiasi/plagiarism/turnitin — setiap produk deteksi AI di
+            // katalog ini ("Cek Plagiasi AI", "Cek AI Turnitin") jatuh ke sana,
+            // jadi pelanggan sudah melihatnya BIRU sejak halaman Shop. Memberi
+            // halaman /cek warna lain berarti barang yang sama berganti warna
+            // di tengah jalan.
+            //
+            // Yang membedakan kedua halaman tetap ada, dan justru yang dibaca:
+            // judul, tombol, label jatah, dan judul riwayatnya. Keunikan itu
+            // dijaga RagamJasaTest.
+            'warna' => '#2563eb',
+            'lembut' => '#eff6ff',
+            'tepi' => '#bfdbfe',
             'jaminanJudul' => 'Tentang Deteksi AI Ini',
             'jaminan' => [
                 ['b' => 'Turnitin AI Detection', 't' => 'memakai alat resmi Turnitin, bukan pendeteksi gratisan yang hasilnya berubah-ubah.'],

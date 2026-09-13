@@ -98,10 +98,23 @@ it('pesanan deteksi AI punya kosakata dan peringatan bahasanya sendiri', functio
         ->and(json_encode($r['jaminan'], JSON_UNESCAPED_UNICODE))->toContain('bahasa Inggris');
 });
 
-it('ketiga jasa berbeda warna, judul, dan tombolnya', function () {
+it('ketiga jasa berbeda judul, tombol, dan label jatahnya', function () {
+    /*
+     | 'warna' SENGAJA tidak lagi ada di daftar ini.
+     |
+     | Dulu ada, dan itu memaksa deteksi AI memakai warna karangan sendiri
+     | (indigo) hanya supaya berbeda — padahal Shop menaruh produk deteksi AI
+     | di kategori 'Cek Plagiasi' yang biru. Barang yang sama karena itu
+     | berganti warna di tengah jalan: biru di Shop, indigo di /cek.
+     |
+     | Yang membedakan kedua halaman bagi pelanggan adalah KATA-KATANYA —
+     | judulnya "Halaman Pengecekan Anda" lawan "Halaman Deteksi AI Anda",
+     | tombolnya "Kirim untuk Diperiksa" lawan "Kirim untuk Dideteksi". Itulah
+     | yang tetap wajib unik. Warnanya mengikuti Shop, dan dijaga uji di bawah.
+     */
     $j = ['plagiasi', 'ai', 'parafrase'];
 
-    foreach (['warna', 'judul', 'tombol', 'riwayat', 'jatahLabel'] as $kunci) {
+    foreach (['judul', 'tombol', 'riwayat', 'jatahLabel'] as $kunci) {
         $nilai = array_map(fn ($x) => RagamJasa::dariJenis($x)[$kunci], $j);
 
         expect($nilai)->toHaveCount(count(array_unique($nilai)), "kunci '$kunci' tidak unik antar jasa");
@@ -154,7 +167,11 @@ it('warna jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function 
      */
     $pasangan = [
         'Cek Plagiasi Turnitin' => 'plagiasi',
-        'Cek Plagiasi AI' => 'plagiasi',
+        // Produk deteksi AI juga: kata kunci kategori 'Cek Plagiasi' di
+        // KategoriBeranda adalah plagiasi/plagiarism/turnitin, jadi keduanya
+        // memang satu kategori — dan karenanya satu warna.
+        'Cek Plagiasi AI' => 'ai',
+        'Cek AI Turnitin' => 'ai',
         'Jasa Parafrase Manual' => 'parafrase',
     ];
 
@@ -167,27 +184,18 @@ it('warna jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function 
     }
 });
 
-it('deteksi AI berwarna sendiri, dan tumpang tindihnya disadari', function () {
+it('deteksi AI dan cek plagiasi memang sewarna, karena Shop menyatukannya', function () {
     /*
-     | Shop tidak punya warna tersendiri untuk deteksi AI: produknya ("Cek
-     | Plagiasi AI") masuk kategori 'Cek Plagiasi' juga. Jadi warnanya tidak
-     | bisa dicocokkan seperti dua jasa lainnya — yang bisa dijaga hanyalah
-     | ia tetap BERBEDA dari keduanya, sebagaimana dituntut uji keunikan di
-     | atas.
-     |
-     | Yang disadari dan diterima: #4f46e5 kebetulan sama dengan kategori
-     | 'Edukasi' di KategoriBeranda. Dibiarkan karena tidak ada produk jasa
-     | yang masuk kategori itu, jadi pelanggan tidak pernah melihat keduanya
-     | bersebelahan. Ditulis di sini supaya yang menemukannya nanti tahu itu
-     | pilihan, bukan kelalaian.
+     | Ditulis sebagai uji tersendiri supaya kesamaan ini terbaca sebagai
+     | PILIHAN, bukan kelalaian yang lolos. Siapa pun yang kelak merasa keduanya
+     | "seharusnya beda" akan menemukan alasannya di sini lebih dulu.
      */
-    $ai = RagamJasa::dariJenis('ai')['warna'];
+    expect(RagamJasa::dariJenis('ai')['warna'])
+        ->toBe(RagamJasa::dariJenis('plagiasi')['warna']);
 
-    expect($ai)->not->toBe(RagamJasa::dariJenis('plagiasi')['warna'])
-        ->and($ai)->not->toBe(RagamJasa::dariJenis('parafrase')['warna']);
-
-    $edukasi = collect(\App\Support\KategoriBeranda::PETA)
-        ->firstWhere('label', 'Edukasi')['warna'] ?? null;
-
-    expect($ai)->toBe($edukasi, 'tumpang tindih dengan Edukasi berubah — perbarui catatan di uji ini');
+    // Yang membedakan keduanya di layar adalah kata-katanya.
+    expect(RagamJasa::dariJenis('ai')['judul'])
+        ->not->toBe(RagamJasa::dariJenis('plagiasi')['judul'])
+        ->and(RagamJasa::dariJenis('ai')['tombol'])
+        ->not->toBe(RagamJasa::dariJenis('plagiasi')['tombol']);
 });
