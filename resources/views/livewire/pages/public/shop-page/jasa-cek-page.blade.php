@@ -246,17 +246,23 @@
         .cek-jenis-tag { display:inline-block; margin-left:6px; padding:1px 8px; border-radius:99px;
             background:#eff6ff; color:#1d4ed8; font-size:.68rem; font-weight:700; vertical-align:middle; }
 
-        .cek-drop { position:relative; display:block; border:2px dashed #fcd9a8; border-radius:14px; background:#fffdf8; padding:22px 16px; text-align:center; cursor:pointer; transition:border-color .2s, background .2s; }
-        .cek-drop:hover { border-color:#f59e0b; background:#fff7ed; }
+        /* Dropzone ikut warna jenis jasa. Sebelumnya kuning/jingga dipatok
+           mati (#fcd9a8, #f59e0b, #b45309), sehingga di halaman parafrase yang
+           serba ungu justru kotak unggah — bidang terbesar dan yang pertama
+           dilihat — satu-satunya yang masih memakai warna layanan pengecekan. */
+        .cek-drop { position:relative; display:block; border:2px dashed var(--kek-tepi); border-radius:14px; background:color-mix(in srgb, var(--kek-lembut) 55%, #fff); padding:22px 16px; text-align:center; cursor:pointer; transition:border-color .2s, background .2s; }
+        .cek-drop:hover { border-color:var(--kek-warna); background:var(--kek-lembut); }
         .cek-drop-input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; }
-        .cek-drop-ic { font-size:1.9rem; color:#f59e0b; display:block; line-height:1; margin-bottom:8px; }
-        .cek-drop-title { font-weight:700; color:#b45309; font-size:.92rem; }
+        .cek-drop-ic { font-size:1.9rem; color:var(--kek-warna); display:block; line-height:1; margin-bottom:8px; }
+        .cek-drop-title { font-weight:700; color:color-mix(in srgb, var(--kek-warna) 85%, #0f172a); font-size:.92rem; }
         .cek-drop-hint { font-size:.76rem; color:var(--ph-muted); margin-top:3px; }
         .cek-drop-file { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; }
+        /* Berkas terpilih tetap HIJAU di semua ragam: hijau di sini berarti
+           "sudah beres", bukan penanda jenis layanan. */
         .cek-drop-file .bi-file-earmark-check { color:#16a34a; font-size:1.35rem; }
         .cek-drop-fname { font-weight:700; color:#15803d; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .cek-drop-change { font-size:.74rem; color:#b45309; background:#fef3c7; padding:3px 9px; border-radius:99px; }
-        .cek-drop-loading { color:#b45309; font-weight:700; font-size:.9rem; }
+        .cek-drop-change { font-size:.74rem; color:color-mix(in srgb, var(--kek-warna) 85%, #0f172a); background:var(--kek-lembut); padding:3px 9px; border-radius:99px; }
+        .cek-drop-loading { color:var(--kek-warna); font-weight:700; font-size:.9rem; }
         .cek-spin { display:inline-block; animation:cekSpin 1s linear infinite; }
         @keyframes cekSpin { to { transform:rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) { .cek-pulse, .cek-spin { animation:none; } }
@@ -694,7 +700,7 @@
                         <div class="cek-bar"><span style="width: {{ $kuota > 0 ? round($terpakai / $kuota * 100) : 0 }}%;"></span></div>
                         <div style="font-size:.78rem; color:var(--ph-muted); margin-top:8px;">
                             <i class="bi bi-info-circle"></i>
-                        {{ $terpakai }} dari {{ $kuota }} {{ $ragam['satuan'] }} sudah dikirim. Sisanya bisa dikirim kapan saja tanpa bayar lagi.
+                        {{ $terpakai }} dari {{ $kuota }} {{ $ragam['satuan'] }} sudah dikirim.@if ($sisa > 0) Sisanya bisa dikirim kapan saja tanpa bayar lagi.@else Jatah pengiriman Anda sudah terpakai semua.@endif
                         </div>
                         {{-- Bonus kuota dari admin (kompensasi bila ada kendala). --}}
                         @if ($order->bonusKuota() > 0)

@@ -87,7 +87,7 @@ class RagamJasa
             'judul' => 'Halaman Pengerjaan Anda',
             'ajakan' => 'Simpan halaman ini untuk mengirim naskah & mengunduh hasilnya.',
             'ikon' => 'pencil-square',
-            'jatahLabel' => 'Naskah Dikirim',
+            'jatahLabel' => 'Sisa Naskah',
             'jatahIkon' => 'file-earmark-text',
             'satuan' => 'naskah',
             'unggahJudul' => 'Kirim Naskah untuk Diparafrase',
