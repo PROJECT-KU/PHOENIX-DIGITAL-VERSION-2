@@ -72,8 +72,20 @@
 
         /* Dulu 640px — satu kolom sempit yang memaksa semuanya bertumpuk ke
            bawah. Dilebarkan supaya isi halaman bisa berdampingan, sehingga
-           hasil pengecekan terlihat tanpa menggulir. */
-        .cek-wrap { max-width: 1180px; margin: 0 auto; }
+           hasil pengecekan terlihat tanpa menggulir.
+
+           Lebarnya kini TIDAK dipatok angka sama sekali. Patokan 1180px membuat
+           badan halaman lebih sempit ~116px daripada kartu kepalanya, dan
+           selisih itu berubah-ubah mengikuti ukuran kontainer Bootstrap (540,
+           720, 960, 1140, 1320) — jadi tak ada satu angka pun yang bisa sejajar
+           di semua lebar layar.
+
+           Kartu kepala digambar oleh ::before yang menjorok 12px dari tiap sisi
+           .container, sementara isi .container sendiri sudah berjarak 12px dari
+           tepinya karena padding bawaan Bootstrap. Keduanya karena itu bertepi
+           sama persis begitu pembungkus ini berhenti mempersempit dirinya —
+           otomatis, di setiap breakpoint. */
+        .cek-wrap { margin: 0 auto; }
 
         /* Warna halaman mengikuti jenis jasanya. Dipasang sekali di pembungkus
            agar tiap bagian tinggal mewarisi — bukan ditulis ulang di belasan
