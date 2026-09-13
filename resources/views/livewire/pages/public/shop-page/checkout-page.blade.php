@@ -35,8 +35,16 @@
         /* Yang sudah dilewati memakai hijau: di mana pun hijau berarti beres. */
         .ck-henti.is-lewat .ck-henti-bulat { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
         .ck-henti.is-lewat .ck-henti-teks { color: #16a34a; }
+        /* border:0, BUKAN border-color:transparent.
+           Latar gradasi dilukis sampai border-box, lalu cincin border transparan
+           itu dikomposit di atasnya — dan jahitannya muncul sebagai garis siku
+           di dalam lingkaran: lurus mendatar di atas, lurus tegak di kiri,
+           sehingga jingganya terbaca sebagai kotak membulat, bukan bulatan.
+           Ukurannya tidak berubah: box-sizing border-box, jadi 36px tetap 36px
+           dengan atau tanpa border — perhentian ini tetap sejajar dengan tiga
+           lainnya dan tetap duduk tepat di garis jalur. */
         .ck-henti.is-kini .ck-henti-bulat {
-            background: linear-gradient(135deg, #fba919, #f26522); border-color: transparent; color: #fff;
+            background: linear-gradient(135deg, #fba919, #f26522); border: 0; color: #fff;
             box-shadow: 0 8px 18px -8px rgba(242, 101, 34, .85);
         }
         .ck-henti.is-kini .ck-henti-teks { color: var(--ck-ink); }
