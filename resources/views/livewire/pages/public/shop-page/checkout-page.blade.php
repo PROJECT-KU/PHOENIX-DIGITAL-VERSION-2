@@ -207,18 +207,22 @@
         .ck-sisi { position: sticky; top: 92px; }
         .ck-ringkas { background: #fff; border: 1px solid var(--ck-line); border-radius: 18px; overflow: hidden; }
         .ck-item {
-            display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px;
+            display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 11px;
             padding: 11px 0;
         }
         .ck-item + .ck-item { border-top: 1px dashed var(--ck-line); }
-        /* Ubin kategori yang sama dengan baris Keranjang, supaya pembeli
-           mengenali barangnya tanpa membaca ulang namanya. */
+        /* Ubin yang sama dengan baris Keranjang, supaya pembeli mengenali
+           barangnya tanpa membaca ulang namanya: logo produknya bila berkasnya
+           ada, ikon kategori bila tidak. */
         .ck-item-ubin {
-            display: flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px; border-radius: 11px; font-size: .92rem;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            width: 40px; height: 40px; border-radius: 12px; font-size: .92rem;
             background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 82%, #0f172a);
         }
         .ck-item-ubin i.bi, .ck-item-ubin i.bi::before { display: block; line-height: 1; }
+        /* multiply melebur latar putih logo ke dalam tint ubinnya — perlakuan
+           yang sama dengan media kartu di Shop dan Keranjang. */
+        .ck-item-ubin img { max-width: 76%; max-height: 76%; object-fit: contain; mix-blend-mode: multiply; }
         .ck-item-nama { font-family: var(--ck-font); font-weight: 700; font-size: .87rem; color: var(--ck-ink); line-height: 1.35; }
         .ck-item-ket { font-size: .76rem; color: var(--ck-muted); margin-top: 1px; }
         .ck-item-harga { font-family: var(--ck-font); font-weight: 700; font-size: .87rem; color: var(--ck-ink); white-space: nowrap; }
@@ -585,9 +589,25 @@
                                         $katCk = $isPaket ? null : \App\Support\KategoriBeranda::untukProduk($item['product_name'] ?? '');
                                         $warnaCk = $isPaket ? '#f26522' : ($katCk['warna'] ?? '#f26522');
                                         $ikonCk = $isPaket ? 'bi-box2-heart-fill' : ($katCk['ikon'] ?? 'bi-box-seam');
+
+                                        // Logo dipakai HANYA bila berkasnya ada. Memasangnya tanpa
+                                        // syarat membuat teks alt tampil sebagai gambar rusak —
+                                        // persis yang dulu terjadi di Keranjang dan Wishlist.
+                                        $folderCk = $isPaket ? 'ProductBundlings' : 'Product';
+                                        $berkasCk = ! empty($item['product_image']) ? basename($item['product_image']) : null;
+                                        $logoCk = $berkasCk && is_file(public_path('storage/img/'.$folderCk.'/'.$berkasCk))
+                                            ? asset('storage/img/'.$folderCk.'/'.$berkasCk)
+                                            : null;
                                     @endphp
                                     <div class="ck-item" style="--c: {{ $warnaCk }}">
-                                        <span class="ck-item-ubin"><i class="bi {{ $ikonCk }}"></i></span>
+                                        <span class="ck-item-ubin">
+                                            @if ($logoCk)
+                                                <img src="{{ $logoCk }}" alt="{{ $item['product_name'] }}" loading="lazy"
+                                                    onerror="this.remove();">
+                                            @else
+                                                <i class="bi {{ $ikonCk }}"></i>
+                                            @endif
+                                        </span>
                                         <div>
                                             <div class="ck-item-nama">{{ $item['product_name'] }}</div>
                                             <div class="ck-item-ket">

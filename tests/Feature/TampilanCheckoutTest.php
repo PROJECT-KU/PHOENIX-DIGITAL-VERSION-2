@@ -46,6 +46,39 @@ it('ringkasan memakai warna & ikon kategori produknya', function () {
         ->assertSee('Rp 95.000');
 });
 
+it('ringkasan memasang logo produk bila berkasnya benar-benar ada', function () {
+    $nama = 'Product_uji_'.uniqid().'.png';
+    $tujuan = public_path('storage/img/Product/'.$nama);
+    @mkdir(dirname($tujuan), 0777, true);
+    file_put_contents($tujuan, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
+
+    session()->put('cart', [
+        'a' => ['product_id' => 'a', 'product_name' => 'Grammarly Premium', 'product_image' => $nama,
+            'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 15000, 'quantity' => 1, 'subtotal' => 15000],
+    ]);
+
+    try {
+        Livewire::test(CheckoutPage::class)
+            ->assertSeeHtml('storage/img/Product/'.$nama)
+            ->assertSeeHtml('alt="Grammarly Premium"');
+    } finally {
+        @unlink($tujuan);
+    }
+});
+
+it('ringkasan jatuh ke ikon kategori saat berkas logonya tidak ada', function () {
+    // Kebalikannya: <img> TIDAK dipasang sama sekali, supaya teks alt tidak
+    // tampil sebagai gambar rusak — pelajaran dari Keranjang dan Wishlist.
+    session()->put('cart', [
+        'a' => ['product_id' => 'a', 'product_name' => 'NotebookLM', 'product_image' => 'Product_64229.webp',
+            'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 50000, 'quantity' => 1, 'subtotal' => 50000],
+    ]);
+
+    Livewire::test(CheckoutPage::class)
+        ->assertSeeHtml('<i class="bi bi-robot"></i>')
+        ->assertDontSeeHtml('storage/img/Product/');
+});
+
 it('jalur empat langkah menandai yang sedang dikerjakan', function () {
     keranjangUji();
 
