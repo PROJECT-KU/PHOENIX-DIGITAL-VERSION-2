@@ -87,3 +87,41 @@ it('kabel Livewire & id yang dipegang skrip tetap utuh', function () use ($sumbe
         ->and($sumber)->toContain('id="cek-permalink"')
         ->and($sumber)->toContain("getElementById('cek-permalink')");
 });
+
+/**
+ * Halaman penutup (/cek yang masa aksesnya habis). Sebelumnya seluruh
+ * warnanya dipatok jingga padahal ia menerima $ragam — pelanggan Deteksi AI
+ * (indigo) dan parafrase (ungu) menutup pesanannya di halaman berwarna
+ * layanan pengecekan.
+ */
+$sumberKadaluarsa = fn () => file_get_contents(
+    resource_path('views/livewire/pages/public/shop-page/jasa-cek-kadaluarsa.blade.php')
+);
+
+it('halaman penutup mewarisi warna jenis jasanya, bukan jingga mati', function () use ($sumberKadaluarsa) {
+    $sumber = $sumberKadaluarsa();
+
+    expect($sumber)->toContain("--kek-warna: {{ \$ragam['warna'] }}")
+        ->and($sumber)->toContain("--kek-lembut: {{ \$ragam['lembut'] }}")
+        ->and($sumber)->toContain("--kek-tepi: {{ \$ragam['tepi'] }}")
+        // Ikon besar di tengah & panel keterangan ikut warnanya.
+        ->and($sumber)->toContain('color: var(--kek-warna)');
+
+    // Warna jingga yang dulu dipatok mati tidak boleh kembali sebagai NILAI
+    // CSS. Yang dilarang deklarasinya, bukan penyebutan namanya: komentar di
+    // berkas itu sengaja menyimpan warna lamanya sebagai catatan.
+    // (#f26522 tetap sah — itu tombol aksi utama, bukan penanda jenis layanan.)
+    $deklarasi = preg_replace('~/\*.*?\*/~s', '', $sumber);
+    foreach (['#b45309', '#fde68a', '#ffedd5', '#92400e', '#6b5f52'] as $patokanLama) {
+        expect($deklarasi)->not->toContain($patokanLama);
+    }
+});
+
+it('halaman penutup berkepala baku & tidak lagi memakai kelas beku', function () use ($sumberKadaluarsa) {
+    $sumber = $sumberKadaluarsa();
+
+    expect($sumber)->toContain('class="page-title ph-page-title"')
+        ->and($sumber)->toContain("--c: {{ \$ragam['warna'] }}")
+        ->and($sumber)->toContain('class="breadcrumbs"')
+        ->and($sumber)->not->toContain('class="cart-section"');
+});
