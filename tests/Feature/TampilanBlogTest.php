@@ -1,7 +1,10 @@
 <?php
 
+use App\Livewire\Pages\Public\Blog\BlogIndex;
+use App\Models\BlogPost;
 use App\Support\KategoriBeranda;
 use App\Support\RagamBlog;
+use Livewire\Livewire;
 
 /**
  * /blog — kartu artikel tanpa sampul.
@@ -53,36 +56,92 @@ it('kategori kosong atau tak dikenal jatuh ke warna bawaan, bukan galat', functi
 it('sampul dijaga dua lapis: diperiksa di server, dan onerror bila tetap rusak', function () use ($sumberBlog) {
     $sumber = $sumberBlog();
 
-    // Kartu unggulan dan kartu grid sama-sama.
-    expect(substr_count($sumber, "Storage::disk('public')->exists("))->toBeGreaterThanOrEqual(2)
-        ->and(substr_count($sumber, "onerror=\"this.parentNode.classList.add('is-kosong'); this.remove();\""))->toBe(2)
-        ->and(substr_count($sumber, 'RagamBlog::untuk('))->toBe(2)
+    // Kartu utama, baris "Baru Terbit", dan kartu grid — ketiganya.
+    expect(substr_count($sumber, "Storage::disk('public')->exists("))->toBe(3)
+        ->and(substr_count($sumber, "onerror=\"this.parentNode.classList.add('is-kosong'); this.remove();\""))->toBe(3)
         ->and($sumber)->toContain("style=\"--kb: {{ \$rbF['warna'] }}\"")
-        ->and($sumber)->toContain("style=\"--kb: {{ \$rb['warna'] }}\"");
+        ->and($sumber)->toContain("style=\"--kb: {{ \$rbS['warna'] }}\"")
+        ->and($sumber)->toContain("style=\"--kb: {{ \$rb['warna'] }}\"")
+        // Chip topik ikut warna kategorinya.
+        ->and($sumber)->toContain("style=\"--kb: {{ \$rbC['warna'] }}\"");
 });
 
 it('ubin ikon hanya tampil saat sampulnya kosong, tidak menindih foto', function () use ($sumberBlog) {
     $sumber = $sumberBlog();
 
-    expect($sumber)->toMatch('/\.ph-blog \.thumb \.fb\s*\{[^}]*display:\s*none/')
-        ->and($sumber)->toMatch('/\.ph-blog \.thumb\.is-kosong \.fb\s*\{[^}]*display:\s*flex/')
-        // Aturan lama ini memaksa ikon tampil DI ATAS foto sampul — dan karena
-        // spesifisitasnya lebih tinggi, ia mengalahkan display:none di atas.
-        ->and($sumber)->not->toMatch('/\.ph-blog \.bcard \.thumb \.fb\s*\{[^}]*display:\s*flex/');
+    expect($sumber)->toMatch('/\.ph-blog \.blg-ubin\s*\{[^}]*display:\s*none/')
+        ->and($sumber)->toMatch('/\.ph-blog \.blg-sampul\.is-kosong \.blg-ubin\s*\{[^}]*display:\s*flex/');
 });
 
-it('latar warna kategori tidak dikalahkan latar persik bawaan kartu grid', function () use ($sumberBlog) {
+it('lebar badan tidak dipatok angka, jadi sejajar kartu kepala di semua layar', function () use ($sumberBlog) {
     /*
-     | ".ph-blog .bcard .thumb" (latar persik) ditulis LEBIH BAWAH. Kalau
-     | aturan warnanya cuma ".ph-blog .thumb.is-kosong", spesifisitas keduanya
-     | sama dan yang terakhir menang — kartu grid kembali persik tanpa galat.
+     | Dulu `<div class="container" style="max-width: 1140px;">` membuat badan
+     | 90px lebih sempit di kiri-kanan dari kartu kepala. Kartu kepala adalah
+     | ::before pada .container yang menjorok 12px — sama dengan padding
+     | .container — jadi .container polos otomatis sejajar di tiap breakpoint.
      */
     $sumber = $sumberBlog();
 
-    expect($sumber)->toMatch('/\.ph-blog \.bcard \.thumb\.is-kosong\s*\{[^}]*var\(--kb\)/')
-        ->and($sumber)->toMatch('/\.ph-blog \.feat \.thumb\.is-kosong,/');
+    expect($sumber)->toContain('class="page-title ph-page-title"')
+        ->and($sumber)->not->toMatch('/class="container"[^>]*max-width/')
+        ->and($sumber)->not->toMatch('/\.blg-(alat|sorot|grid|hasil)\s*\{[^}]*max-width/');
 });
 
-it('animasi ubin menghormati prefers-reduced-motion', function () use ($sumberBlog) {
+it('animasi menghormati prefers-reduced-motion', function () use ($sumberBlog) {
     expect($sumberBlog())->toContain('prefers-reduced-motion: reduce');
+});
+
+function artikelBlog(int $urutan, string $kategori = 'AI & Tools Digital'): BlogPost
+{
+    return BlogPost::create([
+        'title' => 'Artikel Uji '.$urutan,
+        'slug' => 'artikel-uji-'.$urutan,
+        'category' => $kategori,
+        'excerpt' => 'Ringkasan artikel '.$urutan,
+        'body' => 'Isi artikel',
+        'status' => 'published',
+        'published_at' => now()->subDays($urutan),
+    ]);
+}
+
+it('artikel utama & "Baru Terbit" tidak diulang di grid', function () {
+    foreach (range(1, 8) as $i) {
+        artikelBlog($i);
+    }
+
+    $html = Livewire::test(BlogIndex::class)->html();
+
+    // Tiap judul muncul tepat sekali sebagai tautan artikel.
+    foreach (range(1, 8) as $i) {
+        expect(substr_count($html, 'href="'.route('blog.show', 'artikel-uji-'.$i).'"'))->toBe(1);
+    }
+
+    expect(substr_count($html, 'class="blg-utama"'))->toBe(1)
+        ->and(substr_count($html, 'class="blg-baris"'))->toBe(3)
+        ->and(substr_count($html, 'class="blg-kartu"'))->toBe(4);
+});
+
+it('halaman pertama memuat 12 artikel: 1 utama + 3 baru terbit + 8 kartu grid', function () {
+    // Delapan kartu = dua baris penuh grid 4 kolom, tanpa kartu yatim.
+    foreach (range(1, 14) as $i) {
+        artikelBlog($i);
+    }
+
+    $html = Livewire::test(BlogIndex::class)->html();
+
+    expect(substr_count($html, 'class="blg-kartu"'))->toBe(8);
+});
+
+it('saat topik dipilih tidak ada sorotan; semua hasil masuk grid', function () {
+    artikelBlog(1, 'Turnitin');
+    artikelBlog(2, 'Turnitin');
+    artikelBlog(3, 'Riset & Publikasi');
+
+    Livewire::test(BlogIndex::class)
+        ->call('filterCategory', 'Turnitin')
+        ->assertDontSeeHtml('class="blg-utama"')
+        ->assertDontSeeHtml('class="blg-baru"')
+        ->assertSeeHtml('<h2>Turnitin</h2>')
+        ->assertSee('Artikel Uji 1')
+        ->assertDontSee('Artikel Uji 3');
 });

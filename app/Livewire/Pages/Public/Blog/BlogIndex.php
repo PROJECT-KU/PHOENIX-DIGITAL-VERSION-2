@@ -51,12 +51,24 @@ class BlogIndex extends Component
             ->orderByDesc('published_at')
             ->orderByDesc('id');
 
-        $posts = $query->paginate(9);
+        // 12 = kelipatan grid 4 kolom. Di halaman pertama: 1 utama + 3 "Baru
+        // Terbit" + 8 kartu (dua baris penuh), tanpa kartu yatim di baris akhir.
+        $posts = $query->paginate(12);
 
         // Artikel unggulan (terbaru) hanya di halaman pertama tanpa filter.
         $featured = null;
         if ($this->search === '' && $this->category === '' && $this->getPage() === 1) {
             $featured = BlogPost::published()->orderByDesc('published_at')->orderByDesc('id')->first();
+        }
+
+        // Artikel utama & "Baru Terbit" diambil dari halaman yang sama lalu
+        // DIKELUARKAN dari grid, supaya tidak ada artikel yang tampil dua kali.
+        $lain = $posts->getCollection();
+        $sorotan = collect();
+        if ($featured) {
+            $lain = $lain->reject(fn ($p) => $p->id === $featured->id)->values();
+            $sorotan = $lain->take(3)->values();
+            $lain = $lain->slice(3)->values();
         }
 
         $categories = BlogPost::published()
@@ -70,6 +82,8 @@ class BlogIndex extends Component
         return view('livewire.pages.public.blog.blog-index', [
             'posts' => $posts,
             'featured' => $featured,
+            'sorotan' => $sorotan,
+            'lain' => $lain,
             'categories' => $categories,
         ])->layout('layouts.guest');
     }
