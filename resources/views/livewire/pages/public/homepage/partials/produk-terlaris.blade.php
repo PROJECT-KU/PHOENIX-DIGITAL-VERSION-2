@@ -86,6 +86,25 @@
         .pt-pelat img {
             max-width: 76%; max-height: 72%; object-fit: contain; display: block;
         }
+        /* Ubin cadangan — menyalin .sk-cadangan milik kartu produk di /shop:
+           ubin bergradasi warna KATEGORI dengan ikon kategorinya, bukan lubang
+           kosong. Dulu cadangannya hanya dipakai bila kolom image bernilai
+           NULL, padahal yang biasa terjadi adalah image TERISI tetapi berkasnya
+           tidak ada. Ditambah alt="" pada <img>-nya, kegagalan itu jadi senyap
+           total: peramban tidak menampilkan apa pun, bahkan ikon rusak. */
+        .pt-cadangan {
+            display: none; position: relative; align-items: center; justify-content: center;
+            width: 58px; height: 58px; border-radius: 18px;
+            background: linear-gradient(140deg, var(--pc), color-mix(in srgb, var(--pc) 60%, #fff));
+            color: #fff; font-size: 1.5rem;
+            box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--pc) 85%, transparent);
+            transition: transform .35s ease;
+        }
+        .pt-pelat.is-kosong { background: color-mix(in srgb, var(--pc) 8%, #fff); border-color: color-mix(in srgb, var(--pc) 18%, #fff); }
+        .pt-pelat.is-kosong .pt-cadangan { display: flex; }
+        .pt-kartu:hover .pt-cadangan { transform: scale(1.06) rotate(-4deg); }
+        .pt-cadangan i.bi, .pt-cadangan i.bi::before { display: block; line-height: 1; }
+        @media (prefers-reduced-motion: reduce) { .pt-cadangan, .pt-kartu:hover .pt-cadangan { transition: none; transform: none; } }
 
         /* --- Peringkat --- */
         /* Bagian ini sebuah TANGGA, dan angka 1 sampai 5 yang membuatnya
@@ -192,11 +211,28 @@
                          kelimanya melayang di ketinggian yang berbeda dan
                          barisnya terlihat goyah. Pelat memberi mereka satu
                          bidang yang sama. --}}
-                    <div class="pt-pelat">
-                        <img loading="lazy" alt=""
-                             src="{{ $p->image
-                                ? asset('storage/img/Product/'.$p->image)
-                                : asset('niceshop/assets/img/product/scopus.png') }}">
+                    @php
+                        // Warna & ikon dari KATEGORI produk — taksonomi yang sama dengan
+                        // /shop, keranjang, dan checkout.
+                        $katPt = \App\Support\KategoriBeranda::untukProduk($p->nama_akun);
+                        $warnaPt = $katPt['warna'] ?? '#f26522';
+                        $ikonPt = $katPt['ikon'] ?? 'bi-box-seam';
+
+                        // Dipakai HANYA bila berkasnya benar-benar ada. Storage::exists,
+                        // bukan is_file, mengikuti cara /shop memeriksanya.
+                        $gambarPt = $p->image && \Illuminate\Support\Facades\Storage::disk('public')->exists('img/Product/'.basename($p->image))
+                            ? asset('storage/img/Product/'.basename($p->image))
+                            : null;
+                    @endphp
+                    <div class="pt-pelat {{ $gambarPt ? '' : 'is-kosong' }}" style="--pc: {{ $warnaPt }}">
+                        {{-- Berlapis dua, sama dengan /shop: penjaga di server untuk
+                             berkas yang memang tidak ada, dan onerror untuk berkas yang
+                             ada saat dirender tetapi gagal diambil peramban. --}}
+                        @if ($gambarPt)
+                            <img loading="lazy" alt="" src="{{ $gambarPt }}"
+                                 onerror="this.parentNode.classList.add('is-kosong'); this.remove();">
+                        @endif
+                        <span class="pt-cadangan"><i class="bi {{ $ikonPt }}"></i></span>
 
                         {{-- Peringkat, bukan hanya juara satu.
 
