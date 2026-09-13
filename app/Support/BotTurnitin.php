@@ -477,6 +477,26 @@ class BotTurnitin
             ->get();
     }
 
+    /** Pengecekan yang SEDANG dikerjakan bot (belum dianggap macet). */
+    public static function sedangDikerjakan(): Collection
+    {
+        return OrderUpload::with('order')
+            ->whereIn('bot_status', [self::DIAMBIL, self::MENUNGGU_HASIL])
+            ->where('status', 'diproses')
+            ->orderBy('bot_diambil_at')
+            ->get()
+            ->reject(fn ($up) => self::macet($up))
+            ->values();
+    }
+
+    /** Berapa pengecekan yang dituntaskan bot hari ini. */
+    public static function selesaiHariIni(): int
+    {
+        return OrderUpload::whereIn('bot_status', [self::SELESAI, self::PERLU_DILENGKAPI])
+            ->whereDate('bot_diperbarui_at', today())
+            ->count();
+    }
+
     public static function macet(OrderUpload $up): bool
     {
         return in_array($up->bot_status, [self::DIAMBIL, self::MENUNGGU_HASIL], true)

@@ -429,3 +429,33 @@ it('selama SQL deploy belum dijalankan, unggahan customer TETAP tersimpan', func
     BotTurnitin::buatToken();
     $this->getJson('/api/bot-turnitin/tugas', ['Authorization' => 'Bearer x'])->assertStatus(503);
 });
+
+it('kartu dashboard menampilkan pengecekan yang SEDANG dikerjakan bot', function () {
+    $role = \App\Models\Role::create(['name' => 'uji-bot-'.uniqid(), 'description' => 'Peran uji bot']);
+    foreach (['view_pemesanantoko', 'edit_pemesanantoko'] as $nama) {
+        $role->permissions()->attach(\App\Models\Permission::firstOrCreate(
+            ['name' => $nama], ['display_name' => $nama, 'group' => 'pemesanan', 'description' => 'uji']
+        )->id);
+    }
+    $admin = \App\Models\User::factory()->create(['role_id' => $role->id]);
+
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::buatToken();
+    BotTurnitin::ambilTugas();
+    BotTurnitin::tandaiTerkirim($up->fresh(), 'SC-D0FEDA0427D4');
+
+    $panel = Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
+        ->assertSee('1 pengecekan sedang dikerjakan bot')
+        ->assertSee($up->order->order_number)
+        ->assertSee('Menunggu laporan submitin')
+        ->assertSee('SC-D0FEDA0427D4')
+        ->assertDontSee('perlu dikerjakan admin');
+
+    expect(BotTurnitin::selesaiHariIni())->toBe(0);
+
+    // Begitu bot berhenti memberi kabar, ia pindah ke kartu "perlu dikerjakan admin".
+    $this->travel(BotTurnitin::MACET_MENIT + 1)->minutes();
+    Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
+        ->assertDontSee('sedang dikerjakan bot')
+        ->assertSee('1 pengecekan perlu dikerjakan admin');
+});

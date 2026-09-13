@@ -37,6 +37,14 @@
         .bt-kartu.merah { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
         .bt-kartu.kuning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
         .bt-kartu.ungu { background: #f5f3ff; border-color: #ddd6fe; color: #4c1d95; }
+        .bt-kartu.biru { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+        .bt-kartu.biru .bt-baris { border-color: #bfdbfe; }
+        /* Titik berdenyut: menandai pekerjaan yang sedang berjalan. */
+        .bt-denyut { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; animation: btDenyut 1.6s ease-in-out infinite; }
+        @keyframes btDenyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.72); } }
+        @media (prefers-reduced-motion: reduce) { .bt-denyut { animation: none; } }
+        .bt-tahap { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+        .bt-sunyi { font-size: .82rem; color: #64748b; padding: 2px 0 0; }
         .bt-daftar { display: grid; gap: 8px; }
         .bt-baris {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid #fde68a;
@@ -68,9 +76,13 @@
                             @if (! $dipasang)
                                 Belum dipasang.
                             @elseif ($aktif)
-                                Terakhir memberi kabar {{ $detak->locale('id')->diffForHumans() }} · {{ $antrean }} unggahan di antrean
+                                Terakhir memberi kabar {{ $detak->locale('id')->diffForHumans() }}
+                                · {{ $berjalan->count() }} sedang dikerjakan
+                                · {{ $antrean }} di antrean
+                                · {{ $selesaiHariIni }} selesai hari ini
                             @elseif ($detak)
-                                Tidak aktif sejak {{ $detak->locale('id')->diffForHumans() }} — buka tab submitin.id di Chrome admin · {{ $antrean }} unggahan di antrean
+                                Tidak aktif sejak {{ $detak->locale('id')->diffForHumans() }} — buka tab submitin.id di Chrome admin
+                                · {{ $antrean }} unggahan di antrean
                             @else
                                 Belum pernah terhubung — pasang skripnya di Chrome admin.
                             @endif
@@ -127,6 +139,41 @@
                 </div>
                 @endif
 
+                {{-- Sedang dikerjakan bot --}}
+                @if ($berjalan->isNotEmpty())
+                <div class="bt-kartu biru">
+                    <h6><i class="bi bi-arrow-repeat"></i> {{ $berjalan->count() }} pengecekan sedang dikerjakan bot</h6>
+                    <p>Bot memegang satu pengecekan pada satu waktu. Jangan mengunggah hasil manual untuk pesanan ini kecuali bot dilaporkan gagal.</p>
+                    <div class="bt-daftar">
+                        @foreach ($berjalan as $up)
+                            <div class="bt-baris" wire:key="bt-jalan-{{ $up->id }}">
+                                <span class="bt-denyut"></span>
+                                <div class="bt-baris-isi">
+                                    <b>{{ optional($up->order)->order_number }}</b>
+                                    <span>
+                                        Mulai {{ $up->bot_diambil_at?->locale('id')->diffForHumans() }}
+                                        · kabar terakhir {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() }}
+                                        @if ($up->bot_kode)
+                                            · <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                        @endif
+                                    </span>
+                                </div>
+                                <span class="bt-tahap">
+                                    @if ($up->bot_status === 'menunggu_hasil')
+                                        <i class="bi bi-hourglass-split"></i> Menunggu laporan submitin
+                                    @else
+                                        <i class="bi bi-upload"></i> Mengunggah ke submitin
+                                    @endif
+                                </span>
+                                @if ($up->order)
+                                    <a class="bt-btn" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
                 {{-- Kuota paket Standard habis --}}
                 @if ($kuotaHabis)
                 <div class="bt-kartu merah">
@@ -140,6 +187,10 @@
                 @endif
 
                 {{-- Perlu dikerjakan manual --}}
+                @if ($dipasang && $berjalan->isEmpty() && $antrean === 0 && ! $kuotaHabis && $perluAdmin->isEmpty())
+                    <div class="bt-sunyi"><i class="bi bi-check2-circle"></i> Tidak ada pengecekan yang menunggu maupun berjalan.</div>
+                @endif
+
                 @if ($perluAdmin->isNotEmpty())
                 <div class="bt-kartu kuning">
                     <h6><i class="bi bi-person-exclamation"></i> {{ $perluAdmin->count() }} pengecekan perlu dikerjakan admin</h6>
