@@ -1,0 +1,16 @@
+# Skrip bot Turnitin disajikan sebagai JavaScript ber-UTF-8.
+#
+# Bawaan server menyajikannya sebagai "application/x-javascript" TANPA charset,
+# sehingga tanda pisah pada nama skrip tampil rusak ("Phoenix â€" Bot Turnitin")
+# dan sebagian pemasang userscript menolak menanganinya.
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddCharset UTF-8 .js
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.user\.js$">
+        Header set Content-Type "application/javascript; charset=UTF-8"
+        # Pemasang userscript membaca berkas ini langsung; jangan disimpan lama.
+        Header set Cache-Control "public, max-age=300"
+    </FilesMatch>
+</IfModule>
