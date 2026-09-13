@@ -1,5 +1,83 @@
-<div wire:poll.20s="refreshStatus">
+<div class="jck-page" wire:poll.20s="refreshStatus">
     <style>
+        /* ===== Kemandirian dari CSS beku =====
+           Kerangka kartu halaman ini dulu meminjam .pay-card, .cart-section,
+           dan .ph-empty* dari public-custom-styles.css — berkas yang lewat Vite
+           ke public/build, dan folder itu masuk .gitignore, jadi beku di server
+           sampai ada rsync. Semuanya kini digantikan kelas jck-* di bawah.
+
+           Variabel --ph-* dipakai di 23 tempat pada berkas ini. Alih-alih
+           menyunting satu per satu (churn besar, peluang salah ketik), nilainya
+           didefinisikan ulang di pembungkus ini — persis sama dengan yang di
+           public-custom-styles.css, jadi tampilannya tidak berubah sedikit pun
+           tetapi tidak lagi bergantung padanya. */
+        .jck-page {
+            --ph-orange: #f26522;
+            --ph-ink: #23272f;
+            --ph-muted: #6b7280;
+            --ph-soft: #fff8f1;
+            --ph-line: #f1e6d8;
+            --jck-font: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+        }
+        .jck-sec { padding: 22px 0 64px; }
+
+        /* Kepala halaman SENGAJA tetap ringkas — tidak memakai pita tinggi
+           seperti /cart atau /checkout. Yang dicari pelanggan di sini adalah
+           HASIL pengecekannya; kepala yang tinggi mendorong hasil itu ke bawah
+           layar. Rupanya diseragamkan, tingginya tidak. */
+        .jck-kepala { text-align: center; padding: 0 0 16px; }
+        .jck-eyebrow {
+            display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px;
+            height: 30px; padding: 0 14px; border-radius: 99px;
+            background: var(--ph-soft); border: 1px solid var(--ph-line); color: var(--ph-orange);
+            font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+        }
+        .jck-eyebrow i.bi, .jck-eyebrow i.bi::before { display: block; line-height: 1; font-size: .82rem; }
+        .jck-judul { font-family: var(--jck-font); font-weight: 800; font-size: 1.5rem; color: #1c1f26; margin: 0 0 4px; letter-spacing: -.02em; }
+        .jck-sub { font-size: .9rem; color: var(--ph-muted); line-height: 1.7; margin: 0 auto; max-width: 560px; }
+
+        /* ===== Kerangka kartu — bahasa yang sama dengan Keranjang, Checkout,
+           Pembayaran, dan halaman sukses: ubin ikon berwarna di kepala,
+           sudut 18px, garis #eceff3. ===== */
+        .jck-kartu { background: #fff; border: 1px solid #eceff3; border-radius: 18px; overflow: hidden; }
+        .jck-kartu + .jck-kartu { margin-top: 14px; }
+        .jck-kepala-kartu {
+            display: flex; align-items: center; gap: 10px; padding: 15px 18px; border-bottom: 1px solid #eceff3;
+            font-family: var(--jck-font); font-weight: 800; font-size: 1rem; color: #1c1f26; letter-spacing: -.015em;
+        }
+        .jck-ubin {
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 34px; height: 34px; border-radius: 11px; font-size: .95rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: color-mix(in srgb, var(--c) 82%, #0f172a);
+        }
+        .jck-ubin i.bi, .jck-ubin i.bi::before { display: block; line-height: 1; }
+        .jck-isi { padding: 18px; }
+
+        .jck-btn-utama {
+            display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 50px;
+            /* border:0 — cincin border transparan di atas latar gradasi
+               meninggalkan garis pucat di tepi tombol. */
+            border: 0; border-radius: 13px; cursor: pointer;
+            background: linear-gradient(135deg, #fba919, #f26522); color: #fff;
+            font-family: var(--jck-font); font-weight: 800; font-size: .92rem;
+            box-shadow: 0 12px 24px -14px rgba(242, 101, 34, .85);
+            transition: filter .16s ease, transform .16s ease;
+        }
+        .jck-btn-utama > span { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .jck-btn-utama i.bi, .jck-btn-utama i.bi::before { display: block; line-height: 1; font-size: .98rem; }
+        .jck-btn-utama:not(:disabled):hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .jck-btn-utama:disabled { opacity: .65; cursor: wait; }
+
+        .jck-nota { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 16px 0 0; font-size: .78rem; color: var(--ph-muted); }
+        .jck-nota i.bi { font-size: .85rem; color: #64748b; }
+        .jck-nota i.bi::before { display: block; line-height: 1; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .jck-btn-utama, .jck-btn-utama:hover { transition: none; transform: none; }
+        }
+
         /* Dulu 640px — satu kolom sempit yang memaksa semuanya bertumpuk ke
            bawah. Dilebarkan supaya isi halaman bisa berdampingan, sehingga
            hasil pengecekan terlihat tanpa menggulir. */
@@ -175,17 +253,17 @@
         @media (prefers-reduced-motion: reduce) { .cek-pulse, .cek-spin { animation:none; } }
     </style>
 
-    <section class="cart-section">
+    <section class="jck-sec">
         <div class="container">
             <div class="cek-wrap">
                 {{-- Dirampingkan: kepala halaman yang tinggi mendorong hasil ke bawah
                      layar, padahal hasil itulah yang dicari pelanggan. --}}
-                <div class="ph-empty" style="padding:0 0 14px;">
-                    <span class="ph-sec-eyebrow cek-eyebrow" style="margin-bottom:10px;">
+                <div class="jck-kepala">
+                    <span class="jck-eyebrow cek-eyebrow">
                         <i class="bi bi-{{ $ragam['ikon'] }}"></i> {{ $ragam['nama'] }}
                     </span>
-                    <h3 class="ph-empty-title" style="margin-bottom:4px;">{{ $ragam['judul'] }}</h3>
-                    <p class="ph-empty-sub">
+                    <h3 class="jck-judul">{{ $ragam['judul'] }}</h3>
+                    <p class="jck-sub">
                         Pesanan <span style="font-family:'Courier New',monospace; font-weight:700; color:var(--kek-warna);">{{ $order->order_number }}</span>.
                         {{ $ragam['ajakan'] }}
                     </p>
@@ -217,9 +295,11 @@
 
                     {{-- ===== Form unggah / kunci kuota ===== --}}
                     @if ($order->bisaUploadPengecekan())
-                    <div class="pay-card">
-                        <div class="pay-card-head" style="color:var(--kek-warna);"><i class="bi bi-{{ $ragam['unggahIkon'] }}"></i> {{ $ragam['unggahJudul'] }}</div>
-                        <div class="pay-card-body">
+                    <div class="jck-kartu" style="--c: var(--kek-warna);">
+                        <div class="jck-kepala-kartu" style="color:var(--kek-warna);">
+                            <span class="jck-ubin"><i class="bi bi-{{ $ragam['unggahIkon'] }}"></i></span> {{ $ragam['unggahJudul'] }}
+                        </div>
+                        <div class="jck-isi">
                             <div wire:key="cek-form-{{ $terpakai }}" x-data="{
                                 fileName: '',
 
@@ -404,7 +484,7 @@
                                 </div>
 
                                 <button type="button" wire:click="uploadDokumen" wire:loading.attr="disabled"
-                                    wire:target="uploadDokumen,dokumen" class="ph-empty-btn" style="width:100%; justify-content:center; margin-top:20px;">
+                                    wire:target="uploadDokumen,dokumen" class="jck-btn-utama" style="margin-top:20px;">
                                     <span wire:loading.remove wire:target="uploadDokumen,dokumen"><i class="bi bi-{{ $ragam['unggahIkon'] }}"></i> {{ $ragam['tombol'] }}</span>
                                     <span wire:loading wire:target="uploadDokumen,dokumen"><i class="bi bi-hourglass-split"></i> Mengunggah…</span>
                                 </button>
@@ -416,8 +496,8 @@
                          diunduh" — dan dua kartu berturut-turut dengan pesan kembar
                          mendorong tombol unduh turun tanpa memberi tahu apa pun yang baru. --}}
                     @elseif ($sisa <= 0 && $kuota > 0 && ! $kadaluarsaAt)
-                    <div class="pay-card" style="border-color:#fecaca; background:linear-gradient(180deg,#fef2f2,#fff);">
-                        <div class="pay-card-body" style="text-align:center;">
+                    <div class="jck-kartu" style="--c: #dc2626; border-color:#fecaca; background:linear-gradient(180deg,#fef2f2,#fff);">
+                        <div class="jck-isi" style="text-align:center;">
                             <i class="bi bi-check2-all" style="font-size:1.8rem; color:#dc2626;"></i>
                             <p style="font-weight:700; color:#b91c1c; margin:8px 0 2px;">{{ $ragam['habis'] }} ({{ $terpakai }}/{{ $kuota }}).</p>
                             <p style="font-size:.84rem; color:var(--ph-muted); margin:0;">Anda tetap bisa mengunduh hasil di bawah kapan saja.</p>
@@ -426,9 +506,11 @@
                     @endif
 
                     {{-- ===== Riwayat pengecekan ===== --}}
-                    <div class="pay-card" style="margin-top:14px;">
-                        <div class="pay-card-head"><i class="bi bi-list-check"></i> {{ $ragam['riwayat'] }}</div>
-                        <div class="pay-card-body">
+                    <div class="jck-kartu" style="--c: #2563eb;">
+                        <div class="jck-kepala-kartu">
+                            <span class="jck-ubin"><i class="bi bi-list-check"></i></span> {{ $ragam['riwayat'] }}
+                        </div>
+                        <div class="jck-isi">
                             @forelse ($pengecekan as $up)
                             <div class="cek-item" wire:key="cek-row-{{ $up->id }}">
                                 <div class="cek-item-top">
@@ -528,9 +610,11 @@
                         $adaRincian = $itemJasa->isNotEmpty();
                     @endphp
                     @if ($adaRincian)
-                    <div class="pay-card" style="margin-top:14px;">
-                        <div class="pay-card-head"><i class="bi bi-list-ul"></i> Layanan Anda</div>
-                        <div class="pay-card-body">
+                    <div class="jck-kartu" style="--c: #0d9488;">
+                        <div class="jck-kepala-kartu">
+                            <span class="jck-ubin"><i class="bi bi-list-ul"></i></span> Layanan Anda
+                        </div>
+                        <div class="jck-isi">
                             @foreach ($itemJasa as $it)
                             <div class="lyn-item">
                                 <div class="lyn-name">{{ $it->product_name }}</div>
@@ -617,9 +701,11 @@
                     </div>
 
                     {{-- ===== Simpan link ===== --}}
-                    <div class="pay-card" style="margin-top:14px;">
-                        <div class="pay-card-head"><i class="bi bi-link-45deg"></i> Link Halaman Ini</div>
-                        <div class="pay-card-body">
+                    <div class="jck-kartu" style="--c: #7c3aed;">
+                        <div class="jck-kepala-kartu">
+                            <span class="jck-ubin"><i class="bi bi-link-45deg"></i></span> Link Halaman Ini
+                        </div>
+                        <div class="jck-isi">
                             <p style="font-size:.83rem; color:var(--ph-muted); margin:0 0 4px;">Simpan link ini agar bisa kembali kapan saja (unggah &amp; unduh hasil):</p>
                             <div class="cek-linkbox">
                                 <code id="cek-permalink">{{ url('/cek/'.$order->share_token) }}</code>
@@ -631,7 +717,7 @@
                     </div>
                 </div>
 
-                <p class="cart-summary-note" style="justify-content:center; margin-top:16px;">
+                <p class="jck-nota">
                     <i class="bi bi-shield-lock"></i> Link ini bersifat rahasia — jangan bagikan ke orang lain.
                 </p>
             </div>
