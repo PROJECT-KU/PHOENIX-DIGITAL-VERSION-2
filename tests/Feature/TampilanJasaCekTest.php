@@ -104,8 +104,13 @@ it('halaman penutup mewarisi warna jenis jasanya, bukan jingga mati', function (
     expect($sumber)->toContain("--kek-warna: {{ \$ragam['warna'] }}")
         ->and($sumber)->toContain("--kek-lembut: {{ \$ragam['lembut'] }}")
         ->and($sumber)->toContain("--kek-tepi: {{ \$ragam['tepi'] }}")
-        // Ikon besar di tengah & panel keterangan ikut warnanya.
-        ->and($sumber)->toContain('color: var(--kek-warna)');
+        // Ilustrasi jam di tengah ikut warnanya — lewat fill/stroke SVG, sebab
+        // jarumnya digambar sendiri agar bisa dianimasikan (glif Bootstrap
+        // Icons tidak menyediakan bagian-bagiannya).
+        ->and($sumber)->toContain('fill="var(--kek-warna)"')
+        ->and($sumber)->toContain('stroke="var(--kek-warna)"')
+        // Panel keterangan & lencana tetap menurunkannya lewat color-mix.
+        ->and($sumber)->toContain('color-mix(in srgb, var(--kek-warna)');
 
     // Warna jingga yang dulu dipatok mati tidak boleh kembali sebagai NILAI
     // CSS. Yang dilarang deklarasinya, bukan penyebutan namanya: komentar di
@@ -124,4 +129,28 @@ it('halaman penutup berkepala baku & tidak lagi memakai kelas beku', function ()
         ->and($sumber)->toContain("--c: {{ \$ragam['warna'] }}")
         ->and($sumber)->toContain('class="breadcrumbs"')
         ->and($sumber)->not->toContain('class="cart-section"');
+});
+
+it('ilustrasi jam beranimasi dan menghormati prefers-reduced-motion', function () use ($sumberKadaluarsa) {
+    // Gerak tanpa jalan keluar adalah masalah aksesibilitas: sebagian orang
+    // pusing oleh animasi yang berulang terus.
+    $sumber = $sumberKadaluarsa();
+
+    expect($sumber)->toContain('@keyframes ckePutar')
+        ->and($sumber)->toContain('@keyframes ckeCincin')
+        ->and($sumber)->toContain('class="cke-menit"')
+        ->and($sumber)->toContain('prefers-reduced-motion: reduce')
+        ->and($sumber)->toContain('.cke-menit, .cke-jam, .cke-percik { animation: none !important; }');
+});
+
+it('kartu penutup selebar kartu kepala, teksnya tidak ikut melebar', function () use ($sumberKadaluarsa) {
+    // Melebarkan kartu bukan berarti melebarkan baris kalimatnya.
+    $sumber = $sumberKadaluarsa();
+
+    expect($sumber)->toContain('class="cke-dalam"')
+        ->and($sumber)->toContain('.cke-dalam { max-width: 560px')
+        // Lebar kartunya TIDAK boleh dipatok angka: kalau dipatok, ia hanya
+        // sejajar dengan kartu kepala di satu ukuran layar saja.
+        ->and($sumber)->not->toContain('.cke-kartu {
+            max-width:');
 });

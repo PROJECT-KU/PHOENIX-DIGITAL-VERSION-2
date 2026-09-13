@@ -22,25 +22,49 @@
         }
         .cke-sec { padding: 22px 0 64px; }
 
-        /* Satu kabar penutup, jadi kartunya sengaja TIDAK selebar kartu kepala:
-           satu paragraf yang direntangkan 1296px justru lebih sulit dibaca.
-           Yang diseragamkan bahasanya — kartu putih, sudut 18px, ubin ikon
-           berwarna — bukan lebarnya. */
-        .cke-kartu {
-            max-width: 620px; margin: 0 auto; text-align: center;
-            background: #fff; border: 1px solid #eceff3; border-radius: 18px;
-            padding: 34px 28px 30px;
-        }
+        /* KARTU selebar kartu kepala; ISINYA tidak.
 
-        /* Ikon besar di tengah, berwarna jenis jasanya. */
-        .cke-ic {
-            width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 18px;
-            display: grid; place-items: center; font-size: 2.2rem;
-            color: var(--kek-warna);
-            background: linear-gradient(135deg, color-mix(in srgb, var(--kek-lembut) 70%, #fff), var(--kek-lembut));
-            border: 1px solid var(--kek-tepi);
+           Lebarnya tidak dipatok angka: kartu kepala digambar oleh ::before
+           yang menjorok 12px dari tiap sisi .container, sementara isi
+           .container sendiri sudah berjarak 12px karena padding bawaan
+           Bootstrap — jadi keduanya bertepi sama persis di setiap breakpoint,
+           tanpa satu angka lebar pun.
+
+           Teksnya tetap dibatasi .cke-dalam: satu paragraf yang direntangkan
+           1296px sulit dibaca, dan melebarkan kartu tidak berarti melebarkan
+           baris kalimatnya. */
+        .cke-kartu {
+            margin: 0 auto; text-align: center;
+            background: #fff; border: 1px solid #eceff3; border-radius: 18px;
+            padding: 40px 28px 36px;
         }
-        .cke-ic i.bi, .cke-ic i.bi::before { display: block; line-height: 1; }
+        .cke-dalam { max-width: 560px; margin: 0 auto; }
+
+        /* Ikon besar di tengah, berwarna jenis jasanya, dan BERGERAK.
+
+           Digambar sebagai SVG sendiri, bukan glif Bootstrap Icons: jarum jam
+           harus bisa dianimasikan, dan glif tidak menyediakan bagian-bagiannya.
+           Pola animasinya menyalin halaman penutup lain — cincin yang memuai
+           lalu memudar (halaman sukses) dan percik yang berkelip (halaman
+           kedaluwarsa keranjang) — supaya ketiganya terasa satu keluarga. */
+        .cke-ilus { width: 132px; height: 132px; margin: 0 auto 18px; }
+        .cke-ilus svg { display: block; width: 100%; height: auto; }
+
+        .cke-cincin { transform-box: fill-box; transform-origin: center; animation: ckeCincin 3s ease-out infinite; }
+        .cke-cincin.r2 { animation-delay: 1.5s; }
+        /* Jarum menit berputar penuh, jarum jam merambat. Jamnya masih
+           berdetak — yang berakhir masa aksesnya, bukan waktunya. */
+        .cke-menit { transform-box: fill-box; transform-origin: 50% 100%; animation: ckePutar 6s linear infinite; }
+        .cke-jam { transform-box: fill-box; transform-origin: 50% 100%; animation: ckePutar 36s linear infinite; }
+        .cke-percik { transform-box: fill-box; transform-origin: center; animation: ckeKelip 2.4s ease-in-out infinite; }
+        .cke-percik.s2 { animation-delay: .8s; }
+        .cke-percik.s3 { animation-delay: 1.6s; }
+        @keyframes ckeCincin { 0% { transform: scale(.72); opacity: .5; } 100% { transform: scale(1.45); opacity: 0; } }
+        @keyframes ckePutar { to { transform: rotate(360deg); } }
+        @keyframes ckeKelip { 0%, 100% { opacity: .25; transform: scale(.6); } 50% { opacity: 1; transform: scale(1); } }
+        @media (prefers-reduced-motion: reduce) {
+            .cke-cincin, .cke-menit, .cke-jam, .cke-percik { animation: none !important; }
+        }
 
         .cke-lencana {
             display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;
@@ -94,7 +118,7 @@
 
         @media (max-width: 575.98px) {
             .cke-kartu { padding: 26px 18px 24px; }
-            .cke-ic { width: 70px; height: 70px; font-size: 1.85rem; }
+            .cke-ilus { width: 108px; }
             .cke-title { font-size: 1.22rem; }
             .cke-btn { width: 100%; }
         }
@@ -126,7 +150,28 @@
     <section class="cke-sec">
         <div class="container">
             <div class="cke-kartu">
-                <div class="cke-ic"><i class="bi bi-clock-history"></i></div>
+                <div class="cke-dalam">
+                <div class="cke-ilus">
+                    <svg viewBox="0 0 132 132" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Masa akses berakhir">
+                        {{-- Cincin yang memuai lalu memudar --}}
+                        <circle class="cke-cincin" cx="66" cy="66" r="34" fill="none" stroke="var(--kek-warna)" stroke-width="2" opacity=".5" />
+                        <circle class="cke-cincin r2" cx="66" cy="66" r="34" fill="none" stroke="var(--kek-warna)" stroke-width="2" opacity=".5" />
+
+                        {{-- Percik kecil, irama berbeda --}}
+                        <circle class="cke-percik" cx="20" cy="34" r="3" fill="var(--kek-warna)" />
+                        <circle class="cke-percik s2" cx="113" cy="44" r="2.4" fill="var(--kek-warna)" />
+                        <circle class="cke-percik s3" cx="106" cy="103" r="2.8" fill="var(--kek-warna)" />
+
+                        {{-- Muka jam --}}
+                        <circle cx="66" cy="66" r="34" fill="var(--kek-lembut)" stroke="var(--kek-tepi)" stroke-width="2" />
+                        <circle cx="66" cy="66" r="27" fill="none" stroke="var(--kek-tepi)" stroke-width="1" opacity=".8" />
+
+                        {{-- Jarum: menit berputar penuh, jam merambat --}}
+                        <rect class="cke-jam" x="64.6" y="50" width="2.8" height="16" rx="1.4" fill="var(--kek-warna)" />
+                        <rect class="cke-menit" x="65" y="43" width="2" height="23" rx="1" fill="var(--kek-warna)" opacity=".75" />
+                        <circle cx="66" cy="66" r="3.2" fill="var(--kek-warna)" />
+                    </svg>
+                </div>
 
                 <span class="cke-lencana"><i class="bi bi-lock-fill"></i> Ditutup</span>
 
@@ -154,6 +199,7 @@
                 <div class="cke-actions">
                     <a href="{{ url('/') }}" class="cke-btn primary"><i class="bi bi-house-door"></i> Kembali ke Beranda</a>
                     <a href="{{ url('/shop') }}" class="cke-btn ghost"><i class="bi bi-bag"></i> Pesan Lagi</a>
+                </div>
                 </div>
             </div>
         </div>
