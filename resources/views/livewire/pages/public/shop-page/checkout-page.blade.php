@@ -1,11 +1,277 @@
-<div>
+<div class="ck-page">
+    <style>
+        /* ===== Checkout =====
+           Bahasa visual sama dengan Shop, Bundling, Keranjang, dan Wishlist:
+           kartu putih bersudut 18px, ubin ikon berwarna di kepala tiap kartu,
+           dan warna per bagian (--c) yang diambil dari palet kategori.
+
+           Kelas ck-*: aturan .co-* yang lama ada di public-custom-styles.css,
+           dan berkas itu lewat Vite ke public/build yang masuk .gitignore —
+           beku di server sampai ada rsync. Ditulis inline supaya tampilan ini
+           ikut `git pull`, sama seperti Keranjang dan Wishlist. */
+        .ck-page { --ck-ink: #1c1f26; --ck-muted: #6b7280; --ck-line: #eceff3; --ck-font: 'Plus Jakarta Sans', 'Poppins', sans-serif; }
+        .ck-sec { padding: 22px 0 64px; }
+
+        /* ===== Jalur langkah =====
+           Bentuknya diambil dari "Cara Pesan" di beranda: satu JALUR berisi
+           beberapa perhentian, bukan kartu setara. Di checkout ia menjawab
+           "masih berapa langkah lagi?" — pertanyaan yang paling menentukan
+           apakah orang meneruskan atau menutup tab. */
+        .ck-jalur { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+        .ck-jalur::before {
+            content: ""; position: absolute; z-index: 0; top: 17px;
+            left: 12.5%; right: 12.5%; border-top: 2px dashed #f8d8bf;
+        }
+        .ck-henti { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
+        .ck-henti-bulat {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%; font-size: .92rem;
+            /* Latarnya PEKAT, bukan tembus pandang: ia harus menutupi garis
+               jalur yang lewat di belakangnya. */
+            background: #fff; border: 2px solid var(--ck-line); color: #c3cad3;
+        }
+        .ck-henti-bulat i.bi, .ck-henti-bulat i.bi::before { display: block; line-height: 1; }
+        .ck-henti-teks { font-size: .78rem; font-weight: 700; color: #b4bcc6; }
+        /* Yang sudah dilewati memakai hijau: di mana pun hijau berarti beres. */
+        .ck-henti.is-lewat .ck-henti-bulat { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; }
+        .ck-henti.is-lewat .ck-henti-teks { color: #16a34a; }
+        .ck-henti.is-kini .ck-henti-bulat {
+            background: linear-gradient(135deg, #fba919, #f26522); border-color: transparent; color: #fff;
+            box-shadow: 0 8px 18px -8px rgba(242, 101, 34, .85);
+        }
+        .ck-henti.is-kini .ck-henti-teks { color: var(--ck-ink); }
+
+        /* ===== Tata letak dua kolom ===== */
+        .ck-tata { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 20px; align-items: start; }
+        .ck-kolom { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+        /* ===== Kartu ===== */
+        .ck-kartu { background: #fff; border: 1px solid var(--ck-line); border-radius: 18px; overflow: hidden; }
+        .ck-kepala {
+            display: flex; align-items: center; gap: 10px; padding: 15px 18px;
+            border-bottom: 1px solid var(--ck-line);
+            font-family: var(--ck-font); font-weight: 800; font-size: 1rem; color: var(--ck-ink); letter-spacing: -.015em;
+        }
+        /* Ubin ikon berwarna: penanda bagian, bukan hiasan — mata menemukan
+           "Kode Promo" tanpa membaca judulnya lebih dulu. */
+        .ck-ubin {
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            width: 34px; height: 34px; border-radius: 11px; font-size: .95rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: color-mix(in srgb, var(--c) 82%, #0f172a);
+        }
+        .ck-ubin i.bi, .ck-ubin i.bi::before { display: block; line-height: 1; }
+        .ck-opsional { font-weight: 600; font-size: .78rem; color: var(--ck-muted); }
+        .ck-isi { padding: 18px; }
+
+        /* ===== Isian ===== */
+        .ck-baris { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .ck-medan { display: flex; flex-direction: column; gap: 7px; }
+        /* Jarak antar medan hanya untuk yang BERTUMPUK. Dibatasi ke anak
+           langsung .ck-isi: tanpa itu medan kedua di dalam .ck-baris ikut
+           mendapat margin atas, sehingga Nama Lengkap dan Email berdiri di
+           ketinggian yang berbeda. */
+        .ck-isi > .ck-medan + .ck-medan,
+        .ck-isi > .ck-baris + .ck-medan,
+        .ck-isi > .ck-medan + .ck-baris { margin-top: 14px; }
+        .ck-medan label { font-size: .84rem; font-weight: 700; color: var(--ck-ink); margin: 0; }
+        .ck-page .form-control {
+            width: 100%; border: 1.5px solid #e7ebf0; border-radius: 12px; padding: 11px 14px;
+            font-size: .92rem; color: var(--ck-ink); background: #fff;
+            transition: border-color .16s ease, box-shadow .16s ease;
+        }
+        .ck-page .form-control::placeholder { color: #aeb6c0; }
+        .ck-page .form-control:focus {
+            outline: 0; border-color: #f26522; box-shadow: 0 0 0 3px rgba(242, 101, 34, .13);
+        }
+        .ck-page .form-control[readonly], .ck-page .form-control:disabled { background: #f8fafc; color: #64748b; cursor: not-allowed; }
+        .ck-page textarea.form-control { resize: vertical; min-height: 88px; }
+        .ck-page .form-control.is-invalid { border-color: #f87171; }
+
+        .ck-err { display: flex; align-items: center; gap: 5px; font-size: .78rem; font-weight: 600; color: #dc2626; }
+        .ck-err::before { content: "\F33A"; font-family: "bootstrap-icons"; line-height: 1; }
+        .ck-temu { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; color: #16a34a; }
+        .ck-temu i.bi, .ck-temu i.bi::before { display: block; line-height: 1; }
+        .ck-nota { display: flex; align-items: flex-start; gap: 7px; font-size: .78rem; color: var(--ck-muted); line-height: 1.55; margin: 0; }
+        .ck-nota i.bi { flex-shrink: 0; margin-top: 2px; font-size: .82rem; color: color-mix(in srgb, var(--c, #f26522) 75%, #0f172a); }
+        .ck-nota i.bi::before { display: block; line-height: 1; }
+        .ck-nota b { color: var(--ck-ink); font-weight: 700; }
+
+        /* ===== Tombol ===== */
+        .ck-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px; width: 100%; height: 46px;
+            padding: 0 14px; border: 1.5px solid transparent; border-radius: 12px; cursor: pointer;
+            font-family: var(--ck-font); font-weight: 700; font-size: .88rem; white-space: nowrap;
+            transition: filter .16s ease, transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease;
+        }
+        /* Isi tombol dibungkus <span> oleh wire:loading. Span polos bukan flex,
+           jadi ikon yang display:block memaksa ganti baris dan ikonnya berdiri
+           DI ATAS teksnya — bukan di sampingnya. */
+        .ck-btn > span { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+        .ck-btn i.bi, .ck-btn i.bi::before { display: block; line-height: 1; font-size: .95rem; }
+        .ck-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; filter: none; }
+        .ck-btn-utama { background: linear-gradient(135deg, #fba919, #f26522); color: #fff; box-shadow: 0 10px 20px -12px rgba(242, 101, 34, .8); }
+        .ck-btn-utama:not(:disabled):hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .ck-btn-garis { background: #fff; border-color: #e5e0d8; color: var(--ck-ink); }
+        .ck-btn-garis:not(:disabled):hover { border-color: #f26522; color: #c2410c; transform: translateY(-1px); }
+        /* Menghapus promo itu tindakan merusak: merahnya terlihat tanpa perlu
+           disentuh dulu. */
+        .ck-btn-bahaya { background: #fff5f5; border-color: #fecaca; color: #dc2626; }
+        .ck-btn-bahaya:not(:disabled):hover { background: #fee2e2; border-color: #f87171; transform: translateY(-1px); }
+
+        .ck-pasangan { display: grid; grid-template-columns: minmax(0, 1fr) 148px; gap: 10px; align-items: start; }
+
+        /* ===== Kabar & promo terpakai ===== */
+        .ck-kabar {
+            display: flex; align-items: flex-start; gap: 8px; margin-top: 12px;
+            padding: 10px 12px; border-radius: 12px; border: 1px solid transparent;
+            font-size: .82rem; font-weight: 600; line-height: 1.5;
+        }
+        .ck-kabar i.bi { flex-shrink: 0; margin-top: 1px; }
+        .ck-kabar i.bi::before { display: block; line-height: 1; }
+        .ck-kabar.is-ok { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+        .ck-kabar.is-galat { background: #fff5f5; border-color: #fecaca; color: #b91c1c; }
+        .ck-kabar.is-ingat { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+
+        .ck-terpakai {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px;
+            padding: 11px 13px; border-radius: 13px;
+            background: linear-gradient(135deg, #fffaf4, #fff); border: 1px solid #fde3cc;
+        }
+        .ck-terpakai-kiri { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .ck-terpakai-nama {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-family: var(--ck-font); font-weight: 700; font-size: .87rem; color: var(--ck-ink);
+        }
+        .ck-terpakai-nama i.bi, .ck-terpakai-nama i.bi::before { display: block; line-height: 1; color: #f26522; }
+        .ck-terpakai-kode {
+            display: inline-flex; align-items: center; height: 21px; padding: 0 7px; border-radius: 6px;
+            background: #fff1e7; color: #c2410c; font-size: .72rem; font-weight: 700; font-family: ui-monospace, monospace;
+        }
+        .ck-terpakai-jumlah { font-size: .75rem; color: var(--ck-muted); }
+        .ck-terpakai-sub { font-size: .76rem; color: var(--ck-muted); }
+        .ck-terpakai-nilai { font-family: var(--ck-font); font-weight: 800; font-size: .95rem; color: #16a34a; white-space: nowrap; }
+
+        /* ===== Ajakan member & poin ===== */
+        .ck-member-teks { margin: 0 0 12px; font-size: .87rem; color: #4b5563; line-height: 1.7; }
+        .ck-member-teks b { color: var(--ck-ink); font-weight: 700; }
+        .ck-member-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 44px;
+            border-radius: 12px; text-decoration: none;
+            background: color-mix(in srgb, var(--c) 10%, #fff);
+            border: 1.5px solid color-mix(in srgb, var(--c) 28%, #fff);
+            color: color-mix(in srgb, var(--c) 82%, #0f172a);
+            font-family: var(--ck-font); font-weight: 700; font-size: .87rem;
+            transition: background .16s ease, transform .16s ease;
+        }
+        .ck-member-btn:hover { background: color-mix(in srgb, var(--c) 16%, #fff); color: color-mix(in srgb, var(--c) 88%, #0f172a); transform: translateY(-1px); }
+        .ck-member-btn i.bi, .ck-member-btn i.bi::before { display: block; line-height: 1; }
+
+        .ck-saklar {
+            display: flex; align-items: flex-start; gap: 11px; padding: 12px;
+            border: 1px solid var(--ck-line); border-radius: 13px; background: #fcfcfd;
+        }
+        /* Bootstrap menggambar tuas lewat .form-switch, dan .form-switch
+           membawa serta display:block + padding-left miliknya sendiri — dua
+           hal yang merusak baris flex ini. Tuasnya dipakai, tata letaknya
+           diambil alih di sini. Dibiarkan sebagai kotak centang biasa,
+           role="switch" pada input jadi janji yang tidak ditepati: pembaca
+           layar menyebutnya tuas sementara mata melihat kotak. */
+        .ck-saklar.form-switch { display: flex; padding-left: 0; }
+        .ck-saklar .form-check-input {
+            flex-shrink: 0; margin-top: 1px; margin-left: 0; float: none;
+            width: 40px; height: 22px; cursor: pointer;
+        }
+        .ck-saklar .form-check-input:checked { background-color: #f26522; border-color: #f26522; }
+        .ck-saklar .form-check-input:focus { border-color: #f9b98f; box-shadow: 0 0 0 3px rgba(242, 101, 34, .13); }
+        .ck-saklar label { margin: 0; }
+        .ck-saklar strong { font-family: var(--ck-font); font-weight: 700; font-size: .89rem; color: var(--ck-ink); }
+        .ck-saklar-ket { font-size: .8rem; color: var(--ck-muted); margin-top: 2px; }
+        .ck-saklar-ket b { color: var(--ck-ink); font-weight: 700; }
+
+        /* ===== Ringkasan ===== */
+        .ck-sisi { position: sticky; top: 92px; }
+        .ck-ringkas { background: #fff; border: 1px solid var(--ck-line); border-radius: 18px; overflow: hidden; }
+        .ck-item {
+            display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 11px;
+            padding: 11px 0;
+        }
+        .ck-item + .ck-item { border-top: 1px dashed var(--ck-line); }
+        /* Ubin kategori yang sama dengan baris Keranjang, supaya pembeli
+           mengenali barangnya tanpa membaca ulang namanya. */
+        .ck-item-ubin {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 11px; font-size: .92rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff); color: color-mix(in srgb, var(--c) 82%, #0f172a);
+        }
+        .ck-item-ubin i.bi, .ck-item-ubin i.bi::before { display: block; line-height: 1; }
+        .ck-item-nama { font-family: var(--ck-font); font-weight: 700; font-size: .87rem; color: var(--ck-ink); line-height: 1.35; }
+        .ck-item-ket { font-size: .76rem; color: var(--ck-muted); margin-top: 1px; }
+        .ck-item-harga { font-family: var(--ck-font); font-weight: 700; font-size: .87rem; color: var(--ck-ink); white-space: nowrap; }
+
+        .ck-garis { height: 1px; margin: 12px 0; background: repeating-linear-gradient(to right, var(--ck-line) 0 6px, transparent 6px 12px); }
+        .ck-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: .86rem; color: var(--ck-muted); }
+        .ck-row strong { font-family: var(--ck-font); font-weight: 700; color: var(--ck-ink); }
+        .ck-row i.bi { font-size: .78rem; color: #b4bcc6; }
+        .ck-row.is-potong strong { color: #16a34a; }
+
+        .ck-hemat {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px;
+            padding: 10px 13px; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0;
+            font-size: .84rem; font-weight: 700; color: #15803d;
+        }
+        .ck-hemat strong { font-family: var(--ck-font); font-weight: 800; }
+        .ck-coret { margin-top: 6px; text-align: right; font-size: .82rem; color: #9aa3af; text-decoration: line-through; }
+
+        .ck-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 0 16px; }
+        .ck-total span { font-family: var(--ck-font); font-weight: 700; font-size: .95rem; color: var(--ck-ink); }
+        .ck-total strong {
+            font-family: var(--ck-font); font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em;
+            background: linear-gradient(135deg, #fba919, #f26522); -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .ck-bayar {
+            display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+            height: 54px; padding: 0 18px; border: 0; border-radius: 14px; cursor: pointer;
+            background: linear-gradient(135deg, #fba919, #f26522); color: #fff;
+            font-family: var(--ck-font); font-weight: 800; font-size: .97rem;
+            box-shadow: 0 14px 26px -14px rgba(242, 101, 34, .85);
+            transition: filter .16s ease, transform .16s ease;
+        }
+        .ck-bayar:not(:disabled):hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .ck-bayar:disabled { opacity: .7; cursor: wait; }
+        .ck-bayar span { display: inline-flex; align-items: center; gap: 8px; }
+        .ck-bayar i.bi, .ck-bayar i.bi::before { display: block; line-height: 1; font-size: .95rem; }
+        .ck-bayar-harga { padding: 3px 10px; border-radius: 8px; background: rgba(255, 255, 255, .22); font-size: .9rem; }
+
+        @media (max-width: 991.98px) {
+            .ck-tata { grid-template-columns: minmax(0, 1fr); }
+            /* Ringkasan berhenti menempel: di satu kolom ia sudah berada di
+               bawah formulirnya, dan yang menempel justru menutupi isinya. */
+            .ck-sisi { position: static; }
+        }
+        @media (max-width: 575.98px) {
+            .ck-baris { grid-template-columns: minmax(0, 1fr); }
+            .ck-pasangan { grid-template-columns: minmax(0, 1fr); }
+            .ck-jalur { gap: 4px; }
+            .ck-henti-teks { font-size: .68rem; }
+            .ck-jalur::before { left: 12.5%; right: 12.5%; }
+            .ck-isi { padding: 15px; }
+            .ck-total strong { font-size: 1.35rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .ck-btn, .ck-bayar, .ck-member-btn, .ck-page .form-control { transition: none; }
+            .ck-btn:hover, .ck-bayar:hover, .ck-member-btn:hover { transform: none; }
+        }
+    </style>
+
     <!-- Page Title -->
     <div class="page-title ph-page-title">
         <div class="container d-lg-flex justify-content-between align-items-center">
             <div class="ph-page-head">
                 <span class="ph-sec-eyebrow"><i class="bi bi-bag-check-fill"></i> Checkout</span>
                 <h1>Selesaikan Pesanan</h1>
-                <p>Lengkapi data & pilih promo Anda, lalu lanjutkan ke pembayaran.</p>
+                <p>Lengkapi data &amp; pilih promo Anda, lalu lanjutkan ke pembayaran.</p>
             </div>
             <nav class="breadcrumbs">
                 <ol>
@@ -18,17 +284,41 @@
     </div>
     <!-- End Page Title -->
 
-    <section class="co-section">
+    <section class="ck-sec">
         <div class="container">
+            {{-- Empat perhentian; yang ketiga & keempat belum dilewati, jadi
+                 dibiarkan kelabu. Menjawab "masih berapa langkah lagi?" di
+                 tempat pertanyaan itu paling menentukan. --}}
+            <div class="ck-jalur">
+                <div class="ck-henti is-lewat">
+                    <span class="ck-henti-bulat"><i class="bi bi-check-lg"></i></span>
+                    <span class="ck-henti-teks">Keranjang</span>
+                </div>
+                <div class="ck-henti is-kini">
+                    <span class="ck-henti-bulat"><i class="bi bi-person-fill"></i></span>
+                    <span class="ck-henti-teks">Data &amp; Promo</span>
+                </div>
+                <div class="ck-henti">
+                    <span class="ck-henti-bulat"><i class="bi bi-credit-card-2-front-fill"></i></span>
+                    <span class="ck-henti-teks">Bayar</span>
+                </div>
+                <div class="ck-henti">
+                    <span class="ck-henti-bulat"><i class="bi bi-inbox-fill"></i></span>
+                    <span class="ck-henti-teks">Terima</span>
+                </div>
+            </div>
+
             <form wire:submit="checkout">
-                <div class="row g-4">
+                <div class="ck-tata">
                     {{-- Kolom kiri: data & promo --}}
-                    <div class="col-lg-7">
+                    <div class="ck-kolom">
                         {{-- Informasi pelanggan --}}
-                        <div class="co-card">
-                            <div class="co-card-head"><i class="bi bi-person-fill"></i> Informasi Pelanggan</div>
-                            <div class="co-card-body">
-                                <div class="co-field">
+                        <div class="ck-kartu" style="--c: #2563eb">
+                            <div class="ck-kepala">
+                                <span class="ck-ubin"><i class="bi bi-person-fill"></i></span> Informasi Pelanggan
+                            </div>
+                            <div class="ck-isi">
+                                <div class="ck-medan">
                                     <label>Nomor HP / WhatsApp <span class="text-danger">*</span></label>
                                     <div wire:ignore>
                                         <input type="tel" id="co-phone" class="form-control" autocomplete="tel"
@@ -37,37 +327,33 @@
                                     {{-- jembatan nilai E.164 ke Livewire (untuk lookup pelanggan) --}}
                                     <input type="hidden" id="co-phone-e164" wire:model="no_hp">
                                     @if ($isLoadingCustomer)
-                                        <span class="co-found" style="color:var(--ph-muted)"><span class="spinner-border spinner-border-sm"></span> Mencari data...</span>
+                                        <span class="ck-temu" style="color: #6b7280;"><span class="spinner-border spinner-border-sm"></span> Mencari data...</span>
                                     @endif
-                                    @error('no_hp') <span class="co-err">{{ $message }}</span> @enderror
+                                    @error('no_hp') <span class="ck-err">{{ $message }}</span> @enderror
                                     @if ($customerFound)
-                                        <span class="co-found"><i class="bi bi-check-circle-fill"></i> Data pelanggan ditemukan</span>
+                                        <span class="ck-temu"><i class="bi bi-check-circle-fill"></i> Data pelanggan ditemukan</span>
                                     @endif
-                                    <div class="co-note"><i class="bi bi-globe-americas"></i> Nomor Indonesia cukup ketik <b>08…</b> (otomatis +62). Untuk luar negeri, pilih bendera negaranya.</div>
+                                    <p class="ck-nota"><i class="bi bi-globe-americas"></i> <span>Nomor Indonesia cukup ketik <b>08…</b> (otomatis +62). Untuk luar negeri, pilih bendera negaranya.</span></p>
                                 </div>
 
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="co-field">
-                                            <label>Nama Lengkap <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control @error('nama') is-invalid @enderror"
-                                                wire:model="nama" placeholder="Nama lengkap Anda" {{ $customerFound ? 'readonly' : '' }}>
-                                            @error('nama') <span class="co-err">{{ $message }}</span> @enderror
-                                        </div>
+                                <div class="ck-baris">
+                                    <div class="ck-medan">
+                                        <label>Nama Lengkap <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control @error('nama') is-invalid @enderror"
+                                            wire:model="nama" placeholder="Nama lengkap Anda" {{ $customerFound ? 'readonly' : '' }}>
+                                        @error('nama') <span class="ck-err">{{ $message }}</span> @enderror
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="co-field">
-                                            <label>Email <span class="text-danger">*</span></label>
-                                            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                                wire:model="email" placeholder="email@contoh.com" {{ $customerFound ? 'readonly' : '' }}
-                                                x-on:blur="if ($event.target.value.includes('@')) $wire.saveAbandonedCart($event.target.value)">
-                                            @error('email') <span class="co-err">{{ $message }}</span> @enderror
-                                        </div>
+                                    <div class="ck-medan">
+                                        <label>Email <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                            wire:model="email" placeholder="email@contoh.com" {{ $customerFound ? 'readonly' : '' }}
+                                            x-on:blur="if ($event.target.value.includes('@')) $wire.saveAbandonedCart($event.target.value)">
+                                        @error('email') <span class="ck-err">{{ $message }}</span> @enderror
                                     </div>
                                 </div>
 
-                                <div class="co-field">
-                                    <label>Catatan <span class="co-opt">(opsional)</span></label>
+                                <div class="ck-medan">
+                                    <label>Catatan <span class="ck-opsional">(opsional)</span></label>
                                     <textarea class="form-control" wire:model="customer_notes" rows="3"
                                         placeholder="Catatan tambahan untuk pesanan Anda"></textarea>
                                 </div>
@@ -75,24 +361,26 @@
                         </div>
 
                         {{-- Kode promo --}}
-                        <div class="co-card">
-                            <div class="co-card-head"><i class="bi bi-tag-fill"></i> Kode Promo</div>
-                            <div class="co-card-body">
-                                <div class="row g-2 align-items-start">
-                                    <div class="col-7">
+                        <div class="ck-kartu" style="--c: #d97706">
+                            <div class="ck-kepala">
+                                <span class="ck-ubin"><i class="bi bi-tag-fill"></i></span> Kode Promo
+                            </div>
+                            <div class="ck-isi">
+                                <div class="ck-pasangan">
+                                    <div>
                                         <input type="text" class="form-control @error('kodePromo') is-invalid @enderror"
                                             wire:model="kodePromo"
                                             placeholder="{{ $promoBlokirGabung ? 'Tidak bisa digabung' : 'Masukkan kode promo (opsional)' }}"
                                             @if ($promoValid || $promoBlokirGabung) disabled @endif>
-                                        @error('kodePromo') <span class="co-err">{{ $message }}</span> @enderror
+                                        @error('kodePromo') <span class="ck-err">{{ $message }}</span> @enderror
                                     </div>
-                                    <div class="col-5">
+                                    <div>
                                         @if ($promoValid)
-                                            <button type="button" class="co-btn co-btn-danger" wire:click="removePromo">
+                                            <button type="button" class="ck-btn ck-btn-bahaya" wire:click="removePromo">
                                                 <i class="bi bi-trash3-fill"></i> Hapus
                                             </button>
                                         @else
-                                            <button type="button" class="co-btn co-btn-primary" wire:click="checkPromo"
+                                            <button type="button" class="ck-btn ck-btn-utama" wire:click="checkPromo"
                                                 wire:loading.attr="disabled" wire:target="checkPromo"
                                                 @if ($promoBlokirGabung) disabled @endif>
                                                 <span wire:loading.remove wire:target="checkPromo"><i class="bi bi-check-circle-fill"></i> Pakai</span>
@@ -103,12 +391,15 @@
                                 </div>
 
                                 @if ($promoBlokirGabung)
-                                    <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
-                                        <i class="bi bi-info-circle me-1"></i>Promo <b>{{ $promoBlokirGabung }}</b> yang sedang
-                                        aktif tidak bisa digabung dengan promo lain.
+                                    <div class="ck-kabar is-ingat">
+                                        <i class="bi bi-info-circle-fill"></i>
+                                        <span>Promo <b>{{ $promoBlokirGabung }}</b> yang sedang aktif tidak bisa digabung dengan promo lain.</span>
                                     </div>
                                 @elseif ($promoMessage)
-                                    <div class="co-alert {{ $promoValid ? 'co-alert-ok' : 'co-alert-err' }}">{{ $promoMessage }}</div>
+                                    <div class="ck-kabar {{ $promoValid ? 'is-ok' : 'is-galat' }}">
+                                        <i class="bi {{ $promoValid ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
+                                        <span>{{ $promoMessage }}</span>
+                                    </div>
                                 @endif
 
                                 @if (!empty($appliedPromos))
@@ -129,21 +420,21 @@
                                         }
                                     @endphp
                                     @foreach ($groupedPromos as $promo)
-                                        <div class="co-applied">
-                                            <div>
-                                                <span class="co-applied-name">
+                                        <div class="ck-terpakai">
+                                            <div class="ck-terpakai-kiri">
+                                                <span class="ck-terpakai-nama">
                                                     @if (($promo['tipe_promo'] ?? '') === 'flash_sale')
-                                                        <i class="bi bi-lightning-charge-fill" style="color:var(--ph-orange)"></i>
+                                                        <i class="bi bi-lightning-charge-fill"></i>
                                                     @endif
                                                     {{ $promo['nama_promo'] }}
+                                                    @if ($promo['kode_promo'])
+                                                        <code class="ck-terpakai-kode">{{ $promo['kode_promo'] }}</code>
+                                                    @endif
+                                                    @if (($promo['items_count'] ?? 1) > 1)
+                                                        <span class="ck-terpakai-jumlah">× {{ $promo['items_count'] }} produk</span>
+                                                    @endif
                                                 </span>
-                                                @if ($promo['kode_promo'])
-                                                    <code class="co-applied-code">{{ $promo['kode_promo'] }}</code>
-                                                @endif
-                                                @if (($promo['items_count'] ?? 1) > 1)
-                                                    <span class="co-applied-count">× {{ $promo['items_count'] }} produk</span>
-                                                @endif
-                                                <span class="co-applied-sub">
+                                                <span class="ck-terpakai-sub">
                                                     Diskon
                                                     @if ($promo['tipe_diskon'] === 'persen')
                                                         {{ $promo['nilai_diskon'] }}%{{ ($promo['items_count'] ?? 1) > 1 ? ' / produk' : '' }}
@@ -152,7 +443,7 @@
                                                     @endif
                                                 </span>
                                             </div>
-                                            <span class="co-applied-amt">− Rp {{ number_format($promo['jumlah_diskon'], 0, ',', '.') }}</span>
+                                            <span class="ck-terpakai-nilai">− Rp {{ number_format($promo['jumlah_diskon'], 0, ',', '.') }}</span>
                                         </div>
                                     @endforeach
                                 @endif
@@ -161,43 +452,46 @@
 
                         {{-- Kode referral --}}
                         @if ($showReferralInput)
-                            <div class="co-card">
-                                <div class="co-card-head"><i class="bi bi-people-fill"></i> Kode Referral <span class="co-opt" style="font-weight:600;font-size:.8rem;color:var(--ph-muted)">(opsional)</span></div>
-                                <div class="co-card-body">
-                                    <div class="row g-2">
-                                        <div class="col-7">
+                            <div class="ck-kartu" style="--c: #0d9488">
+                                <div class="ck-kepala">
+                                    <span class="ck-ubin"><i class="bi bi-people-fill"></i></span> Kode Referral
+                                    <span class="ck-opsional">(opsional)</span>
+                                </div>
+                                <div class="ck-isi">
+                                    <div class="ck-pasangan">
+                                        <div>
                                             <input type="text" class="form-control" wire:model="referralCode"
                                                 placeholder="Kode referral" maxlength="9" style="text-transform: uppercase;"
                                                 {{ $referralValid ? 'readonly' : '' }}
                                                 @if($promoBlokirReferral) disabled @endif>
                                         </div>
-                                        <div class="col-5">
+                                        <div>
                                             @if (!$referralValid)
-                                                <button class="co-btn co-btn-outline" type="button" wire:click="checkReferralCode"
+                                                <button class="ck-btn ck-btn-garis" type="button" wire:click="checkReferralCode"
                                                     wire:loading.attr="disabled" wire:target="checkReferralCode">
                                                     <span wire:loading.remove wire:target="checkReferralCode"><i class="bi bi-check-circle"></i> Cek</span>
                                                     <span wire:loading wire:target="checkReferralCode"><span class="spinner-border spinner-border-sm"></span></span>
                                                 </button>
                                             @else
-                                                <button class="co-btn co-btn-primary" type="button" disabled>
+                                                <button class="ck-btn ck-btn-utama" type="button" disabled>
                                                     <i class="bi bi-check-circle-fill"></i> Valid
                                                 </button>
                                             @endif
                                         </div>
                                     </div>
                                     @if ($referralMessage)
-                                        <div class="co-alert {{ $referralValid ? 'co-alert-ok' : 'co-alert-err' }}">
+                                        <div class="ck-kabar {{ $referralValid ? 'is-ok' : 'is-galat' }}">
                                             <i class="bi {{ $referralValid ? 'bi-check-circle-fill' : 'bi-x-circle-fill' }}"></i>
-                                            {{ $referralMessage }}
+                                            <span>{{ $referralMessage }}</span>
                                         </div>
                                     @endif
                                     @if($promoBlokirReferral)
-                                        <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
-                                            <i class="bi bi-info-circle me-1"></i>Kode referral tidak bisa dipakai bersama promo
-                                            <b>{{ $promoBlokirReferral }}</b> yang sedang aktif.
+                                        <div class="ck-kabar is-ingat">
+                                            <i class="bi bi-info-circle-fill"></i>
+                                            <span>Kode referral tidak bisa dipakai bersama promo <b>{{ $promoBlokirReferral }}</b> yang sedang aktif.</span>
                                         </div>
                                     @else
-                                        <div class="co-note"><i class="bi bi-info-circle"></i> Punya kode referral dari teman? Masukkan untuk keuntungan bersama!</div>
+                                        <p class="ck-nota" style="margin-top: 12px;"><i class="bi bi-info-circle"></i> <span>Punya kode referral dari teman? Masukkan untuk keuntungan bersama!</span></p>
                                     @endif
                                 </div>
                             </div>
@@ -208,15 +502,17 @@
                              pernah muncul bersamaan. Pembeli baru (belum ada datanya)
                              juga belum member, jadi ikut melihat ajakan ini. --}}
                         @if (! $foundCustomer || $foundCustomer->status_member !== 'active')
-                            <div class="co-card co-member-cta">
-                                <div class="co-card-head"><i class="bi bi-stars"></i> Kamu Belum Jadi Member</div>
-                                <div class="co-card-body">
-                                    <p class="co-member-text">
+                            <div class="ck-kartu" style="--c: #7c3aed">
+                                <div class="ck-kepala">
+                                    <span class="ck-ubin"><i class="bi bi-stars"></i></span> Kamu Belum Jadi Member
+                                </div>
+                                <div class="ck-isi">
+                                    <p class="ck-member-teks">
                                         Sayang banget 😢 — padahal tiap belanja <b>Rp 50.000</b> bisa jadi
                                         <b>1 poin</b>, dan poinnya bikin belanja berikutnya
                                         <b>lebih murah</b>. Gratis, lho!
                                     </p>
-                                    <a href="{{ route('member.info') }}" class="co-member-btn">
+                                    <a href="{{ route('member.info') }}" class="ck-member-btn">
                                         <i class="bi bi-gift"></i> Lihat Syarat &amp; Keuntungannya
                                     </a>
                                 </div>
@@ -225,31 +521,36 @@
 
                         {{-- Poin member --}}
                         @if ($showPointsOption)
-                            <div class="co-card co-points">
-                                <div class="co-card-head"><i class="bi bi-star-fill"></i> Poin Member</div>
-                                <div class="co-card-body">
-                                    <div class="co-points-toggle" @if($promoBlokirPoin) style="opacity:.55;" @endif>
+                            <div class="ck-kartu" style="--c: #db2777">
+                                <div class="ck-kepala">
+                                    <span class="ck-ubin"><i class="bi bi-star-fill"></i></span> Poin Member
+                                </div>
+                                <div class="ck-isi">
+                                    <div class="ck-saklar form-switch" @if($promoBlokirPoin) style="opacity:.55;" @endif>
                                         <input class="form-check-input" type="checkbox" id="usePoints" role="switch"
                                             wire:model.live="usePoints" @if($promoBlokirPoin) disabled @endif>
                                         <label class="form-check-label" for="usePoints" style="cursor:{{ $promoBlokirPoin ? 'not-allowed' : 'pointer' }};">
                                             <strong>Gunakan Poin Member</strong>
-                                            <div style="font-size:.82rem;color:var(--ph-muted);">
+                                            <div class="ck-saklar-ket">
                                                 Anda punya <b>{{ number_format($availablePoints, 0, ',', '.') }} poin</b>
                                                 (senilai Rp {{ number_format($pointsValue, 0, ',', '.') }})
                                             </div>
                                         </label>
                                     </div>
                                     @if($promoBlokirPoin)
-                                        <div class="alert alert-warning py-2 px-3 mb-0 mt-2" style="font-size:.8rem;">
-                                            <i class="bi bi-info-circle me-1"></i>Poin tidak bisa dipakai bersama promo
-                                            <b>{{ $promoBlokirPoin }}</b> yang sedang aktif.
+                                        <div class="ck-kabar is-ingat">
+                                            <i class="bi bi-info-circle-fill"></i>
+                                            <span>Poin tidak bisa dipakai bersama promo <b>{{ $promoBlokirPoin }}</b> yang sedang aktif.</span>
                                         </div>
                                     @endif
                                     @if ($pointsExpireLabel)
-                                        <div class="co-note" style="color:#b45309;"><i class="bi bi-clock-history" style="color:#b45309;"></i> Poin kadaluarsa pada <b>{{ $pointsExpireLabel }}</b></div>
+                                        <p class="ck-nota" style="margin-top: 12px; color: #b45309;"><i class="bi bi-clock-history" style="color: #b45309;"></i> <span>Poin kadaluarsa pada <b style="color: #b45309;">{{ $pointsExpireLabel }}</b></span></p>
                                     @endif
                                     @if ($usePoints)
-                                        <div class="co-alert co-alert-ok" style="margin-top:12px;"><i class="bi bi-info-circle"></i> Poin akan digunakan untuk mengurangi total pembayaran.</div>
+                                        <div class="ck-kabar is-ok">
+                                            <i class="bi bi-info-circle-fill"></i>
+                                            <span>Poin akan digunakan untuk mengurangi total pembayaran.</span>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -257,73 +558,87 @@
                     </div>
 
                     {{-- Kolom kanan: ringkasan --}}
-                    <div class="col-lg-5">
-                        <div class="co-summary">
-                            <div class="co-summary-head"><i class="bi bi-receipt"></i> Ringkasan Pesanan</div>
-                            <div class="co-summary-body">
-                                <div class="co-sum-items">
-                                    @foreach ($cart as $item)
-                                        <div class="co-sum-item">
-                                            <div>
-                                                <div class="co-sum-item-name">{{ $item['product_name'] }}</div>
-                                                <div class="co-sum-item-dur">
-                                                    @if (($item['type'] ?? '') === 'bundling')
-                                                        Paket Bundling
-                                                    @else
-                                                        {{ $item['duration_value'] }} {{ ucfirst($item['duration_type']) }}
-                                                    @endif
-                                                    &times;{{ $item['quantity'] }}
-                                                </div>
+                    <aside class="ck-sisi">
+                        <div class="ck-ringkas" style="--c: #f26522">
+                            <div class="ck-kepala">
+                                <span class="ck-ubin"><i class="bi bi-receipt"></i></span> Ringkasan Pesanan
+                            </div>
+                            <div class="ck-isi">
+                                @foreach ($cart as $item)
+                                    @php
+                                        // Warna & ikon dari KATEGORI produk — taksonomi yang sama
+                                        // dengan Keranjang, Shop, dan beranda.
+                                        $isPaket = ($item['type'] ?? '') === 'bundling';
+                                        $katCk = $isPaket ? null : \App\Support\KategoriBeranda::untukProduk($item['product_name'] ?? '');
+                                        $warnaCk = $isPaket ? '#f26522' : ($katCk['warna'] ?? '#f26522');
+                                        $ikonCk = $isPaket ? 'bi-box2-heart-fill' : ($katCk['ikon'] ?? 'bi-box-seam');
+                                    @endphp
+                                    <div class="ck-item" style="--c: {{ $warnaCk }}">
+                                        <span class="ck-item-ubin"><i class="bi {{ $ikonCk }}"></i></span>
+                                        <div>
+                                            <div class="ck-item-nama">{{ $item['product_name'] }}</div>
+                                            <div class="ck-item-ket">
+                                                @if ($isPaket)
+                                                    Paket Bundling
+                                                @else
+                                                    {{ $item['duration_value'] }} {{ ucfirst($item['duration_type']) }}
+                                                @endif
+                                                &times;{{ $item['quantity'] }}
                                             </div>
-                                            <span class="co-sum-item-price">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</span>
                                         </div>
-                                    @endforeach
-                                </div>
+                                        <span class="ck-item-harga">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</span>
+                                    </div>
+                                @endforeach
 
-                                <div class="co-sum-row"><span>Subtotal</span><strong>Rp {{ number_format($subtotal, 0, ',', '.') }}</strong></div>
+                                <div class="ck-garis"></div>
+
+                                <div class="ck-row"><span>Subtotal</span><strong>Rp {{ number_format($subtotal, 0, ',', '.') }}</strong></div>
 
                                 @if ($uniqueCode > 0)
-                                    <div class="co-sum-row">
+                                    <div class="ck-row">
                                         <span>Kode Unik <i class="bi bi-info-circle" title="Untuk verifikasi pembayaran"></i></span>
                                         <strong>+ Rp {{ number_format($uniqueCode, 0, ',', '.') }}</strong>
                                     </div>
                                 @endif
                                 @if ($promoDiscount > 0)
-                                    <div class="co-sum-row is-disc"><span>Diskon Promo</span><strong>− Rp {{ number_format($promoDiscount, 0, ',', '.') }}</strong></div>
+                                    <div class="ck-row is-potong"><span>Diskon Promo</span><strong>− Rp {{ number_format($promoDiscount, 0, ',', '.') }}</strong></div>
                                 @endif
                                 @if ($referralDiscount > 0)
-                                    <div class="co-sum-row is-disc"><span>Diskon Referral</span><strong>− Rp {{ number_format($referralDiscount, 0, ',', '.') }}</strong></div>
+                                    <div class="ck-row is-potong"><span>Diskon Referral</span><strong>− Rp {{ number_format($referralDiscount, 0, ',', '.') }}</strong></div>
                                 @endif
                                 @if ($pointsDiscount > 0)
-                                    <div class="co-sum-row is-disc"><span>Diskon Poin</span><strong>− Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</strong></div>
+                                    <div class="ck-row is-potong"><span>Diskon Poin</span><strong>− Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</strong></div>
                                 @endif
 
                                 @if ($totalDiscount > 0)
-                                    <div class="co-sum-hemat"><span>Total Hemat</span><strong>Rp {{ number_format($totalDiscount, 0, ',', '.') }}</strong></div>
-                                    <div class="co-sum-old">Rp {{ number_format($subtotal, 0, ',', '.') }}</div>
+                                    <div class="ck-hemat">
+                                        <span><i class="bi bi-piggy-bank-fill"></i> Total Hemat</span>
+                                        <strong>Rp {{ number_format($totalDiscount, 0, ',', '.') }}</strong>
+                                    </div>
+                                    <div class="ck-coret">Rp {{ number_format($subtotal, 0, ',', '.') }}</div>
                                 @endif
 
-                                <div class="co-sum-total">
+                                <div class="ck-total">
                                     <span>Total Pembayaran</span>
                                     <strong>Rp {{ number_format($finalTotal, 0, ',', '.') }}</strong>
                                 </div>
 
-                                <button type="button" wire:click="checkout" class="co-place"
+                                <button type="button" wire:click="checkout" class="ck-bayar"
                                     wire:loading.attr="disabled" wire:target="checkout">
                                     <span wire:loading.remove wire:target="checkout">
                                         <i class="bi bi-lock-fill"></i>
                                         {{ $finalTotal > 0 ? 'Bayar Sekarang' : 'Selesaikan Pesanan' }}
                                     </span>
                                     @if ($finalTotal > 0)
-                                        <span wire:loading.remove wire:target="checkout" class="co-place-price">Rp {{ number_format($finalTotal, 0, ',', '.') }}</span>
+                                        <span wire:loading.remove wire:target="checkout" class="ck-bayar-harga">Rp {{ number_format($finalTotal, 0, ',', '.') }}</span>
                                     @endif
                                     <span wire:loading wire:target="checkout"><span class="spinner-border spinner-border-sm"></span> Memproses...</span>
                                 </button>
 
-                                <div class="co-note"><i class="bi bi-shield-check"></i> Transaksi aman — Transfer Bank &amp; QRIS.</div>
+                                <p class="ck-nota" style="margin-top: 12px;"><i class="bi bi-shield-check" style="color: #16a34a;"></i> <span>Transaksi aman — Transfer Bank &amp; QRIS.</span></p>
                             </div>
                         </div>
-                    </div>
+                    </aside>
                 </div>
             </form>
         </div>
@@ -332,16 +647,20 @@
     @push('styles')
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css">
         <style>
-            .co-card .iti { width: 100%; display: block; }
-            .co-card #co-phone { border: 1px solid var(--ph-line); border-radius: 12px; padding: 11px 14px; font-size: .92rem; width: 100%; }
-            .co-card #co-phone:focus { border-color: var(--ph-orange); box-shadow: 0 0 0 3px rgba(242, 101, 34, .15); }
-            .co-card .iti--separate-dial-code .iti__selected-flag { background-color: var(--ph-soft); border-radius: 11px 0 0 11px; border-right: 1px solid var(--ph-line); padding: 0 10px 0 12px; }
-            .co-card .iti__selected-flag:hover { background-color: #ffe6cf; }
-            .co-card .iti--separate-dial-code .iti__selected-dial-code { color: var(--ph-ink); font-weight: 700; font-size: .9rem; margin-left: 8px; }
-            .co-card .iti__arrow { border-top-color: var(--ph-orange); margin-left: 8px; }
-            .co-card .iti__country-list { border: 1px solid var(--ph-line); border-radius: 14px; box-shadow: 0 16px 44px rgba(35, 39, 47, .16); font-size: .9rem; padding: 6px; }
-            .co-card .iti__country { padding: 8px 10px; border-radius: 9px; }
-            .co-card .iti__country.iti__highlight { background-color: var(--ph-soft); }
+            /* Penyelarasan intl-tel-input dengan isian di halaman ini. Pemilihnya
+               memakai .ck-page (dulu .co-card) — kelasnya berganti bersama
+               penataan ulang, dan aturan ini harus ikut, kalau tidak kotak
+               nomornya kembali ke rupa bawaan pustakanya. */
+            .ck-page .iti { width: 100%; display: block; }
+            .ck-page #co-phone { border: 1.5px solid #e7ebf0; border-radius: 12px; padding: 11px 14px; font-size: .92rem; width: 100%; }
+            .ck-page #co-phone:focus { border-color: #f26522; box-shadow: 0 0 0 3px rgba(242, 101, 34, .13); }
+            .ck-page .iti--separate-dial-code .iti__selected-flag { background-color: #fff7f0; border-radius: 11px 0 0 11px; border-right: 1px solid #e7ebf0; padding: 0 10px 0 12px; }
+            .ck-page .iti__selected-flag:hover { background-color: #ffe6cf; }
+            .ck-page .iti--separate-dial-code .iti__selected-dial-code { color: #1c1f26; font-weight: 700; font-size: .9rem; margin-left: 8px; }
+            .ck-page .iti__arrow { border-top-color: #f26522; margin-left: 8px; }
+            .ck-page .iti__country-list { border: 1px solid #eceff3; border-radius: 14px; box-shadow: 0 16px 44px rgba(35, 39, 47, .16); font-size: .9rem; padding: 6px; }
+            .ck-page .iti__country { padding: 8px 10px; border-radius: 9px; }
+            .ck-page .iti__country.iti__highlight { background-color: #fff7f0; }
         </style>
     @endpush
 
