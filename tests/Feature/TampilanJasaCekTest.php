@@ -20,13 +20,34 @@ $sumberJasaCek = fn () => file_get_contents(
 );
 
 it('tidak lagi meminjam kerangka kartu dari CSS yang beku di server', function () use ($sumberJasaCek) {
+    /*
+     | Daftarnya SENGAJA tidak memuat .ph-page-title dan .ph-sec-eyebrow.
+     |
+     | Keduanya memang ditulis juga di public-custom-styles.css, tetapi aturan
+     | di sana sudah lama DITIMPA oleh blok <style> di layouts/guest.blade.php —
+     | yang ikut git dan ikut terdeploy. Kepala halaman karena itu aman memakai
+     | markup baku, dan memang harus: dua belas halaman memakai markup yang
+     | sama, dan satu yang berbeda akan terbaca sebagai halaman dari situs lain.
+     */
     $sumber = $sumberJasaCek();
 
     foreach (['pay-card', 'pay-card-head', 'pay-card-body', 'cart-section', 'cart-summary-note',
-        'ph-empty', 'ph-empty-title', 'ph-empty-sub', 'ph-empty-btn', 'ph-sec-eyebrow'] as $beku) {
+        'ph-empty', 'ph-empty-title', 'ph-empty-sub', 'ph-empty-btn'] as $beku) {
         expect($sumber)->not->toContain('class="'.$beku.'"');
         expect($sumber)->not->toContain('class="'.$beku.' ');
     }
+});
+
+it('kepala halaman memakai markup baku, dengan aksen mengikuti jenis jasa', function () use ($sumberJasaCek) {
+    $sumber = $sumberJasaCek();
+
+    expect($sumber)->toContain('class="page-title ph-page-title"')
+        ->and($sumber)->toContain('class="ph-page-head"')
+        ->and($sumber)->toContain('class="breadcrumbs"')
+        // --c adalah aksen yang disediakan layout untuk bola cahaya, titik-titik,
+        // dan ubin ikon eyebrow. Tanpa ini kepalanya jingga tetap, dan pelanggan
+        // parafrase dibacakan warna milik layanan pengecekan.
+        ->and($sumber)->toContain("--c: {{ \$ragam['warna'] }}");
 });
 
 it('memakai kerangka kartu sendiri berikut ubin ikon berwarna', function () use ($sumberJasaCek) {

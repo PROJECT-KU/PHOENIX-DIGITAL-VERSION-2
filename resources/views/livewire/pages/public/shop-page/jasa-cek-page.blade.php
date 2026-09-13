@@ -21,20 +21,12 @@
         }
         .jck-sec { padding: 22px 0 64px; }
 
-        /* Kepala halaman SENGAJA tetap ringkas — tidak memakai pita tinggi
-           seperti /cart atau /checkout. Yang dicari pelanggan di sini adalah
-           HASIL pengecekannya; kepala yang tinggi mendorong hasil itu ke bawah
-           layar. Rupanya diseragamkan, tingginya tidak. */
-        .jck-kepala { text-align: center; padding: 0 0 16px; }
-        .jck-eyebrow {
-            display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px;
-            height: 30px; padding: 0 14px; border-radius: 99px;
-            background: var(--ph-soft); border: 1px solid var(--ph-line); color: var(--ph-orange);
-            font-size: .74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-        }
-        .jck-eyebrow i.bi, .jck-eyebrow i.bi::before { display: block; line-height: 1; font-size: .82rem; }
-        .jck-judul { font-family: var(--jck-font); font-weight: 800; font-size: 1.5rem; color: #1c1f26; margin: 0 0 4px; letter-spacing: -.02em; }
-        .jck-sub { font-size: .9rem; color: var(--ph-muted); line-height: 1.7; margin: 0 auto; max-width: 560px; }
+        /* Kepala halaman memakai markup baku .page-title.ph-page-title seperti
+           sebelas halaman lain. Gayanya TIDAK diambil dari
+           public-custom-styles.css yang beku, melainkan dari blok <style> di
+           layouts/guest.blade.php yang ikut git — aturan di berkas beku itu
+           justru sudah ditimpa sejak lama. Yang perlu halaman ini lakukan cuma
+           menyetel --c, aksen yang memang disediakan layout. */
 
         /* ===== Kerangka kartu — bahasa yang sama dengan Keranjang, Checkout,
            Pembayaran, dan halaman sukses: ubin ikon berwarna di kepala,
@@ -85,8 +77,13 @@
 
         /* Warna halaman mengikuti jenis jasanya. Dipasang sekali di pembungkus
            agar tiap bagian tinggal mewarisi — bukan ditulis ulang di belasan
-           tempat, yang pasti menyisakan satu-dua bagian tetap oranye. */
-        .cek-wrap { --kek-warna: {{ $ragam['warna'] }}; --kek-lembut: {{ $ragam['lembut'] }}; --kek-tepi: {{ $ragam['tepi'] }}; }
+           tempat, yang pasti menyisakan satu-dua bagian tetap oranye.
+
+           Dipasang di .jck-page, bukan .cek-wrap: pita kepala berada DI LUAR
+           .cek-wrap, jadi kalau variabelnya tetap di sana, eyebrow di pita
+           kembali oranye dan pelanggan parafrase dibacakan warna milik layanan
+           pengecekan. */
+        .jck-page { --kek-warna: {{ $ragam['warna'] }}; --kek-lembut: {{ $ragam['lembut'] }}; --kek-tepi: {{ $ragam['tepi'] }}; }
         .cek-eyebrow { background: var(--kek-lembut) !important; color: var(--kek-warna) !important; border-color: var(--kek-tepi) !important; }
         .cek-waspada {
             background: var(--kek-lembut); border: 1px solid var(--kek-tepi); border-radius: 14px;
@@ -253,21 +250,33 @@
         @media (prefers-reduced-motion: reduce) { .cek-pulse, .cek-spin { animation:none; } }
     </style>
 
+    <!-- Page Title -->
+    {{-- --c menyetel aksen kartu kepala (bola cahaya, titik-titik, dan ubin
+         ikon eyebrow) mengikuti JENIS JASA — pelanggan parafrase tidak
+         dibacakan warna milik layanan pengecekan. --}}
+    <div class="page-title ph-page-title" style="--c: {{ $ragam['warna'] }}">
+        <div class="container d-lg-flex justify-content-between align-items-center">
+            <div class="ph-page-head">
+                <span class="ph-sec-eyebrow"><i class="bi bi-{{ $ragam['ikon'] }}"></i> {{ $ragam['nama'] }}</span>
+                <h1>{{ $ragam['judul'] }}</h1>
+                <p>
+                    Pesanan <b style="font-family:'Courier New',monospace; color:var(--kek-warna);">{{ $order->order_number }}</b>.
+                    {{ $ragam['ajakan'] }}
+                </p>
+            </div>
+            <nav class="breadcrumbs">
+                <ol>
+                    <li><a href="{{ route('shop.index') }}">Shop</a></li>
+                    <li class="current">{{ $ragam['nama'] }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <!-- End Page Title -->
+
     <section class="jck-sec">
         <div class="container">
             <div class="cek-wrap">
-                {{-- Dirampingkan: kepala halaman yang tinggi mendorong hasil ke bawah
-                     layar, padahal hasil itulah yang dicari pelanggan. --}}
-                <div class="jck-kepala">
-                    <span class="jck-eyebrow cek-eyebrow">
-                        <i class="bi bi-{{ $ragam['ikon'] }}"></i> {{ $ragam['nama'] }}
-                    </span>
-                    <h3 class="jck-judul">{{ $ragam['judul'] }}</h3>
-                    <p class="jck-sub">
-                        Pesanan <span style="font-family:'Courier New',monospace; font-weight:700; color:var(--kek-warna);">{{ $order->order_number }}</span>.
-                        {{ $ragam['ajakan'] }}
-                    </p>
-                </div>
 
                 {{-- Dua kolom di layar lebar. Yang dicari pelanggan adalah HASILNYA,
                      dan dulu hasil itu berada di urutan ketujuh dari atas — di bawah
