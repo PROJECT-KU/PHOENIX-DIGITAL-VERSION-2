@@ -49,3 +49,20 @@ Route::middleware(['throttle:20,1'])->group(function () {
     Route::post('/message', [MessageController::class, 'store'])
         ->middleware('throttle:10,60');
 });
+
+/*
+ * Bot Turnitin — dipanggil skrip Tampermonkey di Chrome admin
+ * (public/bot/phoenix-turnitin.user.js). Token Bearer dibuat admin di dashboard.
+ * Lihat App\Support\BotTurnitin untuk alurnya.
+ */
+Route::prefix('bot-turnitin')
+    ->middleware([\App\Http\Middleware\TokenBotTurnitin::class, 'throttle:120,1'])
+    ->controller(\App\Http\Controllers\BotTurnitinController::class)
+    ->group(function () {
+        Route::post('/detak', 'detak');
+        Route::get('/tugas', 'tugas');
+        Route::get('/tugas/{upload}/berkas', 'berkas');
+        Route::post('/tugas/{upload}/terkirim', 'terkirim');
+        Route::post('/tugas/{upload}/hasil', 'hasil');
+        Route::post('/tugas/{upload}/gagal', 'gagal');
+    });

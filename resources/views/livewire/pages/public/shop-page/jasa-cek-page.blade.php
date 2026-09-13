@@ -461,6 +461,13 @@
                                             <i class="bi bi-funnel cek-chip-ic"></i>
                                             <span>Exclude Source</span>
                                         </label>
+
+                                        <label class="cek-chip">
+                                            <input type="checkbox" wire:model.live="exclude_kecocokan_kecil">
+                                            <span class="cek-chip-box"><i class="bi bi-check-lg"></i></span>
+                                            <i class="bi bi-text-paragraph cek-chip-ic"></i>
+                                            <span>Exclude Matches</span>
+                                        </label>
                                     </div>
 
                                     @if ($exclude_sumber_kecil)
@@ -498,6 +505,34 @@
                                         @endif
 
                                         @error('ambang_nilai') <div style="color:#dc2626; font-size:.78rem; margin-top:6px;">{{ $message }}</div> @enderror
+                                    </div>
+                                    @endif
+
+                                    @if ($exclude_kecocokan_kecil)
+                                    {{-- Ambang exclude matches — selalu dalam jumlah kata --}}
+                                    @php $ambKata = (int) $ambang_kecocokan; @endphp
+                                    <div class="cek-amb">
+                                        <div class="cek-amb-why">
+                                            <i class="bi bi-info-circle-fill"></i>
+                                            <span>Potongan kalimat yang sama tapi <b>sangat pendek</b> (misalnya istilah umum beberapa kata) tidak ikut dihitung.</span>
+                                        </div>
+
+                                        <span class="cek-amb-step">Abaikan kecocokan di bawah</span>
+                                        <div class="cek-amb-inputwrap">
+                                            <input type="number" min="1" inputmode="numeric"
+                                                wire:model.live.debounce.400ms="ambang_kecocokan" class="cek-amb-num"
+                                                placeholder="10">
+                                            <span class="cek-amb-suffix">kata</span>
+                                        </div>
+
+                                        @if ($ambKata > 0)
+                                        <div class="cek-amb-echo">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                            Kecocokan yang kurang dari <b>{{ $ambKata }} kata</b> akan diabaikan.
+                                        </div>
+                                        @endif
+
+                                        @error('ambang_kecocokan') <div style="color:#dc2626; font-size:.78rem; margin-top:6px;">{{ $message }}</div> @enderror
                                     </div>
                                     @endif
                                 </div>
@@ -600,7 +635,7 @@
                                     // Pada deteksi AI dan parafrase, barisnya membingungkan: tidak
                                     // ada persentase yang sedang dihitung untuk dikecualikan.
                                     $adaExclude = $up->jenis === 'plagiasi' && (
-                                        $up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil
+                                        $up->exclude_bibliografi || $up->exclude_kutipan || $up->exclude_sumber_kecil || $up->exclude_kecocokan_kecil
                                         || $up->exclude_cover || $up->exclude_daftar_isi || $up->halaman_dikecualikan
                                     );
                                 @endphp

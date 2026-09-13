@@ -52,6 +52,11 @@ class JasaCekPage extends Component
 
     public string $ambang_satuan = 'persen';
 
+    // "Exclude Matches": abaikan kecocokan yang kurang dari N kata.
+    public bool $exclude_kecocokan_kecil = false;
+
+    public $ambang_kecocokan = '';
+
     public string $catatan = '';
 
     /**
@@ -107,6 +112,14 @@ class JasaCekPage extends Component
         if ($value && $this->ambang_nilai === '') {
             $this->ambang_nilai = 5;
             $this->ambang_satuan = 'persen';
+        }
+    }
+
+    /** Sama seperti Exclude Source: langsung isi angka yang disarankan. */
+    public function updatedExcludeKecocokanKecil($value): void
+    {
+        if ($value && $this->ambang_kecocokan === '') {
+            $this->ambang_kecocokan = 10;
         }
     }
 
@@ -208,6 +221,10 @@ class JasaCekPage extends Component
             $rules['ambang_nilai'] = ['required', 'integer', 'min:1', $this->ambang_satuan === 'persen' ? 'max:100' : 'max:9999'];
         }
 
+        if ($this->exclude_kecocokan_kecil) {
+            $rules['ambang_kecocokan'] = ['required', 'integer', 'min:1', 'max:9999'];
+        }
+
         $this->validate($rules, [
             'dokumen.required' => 'Pilih file dokumen dulu.',
             'dokumen.mimes' => 'Format file harus PDF atau DOCX.',
@@ -216,6 +233,10 @@ class JasaCekPage extends Component
             'ambang_nilai.integer' => 'Ambang harus berupa angka.',
             'ambang_nilai.min' => 'Ambang minimal 1.',
             'ambang_nilai.max' => $this->ambang_satuan === 'persen' ? 'Ambang persen maksimal 100.' : 'Ambang kata maksimal 9999.',
+            'ambang_kecocokan.required' => 'Isi dulu jumlah katanya.',
+            'ambang_kecocokan.integer' => 'Jumlah kata harus berupa angka.',
+            'ambang_kecocokan.min' => 'Jumlah kata minimal 1.',
+            'ambang_kecocokan.max' => 'Jumlah kata maksimal 9999.',
         ]);
 
         $file = $this->dokumen;
@@ -263,7 +284,7 @@ class JasaCekPage extends Component
                 return false;
             }
 
-            OrderUpload::create([
+            OrderUpload::create(array_merge([
                 'order_id' => $this->order->id,
                 'jenis' => $jenis,
                 'path' => $path,
@@ -282,7 +303,16 @@ class JasaCekPage extends Component
                     ? (int) $this->ambang_nilai.($this->ambang_satuan === 'persen' ? '%' : ' kata')
                     : null,
                 'catatan' => $this->catatan ?: null,
-            ]);
+            ],
+                // Kolomnya datang bersama bot Turnitin. Selama SQL deploy belum
+                // dijalankan, kolom ini dilewati — unggahan customer tetap jalan.
+                \App\Support\BotTurnitin::skemaSiap() ? [
+                    'exclude_kecocokan_kecil' => $this->perluExclude() && $this->exclude_kecocokan_kecil,
+                    'ambang_kecocokan_kecil' => $this->perluExclude() && $this->exclude_kecocokan_kecil
+                        ? (int) $this->ambang_kecocokan
+                        : null,
+                ] : []
+            ));
 
             return true;
         });
@@ -303,6 +333,8 @@ class JasaCekPage extends Component
         $this->exclude_sumber_kecil = false;
         $this->ambang_nilai = '';
         $this->ambang_satuan = 'persen';
+        $this->exclude_kecocokan_kecil = false;
+        $this->ambang_kecocokan = '';
 
         $this->order->load('uploads');
         $this->segarkanJenisPilihan();

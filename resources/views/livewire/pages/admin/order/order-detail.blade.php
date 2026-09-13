@@ -594,6 +594,18 @@ Detail Pesanan || lemon
             .pcek .pcek-bonus-f.narrow { flex: 1 1 100%; }
             .pcek .pcek-bonus-btns .pcek-btn { flex: 1; }
         }
+        /* Penanda bot Turnitin / manual admin */
+        .pcek-bot { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 9px 12px; border-radius: 12px; font-size: .8rem; line-height: 1.45; border: 1px solid transparent; }
+        .pcek-bot > i { font-size: 1rem; line-height: 1.2; }
+        .pcek-bot b { display: block; font-weight: 700; }
+        .pcek-bot span { display: block; color: #4b5563; }
+        .pcek-bot a { font-weight: 600; }
+        .pcek-bot-success { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
+        .pcek-bot-info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+        .pcek-bot-warning { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+        .pcek-bot-danger { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+        .pcek-bot-secondary { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+
         /* Setelan exclude + catatan customer */
         .pcek .pcek-set { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eef0f6; }
         .pcek .pcek-set-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -900,6 +912,40 @@ Detail Pesanan || lemon
                         <i class="bi {{ $up->statusIcon() }}"></i> {{ $up->statusLabel() }}
                     </span>
                 </div>
+
+                {{-- Siapa yang mengerjakan: bot Turnitin atau admin --}}
+                @if ($up->dikerjakan_oleh || $up->bot_status)
+                    @php
+                        $botMacet = \App\Support\BotTurnitin::macet($up);
+                        $botInfo = match (true) {
+                            $botMacet => ['warning', 'bi-hourglass-split', 'Bot tidak memberi kabar lebih dari '.\App\Support\BotTurnitin::MACET_MENIT.' menit'],
+                            $up->bot_status === 'diambil' => ['info', 'bi-robot', 'Bot sedang mengunggah ke submitin.id'],
+                            $up->bot_status === 'menunggu_hasil' => ['info', 'bi-robot', 'Bot menunggu laporan dari submitin.id'],
+                            $up->bot_status === 'gagal' => ['danger', 'bi-exclamation-triangle', 'Bot gagal — kerjakan manual'],
+                            $up->bot_status === 'perlu_dilengkapi' => ['warning', 'bi-puzzle', 'Bot selesai sebagian — lengkapi manual'],
+                            $up->bot_status === 'manual' => ['secondary', 'bi-person-gear', 'Diambil alih admin'],
+                            $up->dikerjakan_oleh === 'bot' => ['success', 'bi-robot', 'Dikerjakan bot'],
+                            $up->dikerjakan_oleh === 'admin' => ['secondary', 'bi-person-check', 'Dikerjakan manual admin'],
+                            default => null,
+                        };
+                    @endphp
+                    @if ($botInfo)
+                    <div class="pcek-bot pcek-bot-{{ $botInfo[0] }}">
+                        <i class="bi {{ $botInfo[1] }}"></i>
+                        <div>
+                            <b>{{ $botInfo[2] }}</b>
+                            @if ($up->bot_pesan)
+                                <span>{{ $up->bot_pesan }}</span>
+                            @endif
+                            @if ($up->bot_kode)
+                                <span>Kode submitin:
+                                    <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                @endif
 
                 {{-- Setelan exclude + catatan dari customer --}}
                 <div class="pcek-set">

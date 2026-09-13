@@ -41,9 +41,18 @@ class OrderUpload extends Model
         'halaman_dikecualikan',
         'exclude_sumber_kecil',
         'ambang_sumber_kecil',
+        'exclude_kecocokan_kecil',
+        'ambang_kecocokan_kecil',
         'catatan',
         'diproses_at',
         'selesai_at',
+        // Bot Turnitin (lihat App\Support\BotTurnitin)
+        'dikerjakan_oleh',
+        'bot_status',
+        'bot_kode',
+        'bot_pesan',
+        'bot_diambil_at',
+        'bot_diperbarui_at',
     ];
 
     protected $casts = [
@@ -59,6 +68,10 @@ class OrderUpload extends Model
         'exclude_cover' => 'boolean',
         'exclude_daftar_isi' => 'boolean',
         'exclude_sumber_kecil' => 'boolean',
+        'exclude_kecocokan_kecil' => 'boolean',
+        'ambang_kecocokan_kecil' => 'integer',
+        'bot_diambil_at' => 'datetime',
+        'bot_diperbarui_at' => 'datetime',
         'diproses_at' => 'datetime',
         'selesai_at' => 'datetime',
     ];
@@ -171,6 +184,9 @@ class OrderUpload extends Model
         }
         if ($this->exclude_sumber_kecil) {
             $out[] = 'Source'.($this->ambang_sumber_kecil ? ' < '.$this->ambang_sumber_kecil : '');
+        }
+        if ($this->exclude_kecocokan_kecil) {
+            $out[] = 'Matches'.($this->ambang_kecocokan_kecil ? ' < '.$this->ambang_kecocokan_kecil.' kata' : '');
         }
         // Nomor halaman yang diminta customer untuk dilewati
         if ($this->halaman_dikecualikan) {

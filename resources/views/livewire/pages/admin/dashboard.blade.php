@@ -91,6 +91,9 @@ Dashboard || lemon
     </div>
     <!--================== END HEADER ==================-->
 
+    {{-- Bot Turnitin: kabar bot + kartu yang butuh tangan admin (kuota habis, gagal) --}}
+    <livewire:pages.admin.bot-turnitin.panel-bot-turnitin />
+
     <!--================== MENAMPILKAN DATA KEUANGAN ==================-->
     <div class="container-fluid">
 

@@ -646,6 +646,13 @@ class OrderDetail extends Component
             'selesai_at' => now(),
         ];
 
+        // Penanda "dikerjakan oleh" (bot Turnitin). Admin yang MENGGANTI laporan
+        // plagiasi menjadi pengerjanya; admin yang hanya melengkapi hasil lain
+        // pada unggahan yang sudah dikerjakan bot tidak menghapus jejak bot.
+        if (\App\Support\BotTurnitin::skemaSiap() && ($up->dikerjakan_oleh !== 'bot' || $this->hasilFile)) {
+            $data['dikerjakan_oleh'] = 'admin';
+        }
+
         // 1) Hasil cek plagiasi
         if ($this->hasilFile) {
             $data['hasil_path'] = $this->hasilFile->store($folder, 'local');
