@@ -147,10 +147,37 @@ it('kartu penutup selebar kartu kepala, teksnya tidak ikut melebar', function ()
     // Melebarkan kartu bukan berarti melebarkan baris kalimatnya.
     $sumber = $sumberKadaluarsa();
 
+    // Dicocokkan dengan pola, bukan dengan urutan deklarasi: versi pertama uji
+    // ini mencari '.cke-dalam { max-width: 560px' apa adanya, lalu jatuh begitu
+    // position/z-index disisipkan di depannya — padahal yang dijaga (kolom teks
+    // dibatasi 560px) sama sekali tidak berubah.
     expect($sumber)->toContain('class="cke-dalam"')
-        ->and($sumber)->toContain('.cke-dalam { max-width: 560px')
+        ->and($sumber)->toMatch('/\.cke-dalam\s*\{[^}]*max-width:\s*560px/')
         // Lebar kartunya TIDAK boleh dipatok angka: kalau dipatok, ia hanya
         // sejajar dengan kartu kepala di satu ukuran layar saja.
-        ->and($sumber)->not->toContain('.cke-kartu {
-            max-width:');
+        ->and($sumber)->not->toMatch('/\.cke-kartu\s*\{[^}]*max-width:/');
+});
+
+it('sayap kartu penutup diberi aksen, dan aksennya tidak menimpa teks', function () use ($sumberKadaluarsa) {
+    /*
+     | Kartunya selebar kartu kepala tetapi isinya satu kolom 560px, jadi kedua
+     | sayapnya kosong lebar. Aksennya memakai perbendaharaan yang sudah ada di
+     | rumah — sapuan cahaya pojok (kartu "Cara Pesan") dan titik memudar (kartu
+     | kepala) — dan diturunkan dari --kek-warna supaya ikut jenis jasanya.
+     */
+    $sumber = $sumberKadaluarsa();
+
+    expect($sumber)->toMatch('/\.cke-kartu::before\s*\{[^}]*radial-gradient/')
+        ->and($sumber)->toMatch('/\.cke-kartu::after\s*\{[^}]*radial-gradient/')
+        ->and($sumber)->toContain('color-mix(in srgb, var(--kek-warna) 26%, transparent)')
+        // Topeng bening di tengah: titik tidak boleh jatuh di belakang kalimat.
+        ->and($sumber)->toContain('transparent 26%, transparent 74%')
+        // Isi harus berada di atas kedua lapisan aksen.
+        ->and($sumber)->toMatch('/\.cke-dalam\s*\{[^}]*z-index:\s*1/')
+        // Kartunya memotong aksen yang menjorok keluar sudutnya.
+        ->and($sumber)->toMatch('/\.cke-kartu\s*\{[^}]*overflow:\s*hidden/');
+
+    // Di layar sempit tidak ada sayap yang perlu diisi — titiknya dimatikan
+    // supaya tidak menindih kalimat.
+    expect($sumber)->toContain('.cke-kartu::after { display: none; }');
 });

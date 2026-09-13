@@ -34,11 +34,48 @@
            1296px sulit dibaca, dan melebarkan kartu tidak berarti melebarkan
            baris kalimatnya. */
         .cke-kartu {
+            position: relative; overflow: hidden;
             margin: 0 auto; text-align: center;
             background: #fff; border: 1px solid #eceff3; border-radius: 18px;
             padding: 40px 28px 36px;
         }
-        .cke-dalam { max-width: 560px; margin: 0 auto; }
+        /* ===== Aksen =====
+           Kartunya selebar kartu kepala tetapi isinya satu kolom 560px, jadi
+           sisi kiri-kanannya kosong lebar. Diisi dengan perbendaharaan yang
+           SUDAH dipakai rumah, bukan hiasan baru: sapuan cahaya di pojok —
+           perlakuan kartu "Cara Pesan" di beranda — dan titik-titik memudar
+           dari kartu kepala. Keduanya diturunkan dari --kek-warna, jadi ikut
+           berganti mengikuti jenis jasanya.
+
+           Ditaruh di ::before/::after supaya ikut terpotong sudut kartu dan
+           tidak menambah satu elemen pun ke markup. */
+        .cke-kartu::before {
+            content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(42% 130% at 100% 0%, color-mix(in srgb, var(--kek-warna) 18%, transparent) 0%, transparent 72%),
+                radial-gradient(42% 130% at 0% 100%, color-mix(in srgb, var(--kek-warna) 15%, transparent) 0%, transparent 72%),
+                radial-gradient(36% 110% at 0% 0%, rgba(251, 169, 25, .10) 0%, transparent 66%);
+        }
+        /* Titik-titik di KEDUA sayap, memudar ke tengah.
+           Isinya satu kolom 560px di tengah kartu 1296px, jadi yang kosong
+           bukan hanya sisi kanan — memberi tekstur di satu sisi saja justru
+           membuat kartunya terlihat berat sebelah. Topengnya bening di 26%-74%,
+           tepat di luar kolom teks (368px dari tiap tepi = 28,4%), jadi titik
+           tidak pernah jatuh di belakang kalimat. */
+        .cke-kartu::after {
+            content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+            background-image: radial-gradient(color-mix(in srgb, var(--kek-warna) 26%, transparent) 1px, transparent 1px);
+            background-size: 18px 18px;
+            -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 26%, transparent 74%, #000 100%);
+            mask-image: linear-gradient(90deg, #000 0%, transparent 26%, transparent 74%, #000 100%);
+        }
+        /* Di layar sempit kolom teks memenuhi kartunya, jadi tidak ada sayap
+           yang perlu diisi — titiknya justru akan jatuh di belakang kalimat. */
+        @media (max-width: 991.98px) {
+            .cke-kartu::after { display: none; }
+        }
+        /* Isi harus berada DI ATAS kedua lapisan aksen. */
+        .cke-dalam { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; }
 
         /* Ikon besar di tengah, berwarna jenis jasanya, dan BERGERAK.
 
