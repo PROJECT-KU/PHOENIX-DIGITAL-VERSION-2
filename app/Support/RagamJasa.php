@@ -17,6 +17,18 @@ use App\Models\Order;
  * Semua perbedaan kata dan warna dikumpulkan di SATU tempat ini. Kalau tersebar
  * sebagai `@if ($jenis === 'parafrase')` di sepanjang Blade, menambah satu jenis
  * jasa berarti menyisir ulang seluruh halaman dan pasti ada yang terlewat.
+ *
+ * WARNA MENGIKUTI KategoriBeranda, bukan dipilih sendiri.
+ *
+ * Berkas ini sempat memilih warnanya sendiri, dan hasilnya satu layanan tampil
+ * dengan dua warna berbeda tergantung halamannya: Jasa Parafrase jingga-amber
+ * (#d97706) di Shop, keranjang, dan checkout — lalu mendadak ungu (#7c3aed) di
+ * /cek. Ungu itu bahkan bukan warna bebas: KategoriBeranda memakainya untuk
+ * kategori 'AI Tools', jadi halaman parafrase memakai warna kategori lain.
+ *
+ * Sebelum mengubah warna di sini, tanyakan dulu warna apa yang diberikan
+ * KategoriBeranda::untukProduk() kepada produk jasanya — itu yang sudah dilihat
+ * pelanggan sejak halaman Shop.
  */
 class RagamJasa
 {
@@ -45,9 +57,11 @@ class RagamJasa
             'selesaiSemua' => 'Pengecekan Anda sudah selesai seluruhnya',
             'habis' => 'Jumlah pengecekan Anda sudah maksimal',
             'kosong' => 'Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.',
-            'warna' => '#ea580c',
-            'lembut' => '#fff7ed',
-            'tepi' => '#fed7aa',
+            // Disamakan dengan kategori 'Cek Plagiasi' di KategoriBeranda
+            // (#2563eb) — lihat catatan di atas berkas ini.
+            'warna' => '#2563eb',
+            'lembut' => '#eff6ff',
+            'tepi' => '#bfdbfe',
             'jaminanJudul' => 'Jaminan Privasi & Keamanan',
             'jaminan' => [
                 ['b' => 'No Repository', 't' => 'file Anda <b>tidak disimpan</b> ke database Turnitin. Jadi dokumen Anda tidak akan terdeteksi sebagai kemiripan pada pengecekan berikutnya.'],
@@ -71,6 +85,11 @@ class RagamJasa
             'selesaiSemua' => 'Deteksi AI Anda sudah selesai seluruhnya',
             'habis' => 'Jumlah deteksi Anda sudah maksimal',
             'kosong' => 'Belum ada file yang diunggah. Silakan unggah file pertama Anda di atas.',
+            // Shop tidak punya warna tersendiri untuk deteksi AI — produknya
+            // ("Cek Plagiasi AI") masuk kategori 'Cek Plagiasi' juga. Tetapi
+            // ketiga jasa WAJIB bisa dibedakan (dijaga RagamJasaTest), jadi
+            // dipakai indigo: tetangga terdekat biru, terbaca sebagai saudara
+            // Cek Plagiasi — memang itulah hubungannya.
             'warna' => '#4f46e5',
             'lembut' => '#eef0ff',
             'tepi' => '#c7d2fe',
@@ -97,9 +116,13 @@ class RagamJasa
             'selesaiSemua' => 'Pengerjaan Anda sudah selesai seluruhnya',
             'habis' => 'Seluruh naskah Anda sudah kami terima',
             'kosong' => 'Belum ada naskah yang dikirim. Silakan kirim naskah Anda di atas.',
-            'warna' => '#7c3aed',
-            'lembut' => '#f5f3ff',
-            'tepi' => '#ddd6fe',
+            // Disamakan dengan kategori 'Jasa Parafrase' di KategoriBeranda
+            // (#d97706). Ungu #7c3aed yang dipakai sebelumnya justru warna
+            // kategori 'AI Tools' — bukan sekadar beda, tapi meminjam warna
+            // kategori lain.
+            'warna' => '#d97706',
+            'lembut' => '#fffbeb',
+            'tepi' => '#fde68a',
             'jaminanJudul' => 'Cara Kami Mengerjakannya',
             'jaminan' => [
                 ['b' => 'Ditulis ulang manusia', 't' => 'naskah diparafrase <b>manual oleh editor</b>, bukan diputar lewat alat otomatis.'],

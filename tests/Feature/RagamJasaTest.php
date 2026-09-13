@@ -141,3 +141,53 @@ it('setiap jenis punya seluruh kunci yang dipakai halaman', function () {
         expect(array_keys($isi))->toBe($wajib, "jenis '$jenis' kuncinya tidak lengkap");
     }
 });
+
+it('warna jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function () {
+    /*
+     | Satu layanan tidak boleh berganti warna tergantung halamannya. Jasa
+     | Parafrase sempat jingga-amber di Shop/keranjang/checkout lalu mendadak
+     | ungu di /cek — dan ungunya justru warna kategori 'AI Tools', jadi bukan
+     | sekadar beda tapi meminjam warna kategori lain.
+     |
+     | Yang dibandingkan warna KATEGORI produknya, karena itulah yang sudah
+     | dilihat pelanggan sebelum ia sampai ke /cek.
+     */
+    $pasangan = [
+        'Cek Plagiasi Turnitin' => 'plagiasi',
+        'Cek Plagiasi AI' => 'plagiasi',
+        'Jasa Parafrase Manual' => 'parafrase',
+    ];
+
+    foreach ($pasangan as $namaProduk => $jenis) {
+        $kategori = \App\Support\KategoriBeranda::untukProduk($namaProduk);
+
+        expect($kategori)->not->toBeNull("produk '$namaProduk' tidak dikenali KategoriBeranda")
+            ->and(RagamJasa::dariJenis($jenis)['warna'])
+            ->toBe($kategori['warna'], "warna jasa '$jenis' beda dengan kategori Shop untuk '$namaProduk'");
+    }
+});
+
+it('deteksi AI berwarna sendiri, dan tumpang tindihnya disadari', function () {
+    /*
+     | Shop tidak punya warna tersendiri untuk deteksi AI: produknya ("Cek
+     | Plagiasi AI") masuk kategori 'Cek Plagiasi' juga. Jadi warnanya tidak
+     | bisa dicocokkan seperti dua jasa lainnya — yang bisa dijaga hanyalah
+     | ia tetap BERBEDA dari keduanya, sebagaimana dituntut uji keunikan di
+     | atas.
+     |
+     | Yang disadari dan diterima: #4f46e5 kebetulan sama dengan kategori
+     | 'Edukasi' di KategoriBeranda. Dibiarkan karena tidak ada produk jasa
+     | yang masuk kategori itu, jadi pelanggan tidak pernah melihat keduanya
+     | bersebelahan. Ditulis di sini supaya yang menemukannya nanti tahu itu
+     | pilihan, bukan kelalaian.
+     */
+    $ai = RagamJasa::dariJenis('ai')['warna'];
+
+    expect($ai)->not->toBe(RagamJasa::dariJenis('plagiasi')['warna'])
+        ->and($ai)->not->toBe(RagamJasa::dariJenis('parafrase')['warna']);
+
+    $edukasi = collect(\App\Support\KategoriBeranda::PETA)
+        ->firstWhere('label', 'Edukasi')['warna'] ?? null;
+
+    expect($ai)->toBe($edukasi, 'tumpang tindih dengan Edukasi berubah — perbarui catatan di uji ini');
+});

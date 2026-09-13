@@ -645,12 +645,29 @@ class Order extends Model
         return $batas !== null && now()->greaterThan($batas);
     }
 
-    /** Masih boleh mengunggah pengecekan baru (jenis apa pun)? */
+    /**
+     * Masih boleh mengunggah pengecekan baru (jenis apa pun)?
+     *
+     * Memakai sisaUnggahan() — jatah KIRIM DOKUMEN — bukan sisaKuota() yang
+     * menghitung jumlah PEKERJAAN. Keduanya berbeda: pelanggan yang membeli
+     * parafrase plus tambahan hasil plagiasi & AI punya 3 pekerjaan tetapi
+     * tetap hanya mengirim 1 dokumen.
+     *
+     * Dengan sisaKuota(), form unggah tetap terbuka sesudah dokumennya dikirim:
+     * panel di sebelahnya sudah menulis "0 dari 1" sementara kotak unggah dan
+     * tombolnya masih mengundang. Yang menekan tombol itu lalu ditolak
+     * bisaUploadJenis() di sisi server — penolakan yang datang SESUDAH orang
+     * bertindak, dan pada dokumen skripsi itu membuat orang mengira berkasnya
+     * hilang, bukan mengira dirinya salah tekan.
+     *
+     * Pola yang sama dengan tombol "Tandai dibayar" di layar Kode Rujukan:
+     * tombolnya tidak ditampilkan, bukan ditampilkan lalu ditolak.
+     */
     public function bisaUploadPengecekan(): bool
     {
         return $this->butuhUpload()
             && $this->statusBolehUpload()
-            && $this->sisaKuota() > 0;
+            && $this->sisaUnggahan() > 0;
     }
 
     /** Masih boleh mengunggah untuk SATU jenis pemeriksaan tertentu? */
