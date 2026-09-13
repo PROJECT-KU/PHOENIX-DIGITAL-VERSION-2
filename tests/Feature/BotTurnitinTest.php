@@ -498,3 +498,70 @@ it('pengecekan yang sudah dituntaskan bot hari ini ikut terlihat di kartu', func
         ->assertSee('Selesai — hasil terkirim ke customer')
         ->assertSee('kemiripan 3%');
 });
+
+it('cek AI TIDAK PERNAH disentuh bot, walau antreannya hanya itu', function () {
+    // Deteksi AI tetap dikerjakan admin sendiri; submitin.id hanya untuk
+    // pengecekan kemiripan (Turnitin). Unggahan lama berjenis 'pengecekan'
+    // juga dilewati supaya tidak ada yang terkirim tanpa disengaja.
+    $ai = unggahanBot(pesananPlagiasi(), ['jenis' => 'ai']);
+    $lawas = unggahanBot(pesananPlagiasi(), ['jenis' => 'pengecekan']);
+    $parafrase = unggahanBot(pesananPlagiasi(), ['jenis' => 'parafrase']);
+    $h = tokenBot();
+
+    foreach (range(1, 3) as $ulang) {
+        $this->getJson('/api/bot-turnitin/tugas', $h)->assertJsonPath('tugas', null);
+    }
+
+    foreach ([$ai, $lawas, $parafrase] as $up) {
+        expect($up->fresh())
+            ->status->toBe('menunggu')
+            ->bot_status->toBeNull()
+            ->dikerjakan_oleh->toBeNull();
+    }
+
+    // Berkasnya pun tidak bisa diambil bot.
+    $this->get('/api/bot-turnitin/tugas/'.$ai->id.'/berkas', $h)->assertStatus(409);
+});
+
+it('halaman /cek customer tidak menampilkan apa pun tentang bot', function () {
+    /*
+     | Pelanggan tidak perlu tahu pekerjaannya dikerjakan bot atau admin, dan
+     | kode pesanan submitin adalah urusan internal. Statusnya tetap memakai
+     | kata yang sama seperti sebelum ada bot.
+     */
+    $order = pesananPlagiasi(['share_token' => Str::upper(Str::random(10))]);
+    $up = unggahanBot($order, [
+        'status' => 'diproses',
+        'dikerjakan_oleh' => 'bot',
+        'bot_status' => BotTurnitin::MENUNGGU_HASIL,
+        'bot_kode' => 'SC-D0FEDA0427D4',
+        'bot_pesan' => 'Menunggu laporan submitin',
+        'bot_diambil_at' => now(),
+        'bot_diperbarui_at' => now(),
+    ]);
+
+    $html = Livewire\Livewire::test(\App\Livewire\Pages\Public\ShopPage\JasaCekPage::class, ['token' => $order->share_token])
+        ->assertSee('Sedang diperiksa')   // label status yang lama, tidak berubah
+        ->assertDontSee('SC-D0FEDA0427D4')
+        ->assertDontSee('submitin')
+        ->assertDontSee('Bot')
+        ->assertDontSee('Menunggu laporan')
+        ->html();
+
+    expect($html)->not->toContain('bot_status')
+        ->and($html)->not->toContain('dikerjakan_oleh')
+        ->and($html)->not->toContain(BotTurnitin::penanda($up));
+});
+
+it('sumber halaman customer memang tidak memuat kolom bot', function () {
+    foreach ([
+        'views/livewire/pages/public/shop-page/jasa-cek-page.blade.php',
+        'views/livewire/pages/public/shop-page/jasa-cek-kadaluarsa.blade.php',
+    ] as $berkas) {
+        $sumber = file_get_contents(resource_path($berkas));
+
+        foreach (['bot_status', 'bot_kode', 'bot_pesan', 'dikerjakan_oleh', 'submitin'] as $kata) {
+            expect($sumber)->not->toContain($kata);
+        }
+    }
+});
