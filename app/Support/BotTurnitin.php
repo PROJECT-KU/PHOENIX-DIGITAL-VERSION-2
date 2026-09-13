@@ -497,6 +497,18 @@ class BotTurnitin
             ->count();
     }
 
+    /** Pengecekan yang baru saja dituntaskan bot (untuk kartu pantau). */
+    public static function selesaiTerbaru(int $batas = 5): Collection
+    {
+        return OrderUpload::with('order')
+            ->where('dikerjakan_oleh', 'bot')
+            ->whereIn('bot_status', [self::SELESAI])
+            ->whereDate('bot_diperbarui_at', today())
+            ->orderByDesc('bot_diperbarui_at')
+            ->limit($batas)
+            ->get();
+    }
+
     public static function macet(OrderUpload $up): bool
     {
         return in_array($up->bot_status, [self::DIAMBIL, self::MENUNGGU_HASIL], true)

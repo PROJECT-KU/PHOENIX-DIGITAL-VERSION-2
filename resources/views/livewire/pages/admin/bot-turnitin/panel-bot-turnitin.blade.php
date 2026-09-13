@@ -43,8 +43,25 @@
         .bt-denyut { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; animation: btDenyut 1.6s ease-in-out infinite; }
         @keyframes btDenyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.72); } }
         @media (prefers-reduced-motion: reduce) { .bt-denyut { animation: none; } }
-        .bt-tahap { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #dbeafe; color: #1d4ed8; font-size: .72rem; font-weight: 700; white-space: nowrap; }
-        .bt-sunyi { font-size: .82rem; color: #64748b; padding: 2px 0 0; }
+        .bt-tahap { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+        .bt-tahap.jalan { background: #dbeafe; color: #1d4ed8; }
+        .bt-tahap.perlu { background: #fee2e2; color: #b91c1c; }
+        .bt-tahap.lengkapi { background: #fef3c7; color: #92400e; }
+        .bt-tahap.beres { background: #dcfce7; color: #15803d; }
+
+        /* Kartu pantau: SELALU tampil, walau tidak ada pekerjaan. */
+        .bt-pantau { background: #fff; border: 1px solid #eef2f7; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.05); overflow: hidden; }
+        .bt-pantau-kepala { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 13px 18px; border-bottom: 1px solid #eef2f7; }
+        .bt-pantau-kepala h6 { margin: 0; font-weight: 800; font-size: .95rem; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .bt-hitung { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: .74rem; font-weight: 700; }
+        .bt-hitung b { color: #0f172a; }
+        .bt-pantau-isi { padding: 12px 18px 16px; display: grid; gap: 8px; }
+        .bt-pantau .bt-baris { border-color: #e8edf4; }
+        .bt-pantau .bt-baris.perlu { border-color: #fecaca; background: #fff7f7; }
+        .bt-pantau .bt-baris.lengkapi { border-color: #fde68a; background: #fffcf3; }
+        .bt-pantau .bt-baris.beres { border-color: #bbf7d0; background: #f7fffa; }
+        .bt-kosong { display: flex; align-items: center; gap: 10px; padding: 14px 2px; color: #64748b; font-size: .84rem; }
+        .bt-kosong i { font-size: 1.1rem; color: #94a3b8; }
         .bt-daftar { display: grid; gap: 8px; }
         .bt-baris {
             display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid #fde68a;
@@ -77,9 +94,6 @@
                                 Belum dipasang.
                             @elseif ($aktif)
                                 Terakhir memberi kabar {{ $detak->locale('id')->diffForHumans() }}
-                                · {{ $berjalan->count() }} sedang dikerjakan
-                                · {{ $antrean }} di antrean
-                                · {{ $selesaiHariIni }} selesai hari ini
                             @elseif ($detak)
                                 Tidak aktif sejak {{ $detak->locale('id')->diffForHumans() }} — buka tab submitin.id di Chrome admin
                                 · {{ $antrean }} unggahan di antrean
@@ -139,26 +153,35 @@
                 </div>
                 @endif
 
-                {{-- Sedang dikerjakan bot --}}
-                @if ($berjalan->isNotEmpty())
-                <div class="bt-kartu biru">
-                    <h6><i class="bi bi-arrow-repeat"></i> {{ $berjalan->count() }} pengecekan sedang dikerjakan bot</h6>
-                    <p>Bot memegang satu pengecekan pada satu waktu. Jangan mengunggah hasil manual untuk pesanan ini kecuali bot dilaporkan gagal.</p>
-                    <div class="bt-daftar">
-                        @foreach ($berjalan as $up)
+                {{-- Pantauan pengecekan bot — SELALU tampil supaya admin punya
+                     satu tempat tetap untuk melihat: nomor pesanan, tahap bot,
+                     kode submitin, kabar terakhir, dan apakah perlu ditindak. --}}
+                <div class="bt-pantau">
+                    <div class="bt-pantau-kepala">
+                        <h6><i class="bi bi-list-check"></i> Pengecekan Bot Turnitin</h6>
+                        <span class="bt-hitung"><i class="bi bi-arrow-repeat"></i> <b>{{ $berjalan->count() }}</b> berjalan</span>
+                        <span class="bt-hitung"><i class="bi bi-hourglass"></i> <b>{{ $antrean }}</b> antre</span>
+                        <span class="bt-hitung"><i class="bi bi-person-exclamation"></i> <b>{{ $perluAdmin->count() }}</b> perlu admin</span>
+                        <span class="bt-hitung"><i class="bi bi-check2-circle"></i> <b>{{ $selesaiHariIni }}</b> selesai hari ini</span>
+                    </div>
+                    <div class="bt-pantau-isi">
+                        @forelse ($berjalan as $up)
                             <div class="bt-baris" wire:key="bt-jalan-{{ $up->id }}">
                                 <span class="bt-denyut"></span>
                                 <div class="bt-baris-isi">
-                                    <b>{{ optional($up->order)->order_number }}</b>
+                                    <b>{{ optional($up->order)->order_number ?? '—' }}</b>
                                     <span>
-                                        Mulai {{ $up->bot_diambil_at?->locale('id')->diffForHumans() }}
-                                        · kabar terakhir {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() }}
+                                        Kabar terakhir {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() ?? '—' }}
+                                        · mulai {{ $up->bot_diambil_at?->locale('id')->diffForHumans() ?? '—' }}
+                                        · kode:
                                         @if ($up->bot_kode)
-                                            · <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                        @else
+                                            belum ada (belum terkirim)
                                         @endif
                                     </span>
                                 </div>
-                                <span class="bt-tahap">
+                                <span class="bt-tahap jalan">
                                     @if ($up->bot_status === 'menunggu_hasil')
                                         <i class="bi bi-hourglass-split"></i> Menunggu laporan submitin
                                     @else
@@ -169,10 +192,91 @@
                                     <a class="bt-btn" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
                                 @endif
                             </div>
+                        @empty
+                        @endforelse
+
+                        @foreach ($perluAdmin as $up)
+                            @php
+                                $macet = \App\Support\BotTurnitin::macet($up);
+                                $lengkapi = $up->bot_status === 'perlu_dilengkapi';
+                            @endphp
+                            <div class="bt-baris {{ $lengkapi ? 'lengkapi' : 'perlu' }}" wire:key="bt-perlu-{{ $up->id }}">
+                                <div class="bt-baris-isi">
+                                    <b>{{ optional($up->order)->order_number ?? '—' }}</b>
+                                    <span>
+                                        Kabar terakhir {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() ?? '—' }}
+                                        · kode:
+                                        @if ($up->bot_kode)
+                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                            — sudah terkirim, cek di sana sebelum mengirim ulang
+                                        @else
+                                            belum ada (belum terkirim ke submitin)
+                                        @endif
+                                    </span>
+                                    @if ($up->bot_pesan)
+                                        <span>{{ $up->bot_pesan }}</span>
+                                    @endif
+                                </div>
+                                <span class="bt-tahap {{ $lengkapi ? 'lengkapi' : 'perlu' }}">
+                                    @if ($lengkapi)
+                                        <i class="bi bi-puzzle"></i> Perlu dilengkapi admin
+                                    @elseif ($macet)
+                                        <i class="bi bi-exclamation-triangle"></i> Bot tidak memberi kabar — perlu admin
+                                    @else
+                                        <i class="bi bi-x-octagon"></i> Bot gagal — perlu admin
+                                    @endif
+                                </span>
+                                @if ($up->order)
+                                    <a class="bt-btn utama" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
+                                @endif
+                                @if (! $up->bot_kode && $up->bot_status === 'gagal')
+                                    <button type="button" class="bt-btn" wire:click="cobaLagi('{{ $up->id }}')"><i class="bi bi-arrow-repeat"></i> Coba lagi pakai bot</button>
+                                @endif
+                                @if (! $lengkapi)
+                                    <button type="button" class="bt-btn" wire:click="ambilAlih('{{ $up->id }}')"><i class="bi bi-person-check"></i> Saya kerjakan manual</button>
+                                @endif
+                            </div>
                         @endforeach
+
+                        @foreach ($selesaiTerbaru as $up)
+                            <div class="bt-baris beres" wire:key="bt-beres-{{ $up->id }}">
+                                <div class="bt-baris-isi">
+                                    <b>{{ optional($up->order)->order_number ?? '—' }}</b>
+                                    <span>
+                                        Selesai {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() ?? '—' }}
+                                        · kode:
+                                        @if ($up->bot_kode)
+                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                                        @else
+                                            —
+                                        @endif
+                                        @if (! is_null($up->persentase))
+                                            · kemiripan {{ $up->persentase }}%
+                                        @endif
+                                    </span>
+                                </div>
+                                <span class="bt-tahap beres"><i class="bi bi-check2-circle"></i> Selesai — hasil terkirim ke customer</span>
+                                @if ($up->order)
+                                    <a class="bt-btn" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
+                                @endif
+                            </div>
+                        @endforeach
+
+                        @if ($berjalan->isEmpty() && $perluAdmin->isEmpty() && $selesaiTerbaru->isEmpty())
+                            <div class="bt-kosong">
+                                <i class="bi bi-inbox"></i>
+                                <span>
+                                    Belum ada pengecekan yang dipantau.
+                                    @if ($antrean > 0)
+                                        {{ $antrean }} dokumen menunggu — bot akan mengambilnya begitu dilanjutkan.
+                                    @else
+                                        Bot akan mengambilnya otomatis begitu customer mengunggah dokumen cek plagiasi.
+                                    @endif
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
-                @endif
 
                 {{-- Kuota paket Standard habis --}}
                 @if ($kuotaHabis)
@@ -186,48 +290,6 @@
                 </div>
                 @endif
 
-                {{-- Perlu dikerjakan manual --}}
-                @if ($dipasang && $berjalan->isEmpty() && $antrean === 0 && ! $kuotaHabis && $perluAdmin->isEmpty())
-                    <div class="bt-sunyi"><i class="bi bi-check2-circle"></i> Tidak ada pengecekan yang menunggu maupun berjalan.</div>
-                @endif
-
-                @if ($perluAdmin->isNotEmpty())
-                <div class="bt-kartu kuning">
-                    <h6><i class="bi bi-person-exclamation"></i> {{ $perluAdmin->count() }} pengecekan perlu dikerjakan admin</h6>
-                    <p>Bot tidak bisa menyelesaikannya. Buka pesanannya lalu kerjakan seperti biasa.</p>
-                    <div class="bt-daftar">
-                        @foreach ($perluAdmin as $up)
-                            @php $macet = \App\Support\BotTurnitin::macet($up); @endphp
-                            <div class="bt-baris" wire:key="bt-{{ $up->id }}">
-                                <div class="bt-baris-isi">
-                                    <b>{{ optional($up->order)->order_number }}</b>
-                                    · {{ $macet ? 'Bot tidak memberi kabar' : ($up->bot_status === 'perlu_dilengkapi' ? 'Perlu dilengkapi' : 'Bot gagal') }}
-                                    · {{ $up->bot_diperbarui_at?->locale('id')->diffForHumans() }}
-                                    @if ($up->bot_pesan)
-                                        <span>{{ $up->bot_pesan }}</span>
-                                    @endif
-                                    @if ($up->bot_kode)
-                                        <span>Sudah terkirim ke submitin:
-                                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
-                                            — cek di sana dulu sebelum mengirim ulang.</span>
-                                    @endif
-                                </div>
-                                <div class="bt-aksi">
-                                    @if ($up->order)
-                                        <a class="bt-btn utama" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
-                                    @endif
-                                    @if (! $up->bot_kode && $up->bot_status === 'gagal')
-                                        <button type="button" class="bt-btn" wire:click="cobaLagi('{{ $up->id }}')"><i class="bi bi-arrow-repeat"></i> Coba lagi pakai bot</button>
-                                    @endif
-                                    @if ($up->bot_status !== 'perlu_dilengkapi')
-                                        <button type="button" class="bt-btn" wire:click="ambilAlih('{{ $up->id }}')"><i class="bi bi-person-check"></i> Saya kerjakan manual</button>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
             @endif
         </div>
     </div>

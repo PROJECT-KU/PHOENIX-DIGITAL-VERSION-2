@@ -375,9 +375,12 @@ it('panel dashboard menampilkan kartu kuota habis & perlu manual', function () {
         ->test(PanelBotTurnitin::class)
         ->assertSee('Kuota paket Standard di submitin.id habis')
         ->assertSee('Paket Standard habis (s/d 10/10/2026).')
-        ->assertSee('1 pengecekan perlu dikerjakan admin')
+        // Kartu pantau: nomor pesanan, status, dan sebab gagalnya.
+        ->assertSee('Pengecekan Bot Turnitin')
         ->assertSee($up->order->order_number)
+        ->assertSee('Bot gagal — perlu admin')
         ->assertSee('Form submitin tidak termuat')
+        ->assertSee('Saya kerjakan manual')
         ->call('kuotaSudahDiisi')
         ->assertDontSee('Kuota paket Standard di submitin.id habis');
 });
@@ -444,18 +447,54 @@ it('kartu dashboard menampilkan pengecekan yang SEDANG dikerjakan bot', function
     BotTurnitin::ambilTugas();
     BotTurnitin::tandaiTerkirim($up->fresh(), 'SC-D0FEDA0427D4');
 
-    $panel = Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
-        ->assertSee('1 pengecekan sedang dikerjakan bot')
+    Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
         ->assertSee($up->order->order_number)
         ->assertSee('Menunggu laporan submitin')
         ->assertSee('SC-D0FEDA0427D4')
-        ->assertDontSee('perlu dikerjakan admin');
+        // Hitungan kepala kartu ikut memuat kata "perlu admin", jadi yang
+        // diperiksa label barisnya.
+        ->assertDontSee('Bot gagal — perlu admin')
+        ->assertDontSee('Bot tidak memberi kabar — perlu admin');
 
     expect(BotTurnitin::selesaiHariIni())->toBe(0);
 
-    // Begitu bot berhenti memberi kabar, ia pindah ke kartu "perlu dikerjakan admin".
+    // Begitu bot berhenti memberi kabar, barisnya berubah jadi "perlu admin".
     $this->travel(BotTurnitin::MACET_MENIT + 1)->minutes();
     Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
-        ->assertDontSee('sedang dikerjakan bot')
-        ->assertSee('1 pengecekan perlu dikerjakan admin');
+        ->assertDontSee('Menunggu laporan submitin')
+        ->assertSee('Bot tidak memberi kabar — perlu admin');
+});
+
+it('kartu pantau tetap tampil walau tidak ada pengecekan sama sekali', function () {
+    $role = \App\Models\Role::create(['name' => 'uji-bot-'.uniqid(), 'description' => 'Peran uji bot']);
+    $role->permissions()->attach(\App\Models\Permission::firstOrCreate(
+        ['name' => 'view_pemesanantoko'], ['display_name' => 'view_pemesanantoko', 'group' => 'pemesanan', 'description' => 'uji']
+    )->id);
+    $admin = \App\Models\User::factory()->create(['role_id' => $role->id]);
+    BotTurnitin::buatToken();
+
+    Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
+        ->assertSee('Pengecekan Bot Turnitin')
+        ->assertSee('Belum ada pengecekan yang dipantau.')
+        ->assertSee('begitu customer mengunggah dokumen cek plagiasi');
+});
+
+it('pengecekan yang sudah dituntaskan bot hari ini ikut terlihat di kartu', function () {
+    $role = \App\Models\Role::create(['name' => 'uji-bot-'.uniqid(), 'description' => 'Peran uji bot']);
+    $role->permissions()->attach(\App\Models\Permission::firstOrCreate(
+        ['name' => 'view_pemesanantoko'], ['display_name' => 'view_pemesanantoko', 'group' => 'pemesanan', 'description' => 'uji']
+    )->id);
+    $admin = \App\Models\User::factory()->create(['role_id' => $role->id]);
+
+    $order = pesananPlagiasi();
+    $up = unggahanBot($order);
+    $h = tokenBot();
+    $this->getJson('/api/bot-turnitin/tugas', $h);
+    $this->postJson('/api/bot-turnitin/tugas/'.$up->id.'/terkirim', ['kode' => 'SC-D0FEDA0427D4'], $h);
+    $this->post('/api/bot-turnitin/tugas/'.$up->id.'/hasil', ['kode' => 'SC-D0FEDA0427D4', 'persen' => 3, 'berkas' => pdfPalsu()], $h);
+
+    Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
+        ->assertSee($order->order_number)
+        ->assertSee('Selesai — hasil terkirim ke customer')
+        ->assertSee('kemiripan 3%');
 });

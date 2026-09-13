@@ -104,6 +104,7 @@ class PanelBotTurnitin extends Component
             'kuotaHabis' => BotTurnitin::kuotaHabis(),
             'perluAdmin' => BotTurnitin::perluAdmin(),
             'berjalan' => BotTurnitin::sedangDikerjakan(),
+            'selesaiTerbaru' => BotTurnitin::selesaiTerbaru(),
             'selesaiHariIni' => BotTurnitin::selesaiHariIni(),
             'antrean' => OrderUpload::where('jenis', 'plagiasi')->where('status', 'menunggu')->whereNull('bot_status')->count(),
             'urlSkrip' => asset('bot/phoenix-turnitin.user.js'),
