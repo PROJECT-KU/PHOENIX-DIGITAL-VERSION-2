@@ -18,7 +18,7 @@ use App\Models\Order;
  * sebagai `@if ($jenis === 'parafrase')` di sepanjang Blade, menambah satu jenis
  * jasa berarti menyisir ulang seluruh halaman dan pasti ada yang terlewat.
  *
- * WARNA MENGIKUTI KategoriBeranda, bukan dipilih sendiri.
+ * WARNA DAN IKON IDENTITAS MENGIKUTI KategoriBeranda, bukan dipilih sendiri.
  *
  * Berkas ini sempat memilih warnanya sendiri, dan hasilnya satu layanan tampil
  * dengan dua warna berbeda tergantung halamannya: Jasa Parafrase jingga-amber
@@ -26,9 +26,14 @@ use App\Models\Order;
  * /cek. Ungu itu bahkan bukan warna bebas: KategoriBeranda memakainya untuk
  * kategori 'AI Tools', jadi halaman parafrase memakai warna kategori lain.
  *
- * Sebelum mengubah warna di sini, tanyakan dulu warna apa yang diberikan
- * KategoriBeranda::untukProduk() kepada produk jasanya — itu yang sudah dilihat
- * pelanggan sejak halaman Shop.
+ * Sebelum mengubah 'warna' atau 'ikon' di sini, tanyakan dulu apa yang
+ * diberikan KategoriBeranda::untukProduk() kepada produk jasanya — itu yang
+ * sudah dilihat pelanggan sejak halaman Shop.
+ *
+ * Yang diikat ke Shop hanya IDENTITAS layanan: 'warna' dan 'ikon'. Ikon
+ * fungsional — 'jatahIkon' (panel jatah) dan 'unggahIkon' (kartu unggah) —
+ * tetap dipilih di sini, sebab keduanya menandai PERBUATAN di halaman ini dan
+ * tidak punya padanan di Shop.
  *
  * Konsekuensinya: 'plagiasi' dan 'ai' BERWARNA SAMA, karena Shop memang
  * menaruh keduanya di kategori yang sama. Itu bukan kelalaian. Yang membedakan
@@ -51,7 +56,10 @@ class RagamJasa
             'nama' => 'Cek Plagiasi',
             'judul' => 'Halaman Pengecekan Anda',
             'ajakan' => 'Simpan halaman ini untuk mengunggah file & mengunduh hasil.',
-            'ikon' => 'shield-check',
+            // Ikon identitas mengikuti kategori 'Cek Plagiasi' di
+            // KategoriBeranda (bi-search) — lihat catatan di atas berkas ini.
+            // Awalan 'bi-' dilepas: Blade di sini menuliskannya sendiri.
+            'ikon' => 'search',
             'jatahLabel' => 'Sisa Pengecekan',
             'jatahIkon' => 'collection',
             'satuan' => 'pengecekan',
@@ -79,7 +87,9 @@ class RagamJasa
             'nama' => 'Deteksi AI',
             'judul' => 'Halaman Deteksi AI Anda',
             'ajakan' => 'Simpan halaman ini untuk mengunggah file & mengunduh laporan deteksi.',
-            'ikon' => 'robot',
+            // Sama dengan ragam plagiasi: produk deteksi AI masuk kategori
+            // 'Cek Plagiasi' di Shop, jadi ikonnya pun bi-search di sana.
+            'ikon' => 'search',
             'jatahLabel' => 'Sisa Deteksi',
             'jatahIkon' => 'cpu',
             'satuan' => 'deteksi',
@@ -117,7 +127,9 @@ class RagamJasa
             'nama' => 'Jasa Parafrase',
             'judul' => 'Halaman Pengerjaan Anda',
             'ajakan' => 'Simpan halaman ini untuk mengirim naskah & mengunduh hasilnya.',
-            'ikon' => 'pencil-square',
+            // Mengikuti kategori 'Jasa Parafrase' di KategoriBeranda
+            // (bi-chat-quote).
+            'ikon' => 'chat-quote',
             'jatahLabel' => 'Sisa Naskah',
             'jatahIkon' => 'file-earmark-text',
             'satuan' => 'naskah',

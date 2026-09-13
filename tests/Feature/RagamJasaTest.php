@@ -155,7 +155,7 @@ it('setiap jenis punya seluruh kunci yang dipakai halaman', function () {
     }
 });
 
-it('warna jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function () {
+it('warna & ikon jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function () {
     /*
      | Satu layanan tidak boleh berganti warna tergantung halamannya. Jasa
      | Parafrase sempat jingga-amber di Shop/keranjang/checkout lalu mendadak
@@ -178,9 +178,16 @@ it('warna jasa sama dengan yang dilihat pelanggan sejak halaman Shop', function 
     foreach ($pasangan as $namaProduk => $jenis) {
         $kategori = \App\Support\KategoriBeranda::untukProduk($namaProduk);
 
+        $ragam = RagamJasa::dariJenis($jenis);
+
         expect($kategori)->not->toBeNull("produk '$namaProduk' tidak dikenali KategoriBeranda")
-            ->and(RagamJasa::dariJenis($jenis)['warna'])
-            ->toBe($kategori['warna'], "warna jasa '$jenis' beda dengan kategori Shop untuk '$namaProduk'");
+            ->and($ragam['warna'])
+            ->toBe($kategori['warna'], "warna jasa '$jenis' beda dengan kategori Shop untuk '$namaProduk'")
+            // KategoriBeranda menyimpan ikonnya berawalan 'bi-', RagamJasa
+            // tanpa awalan (Blade-nya menuliskan sendiri). Dibandingkan setelah
+            // disamakan bentuknya.
+            ->and('bi-'.$ragam['ikon'])
+            ->toBe($kategori['ikon'], "ikon jasa '$jenis' beda dengan kategori Shop untuk '$namaProduk'");
     }
 });
 
@@ -198,4 +205,15 @@ it('deteksi AI dan cek plagiasi memang sewarna, karena Shop menyatukannya', func
         ->not->toBe(RagamJasa::dariJenis('plagiasi')['judul'])
         ->and(RagamJasa::dariJenis('ai')['tombol'])
         ->not->toBe(RagamJasa::dariJenis('plagiasi')['tombol']);
+});
+
+it('ikon fungsional tetap milik halaman ini, tidak diikat ke Shop', function () {
+    // Yang diikat ke Shop hanya IDENTITAS layanan (warna & ikon). 'jatahIkon'
+    // dan 'unggahIkon' menandai PERBUATAN di halaman /cek — melihat sisa jatah,
+    // mengirim berkas — dan tidak punya padanan di Shop. Keduanya harus tetap
+    // bercerita tentang jasanya masing-masing.
+    expect(RagamJasa::dariJenis('parafrase')['unggahIkon'])
+        ->not->toBe(RagamJasa::dariJenis('plagiasi')['unggahIkon'])
+        ->and(RagamJasa::dariJenis('ai')['jatahIkon'])
+        ->not->toBe(RagamJasa::dariJenis('plagiasi')['jatahIkon']);
 });
