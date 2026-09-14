@@ -1068,11 +1068,27 @@ Detail Pesanan || lemon
                      Tanpa kalimat ini, layar ini hanya memperlihatkan tombol
                      yang HILANG — dan yang membacanya menyimpulkan halamannya
                      rusak, lalu mencari bug yang tidak ada. --}}
-                @if (! $adaBerkasPelanggan || (! $adaHasil && $up->status === 'selesai'))
+                @php
+                    $hasilHilang = ! $adaHasil && $up->status === 'selesai';
+                    $naskahHilang = ! $adaBerkasPelanggan;
+                @endphp
+                @if ($naskahHilang || $hasilHilang)
                 <div class="pcek-berkas-hilang">
                     <i class="bi bi-archive"></i>
                     <span>
-                        @if (! $adaHasil && $up->status === 'selesai')
+                        @if ($naskahHilang && $hasilHilang)
+                            {{-- Keduanya lenyap: korban aturan lama yang membuang
+                                 naskah DAN hasil sekaligus, 7 hari setelah link
+                                 /cek mati — dihitung dari tanggal unggah, bukan
+                                 dari tanggal hasil diserahkan. --}}
+                            <b>Naskah customer dan berkas hasil sudah tidak tersimpan.</b>
+                            Keduanya terhapus oleh aturan lama yang membuang semua berkas jasa sekaligus.
+                            Sejak 14 Sep 2026 berkas hasil disimpan permanen, dan naskah customer baru
+                            dihapus 30 hari setelah pekerjaannya rampung.
+                            Kalau salinan hasilnya masih ada, unggah ulang lewat <b>Ganti Hasil</b>;
+                            kalau tidak, minta customer mengirim ulang naskahnya lewat link di atas —
+                            kuotanya masih tersisa.
+                        @elseif ($hasilHilang)
                             <b>Berkas hasil sudah tidak tersimpan.</b>
                             Pesanan lama terkena aturan penghapusan yang dulu ikut membuang berkas hasil.
                             Sejak 14 Sep 2026 berkas hasil disimpan permanen — kalau hasilnya masih ada,

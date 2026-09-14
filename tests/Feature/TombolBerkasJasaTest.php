@@ -102,18 +102,29 @@ it('tombol File Customer muncul selama naskahnya masih ada', function () {
         ->assertDontSee('Naskah customer sudah dihapus otomatis');
 });
 
-it('menjelaskan kenapa tak ada tombol hasil, bukan sekadar menyembunyikannya', function () {
-    // Persis keadaan INV-20260828-0006: selesai, tapi semua berkas lenyap.
+it('menyebut KEDUANYA saat naskah & hasil sama-sama lenyap', function () {
+    // Persis keadaan INV-20260828-0006. Keterangan yang hanya menyebut berkas
+    // hasil membuat admin bertanya-tanya ke mana naskah customernya.
     $order = pesananBerkas(['path' => null]);
 
     $up = $order->uploads->first();
 
     Livewire::actingAs(adminBerkas())
         ->test(OrderDetail::class, ['order' => $order])
-        ->assertSee('Berkas hasil sudah tidak tersimpan')
-        ->assertSee('Ganti Hasil')       // jalan keluarnya disebutkan
+        ->assertSee('Naskah customer dan berkas hasil sudah tidak tersimpan')
+        ->assertSee('Ganti Hasil')                       // jalan keluar untuk hasil
+        ->assertSee('minta customer mengirim ulang naskahnya')  // jalan keluar untuk naskah
         ->assertDontSeeHtml(route('admin.jasa.hasil', $up))
-        ->assertDontSeeHtml(route('admin.jasa.hasil-docx', $up));
+        ->assertDontSeeHtml(route('admin.jasa.berkas', $up));
+});
+
+it('hanya hasil yang hilang: naskahnya tidak ikut disebut', function () {
+    $order = pesananBerkas(['path' => 'masuk/naskah.docx']);
+
+    Livewire::actingAs(adminBerkas())
+        ->test(OrderDetail::class, ['order' => $order])
+        ->assertSee('Berkas hasil sudah tidak tersimpan')
+        ->assertDontSee('Naskah customer dan berkas hasil');
 });
 
 it('pengecekan yang berkasnya lengkap tidak diberi keterangan apa pun', function () {
