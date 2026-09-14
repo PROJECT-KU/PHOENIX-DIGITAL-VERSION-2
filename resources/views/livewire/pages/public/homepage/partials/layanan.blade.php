@@ -48,7 +48,14 @@
         .ly-aksi i.bi { line-height: 1; }
         .ly-aksi i.bi::before { display: block; line-height: 1; }
 
-        @media (max-width: 991.98px) {
+        /* Dibatasi min-width 576px.
+
+           Tanpa batas bawah, aturan :nth-child(2n+1) di bawah ini ikut berlaku
+           di layar HP — dan karena selektornya lebih khusus daripada .ly-kartu,
+           ia MENANG atas padding kartu di blok HP. Akibatnya kartu ganjil yang
+           bukan kartu pertama (layanan ketiga) kehilangan padding kirinya:
+           ikon dan harganya menempel ke tepi, tidak sejajar dengan kartu lain. */
+        @media (min-width: 576px) and (max-width: 991.98px) {
             .ly-deret { grid-template-columns: repeat(2, 1fr); gap: 26px 30px; }
             /* Kolom pertama tiap baris tidak berpembatas kiri — pembatas di ujung
                baris menggantung tanpa apa pun di sebelahnya. */
@@ -74,7 +81,11 @@
                 border-radius: 16px; background: #fff;
                 box-shadow: 0 6px 18px rgba(28, 31, 38, .05);
             }
-            .ly-kartu:first-child { padding: 14px; border-top: 1px solid #eef1f5; }
+            /* Aturan dasar melepas border-left pada kartu pertama (untuk tata
+               letak berkolom). Di sini tiap kartu berbingkai penuh, jadi
+               bingkainya dikembalikan — tanpa itu isi kartu pertama bergeser
+               1px dan ikonnya tidak sebaris dengan kartu di bawahnya. */
+            .ly-kartu:first-child { padding: 14px; border: 1px solid #eef1f5; }
 
             /* Ubin berwarna penuh, bukan bidang pucat: di HP ikon inilah yang
                membedakan satu layanan dari yang lain sebelum namanya dibaca. */
