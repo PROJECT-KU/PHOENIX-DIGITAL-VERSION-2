@@ -90,9 +90,15 @@
         .pkt-kartu:hover .pkt-tumpuk > span { transform: rotate(0deg) translateY(-3px); }
         .pkt-tumpuk i.bi, .pkt-tumpuk i.bi::before { display: block; line-height: 1; }
 
-        /* Berapa produk di dalamnya — pertanyaan pertama tentang sebuah paket. */
+        /* Berapa produk di dalamnya — pertanyaan pertama tentang sebuah paket.
+
+           Di pojok BAWAH kanan, bukan atas. Di atas ia berhadap-hadapan dengan
+           lencana hemat pada bidang selebar 227px, sedangkan keduanya bersama
+           butuh ~240px: ujung putihnya menyembul dari balik lencana hemat
+           (terukur bertumpuk 5-15px di desktop, 72px di HP). Diagonal begini
+           keduanya utuh, berapa pun panjang angkanya. */
         .pkt-jumlah {
-            position: absolute; top: 10px; right: 10px; z-index: 1;
+            position: absolute; bottom: 10px; right: 10px; z-index: 1;
             display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px 0 8px;
             border-radius: 99px; background: rgba(255, 255, 255, .92);
             border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
@@ -188,17 +194,13 @@
             }
             .pkt-hemat i.bi, .pkt-hemat i.bi::before { font-size: .68rem; }
 
-            /* Lencana "N produk" disembunyikan.
+            /* Di HP lencana "N produk" tetap disembunyikan sama sekali.
 
-               Bidang gambarnya hanya 143px, sedangkan lencana hemat di kiri
-               dan lencana jumlah di kanan sama-sama butuh ~120px — keduanya
-               bertumpuk 72px, dan yang terlihat adalah bidang putih yang
-               menyembul dari balik lencana hemat.
-
-               Yang dikorbankan paling sedikit adalah lencana jumlah: isi
-               paketnya sudah tertulis utuh tepat di bawah gambar ("Grammarly
-               Premium + Scopus Lisensi + …"), jadi angkanya tidak memberi tahu
-               apa pun yang belum diketahui pembaca. */
+               Bidang gambarnya tinggal 143px dengan tinggi ~98px; ditaruh di
+               pojok mana pun ia menutupi ubin isi paket. Yang hilang paling
+               sedikit: isi paketnya sudah tertulis utuh tepat di bawah gambar
+               ("Grammarly Premium + Scopus Lisensi + …"), jadi angkanya tidak
+               memberi tahu apa pun yang belum diketahui pembaca. */
             .pkt-jumlah { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
