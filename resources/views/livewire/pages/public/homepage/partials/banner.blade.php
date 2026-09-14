@@ -304,6 +304,18 @@
        mengubah paddingnya membuat teks meluber keluar lalu terpotong tepi. */
     @media (max-width: 991.98px) {
         .ph-hero.section { padding: 14px 0 10px; }
+
+        /* Pita putih 30px di bawah banner.
+
+           public-custom-styles.css menyisakan ruang itu untuk TITIK-TITIK
+           pagination ("ruang khusus di bawah kartu untuk dots"). Penandanya
+           kini bilah progres setipis 4px yang duduk di ATAS kartu, jadi ruang
+           itu tidak pernah terisi apa pun: yang terlihat hanya bidang putih
+           menggantung di bawah banner gelap.
+
+           Berkas itu dikompilasi ke public/build yang masuk .gitignore dan
+           tidak ikut terdeploy, jadi perbaikannya ditulis di sini. */
+        .phoenix-hero-swiper { padding-bottom: 0; }
     }
 </style>
 

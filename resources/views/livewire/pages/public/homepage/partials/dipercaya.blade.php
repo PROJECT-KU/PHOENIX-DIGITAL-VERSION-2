@@ -95,12 +95,56 @@
         .dp-lagi:hover { color: #d9531a; }
         .dp-lagi i.bi { line-height: 1; }
 
+        /* ===== Layar sempit =====
+           Di HP pita ini sebelumnya jadi baris logo 34px abu-abu yang nyaris
+           tak terbaca sebagai apa pun. Tiap merek kini jadi PIL berbingkai
+           dengan logo 44px berwarna penuh: ukuran yang cukup untuk dikenali
+           sekilas, dan bentuk yang memberi tahu bahwa deretnya bisa digeser. */
         @media (max-width: 767.98px) {
-            .dp-kotak { padding: 16px 18px; gap: 12px 18px; }
-            .dp-label { max-width: none; flex: 1 1 100%; font-size: .9rem; }
-            .dp-deret { gap: 20px; justify-content: flex-start; }
-            .dp-lagi { padding-left: 0; border-left: 0; }
-            .dp-merek span { font-size: .92rem; }
+            .dp-kotak { padding: 16px 0 14px; gap: 10px; border-radius: 16px; }
+            .dp-label {
+                max-width: none; flex: 1 1 100%; font-size: .95rem; font-weight: 800;
+                padding: 0 16px;
+            }
+
+            /* Deretnya menembus tepi kartu supaya pil pertama & terakhir
+               menyentuh tepi layar — isyarat baku "masih ada lanjutannya". */
+            .dp-deret {
+                gap: 8px; justify-content: flex-start;
+                padding: 2px 16px 2px; margin: 0;
+                scroll-snap-type: x proximity; scroll-padding-left: 16px;
+                /* Memudar di tepi kanan: tanda deretnya berlanjut. */
+                -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+                mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+            }
+            .dp-deret > li { scroll-snap-align: start; }
+
+            .dp-merek {
+                gap: 9px; padding: 6px 13px 6px 6px;
+                background: #fff; border: 1px solid #eceff4; border-radius: 999px;
+                box-shadow: 0 2px 8px rgba(28, 31, 38, .05);
+            }
+            .dp-merek img {
+                width: 44px; height: 44px; border-radius: 12px; padding: 3px;
+                /* Berwarna penuh: di ukuran sekecil ini keabuan membuat logo
+                   berbentuk garis tipis lenyap, dan warnanyalah yang membuat
+                   merek dikenali sebelum namanya dibaca. */
+                filter: none; opacity: 1;
+                background: #f8fafc;
+            }
+            /* Sedikit lebih kecil dari label kartunya: pil ketiga jadi ikut
+               menyembul di tepi, dan itulah yang memberi tahu deretnya bisa
+               digeser — bukan sekadar dua merek yang kebetulan muat. */
+            .dp-merek span { font-size: .9rem; font-weight: 700; color: #1c1f26; }
+
+            /* Ajakan ke katalog jadi tombol selebar kartu, bukan tautan kecil
+               yang menempel di ujung deretan. */
+            .dp-lagi {
+                padding: 11px 14px; border-left: 0; margin: 2px 16px 0;
+                flex: 1 1 100%; justify-content: center;
+                border: 1px dashed rgba(242, 101, 34, .45); border-radius: 12px;
+                background: rgba(242, 101, 34, .06); font-size: .9rem;
+            }
         }
     </style>
 
