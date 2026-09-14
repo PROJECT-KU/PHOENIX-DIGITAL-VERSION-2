@@ -490,6 +490,19 @@
             #footer .footer-widget { padding: 20px 18px; border-radius: 16px; }
             #footer .footer-widget h4 { margin-bottom: 14px; }
             #footer .social-icons a { width: 38px; height: 38px; }
+
+            /* Tema menengahkan TIAP BARIS kontak sendiri-sendiri
+               (.footer-contact .contact-item { justify-content: center }),
+               jadi ubin ikonnya mulai di titik yang berbeda pada tiap baris:
+               alamat, WhatsApp, dan surel tidak pernah sebaris.
+
+               Yang ditengahkan seharusnya BLOKNYA — selebar baris terpanjang —
+               sedangkan isi tiap baris tetap rata kiri, sehingga ketiga ubin
+               ikonnya berdiri di satu garis. */
+            #footer .footer-contact {
+                width: max-content; max-width: 100%; margin-inline: auto;
+            }
+            #footer .contact-item { justify-content: flex-start; text-align: left; }
         }
 
         @media (prefers-reduced-motion: reduce) {
