@@ -54,12 +54,46 @@
                baris menggantung tanpa apa pun di sebelahnya. */
             .ly-kartu:nth-child(2n+1) { padding-left: 0; border-left: 0; }
         }
+        /* ===== Layar HP =====
+           Di lebar penuh, gaya "tanpa kartu" berbalik melawan dirinya sendiri:
+           tiap layanan jadi baris setinggi 250px yang dipisah garis tipis,
+           deskripsinya tiga baris, dan "Pesan" terbaca sebagai tautan biru
+           biasa. Tiga layanan saja sudah sepanjang satu layar penuh.
+
+           Di sini tiap layanan dipadatkan jadi kartu: ikon berwarna di samping
+           nama, deskripsi dua baris, lalu harga berdampingan dengan tombol
+           Pesan yang benar-benar berbentuk tombol. */
         @media (max-width: 575.98px) {
-            /* Menumpuk: pembatasnya ikut berputar jadi garis mendatar di atas
-               tiap layanan, karena garis tegak tidak lagi memisahkan apa pun. */
-            .ly-deret { grid-template-columns: 1fr; gap: 0; }
-            .ly-kartu { padding: 20px 0; border-left: 0; border-top: 1px solid #eceff3; }
-            .ly-kartu:first-child { padding-top: 4px; border-top: 0; }
+            .ly-deret { grid-template-columns: 1fr; gap: 12px; }
+
+            .ly-kartu {
+                display: grid; align-items: center; gap: 8px 12px;
+                grid-template-columns: 46px minmax(0, 1fr);
+                grid-template-areas: "ikon nama" "ket ket" "kaki kaki";
+                padding: 14px; border: 1px solid #eef1f5; border-left: 1px solid #eef1f5;
+                border-radius: 16px; background: #fff;
+                box-shadow: 0 6px 18px rgba(28, 31, 38, .05);
+            }
+            .ly-kartu:first-child { padding: 14px; border-top: 1px solid #eef1f5; }
+
+            /* Ubin berwarna penuh, bukan bidang pucat: di HP ikon inilah yang
+               membedakan satu layanan dari yang lain sebelum namanya dibaca. */
+            .ly-ikon {
+                grid-area: ikon; width: 46px; height: 46px; border-radius: 13px; font-size: 1.15rem;
+                color: #fff;
+                background: linear-gradient(140deg, var(--ly-warna), color-mix(in srgb, var(--ly-warna) 55%, #fff));
+                box-shadow: 0 10px 18px -10px color-mix(in srgb, var(--ly-warna) 85%, transparent);
+            }
+            .ly-nama { grid-area: nama; font-size: 1rem; }
+            .ly-ket { grid-area: ket; -webkit-line-clamp: 2; font-size: .85rem; line-height: 1.55; }
+            .ly-kaki { grid-area: kaki; align-items: center; padding-top: 12px; }
+            .ly-harga b { font-size: 1.1rem; }
+
+            .ly-aksi {
+                padding: 9px 16px; border-radius: 999px; color: #fff; font-size: .85rem;
+                background: linear-gradient(135deg, var(--ly-warna), color-mix(in srgb, var(--ly-warna) 72%, #000 6%));
+                box-shadow: 0 8px 16px -8px color-mix(in srgb, var(--ly-warna) 90%, transparent);
+            }
         }
     </style>
 
