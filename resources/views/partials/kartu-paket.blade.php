@@ -187,6 +187,19 @@
                 max-width: calc(100% - 16px);
             }
             .pkt-hemat i.bi, .pkt-hemat i.bi::before { font-size: .68rem; }
+
+            /* Lencana "N produk" disembunyikan.
+
+               Bidang gambarnya hanya 143px, sedangkan lencana hemat di kiri
+               dan lencana jumlah di kanan sama-sama butuh ~120px — keduanya
+               bertumpuk 72px, dan yang terlihat adalah bidang putih yang
+               menyembul dari balik lencana hemat.
+
+               Yang dikorbankan paling sedikit adalah lencana jumlah: isi
+               paketnya sudah tertulis utuh tepat di bawah gambar ("Grammarly
+               Premium + Scopus Lisensi + …"), jadi angkanya tidak memberi tahu
+               apa pun yang belum diketahui pembaca. */
+            .pkt-jumlah { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
             .pkt-kartu::after, .pkt-media::before, .pkt-media img, .pkt-tumpuk > span, .pkt-btn { transition: none; }
