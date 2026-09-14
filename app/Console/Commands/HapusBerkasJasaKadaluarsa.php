@@ -2,100 +2,101 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Order;
+use App\Models\OrderUpload;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari SETELAH
- * link /cek kedaluwarsa — yakni: kuota habis → +24 jam link mati → +7 hari berkas
- * dihapus. Tujuannya hemat storage; dokumen pribadi (skripsi/naskah) tidak
- * disimpan lebih lama dari perlu.
+ * Hapus NASKAH ASLI milik pelanggan 30 hari setelah dikirim. Berkas HASIL
+ * (laporan plagiasi, laporan AI, dokumen parafrase) TIDAK PERNAH dihapus.
  *
- * Yang dihapus HANYA berkas fisiknya. Baris pengecekan (persentase, metadata)
- * TETAP disimpan untuk riwayat; kolom path di-null-kan supaya UI tak lagi
- * menawarkan unduhan yang berkasnya sudah tiada.
+ * Kenapa dipisah begitu:
  *
- * Aditif: tidak mengubah kuota, expiry, atau alur pesanan mana pun. Pesanan yang
- * kuotanya belum habis (mis. beli 5×, sisa 3) tak tersentuh — berkasHarusDihapus()
- * baru true setelah semua kuota terpakai lalu lewat 24 jam + 7 hari.
+ *  - Naskah pelanggan (skripsi, jurnal, tugas) adalah dokumen pribadi orang
+ *    lain. Tidak ada alasan menyimpannya setelah pekerjaannya rampung, dan
+ *    itulah bagian yang benar-benar memakan ruang.
+ *  - Berkas hasil adalah barang yang KAMI serahkan. Pelanggan yang kehilangan
+ *    laporannya, atau komplain sebulan kemudian, hanya bisa ditolong bila
+ *    admin masih memegangnya.
+ *
+ * Aturan lama menghapus KEDUANYA 7 hari setelah link /cek mati, dan pada kode
+ * yang lebih tua lagi hitungannya dimulai dari tanggal pelanggan mengunggah —
+ * bukan dari tanggal hasil diserahkan. Akibatnya hasil pesanan INV-20260828-0006
+ * lenyap hanya tiga hari setelah diserahkan (8 Sep 2026), dan admin tidak punya
+ * apa pun untuk dikirim ulang. 153 pengecekan kehilangan berkas hasilnya
+ * dengan cara yang sama.
+ *
+ * Berkas hanya dihapus bila pekerjaannya SUDAH RAMPUNG (selesai / dibatalkan).
+ * Pengecekan yang masih menunggu atau sedang diproses tidak pernah disentuh,
+ * berapa pun umurnya — admin masih membutuhkan naskahnya.
  */
 class HapusBerkasJasaKadaluarsa extends Command
 {
     protected $signature = 'jasa:hapus-berkas-kadaluarsa
                             {--dry-run : Tampilkan saja, jangan hapus}';
 
-    protected $description = 'Hapus berkas jasa (unggahan customer + hasil admin) 7 hari setelah link /cek kedaluwarsa';
+    protected $description = 'Hapus naskah asli pelanggan 30 hari setelah pekerjaannya rampung (berkas hasil tidak ikut dihapus)';
 
-    /** Kolom path berkas fisik di OrderUpload yang harus dibersihkan. */
-    private const PATH_COLUMNS = ['path', 'pdf_path', 'hasil_path', 'hasil_ai_path', 'hasil_docx_path'];
+    /** Naskah dari pelanggan. HANYA kolom-kolom ini yang boleh dihapus. */
+    private const BERKAS_PELANGGAN = ['path', 'pdf_path'];
+
+    /** Umur naskah sebelum boleh dihapus. */
+    public const HARI_SIMPAN = 30;
+
+    /** Pekerjaan yang sudah rampung — naskahnya tidak diperlukan lagi. */
+    private const STATUS_RAMPUNG = ['selesai', 'dibatalkan'];
 
     public function handle(): int
     {
         $simulasi = (bool) $this->option('dry-run');
         $disk = Storage::disk('local');
+        $batas = now()->subDays(self::HARI_SIMPAN);
 
-        // Kandidat: pesanan yang punya unggahan (non-batal) MASIH berberkas, dan
-        // unggahan itu sudah > 8 hari (24 jam + 7 hari — batas paling awal berkas
-        // bisa dihapus). Penentu akhir tetap berkasHarusDihapus() di PHP: kuota
-        // benar-benar habis DAN sudah lewat 24 jam + 7 hari.
-        $batasKandidat = now()->subDays(8);
-
-        $orders = Order::whereHas('uploads', function ($q) use ($batasKandidat) {
-            $q->where('status', '!=', 'dibatalkan')
-                ->where('created_at', '<', $batasKandidat)
-                ->where(function ($x) {
-                    foreach (self::PATH_COLUMNS as $col) {
-                        $x->orWhereNotNull($col);
-                    }
-                });
-        })
-            ->with(['uploads', 'items.product'])
-            ->get();
-
-        $orderTerproses = 0;
         $berkasTerhapus = 0;
+        $unggahanTerproses = 0;
 
-        foreach ($orders as $order) {
-            if (! $order->berkasHarusDihapus()) {
-                continue;
-            }
+        OrderUpload::query()
+            ->whereIn('status', self::STATUS_RAMPUNG)
+            ->where('created_at', '<', $batas)
+            ->where(function ($q) {
+                foreach (self::BERKAS_PELANGGAN as $kolom) {
+                    $q->orWhereNotNull($kolom);
+                }
+            })
+            ->chunkById(200, function ($unggahan) use ($disk, $simulasi, &$berkasTerhapus, &$unggahanTerproses) {
+                foreach ($unggahan as $up) {
+                    $ubah = [];
 
-            $adaBerkas = false;
-            foreach ($order->uploads as $up) {
-                $ubah = [];
-                foreach (self::PATH_COLUMNS as $col) {
-                    $path = $up->{$col};
-                    if (! $path) {
-                        continue;
-                    }
-                    $adaBerkas = true;
+                    foreach (self::BERKAS_PELANGGAN as $kolom) {
+                        $path = $up->{$kolom};
+                        if (! $path) {
+                            continue;
+                        }
 
-                    if ($simulasi) {
                         $berkasTerhapus++;
 
-                        continue;
+                        if ($simulasi) {
+                            continue;
+                        }
+
+                        if ($disk->exists($path)) {
+                            $disk->delete($path);
+                        }
+                        $ubah[$kolom] = null;
                     }
 
-                    if ($disk->exists($path)) {
-                        $disk->delete($path);
+                    if (! $simulasi && $ubah) {
+                        // forceFill: kolom path tidak ikut $fillable demi keamanan.
+                        $up->forceFill($ubah)->save();
                     }
-                    $berkasTerhapus++;
-                    $ubah[$col] = null;
-                }
 
-                if (! $simulasi && $ubah) {
-                    $up->forceFill($ubah)->save();
+                    $unggahanTerproses++;
                 }
-            }
-
-            if ($adaBerkas) {
-                $orderTerproses++;
-            }
-        }
+            });
 
         $kata = $simulasi ? 'AKAN dihapus' : 'dihapus';
-        $this->info("{$orderTerproses} pesanan diproses, {$berkasTerhapus} berkas {$kata} (7 hari setelah link /cek kedaluwarsa).");
+        $this->info("{$unggahanTerproses} unggahan diproses, {$berkasTerhapus} naskah pelanggan {$kata} "
+            .'(lebih dari '.self::HARI_SIMPAN.' hari & pekerjaannya rampung). Berkas hasil tidak disentuh.');
 
         return self::SUCCESS;
     }
