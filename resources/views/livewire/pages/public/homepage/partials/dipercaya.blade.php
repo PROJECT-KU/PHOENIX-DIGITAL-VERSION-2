@@ -29,19 +29,52 @@
             font-size: .95rem; line-height: 1.35; margin: 0;
         }
 
-        /* Membungkus, bukan menggulir. Tiap merek kini sebuah PIL dengan lebar
-           sendiri-sendiri; dipaksa satu baris, pil terakhir akan terpotong tepi
-           kartu tanpa ada yang memberi tahu bahwa ia bisa digeser. Dibungkus,
-           seluruh merek terlihat sekaligus dan barisnya tetap rapi.
-
-           (Di layar sempit aturannya dibalik: menggulir dengan tepi memudar —
-           lihat blok @media di bawah.) */
+        /* SATU BARIS yang digeser, bukan membungkus. Pita setinggi dua-tiga
+           baris kehilangan bentuknya sebagai pita, dan tingginya ikut berubah
+           tiap kali jumlah mereknya berubah. */
+        .dp-geser { position: relative; flex: 1 1 320px; min-width: 0; }
         .dp-deret {
-            flex: 1 1 320px; min-width: 0;
-            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+            display: flex; align-items: center; flex-wrap: nowrap; gap: 10px;
+            overflow-x: auto; scroll-behavior: smooth;
+            scroll-snap-type: x proximity; scroll-padding-left: 4px;
             scrollbar-width: none; -ms-overflow-style: none;
-            list-style: none; margin: 0;
+            list-style: none; margin: 0; padding: 4px;
         }
+        .dp-deret > li { scroll-snap-align: start; }
+
+        /* Tepi memudar: tanda deretnya berlanjut. Sisi yang sudah mentok
+           dimatikan lewat kelas .di-awal / .di-akhir dari skrip di bawah. */
+        /* Selebar tombol panah + sedikit lagi: pil yang kebetulan berada di
+           balik tombol ikut memudar, jadi tombolnya tidak terbaca sebagai
+           bagian dari pil itu. */
+        .dp-geser::before, .dp-geser::after {
+            content: ""; position: absolute; top: 0; bottom: 0; width: 52px; z-index: 1;
+            pointer-events: none; opacity: 1; transition: opacity .2s ease;
+        }
+        .dp-geser::before { left: 0; background: linear-gradient(90deg, #fff, rgba(255, 255, 255, 0)); }
+        .dp-geser::after { right: 0; background: linear-gradient(270deg, #fff, rgba(255, 255, 255, 0)); }
+        .dp-geser.di-awal::before { opacity: 0; }
+        .dp-geser.di-akhir::after { opacity: 0; }
+
+        /* Tombol panah: di layar sentuh deret bisa digeser jari, di desktop
+           tidak ada isyarat apa pun tanpa tombol ini. Disembunyikan saat
+           seluruh merek sudah muat (kelas .muat dari skrip). */
+        .dp-panah {
+            position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+            width: 34px; height: 34px; border-radius: 50%; border: 1px solid #e6eaf0;
+            background: #fff; color: #1c1f26; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(28, 31, 38, .12);
+            transition: background .2s ease, color .2s ease, opacity .2s ease;
+        }
+        .dp-panah:hover { background: #f26522; border-color: #f26522; color: #fff; }
+        .dp-panah i.bi { line-height: 1; font-size: .95rem; }
+        .dp-panah i.bi::before { display: block; line-height: 1; }
+        .dp-panah.kiri { left: -6px; }
+        .dp-panah.kanan { right: -6px; }
+        .dp-geser.muat .dp-panah,
+        .dp-geser.di-awal .dp-panah.kiri,
+        .dp-geser.di-akhir .dp-panah.kanan { opacity: 0; pointer-events: none; }
         .dp-deret::-webkit-scrollbar { display: none; }
         .dp-deret > li { flex: 0 0 auto; }
 
@@ -102,7 +135,7 @@
         @media (max-width: 991.98px) {
             .dp-kotak { align-items: flex-start; gap: 12px 18px; }
             .dp-label { flex: 1 1 100%; max-width: none; }
-            .dp-deret { flex: 1 1 100%; }
+            .dp-geser { flex: 1 1 100%; }
         }
 
         /* ===== Layar sempit =====
@@ -118,16 +151,12 @@
             }
 
             /* Deretnya menembus tepi kartu supaya pil pertama & terakhir
-               menyentuh tepi layar — isyarat baku "masih ada lanjutannya". */
-            .dp-deret {
-                flex-wrap: nowrap; overflow-x: auto;
-                gap: 8px; justify-content: flex-start;
-                padding: 2px 16px; margin: 0;
-                scroll-snap-type: x proximity; scroll-padding-left: 16px;
-                -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
-                mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%);
-            }
-            .dp-deret > li { scroll-snap-align: start; }
+               menyentuh tepi layar — isyarat baku "masih ada lanjutannya".
+               Tombol panah tidak dipakai: di layar sentuh jari sudah cukup,
+               dan tombolnya hanya akan menutupi logo. */
+            .dp-deret { gap: 8px; padding: 2px 16px; scroll-padding-left: 16px; }
+            .dp-panah { display: none; }
+            .dp-geser::before, .dp-geser::after { width: 26px; }
 
             /* Ajakan ke katalog jadi tombol selebar kartu, bukan pil yang
                tersembunyi di ujung deretan yang menggulir. */
@@ -143,6 +172,17 @@
             {{-- Daftar, bukan sekadar deretan <a>. Pembaca layar mengumumkan
                  "daftar 5 butir" sebelum membacanya, jadi pendengarnya tahu
                  sedang menghadapi kumpulan merek, bukan tautan acak. --}}
+            <div class="dp-geser" data-geser>
+                {{-- aria-hidden: tombol ini hanya pintasan tetikus. Pembaca layar
+                     menelusuri daftar mereknya langsung, jadi mengumumkan
+                     "tombol geser" hanya menambah kebisingan. --}}
+                <button type="button" class="dp-panah kiri" data-arah="-1" aria-hidden="true" tabindex="-1">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="dp-panah kanan" data-arah="1" aria-hidden="true" tabindex="-1">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+
             <ul class="dp-deret">
                 @foreach ($merek as $m)
                 <li>
@@ -162,6 +202,7 @@
                 </li>
                 @endforeach
             </ul>
+            </div>
 
             {{-- Ditutup ANGKA, bukan "dan banyak lagi".
 
@@ -179,5 +220,53 @@
             </a>
         </div>
     </div>
+
+    {{-- Tombol geser + penanda ujung deret.
+
+         Dipasang SEKALI untuk seluruh sesi dan mencari elemennya tiap kali
+         dipanggil: halaman dibuka lewat wire:navigate, jadi elemen yang
+         ditangkap sekali di awal sudah bukan elemen yang ada di layar. --}}
+    <script data-navigate-once>
+        (function () {
+            if (window.__dpGeserTerpasang) return;
+            window.__dpGeserTerpasang = true;
+
+            const perbarui = (geser) => {
+                const deret = geser.querySelector('.dp-deret');
+                if (!deret) return;
+                const sisa = deret.scrollWidth - deret.clientWidth;
+                geser.classList.toggle('muat', sisa <= 2);
+                geser.classList.toggle('di-awal', deret.scrollLeft <= 2);
+                geser.classList.toggle('di-akhir', deret.scrollLeft >= sisa - 2);
+            };
+
+            const pasang = () => {
+                document.querySelectorAll('[data-geser]').forEach((geser) => {
+                    perbarui(geser);
+                    if (geser.dataset.siap) return;
+                    geser.dataset.siap = '1';
+
+                    const deret = geser.querySelector('.dp-deret');
+                    deret.addEventListener('scroll', () => perbarui(geser), { passive: true });
+                    new ResizeObserver(() => perbarui(geser)).observe(deret);
+
+                    geser.querySelectorAll('.dp-panah').forEach((tombol) => {
+                        tombol.addEventListener('click', () => {
+                            // Digeser selebar yang terlihat dikurangi satu pil,
+                            // supaya selalu ada merek yang ikut berpindah dan
+                            // pembaca tidak kehilangan tempatnya.
+                            const langkah = Math.max(160, deret.clientWidth - 120);
+                            deret.scrollBy({ left: langkah * Number(tombol.dataset.arah), behavior: 'smooth' });
+                        });
+                    });
+                });
+            };
+
+            document.addEventListener('DOMContentLoaded', pasang);
+            document.addEventListener('livewire:navigated', pasang);
+            window.addEventListener('load', pasang);
+            pasang();
+        })();
+    </script>
 </section>
 @endif
