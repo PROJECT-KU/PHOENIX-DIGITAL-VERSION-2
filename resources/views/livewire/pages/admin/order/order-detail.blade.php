@@ -594,6 +594,16 @@ Detail Pesanan || lemon
             .pcek .pcek-bonus-f.narrow { flex: 1 1 100%; }
             .pcek .pcek-bonus-btns .pcek-btn { flex: 1; }
         }
+        /* Keterangan saat berkasnya sudah dihapus otomatis */
+        .pcek-berkas-hilang {
+            display: flex; gap: 9px; align-items: flex-start; margin-top: 10px;
+            padding: 9px 12px; border-radius: 12px; font-size: .8rem; line-height: 1.5;
+            background: #f8fafc; border: 1px solid #e6eaf0; color: #475569;
+        }
+        .pcek-berkas-hilang > i { font-size: .95rem; line-height: 1.3; color: #94a3b8; }
+        .pcek-berkas-hilang b { color: #334155; }
+        .pcek-actions.pcek-actions-lanjut { margin-top: 10px; }
+
         /* Penanda bot Turnitin / manual admin */
         .pcek-bot { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 9px 12px; border-radius: 12px; font-size: .8rem; line-height: 1.45; border: 1px solid transparent; }
         .pcek-bot > i { font-size: 1rem; line-height: 1.2; }
@@ -986,6 +996,15 @@ Detail Pesanan || lemon
 
                 {{-- Aksi — satu aksi utama per status, sisanya netral; destruktif di kanan --}}
                 <div class="pcek-actions">
+                    @php
+                        // Berkas pelanggan dihapus otomatis 30 hari setelah
+                        // pekerjaannya rampung (jasa:hapus-berkas-kadaluarsa).
+                        // Tanpa penjagaan ini tombolnya tetap tampil dan
+                        // menjanjikan unduhan yang berujung 404.
+                        $adaBerkasPelanggan = (bool) $up->path;
+                        $adaHasil = $up->hasil_path || $up->hasil_ai_path || $up->hasil_docx_path;
+                    @endphp
+                    @if ($adaBerkasPelanggan)
                     @if ($up->perlu_diringkas)
                     {{-- DOCX melewati batas unggah Groupy: gambar dimampatkan, teks utuh --}}
                     <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost"
@@ -1000,6 +1019,7 @@ Detail Pesanan || lemon
                     <a href="{{ route('admin.jasa.berkas', $up) }}" class="pcek-btn ghost">
                         <i class="bi bi-download"></i> File Customer
                     </a>
+                    @endif
                     @endif
                     @if ($up->pdf_path)
                     {{-- Parafrase: PDF acuan jumlah halaman (file utama = DOCX kerja) --}}
@@ -1041,6 +1061,31 @@ Detail Pesanan || lemon
                         <i class="bi bi-arrow-repeat"></i> Ganti Hasil
                     </button>
                     @endif
+                </div>
+
+                {{-- Kenapa tidak ada yang bisa diunduh.
+
+                     Tanpa kalimat ini, layar ini hanya memperlihatkan tombol
+                     yang HILANG — dan yang membacanya menyimpulkan halamannya
+                     rusak, lalu mencari bug yang tidak ada. --}}
+                @if (! $adaBerkasPelanggan || (! $adaHasil && $up->status === 'selesai'))
+                <div class="pcek-berkas-hilang">
+                    <i class="bi bi-archive"></i>
+                    <span>
+                        @if (! $adaHasil && $up->status === 'selesai')
+                            <b>Berkas hasil sudah tidak tersimpan.</b>
+                            Pesanan lama terkena aturan penghapusan yang dulu ikut membuang berkas hasil.
+                            Sejak 14 Sep 2026 berkas hasil disimpan permanen — kalau hasilnya masih ada,
+                            unggah ulang lewat <b>Ganti Hasil</b> agar customer bisa mengunduhnya lagi.
+                        @else
+                            <b>Naskah customer sudah dihapus otomatis</b> (30 hari setelah pekerjaannya rampung).
+                            Berkas hasil tidak ikut dihapus.
+                        @endif
+                    </span>
+                </div>
+                @endif
+
+                <div class="pcek-actions pcek-actions-lanjut">
 
                     @if (in_array($up->status, ['menunggu', 'diproses']))
                     <button type="button" class="pcek-btn danger pcek-push pcek-konfirmasi" title="Batalkan pengecekan"
