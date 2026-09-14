@@ -169,6 +169,24 @@
             .pkt-nama { font-size: .94rem; }
             .pkt-harga b { font-size: 1.18rem; }
             .pkt-btn { height: 40px; font-size: .8rem; }
+
+            /* Dua kartu sebaris (col-6) menyisakan ~143px untuk isi kartu,
+               sedangkan "Keranjang" + "Lihat" berdampingan butuh ~168px —
+               tombol "Lihat" menyembul keluar kartu lalu terpotong kartu di
+               sebelahnya. Ditumpuk, keduanya utuh dan bidang sentuhnya justru
+               lebih lebar. */
+            .pkt-aksi { flex-direction: column; gap: 8px; }
+            .pkt-btn { width: 100%; flex: 0 0 auto; }
+            .pkt-btn-lihat { padding: 0 12px; }
+
+            /* Lencana hemat dipendekkan: "Hemat Rp250.000" pada ukuran penuh
+               lebih lebar dari bidang gambarnya sendiri, dan ujungnya terpotong
+               karena bidang itu memotong apa pun yang menjorok keluar. */
+            .pkt-hemat {
+                height: 23px; padding: 0 8px; gap: 4px; font-size: .64rem;
+                max-width: calc(100% - 16px);
+            }
+            .pkt-hemat i.bi, .pkt-hemat i.bi::before { font-size: .68rem; }
         }
         @media (prefers-reduced-motion: reduce) {
             .pkt-kartu::after, .pkt-media::before, .pkt-media img, .pkt-tumpuk > span, .pkt-btn { transition: none; }
