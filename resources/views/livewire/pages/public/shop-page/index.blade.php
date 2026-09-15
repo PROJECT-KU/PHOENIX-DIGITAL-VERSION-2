@@ -211,6 +211,7 @@
         }
         .sk-lihat:hover { background: var(--c); color: #fff; }
         .sk-pendek { display: none; }
+        .sk-krj-pendek { display: none; }
         .sk-kartu.is-jeda .sk-media > img, .sk-kartu.is-jeda .sk-cadangan { filter: grayscale(.6); opacity: .75; }
 
         /* Glif sendirian di wadah penengah → block; glif sebaris teks → cukup line-height. */
@@ -239,9 +240,16 @@
             .sk-isi { padding: 12px 12px 13px; }
             .sk-nama { font-size: .9rem; }
             .sk-harga b { font-size: 1rem; }
-            .sk-aksi { gap: 6px; padding-top: 12px; }
-            .sk-beli { height: 38px; padding: 0 8px; border-radius: 10px; font-size: .78rem; }
-            .sk-lihat { width: 38px; height: 38px; border-radius: 10px; }
+            /* "Keranjang" terpotong 4px pada kartu 163px (dua kartu sebaris).
+               Ruangnya dikumpulkan dari empat tempat sekaligus — padding tombol,
+               jarak ikon ke teks, lebar tombol panah, dan ukuran ikon — supaya
+               tidak ada satu pun yang harus dipangkas ekstrem, dan masih tersisa
+               ruang untuk layar 360px. */
+            .sk-aksi { gap: 4px; padding-top: 12px; }
+            .sk-beli { height: 38px; padding: 0 6px; border-radius: 10px; font-size: .78rem; }
+            .sk-beli > span { gap: 5px; }
+            .sk-beli i.bi { font-size: .82rem; }
+            .sk-lihat { width: 34px; height: 38px; border-radius: 10px; }
             .shop-kat { width: 26px; height: 26px; padding: 0; justify-content: center; border-radius: 50%; top: 8px; right: 8px; }
             .shop-kat-teks { display: none; }
             .sk-diskon { height: 23px; padding: 0 7px; font-size: .66rem; top: 8px; left: 8px; }
@@ -251,6 +259,21 @@
             .sk-panjang { display: none; }
             .sk-pendek { display: inline; }
         }
+        /* HP sempit (iPhone mini 375px, sebagian Android 360px): ruang teks
+           tombolnya tinggal di bawah 80px yang dibutuhkan "Keranjang" + ikon,
+           jadi katanya ditukar "Beli". Batasnya 385px, bukan 400px: pada 390px
+           (iPhone 14/15) kata penuhnya masih muat dengan sisa ruang. */
+        @media (max-width: 384.98px) {
+            .sk-krj-panjang { display: none; }
+            .sk-krj-pendek { display: inline; }
+        }
+
+        /* Layar 320px (HP lawas): bahkan "Beli" + ikon masih lebih lebar 1px
+           dari ruangnya. Ikonnya yang dilepas — katanya yang harus terbaca. */
+        @media (max-width: 344.98px) {
+            .sk-beli i.bi { display: none; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .sk-kartu, .sk-media::before, .sk-media img, .sk-cadangan, .sk-lihat, .sk-beli, .sf-chip, .sf-chip-ic { transition: none; }
         }
@@ -636,7 +659,11 @@
                                                             {{-- Jasa: harga ditentukan di halaman produk (unggah file / add-on) --}}
                                                             <i class="bi bi-sliders"></i><span class="sk-panjang">Atur Pesanan</span><span class="sk-pendek">Atur</span>
                                                         @else
-                                                            <i class="bi bi-cart-plus"></i> Keranjang
+                                                            {{-- "Keranjang" masih muat sampai layar 390px; di bawah itu
+                                                                 ia terpotong, jadi ditukar "Beli". Pasangan kelasnya
+                                                                 sendiri (bukan .sk-panjang/.sk-pendek) supaya kata yang
+                                                                 lebih jelas tidak ikut hilang di HP berukuran normal. --}}
+                                                            <i class="bi bi-cart-plus"></i><span class="sk-krj-panjang">Keranjang</span><span class="sk-krj-pendek">Beli</span>
                                                         @endif
                                                     </span>
                                                     <span wire:loading wire:target="openDuration('{{ $k['id'] }}')"><span class="spinner-border spinner-border-sm"></span></span>
