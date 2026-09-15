@@ -703,6 +703,9 @@
                         <select wire:model="prices.{{ $i }}.durasi_type" class="form-select">
                             <option value="bulan">Bulan</option>
                             <option value="tahun">Tahun</option>
+                            {{-- Kredit: dijual per JUMLAH (mis. 1.500 kredit Gamma),
+                                 tanpa masa aktif. --}}
+                            <option value="kredit">Kredit</option>
                         </select>
                     </div>
                     <div class="col-9 col-md-5" x-data>

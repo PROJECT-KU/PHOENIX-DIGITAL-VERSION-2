@@ -126,14 +126,15 @@ class Product extends Model
                 'durasi_value' => (int) $p->durasi_value,
                 'durasi_type' => $p->durasi_type,
                 'harga' => (int) $p->harga,
-                'label' => $p->durasi_value.' '.$p->durasi_type,
+                // Dipisah ribuan: paket 1500 kredit terbaca "1.500 kredit".
+                'label' => number_format((int) $p->durasi_value, 0, ',', '.').' '.$p->durasi_type,
             ])->values();
         }
 
         $out = collect();
         foreach ([[1, 'bulan', $this->harga_perbulan], [5, 'bulan', $this->harga_5_perbulan], [10, 'bulan', $this->harga_10_perbulan], [1, 'tahun', $this->harga_pertahun]] as [$v, $t, $h]) {
             if ((int) $h > 0) {
-                $out->push(['durasi_value' => $v, 'durasi_type' => $t, 'harga' => (int) $h, 'label' => $v.' '.$t]);
+                $out->push(['durasi_value' => $v, 'durasi_type' => $t, 'harga' => (int) $h, 'label' => number_format($v, 0, ',', '.').' '.$t]);
             }
         }
 
@@ -213,6 +214,31 @@ class Product extends Model
     public function addonPilihSatu(): bool
     {
         return $this->addon_mode === 'tunggal';
+    }
+
+    /**
+     * Produk yang dijual per KREDIT (jumlah), bukan per lama waktu.
+     *
+     * Satuan 'kredit' menumpang kolom durasi yang sama dengan 'bulan'/'tahun',
+     * seperti 'halaman' pada jasa parafrase. Bedanya: kredit TIDAK punya masa
+     * aktif — lihat OrderItem::calculateEndDate().
+     */
+    public function pakaiKredit(): bool
+    {
+        return $this->prices->contains(fn ($h) => $h->durasi_type === 'kredit');
+    }
+
+    /**
+     * Paket kredit termurah — dipakai kartu /shop yang hanya menampilkan SATU
+     * harga ("mulai dari"). Tanpa ini kartunya membaca kolom harga_perbulan
+     * yang pada produk kredit memang kosong, lalu mencetak "Rp0 /bln".
+     */
+    public function paketKreditTermurah()
+    {
+        return $this->prices
+            ->where('durasi_type', 'kredit')
+            ->sortBy('harga')
+            ->first();
     }
 
     /** Harga per halaman (produk jasa mode 'halaman'). */

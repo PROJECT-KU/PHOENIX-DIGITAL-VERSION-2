@@ -179,7 +179,19 @@ class OrderItem extends Model
     // Methods
     public function getDurationLabel()
     {
-        return "{$this->duration_value} {$this->duration_type}";
+        return $this->jumlahDurasi().' '.$this->duration_type;
+    }
+
+    /** Angka durasi siap tampil; paket kredit dipisah ribuan ("1.500"). */
+    private function jumlahDurasi(): string
+    {
+        return number_format((int) $this->duration_value, 0, ',', '.');
+    }
+
+    /** Dijual per jumlah kredit, bukan per lama waktu — tidak punya masa aktif. */
+    public function pakaiKredit(): bool
+    {
+        return $this->duration_type === 'kredit';
     }
 
     // Apakah item ini punya bonus durasi tambahan
@@ -191,7 +203,7 @@ class OrderItem extends Model
     // Label durasi lengkap termasuk bonus, mis. "1 bulan + bonus 2 bulan (total 3 bulan)"
     public function getFullDurationLabel(): string
     {
-        $label = "{$this->duration_value} {$this->duration_type}";
+        $label = $this->jumlahDurasi().' '.$this->duration_type;
 
         if ($this->hasBonusDuration()) {
             $label .= " + bonus {$this->bonus_duration_value} {$this->bonus_duration_type}";
@@ -220,6 +232,13 @@ class OrderItem extends Model
     public function calculateEndDate()
     {
         if (! $this->start_date) {
+            return null;
+        }
+
+        // Kredit dibeli per JUMLAH, bukan per lama waktu: tidak ada tanggal
+        // berakhir. Tanpa penjagaan ini "1500 kredit" dihitung 1.500 bulan —
+        // masa aktif 125 tahun, dan pengingat perpanjangan ikut salah sasaran.
+        if ($this->pakaiKredit()) {
             return null;
         }
 

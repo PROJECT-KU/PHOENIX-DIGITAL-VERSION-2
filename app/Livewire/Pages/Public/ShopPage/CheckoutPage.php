@@ -478,6 +478,18 @@ class CheckoutPage extends Component
         }
     }
 
+    /**
+     * Keranjang memuat produk KREDIT (mis. kredit Gamma AI)?
+     *
+     * Kredit tidak dikirim sebagai akun baru — admin mengisikannya ke akun yang
+     * SUDAH dipakai pembeli. Tanpa alamat akun itu pesanan tidak bisa
+     * dikerjakan, jadi kolom Catatan berubah wajib khusus untuk pesanan ini.
+     */
+    public function adaKredit(): bool
+    {
+        return collect($this->cart)->contains(fn ($i) => ($i['duration_type'] ?? '') === 'kredit');
+    }
+
     public function checkout()
     {
         $this->validate();
@@ -486,6 +498,12 @@ class CheckoutPage extends Component
             session()->flash('error', 'Keranjang Anda kosong');
 
             return redirect()->route('shop.index');
+        }
+
+        if ($this->adaKredit() && blank(trim((string) $this->customer_notes))) {
+            $this->addError('customer_notes', 'Tulis email akun yang akan diisi kreditnya — tanpa itu admin tidak tahu ke akun mana kredit dikirim.');
+
+            return;
         }
 
         // Layanan bisa dijeda admin SETELAH barangnya masuk keranjang — mis.

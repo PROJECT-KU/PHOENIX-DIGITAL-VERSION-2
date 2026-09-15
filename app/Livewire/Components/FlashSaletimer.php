@@ -197,7 +197,8 @@ class FlashSaletimer extends Component
                 'duration_type' => $type,
                 'duration_value' => $val,
                 'price' => $harga,
-                'label' => $val.' '.ucfirst($type),
+                // Dipisah ribuan: paket 1500 kredit terbaca "1.500 Kredit".
+                'label' => number_format($val, 0, ',', '.').' '.ucfirst($type),
                 'savings' => $savings,
                 'discounted' => $discounted,
             ];

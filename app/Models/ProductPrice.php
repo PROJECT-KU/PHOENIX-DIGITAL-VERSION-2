@@ -29,6 +29,8 @@ class ProductPrice extends Model
 
     public function getLabelAttribute(): string
     {
-        return $this->durasi_value.' '.$this->durasi_type;
+        // Dipisah ribuan: paket kredit bernilai 1500 terbaca "1.500 kredit",
+        // bukan "1500 kredit". Satuan waktu tidak terpengaruh (1, 3, 12).
+        return number_format($this->durasi_value, 0, ',', '.').' '.$this->durasi_type;
     }
 }

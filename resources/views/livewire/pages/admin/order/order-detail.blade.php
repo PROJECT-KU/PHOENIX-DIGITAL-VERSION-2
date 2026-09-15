@@ -1428,7 +1428,9 @@ Detail Pesanan || lemon
                             </td>
                             <td class="text-center">
                                 <div>{!! $item->getSubscriptionStatusBadge() !!}</div>
-                                @if ($item->end_date)
+                                @if ($item->pakaiKredit())
+                                <small class="d-block text-muted mt-1">Tanpa masa aktif (kredit)</small>
+                                @elseif ($item->end_date)
                                 <small class="d-block text-muted mt-1">
                                     s/d {{ \Carbon\Carbon::parse($item->end_date)->translatedFormat('d M Y') }}
                                 </small>
@@ -1481,8 +1483,13 @@ Detail Pesanan || lemon
                                     data-akun="{{ trim($item->product_name ?: ($item->product->nama_akun ?? '-')) }}"
                                     data-tglorder="{{ $order->created_at->translatedFormat('d F Y') }}"
                                     data-total="{{ number_format($order->total, 0, ',', '.') }}"
-                                    data-pemesanan="{{ \Carbon\Carbon::parse($item->start_date)->format('d F Y') }}"
-                                    data-berakhir="{{ \Carbon\Carbon::parse($item->end_date)->format('d F Y') }}"
+                                    data-pemesanan="{{ $item->start_date ? \Carbon\Carbon::parse($item->start_date)->format('d F Y') : '' }}"
+                                    {{-- Dikosongkan bila memang tak ada tanggal akhir (mis. produk
+                                         kredit). Carbon::parse(null) memberi HARI INI, dan pesan
+                                         WhatsApp-nya lalu mengarang masa aktif yang tidak pernah ada. --}}
+                                    data-berakhir="{{ $item->end_date ? \Carbon\Carbon::parse($item->end_date)->format('d F Y') : '' }}"
+                                    data-kredit="{{ $item->pakaiKredit() ? '1' : '' }}"
+                                    data-jumlahkredit="{{ $item->getDurationLabel() }}"
                                     data-username="{{ $item->account_username }}"
                                     data-password="{{ $item->account_password }}"
                                     data-linkakses="{{ $item->account_link }}"
@@ -1791,6 +1798,8 @@ Detail Pesanan || lemon
             total: button.dataset.total,
             pemesanan: button.dataset.pemesanan,
             berakhir: button.dataset.berakhir,
+            kredit: button.dataset.kredit,
+            jumlahkredit: button.dataset.jumlahkredit,
             username: button.dataset.username,
             password: button.dataset.password,
             linkakses: button.dataset.linkakses,
@@ -1873,7 +1882,30 @@ Detail Pesanan || lemon
 
         let pesan = '';
 
-        if (type === 'pengiriman') {
+        // Produk KREDIT: tidak ada akun baru yang dikirim, dan tidak ada masa
+        // aktif. Memakai naskah "pengiriman" biasa berarti mengirim password
+        // kosong dan tanggal berakhir yang dikarang.
+        if (type === 'pengiriman' && waData.kredit) {
+            pesan =
+                `ID Transaksi: ${idtransaksi}
+
+Halo ${nama},
+Pesanan *${akun}* Anda pada tanggal *${tglorder}* sudah kami proses.
+
+${EMO.bullet} Kredit ditambahkan: *${waData.jumlahkredit}*
+${EMO.bullet} Akun tujuan: ${username || '-'}
+
+Kredit ini *tidak memiliki masa aktif*, jadi bisa Anda pakai kapan saja.
+Total pembayaran anda *Rp ${total}*.${blokCatatan}${blokBonus}${blokStruk}
+
+Jika ada kendala, jangan ragu untuk menghubungi kami.
+Terima kasih telah menggunakan layanan kami.
+
+Salam hangat,
+Phoenix Digital Warehouse
+Instagram: phoenixdigital_warehouse
+Website: https://phoenixdigitalwarehouse.com/`;
+        } else if (type === 'pengiriman') {
             pesan =
                 `ID Transaksi: ${idtransaksi}
 

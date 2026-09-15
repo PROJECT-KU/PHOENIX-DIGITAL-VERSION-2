@@ -178,6 +178,13 @@ class ProcessOrder extends Component
             return;
         }
 
+        // Produk kredit tidak punya masa aktif (lihat OrderItem::calculateEndDate).
+        if ($this->orderItem && $this->orderItem->duration_type === 'kredit') {
+            $this->endDate = null;
+
+            return;
+        }
+
         try {
             $endDate = Carbon::parse($this->startDate);
 
@@ -206,12 +213,26 @@ class ProcessOrder extends Component
         $this->accountLink = '';
     }
 
+    /**
+     * Item KREDIT (mis. kredit Gamma AI).
+     *
+     * Kredit tidak dikirim sebagai akun baru: admin menambahkannya ke akun yang
+     * sudah dipakai pembeli. Karena itu username/password akun tidak wajib di
+     * sini — yang dibutuhkan hanya alamat akun tujuan, dan masa aktifnya kosong.
+     */
+    public function pakaiKredit(): bool
+    {
+        return $this->orderItem && $this->orderItem->duration_type === 'kredit';
+    }
+
     public function processOrder()
     {
+        $wajibAkun = $this->pakaiKredit() ? 'nullable' : 'required';
+
         $this->validate([
             'selectedDataAkunId' => 'nullable|exists:data_akuns,id',
-            'accountUsername' => 'required|string|max:255',
-            'accountPassword' => 'required|string',
+            'accountUsername' => $wajibAkun.'|string|max:255',
+            'accountPassword' => $wajibAkun.'|string',
             'accountLink' => 'nullable|url|max:255',
             'accountNotes' => 'nullable|string',
             'startDate' => 'required|date',

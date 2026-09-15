@@ -442,6 +442,31 @@ Proses Pesanan || lemon
         </div>
     </div>
 
+    @php $pkKredit = $this->pakaiKredit(); @endphp
+
+    {{-- Pesanan KREDIT: tidak ada akun baru yang dikirim. Admin menambah kredit
+         ke akun milik pembeli, alamatnya ditulis pembeli di Catatan. --}}
+    @if ($pkKredit)
+        <div class="proc-section p-4 mb-4" style="border-left: 4px solid #f59e0b;">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <span class="proc-section-icon" style="background: linear-gradient(135deg,#f59e0b,#d97706);"><i class="bi bi-coin"></i></span>
+                <h5 class="fw-bold mb-0">Pesanan Kredit — isi ke akun pelanggan</h5>
+            </div>
+            <p class="mb-2 text-muted">
+                Tambahkan <strong>{{ $orderItem->getDurationLabel() }}</strong> ke akun pelanggan.
+                Kredit tidak punya masa aktif, jadi tanggal akhir dikosongkan.
+            </p>
+            <div class="mb-0">
+                <span class="fw-semibold">Akun tujuan (catatan pelanggan):</span>
+                @if (filled($order->customer_notes))
+                    <span class="d-inline-block">{{ $order->customer_notes }}</span>
+                @else
+                    <span class="text-danger">- pelanggan tidak menulis akun tujuan, hubungi dulu -</span>
+                @endif
+            </div>
+        </div>
+    @endif
+
     <form wire:submit="processOrder">
         <!-- Pilih Data Akun -->
         <div class="proc-section p-4 mb-4">
@@ -475,7 +500,7 @@ Proses Pesanan || lemon
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Username / Email Akun</label>
+                    <label class="form-label">{{ $pkKredit ? 'Email akun pelanggan yang diisi' : 'Username / Email Akun' }}</label>
                     <input type="text" class="form-control @error('accountUsername') is-invalid @enderror"
                         wire:model="accountUsername" placeholder="username@example.com">
                     @error('accountUsername')
@@ -484,7 +509,7 @@ Proses Pesanan || lemon
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Password Akun</label>
+                    <label class="form-label">Password Akun @if ($pkKredit)<span class="text-muted">(tidak perlu untuk kredit)</span>@endif</label>
                     <input type="text" class="form-control @error('accountPassword') is-invalid @enderror"
                         wire:model="accountPassword" placeholder="Password akun premium">
                     @error('accountPassword')
@@ -534,11 +559,15 @@ Proses Pesanan || lemon
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Tanggal Akhir</label>
-                        <input type="date" class="form-control" wire:model="endDate" readonly>
+                        <input type="date" class="form-control" wire:model="endDate" readonly @disabled($pkKredit)>
                         <small class="text-muted">
-                            Otomatis: mulai + {{ $orderItem->getDurationLabel() }}
-                            @if ((int) $bonusDurationValue > 0)
-                            + bonus {{ $bonusDurationValue }} {{ $bonusDurationType }}
+                            @if ($pkKredit)
+                                Kredit tidak kedaluwarsa — tanpa tanggal akhir.
+                            @else
+                                Otomatis: mulai + {{ $orderItem->getDurationLabel() }}
+                                @if ((int) $bonusDurationValue > 0)
+                                + bonus {{ $bonusDurationValue }} {{ $bonusDurationType }}
+                                @endif
                             @endif
                         </small>
                     </div>

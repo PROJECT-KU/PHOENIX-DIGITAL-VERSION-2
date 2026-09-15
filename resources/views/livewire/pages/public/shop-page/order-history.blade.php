@@ -355,15 +355,23 @@
                     <div class="rw-isi">
                         @foreach($order->items as $item)
                         @php
-                            $habisItem = $item->isHabis();
-                            $segeraItem = ! $habisItem && $item->end_date && $item->isExpiringSoon();
+                            // Kredit tidak punya masa aktif. Tanpa cabang sendiri
+                            // pembelinya selamanya membaca "Menunggu aktivasi",
+                            // padahal kreditnya sudah masuk ke akunnya.
+                            $kreditItem = $item->pakaiKredit();
+                            $habisItem = ! $kreditItem && $item->isHabis();
+                            $segeraItem = ! $habisItem && ! $kreditItem && $item->end_date && $item->isExpiringSoon();
                             [$warnaItem, $ikonItem, $tandaItem, $kelasItem] = $habisItem
                                 ? ['#e11d48', 'bi-x-circle-fill', 'Habis', 'is-habis']
-                                : ($segeraItem
-                                    ? ['#d97706', 'bi-clock-fill', $item->getRemainingLabel(), 'is-segera']
-                                    : ($item->end_date
-                                        ? ['#16a34a', 'bi-check-circle-fill', 'Aktif · '.$item->getRemainingLabel(), 'is-aktif']
-                                        : ['#64748b', 'bi-hourglass-split', 'Menunggu aktivasi', 'is-tunggu']));
+                                : ($kreditItem
+                                    ? ($item->delivery_status === 'delivered'
+                                        ? ['#16a34a', 'bi-check-circle-fill', 'Kredit sudah diisi', 'is-aktif']
+                                        : ['#64748b', 'bi-hourglass-split', 'Menunggu pengisian kredit', 'is-tunggu'])
+                                    : ($segeraItem
+                                        ? ['#d97706', 'bi-clock-fill', $item->getRemainingLabel(), 'is-segera']
+                                        : ($item->end_date
+                                            ? ['#16a34a', 'bi-check-circle-fill', 'Aktif · '.$item->getRemainingLabel(), 'is-aktif']
+                                            : ['#64748b', 'bi-hourglass-split', 'Menunggu aktivasi', 'is-tunggu'])));
                         @endphp
                         @php
                             // Logo produknya sendiri, bukan ikon status: status tetap
@@ -387,7 +395,7 @@
                                 <span class="rw-produk">{{ $item->product_name }}</span>
                                 <span class="rw-baris-meta">
                                     <span class="rw-tanda {{ $kelasItem }}"><i class="bi {{ $ikonItem }}"></i> {{ $tandaItem }}</span>
-                                    <span class="rw-durasi">{{ $item->duration_value }} {{ ucfirst($item->duration_type) }}</span>
+                                    <span class="rw-durasi">{{ number_format((int) $item->duration_value, 0, ',', '.') }} {{ ucfirst($item->duration_type) }}</span>
                                     @if ($item->end_date)
                                         <span><i class="bi bi-calendar-event"></i>
                                             {{ $habisItem ? 'Berakhir' : 'Berlaku s.d.' }}

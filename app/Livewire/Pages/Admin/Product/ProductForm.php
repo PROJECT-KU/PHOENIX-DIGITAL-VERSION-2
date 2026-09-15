@@ -165,7 +165,7 @@ class ProductForm extends Component
             'deskripsi' => 'nullable|string',
             'prices' => 'required|array|min:1',
             'prices.*.durasi_value' => 'required|integer|min:1',
-            'prices.*.durasi_type' => 'required|in:bulan,tahun,sekali,kali,halaman',
+            'prices.*.durasi_type' => 'required|in:bulan,tahun,sekali,kali,halaman,kredit',
             'prices.*.harga' => 'required',
             'addons.*.nama' => 'required|string|max:100',
             'addons.*.harga' => 'required|numeric|min:0',

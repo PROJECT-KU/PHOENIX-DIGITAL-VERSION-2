@@ -179,9 +179,13 @@ class ProductDetail extends Component
 
             $isJasa = (bool) $p->butuh_file;
             $perHalaman = $isJasa && $p->jasaPerHalaman();
+            // Produk kredit: harga_perbulan kosong, jadi dipakai paket termurah.
+            $paketKredit = ! $isJasa ? $p->paketKreditTermurah() : null;
             $asli = $perHalaman
                 ? (int) $p->hargaPerHalaman()
-                : ($isJasa ? (int) ($p->hargaSekali() ?? 0) : (int) $p->harga_perbulan);
+                : ($isJasa
+                    ? (int) ($p->hargaSekali() ?? 0)
+                    : (int) ($paketKredit->harga ?? $p->harga_perbulan));
 
             $diskon = $this->promoService->getBestProductDiscount($p->id, null);
             $akhir = $asli;
@@ -212,8 +216,12 @@ class ProductDetail extends Component
                     ? (($diskon['type'] ?? '') === 'persen' ? '-'.number_format($diskon['value'], 0).'%' : 'Hemat')
                     : null,
                 'flash' => $adaDiskon && ($diskon['promo']->tipe_promo ?? null) === 'flash_sale',
-                'mulai' => $isJasa,
-                'satuan' => $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln'),
+                'mulai' => $isJasa || (bool) $paketKredit,
+                'satuan' => $perHalaman
+                    ? '/halaman'
+                    : ($isJasa
+                        ? '/cek'
+                        : ($paketKredit ? '/'.number_format($paketKredit->durasi_value, 0, ',', '.').' kredit' : '/bln')),
             ];
 
             if (count($kartu) === 10) {
@@ -251,7 +259,8 @@ class ProductDetail extends Component
             $opsi[$i] = [
                 'tipe' => $pkg['durasi_type'],
                 'nilai' => (int) $pkg['durasi_value'],
-                'label' => $pkg['durasi_value'].' '.ucfirst($pkg['durasi_type']),
+                // Dipisah ribuan: paket 1500 kredit terbaca "1.500 Kredit".
+                'label' => number_format($pkg['durasi_value'], 0, ',', '.').' '.ucfirst($pkg['durasi_type']),
                 'akhir' => $rupiah($akhir),
                 'asli' => $akhir < $asli ? $rupiah($asli) : null,
                 'hemat' => $asli > $akhir ? 'Hemat '.$rupiah($asli - $akhir) : null,

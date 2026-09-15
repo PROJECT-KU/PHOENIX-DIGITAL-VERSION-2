@@ -801,12 +801,13 @@
                             <span class="dm-label"><i class="bi {{ $dm['ikon'] }}"></i>{{ $dm['kategori'] }}</span>
                         @endif
                         <h4 id="dm-judul">{{ $pickProductName }}</h4>
-                        <p>{{ $dm['diskon'] ? 'Pilih durasi — harga sudah termasuk diskon.' : 'Pilih durasi langganan yang kamu butuhkan.' }}</p>
+                        @php $dmKata = $dm['kredit'] ? 'paket kredit' : 'durasi langganan'; @endphp
+                        <p>{{ $dm['diskon'] ? 'Pilih '.($dm['kredit'] ? 'paket' : 'durasi').' — harga sudah termasuk diskon.' : 'Pilih '.$dmKata.' yang kamu butuhkan.' }}</p>
                     </div>
                     <button type="button" class="dm-tutup" wire:click="closeDuration" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
                 </div>
 
-                <div class="dm-daftar" role="radiogroup" aria-label="Durasi langganan">
+                <div class="dm-daftar" role="radiogroup" aria-label="{{ $dm['kredit'] ? 'Paket kredit' : 'Durasi langganan' }}">
                     @foreach ($dm['opsi'] as $o)
                         {{-- is-aktif dicetak juga oleh server: morph Livewire menimpa atribut
                              class dengan versi server, jadi sorotan yang hanya dipasang

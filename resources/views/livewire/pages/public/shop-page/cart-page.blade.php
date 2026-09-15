@@ -380,6 +380,9 @@
                                                     @endif
                                                 @elseif (($item['duration_type'] ?? '') === 'kali')
                                                     <i class="bi bi-collection"></i> {{ $item['duration_value'] }}× pengecekan
+                                                @elseif (($item['duration_type'] ?? '') === 'kredit')
+                                                    {{-- Kredit bukan masa aktif: ikon kalender di sini menyesatkan. --}}
+                                                    <i class="bi bi-coin"></i> {{ number_format($durVal, 0, ',', '.') }} Kredit
                                                 @else
                                                     <i class="bi bi-calendar2-week"></i> {{ $item['duration_value'] }} {{ ucfirst($item['duration_type']) }}
                                                 @endif

@@ -175,7 +175,8 @@ class Index extends Component
                 'duration_type' => $type,
                 'duration_value' => $val,
                 'price' => $harga,
-                'label' => $val.' '.ucfirst($type),
+                // Dipisah ribuan: paket 1500 kredit terbaca "1.500 Kredit".
+                'label' => number_format($val, 0, ',', '.').' '.ucfirst($type),
                 'savings' => max(0, $harga - $discounted),
                 'discounted' => $discounted,
             ];
@@ -391,6 +392,9 @@ class Index extends Component
         }
 
         return [
+            // Produk kredit tidak punya masa aktif: kata "durasi"/"langganan"
+            // di jendela ini salah untuknya.
+            'kredit' => collect($this->pickPackages)->contains(fn ($p) => ($p['duration_type'] ?? '') === 'kredit'),
             'warna' => $kat['warna'] ?? '#f26522',
             'ikon' => $kat['ikon'] ?? 'bi-box-seam',
             'kategori' => $kat['label'] ?? null,
@@ -515,9 +519,15 @@ class Index extends Component
         // Produk JASA harga per bulannya 0: ditagih per pengecekan atau per halaman.
         $isJasa = (bool) $item->butuh_file;
         $perHalaman = $isJasa && $item->jasaPerHalaman();
+        // Produk KREDIT dijual per jumlah, bukan per bulan: kolom harga_perbulan
+        // memang kosong, jadi kartunya memakai paket kredit termurah.
+        $paketKredit = ! $isJasa ? $item->paketKreditTermurah() : null;
+
         $asli = $perHalaman
             ? (int) $item->hargaPerHalaman()
-            : ($isJasa ? (int) ($item->hargaSekali() ?? 0) : (int) $item->harga_perbulan);
+            : ($isJasa
+                ? (int) ($item->hargaSekali() ?? 0)
+                : (int) ($paketKredit->harga ?? $item->harga_perbulan));
 
         $akhir = $asli;
         if ($best) {
@@ -563,8 +573,14 @@ class Index extends Component
             'jenis' => $isJasa ? 'Layanan' : ucfirst((string) ($item->tipe_akun ?: 'Akun')),
             'harga' => $akhir,
             'hargaAsli' => $akhir < $asli ? $asli : null,
-            'satuan' => $perHalaman ? '/halaman' : ($isJasa ? '/cek' : '/bln'),
-            'mulai' => $isJasa,
+            'satuan' => $perHalaman
+                ? '/halaman'
+                : ($isJasa
+                    ? '/cek'
+                    : ($paketKredit ? '/'.number_format($paketKredit->durasi_value, 0, ',', '.').' kredit' : '/bln')),
+            // "Mulai dari": produk kredit punya beberapa paket, dan yang
+            // tercetak di kartu hanyalah yang termurah.
+            'mulai' => $isJasa || (bool) $paketKredit,
             'jasa' => $isJasa,
             'diskon' => $diskon,
             'flash' => $isFlash,

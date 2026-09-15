@@ -904,7 +904,7 @@
                     {{-- Paket (disembunyikan untuk jasa per halaman) --}}
                     @if (! $product->jasaPerHalaman())
                     <div class="pd-packages">
-                        <h4 class="pd-sub"><i class="bi bi-calendar2-week"></i> Pilih Paket</h4>
+                        <h4 class="pd-sub"><i class="bi {{ $product->pakaiKredit() ? 'bi-coin' : 'bi-calendar2-week' }}"></i> Pilih Paket</h4>
                         <div class="pd-pkg-grid">
                             {{-- Data kartu dari ProductDetail::paketTampil(); "Paling hemat" memakai
                                  aturan yang sama dengan jendela durasi di /shop. --}}

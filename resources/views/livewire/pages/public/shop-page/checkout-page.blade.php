@@ -369,10 +369,24 @@
                                     </div>
                                 </div>
 
+                                {{-- Pesanan KREDIT: kreditnya diisikan ke akun milik pembeli,
+                                     jadi alamat akun itu harus ikut dikirim. --}}
+                                @php $ckKredit = $this->adaKredit(); @endphp
                                 <div class="ck-medan">
-                                    <label>Catatan <span class="ck-opsional">(opsional)</span></label>
-                                    <textarea class="form-control" wire:model="customer_notes" rows="3"
-                                        placeholder="Catatan tambahan untuk pesanan Anda"></textarea>
+                                    <label>
+                                        Catatan
+                                        @if ($ckKredit)
+                                            <span class="text-danger">*</span>
+                                        @else
+                                            <span class="ck-opsional">(opsional)</span>
+                                        @endif
+                                    </label>
+                                    <textarea class="form-control @error('customer_notes') is-invalid @enderror" wire:model="customer_notes" rows="3"
+                                        placeholder="{{ $ckKredit ? 'Email akun yang akan diisi kreditnya' : 'Catatan tambahan untuk pesanan Anda' }}"></textarea>
+                                    @if ($ckKredit)
+                                        <small class="text-muted">Kredit diisikan admin ke akun ini, jadi pastikan emailnya benar.</small>
+                                    @endif
+                                    @error('customer_notes') <span class="ck-err">{{ $message }}</span> @enderror
                                 </div>
                             </div>
                         </div>
@@ -614,7 +628,7 @@
                                                 @if ($isPaket)
                                                     Paket Bundling
                                                 @else
-                                                    {{ $item['duration_value'] }} {{ ucfirst($item['duration_type']) }}
+                                                    {{ number_format((int) $item['duration_value'], 0, ',', '.') }} {{ ucfirst($item['duration_type']) }}
                                                 @endif
                                                 &times;{{ $item['quantity'] }}
                                             </div>
