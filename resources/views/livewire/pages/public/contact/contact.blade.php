@@ -135,6 +135,13 @@
         .kn-submit:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
         .kn-submit:disabled { opacity: .7; cursor: progress; }
         .kn-submit i.bi, .kn-submit i.bi::before { display: block; line-height: 1; }
+        /* Isi tombol dibungkus <span> oleh wire:loading. Span polos bukan flex,
+           jadi ikon yang display:block memaksa ganti baris dan berdiri DI ATAS
+           teksnya — bukan di sampingnya. Cacat yang sama pernah muncul di
+           tombol "Pakai" (/checkout) dan "Keranjang" (kartu paket). */
+        .kn-submit > span {
+            display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+        }
         .kn-catatan {
             display: flex; align-items: center; gap: 11px; margin: 16px 0 0; padding: 12px 14px; border-radius: 14px;
             background: #f8fafc; border: 1px solid var(--kn-line); color: #475569; font-size: .83rem; line-height: 1.55;
