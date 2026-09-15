@@ -140,3 +140,24 @@ it('pesanan biasa catatannya tetap opsional', function () {
         ->call('checkout')
         ->assertHasNoErrors('customer_notes');
 });
+
+it('satuan kredit diizinkan kolom MySQL dan kedua formulir admin', function () {
+    // Dijaga di SUMBER: pengujian memakai SQLite yang kolom satuannya sudah
+    // dilonggarkan jadi string, jadi ENUM MySQL yang ketinggalan tidak akan
+    // pernah membuat tes merah — ia baru terlihat di server, sebagai pesanan
+    // yang batal diam-diam.
+    $migrasi = glob(database_path('migrations/*izinkan_satuan_kredit*.php'));
+    expect($migrasi)->not->toBeEmpty();
+
+    $isi = file_get_contents($migrasi[0]);
+    expect($isi)->toContain("'bulan','tahun','sekali','kali','halaman','kredit'")
+        ->and($isi)->toContain('product_prices')
+        ->and($isi)->toContain('product_modal_prices')
+        ->and($isi)->toContain('order_items');
+
+    // Harga jual & harga modal: keduanya harus menerima satuan ini.
+    expect(file_get_contents(app_path('Livewire/Pages/Admin/Product/ProductForm.php')))
+        ->toContain('in:bulan,tahun,sekali,kali,halaman,kredit')
+        ->and(file_get_contents(app_path('Livewire/Pages/Admin/HargaModal/HargaModalList.php')))
+        ->toContain('in:bulan,tahun,kali,halaman,kredit');
+});

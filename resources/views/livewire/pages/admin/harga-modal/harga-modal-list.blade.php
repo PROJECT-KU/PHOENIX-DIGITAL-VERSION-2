@@ -186,6 +186,7 @@ Harga Modal Produk || lemon
                             <select wire:model="formDurasiType" class="form-select rounded-3">
                                 <option value="bulan">Bulan</option>
                                 <option value="tahun">Tahun</option>
+                                <option value="kredit">Kredit</option>
                             </select>
                         </div>
                         @endif

@@ -152,7 +152,9 @@ class HargaModalList extends Component
         $this->validate([
             'formProductId' => ['required', 'exists:products,id'],
             'formDurasiValue' => ['required', 'integer', 'min:1'],
-            'formDurasiType' => ['required', 'in:bulan,tahun,kali,halaman'],
+            // 'kredit': produk kredit (mis. Gamma AI) modalnya dicatat per
+            // paket, sama seperti paket bulanan — lihat Product::modalSatuan().
+            'formDurasiType' => ['required', 'in:bulan,tahun,kali,halaman,kredit'],
             'formHarga' => ['required', 'numeric', 'min:1'],
             'formBerlakuMulai' => ['required', 'date'],
         ], [], [
