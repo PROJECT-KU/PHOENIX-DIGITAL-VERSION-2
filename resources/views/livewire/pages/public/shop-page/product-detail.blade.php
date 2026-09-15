@@ -441,10 +441,19 @@
             background: color-mix(in srgb, var(--c) 12%, transparent);
             transition: transform .3s ease; pointer-events: none;
         }
-        .pd-feature:hover::before { transform: scale(1.35); }
-        .pd-feature:hover {
-            border-color: color-mix(in srgb, var(--c) 35%, #fff) !important;
-            box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent) !important;
+        /* Hanya untuk tetikus.
+
+           Di layar sentuh, :hover MENEMPEL sesudah kartunya disentuh — bidang
+           warnanya membesar lalu tinggal begitu, dan karena kartunya cuma
+           114px, bidang 92px yang membesar 1,35x menelan ubin ikonnya yang
+           kebetulan sewarna. Jari tidak "melayang di atas", jadi kartu ini
+           memang tidak punya keadaan hover di sana. */
+        @media (hover: hover) and (pointer: fine) {
+            .pd-feature:hover::before { transform: scale(1.35); }
+            .pd-feature:hover {
+                border-color: color-mix(in srgb, var(--c) 35%, #fff) !important;
+                box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent) !important;
+            }
         }
         .pd-feature > * { position: relative; z-index: 1; }
         .pd-feature-ic {
@@ -453,6 +462,13 @@
         }
         .pd-feature-ic i.bi { display: block; line-height: 1; }
         .pd-feature-ic i.bi::before { display: block; line-height: 1; }
+
+        /* Kartu jaminan di HP tinggal 114px. Bidang warna 92px di situ bukan
+           lagi aksen pojok melainkan latar kartu, dan ubin ikon yang warnanya
+           sama ikut lenyap ke dalamnya. Dikecilkan supaya kembali jadi aksen. */
+        @media (max-width: 575.98px) {
+            .pd-feature::before { top: -26px; right: -26px; width: 64px; height: 64px; }
+        }
 
         /* ===== Produk lainnya =====
            Kelas rk-*, bukan rel-* lama: aturan .rel-* di public-custom-styles.css
