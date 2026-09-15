@@ -244,6 +244,52 @@
             .ph-page-head p { font-size: .94rem; }
             .ph-page-title .breadcrumbs ol { font-size: .8rem; padding: 7px 14px; }
         }
+
+        /* ===== Remah roti di layar sempit =====
+
+           Naik ke pojok kanan atas, sebaris dengan label — menghemat satu baris
+           penuh di tiap halaman.
+
+           Yang ditampilkan HANYA INDUKNYA, dengan panah kembali: "‹ Beranda",
+           "‹ Shop". Dua alasan:
+
+           1. Jejak lengkapnya tidak muat. Ruang di dalam kartu 330px pada layar
+              390px, sedangkan label + jejak penuh mencapai 353px di /layanan,
+              342px di /lacak-pesanan & /about, 336px di /bundling/product.
+              Dipaksakan, ia bertabrakan dengan label atau turun baris sendiri —
+              dan kedua puluh empat halaman jadi tampil berbeda-beda.
+           2. Di layar sempit yang dicari orang adalah jalan KEMBALI, bukan peta
+              lokasi: halaman yang sedang dibuka sudah tertulis besar-besar tepat
+              di bawahnya.
+
+           Induknya = butir kedua dari belakang, jadi pada jejak tiga tingkat
+           ("Beranda › Blog › Artikel") yang tampil "‹ Blog" — tetangga terdekat,
+           bukan akar yang paling jauh. */
+        @media (max-width: 767.98px) {
+            .ph-page-title .breadcrumbs {
+                position: absolute; top: 22px; right: 40px; z-index: 2;
+                margin: 0 !important; max-width: 52%;
+            }
+            .ph-page-title .breadcrumbs ol { max-width: 100%; padding: 6px 13px; }
+            .ph-page-title .breadcrumbs ol li { display: none; }
+            /* Induk; atau satu-satunya butir bila jejaknya cuma satu tingkat. */
+            .ph-page-title .breadcrumbs ol li:nth-last-child(2),
+            .ph-page-title .breadcrumbs ol li:only-child {
+                display: inline-flex; max-width: 100%; padding-left: 0;
+            }
+            .ph-page-title .breadcrumbs ol li:nth-last-child(2)::before,
+            .ph-page-title .breadcrumbs ol li:only-child::before {
+                content: "\2039"; padding: 0 6px 0 0;
+                color: #9aa3b0; font-size: 1.05rem; line-height: 1;
+            }
+            .ph-page-title .breadcrumbs ol a,
+            .ph-page-title .breadcrumbs ol .current {
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .ph-page-title .breadcrumbs { top: 20px; right: 30px; }
+        }
     </style>
 
     {{-- ===== Kaki halaman =====
