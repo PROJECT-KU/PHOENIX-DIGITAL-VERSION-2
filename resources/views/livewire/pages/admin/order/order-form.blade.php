@@ -861,7 +861,7 @@
                 @error('bukti')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                 @if($bukti && !is_string($bukti))
                 <div class="mt-3 text-center">
-                    <img src="{{ $bukti->temporaryUrl() }}" style="max-height:220px; max-width:100%; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,.12);">
+                    <img src="{{ \App\Support\PratinjauUnggahan::url($bukti) }}" style="max-height:220px; max-width:100%; border-radius:12px; box-shadow:0 6px 18px rgba(15,23,42,.12);">
                 </div>
                 @endif
             </div>

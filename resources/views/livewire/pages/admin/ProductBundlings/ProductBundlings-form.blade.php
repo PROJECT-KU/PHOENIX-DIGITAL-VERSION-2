@@ -285,10 +285,10 @@
                         <div class="col-md-6">
                             <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center" style="min-height: 150px;">
                                 @if ($gambarVar && is_object($gambarVar) && method_exists($gambarVar, 'temporaryUrl') && !$errors->has('gambar'))
-                                <img src="{{ $gambarVar->temporaryUrl() }}"
+                                <img src="{{ \App\Support\PratinjauUnggahan::url($gambarVar) }}"
                                     class="rounded-3 img-fluid"
                                     style="cursor: pointer; max-height: 250px; object-fit: contain;"
-                                    onclick="showGlossyPreview('{{ $gambarVar->temporaryUrl() }}')"
+                                    onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($gambarVar) }}')"
                                     title="Klik untuk memperbesar">
                                 @elseif (!empty($existingImage))
                                 <img src="{{ asset('storage/img/ProductBundlings/' . $existingImage) }}"

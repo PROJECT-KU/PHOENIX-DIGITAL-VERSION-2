@@ -141,21 +141,13 @@ it('tidak ada satu pun tampilan admin yang memanggil temporaryUrl langsung', fun
      |
      | Daftarnya hanya boleh menyusut. Menambah nama ke sini berarti sengaja
      | mengirim pratinjau yang tidak akan tampil ke pengguna.
+     |
+     | Daftarnya sekarang KOSONG: 12 tampilan terakhir (produk, banner,
+     | testimoni, blog, bundling, pengeluaran, pemasukan, modal, pesanan,
+     | profil, dan dua daftar task) dibereskan 15 Sep 2026, setelah admin
+     | melaporkan pratinjau gambar produk di server tidak tampil.
      */
-    $belumDibereskan = [
-        'Banners/Banners-form.blade.php',
-        'ProductBundlings/ProductBundlings-form.blade.php',
-        'blog/blog-form.blade.php',
-        'modal/modal-list.blade.php',
-        'order/order-form.blade.php',
-        'pemasukan/pemasukan-list.blade.php',
-        'penyelesaian-task/penyelesaian-task-list.blade.php',
-        'product/product-form.blade.php',
-        'profile/profile-setting.blade.php',
-        'spending/spending-form.blade.php',
-        'task/task-saya-list.blade.php',
-        'testimoni/testimoni-form.blade.php',
-    ];
+    $belumDibereskan = [];
 
     expect(array_values(array_diff($pelanggar, $belumDibereskan)))
         ->toBe([], 'Pakai PratinjauUnggahan::url() — ->temporaryUrl() tidak tampil di produksi.');

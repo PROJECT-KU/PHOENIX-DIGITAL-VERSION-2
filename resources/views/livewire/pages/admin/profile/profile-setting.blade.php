@@ -492,7 +492,7 @@ Pengaturan Profil || lemon
                             x-data="{ fileName: '' }">
                             <div class="position-relative d-inline-block mb-3">
                                 <div class="avatar-ring mx-auto">
-                                    <img src="{{ $photo ? $photo->temporaryUrl() : (auth()->user()->profile_photo ? Storage::url(auth()->user()->profile_photo) : auth()->user()->profile_photo_url) }}"
+                                    <img src="{{ $photo ? \App\Support\PratinjauUnggahan::url($photo) : (auth()->user()->profile_photo ? Storage::url(auth()->user()->profile_photo) : auth()->user()->profile_photo_url) }}"
                                         alt="Foto Profil">
                                 </div>
                                 <label for="photo-input" class="avatar-cam" title="Pilih foto">

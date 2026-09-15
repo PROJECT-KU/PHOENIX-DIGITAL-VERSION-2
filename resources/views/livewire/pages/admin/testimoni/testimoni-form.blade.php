@@ -128,9 +128,9 @@
                     <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center"
                         style="min-height: 150px;">
                         @if ($foto && is_object($foto) && !$errors->has('foto'))
-                            <img src="{{ $foto->temporaryUrl() }}" class="rounded-3 img-fluid"
+                            <img src="{{ \App\Support\PratinjauUnggahan::url($foto) }}" class="rounded-3 img-fluid"
                                 style="cursor: pointer; max-height: 250px; object-fit: contain;"
-                                onclick="showGlossyPreview('{{ $foto->temporaryUrl() }}')" title="Klik untuk memperbesar">
+                                onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($foto) }}')" title="Klik untuk memperbesar">
                         @elseif ($existingImage)
                             <img src="{{ asset('storage/img/testimoni/' . $existingImage) }}" class="rounded-3 img-fluid"
                                 style="cursor: pointer; max-height: 250px; object-fit: contain;"

@@ -115,7 +115,7 @@
 
                 <div class="bf-cover-preview mb-3">
                     @if ($cover && is_object($cover) && !$errors->has('cover'))
-                        <img src="{{ $cover->temporaryUrl() }}" onclick="showGlossyPreview('{{ $cover->temporaryUrl() }}')" title="Klik untuk memperbesar">
+                        <img src="{{ \App\Support\PratinjauUnggahan::url($cover) }}" onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($cover) }}')" title="Klik untuk memperbesar">
                     @elseif ($existingCover)
                         <img src="{{ asset('storage/img/blog/' . $existingCover) }}" onclick="showGlossyPreview('{{ asset('storage/img/blog/' . $existingCover) }}')" title="Klik untuk memperbesar">
                     @else

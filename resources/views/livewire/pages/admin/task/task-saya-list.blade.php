@@ -706,7 +706,7 @@ Task Saya || lemon
                         @foreach($t_files as $i => $file)
                         @php $isImg = str_starts_with((string) $file->getMimeType(), 'image/'); @endphp
                         <div class="ts-thumb">
-                            <div class="media">@if($isImg)<img src="{{ $file->temporaryUrl() }}" alt="">@else<i class="bi bi-file-earmark-arrow-up"></i>@endif</div>
+                            <div class="media">@if($isImg)<img src="{{ \App\Support\PratinjauUnggahan::url($file) }}" alt="">@else<i class="bi bi-file-earmark-arrow-up"></i>@endif</div>
                             <span class="badge-new">Baru</span>
                             <div class="cap">{{ $file->getClientOriginalName() }}</div>
                             <button type="button" class="rm" wire:click="removeNewFile({{ $i }})" title="Batal"><i class="bi bi-x"></i></button>

@@ -660,7 +660,7 @@ Penyelesaian Task || lemon
                         @php $isImg = str_starts_with((string) $file->getMimeType(), 'image/'); @endphp
                         <div class="tw-thumb">
                             <div class="media">
-                                @if($isImg)<img src="{{ $file->temporaryUrl() }}" alt="">@else<i class="bi bi-file-earmark-arrow-up"></i>@endif
+                                @if($isImg)<img src="{{ \App\Support\PratinjauUnggahan::url($file) }}" alt="">@else<i class="bi bi-file-earmark-arrow-up"></i>@endif
                             </div>
                             <span class="badge-new">Baru</span>
                             <div class="cap">{{ $file->getClientOriginalName() }}</div>

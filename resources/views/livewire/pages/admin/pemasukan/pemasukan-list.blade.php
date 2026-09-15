@@ -555,7 +555,7 @@ Pemasukan Lainnya || lemon
                                     @php $isImg = str_starts_with((string) $file->getMimeType(), 'image/'); @endphp
                                     <div class="pm-bukti">
                                         @if ($isImg)
-                                            <img src="{{ $file->temporaryUrl() }}" alt="bukti">
+                                            <img src="{{ \App\Support\PratinjauUnggahan::url($file) }}" alt="bukti">
                                         @else
                                             <div class="pm-bukti-file" title="{{ $file->getClientOriginalName() }}"><i class="bi bi-file-earmark-text"></i><span>{{ \Illuminate\Support\Str::limit($file->getClientOriginalName(), 9) }}</span></div>
                                         @endif

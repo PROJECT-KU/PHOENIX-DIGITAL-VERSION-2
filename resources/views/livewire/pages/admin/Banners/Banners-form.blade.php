@@ -85,10 +85,10 @@
                     <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center" style="min-height: 150px;">
                         @if ($gambar && is_object($gambar) && !$errors->has('gambar'))
                         <!-- Preview untuk gambar yang baru di-upload (temporary) -->
-                        <img src="{{ $gambar->temporaryUrl() }}"
+                        <img src="{{ \App\Support\PratinjauUnggahan::url($gambar) }}"
                             class="rounded-3 img-fluid"
                             style="cursor: pointer; max-height: 250px; object-fit: contain;"
-                            onclick="showGlossyPreview('{{ $gambar->temporaryUrl() }}')"
+                            onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($gambar) }}')"
                             title="Klik untuk memperbesar">
 
                         @elseif ($existingImage)

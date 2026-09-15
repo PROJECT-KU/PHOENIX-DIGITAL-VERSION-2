@@ -330,7 +330,7 @@
                 @endforeach
                 @foreach($fotosBaru as $i => $file)
                 <div class="position-relative" wire:key="foto-baru-{{ $i }}">
-                    <img src="{{ $file->temporaryUrl() }}" style="width:90px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #7c3aed;">
+                    <img src="{{ \App\Support\PratinjauUnggahan::url($file) }}" style="width:90px; height:90px; object-fit:cover; border-radius:10px; border:1px solid #7c3aed;">
                     <span class="badge bg-primary position-absolute bottom-0 start-0 m-1" style="font-size:.55rem;">baru</span>
                     <button type="button" wire:click="removeFotoBaru({{ $i }})" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 py-0 px-1" title="Hapus"><i class="bi bi-x"></i></button>
                 </div>
