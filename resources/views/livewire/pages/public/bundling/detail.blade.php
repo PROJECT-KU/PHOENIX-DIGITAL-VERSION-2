@@ -196,14 +196,27 @@
             background: color-mix(in srgb, var(--c) 12%, transparent);
             transition: transform .3s ease; pointer-events: none;
         }
-        .pd-feature:hover::before { transform: scale(1.35); }
-        .pd-feature:hover {
-            border-color: color-mix(in srgb, var(--c) 35%, #fff) !important;
-            box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent) !important;
+        /* Hanya untuk tetikus — sama dengan halaman detail produk.
+
+           Di layar sentuh :hover MENEMPEL sesudah kartunya disentuh: bidang
+           warnanya membesar 1,35x lalu tinggal begitu, dan pada kartu selebar
+           114px ia menelan ubin ikon yang kebetulan sewarna. */
+        @media (hover: hover) and (pointer: fine) {
+            .pd-feature:hover::before { transform: scale(1.35); }
+            .pd-feature:hover {
+                border-color: color-mix(in srgb, var(--c) 35%, #fff) !important;
+                box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent) !important;
+            }
         }
         .pd-feature > * { position: relative; z-index: 1; }
         .pd-feature-ic { background: color-mix(in srgb, var(--c) 12%, #fff) !important; color: var(--c) !important; box-shadow: none !important; }
         .pd-feature-ic i.bi, .pd-feature-ic i.bi::before { display: block; line-height: 1; }
+
+        /* Di HP kartunya tinggal ~114px. Bidang warna 92px di situ bukan aksen
+           pojok lagi melainkan latar kartu, dan ikonnya ikut lenyap ke dalamnya. */
+        @media (max-width: 575.98px) {
+            .pd-feature::before { top: -26px; right: -26px; width: 64px; height: 64px; }
+        }
 
         /* ===== Paket lainnya — kartu rk-* yang sama dengan "Produk Lainnya" ===== */
         .rk-deret { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px; }
