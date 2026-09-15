@@ -1,53 +1,58 @@
-
 @section('title')
 Pengguna Online || lemon
 @stop
-<div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden"
-    wire:poll.10s
-    style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);">
-
-    <!-- Header dengan statistik karyawan aktif -->
-    <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
-        <div>
-            <h5 class="fw-bold text-dark mb-0">Karyawan Online</h5>
+{{-- Dipakai HANYA di dasbor, dan memakai bahasa rupa dasbor (dsb-*) supaya
+     kartunya tidak terlihat seperti tempelan dari template lain di sebelah
+     kartu Metode Pembayaran. --}}
+<div class="dsb-kartu h-100" wire:poll.10s>
+    {{-- Gaya dsb-* sengaja TIDAK di-include di sini: dasbor yang memuat
+         komponen ini sudah mencetaknya sekali. Menyertakannya di sini membuat
+         seluruh blok <style> ikut terkirim ulang tiap 10 detik. --}}
+    <div class="dsb-kartu-kepala">
+        <div class="dsb-kartu-kepala-kiri">
+            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-people-fill"></i></span>
+            <div>
+                <h3 class="dsb-kartu-judul">Karyawan Online</h3>
+                <span class="dsb-kartu-sub">Diperbarui otomatis tiap 10 detik</span>
+            </div>
         </div>
-        <div class="badge bg-gradient-purple rounded-pill px-3 py-2 shadow-sm">
-            {{ $users->where('online', true)->count() }} Aktif
-        </div>
+        <span class="dsb-lencana is-hijau">
+            <span class="dsb-bulat"></span>{{ $users->where('online', true)->count() }} aktif
+        </span>
     </div>
 
-    <div class="card-content pb-4 mt-3">
+    <div class="dsb-daftar" id="online-users-container">
         @forelse($users as $user)
-        <div class="recent-message d-flex px-4 py-3 align-items-center border-bottom border-light">
-            <!-- Avatar dengan Indikator Status -->
-            <div class="avatar avatar-lg position-relative">
-                <img src="{{ $user->profile_photo && Storage::disk('public')->exists($user->profile_photo) ? Storage::url($user->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}" alt="{{ $user->name }}" class="rounded-circle shadow-sm">
-                <!-- Titik indikator status -->
-                <span class="position-absolute bottom-0 end-0 p-1 {{ $user->online ? 'bg-success' : 'bg-danger' }} border border-white rounded-circle"></span>
-            </div>
-
-            <div class="name ms-4">
-                <h6 class="mb-0 fw-bold text-dark">{{ $user->name }}</h6>
-
-                {{-- Status Badge Colorful --}}
-                @if ($user->online)
-                <span class="badge bg-light-success text-success mt-1 rounded-pill px-2 py-1" style="font-size: 0.7rem;">
-                    <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> ONLINE
+            <div class="dsb-baris" id="user-{{ $user->id }}">
+                <span class="dsb-aku-foto">
+                    <img src="{{ $user->profile_photo && Storage::disk('public')->exists($user->profile_photo) ? Storage::url($user->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}"
+                        alt="{{ $user->name }}" style="width:38px; height:38px; border-radius:12px; object-fit:cover; display:block;">
+                    <span class="dsb-titik {{ $user->online ? 'is-daring' : 'is-luring' }}"></span>
                 </span>
-                @else
-                <span class="badge bg-light-danger text-danger mt-1 rounded-pill px-2 py-1" style="font-size: 0.7rem;">
-                    <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i> OFFLINE
+
+                <span class="dsb-baris-isi">
+                    <span class="dsb-baris-judul">{{ $user->name }}</span>
+                    @if ($user->online)
+                        <span class="dsb-baris-meta">Sedang daring</span>
+                    @else
+                        <span class="dsb-baris-meta">
+                            Terakhir terlihat {{ $user->last_seen_diff ?: 'tidak diketahui' }}
+                        </span>
+                    @endif
                 </span>
-                @if ($user->last_seen_diff)
-                <small class="d-block text-muted mt-1" style="font-size: 0.7rem;">
-                    Terakhir: {{ $user->last_seen_diff }}
-                </small>
-                @endif
-                @endif
+
+                <span class="dsb-baris-kanan">
+                    <span class="dsb-lencana {{ $user->online ? 'is-hijau' : 'is-abu' }}">
+                        <span class="dsb-bulat"></span>{{ $user->online ? 'ONLINE' : 'OFFLINE' }}
+                    </span>
+                </span>
             </div>
-        </div>
         @empty
-        <p class="text-muted px-4 py-3 text-center">Tidak ada karyawan yang tercatat.</p>
+            <div class="dsb-kosong">
+                <span class="dsb-kosong-ikon"><i class="bi bi-person-badge"></i></span>
+                <p class="dsb-kosong-judul">Belum ada karyawan tercatat</p>
+                <p class="dsb-kosong-ket">Status daring muncul setelah karyawan pertama masuk panel.</p>
+            </div>
         @endforelse
     </div>
 </div>
