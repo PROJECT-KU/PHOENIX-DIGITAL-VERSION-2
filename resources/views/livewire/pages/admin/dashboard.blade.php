@@ -59,7 +59,16 @@ Dashboard || lemon
                 <h1 class="dsb-salam">{{ $salam }}, {{ $namaDepan }} 👋</h1>
                 <p class="dsb-hero-ket">
                     <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
-                    <span class="d-block">Ringkasan toko &amp; keuangan periode {{ $periodeLabel }}</span>
+                    <span class="d-block">
+                        Ringkasan toko &amp; keuangan periode {{ $periodeLabel }}
+                        {{-- Penanda kesegaran: angka di halaman ini dihitung saat
+                             halaman dimuat, bukan mengalir sendiri. Tanpa jam ini,
+                             tab yang dibiarkan terbuka semalaman terbaca seolah
+                             masih menunjukkan keadaan sekarang. --}}
+                        <span class="dsb-segar" title="Angka di halaman ini dihitung saat halaman dimuat">
+                            <i class="bi bi-clock-history"></i>Data per {{ now()->locale('id')->translatedFormat('H:i') }}
+                        </span>
+                    </span>
                 </p>
             </div>
 
@@ -85,7 +94,21 @@ Dashboard || lemon
                     </span>
                 </div>
 
-                <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-utama">
+                {{-- Aksi cepat: dua hal yang paling sering dikerjakan admin dari
+                     dasbor. Tanpa ini keduanya butuh dua klik lewat sidebar. --}}
+                @if (\Illuminate\Support\Facades\Route::has('admin.pesanantoko.create') && auth()->user()->hasPermission('create_pemesanantoko'))
+                    <a href="{{ route('admin.pesanantoko.create') }}" wire:navigate class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Pesanan Baru</span>
+                    </a>
+                @endif
+
+                @if (\Illuminate\Support\Facades\Route::has('admin.spending.create') && auth()->user()->hasPermission('create_spending'))
+                    <a href="{{ route('admin.spending.create') }}" wire:navigate class="dsb-tombol is-lembut">
+                        <i class="bi bi-receipt"></i><span>Catat Pengeluaran</span>
+                    </a>
+                @endif
+
+                <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-lembut">
                     <i class="bi bi-person-fill"></i><span>Profil</span>
                 </a>
 
@@ -97,6 +120,145 @@ Dashboard || lemon
 
         {{-- Bot Turnitin: kabar bot + kartu yang butuh tangan admin (kuota habis, gagal) --}}
         <livewire:pages.admin.bot-turnitin.panel-bot-turnitin />
+
+        {{-- ================== BUTUH PERHATIAN ==================
+             Pekerjaan dan uang yang MENUNGGU tindakan — bukan rekap yang sudah
+             terjadi. Semua angkanya sudah lama ada di database dan tidak pernah
+             ditampilkan; yang tidak ditampilkan tidak dikerjakan.
+
+             Sengaja diletakkan di ATAS ringkasan keuangan: rekap bulan ini bisa
+             dibaca kapan saja, sedangkan pelanggan yang menunggu tidak. --}}
+        @php
+            $ops = $operasional;
+            $rupiahOps = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+
+            // Kartu hanya dibuat untuk yang ADA isinya. Deretan kartu bernilai
+            // nol yang tidak pernah berubah melatih mata untuk melewatinya,
+            // dan saat salah satunya akhirnya berisi, ia ikut terlewat.
+            $perhatian = [];
+
+            if ($ops['langganan']['segera'] > 0 || $ops['langganan']['belum_dikabari'] > 0) {
+                $perhatian[] = [
+                    'warna' => '#d97706',
+                    'ikon' => 'bi-hourglass-split',
+                    'label' => 'Langganan Habis',
+                    'nilai' => $ops['langganan']['segera'].' akan habis',
+                    'ket' => $ops['langganan']['nilai_segera'] > 0
+                        ? $rupiahOps($ops['langganan']['nilai_segera']).' bila diperpanjang'
+                        : 'Dalam '.\App\Support\RingkasanOperasional::AMBANG_HABIS_HARI.' hari ke depan',
+                    'pil' => $ops['langganan']['belum_dikabari'] > 0
+                        ? $ops['langganan']['belum_dikabari'].' sudah habis & belum dikabari'
+                        : null,
+                    'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
+                        ? route('admin.pesanantoko.index', ['activeTab' => 'habis']) : null,
+                ];
+            }
+
+            if ($ops['jasa']['manual'] > 0 || $ops['jasa']['dikerjakan'] > 0) {
+                $perhatian[] = [
+                    'warna' => '#7c3aed',
+                    'ikon' => 'bi-file-earmark-text-fill',
+                    'label' => 'Jasa Dikerjakan Manual',
+                    'nilai' => $ops['jasa']['manual'].' menunggu',
+                    // Bot hanya menangani plagiasi Turnitin; cek AI & parafrase
+                    // selalu tangan admin.
+                    'ket' => $ops['jasa']['dikerjakan'].' sedang dikerjakan • '.$ops['jasa']['bot'].' antre bot',
+                    'pil' => $ops['jasa']['manual_terlama']
+                        ? 'Terlama menunggu '.$ops['jasa']['manual_terlama']->locale('id')->diffForHumans(null, true)
+                        : null,
+                    'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
+                        ? route('admin.pesanantoko.index') : null,
+                ];
+            }
+
+            if ($ops['pesanan']['jumlah'] > 0) {
+                $perhatian[] = [
+                    'warna' => '#0284c7',
+                    'ikon' => 'bi-hourglass',
+                    'label' => 'Menunggu Pembayaran',
+                    'nilai' => $ops['pesanan']['jumlah'].' pesanan',
+                    'ket' => $rupiahOps($ops['pesanan']['nilai']).' belum masuk',
+                    'pil' => $ops['pesanan']['segera_kedaluwarsa'] > 0
+                        ? $ops['pesanan']['segera_kedaluwarsa'].' kedaluwarsa < 1 jam'
+                        : null,
+                    'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
+                        ? route('admin.pesanantoko.index', ['activeTab' => 'neworder']) : null,
+                ];
+            }
+
+            if ($ops['task']['jumlah'] > 0) {
+                $perhatian[] = [
+                    'warna' => '#e11d48',
+                    'ikon' => 'bi-clipboard-x-fill',
+                    'label' => 'Task Lewat Tenggat',
+                    'nilai' => $ops['task']['jumlah'].' task',
+                    'ket' => $ops['task']['terlama']
+                        ? 'Terlama jatuh tempo '.$ops['task']['terlama']->locale('id')->translatedFormat('d M Y')
+                        : 'Belum selesai melewati tenggatnya',
+                    'pil' => null,
+                    'url' => \Illuminate\Support\Facades\Route::has('admin.task-saya.index')
+                        ? route('admin.task-saya.index') : null,
+                ];
+            }
+
+            if (! empty($ops['stok'])) {
+                $daftarStok = collect($ops['stok'])->map(fn ($s) => $s['produk'].' ('.$s['sisa'].')')->implode(', ');
+                $perhatian[] = [
+                    'warna' => '#16a34a',
+                    'ikon' => 'bi-box-seam',
+                    'label' => 'Stok Akun Menipis',
+                    'nilai' => count($ops['stok']).' produk',
+                    'ket' => \Illuminate\Support\Str::limit($daftarStok, 70),
+                    'pil' => 'Sisa ≤ '.\App\Support\RingkasanOperasional::AMBANG_STOK.' akun bebas',
+                    'url' => \Illuminate\Support\Facades\Route::has('admin.DataAkun.index')
+                        ? route('admin.DataAkun.index') : null,
+                ];
+            }
+
+            $lebarPerhatian = count($perhatian) >= 4 ? 'k-3' : (count($perhatian) === 3 ? 'k-4' : 'k-6');
+        @endphp
+
+        @if (! empty($perhatian))
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kepala" style="--c: #d97706">
+                        <span class="dsb-kepala-ikon"><i class="bi bi-exclamation-diamond-fill"></i></span>
+                        <div class="dsb-kepala-teks">
+                            <span class="dsb-kicker">Butuh Perhatian</span>
+                            <h2 class="dsb-judul">Yang Menunggu Dikerjakan</h2>
+                            <div class="dsb-chip-deret">
+                                <span class="dsb-chip"><i class="bi bi-list-check"></i>{{ count($perhatian) }} hal</span>
+                                <span class="dsb-chip is-samar">Kartu hanya muncul saat memang ada isinya</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @foreach ($perhatian as $p)
+                        {{-- Tautannya MENUTUPI kartu, bukan kartunya yang jadi
+                             <a>: dengan begitu markupnya satu jalur saja. Versi
+                             bercabang (<a> bila ada tautan, <article> bila
+                             tidak) menaruh @if di dalam tag, dan tanda
+                             lebih-besar sesudah @endif membuat Livewire
+                             melewati penanda morph-nya. --}}
+                        <article class="dsb-stat {{ $lebarPerhatian }}" style="--c: {{ $p['warna'] }}">
+                            <span class="dsb-ikon"><i class="bi {{ $p['ikon'] }}"></i></span>
+                            <p class="dsb-stat-label">{{ $p['label'] }}</p>
+                            <p class="dsb-stat-nilai" style="font-size: 1.35rem;">{{ $p['nilai'] }}</p>
+                            @if ($p['pil'])
+                                <span class="dsb-pil">{{ $p['pil'] }}</span>
+                            @endif
+                            <p class="dsb-stat-ket"><i class="bi bi-arrow-right-short"></i><span>{{ $p['ket'] }}</span></p>
+
+                            @if ($p['url'])
+                                <a class="dsb-tutup-kartu" href="{{ $p['url'] }}" wire:navigate>
+                                    <span class="visually-hidden">Buka {{ $p['label'] }}</span>
+                                </a>
+                            @endif
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
 
         {{-- ================== RINGKASAN KEUANGAN ==================
              Satu rak 12 kolom memuat kepala bagian DAN kelima kartunya, jadi
@@ -110,9 +272,29 @@ Dashboard || lemon
                         <h2 class="dsb-judul">Uang Masuk &amp; Keluar</h2>
                         <div class="dsb-chip-deret">
                             <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
-                            <span class="dsb-chip is-samar">Periode dihitung tanggal 21 sampai 20</span>
+                            @if ($periodeBerjalan)
+                                <span class="dsb-chip is-samar">Periode dihitung tanggal 21 sampai 20</span>
+                            @else
+                                <span class="dsb-chip is-samar">Periode lampau — bukan angka berjalan</span>
+                            @endif
                         </div>
                     </div>
+
+                    {{-- Pemilih periode. Tombol mundur/maju, bukan kotak pilih
+                         berisi daftar bulan: yang hampir selalu dicari adalah
+                         "periode sebelum ini", dan itu harus satu klik. --}}
+                    <div class="dsb-geser">
+                        <button type="button" class="dsb-geser-btn" wire:click="pilihPeriode({{ $mundur + 1 }})"
+                            @disabled($mundur >= \App\Livewire\Pages\Admin\Dashboard::MUNDUR_MAKS)
+                            title="Periode sebelumnya"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="dsb-geser-btn" wire:click="pilihPeriode({{ $mundur - 1 }})"
+                            @disabled($periodeBerjalan)
+                            title="Periode berikutnya"><i class="bi bi-chevron-right"></i></button>
+                        @unless ($periodeBerjalan)
+                            <button type="button" class="dsb-geser-btn is-kini" wire:click="pilihPeriode(0)">Kembali ke sekarang</button>
+                        @endunless
+                    </div>
+
                     <a href="{{ route('admin.cashflow.index') }}" wire:navigate class="dsb-tautan">
                         <span>Buka Cash Flow</span><i class="bi bi-arrow-right"></i>
                     </a>
@@ -228,7 +410,12 @@ Dashboard || lemon
 
                 {{-- Rincian per NAMA promo. "Flash sale 12 kali" tidak bisa
                      ditindaklanjuti; yang menentukan promo mana yang layak
-                     diulang adalah nama promonya. --}}
+                     diulang adalah nama promonya.
+
+                     Hanya tampil bila ADA yang terpakai: saat kosong, ketiga
+                     kartu nol di atasnya sudah mengatakan hal yang sama, dan
+                     kartu kosong kedua hanya memanjangkan halaman. --}}
+                @if (! empty($promoRincian))
                 <div class="dsb-kartu k-12">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
@@ -250,7 +437,7 @@ Dashboard || lemon
                             ];
                         @endphp
 
-                        @forelse ($promoRincian as $baris)
+                        @foreach ($promoRincian as $baris)
                             @php [$jenisNama, $jenisIkon, $jenisWarna] = $rupaPromo[$baris['tipe']] ?? ['Promo', 'bi-tag-fill', '#64748b']; @endphp
                             <div class="dsb-baris">
                                 <span class="dsb-avatar" style="--c: {{ $jenisWarna }}"><i class="bi {{ $jenisIkon }}"></i></span>
@@ -269,15 +456,10 @@ Dashboard || lemon
                                     <span class="dsb-baris-meta">{{ $rupiahPromo($baris['nilai']) }} diskon</span>
                                 </span>
                             </div>
-                        @empty
-                            <div class="dsb-kosong">
-                                <span class="dsb-kosong-ikon"><i class="bi bi-tags"></i></span>
-                                <p class="dsb-kosong-judul">Belum ada promo terpakai</p>
-                                <p class="dsb-kosong-ket">Begitu ada pesanan berpromo yang dibayar, rinciannya muncul di sini.</p>
-                            </div>
-                        @endforelse
+                        @endforeach
                     </div>
                 </div>
+                @endif
             </div>
         </section>
 
@@ -312,7 +494,14 @@ Dashboard || lemon
                         <span class="dsb-lencana is-hijau">{{ now()->year }}</span>
                     </div>
                     <div class="dsb-kartu-isi">
-                        <div class="dsb-grafik"><div id="finance-chart"></div></div>
+                        {{-- Penanda "sedang memuat" dihapus sendiri oleh Apex
+                             saat grafiknya digambar. Tanpa ini, kartunya kosong
+                             beberapa ratus milidetik dan terbaca seperti tidak
+                             ada datanya. --}}
+                        <div class="dsb-grafik">
+                            <div class="dsb-memuat"><span class="dsb-putar"></span> Menggambar grafik…</div>
+                            <div id="finance-chart"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -334,8 +523,82 @@ Dashboard || lemon
                                 <p class="dsb-kosong-ket">Belum ada pesanan dengan metode pembayaran.</p>
                             </div>
                         @else
-                            <div class="dsb-grafik is-donat"><div id="chart-visitors-profile"></div></div>
+                            <div class="dsb-grafik is-donat">
+                                <div class="dsb-memuat"><span class="dsb-putar"></span> Menggambar grafik…</div>
+                                <div id="chart-visitors-profile"></div>
+                            </div>
                         @endif
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- ================== TREN HARIAN & TERLARIS ==================
+             Grafik tahunan menjawab "bulan mana yang ramai"; yang harian
+             menjawab "minggu ini bagaimana" — pertanyaan yang justru ditanyakan
+             tiap hari, dan sebelumnya tidak terjawab di mana pun. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-calendar-week-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Periode Ini</span>
+                        <h2 class="dsb-judul">Tren Harian &amp; Terlaris</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                            <span class="dsb-chip is-samar">Hari tanpa pesanan tetap digambar sebagai nol</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-7">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-activity"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Pemasukan Harian</h3>
+                                <span class="dsb-kartu-sub">Pesanan dibayar per hari • {{ $periodeLabel }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-grafik">
+                            <div class="dsb-memuat"><span class="dsb-putar"></span> Menggambar grafik…</div>
+                            <div id="grafik-harian"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-5">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-trophy-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Paling Laku</h3>
+                                <span class="dsb-kartu-sub">Lima teratas menurut nilai</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @forelse ($produkTerlaris as $i => $laris)
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: {{ ['#d97706','#7c3aed','#0284c7','#16a34a','#e11d48'][$i] ?? '#64748b' }}">{{ $i + 1 }}</span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $laris['produk'] }}</span>
+                                    <span class="dsb-baris-meta">{{ $laris['jumlah'] }}× terjual</span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="dsb-baris-nilai">Rp {{ number_format($laris['nilai'], 0, ',', '.') }}</span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-trophy"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada penjualan</p>
+                                <p class="dsb-kosong-ket">Belum ada pesanan dibayar pada periode ini.</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -663,6 +926,50 @@ Dashboard || lemon
     });
 </script>
 <!--================== END GRAFIK PEMASUKAN & PENGELUARAN ==================-->
+
+<!--================== GRAFIK PEMASUKAN HARIAN ==================-->
+<script>
+    function gambarGrafikHarian() {
+        const wadah = document.querySelector('#grafik-harian');
+        if (!wadah || typeof ApexCharts === 'undefined') return;
+
+        const tanggal = @json($pemasukanHarian['tanggal']);
+        const nilai = @json($pemasukanHarian['nilai']);
+
+        const rupiah = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
+
+        const pilihan = {
+            series: [{ name: 'Pemasukan', data: nilai }],
+            chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
+            colors: ['#16a34a'],
+            fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: .35, opacityTo: .04, stops: [0, 90, 100] } },
+            stroke: { curve: 'smooth', width: 3 },
+            dataLabels: { enabled: false },
+            xaxis: {
+                categories: tanggal,
+                // Tanggal dijarangkan sendiri oleh Apex: satu periode berisi
+                // 31 hari, dan mencetak semuanya membuat sumbunya jadi pagar.
+                tickAmount: Math.min(tanggal.length, 10),
+                labels: { style: { fontWeight: 600, colors: '#94a3b8' }, rotate: 0, hideOverlappingLabels: true },
+                axisBorder: { show: false }, axisTicks: { show: false },
+            },
+            yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (v) => v >= 1000000 ? (v / 1000000).toFixed(1) + ' jt' : (v / 1000).toFixed(0) + ' rb' } },
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+            tooltip: { theme: 'light', y: { formatter: rupiah } },
+            noData: { text: 'Belum ada pemasukan pada periode ini.' },
+        };
+
+        wadah.innerHTML = '';
+        new ApexCharts(wadah, pilihan).render();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => setTimeout(gambarGrafikHarian, 60));
+    document.addEventListener('livewire:navigated', () => setTimeout(gambarGrafikHarian, 120));
+    // Pergantian periode mengganti datanya lewat Livewire, jadi grafiknya
+    // digambar ulang setelah komponen diperbarui.
+    document.addEventListener('livewire:updated', () => setTimeout(gambarGrafikHarian, 60));
+</script>
+<!--================== END GRAFIK PEMASUKAN HARIAN ==================-->
 
 {{-- Salam TIDAK lagi dirakit di peramban.
 

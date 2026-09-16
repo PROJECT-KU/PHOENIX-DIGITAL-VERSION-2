@@ -85,3 +85,40 @@ it('ikon yang menemani teks tidak memakai vertical-align sub bawaan template', f
     expect($gaya)->toContain('vertical-align: -.125em;')
         ->and($gaya)->toContain('vertical-align: baseline;');
 });
+
+it('pemilih periode menggeser seluruh angka periode, dan dibatasi rentangnya', function () {
+    // Kueri grafik dasbor memakai MONTH()/YEAR() milik MySQL; pengujian jalan
+    // di SQLite, jadi fungsinya didaftarkan seadanya khusus untuk tes ini.
+    $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+    $pdo->sqliteCreateFunction('MONTH', fn ($d) => $d ? (int) date('n', strtotime($d)) : null, 1);
+    $pdo->sqliteCreateFunction('YEAR', fn ($d) => $d ? (int) date('Y', strtotime($d)) : null, 1);
+
+    $peran = \App\Models\Role::create(['name' => 'uji-periode-'.uniqid(), 'description' => 'uji']);
+    foreach (['view_dashboard', 'view_all_dashboard'] as $n) {
+        $peran->permissions()->attach(\App\Models\Permission::firstOrCreate(
+            ['name' => $n], ['display_name' => $n, 'group' => 'uji', 'description' => 'uji']
+        )->id);
+    }
+    $admin = \App\Models\User::factory()->create(['role_id' => $peran->id]);
+
+    $ini = \App\Support\PeriodeGaji::dariTanggal(now());
+    $labelIni = \App\Support\PeriodeGaji::label($ini['bulan'], $ini['tahun']);
+
+    $lalu = \App\Support\PeriodeGaji::dariTanggal(
+        \App\Support\PeriodeGaji::mulai($ini['bulan'], $ini['tahun'])->subDay()
+    );
+    $labelLalu = \App\Support\PeriodeGaji::label($lalu['bulan'], $lalu['tahun']);
+
+    \Livewire\Livewire::actingAs($admin->fresh())
+        ->test(\App\Livewire\Pages\Admin\Dashboard::class)
+        ->assertSee($labelIni)
+        ->call('pilihPeriode', 1)
+        ->assertSet('mundur', 1)
+        ->assertSee($labelLalu)
+        // Nilai dari peramban tidak boleh menyeret kueri ke rentang sembarang.
+        ->call('pilihPeriode', 999)
+        ->assertSet('mundur', \App\Livewire\Pages\Admin\Dashboard::MUNDUR_MAKS)
+        ->call('pilihPeriode', -5)
+        ->assertSet('mundur', 0)
+        ->assertSee($labelIni);
+});

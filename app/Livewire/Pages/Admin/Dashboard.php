@@ -12,10 +12,27 @@ use App\Models\User;
 use App\Support\PeriodeGaji;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Dashboard extends Component
 {
+    /**
+     * Periode yang sedang dilihat: 0 = berjalan, 1 = satu periode ke belakang,
+     * dan seterusnya. Angka, bukan tanggal, supaya nilai dari peramban tidak
+     * bisa menyeret kueri ke rentang sembarang.
+     */
+    #[Url(as: 'periode', keep: false)]
+    public int $mundur = 0;
+
+    /** Sejauh mana boleh menengok ke belakang — setahun sudah lebih dari cukup. */
+    public const MUNDUR_MAKS = 12;
+
+    public function pilihPeriode(int $mundur): void
+    {
+        $this->mundur = max(0, min(self::MUNDUR_MAKS, $mundur));
+    }
+
     public function logout()
     {
         Auth::logout();
@@ -175,7 +192,21 @@ class Dashboard extends Component
 
         // Periode BERJALAN mengikuti siklus gaji 21-20 (seragam dgn Cashflow &
         // Gaji), bukan bulan kalender. Pada tgl 21+ periode ini beda dari kalender.
-        $per = PeriodeGaji::dariTanggal(now());
+        // Mundur N periode dari yang berjalan. subMonthNoOverflow lewat
+        // PeriodeGaji::mulai() sendiri, jadi akhir bulan tidak melompat.
+        $mundur = max(0, min(self::MUNDUR_MAKS, $this->mundur));
+        $acuan = PeriodeGaji::mulai(
+            PeriodeGaji::dariTanggal(now())['bulan'],
+            PeriodeGaji::dariTanggal(now())['tahun']
+        );
+        for ($i = 0; $i < $mundur; $i++) {
+            $acuan = PeriodeGaji::mulai(
+                PeriodeGaji::dariTanggal($acuan->copy()->subDay())['bulan'],
+                PeriodeGaji::dariTanggal($acuan->copy()->subDay())['tahun']
+            );
+        }
+
+        $per = PeriodeGaji::dariTanggal($acuan);
         $perMulai = PeriodeGaji::mulai($per['bulan'], $per['tahun']);
         $perAkhirEks = PeriodeGaji::akhir($per['bulan'], $per['tahun'])->copy()->addDay()->startOfDay();
         $periodeLabel = PeriodeGaji::label($per['bulan'], $per['tahun']);
@@ -249,7 +280,21 @@ class Dashboard extends Component
         // Pembanding periode LALU untuk saldo, pemasukan, dan pengeluaran.
         // Ketiganya angka periode, jadi pembandingnya pun periode — bukan
         // "kemarin" seperti kartu harian. Lihat App\Support\PerbandinganPeriode.
-        $bandingPeriode = \App\Support\PerbandinganPeriode::ringkas();
+        $bandingPeriode = \App\Support\PerbandinganPeriode::ringkas($perMulai);
+
+        // Angka OPERASIONAL: pekerjaan & uang yang menunggu tindakan. Tidak
+        // ikut berubah saat periode digeser — yang menunggu tindakan selalu
+        // "sekarang", bukan bulan lalu.
+        $operasional = [
+            'langganan' => \App\Support\RingkasanOperasional::langganan(),
+            'jasa' => \App\Support\RingkasanOperasional::antreanJasa(),
+            'pesanan' => \App\Support\RingkasanOperasional::pesananMenunggu(),
+            'task' => \App\Support\RingkasanOperasional::taskTerlambat(),
+            'stok' => \App\Support\RingkasanOperasional::stokAkun(),
+        ];
+
+        $produkTerlaris = \App\Support\RingkasanOperasional::produkTerlaris($perMulai, $perAkhirEks);
+        $pemasukanHarian = \App\Support\RingkasanOperasional::pemasukanHarian($perMulai, $perAkhirEks);
 
         // Pemakaian promo pada periode berjalan (flash sale, kode promo,
         // promo otomatis, kode rujukan) — lihat App\Support\RingkasanPromo.
@@ -307,6 +352,11 @@ class Dashboard extends Component
             'recentOrders' => $recentOrders,
             'recentCustomers' => $recentCustomers,
             'bandingPeriode' => $bandingPeriode,
+            'operasional' => $operasional,
+            'produkTerlaris' => $produkTerlaris,
+            'pemasukanHarian' => $pemasukanHarian,
+            'mundur' => $mundur,
+            'periodeBerjalan' => $mundur === 0,
             'promoDipakai' => $promoDipakai,
             'promoRincian' => $promoRincian,
             'countries' => $paymentLabels,

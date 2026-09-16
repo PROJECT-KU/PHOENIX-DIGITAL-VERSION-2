@@ -265,6 +265,13 @@
     }
     .dsb-hero-ket { color: var(--dsb-redup); font-size: .9rem; margin: 0; line-height: 1.55; }
 
+    .dsb-segar {
+        display: inline-flex; align-items: center; gap: 5px; margin-left: 6px;
+        padding: 2px 9px; border-radius: 999px;
+        background: rgba(255, 255, 255, .7); border: 1px solid var(--dsb-tepi);
+        color: #94a3b8; font-size: .72rem; font-weight: 600; white-space: nowrap;
+    }
+
     .dsb-hero-aksi { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 
     /* Kartu identitas: foto + nama + titik daring. */
@@ -402,6 +409,14 @@
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
     .dsb-stat.is-utama > .dsb-ikon { width: 54px; height: 54px; border-radius: 16px; font-size: 1.5rem; }
 
+    /* Tautan yang menutupi seluruh kartu.
+       Dipakai supaya kartu bisa diklik tanpa membuat KARTUNYA sebuah <a> —
+       markupnya jadi satu jalur, dan isinya (pil, lencana) tetap boleh
+       mengandung tautannya sendiri karena berada di lapisan atasnya. */
+    .dsb-tutup-kartu { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+    .dsb-stat:has(.dsb-tutup-kartu) { cursor: pointer; }
+    .dsb-stat > :not(.dsb-tutup-kartu) { position: relative; z-index: 2; }
+
     /* Pil kecil di dalam kartu (mis. "Hari ini: Rp 2.005"). */
     .dsb-pil {
         display: inline-flex; justify-self: start; align-items: center; gap: 6px; margin-top: 10px;
@@ -509,6 +524,40 @@
         font-weight: 700; color: var(--dsb-tinta); font-size: .84rem;
         text-align: right; overflow-wrap: anywhere;
     }
+
+    /* Penggeser periode. Dua tombol panah, bukan kotak pilih berisi daftar
+       bulan: yang hampir selalu dicari adalah "periode sebelum ini". */
+    .dsb-geser { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .dsb-geser-btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+        min-width: 36px; height: 36px; padding: 0 10px; border-radius: 10px;
+        background: #fff; border: 1px solid var(--dsb-tepi); color: #475569;
+        font-size: .8rem; font-weight: 700; cursor: pointer;
+        transition: border-color .18s ease, color .18s ease, background .18s ease;
+    }
+    .dsb-geser-btn.is-kini { color: var(--c, #475569); }
+    .dsb-geser-btn:disabled { opacity: .4; cursor: not-allowed; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-geser-btn:not(:disabled):hover { border-color: color-mix(in srgb, var(--c, #94a3b8) 40%, #fff); color: var(--c, #1c1f26); }
+    }
+
+    /* Penanda "sedang menggambar". Ditimpa grafik begitu Apex selesai; tanpa
+       ini kartunya kosong beberapa ratus milidetik dan terbaca seperti tidak
+       ada datanya. */
+    .dsb-memuat {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        gap: 9px; color: #94a3b8; font-size: .82rem; pointer-events: none;
+    }
+    .dsb-putar {
+        width: 15px; height: 15px; border-radius: 50%;
+        border: 2px solid #e2e8f0; border-top-color: #94a3b8;
+        animation: dsbPutar .8s linear infinite;
+    }
+    @keyframes dsbPutar { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .dsb-putar { animation: none; } }
+    /* Begitu Apex menaruh grafiknya, penandanya disembunyikan. */
+    .dsb-grafik:has(.apexcharts-canvas) .dsb-memuat { display: none; }
+    .dsb-grafik { position: relative; }
 
     /* Wadah grafik. Tingginya dipatok supaya kartu grafik dan kartu di
        sebelahnya berakhir di garis yang sama — grafik Apex menghitung
