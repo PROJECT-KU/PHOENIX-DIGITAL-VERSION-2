@@ -408,6 +408,14 @@
     .dsb-stat > .dsb-stat-ket:last-child { margin-top: auto; padding-top: 10px; }
     .dsb-stat-ket i.bi { flex-shrink: 0; }
     .dsb-stat.is-utama { padding: 22px; column-gap: 18px; }
+    /* Satuan di belakang angka besar ("182 pesanan"): dibuat kecil dan redup
+       supaya yang dibaca lebih dulu tetap angkanya, dan kalimatnya tidak
+       terbaca sebagai judul kartu. */
+    .dsb-stat-satuan {
+        margin-left: 6px; font-size: .85rem; font-weight: 700; color: var(--dsb-redup);
+        letter-spacing: 0;
+    }
+
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
     .dsb-stat.is-utama > .dsb-ikon { width: 54px; height: 54px; border-radius: 16px; font-size: 1.5rem; }
 
@@ -754,6 +762,77 @@
 
     @media (prefers-reduced-motion: reduce) {
         .dsb-stat, .dsb-stat::before, .dsb-ikon, .dsb-tombol, .dsb-tautan, .dsb-tautan i.bi { transition: none; }
+    }
+
+    /* ===== Tombol muat ulang di kepala halaman =====
+       Rupanya sama dengan penanda "Data per 14:20" di sebelahnya supaya
+       keduanya terbaca sepasang: yang satu mengatakan angkanya sejak kapan,
+       yang satu menyegarkannya. */
+    .dsb-segar.is-tombol {
+        cursor: pointer; color: #64748b;
+        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .dsb-segar.is-tombol:hover { background: #fff; color: var(--dsb-tinta); border-color: #cbd5e1; }
+    .dsb-segar.is-tombol:disabled { cursor: progress; opacity: .7; }
+    .dsb-segar.is-tombol > span { display: inline-flex; align-items: center; gap: 5px; }
+    .dsb-putar.is-kecil { width: 11px; height: 11px; border-width: 1.5px; }
+
+    /* ===== Keadaan memuat saat periode digeser =====
+       Tanpa ini, menekan panah periode tidak memberi tanda apa pun: halaman
+       diam sesaat lalu angkanya sudah berganti, dan pada sambungan lambat
+       admin menekan panahnya dua kali. */
+    .dsb-sedang-muat { opacity: .45; pointer-events: none; transition: opacity .12s ease; }
+    .dsb-chip.is-memuat { border-color: #cbd5e1; color: #475569; }
+
+    /* ===== Kartu yang TIDAK ikut pemilih periode =====
+       "Pendapatan Hari Ini" duduk satu bagian dengan kartu-kartu periode.
+       Saat periode digeser ke belakang, empat kartu berubah dan kartu ini
+       tetap hari ini — tanpa penanda, angkanya terbaca sebagai angka periode
+       lampau yang keliru. */
+    .dsb-tanda-kini {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 8px; border-radius: 999px;
+        background: #eef2ff; color: #4338ca;
+        font-size: .68rem; font-weight: 700; white-space: nowrap;
+    }
+
+    /* ===== Daftar dengan tombol aksi di kanan (mis. hubungi WhatsApp) ===== */
+    .dsb-baris-aksi {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 6px 11px; border-radius: 10px;
+        background: #dcfce7; color: #15803d;
+        font-size: .74rem; font-weight: 700; text-decoration: none; white-space: nowrap;
+        transition: background .15s ease;
+    }
+    .dsb-baris-aksi:hover { background: #bbf7d0; color: #166534; }
+    .dsb-baris-aksi.is-mati { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    /* Kolom kanan biasanya menumpuk (nilai di atas, keterangan di bawah).
+       Pada baris yang berisi lencana + tombol, menumpuk membuat barisnya dua
+       kali lebih tinggi tanpa alasan — keduanya pendek dan muat berdampingan. */
+    .dsb-baris-kanan.is-mendatar { flex-direction: row; align-items: center; gap: 9px; }
+    @media (max-width: 575.98px) {
+        .dsb-baris-kanan.is-mendatar { flex-direction: column; align-items: flex-end; gap: 6px; }
+    }
+
+    /* ===== Cetak =====
+       Dasbor sering dicetak atau disimpan jadi PDF untuk rapat. Tanpa aturan
+       ini yang ikut tercetak adalah sidebar, tombol, dan bayangan kartu —
+       tiga hal yang tidak berarti apa-apa di atas kertas. */
+    @media print {
+        .dsb { background: #fff; }
+        .dsb-hero-aksi, .dsb-geser, .dsb-tautan, .dsb-aksi, .dsb-tombol,
+        .dsb-segar.is-tombol, .dsb-baris-aksi, .dsb-memuat { display: none !important; }
+        .dsb-kartu, .dsb-stat, .dsb-tugas {
+            box-shadow: none !important; border: 1px solid #cbd5e1 !important;
+            break-inside: avoid; page-break-inside: avoid;
+        }
+        .dsb-bagian { break-inside: avoid; }
+        .dsb-rak { gap: 10px; }
+        /* Warna latar ubin ikon & lencana harus benar-benar tercetak; tanpa
+           ini peramban membuangnya dan status kehilangan artinya. */
+        .dsb-ikon, .dsb-lencana, .dsb-pil, .dsb-chip, .bnd-pil {
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
     }
 </style>
 @endonce

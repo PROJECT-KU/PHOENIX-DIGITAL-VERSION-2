@@ -33,6 +33,16 @@ class Dashboard extends Component
         $this->mundur = max(0, min(self::MUNDUR_MAKS, $mundur));
     }
 
+    /**
+     * Hitung ulang seluruh angka halaman.
+     *
+     * Badannya memang kosong: Livewire merender ulang komponen setelah setiap
+     * aksi, dan itulah yang dibutuhkan. Ditulis sebagai metode sungguhan —
+     * bukan aksi ajaib $refresh — karena wire:target hanya cocok dengan NAMA
+     * METODE; dengan $refresh, penanda "Memuat…" tidak akan pernah muncul.
+     */
+    public function muatUlang(): void {}
+
     public function logout()
     {
         Auth::logout();
@@ -136,6 +146,31 @@ class Dashboard extends Component
             ->take(6)
             ->values();
 
+        // Pekerjaan hari ini. Dasbor karyawan sebelumnya hanya memuat gaji,
+        // pinjaman, dan data diri — semua yang dibuka sebulan sekali —
+        // sementara task dan presensi, dua hal yang dibuka tiap hari, tidak
+        // ada sama sekali dan harus dicari lewat menu.
+        $taskSaya = \App\Models\Task::visibleTo($user)
+            ->where('user_id', $user->id)
+            ->where('progress', '!=', 'selesai')
+            ->orderByRaw('CASE WHEN deadline_selesai < ? THEN 0 ELSE 1 END', [today()->toDateString()])
+            ->orderBy('deadline_selesai')
+            ->take(5)
+            ->get();
+
+        $taskRingkas = [
+            'belum' => (int) \App\Models\Task::where('user_id', $user->id)->where('progress', 'belum')->count(),
+            'dikerjakan' => (int) \App\Models\Task::where('user_id', $user->id)->where('progress', 'dikerjakan')->count(),
+            'telat' => (int) \App\Models\Task::where('user_id', $user->id)
+                ->where('progress', '!=', 'selesai')
+                ->whereDate('deadline_selesai', '<', today())
+                ->count(),
+        ];
+
+        $presensiHariIni = \App\Models\Presensi::where('user_id', $user->id)
+            ->whereDate('tanggal', today())
+            ->first();
+
         return view('livewire.pages.admin.dashboard-karyawan', [
             'user' => $user,
             'detail' => $user->detail,
@@ -149,6 +184,9 @@ class Dashboard extends Component
             'statusPinjaman' => $statusPinjaman,
             'riwayat' => $riwayat,
             'tahunIni' => $tahunIni,
+            'taskSaya' => $taskSaya,
+            'taskRingkas' => $taskRingkas,
+            'presensiHariIni' => $presensiHariIni,
             'agendaSaya' => $this->agendaSaya(),
         ])->layout('livewire.layout.templateindex');
     }
@@ -293,6 +331,26 @@ class Dashboard extends Component
             'stok' => \App\Support\RingkasanOperasional::stokAkun(),
         ];
 
+        // Daftar langganan yang perlu dihubungi — bukan hitungannya saja.
+        // Selalu keadaan SEKARANG, seperti kartu "Butuh Perhatian": yang mau
+        // habis tidak bisa dihubungi di periode lampau.
+        $langgananSegera = \App\Support\RingkasanOperasional::langgananSegeraRinci();
+
+        // Laba, jumlah transaksi, dan pelanggan baru vs kembali. Ketiganya
+        // dihitung dari himpunan pesanan yang sama supaya kartunya tidak
+        // saling bertentangan.
+        $laba = \App\Support\RingkasanLaba::banding($perMulai);
+        $penjualan = \App\Support\RingkasanPenjualan::banding($perMulai);
+        $kecepatanJasa = \App\Support\KecepatanJasa::periode($perMulai, $perAkhirEks);
+
+        // Lima pengeluaran terakhir. "Catat Pengeluaran" sudah jadi aksi cepat
+        // di atas, tetapi hasil catatannya tidak pernah terlihat lagi dari
+        // dasbor — jadi pengeluaran ganda baru ketahuan di layar Cash Flow.
+        $pengeluaranTerbaru = \App\Models\Spending::with('penginput')
+            ->orderByDesc('tanggal_transaksi')
+            ->take(5)
+            ->get();
+
         $produkTerlaris = \App\Support\RingkasanOperasional::produkTerlaris($perMulai, $perAkhirEks);
         $pemasukanHarian = \App\Support\RingkasanOperasional::pemasukanHarian($perMulai, $perAkhirEks);
 
@@ -357,6 +415,11 @@ class Dashboard extends Component
             'pemasukanHarian' => $pemasukanHarian,
             'mundur' => $mundur,
             'periodeBerjalan' => $mundur === 0,
+            'laba' => $laba,
+            'penjualan' => $penjualan,
+            'kecepatanJasa' => $kecepatanJasa,
+            'langgananSegera' => $langgananSegera,
+            'pengeluaranTerbaru' => $pengeluaranTerbaru,
             'promoDipakai' => $promoDipakai,
             'promoRincian' => $promoRincian,
             'countries' => $paymentLabels,

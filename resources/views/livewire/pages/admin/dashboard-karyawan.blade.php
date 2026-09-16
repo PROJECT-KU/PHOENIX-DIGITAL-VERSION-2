@@ -91,6 +91,190 @@ Dashboard || lemon
                 </button>
             </div>
         </header>
+
+        {{-- ================== AKSI CEPAT ==================
+             Sama dengan dasbor pengurus: yang paling sering dikerjakan tidak
+             boleh perlu dicari di menu samping lebih dulu. --}}
+        @php
+            $aksiKaryawan = [];
+
+            if (\Illuminate\Support\Facades\Route::has('admin.presensi.index') && auth()->user()->hasPermission('view_presensi')) {
+                $aksiKaryawan[] = ['#16a34a', 'bi-fingerprint', 'Presensi',
+                    $presensiHariIni?->waktu_pulang ? 'Presensi hari ini sudah lengkap'
+                        : ($presensiHariIni ? 'Belum absen pulang' : 'Belum absen hari ini'),
+                    route('admin.presensi.index')];
+            }
+
+            if (\Illuminate\Support\Facades\Route::has('admin.task-saya.index')) {
+                $aksiKaryawan[] = ['#7c3aed', 'bi-clipboard-check-fill', 'Task Saya',
+                    $taskRingkas['belum'] + $taskRingkas['dikerjakan'] > 0
+                        ? ($taskRingkas['belum'] + $taskRingkas['dikerjakan']).' task belum selesai'
+                        : 'Semua task sudah selesai',
+                    route('admin.task-saya.index')];
+            }
+
+            if (\Illuminate\Support\Facades\Route::has('admin.kegiatan.index') && auth()->user()->hasPermission('view_kegiatan')) {
+                $aksiKaryawan[] = ['#0284c7', 'bi-calendar-event-fill', 'Kalender Kegiatan', 'Agenda dan jadwal bersama', route('admin.kegiatan.index')];
+            }
+        @endphp
+
+        @if (! empty($aksiKaryawan))
+            <section class="dsb-bagian">
+                <div class="dsb-kartu">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #f26522"><i class="bi bi-lightning-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Aksi Cepat</h3>
+                                <span class="dsb-kartu-sub">Yang paling sering dibuka tiap hari</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-aksi">
+                            @foreach ($aksiKaryawan as [$warna, $ikon, $nama, $ket, $tautan])
+                                <a class="dsb-aksi-item" href="{{ $tautan }}" wire:navigate style="--c: {{ $warna }}">
+                                    <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                    <span class="dsb-aksi-teks">
+                                        <span class="dsb-aksi-nama">{{ $nama }}</span>
+                                        <span class="dsb-aksi-ket">{{ $ket }}</span>
+                                    </span>
+                                    <i class="bi bi-arrow-right dsb-aksi-panah"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        {{-- ================== PEKERJAAN HARI INI ==================
+             Dasbor ini sebelumnya hanya memuat gaji, pinjaman, dan data diri —
+             semuanya hal yang dibuka sebulan sekali. Dua hal yang dibuka TIAP
+             HARI, presensi dan task, justru tidak ada sama sekali dan harus
+             dicari lewat menu samping.
+
+             Sengaja diletakkan di ATAS ringkasan gaji: gaji bulan ini bisa
+             dibaca kapan saja, sedangkan tenggat hari ini tidak. --}}
+        @php
+            $belumSelesai = $taskRingkas['belum'] + $taskRingkas['dikerjakan'];
+
+            // Presensi dibaca sebagai TIGA keadaan, bukan ada/tidak ada:
+            // belum absen, sedang bekerja, dan sudah pulang. Menggabungkan dua
+            // yang terakhir membuat "sudah absen" terbaca selesai padahal
+            // absen pulangnya belum ditekan.
+            if (! $presensiHariIni) {
+                $rupaPresensi = ['#e11d48', 'bi-fingerprint', 'Belum absen', 'Presensi hari ini belum tercatat'];
+            } elseif (! $presensiHariIni->waktu_pulang) {
+                $rupaPresensi = ['#d97706', 'bi-clock-fill', 'Sedang bekerja',
+                    'Masuk '.\Illuminate\Support\Carbon::parse($presensiHariIni->waktu_masuk)->format('H:i').' • belum absen pulang'];
+            } else {
+                $rupaPresensi = ['#16a34a', 'bi-check-circle-fill', 'Sudah pulang',
+                    \Illuminate\Support\Carbon::parse($presensiHariIni->waktu_masuk)->format('H:i').' – '
+                    .\Illuminate\Support\Carbon::parse($presensiHariIni->waktu_pulang)->format('H:i')
+                    .' • '.$presensiHariIni->durasi_label];
+            }
+        @endphp
+
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-clipboard-check-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Hari Ini</span>
+                        <h2 class="dsb-judul">Presensi &amp; Task Saya</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar3"></i>{{ now()->locale('id')->translatedFormat('l, d M Y') }}</span>
+                            <span class="dsb-chip is-samar">Hanya pekerjaan yang ditugaskan kepada Anda</span>
+                        </div>
+                    </div>
+                </div>
+
+                <article class="dsb-stat k-4" style="--c: {{ $rupaPresensi[0] }}">
+                    <span class="dsb-ikon"><i class="bi {{ $rupaPresensi[1] }}"></i></span>
+                    <p class="dsb-stat-label">Presensi Hari Ini</p>
+                    <p class="dsb-stat-nilai" style="font-size: 1.35rem;">{{ $rupaPresensi[2] }}</p>
+                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>{{ $rupaPresensi[3] }}</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #7c3aed">
+                    <span class="dsb-ikon"><i class="bi bi-list-check"></i></span>
+                    <p class="dsb-stat-label">Task Belum Selesai</p>
+                    <p class="dsb-stat-nilai">{{ $belumSelesai }}<span class="dsb-stat-satuan">task</span></p>
+                    <p class="dsb-stat-ket">
+                        <i class="bi bi-hourglass-split"></i>
+                        <span>{{ $taskRingkas['dikerjakan'] }} dikerjakan • {{ $taskRingkas['belum'] }} belum dimulai</span>
+                    </p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: {{ $taskRingkas['telat'] > 0 ? '#e11d48' : '#16a34a' }}">
+                    <span class="dsb-ikon"><i class="bi {{ $taskRingkas['telat'] > 0 ? 'bi-clipboard-x-fill' : 'bi-patch-check-fill' }}"></i></span>
+                    <p class="dsb-stat-label">Lewat Tenggat</p>
+                    <p class="dsb-stat-nilai">{{ $taskRingkas['telat'] }}<span class="dsb-stat-satuan">task</span></p>
+                    <p class="dsb-stat-ket">
+                        <i class="bi bi-calendar-x"></i>
+                        <span>{{ $taskRingkas['telat'] > 0 ? 'Kerjakan yang ini lebih dulu' : 'Tidak ada yang lewat tenggat' }}</span>
+                    </p>
+                </article>
+
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-card-checklist"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Yang Perlu Dikerjakan</h3>
+                                <span class="dsb-kartu-sub">Yang lewat tenggat lebih dulu, lalu yang paling dekat</span>
+                            </div>
+                        </div>
+                        @if (\Illuminate\Support\Facades\Route::has('admin.task-saya.index'))
+                            <a href="{{ route('admin.task-saya.index') }}" wire:navigate class="dsb-tautan">
+                                <span>Semua Task</span><i class="bi bi-arrow-right"></i>
+                            </a>
+                        @endif
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @forelse ($taskSaya as $task)
+                            @php
+                                $telat = $task->deadline_selesai && $task->deadline_selesai->isBefore(today());
+                                $tenggatHariIni = $task->deadline_selesai && $task->deadline_selesai->isSameDay(today());
+                                // Task::hariTerlambat() hanya berlaku untuk task yang SUDAH
+                                // selesai (ia membandingkan completed_at). Yang ada di daftar
+                                // ini justru yang belum selesai, jadi selisihnya dihitung
+                                // langsung terhadap hari ini.
+                                $hariTelat = $telat ? (int) $task->deadline_selesai->startOfDay()->diffInDays(today()) : 0;
+                            @endphp
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: {{ $telat ? '#e11d48' : '#7c3aed' }}">
+                                    <i class="bi {{ $telat ? 'bi-exclamation-lg' : 'bi-check2' }}"></i>
+                                </span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $task->nama }}</span>
+                                    <span class="dsb-baris-meta">
+                                        <span>{{ $task->category->nama ?? 'Tanpa kategori' }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>Tenggat {{ $task->deadline_selesai?->locale('id')->translatedFormat('d M Y') ?? 'tidak diatur' }}</span>
+                                    </span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="dsb-lencana {{ $telat ? 'is-luring' : ($tenggatHariIni ? 'is-kuning' : 'is-abu') }}">
+                                        {{ $telat ? 'TELAT '.$hariTelat.' HARI' : ($tenggatHariIni ? 'HARI INI' : strtoupper($task->progress)) }}
+                                    </span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-emoji-smile"></i></span>
+                                <p class="dsb-kosong-judul">Tidak ada task yang menunggu</p>
+                                <p class="dsb-kosong-ket">Semua task yang ditugaskan kepada Anda sudah selesai.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </section>
+
         {{-- ================== RINGKASAN SAYA ==================
              Kepala bagian dan keempat kartunya duduk pada rak 12 kolom yang
              sama, jadi tepinya segaris — lihat catatan .dsb-rak. --}}

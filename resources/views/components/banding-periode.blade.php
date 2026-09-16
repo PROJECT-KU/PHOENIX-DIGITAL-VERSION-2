@@ -3,6 +3,12 @@
     'label' => 'periode lalu',
     'rentang' => null,
     'biaya' => false,
+    // Satuan pembandingnya. Bawaannya rupiah karena hampir semua kartu di
+    // dasbor berisi uang, tetapi ada juga yang berisi CACAH (jumlah pesanan,
+    // jumlah pelanggan) — dan "Rp 12" untuk dua belas pesanan salah baca.
+    'prefiks' => 'Rp ',
+    'sufiks' => '',
+    'desimal' => 0,
 ])
 
 {{-- Perbandingan PERIODE INI vs PERIODE LALU — lihat App\Support\PerbandinganPeriode.
@@ -37,5 +43,5 @@
      sesudah @endif membuat Livewire melewati penanda morph-nya. --}}
 <span class="bnd" title="{{ $rentang ? 'Periode sebelumnya: '.$rentang : '' }}">
     <span class="bnd-pil {{ $rupa }}"><i class="bi {{ $ikon }}"></i>{{ $teks }}</span>
-    <span class="bnd-ket">vs <b>Rp {{ number_format($sebelumnya, 0, ',', '.') }}</b> {{ $label }}</span>
+    <span class="bnd-ket">vs <b>{{ $prefiks }}{{ number_format($sebelumnya, $desimal, ',', '.') }}{{ $sufiks }}</b> {{ $label }}</span>
 </span>

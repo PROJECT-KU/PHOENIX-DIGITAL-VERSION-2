@@ -54,6 +54,47 @@ class RingkasanOperasional
     }
 
     /**
+     * DAFTAR langganan yang perlu dihubungi — bukan sekadar hitungannya.
+     *
+     * Angka "38 akan habis" tidak bisa ditindaklanjuti: yang menentukan
+     * perpanjangan adalah siapa orangnya dan nomor mana yang dihubungi.
+     * Yang sudah habis tapi belum dikabari ditaruh PALING ATAS: itulah yang
+     * benar-benar bisa hilang, dan urutan tanggal biasa justru menguburnya di
+     * bawah langganan yang masih hidup.
+     *
+     * @return array<int, array{nama:string, no_hp:?string, produk:string, tanggal:?Carbon, sisa:int, dikabari:bool}>
+     */
+    public static function langgananSegeraRinci(int $batas = 5): array
+    {
+        return OrderItem::query()
+            ->whereNotNull('end_date')
+            ->where('end_date', '<=', now()->addDays(self::AMBANG_HABIS_HARI))
+            ->where('delivery_status', '!=', 'cancelled')
+            ->where(fn ($q) => $q->where('end_date', '>=', now())->orWhereNull('habis_notified_at'))
+            ->with('order.customer')
+            ->orderByRaw('CASE WHEN end_date < ? THEN 0 ELSE 1 END', [now()->toDateTimeString()])
+            ->orderBy('end_date')
+            ->limit($batas)
+            ->get()
+            ->map(function (OrderItem $item) {
+                $akhir = $item->end_date ? Carbon::parse($item->end_date) : null;
+                $pelanggan = $item->order?->customer;
+
+                return [
+                    'nama' => (string) ($pelanggan->nama ?? 'Tanpa nama'),
+                    'no_hp' => $pelanggan->no_hp ?? null,
+                    'produk' => (string) ($item->product_name ?: 'Tanpa nama'),
+                    'tanggal' => $akhir,
+                    // Negatif = sudah lewat. Dibulatkan ke hari penuh supaya
+                    // "besok habis" tidak tertulis "0 hari lagi".
+                    'sisa' => $akhir ? (int) ceil(now()->startOfDay()->diffInDays($akhir->copy()->startOfDay(), false)) : 0,
+                    'dikabari' => $item->habis_notified_at !== null,
+                ];
+            })
+            ->all();
+    }
+
+    /**
      * Antrean jasa yang menunggu dikerjakan.
      *
      * Dipisah bot vs manual: bot hanya menangani cek plagiasi Turnitin. Cek AI

@@ -59,11 +59,15 @@ class PerbandinganPeriode
     }
 
     /**
+     * Bentuk baku pembanding, dipakai bersama oleh kelas ringkasan lain
+     * (mis. RingkasanLaba, RingkasanPenjualan) supaya komponen tampilan
+     * <x-banding-periode> menerima susunan yang sama dari mana pun asalnya.
+     *
      * @return array{sekarang: float, sebelumnya: float, selisih: float, persen: ?float, arah: int}
      *                                                                                              persen null = tidak bisa dipersenkan (pembandingnya nol atau minus)
      *                                                                                              arah: 1 naik, 0 sama, -1 turun
      */
-    private static function banding(float $sekarang, float $sebelumnya): array
+    public static function banding(float $sekarang, float $sebelumnya): array
     {
         return [
             'sekarang' => $sekarang,
@@ -71,6 +75,28 @@ class PerbandinganPeriode
             'selisih' => $sekarang - $sebelumnya,
             'persen' => self::persen($sekarang, $sebelumnya),
             'arah' => $sekarang <=> $sebelumnya,
+        ];
+    }
+
+    /**
+     * Rentang periode SEBELUM periode yang memuat $acuan.
+     *
+     * Dipakai bersama supaya setiap ringkasan memakai definisi "periode lalu"
+     * yang sama persis — satu siklus 21–20 ke belakang, bukan 30 hari.
+     *
+     * @return array{0: Carbon, 1: Carbon, 2: string} mulai, akhir eksklusif, label
+     */
+    public static function periodeSebelum(Carbon $acuan): array
+    {
+        $ini = PeriodeGaji::dariTanggal($acuan);
+        $iniMulai = PeriodeGaji::mulai($ini['bulan'], $ini['tahun']);
+
+        $lalu = PeriodeGaji::dariTanggal($iniMulai->copy()->subDay());
+
+        return [
+            PeriodeGaji::mulai($lalu['bulan'], $lalu['tahun']),
+            PeriodeGaji::akhir($lalu['bulan'], $lalu['tahun'])->copy()->addDay()->startOfDay(),
+            PeriodeGaji::label($lalu['bulan'], $lalu['tahun']),
         ];
     }
 

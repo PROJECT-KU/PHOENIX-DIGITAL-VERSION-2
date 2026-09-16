@@ -198,3 +198,41 @@ it('status luring dan non-member punya warnanya sendiri, bukan abu-abu', functio
         // tanpa ini, baris yang berubah realtime kembali jadi abu-abu.
         ->and($dasbor)->toContain("daring ? 'is-hijau' : 'is-luring'");
 });
+
+it('dasbor karyawan memuat pekerjaan hari ini, bukan hanya gaji', function () {
+    // Dasbor ini sebelumnya hanya berisi gaji, pinjaman, dan data diri —
+    // semuanya hal yang dibuka sebulan sekali. Presensi dan task, dua hal
+    // yang dibuka tiap hari, tidak ada sama sekali.
+    $karyawan = file_get_contents(resource_path('views/livewire/pages/admin/dashboard-karyawan.blade.php'));
+
+    expect($karyawan)->toContain('Presensi &amp; Task Saya')
+        ->and($karyawan)->toContain('$presensiHariIni')
+        ->and($karyawan)->toContain('$taskSaya')
+        // Aksi cepat: sama dengan dasbor pengurus, supaya yang paling sering
+        // dibuka tidak perlu dicari di menu samping lebih dulu.
+        ->and($karyawan)->toContain('Aksi Cepat');
+});
+
+it('penanda memuat memakai nama metode, bukan aksi ajaib', function () {
+    // wire:target hanya cocok dengan NAMA METODE. Dengan wire:target="$refresh"
+    // penandanya tidak pernah muncul — dan tidak ada yang tahu, karena
+    // halamannya tetap bekerja.
+    $dasbor = file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php'));
+
+    expect($dasbor)->toContain('wire:target="muatUlang"')
+        ->and($dasbor)->not->toContain('wire:target="$refresh"')
+        // Livewire menyetel display jadi 'inline-block' kecuali diberi
+        // modifier; pada pil yang seharusnya inline-flex, itu merusak jarak
+        // ikon dengan teksnya.
+        ->and($dasbor)->toContain('wire:loading.inline-flex wire:target="pilihPeriode"')
+        ->and(method_exists(\App\Livewire\Pages\Admin\Dashboard::class, 'muatUlang'))->toBeTrue();
+});
+
+it('kartu hari ini menandai dirinya saat periode digeser ke belakang', function () {
+    // "Pendapatan Hari Ini" duduk satu bagian dengan kartu-kartu periode.
+    // Saat periode digeser, empat kartu berubah dan kartu ini tetap hari ini.
+    $dasbor = file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php'));
+
+    expect($dasbor)->toContain('dsb-tanda-kini')
+        ->and($dasbor)->toContain('Selalu hari ini');
+});

@@ -68,6 +68,16 @@ Dashboard || lemon
                         <span class="dsb-segar" title="Angka di halaman ini dihitung saat halaman dimuat">
                             <i class="bi bi-clock-history"></i>Data per {{ now()->locale('id')->translatedFormat('H:i') }}
                         </span>
+                        {{-- Tombolnya ADA karena jamnya ada: memberi tahu angka
+                             sudah basi tanpa memberi cara menyegarkannya hanya
+                             memindahkan pekerjaan ke admin (cari tombol reload
+                             peramban, dan kehilangan posisi gulir). --}}
+                        <button type="button" class="dsb-segar is-tombol" wire:click="muatUlang"
+                            wire:loading.attr="disabled" wire:target="muatUlang"
+                            title="Hitung ulang semua angka di halaman ini">
+                            <span wire:loading.remove.inline-flex wire:target="muatUlang"><i class="bi bi-arrow-clockwise"></i>Muat ulang</span>
+                            <span wire:loading.inline-flex wire:target="muatUlang"><span class="dsb-putar is-kecil"></span>Memuat…</span>
+                        </button>
                     </span>
                 </p>
             </div>
@@ -359,11 +369,153 @@ Dashboard || lemon
             </section>
         @endif
 
+        {{-- ================== LAYANAN & PERPANJANGAN ==================
+             Dua sisi mutu layanan: siapa yang harus dihubungi supaya tidak
+             hilang, dan seberapa cepat pekerjaan yang masuk diselesaikan.
+
+             Daftarnya sengaja memuat NAMA dan tombol hubungi. Angka "38 akan
+             habis" tidak bisa ditindaklanjuti — yang menentukan perpanjangan
+             adalah siapa orangnya dan nomor mana yang dihubungi. --}}
+        @if (! empty($langgananSegera) || $kecepatanJasa['selesai'] > 0)
+            <section class="dsb-bagian">
+                <div class="dsb-rak">
+                    <div class="dsb-kepala" style="--c: #0ea5e9">
+                        <span class="dsb-kepala-ikon"><i class="bi bi-arrow-repeat"></i></span>
+                        <div class="dsb-kepala-teks">
+                            <span class="dsb-kicker">Layanan</span>
+                            <h2 class="dsb-judul">Perpanjangan &amp; Kecepatan</h2>
+                            <div class="dsb-chip-deret">
+                                <span class="dsb-chip is-samar">Daftar perpanjangan selalu keadaan sekarang, bukan periode yang dipilih</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-kartu k-7">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-hourglass-split"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Perlu Dihubungi</h3>
+                                    <span class="dsb-kartu-sub">Yang sudah habis lebih dulu, lalu yang paling dekat</span>
+                                </div>
+                            </div>
+                            @if (\Illuminate\Support\Facades\Route::has('admin.pesanantoko.index'))
+                                <a href="{{ route('admin.pesanantoko.index', ['activeTab' => 'habis']) }}" wire:navigate class="dsb-tautan">
+                                    <span>Semua</span><i class="bi bi-arrow-right"></i>
+                                </a>
+                            @endif
+                        </div>
+
+                        <div class="dsb-daftar">
+                            @forelse ($langgananSegera as $lg)
+                                @php
+                                    $sisa = (int) $lg['sisa'];
+                                    $habis = $sisa < 0;
+                                    $pesanWa = 'Halo '.$lg['nama'].', langganan '.$lg['produk'].' Anda '
+                                        .($habis ? 'sudah berakhir pada ' : 'akan berakhir pada ')
+                                        .($lg['tanggal']?->locale('id')->translatedFormat('d F Y') ?? 'waktu dekat')
+                                        .'. Apakah ingin diperpanjang? Terima kasih 🙏';
+                                    $tautanWa = \App\Support\TautanWa::kirim($lg['no_hp'], $pesanWa);
+                                @endphp
+                                <div class="dsb-baris">
+                                    <span class="dsb-avatar" style="--c: {{ $habis ? '#e11d48' : '#d97706' }}">{{ \Illuminate\Support\Str::substr($lg['nama'], 0, 1) }}</span>
+                                    <span class="dsb-baris-isi">
+                                        <span class="dsb-baris-judul">{{ $lg['nama'] }}</span>
+                                        <span class="dsb-baris-meta">
+                                            <span>{{ $lg['produk'] }}</span>
+                                            <span class="dsb-pisah">•</span>
+                                            <span>{{ $lg['tanggal']?->locale('id')->translatedFormat('d M Y') ?? 'tanpa tanggal' }}</span>
+                                        </span>
+                                    </span>
+                                    <span class="dsb-baris-kanan is-mendatar">
+                                        <span class="dsb-lencana {{ $habis ? 'is-luring' : 'is-kuning' }}">
+                                            {{ $habis ? abs($sisa).' HARI LEWAT' : ($sisa === 0 ? 'HABIS HARI INI' : $sisa.' HARI LAGI') }}
+                                        </span>
+                                        {{-- Tombolnya tetap tampil walau nomornya kosong,
+                                             tetapi mati: menyembunyikannya membuat baris
+                                             tanpa nomor terlihat sudah beres. --}}
+                                        @if ($tautanWa)
+                                            <a class="dsb-baris-aksi" href="{{ $tautanWa }}" target="_blank" rel="noopener">
+                                                <i class="bi bi-whatsapp"></i>Hubungi
+                                            </a>
+                                        @else
+                                            <span class="dsb-baris-aksi is-mati" title="Pelanggan ini tidak punya nomor WhatsApp">
+                                                <i class="bi bi-whatsapp"></i>Tanpa nomor
+                                            </span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @empty
+                                <div class="dsb-kosong">
+                                    <span class="dsb-kosong-ikon"><i class="bi bi-check2-circle"></i></span>
+                                    <p class="dsb-kosong-judul">Tidak ada yang perlu dihubungi</p>
+                                    <p class="dsb-kosong-ket">Tidak ada langganan yang habis dalam {{ \App\Support\RingkasanOperasional::AMBANG_HABIS_HARI }} hari ke depan.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </div>
+
+                    <div class="dsb-kartu k-5">
+                        <div class="dsb-kartu-kepala">
+                            <div class="dsb-kartu-kepala-kiri">
+                                <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-stopwatch-fill"></i></span>
+                                <div>
+                                    <h3 class="dsb-kartu-judul">Kecepatan Jasa</h3>
+                                    <span class="dsb-kartu-sub">Dihitung sejak naskah masuk • {{ $periodeLabel }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dsb-kartu-isi">
+                            @if ($kecepatanJasa['selesai'] > 0)
+                                @php
+                                    $tepat = (float) $kecepatanJasa['tepat_persen'];
+                                    $warnaTepat = $tepat >= 90 ? '#16a34a' : ($tepat >= 70 ? '#d97706' : '#e11d48');
+                                @endphp
+                                <div class="dsb-data">
+                                    <div class="dsb-data-baris">
+                                        <span class="dsb-data-label"><i class="bi bi-speedometer2"></i>Rata-rata selesai</span>
+                                        <span class="dsb-data-nilai">{{ \App\Support\KecepatanJasa::labelJam($kecepatanJasa['rata_jam']) }}</span>
+                                    </div>
+                                    <div class="dsb-data-baris">
+                                        <span class="dsb-data-label"><i class="bi bi-check2-circle"></i>Selesai dalam sehari</span>
+                                        <span class="dsb-data-nilai" style="color: {{ $warnaTepat }}">{{ number_format($tepat, 1, ',', '.') }}%</span>
+                                    </div>
+                                    <div class="dsb-data-baris">
+                                        <span class="dsb-data-label"><i class="bi bi-exclamation-circle"></i>Lewat sehari</span>
+                                        <span class="dsb-data-nilai">{{ $kecepatanJasa['lewat_sehari'] }} dari {{ $kecepatanJasa['selesai'] }}</span>
+                                    </div>
+                                    <div class="dsb-data-baris">
+                                        <span class="dsb-data-label"><i class="bi bi-hourglass-bottom"></i>Paling lama</span>
+                                        <span class="dsb-data-nilai">{{ \App\Support\KecepatanJasa::labelJam($kecepatanJasa['terlama_jam']) }}</span>
+                                    </div>
+                                </div>
+
+                                <span class="dsb-kemajuan" style="--c: {{ $warnaTepat }}"
+                                    title="{{ number_format($tepat, 1, ',', '.') }}% selesai dalam sehari">
+                                    <span style="width: {{ min(max($tepat, 0), 100) }}%"></span>
+                                </span>
+                                <p class="dsb-kartu-sub" style="margin-top: 10px;">
+                                    Batas wajar {{ \App\Support\KecepatanJasa::AMBANG_JAM }} jam sejak naskah diunggah pelanggan.
+                                </p>
+                            @else
+                                <div class="dsb-kosong">
+                                    <span class="dsb-kosong-ikon"><i class="bi bi-stopwatch"></i></span>
+                                    <p class="dsb-kosong-judul">Belum ada pengecekan selesai</p>
+                                    <p class="dsb-kosong-ket">Angkanya muncul setelah ada pengecekan yang diselesaikan pada periode ini.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
         {{-- ================== RINGKASAN KEUANGAN ==================
              Satu rak 12 kolom memuat kepala bagian DAN kelima kartunya, jadi
              tepi kiri judul, kartu besar, dan kartu kecil benar-benar segaris. --}}
         <section class="dsb-bagian">
-            <div class="dsb-rak">
+            <div class="dsb-rak" wire:loading.class="dsb-sedang-muat" wire:target="pilihPeriode">
                 <div class="dsb-kepala" style="--c: #16a34a">
                     <span class="dsb-kepala-ikon"><i class="bi bi-graph-up-arrow"></i></span>
                     <div class="dsb-kepala-teks">
@@ -376,6 +528,12 @@ Dashboard || lemon
                             @else
                                 <span class="dsb-chip is-samar">Periode lampau — bukan angka berjalan</span>
                             @endif
+                            {{-- Satu-satunya tanda bahwa permintaannya sedang
+                                 berjalan. Tanpa ini, panah periode terasa mati
+                                 pada sambungan lambat dan ditekan dua kali. --}}
+                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="pilihPeriode">
+                                <span class="dsb-putar is-kecil"></span>Menghitung ulang…
+                            </span>
                         </div>
                     </div>
 
@@ -384,13 +542,16 @@ Dashboard || lemon
                          "periode sebelum ini", dan itu harus satu klik. --}}
                     <div class="dsb-geser">
                         <button type="button" class="dsb-geser-btn" wire:click="pilihPeriode({{ $mundur + 1 }})"
+                            wire:loading.attr="disabled" wire:target="pilihPeriode"
                             @disabled($mundur >= \App\Livewire\Pages\Admin\Dashboard::MUNDUR_MAKS)
                             title="Periode sebelumnya"><i class="bi bi-chevron-left"></i></button>
                         <button type="button" class="dsb-geser-btn" wire:click="pilihPeriode({{ $mundur - 1 }})"
+                            wire:loading.attr="disabled" wire:target="pilihPeriode"
                             @disabled($periodeBerjalan)
                             title="Periode berikutnya"><i class="bi bi-chevron-right"></i></button>
                         @unless ($periodeBerjalan)
-                            <button type="button" class="dsb-geser-btn is-kini" wire:click="pilihPeriode(0)">Kembali ke sekarang</button>
+                            <button type="button" class="dsb-geser-btn is-kini" wire:click="pilihPeriode(0)"
+                                wire:loading.attr="disabled" wire:target="pilihPeriode">Kembali ke sekarang</button>
                         @endunless
                     </div>
 
@@ -401,8 +562,23 @@ Dashboard || lemon
 
                 <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
                     <span class="dsb-ikon"><i class="bi bi-calendar-day-fill"></i></span>
-                    <p class="dsb-stat-label">Pendapatan Hari Ini</p>
+                    <p class="dsb-stat-label">
+                        Pendapatan Hari Ini
+                        {{-- Kartu ini TIDAK ikut pemilih periode. Saat periode
+                             digeser ke belakang, empat kartu di sekitarnya
+                             berubah dan kartu ini tetap hari ini; tanpa
+                             penanda, angkanya terbaca sebagai angka periode
+                             lampau yang keliru. --}}
+                        @unless ($periodeBerjalan)
+                            <span class="dsb-tanda-kini"><i class="bi bi-pin-angle-fill"></i>Selalu hari ini</span>
+                        @endunless
+                    </p>
                     <p class="dsb-stat-nilai is-hijau">Rp {{ $pendapatanHariIni }}</p>
+                    {{-- Kode unik HARI INI pindah ke kartu ini, bukan lagi
+                         menumpang kartu periode: di sana satu kartu memuat
+                         tiga dasar waktu sekaligus (total periode, angka hari
+                         ini, dan pembanding kemarin). --}}
+                    <span class="dsb-pil"><i class="bi bi-upc-scan"></i>Kode unik: <b>Rp {{ $kodeUnikHariIni }}</b></span>
                     <p class="dsb-stat-ket">
                         <i class="bi bi-wallet2"></i>
                         <span>Pesanan dibayar {{ now()->translatedFormat('d M Y') }} (paid/proses/selesai)</span>
@@ -442,11 +618,108 @@ Dashboard || lemon
                     <span class="dsb-ikon"><i class="bi bi-upc-scan"></i></span>
                     <p class="dsb-stat-label">Total Kode Unik</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalKodeUnik }}</p>
-                    {{-- Kode unik HARI INI menumpang di kartu ini, bukan jadi kartu
-                         keempat: susunan 2 atas + 3 bawah tetap utuh. --}}
-                    <span class="dsb-pil"><i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ $kodeUnikHariIni }}</b></span>
-                    <x-banding-harian :data="$bandingKodeUnik" />
                     <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>Periode {{ $periodeLabel }}</span></p>
+                </article>
+            </div>
+        </section>
+
+
+        {{-- ================== LABA & PENJUALAN ==================
+             Bagian ini menjawab dua hal yang selama ini tidak dijawab di mana
+             pun: berapa yang benar-benar tersisa dari omset, dan berapa KALI
+             penjualan itu terjadi.
+
+             Modal sudah lama tercatat (satu baris expense per order item),
+             tetapi di kartu "Total Pengeluaran" ia melebur dengan gaji, iklan,
+             dan listrik — jadi omset besar dan omset untung terlihat sama.
+
+             Omset dan modal di sini dihitung dari HIMPUNAN PESANAN yang sama,
+             bukan dari tanggal baris buku kasnya, supaya kedua kartu mustahil
+             saling bertentangan. --}}
+        @php
+            $labaKini = $laba['kini'];
+            $jualKini = $penjualan['kini'];
+            $rupiahLaba = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+            $labaNegatif = $labaKini['laba_kotor'] < 0;
+        @endphp
+
+        <section class="dsb-bagian">
+            <div class="dsb-rak" wire:loading.class="dsb-sedang-muat" wire:target="pilihPeriode">
+                <div class="dsb-kepala" style="--c: #0f766e">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-piggy-bank-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Untung Rugi</span>
+                        <h2 class="dsb-judul">Laba &amp; Penjualan</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                            <span class="dsb-chip is-samar">Omset dan modal dihitung dari pesanan yang sama</span>
+                        </div>
+                    </div>
+                </div>
+
+                <article class="dsb-stat is-utama k-6" style="--c: {{ $labaNegatif ? '#dc2626' : '#0f766e' }}">
+                    <span class="dsb-ikon"><i class="bi bi-cash-coin"></i></span>
+                    <p class="dsb-stat-label">Laba Kotor</p>
+                    <p class="dsb-stat-nilai {{ $labaNegatif ? 'is-merah' : '' }}">{{ $rupiahLaba($labaKini['laba_kotor']) }}</p>
+                    {{-- Margin sebagai pil, bukan kartu sendiri: ia hanya punya
+                         arti berdampingan dengan laba yang dipersenkannya. --}}
+                    <span class="dsb-pil">
+                        <i class="bi bi-percent"></i>Margin:
+                        <b>{{ $labaKini['margin'] === null ? 'belum ada omset' : number_format($labaKini['margin'], 1, ',', '.').'%' }}</b>
+                    </span>
+                    <x-banding-periode :data="$laba['laba_kotor']" :rentang="$laba['label_sebelumnya']" />
+                    <p class="dsb-stat-ket">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Omset {{ $rupiahLaba($labaKini['omset']) }} − modal {{ $rupiahLaba($labaKini['modal']) }}</span>
+                    </p>
+                </article>
+
+                <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
+                    <span class="dsb-ikon"><i class="bi bi-people-fill"></i></span>
+                    <p class="dsb-stat-label">Pelanggan Periode Ini</p>
+                    <p class="dsb-stat-nilai">{{ $jualKini['pelanggan'] }}<span class="dsb-stat-satuan">orang</span></p>
+                    {{-- Pelanggan yang KEMBALI dipisah karena itulah nadi
+                         bisnis langganan: ia tidak memerlukan biaya iklan, dan
+                         turunnya angka itu adalah peringatan paling awal yang
+                         bisa didapat. --}}
+                    <span class="dsb-pil"><i class="bi bi-arrow-repeat"></i>Kembali: <b>{{ $jualKini['kembali'] }}</b></span>
+                    <x-banding-periode :data="$penjualan['kembali']" :rentang="$penjualan['label_sebelumnya']"
+                        prefiks="" sufiks=" pelanggan kembali" label="di periode lalu" />
+                    <p class="dsb-stat-ket">
+                        <i class="bi bi-person-plus"></i>
+                        <span>{{ $jualKini['baru'] }} pelanggan baru @if ($jualKini['tanpa_akun'] > 0) • {{ $jualKini['tanpa_akun'] }} pesanan tanpa akun @endif</span>
+                    </p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #0284c7">
+                    <span class="dsb-ikon"><i class="bi bi-bag-check-fill"></i></span>
+                    <p class="dsb-stat-label">Pesanan Dibayar</p>
+                    <p class="dsb-stat-nilai">{{ $jualKini['pesanan'] }}<span class="dsb-stat-satuan">pesanan</span></p>
+                    {{-- Rata-rata nilai pesanan menempel di kartu jumlahnya:
+                         keduanya bersama menjawab kenapa omset berubah —
+                         pembelinya bertambah, atau belanjanya membesar. --}}
+                    <span class="dsb-pil"><i class="bi bi-calculator"></i>Rata-rata: <b>{{ $rupiahLaba($jualKini['rata']) }}</b></span>
+                    <x-banding-periode :data="$penjualan['pesanan']" :rentang="$penjualan['label_sebelumnya']"
+                        prefiks="" sufiks=" pesanan" />
+                    <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Omset {{ $rupiahLaba($jualKini['nilai']) }}</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #d97706">
+                    <span class="dsb-ikon"><i class="bi bi-box-seam-fill"></i></span>
+                    <p class="dsb-stat-label">Modal Terpakai</p>
+                    <p class="dsb-stat-nilai">{{ $rupiahLaba($labaKini['modal']) }}</p>
+                    {{-- biaya: modal yang naik bukan kabar baik dengan
+                         sendirinya — ia baik hanya bila labanya ikut naik. --}}
+                    <x-banding-periode :data="$laba['modal']" :rentang="$laba['label_sebelumnya']" biaya />
+                    <p class="dsb-stat-ket"><i class="bi bi-upc"></i><span>Harga beli akun &amp; biaya pengecekan</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #e11d48">
+                    <span class="dsb-ikon"><i class="bi bi-receipt"></i></span>
+                    <p class="dsb-stat-label">Biaya Operasional</p>
+                    <p class="dsb-stat-nilai">{{ $rupiahLaba($labaKini['biaya_operasional']) }}</p>
+                    <x-banding-periode :data="$laba['biaya_operasional']" :rentang="$laba['label_sebelumnya']" biaya />
+                    <p class="dsb-stat-ket"><i class="bi bi-list-ul"></i><span>Pengeluaran di luar modal (gaji, iklan, lain-lain)</span></p>
                 </article>
             </div>
         </section>
@@ -475,7 +748,7 @@ Dashboard || lemon
         @endphp
 
         <section class="dsb-bagian">
-            <div class="dsb-rak">
+            <div class="dsb-rak" wire:loading.class="dsb-sedang-muat" wire:target="pilihPeriode">
                 <div class="dsb-kepala" style="--c: #f26522">
                     <span class="dsb-kepala-ikon"><i class="bi bi-tags-fill"></i></span>
                     <div class="dsb-kepala-teks">
@@ -562,21 +835,26 @@ Dashboard || lemon
             </div>
         </section>
 
-        {{-- ================== GRAFIK & CARA BAYAR ==================
-             Grafik batang dan diagram donat ditaruh BERDAMPINGAN (8 + 4 kolom).
-             Keduanya menjawab pertanyaan yang sama — "uangnya dari mana dan ke
-             mana" — dan sebelumnya terpisah oleh dua bagian lain, sehingga
-             untuk membandingkannya admin harus menggulung bolak-balik. --}}
+        {{-- ================== GRAFIK & TREN ==================
+             Keempat grafik dalam SATU bagian. Sebelumnya terbelah jadi dua
+             bagian berurutan dengan dua kepala — dan dua kepala berturut-turut
+             terbaca seperti dua topik berbeda, padahal semuanya menjawab
+             pertanyaan yang sama: uangnya dari mana, ke mana, dan bergerak
+             seperti apa.
+
+             Susunannya 8+4 lalu 7+5 — dua baris, masing-masing satu grafik
+             lebar berpasangan dengan satu ringkasan sempit. --}}
         <section class="dsb-bagian">
-            <div class="dsb-rak">
+            <div class="dsb-rak" wire:loading.class="dsb-sedang-muat" wire:target="pilihPeriode">
                 <div class="dsb-kepala" style="--c: #0284c7">
                     <span class="dsb-kepala-ikon"><i class="bi bi-bar-chart-line-fill"></i></span>
                     <div class="dsb-kepala-teks">
                         <span class="dsb-kicker">Analisis</span>
-                        <h2 class="dsb-judul">Arus Tahun Ini &amp; Cara Bayar</h2>
+                        <h2 class="dsb-judul">Grafik &amp; Tren</h2>
                         <div class="dsb-chip-deret">
                             <span class="dsb-chip"><i class="bi bi-calendar3"></i>{{ now()->year }}</span>
-                            <span class="dsb-chip is-samar">Pemasukan vs pengeluaran, dan sebaran metode pembayaran</span>
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                            <span class="dsb-chip is-samar">Arus setahun, cara bayar, tren harian, dan produk terlaris</span>
                         </div>
                     </div>
                 </div>
@@ -629,34 +907,17 @@ Dashboard || lemon
                         @endif
                     </div>
                 </div>
-            </div>
-        </section>
 
-        {{-- ================== TREN HARIAN & TERLARIS ==================
-             Grafik tahunan menjawab "bulan mana yang ramai"; yang harian
-             menjawab "minggu ini bagaimana" — pertanyaan yang justru ditanyakan
-             tiap hari, dan sebelumnya tidak terjawab di mana pun. --}}
-        <section class="dsb-bagian">
-            <div class="dsb-rak">
-                <div class="dsb-kepala" style="--c: #16a34a">
-                    <span class="dsb-kepala-ikon"><i class="bi bi-calendar-week-fill"></i></span>
-                    <div class="dsb-kepala-teks">
-                        <span class="dsb-kicker">Periode Ini</span>
-                        <h2 class="dsb-judul">Tren Harian &amp; Terlaris</h2>
-                        <div class="dsb-chip-deret">
-                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
-                            <span class="dsb-chip is-samar">Hari tanpa pesanan tetap digambar sebagai nol</span>
-                        </div>
-                    </div>
-                </div>
-
+                {{-- Grafik tahunan menjawab "bulan mana yang ramai"; yang
+                     harian menjawab "minggu ini bagaimana" — pertanyaan yang
+                     justru ditanyakan tiap hari. --}}
                 <div class="dsb-kartu k-7">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-activity"></i></span>
                             <div>
                                 <h3 class="dsb-kartu-judul">Pemasukan Harian</h3>
-                                <span class="dsb-kartu-sub">Pesanan dibayar per hari • {{ $periodeLabel }}</span>
+                                <span class="dsb-kartu-sub">Pesanan dibayar per hari • hari tanpa pesanan digambar nol</span>
                             </div>
                         </div>
                     </div>
@@ -710,7 +971,7 @@ Dashboard || lemon
                     <span class="dsb-kepala-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
                     <div class="dsb-kepala-teks">
                         <span class="dsb-kicker">Terbaru</span>
-                        <h2 class="dsb-judul">Pesanan &amp; Pelanggan</h2>
+                        <h2 class="dsb-judul">Aktivitas Terakhir</h2>
                         <div class="dsb-chip-deret">
                             <span class="dsb-chip"><i class="bi bi-bag-check"></i>{{ $recentOrders->count() }} pesanan terakhir</span>
                             <span class="dsb-chip is-samar">Klik barisnya untuk membuka</span>
@@ -719,7 +980,7 @@ Dashboard || lemon
                 </div>
 
                 {{-- Pesanan terbaru --}}
-                <div class="dsb-kartu k-6">
+                <div class="dsb-kartu k-4">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-bag-check-fill"></i></span>
@@ -765,7 +1026,7 @@ Dashboard || lemon
                 </div>
 
                 {{-- Pelanggan terbaru --}}
-                <div class="dsb-kartu k-6">
+                <div class="dsb-kartu k-4">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-people-fill"></i></span>
@@ -803,6 +1064,62 @@ Dashboard || lemon
                                 <span class="dsb-kosong-ikon"><i class="bi bi-person-plus"></i></span>
                                 <p class="dsb-kosong-judul">Belum ada pelanggan</p>
                                 <p class="dsb-kosong-ket">Pelanggan baru muncul di sini setelah pesanan pertamanya.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Pengeluaran terbaru.
+
+                     "Catat Pengeluaran" sudah jadi aksi cepat di kepala
+                     halaman, tetapi hasil catatannya tidak pernah terlihat
+                     lagi dari dasbor — sehingga pengeluaran yang tercatat dua
+                     kali baru ketahuan saat membuka layar Cash Flow. --}}
+                <div class="dsb-kartu k-4">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #e11d48"><i class="bi bi-receipt"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Pengeluaran Terbaru</h3>
+                                <span class="dsb-kartu-sub">Catatan terakhir</span>
+                            </div>
+                        </div>
+                        @if (auth()->user()->hasPermission('view_spending'))
+                            <a href="{{ route('admin.spending.index') }}" wire:navigate class="dsb-tautan">
+                                <span>Semua</span><i class="bi bi-arrow-right"></i>
+                            </a>
+                        @endif
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @forelse ($pengeluaranTerbaru as $keluar)
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: #e11d48"><i class="bi bi-receipt"></i></span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ \Illuminate\Support\Str::limit($keluar->deskripsi ?: 'Tanpa keterangan', 34) }}</span>
+                                    <span class="dsb-baris-meta">
+                                        <span>{{ $keluar->penginput->name ?? 'Tanpa penginput' }}</span>
+                                        <span class="dsb-pisah">•</span>
+                                        <span>{{ $keluar->tanggal_transaksi?->locale('id')->translatedFormat('d M Y') }}</span>
+                                    </span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="dsb-baris-nilai">Rp {{ number_format((float) $keluar->nominal, 0, ',', '.') }}</span>
+                                    {{-- Pengeluaran 'pending' BELUM masuk buku kas
+                                         (lihat SyncCashFlowAction::shouldRecord), jadi
+                                         statusnya ikut ditampilkan — tanpa itu, angka
+                                         di sini tidak cocok dengan Total Pengeluaran
+                                         di atas dan tidak ada yang menjelaskan kenapa. --}}
+                                    <span class="dsb-lencana {{ $keluar->status === 'pending' ? 'is-kuning' : 'is-hijau' }}">
+                                        {{ strtoupper($keluar->status ?? '-') }}
+                                    </span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-receipt"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada pengeluaran</p>
+                                <p class="dsb-kosong-ket">Catatan pengeluaran terakhir akan muncul di sini.</p>
                             </div>
                         @endforelse
                     </div>
