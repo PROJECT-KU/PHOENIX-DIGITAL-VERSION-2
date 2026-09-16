@@ -171,35 +171,51 @@ Dashboard || lemon
             // dan saat salah satunya akhirnya berisi, ia ikut terlewat.
             $perhatian = [];
 
+            // Angka besar tiap kartu selalu yang MENUNTUT tindakan; kalimat
+            // pendukungnya dijaga ringkas satu baris supaya baris bawah semua
+            // kartu berhenti di ketinggian yang sama.
             if ($ops['langganan']['segera'] > 0 || $ops['langganan']['belum_dikabari'] > 0) {
                 $perhatian[] = [
                     'warna' => '#d97706',
                     'ikon' => 'bi-hourglass-split',
                     'label' => 'Langganan Habis',
-                    'nilai' => $ops['langganan']['segera'].' akan habis',
+                    'nilai' => $ops['langganan']['segera'],
+                    'satuan' => 'akan habis',
+                    'pil' => $ops['langganan']['belum_dikabari'] > 0
+                        ? $ops['langganan']['belum_dikabari'].' belum dikabari'
+                        : null,
                     'ket' => $ops['langganan']['nilai_segera'] > 0
                         ? $rupiahOps($ops['langganan']['nilai_segera']).' bila diperpanjang'
                         : 'Dalam '.\App\Support\RingkasanOperasional::AMBANG_HABIS_HARI.' hari ke depan',
-                    'pil' => $ops['langganan']['belum_dikabari'] > 0
-                        ? $ops['langganan']['belum_dikabari'].' sudah habis & belum dikabari'
-                        : null,
+                    'ikon_ket' => 'bi-cash-coin',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
                         ? route('admin.pesanantoko.index', ['activeTab' => 'habis']) : null,
                 ];
             }
 
             if ($ops['jasa']['manual'] > 0 || $ops['jasa']['dikerjakan'] > 0) {
+                // Bot hanya menangani plagiasi Turnitin; cek AI & parafrase
+                // selalu tangan admin. Saat antrean manual kosong, angka
+                // besarnya diganti yang sedang dikerjakan — "0 menunggu"
+                // sebagai judul kartu tidak memberi tahu apa pun.
+                $adaAntrean = $ops['jasa']['manual'] > 0;
                 $perhatian[] = [
                     'warna' => '#7c3aed',
                     'ikon' => 'bi-file-earmark-text-fill',
-                    'label' => 'Jasa Dikerjakan Manual',
-                    'nilai' => $ops['jasa']['manual'].' menunggu',
-                    // Bot hanya menangani plagiasi Turnitin; cek AI & parafrase
-                    // selalu tangan admin.
-                    'ket' => $ops['jasa']['dikerjakan'].' sedang dikerjakan • '.$ops['jasa']['bot'].' antre bot',
-                    'pil' => $ops['jasa']['manual_terlama']
-                        ? 'Terlama menunggu '.$ops['jasa']['manual_terlama']->locale('id')->diffForHumans(null, true)
+                    'label' => $adaAntrean ? 'Jasa Antre Manual' : 'Jasa Dikerjakan',
+                    'nilai' => $adaAntrean ? $ops['jasa']['manual'] : $ops['jasa']['dikerjakan'],
+                    'satuan' => $adaAntrean ? 'antre manual' : 'berjalan',
+                    'pil' => $adaAntrean && $ops['jasa']['manual_terlama']
+                        // Di bawah semenit, "terlama 0 detik" tidak memberi tahu
+                        // apa pun — yang ingin diketahui adalah "baru masuk".
+                        ? ($ops['jasa']['manual_terlama']->diffInMinutes(now()) < 1
+                            ? 'Baru masuk'
+                            : 'Terlama '.$ops['jasa']['manual_terlama']->locale('id')->diffForHumans(null, true))
                         : null,
+                    'ket' => $adaAntrean
+                        ? $ops['jasa']['dikerjakan'].' sedang dikerjakan'
+                        : $ops['jasa']['bot'].' menunggu giliran bot',
+                    'ikon_ket' => 'bi-arrow-repeat',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
                         ? route('admin.pesanantoko.index') : null,
                 ];
@@ -209,12 +225,14 @@ Dashboard || lemon
                 $perhatian[] = [
                     'warna' => '#0284c7',
                     'ikon' => 'bi-hourglass',
-                    'label' => 'Menunggu Pembayaran',
-                    'nilai' => $ops['pesanan']['jumlah'].' pesanan',
-                    'ket' => $rupiahOps($ops['pesanan']['nilai']).' belum masuk',
+                    'label' => 'Belum Dibayar',
+                    'nilai' => $ops['pesanan']['jumlah'],
+                    'satuan' => 'pesanan',
                     'pil' => $ops['pesanan']['segera_kedaluwarsa'] > 0
-                        ? $ops['pesanan']['segera_kedaluwarsa'].' kedaluwarsa < 1 jam'
+                        ? $ops['pesanan']['segera_kedaluwarsa'].' hangus < 1 jam'
                         : null,
+                    'ket' => $rupiahOps($ops['pesanan']['nilai']).' belum masuk',
+                    'ikon_ket' => 'bi-wallet2',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.pesanantoko.index')
                         ? route('admin.pesanantoko.index', ['activeTab' => 'neworder']) : null,
                 ];
@@ -224,32 +242,55 @@ Dashboard || lemon
                 $perhatian[] = [
                     'warna' => '#e11d48',
                     'ikon' => 'bi-clipboard-x-fill',
-                    'label' => 'Task Lewat Tenggat',
-                    'nilai' => $ops['task']['jumlah'].' task',
-                    'ket' => $ops['task']['terlama']
-                        ? 'Terlama jatuh tempo '.$ops['task']['terlama']->locale('id')->translatedFormat('d M Y')
-                        : 'Belum selesai melewati tenggatnya',
-                    'pil' => null,
+                    'label' => 'Task Telat',
+                    'nilai' => $ops['task']['jumlah'],
+                    'satuan' => 'task',
+                    'pil' => $ops['task']['terlama']
+                        ? 'Terlama '.$ops['task']['terlama']->locale('id')->translatedFormat('d M Y')
+                        : null,
+                    'ket' => 'Belum selesai melewati tenggatnya',
+                    'ikon_ket' => 'bi-calendar-x',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.task-saya.index')
                         ? route('admin.task-saya.index') : null,
                 ];
             }
 
             if (! empty($ops['stok'])) {
-                $daftarStok = collect($ops['stok'])->map(fn ($s) => $s['produk'].' ('.$s['sisa'].')')->implode(', ');
+                // Dua nama saja lalu "+N lagi": daftar yang dipotong di tengah
+                // kata ("Gemi…") tidak bisa dibaca maupun dicari.
+                $namaStok = collect($ops['stok'])->take(2)
+                    ->map(fn ($s) => $s['produk'].' ('.$s['sisa'].')')->implode(', ');
+                $sisaNama = count($ops['stok']) - 2;
+
                 $perhatian[] = [
                     'warna' => '#16a34a',
                     'ikon' => 'bi-box-seam',
-                    'label' => 'Stok Akun Menipis',
-                    'nilai' => count($ops['stok']).' produk',
-                    'ket' => \Illuminate\Support\Str::limit($daftarStok, 70),
-                    'pil' => 'Sisa ≤ '.\App\Support\RingkasanOperasional::AMBANG_STOK.' akun bebas',
+                    'label' => 'Stok Menipis',
+                    'nilai' => count($ops['stok']),
+                    'satuan' => 'produk',
+                    'pil' => 'Sisa ≤ '.\App\Support\RingkasanOperasional::AMBANG_STOK.' akun',
+                    'ket' => $namaStok.($sisaNama > 0 ? ' +'.$sisaNama.' lagi' : ''),
+                    'ikon_ket' => 'bi-box',
                     'url' => \Illuminate\Support\Facades\Route::has('admin.DataAkun.index')
                         ? route('admin.DataAkun.index') : null,
                 ];
             }
 
-            $lebarPerhatian = count($perhatian) >= 4 ? 'k-3' : (count($perhatian) === 3 ? 'k-4' : 'k-6');
+            /*
+             | Lebar kartu dipilih supaya BARIS TERAKHIR selalu penuh.
+             |
+             | Pada lima kartu seperempat lebar, yang kelima berdiri sendirian
+             | dengan tiga perempat baris kosong di sebelahnya — terbaca seperti
+             | ada yang gagal dimuat. Lima kartu karena itu dibagi 3 + 2.
+             */
+            $jumlahPerhatian = count($perhatian);
+            $lebarPerhatian = match (true) {
+                $jumlahPerhatian >= 6 => 'k-4',
+                $jumlahPerhatian === 5 => null,      // ditentukan per kartu di bawah
+                $jumlahPerhatian === 4 => 'k-3',
+                $jumlahPerhatian === 3 => 'k-4',
+                default => 'k-6',
+            };
         @endphp
 
         @if (! empty($perhatian))
@@ -274,14 +315,38 @@ Dashboard || lemon
                              tidak) menaruh @if di dalam tag, dan tanda
                              lebih-besar sesudah @endif membuat Livewire
                              melewati penanda morph-nya. --}}
-                        <article class="dsb-stat {{ $lebarPerhatian }}" style="--c: {{ $p['warna'] }}">
+                        {{-- Teksnya dibungkus satu kolom flex sendiri: dengan
+                             begitu keterangan di bawah selalu jatuh ke DASAR
+                             kartu, entah kartunya punya pil atau tidak — dan
+                             baris bawah semua kartu berhenti di satu garis. --}}
+                        @php
+                            // Lima kartu: tiga di baris pertama, dua di baris kedua.
+                            $lebarKartu = $lebarPerhatian ?? ($loop->index < 3 ? 'k-4' : 'k-6');
+
+                            // Di tablet semua kartu berpasangan dua-dua. Bila
+                            // jumlahnya ganjil, yang terakhir melebar penuh —
+                            // kalau tidak, ia berdiri setengah lebar dengan
+                            // separuh baris kosong di sebelahnya.
+                            $penuhTablet = $loop->last && $jumlahPerhatian % 2 === 1;
+                        @endphp
+                        <article class="dsb-tugas {{ $lebarKartu }} {{ $penuhTablet ? 'is-penuh-sedang' : '' }}"
+                            style="--c: {{ $p['warna'] }}">
                             <span class="dsb-ikon"><i class="bi {{ $p['ikon'] }}"></i></span>
-                            <p class="dsb-stat-label">{{ $p['label'] }}</p>
-                            <p class="dsb-stat-nilai" style="font-size: 1.35rem;">{{ $p['nilai'] }}</p>
-                            @if ($p['pil'])
-                                <span class="dsb-pil">{{ $p['pil'] }}</span>
-                            @endif
-                            <p class="dsb-stat-ket"><i class="bi bi-arrow-right-short"></i><span>{{ $p['ket'] }}</span></p>
+
+                            <span class="dsb-tugas-isi">
+                                <span class="dsb-stat-label">{{ $p['label'] }}</span>
+                                <span class="dsb-tugas-angka">
+                                    {{ $p['nilai'] }}<span class="dsb-tugas-satuan">{{ $p['satuan'] }}</span>
+                                </span>
+
+                                @if ($p['pil'])
+                                    <span class="dsb-pil">{{ $p['pil'] }}</span>
+                                @endif
+
+                                <span class="dsb-stat-ket">
+                                    <i class="bi {{ $p['ikon_ket'] }}"></i><span>{{ $p['ket'] }}</span>
+                                </span>
+                            </span>
 
                             @if ($p['url'])
                                 <a class="dsb-tutup-kartu" href="{{ $p['url'] }}" wire:navigate>

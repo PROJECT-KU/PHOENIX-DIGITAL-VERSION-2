@@ -409,6 +409,69 @@
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
     .dsb-stat.is-utama > .dsb-ikon { width: 54px; height: 54px; border-radius: 16px; font-size: 1.5rem; }
 
+    /* ===== Kartu "yang menunggu dikerjakan" =====================
+       Beda dari kartu angka biasa: isinya panjangnya tidak seragam (ada yang
+       punya pil, ada yang tidak; ada keterangan satu baris, ada dua). Karena
+       itu teksnya dibungkus SATU kolom flex, dan keterangannya didorong ke
+       dasar kolom — sehingga baris bawah semua kartu berhenti di satu garis
+       berapa pun isinya. */
+    .dsb-tugas {
+        position: relative; overflow: hidden; height: 100%;
+        display: flex; align-items: flex-start; gap: 15px;
+        background: #fff; border: 1px solid var(--dsb-tepi); border-radius: 16px;
+        padding: 20px;
+        transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+    }
+    .dsb-tugas::before {
+        content: ""; position: absolute; top: -36px; right: -36px;
+        width: 104px; height: 104px; border-radius: 50%;
+        background: color-mix(in srgb, var(--c) 12%, transparent);
+        transition: transform .3s ease;
+    }
+    .dsb-tugas > * { position: relative; z-index: 2; }
+    .dsb-tugas > .dsb-ikon { margin-bottom: 0; flex-shrink: 0; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-tugas:hover {
+            border-color: color-mix(in srgb, var(--c) 34%, #fff);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 16%, transparent);
+        }
+        .dsb-tugas:hover::before { transform: scale(1.3); }
+        .dsb-tugas:hover .dsb-ikon { background: var(--c); color: #fff; border-color: transparent; }
+    }
+
+    .dsb-tugas-isi { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; flex: 1; align-self: stretch; }
+    .dsb-tugas-angka {
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
+        color: var(--dsb-tinta); font-size: 1.6rem; line-height: 1.1;
+        letter-spacing: -.025em; font-variant-numeric: tabular-nums;
+    }
+    /* Satuan menempel pada angkanya dengan ukuran & bobot yang jelas berbeda:
+       "38 akan habis" harus terbaca sebagai satu angka beserta satuannya,
+       bukan sebagai kalimat. */
+    .dsb-tugas-satuan {
+        margin-left: 6px; font-size: .85rem; font-weight: 700; color: var(--dsb-redup);
+        letter-spacing: 0;
+    }
+    .dsb-tugas-isi .dsb-pil { margin-top: 10px; }
+    /* Keterangan selalu di DASAR kolom. */
+    .dsb-tugas-isi .dsb-stat-ket { margin-top: auto; padding-top: 12px; align-self: stretch; }
+    .dsb-tugas-isi .dsb-stat-ket > span { overflow-wrap: anywhere; }
+
+    @media (max-width: 1199.98px) {
+        /* Kartu tugas berpasangan dua-dua di tablet — isinya pendek, jadi
+           setengah lebar masih cukup (tidak seperti kartu berisi daftar). */
+        .dsb-tugas { grid-column: span 6; }
+        .dsb-tugas.is-penuh-sedang { grid-column: span 12; }
+    }
+    @media (max-width: 767.98px) {
+        .dsb-tugas, .dsb-tugas.is-penuh-sedang { grid-column: span 12; }
+    }
+    @media (max-width: 575.98px) {
+        .dsb-tugas { padding: 17px; gap: 13px; }
+        .dsb-tugas-angka { font-size: 1.45rem; }
+    }
+
     /* ===== Aksi cepat =========================================== */
     .dsb-aksi { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
     .dsb-aksi-item {
