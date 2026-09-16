@@ -15,6 +15,7 @@ dataset('tampilan dasbor', [
     'livewire/pages/admin/dashboard-karyawan.blade.php',
     'livewire/pages/admin/online-users.blade.php',
     'livewire/pages/admin/partials/dasbor-gaya.blade.php',
+    'livewire/pages/admin/bot-turnitin/panel-bot-turnitin.blade.php',
 ]);
 
 it('hasil kompilasinya PHP yang sah', function (string $berkas) {
@@ -253,4 +254,38 @@ it('gaya sendiri tidak mengalahkan aturan penyembunyi wire:loading', function ()
     expect($gaya)->toContain('.dsb-segar-isi { display: inline-flex;')
         ->and($gaya)->not->toContain('.dsb-segar.is-tombol > span { display:')
         ->and($dasbor)->toContain('class="dsb-segar-isi" wire:loading.inline-flex');
+});
+
+it('lencana status bot setinggi tombol di sebelahnya', function () {
+    // Lencana berdiri SEBARIS dengan "Jeda", "Pasang skrip", dan "Token baru".
+    // Dengan padding pilnya sendiri ia setinggi 21px di antara tombol 36px dan
+    // terbaca seperti label yang tercecer, bukan status kartunya.
+    // Diukur sesudahnya: keduanya 36px, tepi atas & bawah sama persis.
+    $panel = file_get_contents(resource_path('views/livewire/pages/admin/bot-turnitin/panel-bot-turnitin.blade.php'));
+
+    expect($panel)->toContain('box-sizing: border-box; min-height: 36px;')
+        // Tepi bening supaya kotaknya sama dengan .bt-btn yang bertepi 1px.
+        ->and($panel)->toContain('border: 1px solid transparent; border-radius: 999px;');
+});
+
+it('judul baris tidak dipotong di layar sempit', function () {
+    // Nomor pesanan adalah IDENTITAS. Terpotong jadi "INV-20260915-00…" ia
+    // tidak bisa dicocokkan maupun dicari. Diukur: pada 768px empat nomor
+    // pesanan terpotong sebelum aturan ini ada.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($gaya)->toContain("@media (max-width: 1199.98px) {\n        .dsb-baris-judul { white-space: normal; overflow-wrap: anywhere; }");
+});
+
+it('sasaran sentuh di layar sempit cukup besar untuk jempol', function () {
+    // Diukur: "Muat ulang" 19px, "Hubungi" 25px, tab bot 26px — semuanya jauh
+    // di bawah ~36px. Sesudah aturan ini, sasaran terkecil di bawah 992px
+    // adalah 35px.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+    $panel = file_get_contents(resource_path('views/livewire/pages/admin/bot-turnitin/panel-bot-turnitin.blade.php'));
+
+    expect($gaya)->toContain('@media (max-width: 991.98px), (pointer: coarse) {')
+        ->and($gaya)->toContain('.dsb-segar.is-tombol { min-height: 36px;')
+        ->and($gaya)->toContain('.dsb-baris-aksi { min-height: 36px;')
+        ->and($panel)->toContain('.bt-tab { min-height: 36px;');
 });

@@ -567,6 +567,14 @@
         display: block; font-weight: 700; color: var(--dsb-tinta); font-size: .88rem;
         line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    /* Di bawah 1200px kartunya menyempit dan nomor pesanan mulai terpotong
+       jadi "INV-20260915-00…" — bentuk yang tidak bisa dicocokkan maupun
+       dicari. Judul baris adalah IDENTITAS, jadi lebih baik turun baris
+       daripada hilang ujungnya. Diukur: pada 768px empat nomor pesanan
+       terpotong sebelum aturan ini. */
+    @media (max-width: 1199.98px) {
+        .dsb-baris-judul { white-space: normal; overflow-wrap: anywhere; }
+    }
     .dsb-baris-meta {
         display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
         color: var(--dsb-redup); font-size: .76rem; margin-top: 3px;
@@ -783,6 +791,19 @@
        Satu kelas (0,1,0) kalah dari aturan Livewire (0,2,0), jadi
        penyembunyiannya kembali bekerja tanpa kehilangan tata letaknya. */
     .dsb-segar-isi { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* Sasaran sentuh di layar sempit & perangkat sentuh.
+
+       Diukur: "Muat ulang" setinggi 19px dan tombol "Hubungi" 25px — keduanya
+       jauh di bawah ukuran yang bisa ditekan jempol dengan yakin (~36px).
+       Hurufnya sengaja tidak ikut dibesarkan; yang ditambah kotak sentuhnya.
+
+       Dua syarat sekaligus: lebar layar (bisa diuji, dan menangkap ponsel &
+       tablet) ATAU pointer kasar (menangkap layar sentuh besar). */
+    @media (max-width: 991.98px), (pointer: coarse) {
+        .dsb-segar.is-tombol { min-height: 36px; padding-inline: 12px; }
+        .dsb-baris-aksi { min-height: 36px; padding-inline: 13px; }
+    }
     .dsb-putar.is-kecil { width: 11px; height: 11px; border-width: 1.5px; }
 
     /* ===== Keadaan memuat saat periode digeser =====

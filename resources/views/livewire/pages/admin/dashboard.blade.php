@@ -1096,7 +1096,12 @@ Dashboard || lemon
                             <div class="dsb-baris">
                                 <span class="dsb-avatar" style="--c: #e11d48"><i class="bi bi-receipt"></i></span>
                                 <span class="dsb-baris-isi">
-                                    <span class="dsb-baris-judul">{{ \Illuminate\Support\Str::limit($keluar->deskripsi ?: 'Tanpa keterangan', 34) }}</span>
+                                    {{-- Dipotong oleh CSS saja, bukan juga oleh Str::limit:
+                                         dua pemotongan berturut-turut menghasilkan
+                                         "Operasional Konsumsi ke Surakarta……", dan yang
+                                         CSS lakukan sudah menyesuaikan lebar kartunya.
+                                         Teks penuhnya tetap bisa dibaca lewat title. --}}
+                                    <span class="dsb-baris-judul" title="{{ $keluar->deskripsi ?: 'Tanpa keterangan' }}">{{ $keluar->deskripsi ?: 'Tanpa keterangan' }}</span>
                                     <span class="dsb-baris-meta">
                                         <span>{{ $keluar->penginput->name ?? 'Tanpa penginput' }}</span>
                                         <span class="dsb-pisah">•</span>

@@ -29,8 +29,16 @@
 
         /* Lampu status: titiknya dari CSS, bukan ikon huruf — kotak glif selalu
            lebih lebar dari titiknya dan membuat jaraknya timpang. */
+        /* Lencana status berdiri SEBARIS dengan tombol-tombolnya, jadi
+           kotaknya disamakan: tinggi 36px dan tepi setebal 1px (bening) —
+           persis .bt-btn. Tanpa itu lencananya 21px di antara tombol 36px dan
+           terbaca seperti label yang tercecer, bukan status kartunya.
+           Ukuran hurufnya sengaja TIDAK ikut dibesarkan: ia status, bukan
+           tombol, dan tidak boleh mengajak ditekan. */
         .bt-lampu {
-            display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            box-sizing: border-box; min-height: 36px; padding: 0 13px;
+            border: 1px solid transparent; border-radius: 999px;
             font-size: .72rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
         }
         .bt-lampu::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
@@ -191,10 +199,15 @@
         .bt-token { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         .bt-token input { flex: 1 1 240px; min-width: 0; font-family: ui-monospace, monospace; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 11px; padding: 9px 12px; background: #fff; }
 
-        @media (max-width: 991.98px) {
+        @media (max-width: 991.98px), (pointer: coarse) {
             /* Keterangan mengambil satu baris penuh; lencana dan tombol
                berbaris di bawahnya, tidak berdesakan di sisa ruang sempit. */
             .bt-baris-isi { flex: 1 1 100%; }
+
+            /* Tab pemilih adalah TOMBOL, dan setinggi 26px ia terlalu kecil
+               untuk ditekan jempol dengan yakin. Hurufnya tidak ikut
+               dibesarkan — yang ditambah kotak sentuhnya. */
+            .bt-tab { min-height: 36px; padding-inline: 13px; }
         }
         @media (max-width: 575.98px) {
             .bt-bar { padding: 15px 16px; gap: 12px; }
