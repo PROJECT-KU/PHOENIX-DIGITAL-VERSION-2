@@ -32,7 +32,7 @@
                 'dalamTahun' => (int) $tgl->year === $tahun,
                 'depan' => $tgl->isFuture(),
                 'jumlah' => $perHari[$tgl->toDateString()] ?? 0,
-                'label' => $tgl->translatedFormat('d M Y'),
+                'label' => $tgl->locale('id')->translatedFormat('d M Y'),
             ];
         }
         // Tandai label bulan saat bulan berganti (pakai hari pertama kolom yg dalam tahun).
@@ -40,7 +40,7 @@
         if ($acuan) {
             $b = \Carbon\Carbon::parse($acuan['tanggal'])->format('M');
             if ($b !== $bulanTerakhir) {
-                $labelBulan[$kolomKe] = \Carbon\Carbon::parse($acuan['tanggal'])->translatedFormat('M');
+                $labelBulan[$kolomKe] = \Carbon\Carbon::parse($acuan['tanggal'])->locale('id')->translatedFormat('M');
                 $bulanTerakhir = $b;
             }
         }
@@ -79,7 +79,7 @@
             <span class="akt-stat-label">
                 hari terbaik
                 @if ($aktivitas['terbaik']['tanggal'])
-                    ({{ \Carbon\Carbon::parse($aktivitas['terbaik']['tanggal'])->translatedFormat('d M') }})
+                    ({{ \Carbon\Carbon::parse($aktivitas['terbaik']['tanggal'])->locale('id')->translatedFormat('d M') }})
                 @endif
             </span>
         </div>
@@ -156,7 +156,7 @@
                 <div class="akt-lini-isi">
                     <button type="button" class="akt-lini-judul" wire:click="openTask('{{ $t->id }}')">{{ $t->nama }}</button>
                     <div class="akt-lini-meta">
-                        diselesaikan {{ $t->completed_at->translatedFormat('d M Y') }}
+                        diselesaikan {{ $t->completed_at->locale('id')->translatedFormat('d M Y') }}
                         @if ($t->karyawan)
                             oleh {{ \Illuminate\Support\Str::of($t->karyawan->name)->explode(' ')->first() }}
                         @endif

@@ -57,7 +57,7 @@
                             @if ($t->deadline_selesai)
                                 <span class="scrum-meta-item {{ $telat ? 'text-danger fw-bold' : '' }}">
                                     <i class="bi bi-calendar-event"></i>
-                                    {{ $t->deadline_selesai->translatedFormat('d M') }}
+                                    {{ $t->deadline_selesai->locale('id')->translatedFormat('d M') }}
                                     @if ($telat) — lewat @endif
                                 </span>
                             @endif

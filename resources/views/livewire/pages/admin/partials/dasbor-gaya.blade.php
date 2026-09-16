@@ -73,6 +73,10 @@
         padding: 0 clamp(4px, 1.4vw, 18px) 28px;
     }
 
+    /* Dipakai saat bahasa rupa ini dipinjam di dalam wadah yang sudah punya
+       tepinya sendiri (isi jendela): padding halaman tidak boleh ikut. */
+    .dsb.is-datar { padding: 0; }
+
     .dsb-bagian { margin-bottom: clamp(20px, 3vw, 32px); }
 
     /* ===== Rak: satu kisi 12 kolom untuk seluruh dasbor ==========
@@ -623,6 +627,10 @@
        itu sudah dipakai status pesanan (cancelled & pending) di kartu
        sebelahnya, dan kelas yang sama dengan dua arti akan saling menular
        begitu salah satunya disetel ulang. */
+    /* Nila untuk "belum dikerjakan": keadaan yang PASTI, jadi tidak boleh
+       abu-abu — abu-abu di sini berarti datanya yang belum ada. Dibedakan dari
+       is-biru yang sudah dipakai label kategori di baris yang sama. */
+    .dsb-lencana.is-nila { background: #e0e7ff; color: #4338ca; }
     .dsb-lencana.is-luring { background: #fee2e2; color: #b91c1c; }
     .dsb-lencana.is-tamu { background: #ffedd5; color: #c2410c; }
 
@@ -854,6 +862,71 @@
     .dsb-baris-kanan.is-mendatar { flex-direction: row; align-items: center; gap: 9px; }
     @media (max-width: 575.98px) {
         .dsb-baris-kanan.is-mendatar { flex-direction: column; align-items: flex-end; gap: 6px; }
+    }
+
+    /* ===== Tombol tambahan untuk jendela =====
+       is-hijau/is-kuning dipakai tombol keputusan di kaki jendela detail,
+       tempat warna tombol adalah ARTI (selesaikan / terlambat), bukan hiasan. */
+    .dsb-tombol.is-hijau { background: #16a34a; color: #fff; box-shadow: 0 8px 18px rgba(22, 163, 74, .26); }
+    .dsb-tombol.is-kuning { background: #d97706; color: #fff; box-shadow: 0 8px 18px rgba(217, 119, 6, .24); }
+    .dsb-tombol.is-biru { background: #fff; color: #0369a1; border-color: #bae6fd; }
+    .dsb-tombol:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-tombol.is-biru:hover { background: #0284c7; color: #fff; border-color: transparent; }
+        .dsb-tombol:disabled:hover { transform: none; }
+    }
+    @media (max-width: 575.98px) {
+        /* Tombol keputusan melebar penuh: berdampingan di 390px masing-masing
+           hanya selebar ~150px dan teksnya terpotong. */
+        .dsb-tombol.is-penuh-sempit { width: 100%; }
+    }
+
+    /* ===== Isi jendela (modal) =======================================
+       Kepala, badan, dan kaki jendela. Ditulis di sistem desain karena
+       jendela adalah tempat kedua setelah tabel di mana dialek gaya baru
+       paling gampang tumbuh — tiap layar cenderung membuat kepalanya
+       sendiri. */
+    .dsb-jendela-kepala {
+        display: flex; align-items: flex-start; gap: 13px;
+        padding: 18px clamp(16px, 2.2vw, 22px); border-bottom: 1px solid #f1f5f9;
+    }
+    .dsb-jendela-teks { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 7px; }
+    .dsb-jendela-judul {
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 800;
+        color: var(--dsb-tinta); font-size: 1.02rem; line-height: 1.3; margin: 0;
+        overflow-wrap: anywhere;
+    }
+    .dsb-jendela-lencana { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .dsb-jendela-isi { padding: clamp(16px, 2.2vw, 22px); }
+    .dsb-jendela-kaki {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: 12px;
+        padding: 15px clamp(16px, 2.2vw, 22px);
+        background: #fbfcfe; border-top: 1px solid #f1f5f9;
+    }
+    .dsb-jendela-kaki-ket {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: var(--dsb-redup); font-size: .82rem; line-height: 1.5; min-width: 0;
+    }
+    .dsb-jendela-aksi { display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+    /* Tombol tutup: kotak sama dengan tombol aksi baris, jadi sudut kanan atas
+       jendela tidak punya ukuran sendiri. */
+    .dsb-jendela-tutup {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px;
+        background: #fff; border: 1px solid var(--dsb-tepi); color: #64748b;
+        font-size: .9rem; cursor: pointer; padding: 0;
+    }
+    .dsb-jendela-tutup i.bi::before { display: block; line-height: 1; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-jendela-tutup:hover { background: #f1f5f9; color: var(--dsb-tinta); border-color: #cbd5e1; }
+    }
+    @media (max-width: 575.98px) {
+        .dsb-jendela-tutup { width: 36px; height: 36px; }
+        /* Keterangan kaki naik ke atas tombolnya; berdampingan, keduanya
+           menyusut sampai teksnya pecah satu kata per baris. */
+        .dsb-jendela-kaki { flex-direction: column; align-items: stretch; }
+        .dsb-jendela-aksi { width: 100%; }
     }
 
     /* ===== Tabel =====================================================

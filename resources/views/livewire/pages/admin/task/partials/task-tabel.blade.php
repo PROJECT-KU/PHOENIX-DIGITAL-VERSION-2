@@ -7,8 +7,8 @@
 
      Urutan: YANG TERBARU DI ATAS (lihat TaskSayaList::render). --}}
 @php
-    $warnaProgres = ['belum' => '#64748b', 'dikerjakan' => '#0284c7', 'selesai' => '#16a34a'];
-    $lencanaProgres = ['belum' => 'is-abu', 'dikerjakan' => 'is-biru', 'selesai' => 'is-hijau'];
+    $warnaProgres = ['belum' => '#6366f1', 'dikerjakan' => '#0284c7', 'selesai' => '#16a34a'];
+    $lencanaProgres = ['belum' => 'is-nila', 'dikerjakan' => 'is-biru', 'selesai' => 'is-hijau'];
     $lencanaBobot = ['ringan' => 'is-hijau', 'sedang' => 'is-kuning', 'berat' => 'is-merah'];
 @endphp
 
@@ -134,12 +134,12 @@
 
                         <td class="k-sedang" data-judul="Tenggat">
                             <span class="dsb-tabel-teks">
-                                <span class="dsb-tabel-angka">{{ $first->deadline_selesai?->translatedFormat('d M Y') ?? '—' }}</span>
+                                <span class="dsb-tabel-angka">{{ $first->deadline_selesai?->locale('id')->translatedFormat('d M Y') ?? '—' }}</span>
                                 <span class="dsb-tabel-meta">
                                     @if ($selesai)
                                         {{-- Kata "Selesai" sudah ada di kolom Status; yang belum
                                              terjawab adalah KAPAN, jadi itulah yang ditulis. --}}
-                                        {{ $first->completed_at ? 'Rampung '.$first->completed_at->translatedFormat('d M') : 'Rampung' }}
+                                        {{ $first->completed_at ? 'Rampung '.$first->completed_at->locale('id')->translatedFormat('d M') : 'Rampung' }}
                                     @elseif ($lewat)
                                         <span style="color: #e11d48; font-weight: 700;">Lewat tenggat</span>
                                     @elseif ($sisa === 0)

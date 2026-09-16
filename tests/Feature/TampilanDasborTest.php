@@ -325,3 +325,41 @@ it('gaya dasbor tidak menumpang reset kotak milik kerangka', function () {
 
     expect($gaya)->toContain('.dsb, .dsb *, .dsb *::before, .dsb *::after { box-sizing: border-box; }');
 });
+
+it('jendela detail task memakai kerangka jendela bersama', function () {
+    // Jendela yang terbuka saat baris task diklik dulu memakai kepala gradasi
+    // ungu dan badge Bootstrap — dialek yang tidak ada di layar lain.
+    $task = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($task)->toContain('class="ts-modal-card dsb is-datar"')
+        ->and($task)->toContain('dsb-jendela-kepala')
+        ->and($task)->toContain('dsb-jendela-kaki')
+        // .dsb membawa padding halaman; di dalam jendela padding itu harus mati.
+        ->and($gaya)->toContain('.dsb.is-datar { padding: 0; }')
+        ->and($gaya)->toContain('.dsb-jendela-kepala');
+});
+
+it('tanggal di layar task ditulis dalam bahasa Indonesia', function () {
+    // APP_LOCALE=en, jadi translatedFormat() TANPA locale('id') menulis "Aug",
+    // bukan "Agu" — lihat pola yang sama di CLAUDE.md. Gejalanya halus: tanggal
+    // tetap benar, hanya bahasanya yang bocor.
+    $berkas = glob(resource_path('views/livewire/pages/admin/task/*.blade.php'))
+        + glob(resource_path('views/livewire/pages/admin/task/partials/*.blade.php'));
+
+    $lalai = [];
+    foreach ($berkas as $b) {
+        foreach (preg_split('/\R/', (string) file_get_contents($b)) as $no => $baris) {
+            if (str_contains($baris, 'translatedFormat(') && ! str_contains($baris, "locale('id')->translatedFormat(")) {
+                // task-card & task-folder sudah tidak dipakai sejak daftar jadi
+                // tabel; dibiarkan apa adanya sampai benar-benar dihapus.
+                if (str_contains($b, 'task-card') || str_contains($b, 'task-folder')) {
+                    continue;
+                }
+                $lalai[] = basename($b).':'.($no + 1);
+            }
+        }
+    }
+
+    expect($lalai)->toBe([]);
+});

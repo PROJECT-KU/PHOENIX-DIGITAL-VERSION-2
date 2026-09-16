@@ -457,6 +457,34 @@ Task Saya || lemon
         @media (hover: hover) and (pointer: fine) {
             .ts-pandang-btn:hover { border-color: color-mix(in srgb, var(--c) 35%, #fff); color: var(--dsb-tinta, #1f2b3d); }
         }
+        /* ===== Isi jendela detail task ===== */
+        .ts-uraian {
+            background: #f8fafc; border: 1px solid #eef2f7; border-radius: 14px;
+            padding: 13px 15px; margin-bottom: 16px;
+            color: #475569; font-size: .88rem; line-height: 1.65; white-space: pre-line;
+        }
+        .ts-bagian { margin-top: 18px; }
+        .ts-bagian-judul {
+            display: inline-flex; align-items: center; gap: 7px; margin-bottom: 10px;
+            color: #94a3b8; font-size: .72rem; font-weight: 800;
+            letter-spacing: .04em; text-transform: uppercase;
+        }
+        .ts-lampiran { display: flex; flex-wrap: wrap; gap: 9px; }
+        .ts-lampiran-gambar img {
+            width: 62px; height: 62px; object-fit: cover; border-radius: 12px;
+            display: block; cursor: zoom-in; border: 1px solid #eef2f7;
+        }
+        .ts-lampiran-berkas {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 7px 13px 7px 8px; border-radius: 12px; min-height: 44px;
+            background: #fff; border: 1px solid #e9edf3; color: #475569;
+            font-size: .82rem; font-weight: 700; text-decoration: none;
+        }
+        .ts-lampiran-berkas .dsb-ikon { width: 30px; height: 30px; border-radius: 9px; font-size: .85rem; }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-lampiran-berkas:hover { border-color: #cbd5e1; color: #1c1f26; }
+        }
+
         .ts-reset-teks { display: none; }
         @media (max-width: 767.98px) {
             /* Dua kelas, BUKAN satu: gaya dasbor di-include sesudah blok ini,
@@ -554,7 +582,7 @@ Task Saya || lemon
                         <div class="dsb-chip-deret">
                             <span class="dsb-chip"><i class="bi bi-list-check"></i>{{ $semua }} task</span>
                             @if ($modePeriode === 'siklus20' && $siklusMulai && $siklusAkhir)
-                                <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $siklusMulai->translatedFormat('d M') }} – {{ $siklusAkhir->translatedFormat('d M Y') }}</span>
+                                <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $siklusMulai->locale('id')->translatedFormat('d M') }} – {{ $siklusAkhir->locale('id')->translatedFormat('d M Y') }}</span>
                             @endif
                             <span class="dsb-chip is-samar">Hanya task yang menyangkut Anda</span>
                         </div>
@@ -862,94 +890,187 @@ Task Saya || lemon
     </div>
     @endif
 
-    {{-- ===== Modal detail task ===== --}}
+    {{-- ===== Jendela detail task =====
+         Memakai bahasa rupa dasbor (dsb-*) seperti sisa layar ini: ubin ikon
+         berwarna, lencana yang sama, dan kisi label–nilai yang sama. Kelas
+         .is-datar mematikan padding halaman milik .dsb — di dalam jendela,
+         tepinya sudah diurus jendela itu sendiri. --}}
     @if($showModal && $activeTask)
-    @php $locked = $activeTask->isLocked(); $bs = $activeTask->bonusStatus(); @endphp
+    @php
+        $locked = $activeTask->isLocked();
+        $bs = $activeTask->bonusStatus();
+        $selesai = $activeTask->progress === 'selesai';
+        $lewatTenggat = ! $selesai && $bs === 'tidak_selesai';
+        $sisaHari = $activeTask->deadline_selesai
+            ? (int) now()->startOfDay()->diffInDays($activeTask->deadline_selesai->copy()->startOfDay(), false)
+            : null;
+
+        // Warna jendela = warna keadaan task, bukan warna merek. Ungu untuk
+        // semua membuat task yang terlambat terlihat sama tenangnya dengan
+        // yang baru dimulai.
+        $warnaTask = $lewatTenggat ? '#e11d48' : ($selesai ? '#16a34a' : ($activeTask->progress === 'dikerjakan' ? '#0284c7' : '#6366f1'));
+        $ikonTask = $lewatTenggat ? 'bi-exclamation-triangle-fill' : ($selesai ? 'bi-check-circle-fill' : ($activeTask->progress === 'dikerjakan' ? 'bi-hourglass-split' : 'bi-card-checklist'));
+        $lencanaProg = ['belum' => 'is-nila', 'dikerjakan' => 'is-biru', 'selesai' => 'is-hijau'];
+        $lencanaBobotM = ['ringan' => 'is-hijau', 'sedang' => 'is-kuning', 'berat' => 'is-merah'];
+    @endphp
     <div class="ts-modal-back" wire:click="$set('showModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card">
-            <div class="ts-modal-head">
-                <button type="button" class="btn-close" wire:click="$set('showModal', false)"></button>
-                <h5 class="fw-bold mb-2" style="max-width: 90%;">{{ $activeTask->nama }}</h5>
-                <div class="d-flex align-items-center gap-1 flex-wrap">
-                    <span class="badge bg-light text-dark rounded-pill">{{ $labelProg[$activeTask->progress] ?? ucfirst($activeTask->progress) }}</span>
-                    <span class="badge bg-{{ $badgeBonus[$bs] ?? 'secondary' }} rounded-pill border border-light">{{ $labelBonus[$bs] ?? $bs }}</span>
-                    @if($locked)<span class="badge bg-dark bg-opacity-25 rounded-pill"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>@endif
-                </div>
-            </div>
-            <div class="p-4">
-                @if($activeTask->deskripsi)<p class="text-muted mb-3" style="font-size:.9rem;">{{ $activeTask->deskripsi }}</p>@endif
+        <div class="ts-modal-card dsb is-datar">
 
-                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap" style="font-size:.85rem;">
-                    <span><i class="bi bi-calendar-range me-1 text-primary"></i>{{ $activeTask->deadline_mulai?->translatedFormat('d M Y') }} – {{ $activeTask->deadline_selesai?->translatedFormat('d M Y') }}</span>
-                    <span class="text-capitalize"><i class="bi bi-bar-chart me-1 text-primary"></i>Bobot: {{ $activeTask->bobot }}</span>
-                </div>
-
-                {{-- Lampiran --}}
-                @if($activeTask->attachments->count())
-                <div class="mb-3">
-                    <div class="ts-section-lbl"><i class="bi bi-paperclip me-1"></i>Lampiran</div>
-                    <div class="d-flex flex-wrap gap-2">
-                        @foreach($activeTask->attachments as $att)
-                        @if($att->isImage())
-                        <a href="javascript:void(0)" role="button" class="ts-img-zoom" data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar"><img src="{{ Storage::url($att->path) }}" style="width:58px;height:58px;object-fit:cover;border-radius:10px;cursor:zoom-in;"></a>
-                        @else
-                        <a href="{{ Storage::url($att->path) }}" target="_blank" class="border rounded-3 px-2 py-1 d-inline-flex align-items-center gap-1 text-decoration-none" style="font-size:.78rem;"><i class="bi bi-file-earmark"></i>{{ Str::limit($att->name, 18) }}</a>
+            <div class="dsb-jendela-kepala">
+                <span class="dsb-ikon is-kecil" style="--c: {{ $warnaTask }}"><i class="bi {{ $ikonTask }}"></i></span>
+                <span class="dsb-jendela-teks">
+                    <h5 class="dsb-jendela-judul">{{ $activeTask->nama }}</h5>
+                    <span class="dsb-jendela-lencana">
+                        <span class="dsb-lencana {{ $lewatTenggat ? 'is-merah' : ($lencanaProg[$activeTask->progress] ?? 'is-abu') }}">
+                            {{ $lewatTenggat ? 'Lewat Tenggat' : ($labelProg[$activeTask->progress] ?? ucfirst($activeTask->progress)) }}
+                        </span>
+                        @if ($activeTask->category)
+                            <span class="dsb-lencana is-ungu">{{ $activeTask->category->nama }}</span>
                         @endif
-                        @endforeach
+                        @if ($activeTask->label)
+                            <span class="dsb-lencana is-biru">{{ $activeTask->label->nama }}</span>
+                        @endif
+                        <span class="dsb-lencana {{ $lencanaBobotM[$activeTask->bobot] ?? 'is-abu' }}">Bobot {{ $activeTask->bobot }}</span>
+                        @if ($locked)
+                            <span class="dsb-lencana is-abu"><i class="bi bi-lock-fill"></i>Terkunci</span>
+                        @endif
+                    </span>
+                </span>
+                <button type="button" class="dsb-jendela-tutup" wire:click="$set('showModal', false)" title="Tutup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="dsb-jendela-isi">
+                @if ($activeTask->deskripsi)
+                    {{-- Uraian diberi wadah sendiri, bukan paragraf telanjang:
+                         di antara lencana dan kisi data, teks tanpa wadah
+                         terbaca seperti keterangan kecil, padahal ia isi
+                         perintahnya. --}}
+                    <div class="ts-uraian">{{ $activeTask->deskripsi }}</div>
+                @endif
+
+                <div class="dsb-data">
+                    <div class="dsb-data-baris">
+                        <span class="dsb-data-label"><i class="bi bi-person-badge"></i>Pemberi</span>
+                        <span class="dsb-data-nilai">{{ $activeTask->pemberi?->name ?? $activeTask->pembuat?->name ?? 'Admin' }}</span>
+                    </div>
+                    <div class="dsb-data-baris">
+                        <span class="dsb-data-label"><i class="bi bi-person-check"></i>Dikerjakan oleh</span>
+                        <span class="dsb-data-nilai">{{ $activeTask->user_id === auth()->id() ? 'Anda' : ($activeTask->karyawan?->name ?? '-') }}</span>
+                    </div>
+                    <div class="dsb-data-baris">
+                        <span class="dsb-data-label"><i class="bi bi-calendar-range"></i>Rentang</span>
+                        <span class="dsb-data-nilai">
+                            {{ $activeTask->deadline_mulai?->locale('id')->translatedFormat('d M Y') ?? '—' }}
+                            &ndash;
+                            {{ $activeTask->deadline_selesai?->locale('id')->translatedFormat('d M Y') ?? '—' }}
+                        </span>
+                    </div>
+                    <div class="dsb-data-baris">
+                        <span class="dsb-data-label"><i class="bi bi-hourglass-split"></i>Sisa waktu</span>
+                        <span class="dsb-data-nilai">
+                            @if ($selesai)
+                                <span style="color: #15803d;">
+                                    {{ $activeTask->completed_at ? 'Rampung '.$activeTask->completed_at->locale('id')->translatedFormat('d M Y') : 'Sudah rampung' }}
+                                </span>
+                            @elseif ($lewatTenggat)
+                                <span style="color: #b91c1c;">Lewat {{ abs($sisaHari ?? 0) }} hari</span>
+                            @elseif ($sisaHari === 0)
+                                <span style="color: #b45309;">Jatuh tempo hari ini</span>
+                            @elseif ($sisaHari !== null)
+                                {{ $sisaHari }} hari lagi
+                            @else
+                                —
+                            @endif
+                        </span>
                     </div>
                 </div>
+
+                @if($activeTask->attachments->count())
+                    <div class="ts-bagian">
+                        <span class="ts-bagian-judul"><i class="bi bi-paperclip"></i>Lampiran</span>
+                        <div class="ts-lampiran">
+                            @foreach($activeTask->attachments as $att)
+                                @if($att->isImage())
+                                    <a href="javascript:void(0)" role="button" class="ts-img-zoom ts-lampiran-gambar"
+                                        data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar">
+                                        <img src="{{ Storage::url($att->path) }}" alt="Lampiran">
+                                    </a>
+                                @else
+                                    <a href="{{ Storage::url($att->path) }}" target="_blank" rel="noopener" class="ts-lampiran-berkas">
+                                        <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-file-earmark-text"></i></span>
+                                        <span>{{ Str::limit($att->name, 22) }}</span>
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
                 @endif
 
-                {{-- Diskusi: solo -> inline; grup -> hanya di folder (bukan di sub-card) --}}
                 @if($activeIsSolo)
-                    @include('livewire.pages.admin.task.partials.discussion', ['activeTask' => $activeTask])
+                    <div class="ts-bagian">
+                        @include('livewire.pages.admin.task.partials.discussion', ['activeTask' => $activeTask])
+                    </div>
                 @endif
             </div>
 
-            {{-- Footer aksi status --}}
-            @php $isOwner = $activeTask->user_id === auth()->id(); @endphp
-            <div class="px-4 py-3 d-flex align-items-center justify-content-between gap-2 flex-wrap" style="background:#fbfcff; border-top:1px solid #eef0f7;">
-                @if(! $isOwner)
-                @php
-                    $isPemberi = $activeTask->assigned_by === auth()->id();
-                    $canManageActive = $activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds);
-                @endphp
-                <span class="text-muted d-inline-flex align-items-center gap-2" style="font-size:.83rem;">
-                    <i class="bi bi-eye"></i>
-                    {{ $isPemberi ? 'Anda pemberi task ini' : ($canManageActive ? 'Anda atasan pemberi — dapat mengelola' : 'Anda memantau task ini') }} — memantau progres &amp; memberi komentar{{ ($canManageActive && $locked) ? ' & membuka kembali revisi' : '' }}.
-                </span>
-                @if($canManageActive && $locked)
-                <button type="button" wire:click="openReopen('{{ $activeTask->id }}')"
-                    class="btn btn-warning btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1">
-                    <i class="bi bi-arrow-counterclockwise" style="display:inline-flex;align-items:center;line-height:1;"></i> Buka Kembali
-                </button>
-                @endif
-                @elseif($locked)
-                <span class="text-muted d-inline-flex align-items-center gap-2" style="font-size:.83rem;">
-                    <i class="bi bi-lock-fill"></i>
-                    {{ $activeTask->progress==='selesai' ? 'Task sudah selesai — status terkunci.' : 'Melewati deadline → Tidak Selesai. Status terkunci.' }}
-                </span>
+            @php
+                $isOwner = $activeTask->user_id === auth()->id();
+                $isPemberi = $activeTask->assigned_by === auth()->id();
+                $canManageActive = $activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds);
+                $lewat = $activeTask->isLewatDeadline();
+            @endphp
+            <div class="dsb-jendela-kaki">
+                @if (! $isOwner)
+                    <span class="dsb-jendela-kaki-ket">
+                        <i class="bi bi-eye"></i>
+                        <span>{{ $isPemberi ? 'Anda pemberi task ini' : ($canManageActive ? 'Anda atasan pemberinya' : 'Anda memantau task ini') }} — bisa memantau progres dan memberi komentar.</span>
+                    </span>
+                    @if ($canManageActive && $locked)
+                        <span class="dsb-jendela-aksi">
+                            <button type="button" wire:click="openReopen('{{ $activeTask->id }}')" class="dsb-tombol is-kuning is-penuh-sempit">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Buka Kembali</span>
+                            </button>
+                        </span>
+                    @endif
+                @elseif ($locked)
+                    <span class="dsb-jendela-kaki-ket">
+                        <i class="bi bi-lock-fill"></i>
+                        <span>{{ $selesai ? 'Task sudah selesai — statusnya terkunci.' : 'Melewati tenggat → Tidak Selesai. Statusnya terkunci.' }}</span>
+                    </span>
                 @else
-                @php $lewat = $activeTask->isLewatDeadline(); @endphp
-                <span class="text-muted d-inline-flex align-items-center gap-1" style="font-size:.8rem;">
-                    <i class="bi {{ $lewat ? 'bi-alarm-fill text-warning' : 'bi-info-circle' }}"></i>
-                    {{ $lewat ? 'Melebihi deadline — bonus dikurangi bila diselesaikan' : 'Perbarui status task Anda' }}
-                </span>
-                <div class="d-flex gap-2">
-                    @if($activeTask->progress !== 'dikerjakan')
-                    <button type="button" wire:click="mulaiKerjakan('{{ $activeTask->id }}')" class="btn btn-outline-info btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1"><i class="bi bi-play-circle"></i> Mulai Kerjakan</button>
-                    @endif
-                    @if($activeTask->progress === 'dikerjakan')
-                        @if($lewat)
-                        <button type="button" data-id="{{ $activeTask->id }}" class="btn btn-warning btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ts-selesai-late-btn"><i class="bi bi-alarm-fill"></i> Tandai Selesai Melebihi Deadline</button>
-                        @else
-                        <button type="button" data-id="{{ $activeTask->id }}" class="btn btn-success btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 ts-selesai-btn"><i class="bi bi-check2-circle"></i> Tandai Selesai</button>
+                    <span class="dsb-jendela-kaki-ket">
+                        <i class="bi {{ $lewat ? 'bi-alarm-fill' : 'bi-info-circle' }}"></i>
+                        <span>{{ $lewat ? 'Sudah melebihi tenggat — bonus berkurang bila diselesaikan sekarang.' : 'Perbarui status task Anda.' }}</span>
+                    </span>
+                    <span class="dsb-jendela-aksi">
+                        @if ($activeTask->progress !== 'dikerjakan')
+                            <button type="button" wire:click="mulaiKerjakan('{{ $activeTask->id }}')" class="dsb-tombol is-biru is-penuh-sempit">
+                                <i class="bi bi-play-circle"></i><span>Mulai Kerjakan</span>
+                            </button>
                         @endif
-                    @else
-                    <button type="button" disabled class="btn btn-success btn-sm rounded-pill px-3 d-inline-flex align-items-center gap-1 opacity-50" style="cursor:not-allowed;" title="Klik 'Mulai Kerjakan' dulu"><i class="bi bi-lock-fill"></i> Tandai Selesai</button>
-                    @endif
-                </div>
+
+                        @if ($activeTask->progress === 'dikerjakan')
+                            @if ($lewat)
+                                <button type="button" data-id="{{ $activeTask->id }}" class="dsb-tombol is-kuning is-penuh-sempit ts-selesai-late-btn">
+                                    <i class="bi bi-alarm-fill"></i><span>Tandai Selesai (Terlambat)</span>
+                                </button>
+                            @else
+                                <button type="button" data-id="{{ $activeTask->id }}" class="dsb-tombol is-hijau is-penuh-sempit ts-selesai-btn">
+                                    <i class="bi bi-check2-circle"></i><span>Tandai Selesai</span>
+                                </button>
+                            @endif
+                        @else
+                            {{-- Tetap ditampilkan, bukan disembunyikan: tombol yang hilang
+                                 membuat orang mengira fiturnya tidak ada. Yang dijelaskan
+                                 adalah SYARATNYA. --}}
+                            <button type="button" disabled class="dsb-tombol is-lembut is-penuh-sempit" title="Tekan 'Mulai Kerjakan' lebih dulu">
+                                <i class="bi bi-lock-fill"></i><span>Tandai Selesai</span>
+                            </button>
+                        @endif
+                    </span>
                 @endif
             </div>
         </div>
