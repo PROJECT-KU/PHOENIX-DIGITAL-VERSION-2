@@ -34,6 +34,10 @@ Dashboard || lemon
         };
         $namaDepan = \Illuminate\Support\Str::of(Auth::user()->name)->trim()->explode(' ')->first();
 
+        $fotoAku = Auth::user()->profile_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists(Auth::user()->profile_photo)
+            ? Storage::url(Auth::user()->profile_photo)
+            : null;
+
         // Lencana status pesanan: warnanya sama dengan yang dipakai halaman
         // pesanan, supaya satu status tidak pernah berganti warna antar layar.
         $warnaStatus = [
@@ -62,8 +66,16 @@ Dashboard || lemon
             <div class="dsb-hero-aksi">
                 <div class="dsb-aku">
                     <span class="dsb-aku-foto">
-                        <img src="{{ Auth::user()->profile_photo ? Storage::url(Auth::user()->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}"
-                            alt="Foto {{ Auth::user()->name }}" onerror="this.style.visibility='hidden';">
+                        {{-- Foto hanya dipasang bila BERKASNYA ada. Memasangnya
+                             begitu saja meninggalkan gambar rusak (atau, saat
+                             disembunyikan lewat onerror, lubang kosong) di
+                             kartu identitas — dan sebagian besar admin memang
+                             belum pernah mengunggah foto. --}}
+                        @if ($fotoAku)
+                            <img src="{{ $fotoAku }}" alt="Foto {{ Auth::user()->name }}">
+                        @else
+                            <span class="dsb-aku-inisial">{{ \Illuminate\Support\Str::substr(Auth::user()->name, 0, 1) }}</span>
+                        @endif
                         <span class="dsb-titik {{ Auth::user()->isOnline() ? 'is-daring' : 'is-luring' }}"
                             title="{{ Auth::user()->isOnline() ? 'Online' : 'Offline' }}"></span>
                     </span>

@@ -33,6 +33,12 @@ Dashboard || lemon
         };
         $namaDepan = \Illuminate\Support\Str::of($user->name)->trim()->explode(' ')->first();
 
+        // Foto hanya dipakai bila berkasnya memang ada — lihat catatan yang
+        // sama di dasbor pengurus.
+        $fotoAku = $user->profile_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->profile_photo)
+            ? Storage::url($user->profile_photo)
+            : null;
+
         // Status pinjaman: warna + kata, satu sumber untuk lencana & kartunya.
         $rupaPinjaman = match ($statusPinjaman) {
             'lunas' => ['is-hijau', 'Lunas', '#16a34a', 'bi-patch-check-fill'],
@@ -63,8 +69,11 @@ Dashboard || lemon
             <div class="dsb-hero-aksi">
                 <div class="dsb-aku">
                     <span class="dsb-aku-foto">
-                        <img src="{{ $user->profile_photo ? Storage::url($user->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}"
-                            alt="Foto {{ $user->name }}" onerror="this.style.visibility='hidden';">
+                        @if ($fotoAku)
+                            <img src="{{ $fotoAku }}" alt="Foto {{ $user->name }}">
+                        @else
+                            <span class="dsb-aku-inisial">{{ \Illuminate\Support\Str::substr($user->name, 0, 1) }}</span>
+                        @endif
                         <span class="dsb-titik {{ $user->isOnline() ? 'is-daring' : 'is-luring' }}"></span>
                     </span>
                     <span>

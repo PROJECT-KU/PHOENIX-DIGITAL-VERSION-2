@@ -75,6 +75,9 @@
         transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
     }
     .dsb-kartu-isi { padding: clamp(16px, 2.2vw, 22px); }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-kartu:hover { border-color: #dfe5ee; box-shadow: 0 10px 24px rgba(15, 23, 42, .05); }
+    }
 
     /* ===== Sapuan hero ========================================== */
     .dsb-hero {
@@ -97,7 +100,7 @@
         background: rgba(242, 101, 34, .10);
     }
     .dsb-hero::after {
-        bottom: -90px; right: 90px; width: 170px; height: 170px;
+        bottom: -110px; right: -70px; width: 190px; height: 190px;
         background: rgba(124, 58, 237, .08);
     }
     .dsb-hero > * { position: relative; z-index: 1; }
@@ -114,7 +117,7 @@
     }
     .dsb-hero-ket { color: var(--dsb-redup); font-size: .9rem; margin: 0; line-height: 1.55; }
 
-    .dsb-hero-aksi { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .dsb-hero-aksi { display: flex; align-items: center; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 
     /* Kartu identitas: foto + nama + titik daring. */
     .dsb-aku {
@@ -123,6 +126,16 @@
         padding: 8px 16px 8px 8px;
     }
     .dsb-aku-foto { position: relative; flex-shrink: 0; }
+    /* Cadangan saat foto profil belum diunggah: huruf awal nama di ubin warna.
+       Sebelumnya gambarnya disembunyikan begitu saja, menyisakan lubang kosong
+       dengan titik hijau menggantung sendirian di dalam kartu. */
+    .dsb-aku-inisial {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 44px; height: 44px; border-radius: 12px;
+        background: #ede9fe; color: #6d28d9;
+        font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+        font-weight: 800; font-size: 1.05rem; line-height: 1; text-transform: uppercase;
+    }
     .dsb-aku-foto img {
         width: 44px; height: 44px; border-radius: 12px; object-fit: cover; display: block;
     }
@@ -165,12 +178,21 @@
     .dsb-deret.is-dua { grid-template-columns: repeat(2, 1fr); }
     .dsb-deret.is-tiga { grid-template-columns: repeat(3, 1fr); }
 
+    /* Ikon di KIRI, angka di kanannya — bukan ikon di atas lalu teks di bawah.
+       Kartu di dasbor selebar setengah layar; dengan susunan bertumpuk, seluruh
+       isinya berkumpul di tepi kiri dan menyisakan petak putih selebar telapak
+       tangan di kanan tiap kartu. */
     .dsb-stat {
         position: relative; overflow: hidden;
         background: #fff; border: 1px solid var(--dsb-tepi); border-radius: 16px;
         padding: 20px;
+        display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px;
+        align-content: start;
         transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
     }
+    /* Ikon menempati kolom pertama sepanjang kartu; sisanya mengisi kolom kedua. */
+    .dsb-stat > .dsb-ikon { grid-row: 1 / span 20; margin-bottom: 0; }
+    .dsb-stat > :not(.dsb-ikon) { grid-column: 2; }
     /* Sapuan warna pojok: penanda bahwa kartu ini punya "warna urusan"
        sendiri — hijau untuk uang masuk, merah untuk keluar, dan seterusnya. */
     .dsb-stat::before {
@@ -194,6 +216,7 @@
        pseudo-element Bootstrap Icons, yang bawaannya menyisakan ruang bawah). */
     .dsb-ikon {
         display: inline-flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
         width: 46px; height: 46px; border-radius: 14px; margin-bottom: 14px;
         background: color-mix(in srgb, var(--c) 12%, #fff);
         border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
@@ -221,12 +244,13 @@
         color: var(--dsb-redup); font-size: .76rem; line-height: 1.5; margin: 8px 0 0;
     }
     .dsb-stat-ket i.bi { flex-shrink: 0; }
-    .dsb-stat.is-utama { padding: 22px; }
+    .dsb-stat.is-utama { padding: 22px; column-gap: 18px; }
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
+    .dsb-stat.is-utama > .dsb-ikon { width: 54px; height: 54px; border-radius: 16px; font-size: 1.5rem; }
 
     /* Pil kecil di dalam kartu (mis. "Hari ini: Rp 2.005"). */
     .dsb-pil {
-        display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+        display: inline-flex; justify-self: start; align-items: center; gap: 6px; margin-top: 10px;
         padding: 5px 10px; border-radius: 999px; font-size: .74rem; font-weight: 600;
         background: color-mix(in srgb, var(--c) 10%, #fff);
         border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
@@ -331,7 +355,11 @@
         .dsb-deret.is-tiga { grid-template-columns: 1fr; }
         .dsb-deret.is-tiga > :last-child:nth-child(odd) { grid-column: auto; }
 
+        /* Arah flex berubah jadi kolom di sini, dan pada kolom flex-basis
+           mengatur TINGGI — basis 360px milik blok sapaan berubah jadi rongga
+           kosong setinggi sepertiga layar di antara sapaan dan tombolnya. */
         .dsb-hero { flex-direction: column; align-items: stretch; text-align: left; }
+        .dsb-hero-teks { flex: 0 0 auto; }
         .dsb-hero-aksi { width: 100%; }
         .dsb-aku { flex: 1 1 100%; }
         /* Dua tombol berbagi rata satu baris — sasaran sentuh tetap lebar. */
@@ -345,18 +373,9 @@
         .dsb-stat { padding: 17px; }
         .dsb-ikon { width: 42px; height: 42px; border-radius: 12px; font-size: 1.15rem; margin-bottom: 12px; }
 
-        /* Kartu pendukung dirapatkan jadi satu baris: ikon di kiri, angka di
-           kanan. Tiga kartu bertumpuk dengan ikon di atasnya menghabiskan tiga
-           layar penuh sebelum admin sampai ke pesanan. Dua kartu utama tetap
-           besar — merekalah yang dicari saat dasbor dibuka. */
-        .dsb-stat:not(.is-utama) {
-            display: grid; grid-template-columns: 42px 1fr; column-gap: 14px; align-items: start;
-        }
-        .dsb-stat:not(.is-utama) > .dsb-ikon { grid-row: span 6; margin-bottom: 0; }
-        .dsb-stat:not(.is-utama) > :not(.dsb-ikon) { grid-column: 2; }
-        .dsb-stat:not(.is-utama) .dsb-stat-label { margin-bottom: 3px; }
+        .dsb-stat { column-gap: 14px; }
+        .dsb-stat .dsb-stat-label { margin-bottom: 3px; }
         .dsb-stat:not(.is-utama) .dsb-stat-nilai { font-size: 1.25rem; }
-        .dsb-stat:not(.is-utama) .dsb-pil { justify-self: start; }
         .dsb-stat:not(.is-utama)::before { width: 76px; height: 76px; top: -30px; right: -30px; }
 
         /* Nama & waktu turun jadi dua baris; titik pemisahnya tidak diperlukan

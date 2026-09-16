@@ -25,8 +25,12 @@ Pengguna Online || lemon
         @forelse($users as $user)
             <div class="dsb-baris" id="user-{{ $user->id }}">
                 <span class="dsb-aku-foto">
-                    <img src="{{ $user->profile_photo && Storage::disk('public')->exists($user->profile_photo) ? Storage::url($user->profile_photo) : asset('mazer/compiled/jpg/1.jpg') }}"
-                        alt="{{ $user->name }}" style="width:38px; height:38px; border-radius:12px; object-fit:cover; display:block;">
+                    @if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo))
+                        <img src="{{ Storage::url($user->profile_photo) }}" alt="{{ $user->name }}"
+                            style="width:38px; height:38px; border-radius:12px; object-fit:cover; display:block;">
+                    @else
+                        <span class="dsb-aku-inisial" style="width:38px; height:38px; border-radius:11px; font-size:.95rem;">{{ \Illuminate\Support\Str::substr($user->name, 0, 1) }}</span>
+                    @endif
                     <span class="dsb-titik {{ $user->online ? 'is-daring' : 'is-luring' }}"></span>
                 </span>
 
