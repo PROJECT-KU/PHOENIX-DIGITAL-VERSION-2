@@ -36,8 +36,21 @@
        sebagai kepala bagian, dan tidak ada apa pun yang menahan mata. Sekarang
        ia punya tiga bagian yang jelas: ubin ikon berwarna sebagai jangkar,
        judul, dan keterangan yang dipadatkan jadi chip. */
+    /* Pita, BUKAN kartu. Kepala yang diberi bingkai & bayangan sendiri menjadi
+       kotak di atas kotak: ia lalu bersaing dengan kartu angka di bawahnya,
+       padahal tugasnya hanya memberi nama pada kelompok itu. Pita berwarna
+       sangat tipis sudah cukup menambatkannya ke halaman — tanpa menambah satu
+       kotak lagi untuk dibaca mata. */
     .dsb-kepala {
-        display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+        display: flex; align-items: center; gap: 14px; margin-bottom: 14px;
+        padding: 13px 16px; border-radius: 16px;
+        /* Warnanya menipis ke kanan, tetapi TIDAK sampai habis: pada versi yang
+           memudar jadi bening, tombol di ujung kanan duduk di luar pitanya dan
+           terlihat seperti tercecer dari kepala bagian. */
+        background: linear-gradient(100deg,
+            color-mix(in srgb, var(--c, #94a3b8) 10%, #fff) 0%,
+            color-mix(in srgb, var(--c, #94a3b8) 5%, #fff) 45%,
+            color-mix(in srgb, var(--c, #94a3b8) 3%, #fff) 100%);
     }
     .dsb-kepala-teks { min-width: 0; flex: 1; }
 
@@ -63,7 +76,7 @@
     .dsb-chip {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 4px 10px; border-radius: 999px;
-        background: color-mix(in srgb, var(--c) 9%, #fff);
+        background: #fff;
         border: 1px solid color-mix(in srgb, var(--c) 20%, #fff);
         color: color-mix(in srgb, var(--c) 75%, #000);
         font-size: .74rem; font-weight: 700; white-space: nowrap;
@@ -71,8 +84,8 @@
     .dsb-chip i.bi { font-size: .78rem; line-height: 1; }
     .dsb-chip i.bi::before { display: block; line-height: 1; }
     .dsb-chip.is-samar {
-        background: #f8fafc; border-color: var(--dsb-tepi); color: #64748b; font-weight: 600;
-        white-space: normal;
+        background: rgba(255, 255, 255, .72); border-color: var(--dsb-tepi);
+        color: #64748b; font-weight: 600; white-space: normal;
     }
     .dsb-kicker {
         display: inline-flex; align-items: center; gap: 7px; margin-bottom: 4px;
@@ -97,7 +110,7 @@
         font-size: .82rem; font-weight: 700; text-decoration: none;
         padding: 9px 14px; border-radius: 11px;
         border: 1px solid color-mix(in srgb, var(--c, #94a3b8) 26%, #fff);
-        background: color-mix(in srgb, var(--c, #f1f5f9) 7%, #fff);
+        background: #fff;
         transition: color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
     }
     .dsb-tautan i.bi { font-size: .85rem; line-height: 1; transition: transform .18s ease; }
@@ -437,6 +450,13 @@
            terpotong jadi "INV-20260915-00…" yang tidak bisa dicocokkan. */
         .dsb-baris-judul { white-space: normal; overflow-wrap: anywhere; }
         .dsb-lencana { font-size: .62rem; padding: 3px 8px; }
+
+        /* Chip keterangan berubah jadi teks polos: di layar sempit kalimatnya
+           pecah dua baris, dan pil berisi dua baris terbaca seperti tombol
+           yang gagal muat — bukan sebagai catatan kecil. */
+        .dsb-chip.is-samar {
+            background: none; border: 0; padding: 0; font-size: .78rem;
+        }
         .dsb-baris { gap: 10px; padding-inline: 16px; }
         .dsb-avatar { width: 34px; height: 34px; border-radius: 10px; font-size: .85rem; }
         .dsb-kartu-kepala { padding-inline: 16px; }
