@@ -473,9 +473,13 @@ it('kartu pantau tetap tampil walau tidak ada pengecekan sama sekali', function 
     $admin = \App\Models\User::factory()->create(['role_id' => $role->id]);
     BotTurnitin::buatToken();
 
+    // Tanpa pekerjaan apa pun, kartunya membuka tab "berjalan" — bukan tab
+    // "perlu admin" yang kosong.
     Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
         ->assertSee('Pengecekan Bot Turnitin')
-        ->assertSee('Belum ada pengecekan yang dipantau.')
+        ->assertSet('tab', 'berjalan')
+        ->assertSee('Tidak ada pengecekan yang sedang dikerjakan bot.')
+        ->call('pilihTab', 'selesai')
         ->assertSee('begitu customer mengunggah dokumen cek plagiasi');
 });
 
@@ -493,7 +497,10 @@ it('pengecekan yang sudah dituntaskan bot hari ini ikut terlihat di kartu', func
     $this->postJson('/api/bot-turnitin/tugas/'.$up->id.'/terkirim', ['kode' => 'SC-D0FEDA0427D4'], $h);
     $this->post('/api/bot-turnitin/tugas/'.$up->id.'/hasil', ['kode' => 'SC-D0FEDA0427D4', 'persen' => 3, 'berkas' => pdfPalsu()], $h);
 
+    // Yang sudah selesai kini punya tabnya sendiri, supaya tidak menumpuk di
+    // atas pekerjaan yang menunggu tindakan admin.
     Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
+        ->call('pilihTab', 'selesai')
         ->assertSee($order->order_number)
         ->assertSee('Selesai — hasil terkirim ke customer')
         ->assertSee('kemiripan 3%');

@@ -19,6 +19,33 @@ class PanelBotTurnitin extends Component
     /** Token polos — hanya ada sesaat setelah dibuat, tidak pernah disimpan. */
     public ?string $tokenBaru = null;
 
+    /**
+     * Tab daftar yang sedang dibuka: perlu | berjalan | selesai.
+     *
+     * Dipilih otomatis saat panel pertama dibuka, lalu DIPEGANG: wire:poll
+     * merender panel ini tiap 30 detik, dan mengembalikannya ke tab bawaan
+     * berarti tab yang sedang dibaca admin tertutup sendiri tiap setengah
+     * menit.
+     */
+    public string $tab = 'perlu';
+
+    public function mount(): void
+    {
+        // Yang menunggu tangan admin dibuka lebih dulu — itu satu-satunya
+        // daftar di kartu ini yang menuntut tindakan. Kalau kosong, yang
+        // ditampilkan pekerjaan yang sedang berjalan.
+        if (! $this->bolehLihat() || ! BotTurnitin::skemaSiap()) {
+            return;
+        }
+
+        $this->tab = BotTurnitin::perluAdmin()->isNotEmpty() ? 'perlu' : 'berjalan';
+    }
+
+    public function pilihTab(string $tab): void
+    {
+        $this->tab = in_array($tab, ['perlu', 'berjalan', 'selesai'], true) ? $tab : 'perlu';
+    }
+
     private function bolehLihat(): bool
     {
         return (bool) auth()->user()?->hasPermission('view_pemesanantoko');

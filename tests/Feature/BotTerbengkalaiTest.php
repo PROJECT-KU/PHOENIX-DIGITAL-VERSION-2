@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\BotTurnitin;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 
 /**
  * Pengecekan bot yang menunggu tangan admin BERHARI-HARI.
@@ -17,6 +18,19 @@ use Illuminate\Support\Str;
  * mengendap sampai Senin tanpa satu pun tanda, dan yang menunggu selama itu
  * adalah pelanggan yang sudah membayar.
  */
+function adminBotPanel(): User
+{
+    $peran = Role::create(['name' => 'uji-panel-'.uniqid(), 'description' => 'uji']);
+    foreach (['view_pemesanantoko', 'edit_pemesanantoko'] as $nama) {
+        $peran->permissions()->attach(Permission::firstOrCreate(
+            ['name' => $nama],
+            ['display_name' => $nama, 'group' => 'uji', 'description' => 'uji']
+        )->id);
+    }
+
+    return User::factory()->create(['role_id' => $peran->id])->fresh();
+}
+
 function unggahanBotTerbengkalai(array $isian = []): OrderUpload
 {
     $order = Order::create([
@@ -102,4 +116,65 @@ it('pengingatnya terjadwal, bukan hanya perintah yang menunggu dipanggil', funct
     // gejalanya persis sama dengan tidak ada fiturnya sama sekali.
     expect(file_get_contents(base_path('routes/console.php')))
         ->toContain("\$jadwalkan('bot:ingatkan-terbengkalai')");
+});
+
+it('kartu pantau membuka tab "perlu admin" saat ada yang menunggu tindakan', function () {
+    // Sebelumnya semua daftar berbaris jadi satu: pada hari ramai, yang
+    // menunggu tindakan terdorong ke bawah oleh yang sedang berjalan dan yang
+    // sudah selesai — persis seperti notifikasi lonceng yang tenggelam.
+    unggahanBotTerbengkalai(['bot_diperbarui_at' => now()->subDays(3)]);
+
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->assertSet('tab', 'perlu');
+});
+
+it('tanpa pekerjaan yang menunggu, tab yang terbuka adalah "berjalan"', function () {
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->assertSet('tab', 'berjalan');
+});
+
+it('tab yang dipilih admin tidak berubah sendiri saat panel memuat ulang', function () {
+    // Panel ini di-poll tiap 30 detik. Kalau tabnya dihitung ulang tiap render,
+    // daftar yang sedang dibaca admin tertutup sendiri tiap setengah menit.
+    unggahanBotTerbengkalai(['bot_diperbarui_at' => now()->subDays(3)]);
+
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->call('pilihTab', 'selesai')
+        ->assertSet('tab', 'selesai')
+        ->call('$refresh')
+        ->assertSet('tab', 'selesai');
+});
+
+it('tab karangan dari peramban dikembalikan ke "perlu", bukan menampilkan daftar kosong', function () {
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->call('pilihTab', 'apa-saja')
+        ->assertSet('tab', 'perlu');
+});
+
+it('hanya baris tab yang sedang dibuka yang dirender', function () {
+    $perlu = unggahanBotTerbengkalai(['bot_diperbarui_at' => now()->subDays(3)]);
+    $jalan = unggahanBotTerbengkalai([
+        'bot_status' => BotTurnitin::MENUNGGU_HASIL,
+        'bot_diambil_at' => now()->subMinutes(5),
+        'bot_diperbarui_at' => now()->subMinute(),
+        'bot_kode' => 'SC-AAA111BBB222',
+    ]);
+
+    $nomorJalan = $jalan->order->order_number;
+
+    // Diperiksa lewat kunci BARISNYA, bukan nomor pesanannya: nomor yang
+    // terbengkalai juga disebut kartu peringatan merah di atas daftar — dan
+    // kartu itu memang SENGAJA tampil di tab mana pun.
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->assertSeeHtml('bt-perlu-'.$perlu->id)
+        ->assertDontSeeHtml('bt-jalan-'.$jalan->id)
+        ->call('pilihTab', 'berjalan')
+        ->assertSeeHtml('bt-jalan-'.$jalan->id)
+        ->assertSee($nomorJalan)
+        ->assertDontSeeHtml('bt-perlu-'.$perlu->id);
 });

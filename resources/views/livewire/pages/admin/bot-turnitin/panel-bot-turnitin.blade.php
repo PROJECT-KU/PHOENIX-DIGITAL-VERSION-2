@@ -87,6 +87,10 @@
         .bt-lama i.bi { line-height: 1; }
         .bt-lama i.bi::before { display: block; line-height: 1; }
         .bt-baris.terbengkalai { border-color: #fca5a5; background: #fff5f5; box-shadow: inset 3px 0 0 #dc2626; }
+        /* Penanda terbengkalai DI KEPALA kartu dibuat bergaris, bukan pekat:
+           tab terpilih juga merah pekat, dan dua pil merah pekat bersebelahan
+           terbaca seperti dua tab — padahal yang satu tidak bisa diklik. */
+        .bt-lama.garis { background: #fff; color: #b91c1c; border: 1px solid #fca5a5; }
 
         /* ---- Kartu pantau: SELALU tampil, walau tidak ada pekerjaan ---- */
         .bt-pantau { background: #fff; border: 1px solid #e9edf3; border-radius: 18px; overflow: hidden; }
@@ -115,6 +119,38 @@
         .bt-hitung b { color: #1c1f26; font-weight: 800; }
         .bt-hitung i.bi { line-height: 1; }
         .bt-hitung i.bi::before { display: block; line-height: 1; }
+
+        /* Tab. Penghitung di kepala kartu SEKALIGUS menjadi tabnya: angkanya
+           sudah dibaca admin untuk memutuskan ke mana melihat, jadi menaruh
+           baris tab terpisah di bawahnya hanya mengulang informasi yang sama.
+
+           Kenapa tab, bukan satu daftar panjang seperti sebelumnya: pekerjaan
+           yang menunggu tindakan admin dulu berbaris di antara yang sedang
+           berjalan dan yang sudah selesai. Pada hari yang ramai ia terdorong
+           ke bawah dan terlewat — persis seperti notifikasi lonceng yang
+           tenggelam di antara notifikasi lain. */
+        .bt-tab {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+            background: #f8fafc; border: 1px solid #e9edf3; color: #64748b;
+            font-size: .74rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+            transition: background .18s ease, border-color .18s ease, color .18s ease;
+        }
+        .bt-tab b { color: #1c1f26; font-weight: 800; }
+        .bt-tab i.bi { line-height: 1; }
+        @media (hover: hover) and (pointer: fine) {
+            .bt-tab:hover { border-color: #cbd5e1; color: #334155; }
+        }
+        /* Tab terpilih: dibalik jadi pekat, bukan sekadar berubah warna tulisan
+           — pada deretan pil abu yang seragam, perbedaan warna tulisan saja
+           tidak cukup untuk menandai mana yang sedang dibuka. */
+        .bt-tab.aktif { background: #1c1f26; border-color: #1c1f26; color: #fff; }
+        .bt-tab.aktif b { color: #fff; }
+        /* Tab yang isinya menuntut tindakan. Merah walau tidak sedang dibuka —
+           itulah gunanya: terlihat tanpa harus diklik dulu. */
+        .bt-tab.perlu { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
+        .bt-tab.perlu b { color: #7f1d1d; }
+        .bt-tab.perlu.aktif { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+        .bt-tab.perlu.aktif b { color: #fff; }
 
         .bt-pantau-isi { padding: 14px 20px 18px; display: grid; gap: 9px; }
         .bt-pantau .bt-baris { border-color: #eef1f6; }
@@ -272,15 +308,30 @@
                 <div class="bt-pantau">
                     <div class="bt-pantau-kepala">
                         <h6><i class="bi bi-list-check"></i> Pengecekan Bot Turnitin</h6>
-                        <span class="bt-hitung"><i class="bi bi-arrow-repeat"></i> <b>{{ $berjalan->count() }}</b> berjalan</span>
-                        <span class="bt-hitung"><i class="bi bi-hourglass"></i> <b>{{ $antrean }}</b> antre</span>
-                        <span class="bt-hitung"><i class="bi bi-person-exclamation"></i> <b>{{ $perluAdmin->count() }}</b> perlu admin</span>
+
+                        <button type="button" class="bt-tab perlu {{ $tab === 'perlu' ? 'aktif' : '' }}" wire:click="pilihTab('perlu')">
+                            <i class="bi bi-person-exclamation"></i> <b>{{ $perluAdmin->count() }}</b> perlu admin
+                        </button>
                         @if (! empty($terbengkalai) && $terbengkalai->isNotEmpty())
-                            <span class="bt-lama"><i class="bi bi-alarm"></i> {{ $terbengkalai->count() }} terbengkalai</span>
+                            <span class="bt-lama garis" title="Menunggu tindakan admin lebih dari {{ \App\Support\BotTurnitin::TERBENGKALAI_JAM }} jam">
+                                <i class="bi bi-alarm"></i> {{ $terbengkalai->count() }} terbengkalai
+                            </span>
                         @endif
-                        <span class="bt-hitung"><i class="bi bi-check2-circle"></i> <b>{{ $selesaiHariIni }}</b> selesai hari ini</span>
+
+                        <button type="button" class="bt-tab {{ $tab === 'berjalan' ? 'aktif' : '' }}" wire:click="pilihTab('berjalan')">
+                            <i class="bi bi-arrow-repeat"></i> <b>{{ $berjalan->count() }}</b> berjalan
+                        </button>
+
+                        <button type="button" class="bt-tab {{ $tab === 'selesai' ? 'aktif' : '' }}" wire:click="pilihTab('selesai')">
+                            <i class="bi bi-check2-circle"></i> <b>{{ $selesaiHariIni }}</b> selesai hari ini
+                        </button>
+
+                        {{-- Antrean tidak punya daftar sendiri (belum disentuh bot),
+                             jadi tetap angka, bukan tab. --}}
+                        <span class="bt-hitung"><i class="bi bi-hourglass"></i> <b>{{ $antrean }}</b> antre</span>
                     </div>
                     <div class="bt-pantau-isi">
+                        @if ($tab === 'berjalan')
                         @forelse ($berjalan as $up)
                             <div class="bt-baris" wire:key="bt-jalan-{{ $up->id }}">
                                 <span class="bt-denyut"></span>
@@ -309,9 +360,20 @@
                                 @endif
                             </div>
                         @empty
+                            <div class="bt-kosong">
+                                <i class="bi bi-hourglass"></i>
+                                <span>
+                                    Tidak ada pengecekan yang sedang dikerjakan bot.
+                                    @if ($antrean > 0)
+                                        {{ $antrean }} dokumen menunggu di antrean.
+                                    @endif
+                                </span>
+                            </div>
                         @endforelse
+                        @endif
 
-                        @foreach ($perluAdmin as $up)
+                        @if ($tab === 'perlu')
+                        @forelse ($perluAdmin as $up)
                             @php
                                 $macet = \App\Support\BotTurnitin::macet($up);
                                 $lengkapi = $up->bot_status === 'perlu_dilengkapi';
@@ -362,9 +424,16 @@
                                     <button type="button" class="bt-btn" wire:click="ambilAlih('{{ $up->id }}')"><i class="bi bi-person-check"></i> Saya kerjakan manual</button>
                                 @endif
                             </div>
-                        @endforeach
+                        @empty
+                            <div class="bt-kosong">
+                                <i class="bi bi-check2-circle"></i>
+                                <span>Tidak ada yang menunggu tindakan Anda. Semua pengecekan tertangani bot.</span>
+                            </div>
+                        @endforelse
+                        @endif
 
-                        @foreach ($selesaiTerbaru as $up)
+                        @if ($tab === 'selesai')
+                        @forelse ($selesaiTerbaru as $up)
                             <div class="bt-baris beres" wire:key="bt-beres-{{ $up->id }}">
                                 <div class="bt-baris-isi">
                                     <b>{{ optional($up->order)->order_number ?? '—' }}</b>
@@ -386,13 +455,11 @@
                                     <a class="bt-btn" href="{{ route('admin.pesanantoko.detail', $up->order) }}" wire:navigate><i class="bi bi-box-arrow-in-right"></i> Buka pesanan</a>
                                 @endif
                             </div>
-                        @endforeach
-
-                        @if ($berjalan->isEmpty() && $perluAdmin->isEmpty() && $selesaiTerbaru->isEmpty())
+                        @empty
                             <div class="bt-kosong">
                                 <i class="bi bi-inbox"></i>
                                 <span>
-                                    Belum ada pengecekan yang dipantau.
+                                    Belum ada yang dituntaskan bot hari ini.
                                     @if ($antrean > 0)
                                         {{ $antrean }} dokumen menunggu — bot akan mengambilnya begitu dilanjutkan.
                                     @else
@@ -400,6 +467,7 @@
                                     @endif
                                 </span>
                             </div>
+                        @endforelse
                         @endif
                     </div>
                 </div>
