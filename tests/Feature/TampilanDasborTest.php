@@ -289,3 +289,39 @@ it('sasaran sentuh di layar sempit cukup besar untuk jempol', function () {
         ->and($gaya)->toContain('.dsb-baris-aksi { min-height: 36px;')
         ->and($panel)->toContain('.bt-tab { min-height: 36px;');
 });
+
+it('task saya memakai kerangka dasbor dan tabel bersama', function () {
+    // Layar ini sebelumnya memakai dialeknya sendiri (kartu Bootstrap +
+    // gradient-text), sehingga lemon terbaca seperti dua aplikasi berbeda.
+    $task = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+
+    expect($task)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')")
+        ->and($task)->toContain('<div class="dsb">')
+        ->and($tabel)->toContain('class="dsb-tabel"')
+        // Satu baris = satu TASK, bukan satu penerima: satu pekerjaan yang
+        // diberikan ke lima orang tetap satu pekerjaan.
+        ->and($tabel)->toContain('$gtasks->first()');
+});
+
+it('daftar task diurutkan yang terbaru di atas', function () {
+    // Urutan lama mendahulukan yang jatuh tempo hari ini lalu progresnya,
+    // sehingga task yang baru diberikan bisa mendarat di tengah daftar.
+    // Yang mendesak tetap ditandai — pita warna di tepi baris dan kartu
+    // ringkasan di atas — tapi tidak lagi mengatur urutannya.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->not->toContain("FIELD(progress,'dikerjakan','belum','selesai')")
+        ->and($sumber)->not->toContain('DATE(deadline_selesai) = CURDATE()')
+        ->and($sumber)->toContain('->latest()');
+});
+
+it('gaya dasbor tidak menumpang reset kotak milik kerangka', function () {
+    // Kartu angka memakai height:100% di dalam kisi. Dengan box-sizing bawaan
+    // (content-box), tinggi itu dihitung DI LUAR padding dan isinya meluber
+    // ~34px keluar kartunya — terlihat sebagai kartu yang saling tindih.
+    // Gejalanya hanya muncul di halaman yang tidak memuat reset Bootstrap.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($gaya)->toContain('.dsb, .dsb *, .dsb *::before, .dsb *::after { box-sizing: border-box; }');
+});

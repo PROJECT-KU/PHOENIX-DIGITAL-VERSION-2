@@ -422,6 +422,62 @@ Task Saya || lemon
             display: block;
             line-height: 1;
         }
+        /* ===== Saringan & pemilih cara pandang (khas layar ini) =====
+           Gaya dasarnya dari sistem desain dasbor; yang di sini hanya yang
+           memang tidak ada di sana. */
+        .ts-saring { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .ts-pilih {
+            appearance: none;
+            padding: 8px 32px 8px 13px; border-radius: 11px; min-height: 36px;
+            border: 1px solid #e9edf3; background: #fff; color: #1f2b3d;
+            font-size: .82rem; font-weight: 700; cursor: pointer;
+            /* Panah digambar sendiri sebagai data URI: berkas gambar luar tidak
+               ikut ter-deploy (public/build di-gitignore). */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+        }
+        .ts-pilih:focus { outline: none; border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124,58,237,.14); }
+
+        .ts-pandang { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .ts-pandang-btn {
+            --c: #64748b;
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 7px 14px 7px 8px; border-radius: 12px; min-height: 40px;
+            background: #fff; border: 1px solid #e9edf3; color: #64748b;
+            font-size: .84rem; font-weight: 700; cursor: pointer;
+            transition: color .15s ease, border-color .15s ease, background .15s ease;
+        }
+        /* Ubin ikon mengikuti dasbor: selalu berwarna dan selalu di tengah,
+           bukan ikon telanjang di samping teks. */
+        .ts-pandang-btn .dsb-ikon { width: 26px; height: 26px; border-radius: 8px; font-size: .8rem; }
+        .ts-pandang-btn.aktif {
+            color: var(--dsb-tinta, #1f2b3d); border-color: color-mix(in srgb, var(--c) 35%, #fff);
+            background: color-mix(in srgb, var(--c) 7%, #fff);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-pandang-btn:hover { border-color: color-mix(in srgb, var(--c) 35%, #fff); color: var(--dsb-tinta, #1f2b3d); }
+        }
+        .ts-reset-teks { display: none; }
+        @media (max-width: 767.98px) {
+            /* Dua kelas, BUKAN satu: gaya dasbor di-include sesudah blok ini,
+               dan aturannya `.dsb-tabel-btn { width: 36px }` berbobot sama —
+               yang belakangan menang. Dengan lebar 36px sementara isinya ikon
+               + teks, teksnya meluber ke luar layar. */
+            .ts-saring .ts-reset { width: 100%; padding-inline: 14px; gap: 8px; font-size: .82rem; font-weight: 700; }
+            .ts-reset-teks { display: inline; }
+
+            /* Saringan turun ke baris sendiri di bawah judul kartunya, dan tiap
+               kotak pilih melebar penuh: tiga kotak sejajar di 390px membuat
+               masing-masing hanya selebar ~110px, terlalu sempit untuk membaca
+               "Kalender (1–akhir bulan)". */
+            .ts-saring { width: 100%; }
+            .ts-saring .ts-pilih { flex: 1 1 100%; }
+        }
+        @media (max-width: 575.98px) {
+            /* Tiga tombol sejajar tidak muat di 390px; dibuat penuh selebar
+               kartunya supaya tidak ada yang terpotong separuh. */
+            .ts-pandang-btn { flex: 1 1 100%; justify-content: flex-start; }
+        }
     </style>
 
     @php
@@ -446,148 +502,205 @@ Task Saya || lemon
         ];
     @endphp
 
-    <div class="container-fluid">
-        {{-- Header --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                <div>
-                    <h3 class="gradient-text fw-bold mb-1">Task Saya</h3>
-                    <p class="text-muted mb-0 small">Daftar task Anda beserta deadline &amp; statusnya. Klik kartu untuk detail, komentar, dan unggah file.</p>
-                </div>
-                @if($canAssign)
-                <div class="header-action d-flex flex-shrink-0">
-                    <button type="button" wire:click="openCreateTask"
-                        class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                        <i class="bi bi-plus-lg"></i>
-                        <span class="ms-2">Beri Task ke Bawahan</span>
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*) supaya layar ini dan
+         dasbor terbaca sebagai satu aplikasi, bukan dua. Lihat catatan di
+         partials/dasbor-gaya.blade.php. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Task Saya</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">Pekerjaan yang ditugaskan kepada Anda, beserta tenggat dan statusnya.</span>
+                    <span class="d-block">
+                        Klik barisnya untuk membuka detail, komentar, dan unggah berkas.
+                        <span class="dsb-segar"><i class="bi bi-sort-down"></i>Terbaru di atas</span>
+                    </span>
+                </p>
+            </div>
+
+            @if ($canAssign)
+                <div class="dsb-hero-aksi">
+                    <button type="button" wire:click="openCreateTask" class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Beri Task ke Bawahan</span>
                     </button>
                 </div>
-                @endif
-            </div>
-        </div>
+            @endif
+        </header>
 
-        {{-- Filter Periode (pola sama seperti Pengeluaran) --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-3 px-4">
-                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
-                        <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0" style="width:40px;height:40px;font-size:1.1rem;border-radius:12px;">
-                            <i class="bi bi-funnel" style="display:flex;align-items:center;justify-content:center;line-height:1;"></i>
-                        </span>
-                        <span>Filter Periode</span>
+        {{-- ================== RINGKASAN ==================
+             Empat angka yang sebelumnya harus dihitung sendiri dengan memindai
+             seluruh daftar. Yang lewat tenggat sengaja dipisah dari "belum
+             selesai": keduanya sama-sama belum selesai, tapi hanya satu yang
+             sudah terlambat. --}}
+        @php
+            $semua = $tasks->count();
+            $tsSelesai = $tasks->where('progress', 'selesai')->count();
+            $tsLewat = $tasks->filter(fn ($t) => $t->progress !== 'selesai' && $t->bonusStatus() === 'tidak_selesai')->count();
+            $tsHariIni = $tasks->filter(fn ($t) => $t->progress !== 'selesai'
+                && $t->deadline_selesai && $t->deadline_selesai->isSameDay(today()))->count();
+            $tsBerjalan = $semua - $tsSelesai;
+        @endphp
+
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #7c3aed">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-clipboard-check-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Ringkasan</span>
+                        <h2 class="dsb-judul">Keadaan Task</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-list-check"></i>{{ $semua }} task</span>
+                            @if ($modePeriode === 'siklus20' && $siklusMulai && $siklusAkhir)
+                                <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $siklusMulai->translatedFormat('d M') }} – {{ $siklusAkhir->translatedFormat('d M Y') }}</span>
+                            @endif
+                            <span class="dsb-chip is-samar">Hanya task yang menyangkut Anda</span>
+                        </div>
                     </div>
-                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                        <select wire:model.live="modePeriode" class="form-select rounded-3 fw-semibold" style="min-width:175px;"
-                            title="Cara menghitung periode">
-                            <option value="kalender">📅 Kalender (1–akhir bln)</option>
-                            <option value="siklus20">🔄 Siklus Gaji (21–20)</option>
+                </div>
+
+                <article class="dsb-stat k-3" style="--c: #0284c7">
+                    <span class="dsb-ikon"><i class="bi bi-hourglass-split"></i></span>
+                    <p class="dsb-stat-label">Belum Selesai</p>
+                    <p class="dsb-stat-nilai">{{ $tsBerjalan }}<span class="dsb-stat-satuan">task</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-list-task"></i><span>Dari {{ $semua }} task periode ini</span></p>
+                </article>
+
+                <article class="dsb-stat k-3" style="--c: {{ $tsHariIni > 0 ? '#d97706' : '#64748b' }}">
+                    <span class="dsb-ikon"><i class="bi bi-alarm-fill"></i></span>
+                    <p class="dsb-stat-label">Jatuh Tempo Hari Ini</p>
+                    <p class="dsb-stat-nilai">{{ $tsHariIni }}<span class="dsb-stat-satuan">task</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-calendar-day"></i><span>{{ $tsHariIni > 0 ? 'Kerjakan yang ini lebih dulu' : 'Tidak ada yang jatuh tempo' }}</span></p>
+                </article>
+
+                <article class="dsb-stat k-3" style="--c: {{ $tsLewat > 0 ? '#e11d48' : '#16a34a' }}">
+                    <span class="dsb-ikon"><i class="bi {{ $tsLewat > 0 ? 'bi-clipboard-x-fill' : 'bi-patch-check-fill' }}"></i></span>
+                    <p class="dsb-stat-label">Lewat Tenggat</p>
+                    <p class="dsb-stat-nilai">{{ $tsLewat }}<span class="dsb-stat-satuan">task</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-calendar-x"></i><span>{{ $tsLewat > 0 ? 'Sudah melewati tanggalnya' : 'Tidak ada yang terlambat' }}</span></p>
+                </article>
+
+                <article class="dsb-stat k-3" style="--c: #16a34a">
+                    <span class="dsb-ikon"><i class="bi bi-check-circle-fill"></i></span>
+                    <p class="dsb-stat-label">Selesai</p>
+                    <p class="dsb-stat-nilai">{{ $tsSelesai }}<span class="dsb-stat-satuan">task</span></p>
+                    @if ($semua > 0)
+                        <span class="dsb-kemajuan" style="--c: #16a34a">
+                            <span style="width: {{ round($tsSelesai / $semua * 100) }}%"></span>
+                        </span>
+                    @endif
+                    <p class="dsb-stat-ket"><i class="bi bi-percent"></i><span>{{ $semua > 0 ? round($tsSelesai / $semua * 100).'% dari periode ini' : 'Belum ada task' }}</span></p>
+                </article>
+            </div>
+        </section>
+
+        {{-- ================== SARINGAN & CARA PANDANG ==================
+             Dua hal yang sama-sama mengatur APA yang terlihat, jadi keduanya
+             duduk di satu kartu. Sebelumnya terpisah jadi dua kartu berurutan,
+             dan yang satu tampak seperti bagian baru padahal bukan. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-kepala">
+                    <div class="dsb-kartu-kepala-kiri">
+                        <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-funnel-fill"></i></span>
+                        <div>
+                            <h3 class="dsb-kartu-judul">Saringan &amp; Cara Pandang</h3>
+                            <span class="dsb-kartu-sub">Periode mana yang ditampilkan, dan dalam bentuk apa</span>
+                        </div>
+                    </div>
+
+                    <div class="ts-saring">
+                        <select wire:model.live="modePeriode" class="ts-pilih" title="Cara menghitung periode">
+                            <option value="kalender">Kalender (1–akhir bulan)</option>
+                            <option value="siklus20">Siklus gaji (21–20)</option>
                         </select>
-                        <select wire:model.live="bulan" class="form-select rounded-3" style="min-width:160px;">
-                            <option value="">Semua Bulan</option>
-                            @foreach($daftarBulan as $num => $nama)
-                            <option value="{{ $num }}">{{ $nama }}</option>
+                        <select wire:model.live="bulan" class="ts-pilih">
+                            <option value="">Semua bulan</option>
+                            @foreach ($daftarBulan as $num => $nama)
+                                <option value="{{ $num }}">{{ $nama }}</option>
                             @endforeach
                         </select>
-                        <select wire:model.live="tahun" class="form-select rounded-3" style="min-width:130px;">
-                            <option value="">Semua Tahun</option>
-                            @foreach($daftarTahun as $th)
-                            <option value="{{ $th }}">{{ $th }}</option>
+                        <select wire:model.live="tahun" class="ts-pilih">
+                            <option value="">Semua tahun</option>
+                            @foreach ($daftarTahun as $th)
+                                <option value="{{ $th }}">{{ $th }}</option>
                             @endforeach
                         </select>
-                        @if($bulan || $tahun || $modePeriode !== 'kalender')
-                        <button wire:click="resetFilter" type="button"
-                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
-                            title="Reset filter">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
+                        @if ($bulan || $tahun || $modePeriode !== 'kalender')
+                            {{-- Di layar sempit kotak pilih melebar penuh, dan tombol
+                                 berisi ikon silang saja lalu berdiri sendirian di satu
+                                 baris — terbaca seperti sisa tata letak yang gagal.
+                                 Di sana ia diberi teks dan ikut melebar. --}}
+                            <button type="button" wire:click="resetFilter" class="dsb-tabel-btn ts-reset" title="Kosongkan saringan">
+                                <i class="bi bi-x-lg"></i><span class="ts-reset-teks">Kosongkan saringan</span>
+                            </button>
                         @endif
                     </div>
                 </div>
 
-                {{-- Info rentang siklus gaji (21–20, sama seperti Cashflow & Gaji).
-                     Rentangnya DIKIRIM dari komponen ($siklusMulai/$siklusAkhir) —
-                     view sengaja tidak menghitung sendiri supaya yang tampil di
-                     layar tidak pernah beda dengan data yang benar-benar difilter. --}}
-                @if($modePeriode === 'siklus20')
-                <div class="mt-3 pt-3 border-top">
-                    @if($siklusMulai && $siklusAkhir)
-                    <div class="siklus-chip d-inline-flex align-items-center gap-2">
-                        <span class="siklus-chip-ico d-inline-flex align-items-center justify-content-center">
-                            <i class="bi bi-calendar-range"></i>
-                        </span>
-                        <span class="siklus-chip-label">Periode Gaji</span>
-                        <span class="siklus-chip-date">{{ $siklusMulai->translatedFormat('d M Y') }}</span>
-                        <i class="bi bi-arrow-right siklus-chip-arrow"></i>
-                        <span class="siklus-chip-date">{{ $siklusAkhir->translatedFormat('d M Y') }}</span>
+                <div class="dsb-kartu-isi">
+                    <div class="ts-pandang">
+                        @foreach ([
+                            'daftar' => ['bi-table', 'Tabel', '#7c3aed'],
+                            'scrum' => ['bi-kanban-fill', 'Papan Scrum', '#0284c7'],
+                            'aktivitas' => ['bi-grid-3x3-gap-fill', 'Aktivitas', '#16a34a'],
+                        ] as $mode => [$ikon, $label, $warna])
+                            <button type="button" wire:click="gantiTampilan('{{ $mode }}')"
+                                class="ts-pandang-btn {{ $tampilan === $mode ? 'aktif' : '' }}" style="--c: {{ $warna }}">
+                                <span class="dsb-ikon is-kecil"><i class="bi {{ $ikon }}"></i></span>
+                                <span>{{ $label }}</span>
+                            </button>
+                        @endforeach
                     </div>
-                    @else
-                    <span class="text-muted" style="font-size:.85rem;">
-                        <i class="bi bi-info-circle me-1"></i>Pilih <b>bulan</b> untuk menentukan siklus gaji. Contoh: pilih Juli → 21 Jun s/d 20 Jul.
-                    </span>
+
+                    @if ($modePeriode === 'siklus20' && ! ($siklusMulai && $siklusAkhir))
+                        <p class="dsb-kartu-sub" style="margin-top: 12px;">
+                            <i class="bi bi-info-circle"></i>
+                            Pilih <b>bulan</b> untuk menentukan siklus gajinya. Contoh: pilih Juli → 21 Jun s/d 20 Jul.
+                        </p>
                     @endif
                 </div>
-                @endif
             </div>
-        </div>
+        </section>
 
-        {{-- ===== Pemilih cara pandang (murni tampilan; data & filter tidak berubah) ===== --}}
-        <div class="tampilan-switch mb-3">
-            @foreach ([
-                'daftar' => ['ikon' => 'bi-card-list', 'label' => 'Daftar'],
-                'scrum' => ['ikon' => 'bi-kanban', 'label' => 'Papan Scrum'],
-                'aktivitas' => ['ikon' => 'bi-grid-3x3', 'label' => 'Aktivitas'],
-            ] as $mode => $m)
-                <button type="button"
-                    class="tampilan-btn {{ $tampilan === $mode ? 'aktif' : '' }}"
-                    wire:click="gantiTampilan('{{ $mode }}')">
-                    <i class="bi {{ $m['ikon'] }}"></i><span>{{ $m['label'] }}</span>
-                </button>
-            @endforeach
-        </div>
+        {{-- ================== ISI ================== --}}
+        @php
+            // toBase() supaya merge memakai Support Collection (bukan Eloquent
+            // yang memanggil getKey). Urutan dari query dipertahankan: yang
+            // terbaru di atas.
+            $ordered = $tasks->groupBy('group_id')->toBase();
+        @endphp
 
-        @if ($tampilan === 'scrum')
-            @include('livewire.pages.admin.task.partials.task-scrum')
-        @elseif ($tampilan === 'aktivitas')
-            @include('livewire.pages.admin.task.partials.task-aktivitas')
-        @else
-        <div class="row g-3">
-            {{-- FOLDER (grup >1 penerima) selalu di ATAS — tetap di atas walau ada
-                 sub-task yang sudah selesai — lalu SOLO di bawah (urutan mengikuti
-                 aturan query: deadline hari ini, progres, terbaru). --}}
-            @php
-                // toBase() agar merge memakai Support Collection (bukan Eloquent yg getKey).
-                $allGroups = $tasks->groupBy('group_id')->toBase();
-                $ordered = $allGroups->filter(fn ($g) => $g->count() > 1)
-                    ->merge($allGroups->filter(fn ($g) => $g->count() === 1));
-            @endphp
-            @forelse($ordered as $gid => $gtasks)
-                @if($gtasks->count() > 1)
-                    @include('livewire.pages.admin.task.partials.task-folder', ['gtasks' => $gtasks])
-                @else
-                    @include('livewire.pages.admin.task.partials.task-card', ['task' => $gtasks->first()])
-                @endif
-            @empty
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-4 ts-empty-card">
-                    <div class="card-body ts-empty text-center">
-                        <div class="ts-empty-badge mb-3"><i class="bi {{ ($bulan || $tahun) ? 'bi-calendar-x' : 'bi-clipboard-check' }}"></i></div>
-                        <h5 class="fw-bold mb-2">{{ ($bulan || $tahun) ? 'Tidak Ada Task di Periode Ini' : 'Belum Ada Task' }}</h5>
-                        <p class="text-muted mb-0" style="font-size:.95rem;">
-                            @if($bulan || $tahun)
-                            Tidak ada task pada bulan &amp; tahun yang dipilih. Coba ganti periode di filter atas, atau tampilkan semua.
+        <section class="dsb-bagian">
+            @if ($tampilan === 'scrum')
+                @include('livewire.pages.admin.task.partials.task-scrum')
+            @elseif ($tampilan === 'aktivitas')
+                @include('livewire.pages.admin.task.partials.task-aktivitas')
+            @elseif ($ordered->isEmpty())
+                <div class="dsb-kartu">
+                    <div class="dsb-kosong">
+                        <span class="dsb-kosong-ikon"><i class="bi {{ ($bulan || $tahun) ? 'bi-calendar-x' : 'bi-clipboard-check' }}"></i></span>
+                        <p class="dsb-kosong-judul">{{ ($bulan || $tahun) ? 'Tidak ada task di periode ini' : 'Belum ada task' }}</p>
+                        <p class="dsb-kosong-ket">
+                            @if ($bulan || $tahun)
+                                Coba ganti periodenya di saringan atas, atau tampilkan semua.
                             @else
-                            Task yang ditugaskan kepada Anda akan muncul di sini.
+                                Task yang ditugaskan kepada Anda akan muncul di sini.
                             @endif
                         </p>
-                        @if($bulan || $tahun)
-                        <button type="button" wire:click="resetFilter" class="btn btn-sm rounded-pill px-4 mt-3 ts-empty-btn"><i class="bi bi-arrow-counterclockwise me-1"></i>Tampilkan Semua Periode</button>
+                        @if ($bulan || $tahun)
+                            <button type="button" wire:click="resetFilter" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua periode</span>
+                            </button>
                         @endif
                     </div>
                 </div>
-            </div>
-            @endforelse
-        </div>
-        @endif
+            @else
+                @include('livewire.pages.admin.task.partials.task-tabel')
+            @endif
+        </section>
     </div>
 
     {{-- ===== Modal beri/edit task ke bawahan ===== --}}

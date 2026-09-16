@@ -832,8 +832,13 @@ class TaskSayaList extends Component
                 $q->when($this->bulan, fn ($qq) => $qq->where('periode_bulan', $this->bulan))
                     ->when($this->tahun, fn ($qq) => $qq->where('periode_tahun', $this->tahun));
             })
-            ->orderByRaw("CASE WHEN progress <> 'selesai' AND DATE(deadline_selesai) = CURDATE() THEN 0 ELSE 1 END")
-            ->orderByRaw("FIELD(progress,'dikerjakan','belum','selesai')")
+            // YANG TERBARU DI ATAS. Urutan lama mendahulukan yang jatuh tempo
+            // hari ini lalu progresnya, sehingga task yang baru saja diberikan
+            // bisa mendarat di tengah daftar dan tidak terlihat sudah masuk.
+            //
+            // Yang mendesak tidak hilang, hanya pindah cara tandanya: baris
+            // lewat tenggat dan jatuh tempo hari ini diberi pita warna di tepi
+            // kiri tabel, dan jumlahnya dihitung di kartu ringkasan atas.
             ->latest()
             ->get();
 

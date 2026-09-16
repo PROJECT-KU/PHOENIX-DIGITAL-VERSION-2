@@ -58,6 +58,13 @@
     .bt-panel i.bi::before { display: block; line-height: 1; vertical-align: baseline; }
 
     /* ===== Kerangka halaman ===================================== */
+    /* Kotak dihitung termasuk tepi & padding — TIDAK menumpang setelan
+       Bootstrap milik kerangka. Kartu angka memakai height:100% di dalam
+       kisi; dengan box-sizing bawaan (content-box), tinggi 100% itu dihitung
+       DI LUAR padding, sehingga isinya meluber ~34px keluar kartunya. Ditulis
+       di sini supaya gaya ini tetap benar di layar mana pun ia dipakai. */
+    .dsb, .dsb *, .dsb *::before, .dsb *::after { box-sizing: border-box; }
+
     .dsb {
         --dsb-tepi: #e9edf3;
         --dsb-tinta: #1c1f26;
@@ -766,6 +773,12 @@
         .dsb-baris { gap: 10px; padding-inline: 16px; }
         .dsb-avatar { width: 34px; height: 34px; border-radius: 10px; font-size: .85rem; }
         .dsb-kartu-kepala { padding-inline: 16px; }
+        /* Kendali di sisi kanan kepala kartu (saringan, tautan) turun ke baris
+           sendiri. Tanpa ini judulnya terhimpit jadi satu kata per baris —
+           "Saringan / & Cara / Pandang" — dan kepala kartunya setinggi empat
+           baris hanya untuk memuat tiga kata. */
+        .dsb-kartu-kepala { flex-wrap: wrap; }
+        .dsb-kartu-kepala > .dsb-kartu-kepala-kiri { flex: 1 1 100%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -841,6 +854,122 @@
     .dsb-baris-kanan.is-mendatar { flex-direction: row; align-items: center; gap: 9px; }
     @media (max-width: 575.98px) {
         .dsb-baris-kanan.is-mendatar { flex-direction: column; align-items: flex-end; gap: 6px; }
+    }
+
+    /* ===== Tabel =====================================================
+       Ditulis di sistem desain, bukan di satu layar, karena layar admin
+       berikutnya akan membutuhkan tabel yang sama — dan tabel adalah tempat
+       dialek gaya baru paling gampang tumbuh.
+
+       Bukan <table> berpembatas kotak: barisnya dibuat setinggi baris daftar
+       (.dsb-baris) supaya tabel dan daftar di layar yang sama terbaca sebagai
+       satu keluarga. */
+    .dsb-tabel-bungkus {
+        /* Satu-satunya tempat gulung mendatar dibolehkan. Tanpa ini, tabel
+           lebar mendorong SELURUH halaman dan tiap layar ikut bergeser. */
+        overflow-x: auto; -webkit-overflow-scrolling: touch;
+    }
+    .dsb-tabel { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .dsb-tabel thead th {
+        text-align: left; padding: 11px 14px;
+        background: #f8fafc; border-bottom: 1px solid var(--dsb-tepi);
+        color: var(--dsb-redup); font-size: .72rem; font-weight: 800;
+        letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+    }
+    .dsb-tabel thead th:first-child { border-top-left-radius: 12px; }
+    .dsb-tabel thead th:last-child { border-top-right-radius: 12px; }
+    .dsb-tabel tbody td { padding: 12px 14px; border-bottom: 1px solid #f2f5f9; vertical-align: middle; }
+    .dsb-tabel tbody tr:last-child td { border-bottom: 0; }
+    .dsb-tabel tbody tr.is-klik { cursor: pointer; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-tabel tbody tr.is-klik:hover td { background: #f8fafc; }
+    }
+    /* Baris yang menuntut perhatian diberi pita warna di tepi kiri, bukan
+       seluruh barisnya diwarnai: latar berwarna penuh membuat teksnya susah
+       dibaca dan tabel terlihat seperti peringatan galat. */
+    .dsb-tabel tbody tr.is-tanda td:first-child { box-shadow: inset 3px 0 0 var(--c, #e11d48); }
+    .dsb-tabel .dsb-tabel-utama { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    /* align-items: flex-start — tanpa ini lencana di dalam kolom ini melar
+       selebar kolomnya (bawaan flex adalah stretch) dan "Selesai" terbaca
+       seperti batang hijau, bukan lencana. */
+    .dsb-tabel .dsb-tabel-teks {
+        min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    }
+    .dsb-tabel .dsb-tabel-judul {
+        font-weight: 700; color: var(--dsb-tinta); font-size: .88rem; line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+    .dsb-tabel .dsb-tabel-meta {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+        color: var(--dsb-redup); font-size: .76rem;
+    }
+    .dsb-tabel .dsb-tabel-angka { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    /* Garis kemajuan harus melebar mengikuti kolomnya; sebagai anak kolom
+       ber-align-items: flex-start ia menyusut sampai selebar nol. */
+    .dsb-tabel .dsb-tabel-teks > .dsb-kemajuan { align-self: stretch; min-width: 90px; }
+    .dsb-tabel .dsb-tabel-aksi { display: inline-flex; align-items: center; gap: 6px; }
+
+    /* Salinan isi kolom yang menghilang di layar sempit. Di layar lebar ia
+       tidak perlu — kolomnya sendiri sudah ada — jadi disembunyikan supaya
+       keterangannya tidak tertulis dua kali berdampingan. */
+    .dsb-tabel-samar { display: none; align-items: center; gap: 5px; }
+    @media (max-width: 1199.98px) {
+        .dsb-tabel-samar { display: inline-flex; }
+    }
+    @media (max-width: 767.98px) {
+        .dsb-tabel-samar { display: none; }
+    }
+
+    /* Tombol aksi baris: kotak 34px, ikon di tengah. Kecil, tetapi tetap di
+       atas ambang yang bisa ditekan jempol saat barisnya jadi kartu. */
+    .dsb-tabel-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border-radius: 10px;
+        background: #fff; border: 1px solid var(--dsb-tepi); color: #64748b;
+        font-size: .9rem; cursor: pointer; padding: 0;
+        transition: color .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .dsb-tabel-btn i.bi::before { display: block; line-height: 1; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-tabel-btn:hover { background: #f1f5f9; color: var(--dsb-tinta); border-color: #cbd5e1; }
+        .dsb-tabel-btn.is-bahaya:hover { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+    }
+    @media (max-width: 991.98px), (pointer: coarse) {
+        .dsb-tabel-btn { width: 36px; height: 36px; }
+    }
+
+    /* Kolom yang boleh menghilang lebih dulu saat layar menyempit. Isinya
+       TIDAK hilang: yang disembunyikan selalu punya salinan di baris meta di
+       bawah judul, jadi tidak ada informasi yang lenyap bersama kolomnya. */
+    @media (max-width: 1199.98px) { .dsb-tabel .k-lebar { display: none; } }
+    @media (max-width: 991.98px) { .dsb-tabel .k-sedang { display: none; } }
+
+    /* Di ponsel tabel berhenti jadi tabel: tiap baris jadi kartu bertumpuk.
+       Tabel yang digulung mendatar di layar 390px praktis tidak terbaca —
+       kolom pertama hilang begitu digulung, dan tanpa kolom pertama sisanya
+       kehilangan konteks. */
+    @media (max-width: 767.98px) {
+        .dsb-tabel { min-width: 0; }
+        .dsb-tabel thead { display: none; }
+        .dsb-tabel tbody tr {
+            display: block; padding: 13px 15px; border-bottom: 1px solid #f2f5f9;
+        }
+        .dsb-tabel tbody td {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 4px 0; border: 0;
+        }
+        .dsb-tabel tbody td:first-child { padding-bottom: 9px; }
+        .dsb-tabel tbody td[data-judul]::before {
+            content: attr(data-judul);
+            color: var(--dsb-redup); font-size: .72rem; font-weight: 700;
+            letter-spacing: .03em; text-transform: uppercase; flex-shrink: 0;
+        }
+        .dsb-tabel .k-lebar, .dsb-tabel .k-sedang { display: flex; }
+        /* Sel tanpa isi tidak ikut mencetak judulnya: baris berlabel tanpa
+           nilai terbaca seperti data yang gagal dimuat. */
+        .dsb-tabel tbody td.is-kosong { display: none; }
+        .dsb-tabel tbody tr.is-tanda { box-shadow: inset 3px 0 0 var(--c, #e11d48); }
+        .dsb-tabel tbody tr.is-tanda td:first-child { box-shadow: none; }
     }
 
     /* ===== Cetak =====
