@@ -76,6 +76,18 @@
         .bt-tahap.lengkapi { background: #fef3c7; color: #92400e; }
         .bt-tahap.beres { background: #dcfce7; color: #15803d; }
 
+        /* Pekerjaan yang menunggu admin LEBIH dari sehari. Dibedakan dari
+           "perlu admin" biasa: yang baru gagal sepuluh menit lalu dan yang
+           sudah mengendap lima hari sama-sama merah, padahal hanya satu di
+           antaranya yang membuat pelanggan menunggu tanpa kabar. */
+        .bt-lama {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px;
+            background: #b91c1c; color: #fff; font-size: .72rem; font-weight: 800; white-space: nowrap;
+        }
+        .bt-lama i.bi { line-height: 1; }
+        .bt-lama i.bi::before { display: block; line-height: 1; }
+        .bt-baris.terbengkalai { border-color: #fca5a5; background: #fff5f5; box-shadow: inset 3px 0 0 #dc2626; }
+
         /* ---- Kartu pantau: SELALU tampil, walau tidak ada pekerjaan ---- */
         .bt-pantau { background: #fff; border: 1px solid #e9edf3; border-radius: 18px; overflow: hidden; }
         .bt-pantau-kepala {
@@ -114,34 +126,31 @@
         .bt-kosong i { font-size: 1.3rem; color: #94a3b8; flex: 0 0 auto; }
         .bt-daftar { display: grid; gap: 9px; }
 
-        /* Satu baris pekerjaan. Kisi bernama, bukan flex-wrap: dengan flex,
-           lencana tahap dan tombolnya berpindah-pindah tempat mengikuti panjang
-           teks di sebelahnya, sehingga tiap baris punya susunan yang berbeda. */
+        /* Satu baris pekerjaan.
+           Keterangan MEMAKAN sisa ruang (flex: 1), sehingga lencana dan tombol
+           selalu terdorong rapat ke tepi kanan — berapa pun jumlahnya, dan
+           sepanjang apa pun teks di sebelahnya. Jumlah tombolnya memang
+           berubah-ubah (gagal tanpa kode dapat tombol "Coba lagi", yang perlu
+           dilengkapi tidak), jadi kisi berkolom tetap justru meninggalkan
+           kolom kosong di sebagian baris. */
         .bt-baris {
-            display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
-            align-items: center; gap: 12px;
+            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
             background: #fff; border: 1px solid #eef1f6; border-radius: 14px;
             padding: 12px 14px; color: #334155;
         }
-        .bt-baris > .bt-denyut { grid-column: 1; }
-        .bt-baris-isi { grid-column: 2; min-width: 0; font-size: .82rem; line-height: 1.55; }
+        .bt-baris > * { flex: 0 0 auto; }
+        .bt-baris-isi { flex: 1 1 240px; min-width: 0; font-size: .82rem; line-height: 1.55; }
         .bt-baris-isi b { color: #0f172a; font-size: .88rem; }
         .bt-baris-isi span { display: block; color: #6b7280; }
         .bt-baris-isi a { color: #2563eb; }
-        .bt-baris .bt-tahap { grid-column: 3; justify-self: end; }
-        .bt-baris .bt-btn { grid-column: 4; }
-        /* Baris tanpa titik denyut tetap mulai di kolom isi. */
-        .bt-baris > .bt-baris-isi:first-child { grid-column: 1 / 3; }
 
         .bt-token { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
         .bt-token input { flex: 1 1 240px; min-width: 0; font-family: ui-monospace, monospace; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 11px; padding: 9px 12px; background: #fff; }
 
         @media (max-width: 991.98px) {
-            /* Lencana tahap turun ke bawah keterangannya; tombol berbaris di
-               bawahnya selebar isi — tidak lagi berdesakan di satu baris. */
-            .bt-baris { grid-template-columns: auto minmax(0, 1fr); }
-            .bt-baris .bt-tahap { grid-column: 2; justify-self: start; }
-            .bt-baris .bt-btn { grid-column: 2; justify-self: start; }
+            /* Keterangan mengambil satu baris penuh; lencana dan tombol
+               berbaris di bawahnya, tidak berdesakan di sisa ruang sempit. */
+            .bt-baris-isi { flex: 1 1 100%; }
         }
         @media (max-width: 575.98px) {
             .bt-bar { padding: 15px 16px; gap: 12px; }
@@ -238,6 +247,25 @@
                 </div>
                 @endif
 
+                {{-- Peringatan pekerjaan terbengkalai. Ditaruh di ATAS kartu
+                     pantau, bukan sebagai baris di dalamnya: kalau ia hanya
+                     satu baris di antara baris lain, ia ikut terlewat persis
+                     seperti pekerjaannya sendiri. --}}
+                @if (! empty($terbengkalai) && $terbengkalai->isNotEmpty())
+                    @php
+                        $tertua = $terbengkalai->first();
+                        $lamaTertua = \App\Support\BotTurnitin::menungguSejak($tertua)?->locale('id')->diffForHumans(null, true) ?? 'beberapa waktu';
+                    @endphp
+                    <div class="bt-kartu merah">
+                        <h6><i class="bi bi-alarm-fill"></i> {{ $terbengkalai->count() }} pengecekan menunggu terlalu lama</h6>
+                        <p class="mb-0">
+                            Sudah lewat {{ \App\Support\BotTurnitin::TERBENGKALAI_JAM }} jam sejak bot berhenti dan menyerahkannya ke admin.
+                            Yang terlama <b>{{ $lamaTertua }}</b>@if (optional($tertua->order)->order_number) — {{ $tertua->order->order_number }}@endif.
+                            Pelanggannya menunggu selama itu tanpa kabar.
+                        </p>
+                    </div>
+                @endif
+
                 {{-- Pantauan pengecekan bot — SELALU tampil supaya admin punya
                      satu tempat tetap untuk melihat: nomor pesanan, tahap bot,
                      kode submitin, kabar terakhir, dan apakah perlu ditindak. --}}
@@ -247,6 +275,9 @@
                         <span class="bt-hitung"><i class="bi bi-arrow-repeat"></i> <b>{{ $berjalan->count() }}</b> berjalan</span>
                         <span class="bt-hitung"><i class="bi bi-hourglass"></i> <b>{{ $antrean }}</b> antre</span>
                         <span class="bt-hitung"><i class="bi bi-person-exclamation"></i> <b>{{ $perluAdmin->count() }}</b> perlu admin</span>
+                        @if (! empty($terbengkalai) && $terbengkalai->isNotEmpty())
+                            <span class="bt-lama"><i class="bi bi-alarm"></i> {{ $terbengkalai->count() }} terbengkalai</span>
+                        @endif
                         <span class="bt-hitung"><i class="bi bi-check2-circle"></i> <b>{{ $selesaiHariIni }}</b> selesai hari ini</span>
                     </div>
                     <div class="bt-pantau-isi">
@@ -285,7 +316,11 @@
                                 $macet = \App\Support\BotTurnitin::macet($up);
                                 $lengkapi = $up->bot_status === 'perlu_dilengkapi';
                             @endphp
-                            <div class="bt-baris {{ $lengkapi ? 'lengkapi' : 'perlu' }}" wire:key="bt-perlu-{{ $up->id }}">
+                            @php
+                                $jamMenunggu = \App\Support\BotTurnitin::lamaMenungguJam($up);
+                                $terlaluLama = $jamMenunggu !== null && $jamMenunggu >= \App\Support\BotTurnitin::TERBENGKALAI_JAM;
+                            @endphp
+                            <div class="bt-baris {{ $lengkapi ? 'lengkapi' : 'perlu' }} {{ $terlaluLama ? 'terbengkalai' : '' }}" wire:key="bt-perlu-{{ $up->id }}">
                                 <div class="bt-baris-isi">
                                     <b>{{ optional($up->order)->order_number ?? '—' }}</b>
                                     <span>
@@ -302,6 +337,12 @@
                                         <span>{{ $up->bot_pesan }}</span>
                                     @endif
                                 </div>
+                                @if ($terlaluLama)
+                                    <span class="bt-lama">
+                                        <i class="bi bi-alarm"></i>
+                                        Menunggu {{ \App\Support\BotTurnitin::menungguSejak($up)?->locale('id')->diffForHumans(null, true) }}
+                                    </span>
+                                @endif
                                 <span class="bt-tahap {{ $lengkapi ? 'lengkapi' : 'perlu' }}">
                                     @if ($lengkapi)
                                         <i class="bi bi-puzzle"></i> Perlu dilengkapi admin

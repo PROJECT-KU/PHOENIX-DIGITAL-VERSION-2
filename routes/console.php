@@ -134,6 +134,15 @@ $jadwalkan('tasks:notify-deadlines')->dailyAt('07:00');
  * Hapus notifikasi bulan-bulan lama (sebelum awal bulan berjalan) agar DB tak menumpuk.
  * Bell hanya menampilkan bulan berjalan, jadi yang lebih lama aman dihapus permanen.
  */
+/**
+ * Pengecekan bot yang menunggu tangan admin lebih dari sehari.
+ *
+ * Dua kali sehari, bukan sekali: satu pemberitahuan yang kebetulan terlewat
+ * sama saja dengan tidak ada, dan yang menunggu selama itu adalah pelanggan
+ * yang sudah membayar.
+ */
+$jadwalkan('bot:ingatkan-terbengkalai')->twiceDaily(8, 16)->withoutOverlapping(30);
+
 $jadwalkan('notifications:prune')->dailyAt('00:05');
 
 /**

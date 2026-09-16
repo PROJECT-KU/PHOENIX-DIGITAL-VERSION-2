@@ -92,17 +92,23 @@ class PanelBotTurnitin extends Component
             ]);
         }
 
+        // Dihitung SEKALI lalu dipakai bersama: perluAdmin() dan terbengkalai()
+        // membaca baris yang sama, dan memanggil keduanya berarti dua kueri
+        // untuk satu daftar yang identik.
+        $perluAdmin = BotTurnitin::perluAdmin();
+
         return view('livewire.pages.admin.bot-turnitin.panel-bot-turnitin', [
             'tampil' => true,
             'skemaSiap' => true,
             'bolehAtur' => $this->bolehAtur(),
+            'terbengkalai' => BotTurnitin::terbengkalai($perluAdmin),
             'dipasang' => BotTurnitin::sudahDipasang(),
             'aktif' => BotTurnitin::botAktif(),
             'detak' => BotTurnitin::detakTerakhir(),
             'masalah' => BotTurnitin::masalahBot(),
             'dijeda' => BotTurnitin::dijeda(),
             'kuotaHabis' => BotTurnitin::kuotaHabis(),
-            'perluAdmin' => BotTurnitin::perluAdmin(),
+            'perluAdmin' => $perluAdmin,
             'berjalan' => BotTurnitin::sedangDikerjakan(),
             'selesaiTerbaru' => BotTurnitin::selesaiTerbaru(),
             'selesaiHariIni' => BotTurnitin::selesaiHariIni(),

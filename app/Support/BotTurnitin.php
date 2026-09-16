@@ -57,6 +57,17 @@ class BotTurnitin
     /** Detak lebih tua dari ini = bot dianggap tidak aktif (tab tertutup). */
     public const AKTIF_MENIT = 3;
 
+    /**
+     * Sudah selama ini menunggu tangan admin = TERBENGKALAI.
+     *
+     * Bot berhenti dan melempar pekerjaannya ke admin dalam hitungan menit,
+     * tetapi tidak ada apa pun yang memaksa admin menengok panel. Pengecekan
+     * yang gagal pada Jumat sore bisa mengendap sampai Senin tanpa satu pun
+     * tanda — pelanggannya menunggu selama itu tanpa kabar. Ambang ini yang
+     * mengubahnya dari "ada di daftar" menjadi "diteriakkan".
+     */
+    public const TERBENGKALAI_JAM = 24;
+
     private const KUNCI_TOKEN = 'bot_turnitin_token_hash';
 
     private const KUNCI_JEDA = 'bot_turnitin_dijeda';
@@ -475,6 +486,36 @@ class BotTurnitin
             })
             ->orderBy('bot_diperbarui_at')
             ->get();
+    }
+
+    /**
+     * Sejak kapan pengecekan ini menunggu tangan admin.
+     *
+     * bot_diperbarui_at adalah saat bot terakhir melapor — untuk pekerjaan
+     * yang gagal, itulah saat ia berhenti. Dua cadangan di belakangnya untuk
+     * baris lama yang kolom botnya masih kosong.
+     */
+    public static function menungguSejak(OrderUpload $up): ?Carbon
+    {
+        return $up->bot_diperbarui_at ?? $up->bot_diambil_at ?? $up->created_at;
+    }
+
+    /** Sudah berapa jam menunggu admin (null bila tak diketahui). */
+    public static function lamaMenungguJam(OrderUpload $up): ?float
+    {
+        $sejak = self::menungguSejak($up);
+
+        return $sejak ? $sejak->diffInMinutes(now()) / 60 : null;
+    }
+
+    /** Pengecekan yang menunggu admin LEBIH dari ambang terbengkalai. */
+    public static function terbengkalai(?Collection $perluAdmin = null): Collection
+    {
+        $batas = now()->subHours(self::TERBENGKALAI_JAM);
+
+        return ($perluAdmin ?? self::perluAdmin())
+            ->filter(fn (OrderUpload $up) => optional(self::menungguSejak($up))->lt($batas))
+            ->values();
     }
 
     /** Pengecekan yang SEDANG dikerjakan bot (belum dianggap macet). */
