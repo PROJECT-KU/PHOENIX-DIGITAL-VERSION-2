@@ -457,6 +457,44 @@ Task Saya || lemon
         @media (hover: hover) and (pointer: fine) {
             .ts-pandang-btn:hover { border-color: color-mix(in srgb, var(--c) 35%, #fff); color: var(--dsb-tinta, #1f2b3d); }
         }
+        /* ===== Sub-baris penerima grup =====
+           Task grup adalah SATU pekerjaan untuk beberapa orang. Barisnya tetap
+           satu, dan daftar penerimanya dibuka dengan menekan barisnya —
+           dengan begitu daftar utama tetap sependek jumlah pekerjaan, bukan
+           sepanjang jumlah orang. */
+        .ts-panah { font-size: .7rem; margin-left: 2px; }
+        .dsb-tabel tbody.ts-grup tr.is-induk.is-terbuka td { background: #faf8ff; }
+
+        .dsb-tabel tbody.ts-grup tr.ts-sub td { background: #fbfcfe; padding-block: 9px; }
+        /* Lekukan + garis penghubung ke induknya: tanpa penanda apa pun,
+           sub-baris terbaca sebagai task tersendiri di daftar utama. */
+        .dsb-tabel tbody.ts-grup tr.ts-sub td:first-child { padding-left: 34px; position: relative; }
+        .dsb-tabel tbody.ts-grup tr.ts-sub td:first-child::before {
+            content: ""; position: absolute; left: 21px; top: 0; bottom: 0;
+            width: 2px; background: #e9e3fb;
+        }
+        .dsb-tabel tbody.ts-grup tr.ts-sub .dsb-tabel-judul { font-weight: 700; font-size: .85rem; }
+        .dsb-tabel tbody.ts-grup tr.ts-sub.is-saya .dsb-tabel-judul { color: #5b21b6; }
+        .dsb-tabel tbody.ts-grup tr.ts-sub .dsb-lencana { font-size: .66rem; }
+        @media (hover: hover) and (pointer: fine) {
+            .dsb-tabel tbody.ts-grup tr.ts-sub:hover td { background: #f5f3ff; }
+        }
+        @media (max-width: 767.98px) {
+            /* Saat baris jadi kartu bertumpuk, lekukan kiri diganti pita ungu:
+               padding-left di dalam kartu justru membuat isinya tampak salah
+               rata, bukan tampak bersarang. */
+            .dsb-tabel tbody.ts-grup tr.ts-sub {
+                background: #fbfcfe; box-shadow: inset 3px 0 0 #c4b5fd;
+            }
+            .dsb-tabel tbody.ts-grup tr.ts-sub td:first-child { padding-left: 0; }
+            .dsb-tabel tbody.ts-grup tr.ts-sub td:first-child::before { display: none; }
+
+            /* Sel bertumpuk sudah mencetak judulnya sendiri ("RAMPUNG"), jadi
+               keterangan kecil di bawah nilainya tinggal mengulang kata yang
+               sama tepat di sebelahnya. */
+            .dsb-tabel tbody.ts-grup tr.ts-sub td[data-judul="Rampung"] .dsb-tabel-meta { display: none; }
+        }
+
         /* ===== Isi jendela detail task ===== */
         .ts-uraian {
             background: #f8fafc; border: 1px solid #eef2f7; border-radius: 14px;

@@ -35,7 +35,6 @@
                     <th class="k-lebar" style="text-align: right;">Aksi</th>
                 </tr>
             </thead>
-            <tbody>
                 @foreach ($ordered as $gid => $gtasks)
                     @php
                         $first = $gtasks->first();
@@ -83,13 +82,33 @@
                         $tanda = $lewat ? '#e11d48' : ($hariIni ? '#d97706' : null);
                     @endphp
 
-                    <tr class="is-klik {{ $tanda ? 'is-tanda' : '' }}" @if ($tanda) style="--c: {{ $tanda }}" @endif
-                        wire:key="baris-{{ $gid }}" wire:click="openTask('{{ $punyaSaya->id }}')">
+                    {{-- Satu <tbody> per task supaya sub-barisnya ikut terlipat
+                         bersama induknya. Tabel boleh punya banyak tbody; ini
+                         satu-satunya cara melipat baris tanpa membungkusnya
+                         dengan <div>, yang tidak sah di dalam tabel. --}}
+                    <tbody class="ts-grup" @if ($grup) x-data="{ buka: false }" @endif>
+                    <tr class="is-klik {{ $tanda ? 'is-tanda' : '' }} {{ $grup ? 'is-induk' : '' }}"
+                        @if ($tanda) style="--c: {{ $tanda }}" @endif
+                        wire:key="baris-{{ $gid }}"
+                        @if ($grup)
+                            x-on:click="buka = ! buka"
+                            x-bind:class="buka ? 'is-terbuka' : ''"
+                        @else
+                            wire:click="openTask('{{ $punyaSaya->id }}')"
+                        @endif>
 
                         <td>
                             <div class="dsb-tabel-utama">
+                                {{-- Pada grup, ubin ikonnya sekaligus penanda buka-tutup:
+                                     map ikon folder berubah terbuka/tertutup mengikuti
+                                     keadaannya, jadi tidak perlu tombol panah tersendiri
+                                     yang menambah satu sasaran klik lagi di baris. --}}
                                 <span class="dsb-ikon is-kecil" style="--c: {{ $warnaProgres[$progres] ?? '#64748b' }}">
-                                    <i class="bi {{ $grup ? 'bi-folder-fill' : ($selesai ? 'bi-check-lg' : 'bi-card-checklist') }}"></i>
+                                    @if ($grup)
+                                        <i class="bi" x-bind:class="buka ? 'bi-folder2-open' : 'bi-folder-fill'"></i>
+                                    @else
+                                        <i class="bi {{ $selesai ? 'bi-check-lg' : 'bi-card-checklist' }}"></i>
+                                    @endif
                                 </span>
                                 <span class="dsb-tabel-teks">
                                     <span class="dsb-tabel-judul">{{ $first->nama }}</span>
@@ -122,7 +141,10 @@
 
                         <td class="k-sedang" data-judul="Penerima">
                             @if ($grup)
-                                <span class="dsb-lencana is-ungu"><i class="bi bi-people-fill"></i>{{ $jumlah }} penerima</span>
+                                <span class="dsb-lencana is-ungu">
+                                    <i class="bi bi-people-fill"></i>{{ $jumlah }} penerima
+                                    <i class="bi ts-panah" x-bind:class="buka ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                                </span>
                             @else
                                 <span class="dsb-tabel-angka">{{ $first->user_id === auth()->id() ? 'Anda' : ($first->karyawan?->name ?? '-') }}</span>
                             @endif
@@ -207,8 +229,84 @@
                             </span>
                         </td>
                     </tr>
+
+                    @if ($grup)
+                        @php
+                            // Sub-task MILIK SAYA lebih dulu, sisanya per nama —
+                            // yang dicari orang di daftar ini hampir selalu
+                            // barisnya sendiri.
+                            $anggota = $gtasks->sortBy(fn ($t) => [
+                                $t->user_id === auth()->id() ? 0 : 1,
+                                $t->karyawan?->name ?? '',
+                            ])->values();
+                        @endphp
+
+                        @foreach ($anggota as $m)
+                            @php
+                                $mSaya = $m->user_id === auth()->id();
+                                $mSelesai = $m->progress === 'selesai';
+                                $mLewat = ! $mSelesai && $m->bonusStatus() === 'tidak_selesai';
+                                $mKunci = $m->isLocked();
+                                $mKelola = $m->assigned_by && in_array($m->assigned_by, $manageGiverIds);
+                            @endphp
+                            <tr class="ts-sub is-klik {{ $mSaya ? 'is-saya' : '' }}"
+                                wire:key="sub-{{ $m->id }}" x-show="buka" x-cloak
+                                wire:click="openTask('{{ $m->id }}')">
+
+                                <td data-judul="Penerima">
+                                    <div class="dsb-tabel-utama ts-sub-utama">
+                                        <span class="dsb-avatar is-kecil" style="--c: {{ $mSaya ? '#7c3aed' : '#94a3b8' }}">
+                                            {{ \Illuminate\Support\Str::substr($m->karyawan?->name ?? '?', 0, 1) }}
+                                        </span>
+                                        <span class="dsb-tabel-teks">
+                                            <span class="dsb-tabel-judul">
+                                                {{ $m->karyawan?->name ?? 'Tanpa nama' }}
+                                                @if ($mSaya)<span class="dsb-lencana is-ungu">Anda</span>@endif
+                                            </span>
+                                            @if ($mKunci)
+                                                <span class="dsb-tabel-meta"><i class="bi bi-lock-fill"></i>Terkunci</span>
+                                            @endif
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="k-sedang is-kosong"></td>
+                                <td class="k-lebar is-kosong"></td>
+
+                                {{-- Kolomnya berjudul "Tenggat", tetapi tenggat tiap
+                                     penerima SAMA dengan induknya — mengulanginya di
+                                     tiap sub-baris tidak menambah apa pun. Yang berbeda
+                                     per orang adalah KAPAN ia rampung, jadi itu yang
+                                     ditulis, berikut katanya supaya tidak terbaca
+                                     sebagai tenggat yang berbeda-beda. --}}
+                                <td class="k-sedang" data-judul="Rampung">
+                                    <span class="dsb-tabel-teks">
+                                        <span class="dsb-tabel-angka">
+                                            {{ $m->completed_at ? $m->completed_at->locale('id')->translatedFormat('d M Y') : '—' }}
+                                        </span>
+                                        <span class="dsb-tabel-meta">{{ $m->completed_at ? 'Rampung' : 'Belum rampung' }}</span>
+                                    </span>
+                                </td>
+
+                                <td data-judul="Status">
+                                    <span class="dsb-lencana {{ $mLewat ? 'is-merah' : ($lencanaProgres[$m->progress] ?? 'is-abu') }}">
+                                        {{ $mLewat ? 'Lewat Tenggat' : ($labelProg[$m->progress] ?? ucfirst($m->progress)) }}
+                                    </span>
+                                </td>
+
+                                <td class="k-lebar {{ ($mKelola && $mKunci) ? '' : 'is-kosong' }}" data-judul="Aksi" style="text-align: right;">
+                                    @if ($mKelola && $mKunci)
+                                        <button type="button" class="dsb-tabel-btn" title="Buka kembali untuk revisi"
+                                            wire:click.stop="openReopen('{{ $m->id }}')">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endif
+                    </tbody>
                 @endforeach
-            </tbody>
         </table>
     </div>
 </div>

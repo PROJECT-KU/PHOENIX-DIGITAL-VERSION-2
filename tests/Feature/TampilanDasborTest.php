@@ -363,3 +363,23 @@ it('tanggal di layar task ditulis dalam bahasa Indonesia', function () {
 
     expect($lalai)->toBe([]);
 });
+
+it('task grup menyimpan penerimanya sebagai sub-baris yang bisa dibuka', function () {
+    // Daftar utama tetap sependek jumlah PEKERJAAN, bukan sepanjang jumlah
+    // orang — tapi siapa saja yang menerimanya tetap bisa dilihat tanpa
+    // berpindah halaman.
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    // Satu <tbody> per task: itulah satu-satunya cara melipat baris tanpa
+    // membungkusnya dengan <div>, yang tidak sah di dalam tabel.
+    expect($tabel)->toContain('<tbody class="ts-grup"')
+        ->and($tabel)->toContain('x-data="{ buka: false }"')
+        ->and($tabel)->toContain('class="ts-sub is-klik')
+        ->and($tabel)->toContain('x-show="buka" x-cloak')
+        // Tanpa x-cloak seluruh penerima berkedip tampil sekejap tiap halaman
+        // dimuat, sebelum Alpine sempat menyembunyikannya.
+        ->and($gaya)->toContain('[x-cloak] { display: none !important; }')
+        // Pemisah antar-task harus bertahan walau tiap task punya tbody sendiri.
+        ->and($gaya)->toContain('.dsb-tabel tbody:last-child tr:last-child td { border-bottom: 0; }');
+});

@@ -952,7 +952,10 @@
     .dsb-tabel thead th:first-child { border-top-left-radius: 12px; }
     .dsb-tabel thead th:last-child { border-top-right-radius: 12px; }
     .dsb-tabel tbody td { padding: 12px 14px; border-bottom: 1px solid #f2f5f9; vertical-align: middle; }
-    .dsb-tabel tbody tr:last-child td { border-bottom: 0; }
+    /* Hanya baris paling akhir DI SELURUH tabel yang kehilangan garisnya.
+       Dengan satu <tbody> per task, `tbody tr:last-child` akan menghapus
+       pemisah antar-task juga. */
+    .dsb-tabel tbody:last-child tr:last-child td { border-bottom: 0; }
     .dsb-tabel tbody tr.is-klik { cursor: pointer; }
     @media (hover: hover) and (pointer: fine) {
         .dsb-tabel tbody tr.is-klik:hover td { background: #f8fafc; }
@@ -992,6 +995,13 @@
     @media (max-width: 767.98px) {
         .dsb-tabel-samar { display: none; }
     }
+
+    /* Avatar kecil untuk sub-baris. */
+    .dsb-avatar.is-kecil { width: 30px; height: 30px; border-radius: 9px; font-size: .78rem; }
+
+    /* x-cloak: sub-baris disembunyikan SEBELUM Alpine sempat jalan. Tanpa ini,
+       seluruh penerima berkedip tampil sekejap tiap halaman dimuat. */
+    [x-cloak] { display: none !important; }
 
     /* Tombol aksi baris: kotak 34px, ikon di tengah. Kecil, tetapi tetap di
        atas ambang yang bisa ditekan jempol saat barisnya jadi kartu. */
