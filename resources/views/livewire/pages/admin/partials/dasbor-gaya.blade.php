@@ -35,7 +35,27 @@
        Kotaknya dikembalikan mengikuti isi, sehingga yang dipusatkan flex sama
        dengan yang dilihat mata. */
     .dsb i.bi,
-    .bt-panel i.bi { width: auto; height: auto; }
+    .bt-panel i.bi {
+        width: auto; height: auto;
+        /* Satu model untuk SEMUA ikon di dasbor, di mana pun ia dipakai:
+           kotaknya sebesar glifnya, glifnya dipusatkan di dalam kotak itu. */
+        display: inline-flex; align-items: center; justify-content: center;
+        line-height: 1;
+        /* Hanya berlaku saat ikon berdiri di tengah kalimat (konteks inline);
+           pada anak wadah flex, vertical-align memang diabaikan.
+
+           Template menyetel `.bi:before { vertical-align: sub }` — 'sub'
+           menurunkan glif setinggi posisi subskrip, jadi ikon di tengah
+           kalimat duduk ~2px di bawah garis alas dan terbaca melorot.
+           -.125em adalah angka Bootstrap Icons sendiri: glif jatuh pas pada
+           pita huruf, sejajar dengan teks di sebelahnya. */
+        vertical-align: -.125em;
+    }
+    /* Glifnya dijadikan blok di dalam kotak ikon, sekaligus MEMBATALKAN
+       vertical-align: sub milik template — kalau tidak, ikon di dalam ubin
+       pun ikut terdorong turun. */
+    .dsb i.bi::before,
+    .bt-panel i.bi::before { display: block; line-height: 1; vertical-align: baseline; }
 
     /* ===== Kerangka halaman ===================================== */
     .dsb {

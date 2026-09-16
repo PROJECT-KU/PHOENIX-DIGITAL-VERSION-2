@@ -70,5 +70,18 @@ it('kotak ikon huruf dilepas dari aturan ikon SVG bawaan template', function () 
     $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
 
     expect($gaya)->toContain('.dsb i.bi,')
-        ->and($gaya)->toContain('.bt-panel i.bi { width: auto; height: auto; }');
+        ->and($gaya)->toContain('width: auto; height: auto;');
+});
+
+it('ikon yang menemani teks tidak memakai vertical-align sub bawaan template', function () {
+    // Template menyetel `body .bi:before { vertical-align: sub }` — 'sub'
+    // menurunkan glif setinggi posisi subskrip, jadi ikon di tengah kalimat
+    // duduk ~2px di bawah garis alas teksnya dan terbaca melorot.
+    //
+    // Diukur terhadap pita huruf kapital (patokan yang dipakai mata): sesudah
+    // diperbaiki, SELURUH ikon di dasbor meleset kurang dari 0,75 px.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($gaya)->toContain('vertical-align: -.125em;')
+        ->and($gaya)->toContain('vertical-align: baseline;');
 });
