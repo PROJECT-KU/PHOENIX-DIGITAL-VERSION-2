@@ -558,8 +558,23 @@ class BotTurnitin
     }
 
     /** Admin mengambil alih: bot tidak akan menyentuh unggahan ini lagi. */
-    public static function ambilAlih(OrderUpload $up): void
+    public static function ambilAlih(OrderUpload $up): bool
     {
+        /*
+         | PERLU_DILENGKAPI tidak boleh diambil alih.
+         |
+         | Pada keadaan itu bot SUDAH mengunggah laporan plagiasinya; yang
+         | kurang tinggal hasil lain (mis. cek AI) yang memang selalu dikerjakan
+         | admin. Menandainya "manual" tidak mengubah satu pun pekerjaan yang
+         | tersisa — ia hanya melenyapkan barisnya dari daftar "perlu admin",
+         | sehingga sisa pekerjaan itu kehilangan satu-satunya pengingatnya.
+         | Tombolnya memang tidak ditampilkan untuk baris ini; penjagaan di sini
+         | supaya permintaan yang dikarang dari peramban pun tidak bisa.
+         */
+        if ($up->bot_status === self::PERLU_DILENGKAPI) {
+            return false;
+        }
+
         $belumTerkirim = $up->bot_status === self::DIAMBIL || ($up->bot_status === self::GAGAL && ! $up->bot_kode);
 
         $up->update(array_merge(
@@ -568,6 +583,8 @@ class BotTurnitin
                 ? ['status' => 'menunggu', 'diproses_at' => null, 'dikerjakan_oleh' => null]
                 : []
         ));
+
+        return true;
     }
 
     /**

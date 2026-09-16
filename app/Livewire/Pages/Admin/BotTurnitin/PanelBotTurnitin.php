@@ -88,7 +88,12 @@ class PanelBotTurnitin extends Component
     {
         abort_unless($this->bolehLihat() && BotTurnitin::skemaSiap(), 403);
 
-        BotTurnitin::ambilAlih(OrderUpload::findOrFail($uploadId));
+        if (! BotTurnitin::ambilAlih(OrderUpload::findOrFail($uploadId))) {
+            $this->dispatch('swal-error', message: 'Laporan plagiasinya sudah ada — yang kurang tinggal dilengkapi dari halaman pesanan. Barisnya sengaja tetap di daftar ini sampai lengkap.');
+
+            return;
+        }
+
         $this->dispatch('swal-success', message: 'Ditandai dikerjakan manual. Bot tidak akan menyentuhnya lagi.');
     }
 

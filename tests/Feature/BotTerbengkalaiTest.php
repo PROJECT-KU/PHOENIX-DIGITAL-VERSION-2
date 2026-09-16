@@ -178,3 +178,29 @@ it('hanya baris tab yang sedang dibuka yang dirender', function () {
         ->assertSee($nomorJalan)
         ->assertDontSeeHtml('bt-perlu-'.$perlu->id);
 });
+
+it('baris "perlu dilengkapi" tidak bisa diambil alih jadi manual', function () {
+    // Bot sudah mengunggah laporan plagiasinya; yang kurang tinggal hasil lain
+    // yang memang selalu dikerjakan admin. Menandainya "manual" tidak mengubah
+    // satu pun pekerjaan yang tersisa — ia hanya melenyapkan barisnya dari
+    // daftar, sehingga sisa pekerjaan itu kehilangan pengingat terakhirnya.
+    $up = unggahanBotTerbengkalai([
+        'bot_status' => BotTurnitin::PERLU_DILENGKAPI,
+        'bot_kode' => 'SC-AAA111BBB222',
+        'bot_diperbarui_at' => now()->subDays(2),
+    ]);
+
+    expect(BotTurnitin::ambilAlih($up))->toBeFalse()
+        ->and($up->fresh()->bot_status)->toBe(BotTurnitin::PERLU_DILENGKAPI)
+        ->and(BotTurnitin::perluAdmin())->toHaveCount(1);
+});
+
+it('yang gagal sebelum terkirim boleh diambil alih dan kembali ke antrean manual', function () {
+    $up = unggahanBotTerbengkalai(['bot_status' => BotTurnitin::GAGAL, 'bot_kode' => null]);
+
+    expect(BotTurnitin::ambilAlih($up))->toBeTrue();
+
+    $up->refresh();
+    expect($up->bot_status)->toBe(BotTurnitin::MANUAL)
+        ->and($up->status)->toBe('menunggu');
+});
