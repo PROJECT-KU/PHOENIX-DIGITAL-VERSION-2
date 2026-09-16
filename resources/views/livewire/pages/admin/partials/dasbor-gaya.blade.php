@@ -774,7 +774,15 @@
     }
     .dsb-segar.is-tombol:hover { background: #fff; color: var(--dsb-tinta); border-color: #cbd5e1; }
     .dsb-segar.is-tombol:disabled { cursor: progress; opacity: .7; }
-    .dsb-segar.is-tombol > span { display: inline-flex; align-items: center; gap: 5px; }
+
+    /* Isi tombol memakai kelas TUNGGAL, bukan `.dsb-segar.is-tombol > span`.
+       Livewire menyembunyikan elemen wire:loading lewat aturan berbobot dua
+       pemilih atribut; `.dsb-segar.is-tombol > span` berbobot dua kelas + satu
+       elemen — lebih tinggi — sehingga ia MENGALAHKAN penyembunyinya dan
+       penanda "Memuat…" ikut tampil terus sejak halaman dibuka.
+       Satu kelas (0,1,0) kalah dari aturan Livewire (0,2,0), jadi
+       penyembunyiannya kembali bekerja tanpa kehilangan tata letaknya. */
+    .dsb-segar-isi { display: inline-flex; align-items: center; gap: 5px; }
     .dsb-putar.is-kecil { width: 11px; height: 11px; border-width: 1.5px; }
 
     /* ===== Keadaan memuat saat periode digeser =====

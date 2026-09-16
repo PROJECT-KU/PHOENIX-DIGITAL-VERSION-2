@@ -236,3 +236,21 @@ it('kartu hari ini menandai dirinya saat periode digeser ke belakang', function 
     expect($dasbor)->toContain('dsb-tanda-kini')
         ->and($dasbor)->toContain('Selalu hari ini');
 });
+
+it('gaya sendiri tidak mengalahkan aturan penyembunyi wire:loading', function () {
+    // Livewire menyembunyikan elemen wire:loading lewat CSS berbobot DUA
+    // pemilih atribut ([wire\:loading][wire\:loading]). Aturan sendiri yang
+    // memakai dua kelas + satu elemen berbobot lebih tinggi dan mengalahkannya
+    // — penanda "Memuat…" lalu berputar terus sejak halaman dibuka, padahal
+    // tidak ada permintaan yang berjalan.
+    //
+    // Karena itu display untuk isi tombol ditulis pada SATU kelas (0,1,0),
+    // yang kalah dari aturan Livewire (0,2,0). Diukur di peramban sesudahnya:
+    // span "Memuat…" computed display = none saat diam.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+    $dasbor = file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php'));
+
+    expect($gaya)->toContain('.dsb-segar-isi { display: inline-flex;')
+        ->and($gaya)->not->toContain('.dsb-segar.is-tombol > span { display:')
+        ->and($dasbor)->toContain('class="dsb-segar-isi" wire:loading.inline-flex');
+});

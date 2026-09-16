@@ -75,8 +75,8 @@ Dashboard || lemon
                         <button type="button" class="dsb-segar is-tombol" wire:click="muatUlang"
                             wire:loading.attr="disabled" wire:target="muatUlang"
                             title="Hitung ulang semua angka di halaman ini">
-                            <span wire:loading.remove.inline-flex wire:target="muatUlang"><i class="bi bi-arrow-clockwise"></i>Muat ulang</span>
-                            <span wire:loading.inline-flex wire:target="muatUlang"><span class="dsb-putar is-kecil"></span>Memuat…</span>
+                            <span class="dsb-segar-isi" wire:loading.remove.inline-flex wire:target="muatUlang"><i class="bi bi-arrow-clockwise"></i>Muat ulang</span>
+                            <span class="dsb-segar-isi" wire:loading.inline-flex wire:target="muatUlang"><span class="dsb-putar is-kecil"></span>Memuat…</span>
                         </button>
                     </span>
                 </p>
