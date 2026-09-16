@@ -133,6 +133,7 @@ Dashboard || lemon
                     <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
                     <p class="dsb-stat-label">Saldo Bersih</p>
                     <p class="dsb-stat-nilai {{ $saldoIsNegatif ? 'is-merah' : '' }}">Rp {{ $saldoBersih }}</p>
+                    <x-banding-periode :data="$bandingPeriode['saldo']" :rentang="$bandingPeriode['label_sebelumnya']" />
                     <p class="dsb-stat-ket">
                         <i class="bi bi-arrow-left-right"></i>
                         <span>Pemasukan − Pengeluaran • {{ $periodeLabel }}</span>
@@ -143,6 +144,7 @@ Dashboard || lemon
                     <span class="dsb-ikon"><i class="bi bi-graph-up-arrow"></i></span>
                     <p class="dsb-stat-label">Total Pemasukan</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalPemasukan }}</p>
+                    <x-banding-periode :data="$bandingPeriode['pemasukan']" :rentang="$bandingPeriode['label_sebelumnya']" />
                     <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Cashflow • {{ $periodeLabel }}</span></p>
                 </article>
 
@@ -150,6 +152,8 @@ Dashboard || lemon
                     <span class="dsb-ikon"><i class="bi bi-graph-down-arrow"></i></span>
                     <p class="dsb-stat-label">Total Pengeluaran</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalPengeluaran }}</p>
+                    {{-- biaya: naiknya pengeluaran BUKAN kabar baik, jadi warnanya dibalik. --}}
+                    <x-banding-periode :data="$bandingPeriode['pengeluaran']" :rentang="$bandingPeriode['label_sebelumnya']" biaya />
                     <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Cashflow • {{ $periodeLabel }}</span></p>
                 </article>
 

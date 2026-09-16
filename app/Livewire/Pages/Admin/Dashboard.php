@@ -246,6 +246,11 @@ class Dashboard extends Component
         // Ambil 5 Customer Terbaru
         $recentCustomers = Customer::latest('created_at')->take(5)->get();
 
+        // Pembanding periode LALU untuk saldo, pemasukan, dan pengeluaran.
+        // Ketiganya angka periode, jadi pembandingnya pun periode — bukan
+        // "kemarin" seperti kartu harian. Lihat App\Support\PerbandinganPeriode.
+        $bandingPeriode = \App\Support\PerbandinganPeriode::ringkas();
+
         // Pemakaian promo pada periode berjalan (flash sale, kode promo,
         // promo otomatis, kode rujukan) — lihat App\Support\RingkasanPromo.
         $promoDipakai = \App\Support\RingkasanPromo::periode($perMulai, $perAkhirEks);
@@ -300,6 +305,7 @@ class Dashboard extends Component
             // Variabel Baru untuk Tabel
             'recentOrders' => $recentOrders,
             'recentCustomers' => $recentCustomers,
+            'bandingPeriode' => $bandingPeriode,
             'promoDipakai' => $promoDipakai,
             'countries' => $paymentLabels,
             'counts' => $paymentCounts,
