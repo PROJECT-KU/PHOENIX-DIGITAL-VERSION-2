@@ -84,4 +84,60 @@ class RingkasanPromo
 
         return $hasil;
     }
+
+    /**
+     * Rincian per PROMO, bukan per jenis: nama promonya apa dan dipakai
+     * berapa kali.
+     *
+     * "Flash sale 12 kali" tidak bisa ditindaklanjuti — yang menentukan promo
+     * mana yang layak diulang adalah nama promonya. Kode rujukan ikut di sini
+     * sebagai barisnya sendiri, dikelompokkan per KODE, karena di situlah
+     * pertanyaannya sama: kode siapa yang benar-benar membawa pembeli.
+     *
+     * @return array<int, array{nama:string, kode:?string, tipe:string, jumlah:int, nilai:float}>
+     */
+    public static function rincian(Carbon $mulai, Carbon $akhirEksklusif, int $batas = 8): array
+    {
+        $dalamPeriode = fn ($q) => $q
+            ->whereRaw('COALESCE(orders.paid_at, orders.created_at) >= ?', [$mulai->toDateTimeString()])
+            ->whereRaw('COALESCE(orders.paid_at, orders.created_at) < ?', [$akhirEksklusif->toDateTimeString()]);
+
+        $promo = DB::table('order_promo')
+            ->join('orders', 'orders.id', '=', 'order_promo.order_id')
+            ->join('promos', 'promos.id', '=', 'order_promo.promo_id')
+            ->whereIn('orders.status', self::STATUS_DIBAYAR)
+            ->where($dalamPeriode)
+            ->groupBy('promos.id', 'promos.nama_promo', 'promos.kode_promo', 'promos.tipe_promo')
+            ->selectRaw('promos.nama_promo as nama, promos.kode_promo as kode, promos.tipe_promo as tipe,
+                         COUNT(*) as jumlah, COALESCE(SUM(order_promo.jumlah_diskon), 0) as nilai')
+            ->get()
+            ->map(fn ($r) => [
+                'nama' => (string) $r->nama,
+                'kode' => $r->kode ? (string) $r->kode : null,
+                'tipe' => (string) $r->tipe,
+                'jumlah' => (int) $r->jumlah,
+                'nilai' => (float) $r->nilai,
+            ]);
+
+        $rujukan = Order::query()
+            ->whereIn('orders.status', self::STATUS_DIBAYAR)
+            ->whereNotNull('orders.referral_code')
+            ->where($dalamPeriode)
+            ->groupBy('orders.referral_code')
+            ->selectRaw('orders.referral_code as kode, COUNT(*) as jumlah, COALESCE(SUM(orders.referral_discount), 0) as nilai')
+            ->get()
+            ->map(fn ($r) => [
+                'nama' => 'Kode rujukan '.$r->kode,
+                'kode' => (string) $r->kode,
+                'tipe' => 'referral',
+                'jumlah' => (int) $r->jumlah,
+                'nilai' => (float) $r->nilai,
+            ]);
+
+        return $promo->concat($rujukan)
+            ->sortByDesc(fn ($b) => [$b['jumlah'], $b['nilai']])
+            ->take($batas)
+            ->values()
+            ->all();
+    }
 }

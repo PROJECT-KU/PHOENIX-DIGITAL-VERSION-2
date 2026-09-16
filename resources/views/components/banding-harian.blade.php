@@ -1,13 +1,12 @@
 @props(['data'])
 
 {{--
-    Teks perbandingan HARI INI vs KEMARIN.
+    Perbandingan HARI INI vs KEMARIN.
 
-    Dipakai bersama Dashboard & Cash Flow supaya kalimatnya seragam. Sengaja
-    hanya teks (bukan kartu/grafik) sesuai permintaan, dan diletakkan menempel
-    pada angka yang dibandingkan.
+    Dipakai bersama Dashboard & Cash Flow supaya kalimatnya seragam, dan
+    diletakkan menempel pada angka yang dibandingkan.
 
-    'persen' bernilai null saat kemarin nol — ditampilkan sebagai kalimat, bukan
+    'persen' bernilai null saat kemarin nol — ditampilkan sebagai kata, bukan
     "naik 100%", karena naik dari nol tidak bisa dipersenkan.
 --}}
 @php
@@ -15,24 +14,22 @@
     $arah = $data['arah'] ?? 0;
     $kemarin = (float) ($data['kemarin'] ?? 0);
 
-    // Kata "kemarin" sudah ada di depan angkanya, jadi kalimat di sini sengaja
-    // TIDAK mengulangnya — supaya tidak terbaca "Kemarin Rp 100 sama dengan kemarin".
     if ($persen === null) {
-        [$ikon, $warna, $kalimat] = ($data['hari_ini'] ?? 0) > 0
-            ? ['bi-arrow-up-right', '#047857', 'naik dari nol']
-            : ['bi-dash', '#64748b', 'belum ada pemasukan'];
+        [$ikon, $rupa, $teks] = ($data['hari_ini'] ?? 0) > 0
+            ? ['bi-arrow-up-right', 'is-baik', 'Naik dari nol']
+            : ['bi-dash', 'is-datar', 'Belum ada'];
     } elseif ($arah > 0) {
-        [$ikon, $warna, $kalimat] = ['bi-arrow-up-right', '#047857', 'naik ' . number_format(abs($persen), 1, ',', '.') . '%'];
+        [$ikon, $rupa, $teks] = ['bi-arrow-up-right', 'is-baik', number_format(abs($persen), 1, ',', '.') . '%'];
     } elseif ($arah < 0) {
-        [$ikon, $warna, $kalimat] = ['bi-arrow-down-right', '#b91c1c', 'turun ' . number_format(abs($persen), 1, ',', '.') . '%'];
+        [$ikon, $rupa, $teks] = ['bi-arrow-down-right', 'is-buruk', number_format(abs($persen), 1, ',', '.') . '%'];
     } else {
-        [$ikon, $warna, $kalimat] = ['bi-dash', '#64748b', 'tidak berubah'];
+        [$ikon, $rupa, $teks] = ['bi-dash', 'is-datar', 'Tetap'];
     }
 @endphp
 
-<span class="d-block mt-1 text-muted" style="font-size: 0.75rem; line-height: 1.5;">
-    Kemarin <b>Rp {{ number_format($kemarin, 0, ',', '.') }}</b>
-    <span style="color: {{ $warna }}; font-weight: 700; white-space: nowrap;">
-        <i class="bi {{ $ikon }}" style="vertical-align:-0.125em;"></i> {{ $kalimat }}
-    </span>
+<x-banding-gaya />
+
+<span class="bnd">
+    <span class="bnd-pil {{ $rupa }}"><i class="bi {{ $ikon }}"></i>{{ $teks }}</span>
+    <span class="bnd-ket">vs <b>Rp {{ number_format($kemarin, 0, ',', '.') }}</b> kemarin</span>
 </span>

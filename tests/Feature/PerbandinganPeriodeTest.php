@@ -103,7 +103,10 @@ it('naik turunnya pengeluaran diberi warna terbalik di tampilan', function () {
     // pencapaian.
     $sumber = file_get_contents(resource_path('views/components/banding-periode.blade.php'));
 
-    expect($sumber)->toContain("\$baik = \$biaya ? '#b91c1c' : '#047857'")
+    // Saat arahnya NAIK: pemasukan hijau (is-baik), pengeluaran merah (is-buruk).
+    expect($sumber)->toContain("\$rupa = \$biaya ? 'is-buruk' : 'is-baik';")
+        ->and(file_get_contents(resource_path('views/components/banding-gaya.blade.php')))
+        ->toContain('.bnd-pil.is-buruk { background: #fee2e2; color: #b91c1c; }')
         ->and(file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php')))
         ->toContain(":data=\"\$bandingPeriode['pengeluaran']\"");
 });

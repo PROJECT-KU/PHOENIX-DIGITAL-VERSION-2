@@ -254,6 +254,7 @@ class Dashboard extends Component
         // Pemakaian promo pada periode berjalan (flash sale, kode promo,
         // promo otomatis, kode rujukan) — lihat App\Support\RingkasanPromo.
         $promoDipakai = \App\Support\RingkasanPromo::periode($perMulai, $perAkhirEks);
+        $promoRincian = \App\Support\RingkasanPromo::rincian($perMulai, $perAkhirEks);
 
         // ==========================================
         // DISTRIBUSI METODE PEMBAYARAN (data nyata dari tabel orders)
@@ -307,6 +308,7 @@ class Dashboard extends Component
             'recentCustomers' => $recentCustomers,
             'bandingPeriode' => $bandingPeriode,
             'promoDipakai' => $promoDipakai,
+            'promoRincian' => $promoRincian,
             'countries' => $paymentLabels,
             'counts' => $paymentCounts,
             'agendaSaya' => $this->agendaSaya(),

@@ -225,6 +225,59 @@ Dashboard || lemon
                         </p>
                     </article>
                 @endforeach
+
+                {{-- Rincian per NAMA promo. "Flash sale 12 kali" tidak bisa
+                     ditindaklanjuti; yang menentukan promo mana yang layak
+                     diulang adalah nama promonya. --}}
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #f26522"><i class="bi bi-list-ol"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Promo Mana yang Dipakai</h3>
+                                <span class="dsb-kartu-sub">Terbanyak lebih dulu • periode {{ $periodeLabel }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @php
+                            $rupaPromo = [
+                                'flash_sale' => ['Flash Sale', 'bi-lightning-charge-fill', '#f26522'],
+                                'kode_promo' => ['Kode Promo', 'bi-ticket-perforated-fill', '#7c3aed'],
+                                'auto_promo' => ['Promo Otomatis', 'bi-magic', '#16a34a'],
+                                'referral' => ['Kode Rujukan', 'bi-people-fill', '#0284c7'],
+                            ];
+                        @endphp
+
+                        @forelse ($promoRincian as $baris)
+                            @php [$jenisNama, $jenisIkon, $jenisWarna] = $rupaPromo[$baris['tipe']] ?? ['Promo', 'bi-tag-fill', '#64748b']; @endphp
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: {{ $jenisWarna }}"><i class="bi {{ $jenisIkon }}"></i></span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $baris['nama'] }}</span>
+                                    <span class="dsb-baris-meta">
+                                        <span class="dsb-lencana" style="background: color-mix(in srgb, {{ $jenisWarna }} 12%, #fff); color: {{ $jenisWarna }};">{{ $jenisNama }}</span>
+                                        @if ($baris['kode'] && $baris['tipe'] !== 'referral')
+                                            <span class="dsb-pisah">•</span>
+                                            <span>{{ $baris['kode'] }}</span>
+                                        @endif
+                                    </span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="dsb-baris-nilai">{{ $baris['jumlah'] }}× dipakai</span>
+                                    <span class="dsb-baris-meta">{{ $rupiahPromo($baris['nilai']) }} diskon</span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-tags"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada promo terpakai</p>
+                                <p class="dsb-kosong-ket">Begitu ada pesanan berpromo yang dibayar, rinciannya muncul di sini.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
             </div>
         </section>
 

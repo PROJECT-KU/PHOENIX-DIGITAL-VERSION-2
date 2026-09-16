@@ -123,3 +123,48 @@ it('tanpa data apa pun, seluruh angkanya nol dan bukan null', function () {
         expect($hasil[$jenis])->toBe(['jumlah' => 0, 'nilai' => 0.0]);
     }
 });
+
+it('merinci promo per NAMA, terbanyak lebih dulu', function () {
+    // "Flash sale 12 kali" tidak bisa ditindaklanjuti; yang menentukan promo
+    // mana yang layak diulang adalah nama promonya.
+    $hemat = promoJenis('kode_promo');
+    $hemat->update(['nama_promo' => 'Hemat Pelajar']);
+    $kilat = promoJenis('flash_sale');
+    $kilat->update(['nama_promo' => 'Kilat Akhir Pekan']);
+
+    tempelPromo(pesananPromo('paid', now()), $hemat, 4000);
+    tempelPromo(pesananPromo('paid', now()), $hemat, 6000);
+    tempelPromo(pesananPromo('completed', now()), $kilat, 9000);
+
+    $rincian = RingkasanPromo::rincian($this->mulai, $this->akhir);
+
+    expect($rincian[0]['nama'])->toBe('Hemat Pelajar')
+        ->and($rincian[0]['jumlah'])->toBe(2)
+        ->and($rincian[0]['nilai'])->toBe(10000.0)
+        ->and($rincian[0]['tipe'])->toBe('kode_promo')
+        ->and($rincian[1]['nama'])->toBe('Kilat Akhir Pekan')
+        ->and($rincian[1]['jumlah'])->toBe(1);
+});
+
+it('kode rujukan dirinci per KODE, bukan digabung jadi satu baris', function () {
+    // Pertanyaannya sama dengan promo: kode SIAPA yang membawa pembeli.
+    pesananPromo('paid', now(), ['referral_code' => 'RUJUK-A1', 'referral_discount' => 5000]);
+    pesananPromo('paid', now(), ['referral_code' => 'RUJUK-A1', 'referral_discount' => 5000]);
+    pesananPromo('completed', now(), ['referral_code' => 'RUJUK-B2', 'referral_discount' => 3000]);
+
+    $rincian = collect(RingkasanPromo::rincian($this->mulai, $this->akhir))
+        ->where('tipe', 'referral')->values();
+
+    expect($rincian)->toHaveCount(2)
+        ->and($rincian[0]['kode'])->toBe('RUJUK-A1')
+        ->and($rincian[0]['jumlah'])->toBe(2)
+        ->and($rincian[0]['nilai'])->toBe(10000.0)
+        ->and($rincian[1]['kode'])->toBe('RUJUK-B2');
+});
+
+it('rinciannya ikut aturan yang sama: pesanan batal tidak dihitung', function () {
+    tempelPromo(pesananPromo('cancelled', null), promoJenis('flash_sale'), 9000);
+    pesananPromo('pending', null, ['referral_code' => 'RUJUK-X9', 'referral_discount' => 9000]);
+
+    expect(RingkasanPromo::rincian($this->mulai, $this->akhir))->toBe([]);
+});
