@@ -94,21 +94,7 @@ Dashboard || lemon
                     </span>
                 </div>
 
-                {{-- Aksi cepat: dua hal yang paling sering dikerjakan admin dari
-                     dasbor. Tanpa ini keduanya butuh dua klik lewat sidebar. --}}
-                @if (\Illuminate\Support\Facades\Route::has('admin.pesanantoko.create') && auth()->user()->hasPermission('create_pemesanantoko'))
-                    <a href="{{ route('admin.pesanantoko.create') }}" wire:navigate class="dsb-tombol is-utama">
-                        <i class="bi bi-plus-lg"></i><span>Pesanan Baru</span>
-                    </a>
-                @endif
-
-                @if (\Illuminate\Support\Facades\Route::has('admin.spending.create') && auth()->user()->hasPermission('create_spending'))
-                    <a href="{{ route('admin.spending.create') }}" wire:navigate class="dsb-tombol is-lembut">
-                        <i class="bi bi-receipt"></i><span>Catat Pengeluaran</span>
-                    </a>
-                @endif
-
-                <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-lembut">
+                <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-utama">
                     <i class="bi bi-person-fill"></i><span>Profil</span>
                 </a>
 
@@ -117,6 +103,54 @@ Dashboard || lemon
                 </button>
             </div>
         </header>
+
+        {{-- ================== AKSI CEPAT ==================
+             Dikeluarkan dari kartu sapaan: di sana ia berdesakan dengan kartu
+             identitas dan tombol Logout — lima hal berjajar, dan yang paling
+             sering diklik justru paling sulit dikenali. Sebagai kartu sendiri,
+             tiap aksi punya ubin, nama, dan satu baris keterangan. --}}
+        @php
+            $aksiCepat = [];
+
+            if (\Illuminate\Support\Facades\Route::has('admin.pesanantoko.create') && auth()->user()->hasPermission('create_pemesanantoko')) {
+                $aksiCepat[] = ['#7c3aed', 'bi-bag-plus-fill', 'Pesanan Baru', 'Buat pesanan untuk pembeli', route('admin.pesanantoko.create')];
+            }
+
+            if (\Illuminate\Support\Facades\Route::has('admin.spending.create') && auth()->user()->hasPermission('create_spending')) {
+                $aksiCepat[] = ['#e11d48', 'bi-receipt', 'Catat Pengeluaran', 'Masuk ke arus kas periode ini', route('admin.spending.create')];
+            }
+        @endphp
+
+        @if (! empty($aksiCepat))
+            <section class="dsb-bagian">
+                <div class="dsb-kartu">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #f26522"><i class="bi bi-lightning-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Aksi Cepat</h3>
+                                <span class="dsb-kartu-sub">Yang paling sering dikerjakan dari dasbor</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-aksi">
+                            @foreach ($aksiCepat as [$warna, $ikon, $nama, $ket, $tautan])
+                                <a class="dsb-aksi-item" href="{{ $tautan }}" wire:navigate style="--c: {{ $warna }}">
+                                    <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                    <span class="dsb-aksi-teks">
+                                        <span class="dsb-aksi-nama">{{ $nama }}</span>
+                                        <span class="dsb-aksi-ket">{{ $ket }}</span>
+                                    </span>
+                                    <i class="bi bi-arrow-right dsb-aksi-panah"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
 
         {{-- Bot Turnitin: kabar bot + kartu yang butuh tangan admin (kuota habis, gagal) --}}
         <livewire:pages.admin.bot-turnitin.panel-bot-turnitin />

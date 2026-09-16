@@ -409,6 +409,33 @@
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
     .dsb-stat.is-utama > .dsb-ikon { width: 54px; height: 54px; border-radius: 16px; font-size: 1.5rem; }
 
+    /* ===== Aksi cepat =========================================== */
+    .dsb-aksi { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    .dsb-aksi-item {
+        display: flex; align-items: center; gap: 13px; min-width: 0;
+        padding: 13px 15px; border-radius: 14px; text-decoration: none;
+        background: color-mix(in srgb, var(--c) 5%, #fff);
+        border: 1px solid color-mix(in srgb, var(--c) 18%, #fff);
+        transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .dsb-aksi-item .dsb-ikon { margin-bottom: 0; width: 42px; height: 42px; font-size: 1.15rem; }
+    .dsb-aksi-teks { min-width: 0; flex: 1; }
+    .dsb-aksi-nama {
+        display: block; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+        font-weight: 700; font-size: .92rem; color: var(--dsb-tinta); line-height: 1.25;
+    }
+    .dsb-aksi-ket { display: block; color: var(--dsb-redup); font-size: .78rem; margin-top: 2px; }
+    .dsb-aksi-panah { color: color-mix(in srgb, var(--c) 70%, #000); font-size: .95rem; transition: transform .18s ease; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-aksi-item:hover {
+            border-color: color-mix(in srgb, var(--c) 38%, #fff);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px color-mix(in srgb, var(--c) 16%, transparent);
+        }
+        .dsb-aksi-item:hover .dsb-ikon { background: var(--c); color: #fff; border-color: transparent; }
+        .dsb-aksi-item:hover .dsb-aksi-panah { transform: translateX(3px); }
+    }
+
     /* Tautan yang menutupi seluruh kartu.
        Dipakai supaya kartu bisa diklik tanpa membuat KARTUNYA sebuah <a> —
        markupnya jadi satu jalur, dan isinya (pil, lencana) tetap boleh

@@ -122,3 +122,36 @@ it('pemilih periode menggeser seluruh angka periode, dan dibatasi rentangnya', f
         ->assertSet('mundur', 0)
         ->assertSee($labelIni);
 });
+
+it('aksi cepat punya kartunya sendiri dan menghormati izin', function () {
+    // Di dalam kartu sapaan, dua tombol ini berdesakan dengan kartu identitas
+    // dan tombol Logout — lima hal berjajar, dan yang paling sering diklik
+    // justru paling sulit dikenali.
+    $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+    $pdo->sqliteCreateFunction('MONTH', fn ($d) => $d ? (int) date('n', strtotime($d)) : null, 1);
+    $pdo->sqliteCreateFunction('YEAR', fn ($d) => $d ? (int) date('Y', strtotime($d)) : null, 1);
+
+    $buatAdmin = function (array $izin) {
+        $peran = \App\Models\Role::create(['name' => 'uji-aksi-'.uniqid(), 'description' => 'uji']);
+        foreach ($izin as $n) {
+            $peran->permissions()->attach(\App\Models\Permission::firstOrCreate(
+                ['name' => $n], ['display_name' => $n, 'group' => 'uji', 'description' => 'uji']
+            )->id);
+        }
+
+        return \App\Models\User::factory()->create(['role_id' => $peran->id])->fresh();
+    };
+
+    \Livewire\Livewire::actingAs($buatAdmin(['view_dashboard', 'view_all_dashboard', 'create_pemesanantoko', 'create_spending']))
+        ->test(\App\Livewire\Pages\Admin\Dashboard::class)
+        ->assertSeeHtml('class="dsb-aksi"')
+        ->assertSee('Aksi Cepat')
+        ->assertSee('Pesanan Baru')
+        ->assertSee('Catat Pengeluaran');
+
+    // Tanpa izin apa pun, kartunya tidak dibuat — bukan kartu kosong.
+    \Livewire\Livewire::actingAs($buatAdmin(['view_dashboard', 'view_all_dashboard']))
+        ->test(\App\Livewire\Pages\Admin\Dashboard::class)
+        ->assertDontSeeHtml('class="dsb-aksi"')
+        ->assertDontSee('Catat Pengeluaran');
+});
