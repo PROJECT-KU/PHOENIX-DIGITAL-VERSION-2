@@ -91,23 +91,24 @@ Dashboard || lemon
                 </button>
             </div>
         </header>
-
-        {{-- ================== RINGKASAN ================== --}}
+        {{-- ================== RINGKASAN SAYA ==================
+             Kepala bagian dan keempat kartunya duduk pada rak 12 kolom yang
+             sama, jadi tepinya segaris — lihat catatan .dsb-rak. --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala" style="--c: #7c3aed">
-                <span class="dsb-kepala-ikon"><i class="bi bi-wallet2"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Ringkasan Saya</span>
-                    <h2 class="dsb-judul">Gaji &amp; Pinjaman</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip"><i class="bi bi-shield-lock"></i>Hanya data Anda</span>
-                        <span class="dsb-chip is-samar">Tidak ada angka rekan kerja di layar ini</span>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #7c3aed">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-wallet2"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Ringkasan Saya</span>
+                        <h2 class="dsb-judul">Gaji &amp; Pinjaman</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-shield-lock"></i>Hanya data Anda</span>
+                            <span class="dsb-chip is-samar">Tidak ada angka rekan kerja di layar ini</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="dsb-deret is-dua mb-3">
-                <article class="dsb-stat is-utama" style="--c: #7c3aed">
+                <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
                     <span class="dsb-ikon"><i class="bi bi-cash-coin"></i></span>
                     <p class="dsb-stat-label">Gaji Terakhir</p>
                     <p class="dsb-stat-nilai">{{ $gajiTerakhir ? $gajiTerakhir->total_formatted : 'Rp 0' }}</p>
@@ -117,37 +118,34 @@ Dashboard || lemon
                     </p>
                 </article>
 
-                <article class="dsb-stat is-utama" style="--c: #0284c7">
+                <article class="dsb-stat is-utama k-6" style="--c: #0284c7">
                     <span class="dsb-ikon"><i class="bi bi-safe2-fill"></i></span>
                     <p class="dsb-stat-label">Total Gaji {{ $tahunIni }}</p>
                     <p class="dsb-stat-nilai">{{ $rp($totalGajiTahunIni) }}</p>
                     <p class="dsb-stat-ket"><i class="bi bi-graph-up-arrow"></i><span>Akumulasi sepanjang tahun ini</span></p>
                 </article>
-            </div>
 
-            <div class="dsb-deret is-dua">
-                <article class="dsb-stat" style="--c: #16a34a">
+                <article class="dsb-stat k-6" style="--c: #16a34a">
                     <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
                     <p class="dsb-stat-label">Sisa Pinjaman</p>
                     <p class="dsb-stat-nilai {{ $sisaPinjaman > 0 ? '' : 'is-hijau' }}">{{ $rp($sisaPinjaman) }}</p>
-                    <p class="dsb-stat-ket">
-                        <i class="bi bi-arrow-left-right"></i>
-                        <span>Dikembalikan {{ $rp($totalPengembalian) }} dari {{ $rp($totalPinjaman) }}</span>
-                    </p>
                     @if ($totalPinjaman > 0)
                         {{-- Satu garis kemajuan lebih cepat dibaca daripada dua
                              nominal yang harus dibandingkan sendiri di kepala. --}}
-                        <span style="display:block; height:6px; border-radius:999px; background:#eef2f7; margin-top:12px; overflow:hidden;">
-                            <span style="display:block; height:100%; width:{{ $persenKembali }}%; border-radius:999px; background:#16a34a;"></span>
+                        <span class="dsb-kemajuan" title="{{ $persenKembali }}% terbayar">
+                            <span style="width: {{ $persenKembali }}%"></span>
                         </span>
-                        <span class="dsb-stat-ket" style="margin-top:6px;">{{ $persenKembali }}% terbayar</span>
                     @endif
+                    <p class="dsb-stat-ket">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>{{ $persenKembali }}% terbayar — {{ $rp($totalPengembalian) }} dari {{ $rp($totalPinjaman) }}</span>
+                    </p>
                 </article>
 
-                <article class="dsb-stat" style="--c: {{ $rupaPinjaman[2] }}">
+                <article class="dsb-stat k-6" style="--c: {{ $rupaPinjaman[2] }}">
                     <span class="dsb-ikon"><i class="bi {{ $rupaPinjaman[3] }}"></i></span>
                     <p class="dsb-stat-label">Status Pinjaman</p>
-                    <p class="dsb-stat-nilai" style="font-size:1.35rem;">{{ $rupaPinjaman[1] }}</p>
+                    <p class="dsb-stat-nilai" style="font-size: 1.35rem;">{{ $rupaPinjaman[1] }}</p>
                     <p class="dsb-stat-ket">
                         <i class="bi bi-receipt"></i>
                         <span>{{ $sisaPinjaman > 0 ? 'Masih ada sisa yang berjalan' : 'Tidak ada tanggungan berjalan' }}</span>
@@ -156,114 +154,120 @@ Dashboard || lemon
             </div>
         </section>
 
-        {{-- ================== AGENDA ================== --}}
-        @include('livewire.pages.admin.partials.agenda-saya')
-
-        {{-- ================== GRAFIK + RIWAYAT + INFO ================== --}}
+        {{-- ================== AGENDA & DATA DIRI ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala" style="--c: #16a34a">
-                <span class="dsb-kepala-ikon"><i class="bi bi-bar-chart-line-fill"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Rincian</span>
-                    <h2 class="dsb-judul">Riwayat &amp; Data Diri</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip"><i class="bi bi-calendar-range"></i>Tahun {{ $tahunIni }}</span>
-                        <span class="dsb-chip is-samar">Perjalanan gaji beserta catatan pinjaman</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-12 col-xl-7">
-                    {{-- Tanpa h-100: grafiknya setinggi 360px, dan kartu yang
-                         direntangkan setinggi kolom kanan menyisakan petak putih
-                         kosong di bawah grafik. --}}
-                    <div class="dsb-kartu">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-graph-up"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">Grafik Gaji Saya</h3>
-                                    <span class="dsb-kartu-sub">Gaji diterima vs pengembalian pinjaman</span>
-                                </div>
-                            </div>
-                            <span class="dsb-lencana is-hijau">{{ $tahunIni }}</span>
-                        </div>
-                        <div class="dsb-kartu-isi">
-                            <div id="karyawan-gaji-chart"></div>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #d97706">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-calendar3"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Harian</span>
+                        <h2 class="dsb-judul">Agenda &amp; Data Diri</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip is-samar">Kegiatan yang menunggu Anda, dan data yang dipakai membayar gaji</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="col-12 col-xl-5">
-                    <div class="dsb-kartu mb-3">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-arrow-left-right"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">Riwayat Pinjaman</h3>
-                                    <span class="dsb-kartu-sub">Enam catatan terakhir</span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="k-7">@include('livewire.pages.admin.partials.agenda-saya')</div>
 
-                        <div class="dsb-daftar">
-                            @forelse ($riwayat as $r)
-                                @php $masuk = $r['arah'] === 'masuk'; @endphp
-                                <div class="dsb-baris">
-                                    <span class="dsb-avatar" style="--c: {{ $masuk ? '#16a34a' : '#e11d48' }}">
-                                        <i class="bi {{ $masuk ? 'bi-arrow-down-left' : 'bi-arrow-up-right' }}"></i>
-                                    </span>
-                                    <span class="dsb-baris-isi">
-                                        <span class="dsb-baris-judul">{{ $r['jenis'] }}</span>
-                                        <span class="dsb-baris-meta">{{ $r['tanggal'] }}</span>
-                                    </span>
-                                    <span class="dsb-baris-kanan">
-                                        <span class="dsb-baris-nilai" style="color: {{ $masuk ? '#15803d' : '#dc2626' }};">
-                                            {{ $masuk ? '+' : '−' }}{{ $r['nominal'] }}
-                                        </span>
-                                    </span>
-                                </div>
-                            @empty
-                                <div class="dsb-kosong">
-                                    <span class="dsb-kosong-ikon"><i class="bi bi-check2-circle"></i></span>
-                                    <p class="dsb-kosong-judul">Tidak ada pinjaman aktif</p>
-                                    <p class="dsb-kosong-ket">Catatan peminjaman &amp; pengembalian akan tampil di sini.</p>
-                                </div>
-                            @endforelse
+                <div class="dsb-kartu k-5">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-person-vcard-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Info Saya</h3>
+                                <span class="dsb-kartu-sub">Dipakai untuk pembayaran gaji</span>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="dsb-kartu">
-                        <div class="dsb-kartu-kepala">
-                            <div class="dsb-kartu-kepala-kiri">
-                                <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-person-vcard-fill"></i></span>
-                                <div>
-                                    <h3 class="dsb-kartu-judul">Info Saya</h3>
-                                    <span class="dsb-kartu-sub">Dipakai untuk pembayaran gaji</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dsb-kartu-isi">
+                    <div class="dsb-kartu-isi is-tegak">
+                        <div class="dsb-data">
                             @foreach ([
                                 ['bi-envelope', 'Email', $user->email],
                                 ['bi-briefcase', 'Jabatan', $detail->jabatan ?? '-'],
                                 ['bi-bank', 'Bank', $detail && $detail->nama_bank ? $detail->nama_bank . ' — ' . $detail->nomor_rekening : '-'],
                             ] as [$ikon, $label, $nilai])
-                                <div class="d-flex align-items-center justify-content-between gap-3 py-2"
-                                    style="border-bottom: 1px solid #f5f7fa;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="color:#6b7280; font-size:.82rem;">
-                                        <i class="bi {{ $ikon }}"></i>{{ $label }}
-                                    </span>
-                                    <span style="font-weight:700; color:#1c1f26; font-size:.84rem; text-align:right; word-break:break-word;">{{ $nilai }}</span>
+                                <div class="dsb-data-baris">
+                                    <span class="dsb-data-label"><i class="bi {{ $ikon }}"></i>{{ $label }}</span>
+                                    <span class="dsb-data-nilai">{{ $nilai }}</span>
                                 </div>
                             @endforeach
-
-                            <a href="{{ route('admin.account.profile') }}" wire:navigate
-                                class="dsb-tombol is-lembut w-100 mt-3">
-                                <i class="bi bi-gear"></i><span>Pengaturan Profil</span>
-                            </a>
                         </div>
+
+                        <a href="{{ route('admin.account.profile') }}" wire:navigate class="dsb-tombol is-lembut w-100 mt-3">
+                            <i class="bi bi-gear"></i><span>Pengaturan Profil</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- ================== RIWAYAT ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-bar-chart-line-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Rincian</span>
+                        <h2 class="dsb-judul">Riwayat Gaji &amp; Pinjaman</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>Tahun {{ $tahunIni }}</span>
+                            <span class="dsb-chip is-samar">Perjalanan gaji beserta catatan pinjaman</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-8">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-graph-up"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Grafik Gaji Saya</h3>
+                                <span class="dsb-kartu-sub">Gaji diterima vs pengembalian pinjaman</span>
+                            </div>
+                        </div>
+                        <span class="dsb-lencana is-hijau">{{ $tahunIni }}</span>
+                    </div>
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-grafik"><div id="karyawan-gaji-chart"></div></div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-4">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-arrow-left-right"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Riwayat Pinjaman</h3>
+                                <span class="dsb-kartu-sub">Enam catatan terakhir</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dsb-daftar">
+                        @forelse ($riwayat as $r)
+                            @php $masuk = $r['arah'] === 'masuk'; @endphp
+                            <div class="dsb-baris">
+                                <span class="dsb-avatar" style="--c: {{ $masuk ? '#16a34a' : '#e11d48' }}">
+                                    <i class="bi {{ $masuk ? 'bi-arrow-down-left' : 'bi-arrow-up-right' }}"></i>
+                                </span>
+                                <span class="dsb-baris-isi">
+                                    <span class="dsb-baris-judul">{{ $r['jenis'] }}</span>
+                                    <span class="dsb-baris-meta">{{ $r['tanggal'] }}</span>
+                                </span>
+                                <span class="dsb-baris-kanan">
+                                    <span class="dsb-baris-nilai" style="color: {{ $masuk ? '#15803d' : '#dc2626' }};">
+                                        {{ $masuk ? '+' : '−' }}{{ $r['nominal'] }}
+                                    </span>
+                                </span>
+                            </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-check2-circle"></i></span>
+                                <p class="dsb-kosong-judul">Tidak ada pinjaman aktif</p>
+                                <p class="dsb-kosong-ket">Catatan peminjaman &amp; pengembalian akan tampil di sini.</p>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>

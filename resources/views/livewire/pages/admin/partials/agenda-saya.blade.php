@@ -3,7 +3,10 @@
      diundang rapat, dan menyalin markupnya berarti dua tempat yang harus
      diubah setiap kali rincian kegiatan bertambah. --}}
 @if (isset($agendaSaya))
-<div class="card border-0 shadow-sm rounded-4 mb-4">
+{{-- Memakai kerangka kartu dasbor (dsb-kartu): sebelumnya .card bawaan
+     template, sehingga radius, bingkai, dan bayangannya berbeda dari kartu di
+     sekelilingnya — terlihat seperti tempelan dari halaman lain. --}}
+<div class="dsb-kartu h-100">
     <style>
         /* Inline: public/build tidak ikut terdeploy ke server. */
         .ag-baris {
@@ -36,26 +39,23 @@
         .ag-kosong i.bi { display: block; font-size: 1.6rem; margin-bottom: 9px; color: #d7dee8; line-height: 1; }
     </style>
 
-    <div class="card-body p-4">
-        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-            <div class="d-flex align-items-center gap-2">
-                <span class="stat-icon-wrapper"
-                    style="width: 38px; height: 38px; font-size: 1rem; border-radius: 11px; background: linear-gradient(135deg,#a78bfa,#6d28d9); color:#fff;">
-                    <i class="bi bi-calendar3"></i>
-                </span>
-                <div>
-                    <h6 class="fw-bold mb-0 text-dark">Agenda Saya</h6>
-                    <span class="text-muted" style="font-size: 0.85rem;">Kegiatan yang Anda ikuti</span>
-                </div>
+    <div class="dsb-kartu-kepala">
+        <div class="dsb-kartu-kepala-kiri">
+            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-calendar3"></i></span>
+            <div>
+                <h3 class="dsb-kartu-judul">Agenda Saya</h3>
+                <span class="dsb-kartu-sub">Kegiatan yang Anda ikuti</span>
             </div>
-
-            @if (\Illuminate\Support\Facades\Route::has('admin.kegiatan.index') && auth()->user()->hasPermission('view_kegiatan'))
-            <a href="{{ route('admin.kegiatan.index') }}" wire:navigate
-                class="text-decoration-none fw-semibold" style="font-size: .82rem; color:#6d28d9;">
-                Lihat kalender
-            </a>
-            @endif
         </div>
+
+        @if (\Illuminate\Support\Facades\Route::has('admin.kegiatan.index') && auth()->user()->hasPermission('view_kegiatan'))
+        <a href="{{ route('admin.kegiatan.index') }}" wire:navigate class="dsb-tautan" style="--c: #7c3aed">
+            <span>Kalender</span><i class="bi bi-arrow-right"></i>
+        </a>
+        @endif
+    </div>
+
+    <div class="dsb-kartu-isi">
 
         @forelse ($agendaSaya as $k)
         <div class="ag-baris {{ $k->mulai->isToday() ? 'ag-hariini' : '' }}"

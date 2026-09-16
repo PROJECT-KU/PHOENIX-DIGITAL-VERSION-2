@@ -98,28 +98,27 @@ Dashboard || lemon
         {{-- Bot Turnitin: kabar bot + kartu yang butuh tangan admin (kuota habis, gagal) --}}
         <livewire:pages.admin.bot-turnitin.panel-bot-turnitin />
 
-        {{-- ================== RINGKASAN KEUANGAN ================== --}}
+        {{-- ================== RINGKASAN KEUANGAN ==================
+             Satu rak 12 kolom memuat kepala bagian DAN kelima kartunya, jadi
+             tepi kiri judul, kartu besar, dan kartu kecil benar-benar segaris. --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala" style="--c: #16a34a">
-                <span class="dsb-kepala-ikon"><i class="bi bi-graph-up-arrow"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Ringkasan</span>
-                    <h2 class="dsb-judul">Uang Masuk &amp; Keluar</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
-                        <span class="dsb-chip is-samar">Periode dihitung tanggal 21 sampai 20</span>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-graph-up-arrow"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Ringkasan</span>
+                        <h2 class="dsb-judul">Uang Masuk &amp; Keluar</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                            <span class="dsb-chip is-samar">Periode dihitung tanggal 21 sampai 20</span>
+                        </div>
                     </div>
+                    <a href="{{ route('admin.cashflow.index') }}" wire:navigate class="dsb-tautan">
+                        <span>Buka Cash Flow</span><i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <a href="{{ route('admin.cashflow.index') }}" wire:navigate class="dsb-tautan">
-                    <span>Buka Cash Flow</span><i class="bi bi-arrow-right"></i>
-                </a>
-            </div>
 
-            {{-- Dua kartu utama di atas, tiga pendukung di bawah: susunan yang
-                 sama dipakai layar Cash Flow, jadi mata admin tidak perlu
-                 belajar dua tata letak untuk angka yang sama. --}}
-            <div class="dsb-deret is-dua mb-3">
-                <article class="dsb-stat is-utama" style="--c: #16a34a">
+                <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
                     <span class="dsb-ikon"><i class="bi bi-calendar-day-fill"></i></span>
                     <p class="dsb-stat-label">Pendapatan Hari Ini</p>
                     <p class="dsb-stat-nilai is-hijau">Rp {{ $pendapatanHariIni }}</p>
@@ -130,7 +129,7 @@ Dashboard || lemon
                     <x-banding-harian :data="$bandingPendapatan" />
                 </article>
 
-                <article class="dsb-stat is-utama" style="--c: {{ $saldoIsNegatif ? '#dc2626' : '#7c3aed' }}">
+                <article class="dsb-stat is-utama k-6" style="--c: {{ $saldoIsNegatif ? '#dc2626' : '#7c3aed' }}">
                     <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
                     <p class="dsb-stat-label">Saldo Bersih</p>
                     <p class="dsb-stat-nilai {{ $saldoIsNegatif ? 'is-merah' : '' }}">Rp {{ $saldoBersih }}</p>
@@ -139,75 +138,111 @@ Dashboard || lemon
                         <span>Pemasukan − Pengeluaran • {{ $periodeLabel }}</span>
                     </p>
                 </article>
-            </div>
 
-            <div class="dsb-deret is-tiga">
-                <article class="dsb-stat" style="--c: #059669">
+                <article class="dsb-stat k-4" style="--c: #059669">
                     <span class="dsb-ikon"><i class="bi bi-graph-up-arrow"></i></span>
                     <p class="dsb-stat-label">Total Pemasukan</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalPemasukan }}</p>
                     <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Cashflow • {{ $periodeLabel }}</span></p>
                 </article>
 
-                <article class="dsb-stat" style="--c: #e11d48">
+                <article class="dsb-stat k-4" style="--c: #e11d48">
                     <span class="dsb-ikon"><i class="bi bi-graph-down-arrow"></i></span>
                     <p class="dsb-stat-label">Total Pengeluaran</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalPengeluaran }}</p>
                     <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Cashflow • {{ $periodeLabel }}</span></p>
                 </article>
 
-                <article class="dsb-stat" style="--c: #0284c7">
+                <article class="dsb-stat k-4" style="--c: #0284c7">
                     <span class="dsb-ikon"><i class="bi bi-upc-scan"></i></span>
                     <p class="dsb-stat-label">Total Kode Unik</p>
                     <p class="dsb-stat-nilai">Rp {{ $totalKodeUnik }}</p>
-                    <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>Periode {{ $periodeLabel }}</span></p>
                     {{-- Kode unik HARI INI menumpang di kartu ini, bukan jadi kartu
                          keempat: susunan 2 atas + 3 bawah tetap utuh. --}}
                     <span class="dsb-pil"><i class="bi bi-calendar-day"></i>Hari ini: <b>Rp {{ $kodeUnikHariIni }}</b></span>
                     <x-banding-harian :data="$bandingKodeUnik" />
+                    <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>Periode {{ $periodeLabel }}</span></p>
                 </article>
             </div>
         </section>
 
-        {{-- ================== GRAFIK KEUANGAN ================== --}}
+        {{-- ================== GRAFIK & CARA BAYAR ==================
+             Grafik batang dan diagram donat ditaruh BERDAMPINGAN (8 + 4 kolom).
+             Keduanya menjawab pertanyaan yang sama — "uangnya dari mana dan ke
+             mana" — dan sebelumnya terpisah oleh dua bagian lain, sehingga
+             untuk membandingkannya admin harus menggulung bolak-balik. --}}
         <section class="dsb-bagian">
-            <div class="dsb-kartu">
-                <div class="dsb-kartu-kepala">
-                    <div class="dsb-kartu-kepala-kiri">
-                        <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-bar-chart-line-fill"></i></span>
-                        <div>
-                            <h3 class="dsb-kartu-judul">Grafik Keuangan</h3>
-                            <span class="dsb-kartu-sub">Pemasukan vs pengeluaran sepanjang {{ now()->year }}</span>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #0284c7">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-bar-chart-line-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Analisis</span>
+                        <h2 class="dsb-judul">Arus Tahun Ini &amp; Cara Bayar</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-calendar3"></i>{{ now()->year }}</span>
+                            <span class="dsb-chip is-samar">Pemasukan vs pengeluaran, dan sebaran metode pembayaran</span>
                         </div>
                     </div>
-                    <span class="dsb-lencana is-hijau">{{ now()->year }}</span>
                 </div>
-                <div class="dsb-kartu-isi">
-                    <div id="finance-chart"></div>
+
+                <div class="dsb-kartu k-8">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-bar-chart-line-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Grafik Keuangan</h3>
+                                <span class="dsb-kartu-sub">Pemasukan vs pengeluaran sepanjang {{ now()->year }}</span>
+                            </div>
+                        </div>
+                        <span class="dsb-lencana is-hijau">{{ now()->year }}</span>
+                    </div>
+                    <div class="dsb-kartu-isi">
+                        <div class="dsb-grafik"><div id="finance-chart"></div></div>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-4">
+                    <div class="dsb-kartu-kepala">
+                        <div class="dsb-kartu-kepala-kiri">
+                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-credit-card-2-front-fill"></i></span>
+                            <div>
+                                <h3 class="dsb-kartu-judul">Metode Pembayaran</h3>
+                                <span class="dsb-kartu-sub">Sebaran pesanan per metode</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dsb-kartu-isi">
+                        @if (empty($counts))
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-credit-card"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada data</p>
+                                <p class="dsb-kosong-ket">Belum ada pesanan dengan metode pembayaran.</p>
+                            </div>
+                        @else
+                            <div class="dsb-grafik is-donat"><div id="chart-visitors-profile"></div></div>
+                        @endif
+                    </div>
                 </div>
             </div>
         </section>
 
-        {{-- ================== AGENDA KEGIATAN SAYA ================== --}}
-        @include('livewire.pages.admin.partials.agenda-saya')
-
         {{-- ================== PESANAN & PELANGGAN TERBARU ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala" style="--c: #7c3aed">
-                <span class="dsb-kepala-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Terbaru</span>
-                    <h2 class="dsb-judul">Pesanan &amp; Pelanggan</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip"><i class="bi bi-bag-check"></i>{{ $recentOrders->count() }} pesanan terakhir</span>
-                        <span class="dsb-chip is-samar">Klik barisnya untuk membuka</span>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #7c3aed">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Terbaru</span>
+                        <h2 class="dsb-judul">Pesanan &amp; Pelanggan</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-bag-check"></i>{{ $recentOrders->count() }} pesanan terakhir</span>
+                            <span class="dsb-chip is-samar">Klik barisnya untuk membuka</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="dsb-deret is-dua is-daftar">
                 {{-- Pesanan terbaru --}}
-                <div class="dsb-kartu">
+                <div class="dsb-kartu k-6">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-bag-check-fill"></i></span>
@@ -253,7 +288,7 @@ Dashboard || lemon
                 </div>
 
                 {{-- Pelanggan terbaru --}}
-                <div class="dsb-kartu">
+                <div class="dsb-kartu k-6">
                     <div class="dsb-kartu-kepala">
                         <div class="dsb-kartu-kepala-kiri">
                             <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-people-fill"></i></span>
@@ -298,46 +333,27 @@ Dashboard || lemon
             </div>
         </section>
 
-        {{-- ================== PENGGUNA DARING & METODE BAYAR ================== --}}
+        {{-- ================== AGENDA & TIM ==================
+             Dua kartu yang sama-sama tentang ORANG, bukan uang: kegiatan yang
+             menunggu dan siapa yang sedang daring. --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala" style="--c: #0284c7">
-                <span class="dsb-kepala-ikon"><i class="bi bi-activity"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Pantauan</span>
-                    <h2 class="dsb-judul">Tim &amp; Cara Bayar</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip is-samar">Siapa yang sedang daring, dan lewat mana pembeli membayar</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dsb-deret is-dua is-daftar">
-                <div>@livewire('pages.admin.online-users')</div>
-
-                <div class="dsb-kartu">
-                    <div class="dsb-kartu-kepala">
-                        <div class="dsb-kartu-kepala-kiri">
-                            <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-credit-card-2-front-fill"></i></span>
-                            <div>
-                                <h3 class="dsb-kartu-judul">Metode Pembayaran</h3>
-                                <span class="dsb-kartu-sub">Sebaran pesanan per metode</span>
-                            </div>
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #d97706">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-people-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Harian</span>
+                        <h2 class="dsb-judul">Agenda &amp; Tim</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip is-samar">Kegiatan yang menunggu Anda, dan siapa yang sedang daring</span>
                         </div>
                     </div>
-                    <div class="dsb-kartu-isi">
-                        @if (empty($counts))
-                            <div class="dsb-kosong">
-                                <span class="dsb-kosong-ikon"><i class="bi bi-credit-card"></i></span>
-                                <p class="dsb-kosong-judul">Belum ada data</p>
-                                <p class="dsb-kosong-ket">Belum ada pesanan dengan metode pembayaran.</p>
-                            </div>
-                        @else
-                            <div id="chart-visitors-profile"></div>
-                        @endif
-                    </div>
                 </div>
+
+                <div class="k-7">@include('livewire.pages.admin.partials.agenda-saya')</div>
+                <div class="k-5">@livewire('pages.admin.online-users')</div>
             </div>
         </section>
+
     </div>
 </div>
 

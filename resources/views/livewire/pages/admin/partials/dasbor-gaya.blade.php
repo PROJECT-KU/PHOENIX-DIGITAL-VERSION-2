@@ -30,6 +30,47 @@
 
     .dsb-bagian { margin-bottom: clamp(20px, 3vw, 32px); }
 
+    /* ===== Rak: satu kisi 12 kolom untuk seluruh dasbor ==========
+       Semua yang tampil di halaman ini — sapaan, kepala bagian, kartu angka,
+       grafik, daftar — duduk pada kisi yang SAMA. Sebelumnya tiap kelompok
+       punya kisinya sendiri (dua kolom di sini, tiga di sana, Bootstrap row di
+       tempat lain), sehingga tepi kartu dari kelompok berbeda tidak pernah
+       segaris. Ketidaksegarisan itulah yang terbaca sebagai "kurang rapi",
+       bukan warna atau bentuk kartunya. */
+    .dsb-rak {
+        display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: clamp(12px, 1.2vw, 16px);
+        align-items: stretch;
+    }
+    .dsb-rak > * { grid-column: span 12; min-width: 0; }
+    /* Jarak kepala ke kartunya diatur oleh gap raknya sendiri; margin bawaan
+       kepala akan menambahinya sehingga barisnya renggang sendirian. */
+    .dsb-rak > .dsb-kepala { margin-bottom: 0; }
+    .k-3 { grid-column: span 3; }
+    .k-4 { grid-column: span 4; }
+    .k-5 { grid-column: span 5; }
+    .k-6 { grid-column: span 6; }
+    .k-7 { grid-column: span 7; }
+    .k-8 { grid-column: span 8; }
+
+    /* Tablet & laptop sempit.
+       Kartu ANGKA masih muat berdua (span 6), tetapi kartu yang berisi daftar,
+       grafik, atau agenda tidak: pada lebar setengah layar tablet, nama
+       pelanggan, waktu, nominal, dan status berdesakan sampai terpatah di
+       tempat yang janggal. Yang lebar dari 5 kolom karena itu langsung
+       melebar penuh. */
+    @media (max-width: 1199.98px) {
+        .k-3, .k-4 { grid-column: span 6; }
+        .k-5, .k-6, .k-7, .k-8 { grid-column: span 12; }
+        /* Kartu terakhir tidak ditinggalkan sendirian setengah lebar dengan
+           lubang kosong di sebelahnya. */
+        .dsb-rak > .k-3:last-child,
+        .dsb-rak > .k-4:last-child { grid-column: span 12; }
+    }
+    @media (max-width: 767.98px) {
+        .k-3, .k-4, .k-5, .k-6, .k-7, .k-8 { grid-column: span 12; }
+    }
+
     /* Kepala bagian.
        Versi pertamanya hanya tumpukan teks rata kiri: label kecil, judul, lalu
        satu kalimat panjang berisi periode — terbaca sebagai paragraf, bukan
@@ -130,9 +171,20 @@
     .dsb-kartu {
         position: relative; overflow: hidden;
         background: #fff; border: 1px solid var(--dsb-tepi); border-radius: 18px;
+        /* Kolom flex: kartu yang duduk berdampingan sama tinggi, dan isinya
+           boleh memanjang mengisi tinggi itu — bukan menumpuk di atas lalu
+           meninggalkan petak kosong di bawah. */
+        display: flex; flex-direction: column;
         transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
     }
+    .dsb-kartu > .dsb-daftar,
+    .dsb-kartu > .dsb-kartu-isi { flex: 1 1 auto; }
     .dsb-kartu-isi { padding: clamp(16px, 2.2vw, 22px); }
+    /* Isi yang berdiri tegak: tombol/penutupnya menempel ke DASAR kartu, jadi
+       kartu yang direntangkan setinggi tetangganya tidak menyisakan petak
+       putih di bawah tombolnya. */
+    .dsb-kartu-isi.is-tegak { display: flex; flex-direction: column; }
+    .dsb-kartu-isi.is-tegak > :last-child { margin-top: auto; }
     @media (hover: hover) and (pointer: fine) {
         .dsb-kartu:hover { border-color: #dfe5ee; box-shadow: 0 10px 24px rgba(15, 23, 42, .05); }
     }
@@ -241,11 +293,11 @@
        isinya berkumpul di tepi kiri dan menyisakan petak putih selebar telapak
        tangan di kanan tiap kartu. */
     .dsb-stat {
-        position: relative; overflow: hidden;
+        position: relative; overflow: hidden; height: 100%;
         background: #fff; border: 1px solid var(--dsb-tepi); border-radius: 16px;
         padding: 20px;
         display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px;
-        align-content: start;
+        grid-template-rows: auto auto 1fr; align-content: start;
         transition: border-color .22s ease, transform .22s ease, box-shadow .22s ease;
     }
     /* Ikon menempati kolom pertama sepanjang kartu; sisanya mengisi kolom kedua. */
@@ -297,10 +349,16 @@
     }
     .dsb-stat-nilai.is-hijau { color: #15803d; }
     .dsb-stat-nilai.is-merah { color: #dc2626; }
+    /* Keterangan didorong ke DASAR kartu (margin-top: auto). Dalam satu baris,
+       kartu yang isinya lebih pendek tetap menaruh keterangannya di garis yang
+       sama dengan tetangganya — mata membaca deretan itu sebagai satu baris,
+       bukan sebagai kartu-kartu yang kebetulan berjajar. */
     .dsb-stat-ket {
         display: flex; align-items: center; gap: 6px;
-        color: var(--dsb-redup); font-size: .76rem; line-height: 1.5; margin: 8px 0 0;
+        color: var(--dsb-redup); font-size: .76rem; line-height: 1.5;
+        margin: 10px 0 0; align-self: start;
     }
+    .dsb-stat > .dsb-stat-ket:last-child { margin-top: auto; padding-top: 10px; }
     .dsb-stat-ket i.bi { flex-shrink: 0; }
     .dsb-stat.is-utama { padding: 22px; column-gap: 18px; }
     .dsb-stat.is-utama .dsb-stat-nilai { font-size: clamp(1.5rem, 3.2vw, 2rem); }
@@ -318,7 +376,8 @@
     /* ===== Kepala di dalam kartu ================================ */
     .dsb-kartu-kepala {
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
-        padding: 18px clamp(16px, 2.2vw, 22px); border-bottom: 1px solid #f1f5f9;
+        padding: 16px clamp(16px, 2.2vw, 20px); border-bottom: 1px solid #f1f5f9;
+        min-height: 68px; flex: 0 0 auto;
     }
     .dsb-kartu-kepala-kiri { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .dsb-kartu-judul {
@@ -383,6 +442,43 @@
     .dsb-lencana.is-ungu { background: #ede9fe; color: #6d28d9; }
     .dsb-lencana.is-merah { background: #fee2e2; color: #b91c1c; }
     .dsb-lencana.is-abu { background: #f1f5f9; color: #475569; }
+
+    /* Garis kemajuan (mis. berapa bagian pinjaman yang sudah dikembalikan).
+       Satu garis lebih cepat dibaca daripada dua nominal yang harus
+       dibandingkan sendiri di kepala. */
+    .dsb-kemajuan {
+        display: block; height: 6px; border-radius: 999px; overflow: hidden;
+        background: #eef2f7; margin-top: 12px;
+    }
+    .dsb-kemajuan > span { display: block; height: 100%; border-radius: 999px; background: var(--c); }
+
+    /* Deret data "label — nilai" (Info Saya). Dibuat kisi dua kolom, bukan
+       flex space-between: pada flex, nilai yang panjang (alamat surel) mendesak
+       labelnya sampai pecah baris, dan tiap baris jadi punya titik mula yang
+       berbeda. */
+    .dsb-data { display: flex; flex-direction: column; }
+    .dsb-data-baris {
+        display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+        gap: 12px; align-items: baseline;
+        padding: 9px 0; border-bottom: 1px solid #f5f7fa;
+    }
+    .dsb-data-baris:last-child { border-bottom: 0; }
+    .dsb-data-label {
+        display: inline-flex; align-items: center; gap: 7px;
+        color: var(--dsb-redup); font-size: .82rem; white-space: nowrap;
+    }
+    .dsb-data-nilai {
+        font-weight: 700; color: var(--dsb-tinta); font-size: .84rem;
+        text-align: right; overflow-wrap: anywhere;
+    }
+
+    /* Wadah grafik. Tingginya dipatok supaya kartu grafik dan kartu di
+       sebelahnya berakhir di garis yang sama — grafik Apex menghitung
+       tingginya sendiri, dan tanpa patokan ini kedua kartu selalu beda tinggi
+       sampai grafiknya selesai digambar. */
+    .dsb-grafik { min-height: 320px; }
+    .dsb-grafik.is-donat { min-height: 300px; display: flex; align-items: center; justify-content: center; }
+    .dsb-grafik > div { width: 100%; }
 
     /* ===== Keadaan kosong ======================================= */
     .dsb-kosong { text-align: center; padding: 34px 18px; }
