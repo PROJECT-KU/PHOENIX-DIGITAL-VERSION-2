@@ -130,27 +130,35 @@
            ke bawah dan terlewat — persis seperti notifikasi lonceng yang
            tenggelam di antara notifikasi lain. */
         .bt-tab {
+            /* Warna tiap tab = warna lencana baris di dalamnya: merah untuk
+               yang menuntut tindakan, biru untuk yang sedang berjalan, hijau
+               untuk yang sudah selesai. Jadi warna yang dilihat admin di tab
+               adalah warna yang sama yang menyambutnya setelah diklik. */
+            --t: #64748b;
             display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
-            background: #f8fafc; border: 1px solid #e9edf3; color: #64748b;
+            background: color-mix(in srgb, var(--t) 10%, #fff);
+            border: 1px solid color-mix(in srgb, var(--t) 22%, #fff);
+            color: color-mix(in srgb, var(--t) 78%, #000);
             font-size: .74rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-            transition: background .18s ease, border-color .18s ease, color .18s ease;
+            transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
         }
-        .bt-tab b { color: #1c1f26; font-weight: 800; }
+        .bt-tab b { color: color-mix(in srgb, var(--t) 90%, #000); font-weight: 800; }
         .bt-tab i.bi { line-height: 1; }
         @media (hover: hover) and (pointer: fine) {
-            .bt-tab:hover { border-color: #cbd5e1; color: #334155; }
+            .bt-tab:hover { border-color: color-mix(in srgb, var(--t) 45%, #fff); }
         }
-        /* Tab terpilih: dibalik jadi pekat, bukan sekadar berubah warna tulisan
-           — pada deretan pil abu yang seragam, perbedaan warna tulisan saja
-           tidak cukup untuk menandai mana yang sedang dibuka. */
-        .bt-tab.aktif { background: #1c1f26; border-color: #1c1f26; color: #fff; }
+        /* Tab terpilih TERISI PENUH warnanya, bukan sekadar lebih pekat: pada
+           deretan pil berwarna pastel, beda kepekatan saja tidak cukup untuk
+           menandai mana yang sedang dibuka. */
+        .bt-tab.aktif {
+            background: var(--t); border-color: transparent; color: #fff;
+            box-shadow: 0 6px 14px color-mix(in srgb, var(--t) 30%, transparent);
+        }
         .bt-tab.aktif b { color: #fff; }
-        /* Tab yang isinya menuntut tindakan. Merah walau tidak sedang dibuka —
-           itulah gunanya: terlihat tanpa harus diklik dulu. */
-        .bt-tab.perlu { background: #fee2e2; border-color: #fecaca; color: #b91c1c; }
-        .bt-tab.perlu b { color: #7f1d1d; }
-        .bt-tab.perlu.aktif { background: #b91c1c; border-color: #b91c1c; color: #fff; }
-        .bt-tab.perlu.aktif b { color: #fff; }
+
+        .bt-tab.perlu { --t: #dc2626; }   /* menuntut tindakan admin */
+        .bt-tab.jalan { --t: #2563eb; }   /* sedang dikerjakan bot */
+        .bt-tab.beres { --t: #16a34a; }   /* tuntas hari ini */
 
         .bt-pantau-isi { padding: 14px 20px 18px; display: grid; gap: 9px; }
         .bt-pantau .bt-baris { border-color: #eef1f6; }
@@ -318,11 +326,11 @@
                             </span>
                         @endif
 
-                        <button type="button" class="bt-tab {{ $tab === 'berjalan' ? 'aktif' : '' }}" wire:click="pilihTab('berjalan')">
+                        <button type="button" class="bt-tab jalan {{ $tab === 'berjalan' ? 'aktif' : '' }}" wire:click="pilihTab('berjalan')">
                             <i class="bi bi-arrow-repeat"></i> <b>{{ $berjalan->count() }}</b> berjalan
                         </button>
 
-                        <button type="button" class="bt-tab {{ $tab === 'selesai' ? 'aktif' : '' }}" wire:click="pilihTab('selesai')">
+                        <button type="button" class="bt-tab beres {{ $tab === 'selesai' ? 'aktif' : '' }}" wire:click="pilihTab('selesai')">
                             <i class="bi bi-check2-circle"></i> <b>{{ $selesaiHariIni }}</b> selesai hari ini
                         </button>
 

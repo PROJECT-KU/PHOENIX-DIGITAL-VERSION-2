@@ -202,3 +202,24 @@ it('yang gagal sebelum terkirim boleh diambil alih dan kembali ke antrean manual
     expect($up->bot_status)->toBe(BotTurnitin::MANUAL)
         ->and($up->status)->toBe('menunggu');
 });
+
+it('tiap tab memakai warnanya sendiri, dan yang terbuka terisi penuh', function () {
+    // Warna tab = warna lencana baris di dalamnya (merah menuntut tindakan,
+    // biru sedang berjalan, hijau selesai), jadi warna yang dilihat admin di
+    // tab sama dengan yang menyambutnya setelah diklik.
+    unggahanBotTerbengkalai(['bot_diperbarui_at' => now()->subDays(3)]);
+
+    Livewire::actingAs(adminBotPanel())
+        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
+        ->assertSeeHtml('class="bt-tab perlu ')
+        ->assertSeeHtml('class="bt-tab jalan aktif"')
+        ->assertSeeHtml('class="bt-tab beres ')
+        ->call('pilihTab', 'perlu')
+        ->assertSeeHtml('class="bt-tab perlu aktif"');
+
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/bot-turnitin/panel-bot-turnitin.blade.php'));
+
+    expect($gaya)->toContain('.bt-tab.perlu { --t: #dc2626; }')
+        ->and($gaya)->toContain('.bt-tab.jalan { --t: #2563eb; }')
+        ->and($gaya)->toContain('.bt-tab.beres { --t: #16a34a; }');
+});
