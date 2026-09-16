@@ -19,6 +19,24 @@
 @endpush
 
 <style>
+    /* ===== Ikon huruf vs aturan ikon SVG bawaan template =========
+       Template membawa aturan Bootstrap 5.3 ini:
+
+           .bi { width: 1em; height: 1em; ... }
+
+       Aturan itu ditujukan untuk ikon SVG (<svg class="bi">), bukan ikon HURUF
+       (<i class="bi bi-…">). Pada ikon huruf, ia MENGUNCI kotak elemennya di
+       1em milik font induk (16px) sementara glifnya sendiri digambar sebesar
+       font-size ubinnya (24px). Glif lalu meluber ke kanan dan ke bawah dari
+       kotaknya, dan karena yang dipusatkan flex adalah KOTAK itu — bukan
+       tintanya — seluruh ikon di dasbor tampak turun ~3px dan bergeser ~5px ke
+       kanan. Diukur piksel per piksel, bukan ditaksir.
+
+       Kotaknya dikembalikan mengikuti isi, sehingga yang dipusatkan flex sama
+       dengan yang dilihat mata. */
+    .dsb i.bi,
+    .bt-panel i.bi { width: auto; height: auto; }
+
     /* ===== Kerangka halaman ===================================== */
     .dsb {
         --dsb-tepi: #e9edf3;

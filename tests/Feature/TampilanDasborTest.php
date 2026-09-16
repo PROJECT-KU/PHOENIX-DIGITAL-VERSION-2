@@ -57,3 +57,18 @@ it('waktu relatif di dasbor ditulis dalam bahasa Indonesia', function () {
     expect(count($semua[0]))->toBeGreaterThan(0)
         ->and(count($berlocale[0]))->toBe(count($semua[0]));
 });
+
+it('kotak ikon huruf dilepas dari aturan ikon SVG bawaan template', function () {
+    // Template membawa `.bi { width: 1em; height: 1em }` — aturan untuk ikon
+    // SVG. Pada ikon HURUF, ia mengunci kotak elemen di 16px sementara glifnya
+    // digambar 24px, sehingga glif meluber ke kanan-bawah dan seluruh ikon di
+    // dasbor tampak meleset dari pusat ubinnya. Diukur piksel per piksel:
+    // sebelum +4,75/+3,42 px, sesudah di bawah 0,4/1,5 px.
+    //
+    // Dijaga di SUMBER karena gejalanya halus — tidak ada yang rusak, hanya
+    // "kelihatan agak turun" — dan mudah hilang saat gaya dirapikan.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($gaya)->toContain('.dsb i.bi,')
+        ->and($gaya)->toContain('.bt-panel i.bi { width: auto; height: auto; }');
+});
