@@ -1037,6 +1037,16 @@ Dashboard || lemon
 
         const rupiah = (v) => 'Rp ' + Number(v || 0).toLocaleString('id-ID');
 
+        // Berapa tanggal yang boleh dicetak dihitung dari LEBAR wadahnya, bukan
+        // dari jumlah harinya. tickAmount milik Apex hanya perkiraan: pada
+        // periode 31 hari di kolom yang sempit, labelnya tetap dicetak rapat
+        // sampai terbaca menyambung ("21 Agt23 Agt25 Agt").
+        const LEBAR_LABEL = 72; // "21 Agt" berikut jarak napas kiri-kanannya
+        const lebar = wadah.clientWidth || 640;
+        window.lebarGrafikHarian = lebar;
+        const muat = Math.max(2, Math.floor(lebar / LEBAR_LABEL));
+        const langkah = Math.max(1, Math.ceil(tanggal.length / muat));
+
         const pilihan = {
             series: [{ name: 'Pemasukan', data: nilai }],
             chart: { type: 'area', height: 320, toolbar: { show: false }, fontFamily: 'inherit' },
@@ -1046,15 +1056,30 @@ Dashboard || lemon
             dataLabels: { enabled: false },
             xaxis: {
                 categories: tanggal,
-                // Tanggal dijarangkan sendiri oleh Apex: satu periode berisi
-                // 31 hari, dan mencetak semuanya membuat sumbunya jadi pagar.
-                tickAmount: Math.min(tanggal.length, 10),
-                labels: { style: { fontWeight: 600, colors: '#94a3b8' }, rotate: 0, hideOverlappingLabels: true },
+                labels: {
+                    style: { fontWeight: 600, colors: '#94a3b8' }, rotate: 0,
+                    hideOverlappingLabels: false,
+                    // Tanggal di antaranya DIKOSONGKAN, bukan dibuang dari
+                    // kategorinya: titik datanya tetap utuh dan judul tooltip
+                    // tetap menyebut tanggal yang ditunjuk.
+                    formatter: (v, _t, opsi) => {
+                        const i = (opsi && typeof opsi.i === 'number') ? opsi.i : tanggal.indexOf(v);
+                        return i % langkah === 0 ? v : '';
+                    },
+                },
                 axisBorder: { show: false }, axisTicks: { show: false },
+                tooltip: { enabled: false },
             },
             yaxis: { labels: { style: { colors: '#94a3b8' }, formatter: (v) => v >= 1000000 ? (v / 1000000).toFixed(1) + ' jt' : (v / 1000).toFixed(0) + ' rb' } },
             grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
-            tooltip: { theme: 'light', y: { formatter: rupiah } },
+            tooltip: {
+                theme: 'light',
+                // Judulnya dibaca langsung dari daftar tanggal, bukan dari
+                // label sumbunya — label yang dikosongkan tidak boleh membuat
+                // tooltipnya kehilangan tanggal.
+                x: { formatter: (v, opsi) => (opsi && tanggal[opsi.dataPointIndex]) || v },
+                y: { formatter: rupiah },
+            },
             noData: { text: 'Belum ada pemasukan pada periode ini.' },
         };
 
@@ -1067,6 +1092,18 @@ Dashboard || lemon
     // Pergantian periode mengganti datanya lewat Livewire, jadi grafiknya
     // digambar ulang setelah komponen diperbarui.
     document.addEventListener('livewire:updated', () => setTimeout(gambarGrafikHarian, 60));
+
+    // Jarak antar tanggal bergantung pada lebar wadahnya, jadi grafiknya
+    // digambar ulang saat lebarnya berubah jauh (sidebar dilipat, layar
+    // diputar). Ambang 60px supaya bilah alamat peramban ponsel yang
+    // muncul-hilang tidak memicu gambar ulang terus-menerus.
+    window.addEventListener('resize', () => {
+        const wadah = document.querySelector('#grafik-harian');
+        if (!wadah || Math.abs(wadah.clientWidth - (window.lebarGrafikHarian || 0)) < 60) return;
+        window.lebarGrafikHarian = wadah.clientWidth;
+        clearTimeout(window.tungguGrafikHarian);
+        window.tungguGrafikHarian = setTimeout(gambarGrafikHarian, 200);
+    });
 </script>
 <!--================== END GRAFIK PEMASUKAN HARIAN ==================-->
 

@@ -155,3 +155,22 @@ it('aksi cepat punya kartunya sendiri dan menghormati izin', function () {
         ->assertDontSeeHtml('class="dsb-aksi"')
         ->assertDontSee('Catat Pengeluaran');
 });
+
+it('tanggal grafik harian dijarangkan menurut lebar wadahnya', function () {
+    // tickAmount milik Apex hanya PERKIRAAN: pada periode 31 hari di kolom
+    // selebar ~590px ia tetap mencetak delapan label bersentuhan, sehingga
+    // sumbunya terbaca menyambung — "21 Agt23 Agt25 Agt". Jaraknya kini
+    // dihitung sendiri dari lebar wadah (satu label dijatah 72px) dan tanggal
+    // di antaranya dikosongkan lewat formatter.
+    //
+    // Diukur ulang sesudahnya: jarak terkecil antar label 28,6px pada 590px
+    // dan 30,2px pada 330px — sebelumnya nol.
+    $dasbor = file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php'));
+
+    expect($dasbor)->toContain('const LEBAR_LABEL = 72;')
+        ->and($dasbor)->toContain('i % langkah === 0')
+        // Kategorinya TIDAK boleh ikut dikosongkan: tooltip membaca tanggalnya
+        // dari daftar yang sama, jadi label kosong tidak boleh menghapus judul.
+        ->and($dasbor)->toContain('tanggal[opsi.dataPointIndex]')
+        ->and($dasbor)->not->toContain('tickAmount: Math.min(tanggal.length');
+});
