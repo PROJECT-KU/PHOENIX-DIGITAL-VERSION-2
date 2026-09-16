@@ -166,6 +166,64 @@ Dashboard || lemon
             </div>
         </section>
 
+        {{-- ================== PEMAKAIAN PROMO ==================
+             Menjawab pertanyaan yang selama ini hanya bisa dijawab dengan
+             membuka satu per satu halaman promo: pada periode ini, promo mana
+             yang benar-benar dipakai pembeli, berapa kali, dan berapa rupiah
+             yang dilepas karenanya. --}}
+        @php
+            $daftarPromo = [
+                ['flash_sale', 'Flash Sale', 'bi-lightning-charge-fill', '#f26522'],
+                ['kode_promo', 'Kode Promo', 'bi-ticket-perforated-fill', '#7c3aed'],
+                ['referral', 'Kode Rujukan', 'bi-people-fill', '#0284c7'],
+            ];
+
+            // Promo otomatis hanya ditampilkan bila memang pernah terpakai —
+            // kartu bernilai nol yang tidak pernah berubah hanya menyita ruang.
+            if (($promoDipakai['auto_promo']['jumlah'] ?? 0) > 0) {
+                $daftarPromo[] = ['auto_promo', 'Promo Otomatis', 'bi-magic', '#16a34a'];
+            }
+
+            $lebarPromo = count($daftarPromo) === 4 ? 'k-3' : 'k-4';
+            $totalPakai = collect($daftarPromo)->sum(fn ($p) => $promoDipakai[$p[0]]['jumlah'] ?? 0);
+            $rupiahPromo = fn ($n) => 'Rp ' . number_format((float) $n, 0, ',', '.');
+        @endphp
+
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #f26522">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-tags-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Promo</span>
+                        <h2 class="dsb-judul">Promo yang Terpakai</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-check2-circle"></i>{{ $totalPakai }}× dipakai</span>
+                            <span class="dsb-chip"><i class="bi bi-cash-coin"></i>{{ $rupiahPromo($promoDipakai['total_nilai'] ?? 0) }} dilepas</span>
+                            <span class="dsb-chip is-samar">Hanya pesanan yang dibayar, periode {{ $periodeLabel }}</span>
+                        </div>
+                    </div>
+                    @if (auth()->user()->hasPermission('view_promo'))
+                        <a href="{{ route('admin.promo.index') }}" wire:navigate class="dsb-tautan">
+                            <span>Kelola Promo</span><i class="bi bi-arrow-right"></i>
+                        </a>
+                    @endif
+                </div>
+
+                @foreach ($daftarPromo as [$kunci, $nama, $ikon, $warna])
+                    @php $pakai = $promoDipakai[$kunci] ?? ['jumlah' => 0, 'nilai' => 0]; @endphp
+                    <article class="dsb-stat {{ $lebarPromo }}" style="--c: {{ $warna }}">
+                        <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+                        <p class="dsb-stat-label">{{ $nama }}</p>
+                        <p class="dsb-stat-nilai">{{ $pakai['jumlah'] }}<span style="font-size:.9rem; font-weight:700; color:#6b7280; margin-left:5px;">kali</span></p>
+                        <p class="dsb-stat-ket">
+                            <i class="bi bi-tag"></i>
+                            <span>{{ $pakai['jumlah'] > 0 ? $rupiahPromo($pakai['nilai']) . ' diskon diberikan' : 'Belum dipakai periode ini' }}</span>
+                        </p>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
         {{-- ================== GRAFIK & CARA BAYAR ==================
              Grafik batang dan diagram donat ditaruh BERDAMPINGAN (8 + 4 kolom).
              Keduanya menjawab pertanyaan yang sama — "uangnya dari mana dan ke

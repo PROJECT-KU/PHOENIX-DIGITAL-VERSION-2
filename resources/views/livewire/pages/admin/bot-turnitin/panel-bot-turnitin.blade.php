@@ -1,80 +1,165 @@
 <div wire:poll.30s>
     @if ($tampil)
     <style>
-        .bt-panel { display: grid; gap: 14px; margin-bottom: 1.5rem; }
+        /* Panel bot memakai bahasa rupa dasbor (kartu putih, bingkai tipis
+           #e9edf3, ubin ikon berwarna) supaya tidak terbaca sebagai tempelan
+           dari aplikasi lain di antara kartu-kartu dasbor. Nama kelasnya
+           sengaja tetap bt-* — markup dan logikanya tidak disentuh. */
+        .bt-panel { display: grid; gap: 14px; margin-bottom: clamp(20px, 3vw, 32px); }
+
+        /* ---- Bilah status ---- */
         .bt-bar {
-            display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px;
-            background: rgba(255,255,255,.92); border: 1px solid #eef2f7; border-radius: 18px;
-            box-shadow: 0 8px 24px rgba(15,23,42,.05);
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+            padding: 16px 20px; background: #fff;
+            border: 1px solid #e9edf3; border-radius: 18px;
         }
         .bt-ikon {
-            flex: 0 0 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 14px;
-            color: #fff; font-size: 1.25rem; background: linear-gradient(135deg, #8b5cf6, #6366f1);
-            box-shadow: 0 10px 20px -10px rgba(99,102,241,.8);
+            flex: 0 0 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 15px; font-size: 1.32rem;
+            background: linear-gradient(135deg, #ede9fe, #f5f3ff);
+            border: 1px solid #ddd6fe; color: #7c3aed;
         }
         .bt-ikon i::before { display: block; line-height: 1; }
-        .bt-judul { flex: 1 1 220px; min-width: 0; }
-        .bt-judul b { display: block; font-size: .98rem; color: #1e293b; }
-        .bt-judul small { color: #64748b; font-size: .8rem; }
-        .bt-lampu { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700; white-space: nowrap; }
-        .bt-lampu::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-        .bt-lampu.on { background: #ecfdf5; color: #059669; }
-        .bt-lampu.off { background: #f1f5f9; color: #64748b; }
-        .bt-lampu.jeda { background: #fffbeb; color: #b45309; }
+        .bt-judul { flex: 1 1 260px; min-width: 0; }
+        .bt-judul b {
+            display: block; font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: 1rem; color: #1c1f26; line-height: 1.25;
+        }
+        .bt-judul small { color: #6b7280; font-size: .82rem; line-height: 1.5; }
+
+        /* Lampu status: titiknya dari CSS, bukan ikon huruf — kotak glif selalu
+           lebih lebar dari titiknya dan membuat jaraknya timpang. */
+        .bt-lampu {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px;
+            font-size: .72rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+        }
+        .bt-lampu::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .bt-lampu.on { background: #dcfce7; color: #15803d; }
+        .bt-lampu.off { background: #f1f5f9; color: #475569; }
+        .bt-lampu.jeda { background: #fef9c3; color: #a16207; }
+
         .bt-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
         .bt-btn {
-            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border: 1px solid #e2e8f0; background: #fff;
-            color: #334155; font-size: .8rem; font-weight: 600; padding: 7px 12px; border-radius: 10px; text-decoration: none; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+            border: 1px solid #e9edf3; background: #fff; color: #475569;
+            font-size: .82rem; font-weight: 700; padding: 9px 14px; border-radius: 11px;
+            text-decoration: none; cursor: pointer;
+            transition: color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
         }
-        .bt-btn:hover { border-color: #a5b4fc; color: #4338ca; }
-        .bt-btn.utama { background: linear-gradient(135deg, #8b5cf6, #6366f1); border-color: transparent; color: #fff; }
-        .bt-btn.bahaya { background: #dc2626; border-color: #dc2626; color: #fff; }
-        .bt-btn.hijau { background: #059669; border-color: #059669; color: #fff; }
+        .bt-btn i { line-height: 1; }
+        .bt-btn i::before { display: block; line-height: 1; }
+        @media (hover: hover) and (pointer: fine) {
+            .bt-btn:hover { background: #7c3aed; border-color: transparent; color: #fff; box-shadow: 0 8px 18px rgba(124,58,237,.26); }
+        }
+        .bt-btn.utama { background: #7c3aed; border-color: transparent; color: #fff; box-shadow: 0 8px 18px rgba(124,58,237,.26); }
+        .bt-btn.bahaya { background: #dc2626; border-color: transparent; color: #fff; }
+        .bt-btn.hijau { background: #16a34a; border-color: transparent; color: #fff; }
 
-        .bt-kartu { border-radius: 18px; padding: 16px 18px; border: 1px solid; }
-        .bt-kartu h6 { display: flex; align-items: center; gap: 8px; font-weight: 800; margin: 0 0 4px; font-size: .98rem; }
-        .bt-kartu p { margin: 0 0 10px; font-size: .84rem; }
+        /* ---- Kartu pemberitahuan (token, kuota habis, dsb.) ---- */
+        .bt-kartu { border-radius: 18px; padding: 16px 20px; border: 1px solid; }
+        .bt-kartu h6 { display: flex; align-items: center; gap: 8px; font-weight: 800; margin: 0 0 4px; font-size: .95rem; }
+        .bt-kartu p { margin: 0 0 10px; font-size: .84rem; line-height: 1.6; }
         .bt-kartu.merah { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
         .bt-kartu.kuning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
         .bt-kartu.ungu { background: #f5f3ff; border-color: #ddd6fe; color: #4c1d95; }
         .bt-kartu.biru { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
         .bt-kartu.biru .bt-baris { border-color: #bfdbfe; }
+
         /* Titik berdenyut: menandai pekerjaan yang sedang berjalan. */
         .bt-denyut { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; animation: btDenyut 1.6s ease-in-out infinite; }
         @keyframes btDenyut { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.72); } }
         @media (prefers-reduced-motion: reduce) { .bt-denyut { animation: none; } }
-        .bt-tahap { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+
+        .bt-tahap { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
         .bt-tahap.jalan { background: #dbeafe; color: #1d4ed8; }
         .bt-tahap.perlu { background: #fee2e2; color: #b91c1c; }
         .bt-tahap.lengkapi { background: #fef3c7; color: #92400e; }
         .bt-tahap.beres { background: #dcfce7; color: #15803d; }
 
-        /* Kartu pantau: SELALU tampil, walau tidak ada pekerjaan. */
-        .bt-pantau { background: #fff; border: 1px solid #eef2f7; border-radius: 18px; box-shadow: 0 8px 24px rgba(15,23,42,.05); overflow: hidden; }
-        .bt-pantau-kepala { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 13px 18px; border-bottom: 1px solid #eef2f7; }
-        .bt-pantau-kepala h6 { margin: 0; font-weight: 800; font-size: .95rem; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-        .bt-hitung { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: .74rem; font-weight: 700; }
-        .bt-hitung b { color: #0f172a; }
-        .bt-pantau-isi { padding: 12px 18px 16px; display: grid; gap: 8px; }
-        .bt-pantau .bt-baris { border-color: #e8edf4; }
+        /* ---- Kartu pantau: SELALU tampil, walau tidak ada pekerjaan ---- */
+        .bt-pantau { background: #fff; border: 1px solid #e9edf3; border-radius: 18px; overflow: hidden; }
+        .bt-pantau-kepala {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding: 15px 20px; border-bottom: 1px solid #f1f5f9; min-height: 68px;
+        }
+        .bt-pantau-kepala h6 {
+            margin: 0 auto 0 0; display: flex; align-items: center; gap: 10px;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
+            font-size: 1rem; color: #1c1f26;
+        }
+        /* Ubin ikon judul, sepadan dengan kepala kartu dasbor lainnya. */
+        .bt-pantau-kepala h6 > i.bi {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 11px; font-size: .98rem;
+            background: #eff6ff; border: 1px solid #bfdbfe; color: #0284c7;
+        }
+        .bt-pantau-kepala h6 > i.bi::before { display: block; line-height: 1; }
+
+        /* Penghitung: chip putih berbingkai, seragam dengan chip kepala bagian. */
+        .bt-hitung {
+            display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+            background: #f8fafc; border: 1px solid #e9edf3; color: #64748b; font-size: .74rem; font-weight: 600;
+        }
+        .bt-hitung b { color: #1c1f26; font-weight: 800; }
+        .bt-hitung i.bi { line-height: 1; }
+        .bt-hitung i.bi::before { display: block; line-height: 1; }
+
+        .bt-pantau-isi { padding: 14px 20px 18px; display: grid; gap: 9px; }
+        .bt-pantau .bt-baris { border-color: #eef1f6; }
         .bt-pantau .bt-baris.perlu { border-color: #fecaca; background: #fff7f7; }
         .bt-pantau .bt-baris.lengkapi { border-color: #fde68a; background: #fffcf3; }
         .bt-pantau .bt-baris.beres { border-color: #bbf7d0; background: #f7fffa; }
-        .bt-kosong { display: flex; align-items: center; gap: 10px; padding: 14px 2px; color: #64748b; font-size: .84rem; }
-        .bt-kosong i { font-size: 1.1rem; color: #94a3b8; }
-        .bt-daftar { display: grid; gap: 8px; }
+
+        .bt-kosong { display: flex; align-items: flex-start; gap: 12px; padding: 22px 2px; color: #6b7280; font-size: .85rem; line-height: 1.6; }
+        .bt-kosong i { font-size: 1.3rem; color: #94a3b8; flex: 0 0 auto; }
+        .bt-daftar { display: grid; gap: 9px; }
+
+        /* Satu baris pekerjaan. Kisi bernama, bukan flex-wrap: dengan flex,
+           lencana tahap dan tombolnya berpindah-pindah tempat mengikuti panjang
+           teks di sebelahnya, sehingga tiap baris punya susunan yang berbeda. */
         .bt-baris {
-            display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid #fde68a;
-            border-radius: 12px; padding: 10px 12px; color: #334155;
+            display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+            align-items: center; gap: 12px;
+            background: #fff; border: 1px solid #eef1f6; border-radius: 14px;
+            padding: 12px 14px; color: #334155;
         }
-        .bt-baris-isi { flex: 1 1 260px; min-width: 0; font-size: .82rem; }
-        .bt-baris-isi b { color: #0f172a; }
-        .bt-baris-isi span { display: block; color: #64748b; }
-        .bt-token { display: flex; gap: 8px; margin-top: 8px; }
-        .bt-token input { flex: 1; min-width: 0; font-family: ui-monospace, monospace; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 10px; padding: 7px 10px; background: #fff; }
+        .bt-baris > .bt-denyut { grid-column: 1; }
+        .bt-baris-isi { grid-column: 2; min-width: 0; font-size: .82rem; line-height: 1.55; }
+        .bt-baris-isi b { color: #0f172a; font-size: .88rem; }
+        .bt-baris-isi span { display: block; color: #6b7280; }
+        .bt-baris-isi a { color: #2563eb; }
+        .bt-baris .bt-tahap { grid-column: 3; justify-self: end; }
+        .bt-baris .bt-btn { grid-column: 4; }
+        /* Baris tanpa titik denyut tetap mulai di kolom isi. */
+        .bt-baris > .bt-baris-isi:first-child { grid-column: 1 / 3; }
+
+        .bt-token { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+        .bt-token input { flex: 1 1 240px; min-width: 0; font-family: ui-monospace, monospace; font-size: .8rem; border: 1px solid #c4b5fd; border-radius: 11px; padding: 9px 12px; background: #fff; }
+
+        @media (max-width: 991.98px) {
+            /* Lencana tahap turun ke bawah keterangannya; tombol berbaris di
+               bawahnya selebar isi — tidak lagi berdesakan di satu baris. */
+            .bt-baris { grid-template-columns: auto minmax(0, 1fr); }
+            .bt-baris .bt-tahap { grid-column: 2; justify-self: start; }
+            .bt-baris .bt-btn { grid-column: 2; justify-self: start; }
+        }
+        @media (max-width: 575.98px) {
+            .bt-bar { padding: 15px 16px; gap: 12px; }
+            /* Basis judul dikecilkan supaya tetap sebaris dengan ubin ikonnya;
+               pada basis 260px ikonnya terdorong sendirian ke baris pertama. */
+            .bt-judul { flex: 1 1 150px; }
+            .bt-ikon { flex-basis: 44px; height: 44px; border-radius: 13px; font-size: 1.2rem; }
+            .bt-aksi { width: 100%; }
+            .bt-aksi .bt-btn { flex: 1 1 auto; justify-content: center; }
+            .bt-pantau-kepala, .bt-pantau-isi { padding-inline: 16px; }
+            .bt-pantau-kepala h6 { flex: 1 1 100%; }
+        }
     </style>
 
-    <div class="container-fluid">
+    {{-- Tanpa .container-fluid: panel ini dirender DI DALAM kerangka dasbor
+         yang sudah punya tepinya sendiri, dan padding tambahan dari Bootstrap
+         membuat kartu bot masuk ~12px dibanding kartu di atas & di bawahnya. --}}
+    <div>
         <div class="bt-panel">
             @if (! $skemaSiap)
                 @if ($bolehAtur)
