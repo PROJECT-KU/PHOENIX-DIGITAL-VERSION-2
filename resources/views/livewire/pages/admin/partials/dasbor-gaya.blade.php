@@ -30,13 +30,50 @@
 
     .dsb-bagian { margin-bottom: clamp(20px, 3vw, 32px); }
 
-    /* Kepala bagian — sepadan dengan komponen kepala-bagian di halaman publik,
-       hanya diperkecil karena di dalam panel judulnya bersaing dengan sidebar. */
+    /* Kepala bagian.
+       Versi pertamanya hanya tumpukan teks rata kiri: label kecil, judul, lalu
+       satu kalimat panjang berisi periode — terbaca sebagai paragraf, bukan
+       sebagai kepala bagian, dan tidak ada apa pun yang menahan mata. Sekarang
+       ia punya tiga bagian yang jelas: ubin ikon berwarna sebagai jangkar,
+       judul, dan keterangan yang dipadatkan jadi chip. */
     .dsb-kepala {
-        display: flex; align-items: flex-end; justify-content: space-between;
-        gap: 16px; margin-bottom: 16px;
+        display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
     }
-    .dsb-kepala-teks { min-width: 0; }
+    .dsb-kepala-teks { min-width: 0; flex: 1; }
+
+    /* Ubin ikon kepala: warnanya mengikuti --c bagian itu, sehingga tiap
+       bagian punya satu warna yang dipakai bersama kartu di bawahnya. */
+    .dsb-kepala-ikon {
+        display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+        width: 48px; height: 48px; border-radius: 15px;
+        background: linear-gradient(135deg,
+            color-mix(in srgb, var(--c) 16%, #fff),
+            color-mix(in srgb, var(--c) 7%, #fff));
+        border: 1px solid color-mix(in srgb, var(--c) 24%, #fff);
+        color: var(--c); font-size: 1.32rem;
+    }
+    .dsb-kepala-ikon i.bi { display: block; line-height: 1; }
+    .dsb-kepala-ikon i.bi::before { display: block; line-height: 1; }
+
+    /* Chip keterangan: periode dan catatan pendek. Satu kalimat panjang
+       ("Periode berjalan 21 Agt – 20 Sep 2026 — dihitung dari tanggal 21
+       sampai 20") memaksa mata membaca sampai habis untuk menemukan satu
+       potong data; sebagai chip, periodenya terbaca sekali lihat. */
+    .dsb-chip-deret { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 7px; }
+    .dsb-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 999px;
+        background: color-mix(in srgb, var(--c) 9%, #fff);
+        border: 1px solid color-mix(in srgb, var(--c) 20%, #fff);
+        color: color-mix(in srgb, var(--c) 75%, #000);
+        font-size: .74rem; font-weight: 700; white-space: nowrap;
+    }
+    .dsb-chip i.bi { font-size: .78rem; line-height: 1; }
+    .dsb-chip i.bi::before { display: block; line-height: 1; }
+    .dsb-chip.is-samar {
+        background: #f8fafc; border-color: var(--dsb-tepi); color: #64748b; font-weight: 600;
+        white-space: normal;
+    }
     .dsb-kicker {
         display: inline-flex; align-items: center; gap: 7px; margin-bottom: 4px;
         color: var(--dsb-jingga); font-size: .68rem; font-weight: 700;
@@ -51,17 +88,25 @@
     }
     .dsb-sub { color: var(--dsb-redup); font-size: .85rem; margin: 4px 0 0; line-height: 1.5; }
 
-    /* Tautan "Lihat semua": teks + panah, bukan tombol — supaya kepala bagian
-       tidak berebut perhatian dengan tombol aksi di dalam kartunya. */
+    /* Tautan aksi. Mewarisi --c bagiannya, jadi tombol "Buka Cash Flow" satu
+       keluarga dengan ubin ikon dan chip di sebelahnya — bukan tombol abu-abu
+       yang seolah milik halaman lain. */
     .dsb-tautan {
-        display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-        color: #475569; font-size: .82rem; font-weight: 700; text-decoration: none;
-        padding: 7px 12px; border-radius: 10px; border: 1px solid var(--dsb-tepi);
-        background: #fff; transition: color .18s ease, border-color .18s ease, transform .18s ease;
+        display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; flex-shrink: 0;
+        color: color-mix(in srgb, var(--c, #475569) 78%, #000);
+        font-size: .82rem; font-weight: 700; text-decoration: none;
+        padding: 9px 14px; border-radius: 11px;
+        border: 1px solid color-mix(in srgb, var(--c, #94a3b8) 26%, #fff);
+        background: color-mix(in srgb, var(--c, #f1f5f9) 7%, #fff);
+        transition: color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
     }
     .dsb-tautan i.bi { font-size: .85rem; line-height: 1; transition: transform .18s ease; }
+    .dsb-tautan i.bi::before { display: block; line-height: 1; }
     @media (hover: hover) and (pointer: fine) {
-        .dsb-tautan:hover { color: var(--dsb-jingga); border-color: #f8d8bf; }
+        .dsb-tautan:hover {
+            background: var(--c, #475569); color: #fff; border-color: transparent;
+            box-shadow: 0 8px 18px color-mix(in srgb, var(--c, #475569) 28%, transparent);
+        }
         .dsb-tautan:hover i.bi { transform: translateX(2px); }
     }
 
@@ -365,8 +410,14 @@
         /* Dua tombol berbagi rata satu baris — sasaran sentuh tetap lebar. */
         .dsb-hero-aksi .dsb-tombol { flex: 1 1 0; }
 
-        .dsb-kepala { flex-direction: column; align-items: flex-start; gap: 10px; }
-        .dsb-tautan { align-self: flex-start; }
+        /* Ubin ikon naik ke atas: pada layar sempit keterangannya jadi dua
+           baris chip, dan ikon yang tetap di tengah terbaca seolah menempel
+           pada chip, bukan pada judulnya. */
+        .dsb-kepala { flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+        .dsb-kepala-ikon { width: 44px; height: 44px; border-radius: 13px; font-size: 1.2rem; }
+        /* Tombolnya turun ke baris sendiri selebar penuh: sasaran sentuh yang
+           lebar, dan judulnya tidak perlu berbagi baris dengan apa pun. */
+        .dsb-kepala > .dsb-tautan { flex: 1 0 100%; justify-content: center; }
     }
     @media (max-width: 575.98px) {
         .dsb { padding-bottom: 20px; }

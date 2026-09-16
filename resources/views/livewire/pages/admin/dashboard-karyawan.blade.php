@@ -94,11 +94,15 @@ Dashboard || lemon
 
         {{-- ================== RINGKASAN ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala">
+            <div class="dsb-kepala" style="--c: #7c3aed">
+                <span class="dsb-kepala-ikon"><i class="bi bi-wallet2"></i></span>
                 <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker"><i class="bi bi-wallet2"></i>Ringkasan Saya</span>
+                    <span class="dsb-kicker">Ringkasan Saya</span>
                     <h2 class="dsb-judul">Gaji &amp; Pinjaman</h2>
-                    <p class="dsb-sub">Hanya data Anda sendiri — tidak ada angka rekan kerja di layar ini.</p>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip"><i class="bi bi-shield-lock"></i>Hanya data Anda</span>
+                        <span class="dsb-chip is-samar">Tidak ada angka rekan kerja di layar ini</span>
+                    </div>
                 </div>
             </div>
 
@@ -157,11 +161,15 @@ Dashboard || lemon
 
         {{-- ================== GRAFIK + RIWAYAT + INFO ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala">
+            <div class="dsb-kepala" style="--c: #16a34a">
+                <span class="dsb-kepala-ikon"><i class="bi bi-bar-chart-line-fill"></i></span>
                 <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker"><i class="bi bi-bar-chart-line-fill"></i>Rincian</span>
+                    <span class="dsb-kicker">Rincian</span>
                     <h2 class="dsb-judul">Riwayat &amp; Data Diri</h2>
-                    <p class="dsb-sub">Perjalanan gaji Anda sepanjang {{ $tahunIni }} beserta catatan pinjaman.</p>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip"><i class="bi bi-calendar-range"></i>Tahun {{ $tahunIni }}</span>
+                        <span class="dsb-chip is-samar">Perjalanan gaji beserta catatan pinjaman</span>
+                    </div>
                 </div>
             </div>
 

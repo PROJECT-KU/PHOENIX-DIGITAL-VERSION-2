@@ -100,11 +100,15 @@ Dashboard || lemon
 
         {{-- ================== RINGKASAN KEUANGAN ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala">
+            <div class="dsb-kepala" style="--c: #16a34a">
+                <span class="dsb-kepala-ikon"><i class="bi bi-graph-up-arrow"></i></span>
                 <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker"><i class="bi bi-graph-up-arrow"></i>Ringkasan</span>
+                    <span class="dsb-kicker">Ringkasan</span>
                     <h2 class="dsb-judul">Uang Masuk &amp; Keluar</h2>
-                    <p class="dsb-sub">Periode berjalan {{ $periodeLabel }} — dihitung dari tanggal 21 sampai 20.</p>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip"><i class="bi bi-calendar-range"></i>{{ $periodeLabel }}</span>
+                        <span class="dsb-chip is-samar">Periode dihitung tanggal 21 sampai 20</span>
+                    </div>
                 </div>
                 <a href="{{ route('admin.cashflow.index') }}" wire:navigate class="dsb-tautan">
                     <span>Buka Cash Flow</span><i class="bi bi-arrow-right"></i>
@@ -189,11 +193,15 @@ Dashboard || lemon
 
         {{-- ================== PESANAN & PELANGGAN TERBARU ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala">
+            <div class="dsb-kepala" style="--c: #7c3aed">
+                <span class="dsb-kepala-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
                 <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker"><i class="bi bi-lightning-charge-fill"></i>Terbaru</span>
+                    <span class="dsb-kicker">Terbaru</span>
                     <h2 class="dsb-judul">Pesanan &amp; Pelanggan</h2>
-                    <p class="dsb-sub">Lima terakhir yang masuk, langsung bisa dibuka dari sini.</p>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip"><i class="bi bi-bag-check"></i>{{ $recentOrders->count() }} pesanan terakhir</span>
+                        <span class="dsb-chip is-samar">Klik barisnya untuk membuka</span>
+                    </div>
                 </div>
             </div>
 
@@ -292,11 +300,14 @@ Dashboard || lemon
 
         {{-- ================== PENGGUNA DARING & METODE BAYAR ================== --}}
         <section class="dsb-bagian">
-            <div class="dsb-kepala">
+            <div class="dsb-kepala" style="--c: #0284c7">
+                <span class="dsb-kepala-ikon"><i class="bi bi-activity"></i></span>
                 <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker"><i class="bi bi-activity"></i>Pantauan</span>
+                    <span class="dsb-kicker">Pantauan</span>
                     <h2 class="dsb-judul">Tim &amp; Cara Bayar</h2>
-                    <p class="dsb-sub">Siapa yang sedang daring, dan lewat mana pembeli membayar.</p>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip is-samar">Siapa yang sedang daring, dan lewat mana pembeli membayar</span>
+                    </div>
                 </div>
             </div>
 
