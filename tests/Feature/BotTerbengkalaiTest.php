@@ -118,21 +118,19 @@ it('pengingatnya terjadwal, bukan hanya perintah yang menunggu dipanggil', funct
         ->toContain("\$jadwalkan('bot:ingatkan-terbengkalai')");
 });
 
-it('kartu pantau membuka tab "perlu admin" saat ada yang menunggu tindakan', function () {
-    // Sebelumnya semua daftar berbaris jadi satu: pada hari ramai, yang
-    // menunggu tindakan terdorong ke bawah oleh yang sedang berjalan dan yang
-    // sudah selesai — persis seperti notifikasi lonceng yang tenggelam.
+it('kartu pantau selalu membuka pekerjaan hari ini, bukan daftar yang menunggu tindakan', function () {
+    // Kartu ini pertama-tama jendela pemantauan: yang dicari admin saat
+    // membuka dasbor adalah apa yang sedang dikerjakan bot sekarang. Yang
+    // menuntut tindakan tidak perlu membajak tampilan untuk terlihat — tabnya
+    // merah beserta angkanya, dan ada kartu peringatan di atasnya.
     unggahanBotTerbengkalai(['bot_diperbarui_at' => now()->subDays(3)]);
 
     Livewire::actingAs(adminBotPanel())
         ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
-        ->assertSet('tab', 'perlu');
-});
-
-it('tanpa pekerjaan yang menunggu, tab yang terbuka adalah "berjalan"', function () {
-    Livewire::actingAs(adminBotPanel())
-        ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
-        ->assertSet('tab', 'berjalan');
+        ->assertSet('tab', 'berjalan')
+        // Angkanya tetap terlihat tanpa membuka tabnya.
+        ->assertSeeHtml('perlu admin')
+        ->assertSee('menunggu terlalu lama');
 });
 
 it('tab yang dipilih admin tidak berubah sendiri saat panel memuat ulang', function () {
@@ -171,12 +169,12 @@ it('hanya baris tab yang sedang dibuka yang dirender', function () {
     // kartu itu memang SENGAJA tampil di tab mana pun.
     Livewire::actingAs(adminBotPanel())
         ->test(\App\Livewire\Pages\Admin\BotTurnitin\PanelBotTurnitin::class)
-        ->assertSeeHtml('bt-perlu-'.$perlu->id)
-        ->assertDontSeeHtml('bt-jalan-'.$jalan->id)
-        ->call('pilihTab', 'berjalan')
         ->assertSeeHtml('bt-jalan-'.$jalan->id)
         ->assertSee($nomorJalan)
-        ->assertDontSeeHtml('bt-perlu-'.$perlu->id);
+        ->assertDontSeeHtml('bt-perlu-'.$perlu->id)
+        ->call('pilihTab', 'perlu')
+        ->assertSeeHtml('bt-perlu-'.$perlu->id)
+        ->assertDontSeeHtml('bt-jalan-'.$jalan->id);
 });
 
 it('baris "perlu dilengkapi" tidak bisa diambil alih jadi manual', function () {

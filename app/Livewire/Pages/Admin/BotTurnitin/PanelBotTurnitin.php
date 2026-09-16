@@ -22,24 +22,19 @@ class PanelBotTurnitin extends Component
     /**
      * Tab daftar yang sedang dibuka: perlu | berjalan | selesai.
      *
-     * Dipilih otomatis saat panel pertama dibuka, lalu DIPEGANG: wire:poll
-     * merender panel ini tiap 30 detik, dan mengembalikannya ke tab bawaan
-     * berarti tab yang sedang dibaca admin tertutup sendiri tiap setengah
-     * menit.
+     * Bawaannya SELALU "berjalan" — pekerjaan hari ini. Kartu ini pertama-tama
+     * adalah jendela pemantauan: yang ingin dilihat admin saat membuka dasbor
+     * adalah apa yang sedang dikerjakan bot sekarang.
+     *
+     * Yang menuntut tindakan tidak perlu membajak tampilan untuk terlihat:
+     * tabnya merah beserta angkanya walau tidak dibuka, dan kalau sudah lewat
+     * sehari ada kartu peringatan merah di atas kartu ini. Tinggal diklik.
+     *
+     * Nilainya DIPEGANG: wire:poll merender panel tiap 30 detik, dan
+     * menghitungnya ulang tiap render berarti tab yang sedang dibaca admin
+     * tertutup sendiri tiap setengah menit.
      */
-    public string $tab = 'perlu';
-
-    public function mount(): void
-    {
-        // Yang menunggu tangan admin dibuka lebih dulu — itu satu-satunya
-        // daftar di kartu ini yang menuntut tindakan. Kalau kosong, yang
-        // ditampilkan pekerjaan yang sedang berjalan.
-        if (! $this->bolehLihat() || ! BotTurnitin::skemaSiap()) {
-            return;
-        }
-
-        $this->tab = BotTurnitin::perluAdmin()->isNotEmpty() ? 'perlu' : 'berjalan';
-    }
+    public string $tab = 'berjalan';
 
     public function pilihTab(string $tab): void
     {

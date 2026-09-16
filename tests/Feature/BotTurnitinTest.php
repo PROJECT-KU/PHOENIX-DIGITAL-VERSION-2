@@ -373,6 +373,9 @@ it('panel dashboard menampilkan kartu kuota habis & perlu manual', function () {
 
     Livewire\Livewire::actingAs($admin->fresh())
         ->test(PanelBotTurnitin::class)
+        // Kartu pantau membuka pekerjaan hari ini; yang menunggu tindakan ada
+        // di tabnya sendiri.
+        ->call('pilihTab', 'perlu')
         ->assertSee('Kuota paket Standard di submitin.id habis')
         ->assertSee('Paket Standard habis (s/d 10/10/2026).')
         // Kartu pantau: nomor pesanan, status, dan sebab gagalnya.
@@ -458,10 +461,12 @@ it('kartu dashboard menampilkan pengecekan yang SEDANG dikerjakan bot', function
 
     expect(BotTurnitin::selesaiHariIni())->toBe(0);
 
-    // Begitu bot berhenti memberi kabar, barisnya berubah jadi "perlu admin".
+    // Begitu bot berhenti memberi kabar, barisnya pindah dari tab "berjalan"
+    // ke tab "perlu admin".
     $this->travel(BotTurnitin::MACET_MENIT + 1)->minutes();
     Livewire\Livewire::actingAs($admin->fresh())->test(PanelBotTurnitin::class)
         ->assertDontSee('Menunggu laporan submitin')
+        ->call('pilihTab', 'perlu')
         ->assertSee('Bot tidak memberi kabar — perlu admin');
 });
 
