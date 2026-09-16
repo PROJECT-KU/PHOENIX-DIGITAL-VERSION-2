@@ -174,3 +174,27 @@ it('tanggal grafik harian dijarangkan menurut lebar wadahnya', function () {
         ->and($dasbor)->toContain('tanggal[opsi.dataPointIndex]')
         ->and($dasbor)->not->toContain('tickAmount: Math.min(tanggal.length');
 });
+
+it('status luring dan non-member punya warnanya sendiri, bukan abu-abu', function () {
+    // Abu-abu di dasbor ini berarti KETIADAAN data: pesanan 'draft', target
+    // 'Belum Ada'. OFFLINE dan NON-MEMBER bukan data yang belum lengkap —
+    // keduanya keadaan yang pasti — jadi keduanya tidak boleh ikut abu-abu.
+    //
+    // Kelasnya sendiri, bukan menumpang is-merah/is-kuning milik status
+    // pesanan: satu kelas dengan dua arti akan saling menular saat salah
+    // satunya disetel ulang.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+    $dasbor = file_get_contents(resource_path('views/livewire/pages/admin/dashboard.blade.php'));
+    $daring = file_get_contents(resource_path('views/livewire/pages/admin/online-users.blade.php'));
+
+    expect($gaya)->toContain('.dsb-lencana.is-luring')
+        ->and($gaya)->toContain('.dsb-lencana.is-tamu')
+        // Titik di foto memakai warna yang sama dengan lencananya — satu
+        // keadaan tidak boleh muncul dalam dua warna di baris yang sama.
+        ->and($gaya)->toContain('.dsb-titik.is-luring { background: #ef4444; }')
+        ->and($daring)->toContain("\$user->online ? 'is-hijau' : 'is-luring'")
+        ->and($dasbor)->toContain("'is-hijau' : 'is-tamu'")
+        // Termasuk lencana yang ditulis ulang oleh Echo saat status berubah:
+        // tanpa ini, baris yang berubah realtime kembali jadi abu-abu.
+        ->and($dasbor)->toContain("daring ? 'is-hijau' : 'is-luring'");
+});

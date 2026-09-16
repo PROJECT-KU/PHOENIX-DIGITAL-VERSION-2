@@ -792,7 +792,7 @@ Dashboard || lemon
                                     </span>
                                 </span>
                                 <span class="dsb-baris-kanan">
-                                    <span class="dsb-lencana {{ $customer->status_member === 'active' ? 'is-hijau' : 'is-abu' }}">
+                                    <span class="dsb-lencana {{ $customer->status_member === 'active' ? 'is-hijau' : 'is-tamu' }}">
                                         {{ $customer->status_member === 'active' ? 'MEMBER' : 'NON-MEMBER' }}
                                     </span>
                                     <span class="dsb-baris-meta">{{ $customer->created_at?->locale('id')->diffForHumans() }}</span>
@@ -851,7 +851,7 @@ Dashboard || lemon
             if (!wadah) return;
 
             const lencana = (daring) =>
-                `<span class="dsb-lencana ${daring ? 'is-hijau' : 'is-abu'}">` +
+                `<span class="dsb-lencana ${daring ? 'is-hijau' : 'is-luring'}">` +
                 `<span class="dsb-bulat"></span>${daring ? 'ONLINE' : 'OFFLINE'}</span>`;
 
             const keterangan = (u) => u.online

@@ -46,7 +46,7 @@ Pengguna Online || lemon
                 </span>
 
                 <span class="dsb-baris-kanan">
-                    <span class="dsb-lencana {{ $user->online ? 'is-hijau' : 'is-abu' }}">
+                    <span class="dsb-lencana {{ $user->online ? 'is-hijau' : 'is-luring' }}">
                         <span class="dsb-bulat"></span>{{ $user->online ? 'ONLINE' : 'OFFLINE' }}
                     </span>
                 </span>

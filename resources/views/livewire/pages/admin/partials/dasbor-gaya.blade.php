@@ -299,7 +299,9 @@
         width: 13px; height: 13px; border-radius: 50%; border: 2.5px solid #fff;
     }
     .dsb-titik.is-daring { background: #16a34a; }
-    .dsb-titik.is-luring { background: #94a3b8; }
+    /* Titik di foto memakai warna yang SAMA dengan lencananya — satu keadaan
+       tidak boleh muncul dalam dua warna di baris yang sama. */
+    .dsb-titik.is-luring { background: #ef4444; }
     .dsb-aku-nama {
         font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700;
         color: var(--dsb-tinta); font-size: .92rem; line-height: 1.2; margin: 0;
@@ -585,6 +587,21 @@
     .dsb-lencana.is-ungu { background: #ede9fe; color: #6d28d9; }
     .dsb-lencana.is-merah { background: #fee2e2; color: #b91c1c; }
     .dsb-lencana.is-abu { background: #f1f5f9; color: #475569; }
+
+    /* Dua status yang dulu ikut memakai is-abu: LURING (lawan dari ONLINE) dan
+       TAMU (pelanggan yang belum jadi member). Abu-abunya bukan soal kontras
+       — teksnya cukup gelap — melainkan soal ARTI: di dasbor ini abu-abu
+       dipakai untuk ketiadaan data (pesanan 'draft', target 'Belum Ada'),
+       sedangkan luring dan non-member adalah keadaan yang sah dan pasti.
+       Karena warnanya sama, keduanya terbaca sebagai baris yang datanya belum
+       lengkap, bukan sebagai status.
+
+       Diberi kelas SENDIRI, bukan menumpang is-merah/is-kuning: kedua kelas
+       itu sudah dipakai status pesanan (cancelled & pending) di kartu
+       sebelahnya, dan kelas yang sama dengan dua arti akan saling menular
+       begitu salah satunya disetel ulang. */
+    .dsb-lencana.is-luring { background: #fee2e2; color: #b91c1c; }
+    .dsb-lencana.is-tamu { background: #ffedd5; color: #c2410c; }
 
     /* Garis kemajuan (mis. berapa bagian pinjaman yang sudah dikembalikan).
        Satu garis lebih cepat dibaca daripada dua nominal yang harus
