@@ -821,6 +821,10 @@ it('semua layar pemesanan rsc memakai bahasa rupa dasbor', function () {
     expect($form)->toContain('background: color-mix(in srgb, var(--c) 12%, #fff);')
         ->and($form)->toContain('class="rsc-form-samping"')
         ->and($form)->toContain('window.rscAkunPicker')
+        // Kartu akun tambahan: kepala (pilihan, harga, hapus) + kredensial
+        // yang melebar sendiri, bukan empat kolom col-md sempit.
+        ->and($form)->toContain('class="rsc-akun-card-isi"')
+        ->and($form)->not->toContain('<div class="col-md-2">')
         ->and($form)->not->toContain('background: linear-gradient(135deg, #6c63ff, #4e46e5);');
 });
 

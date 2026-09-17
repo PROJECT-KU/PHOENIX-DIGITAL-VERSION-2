@@ -124,7 +124,33 @@
         @media (hover: hover) and (pointer: fine) {
             .rsc-tambah:hover { background: #7c3aed; color: #fff; border-color: transparent; }
         }
-        .rsc-akun-card { border: 1px solid #eef2f7 !important; border-radius: 14px !important; }
+        .rsc-akun-card {
+            border: 1px solid #eef2f7; border-radius: 14px; background: #fcfcfd;
+            padding: 12px 14px 14px; margin-bottom: 10px;
+        }
+        .rsc-akun-card-kepala {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed #e9edf3;
+        }
+        .rsc-akun-card-no {
+            flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; font-weight: 800; font-size: .8rem;
+        }
+        .rsc-akun-card-pilih {
+            flex: 1 1 220px; width: auto; min-width: 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background-color: #fff;
+        }
+        .rsc-akun-card-harga {
+            display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px;
+            border-radius: 999px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;
+            font-size: .78rem; font-weight: 800; white-space: nowrap;
+        }
+        .rsc-akun-card-harga i.bi { line-height: 1; }
+        .rsc-akun-card-kepala .rsc-del-btn { flex-shrink: 0; margin-left: auto; }
+        .rsc-akun-card-isi { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+        .rsc-akun-card-medan { min-width: 0; }
+        .rsc-akun-card .rsc-ro-field { background: #fff; }
         .rsc-jumlah-peserta {
             display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px;
             border-radius: 999px; background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;
@@ -265,20 +291,6 @@
             .of-peserta-table td:nth-child(2) { grid-column: 2; grid-row: 1; }
             .of-peserta-table td:nth-child(3) { grid-column: 2; grid-row: 2; }
             .of-peserta-table td:nth-child(4) { grid-column: 3; grid-row: 1 / span 2; }
-
-            /* Tombol hapus akun tambahan: pindah ke pojok kanan atas card, bulat & menarik.
-               Beri ruang di atas (padding-top) agar tak menimpa select Akun. */
-            .rsc-akun-card { position: relative; padding-top: 46px !important; }
-            .rsc-akun-card .rsc-del-btn {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                z-index: 3;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                box-shadow: 0 4px 12px rgba(239, 68, 68, .20);
-            }
 
             /* Box Total: ikon & teks "Rp" sejajar & berada di tengah (agar kanan tak kosong). */
             .of-total-box { display: flex; align-items: center; justify-content: center; text-align: center; }
@@ -468,44 +480,44 @@
             </div>
 
             @forelse($akunTambahan as $tmpId => $a)
-            <div class="border rounded-3 p-3 mb-2 rsc-akun-card" wire:key="akt-{{ $tmpId }}" style="background:#fff;">
-                <div class="row g-3 align-items-start">
-                    <div class="col-md-3">
-                        <label class="of-form-label d-block">Akun</label>
-                        <button type="button" onclick="rscAkunTambahanPicker(this, '{{ $tmpId }}')"
-                            class="form-select text-start of-picker-btn">
-                            @if($a['akun_id'])<span class="text-dark">{{ $a['nama_akun'] }}</span>
-                            @else<span class="text-muted">-- Pilih Akun --</span>@endif
-                        </button>
-                        @if($metode_harga==='per_akun' && $a['akun_id'])
-                        <span class="badge bg-success-subtle text-success border border-success rounded-pill mt-1" style="font-size:.68rem;">
-                            <i class="bi bi-tag me-1"></i>Rp {{ number_format($a['harga'] ?? 0, 0, ',', '.') }}
-                        </span>
-                        @endif
-                    </div>
-                    <div class="col-md-3">
-                        <label class="of-form-label d-block">Username</label>
-                        <div class="rsc-ro-field">
+            {{-- Satu kartu per akun: baris kepala (nomor, pilihan akun, harga,
+                 hapus) lalu tiga kredensial yang masing-masing mendapat ruang
+                 sendiri. Dulu empat kolom sejajar membuat nama akun patah dua
+                 baris dan username/link terpotong. --}}
+            <div class="rsc-akun-card" wire:key="akt-{{ $tmpId }}">
+                <div class="rsc-akun-card-kepala">
+                    <span class="rsc-akun-card-no">{{ $loop->iteration }}</span>
+                    <button type="button" onclick="rscAkunTambahanPicker(this, '{{ $tmpId }}')"
+                        class="form-select text-start of-picker-btn rsc-akun-card-pilih" aria-label="Pilih akun tambahan {{ $loop->iteration }}">
+                        @if($a['akun_id'])<span class="text-dark">{{ $a['nama_akun'] }}</span>
+                        @else<span class="text-muted">-- Pilih Akun --</span>@endif
+                    </button>
+                    @if($metode_harga==='per_akun' && $a['akun_id'])
+                    <span class="rsc-akun-card-harga"><i class="bi bi-tag"></i>Rp {{ number_format($a['harga'] ?? 0, 0, ',', '.') }}</span>
+                    @endif
+                    <button type="button" class="rsc-del-btn" title="Hapus akun" aria-label="Hapus akun tambahan {{ $loop->iteration }}"
+                        wire:click="removeAkunTambahan('{{ $tmpId }}')"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="rsc-akun-card-isi">
+                    <div class="rsc-akun-card-medan">
+                        <span class="of-form-label d-block">Username</span>
+                        <div class="rsc-ro-field" title="{{ $a['username'] }}">
                             <i class="bi bi-person rsc-ro-ico"></i>
                             <input type="text" class="rsc-ro-input" value="{{ $a['username'] }}" placeholder="—" readonly>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <label class="of-form-label d-block">Password</label>
-                        <div class="rsc-ro-field">
+                    <div class="rsc-akun-card-medan">
+                        <span class="of-form-label d-block">Password</span>
+                        <div class="rsc-ro-field" title="{{ $a['password'] }}">
                             <i class="bi bi-key rsc-ro-ico"></i>
                             <input type="text" class="rsc-ro-input" value="{{ $a['password'] }}" placeholder="—" readonly>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="of-form-label d-block">Link Akses</label>
-                        <div class="d-flex gap-2">
-                            <div class="rsc-ro-field flex-grow-1">
-                                <i class="bi bi-link-45deg rsc-ro-ico"></i>
-                                <input type="text" class="rsc-ro-input" value="{{ $a['link_akses'] }}" placeholder="—" readonly>
-                            </div>
-                            <button type="button" class="rsc-del-btn flex-shrink-0" title="Hapus akun"
-                                wire:click="removeAkunTambahan('{{ $tmpId }}')"><i class="bi bi-trash"></i></button>
+                    <div class="rsc-akun-card-medan">
+                        <span class="of-form-label d-block">Link Akses</span>
+                        <div class="rsc-ro-field" title="{{ $a['link_akses'] }}">
+                            <i class="bi bi-link-45deg rsc-ro-ico"></i>
+                            <input type="text" class="rsc-ro-input" value="{{ $a['link_akses'] }}" placeholder="—" readonly>
                         </div>
                     </div>
                 </div>
