@@ -173,3 +173,15 @@ it('detail menandai bukti yang belum diunggah', function () {
         ->and($html)->toContain('Belum ada bukti yang diunggah')
         ->and($html)->not->toContain('alt="Bukti pembayaran"');
 });
+
+it('kartu pembeli menampilkan status member, poin, jumlah pesanan, dan tombol whatsapp', function () {
+    $order = orderBayar('transfer', 'processing');
+    $order->customer->update(['no_hp' => '0812 3456 7890', 'status_member' => 'active', 'point' => 1500]);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+
+    expect($html)->toContain('Member aktif')
+        ->and($html)->toContain('1.500 poin')
+        ->and($html)->toContain('1 pesanan')
+        ->and($html)->toContain('https://api.whatsapp.com/send?phone=6281234567890');
+});

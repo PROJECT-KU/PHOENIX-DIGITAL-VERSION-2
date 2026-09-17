@@ -25,6 +25,17 @@ Detail Pesanan || lemon
         $hdBuktiTersedia = $hdBuktiTercatat && $this->buktiTersedia();
         $hdBolehGanti = $this->bolehGantiBukti();
         $hdBarisBukti = $hdBuktiTercatat || $hdBolehGanti;
+
+        // Data pembeli (kartu kanan).
+        $pbl = $order->customer;
+        $pblMember = $pbl && $pbl->status_member === 'active';
+        $pblPesanan = $pbl ? $pbl->orders()->whereIn('status', ['paid', 'processing', 'completed'])->count() : 0;
+        $pblWa = $pbl ? preg_replace('/\D/', '', (string) $pbl->no_hp) : '';
+        if (str_starts_with($pblWa, '0')) {
+            $pblWa = '62'.substr($pblWa, 1);
+        }
+        $pblAdaWa = strlen($pblWa) >= 9;
+        $pblBolehLihat = $pbl && (bool) auth()->user()?->hasPermission('view_customer');
     @endphp
 
     <div class="dsb pt-detail">
@@ -124,7 +135,10 @@ Detail Pesanan || lemon
         border: 1px solid var(--dsb-tepi) !important; border-radius: 18px !important;
         box-shadow: none !important; margin-bottom: clamp(20px, 3vw, 32px) !important;
     }
-    .pt-detail .detail-info-card { margin-bottom: 0 !important; }
+    .pt-detail .detail-info-card { margin-bottom: 0 !important; display: flex; flex-direction: column; }
+    .pt-pembeli-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+    .pt-pembeli-aksi:empty { display: none; }
+    .pt-tombol-wa i.bi { color: #16a34a; }
     @media (hover: hover) and (pointer: fine) {
         .pt-detail .detail-info-card:hover, .pt-detail > .card:hover { border-color: #dfe5ee !important; box-shadow: 0 10px 24px rgba(15, 23, 42, .05) !important; }
     }
@@ -670,6 +684,37 @@ Detail Pesanan || lemon
                 <div class="info-row">
                     <span class="info-label">Telepon</span>
                     <span class="info-value">{{ $order->customer->no_hp ?? '-' }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status Member</span>
+                    <span class="info-value">
+                        <span class="dsb-lencana {{ $pblMember ? 'is-hijau' : 'is-abu' }}">
+                            <i class="bi {{ $pblMember ? 'bi-patch-check-fill' : 'bi-person' }}"></i>{{ $pblMember ? 'Member aktif' : 'Non-member' }}
+                        </span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Poin</span>
+                    <span class="info-value">{{ number_format((int) ($pbl->point ?? 0), 0, ',', '.') }} poin</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Pesanan Dibayar</span>
+                    <span class="info-value">{{ $pblPesanan }} pesanan</span>
+                </div>
+
+                {{-- Tombol di dasar kartu: kartu ini setinggi kartu pembayaran di
+                     sebelahnya, jadi tombolnya ditambatkan ke bawah. --}}
+                <div class="pt-pembeli-aksi">
+                    @if ($pblAdaWa)
+                        <a href="https://api.whatsapp.com/send?phone={{ $pblWa }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut is-mungil pt-tombol-wa">
+                            <i class="bi bi-whatsapp"></i><span>Chat WhatsApp</span>
+                        </a>
+                    @endif
+                    @if ($pblBolehLihat)
+                        <a wire:navigate href="{{ route('admin.customer.show', $pbl) }}" class="dsb-tombol is-lembut is-mungil">
+                            <i class="bi bi-person-lines-fill"></i><span>Lihat Pelanggan</span>
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
