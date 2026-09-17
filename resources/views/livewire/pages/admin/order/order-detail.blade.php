@@ -149,10 +149,59 @@ Detail Pesanan || lemon
         letter-spacing: .05em; text-transform: uppercase; border-bottom: 1px solid #eef2f7;
     }
     .pt-detail .items-table thead th:first-child { border-radius: 10px 0 0 10px; }
+    /* Baris tabel item: rata, tanpa bayangan hover dari layout, lencana lembut. */
+    .pt-detail .items-table { margin-bottom: 0; }
+    .pt-detail .items-table thead th { padding: 11px 12px !important; white-space: nowrap; }
+    .pt-detail .items-table tbody td {
+        padding: 14px 12px !important; border-bottom: 1px solid #f1f5f9 !important;
+        color: #334155; font-size: .88rem; vertical-align: middle;
+    }
+    .pt-detail .items-table tbody tr:last-child td { border-bottom: 0 !important; }
+    .pt-detail .items-table tbody tr:hover { box-shadow: none !important; transform: none !important; background: #fafbfd !important; }
+    .pt-detail .items-table tbody tr:hover td { background: transparent !important; }
+    .pt-detail .items-table .pt-sel-produk { color: var(--dsb-tinta); font-weight: 700 !important; min-width: 220px; }
+    /* Angka, durasi, dan tanggal tidak dipatah ("Rp" / "60.000"). */
+    .pt-detail .items-table td[data-judul="Jumlah"],
+    .pt-detail .items-table td[data-judul="Durasi"],
+    .pt-detail .items-table td[data-judul="Harga"],
+    .pt-detail .items-table td[data-judul="Subtotal"],
+    .pt-detail .items-table td[data-judul="Status"],
+    .pt-detail .items-table td[data-judul="Masa Aktif"] { white-space: nowrap; }
+    .pt-detail .items-table td[data-judul="Subtotal"] { color: var(--dsb-tinta); font-weight: 800 !important; }
+    .pt-detail .items-table td[data-judul="Status"] small,
+    .pt-detail .items-table td[data-judul="Masa Aktif"] small { font-size: .72rem !important; }
+    .pt-detail .items-table .badge {
+        display: inline-flex; align-items: center; gap: 4px; padding: .3em .7em; border-radius: 999px;
+        font-size: .7rem; font-weight: 700; border: 1px solid transparent !important; text-decoration: none;
+    }
+    .pt-detail .items-table .badge.bg-success { background: #dcfce7 !important; color: #15803d !important; border-color: #bbf7d0 !important; }
+    .pt-detail .items-table .badge.bg-warning { background: #fef3c7 !important; color: #b45309 !important; border-color: #fde68a !important; }
+    .pt-detail .items-table .badge.bg-info { background: #e0f2fe !important; color: #0369a1 !important; border-color: #bae6fd !important; }
+    .pt-detail .items-table .badge.bg-primary { background: #ede9fe !important; color: #6d28d9 !important; border-color: #ddd6fe !important; }
+    .pt-detail .items-table .badge.bg-danger { background: #fee2e2 !important; color: #b91c1c !important; border-color: #fecaca !important; }
+    .pt-detail .items-table .badge.bg-secondary { background: #f1f5f9 !important; color: #475569 !important; border-color: #e2e8f0 !important; }
+    .pt-detail .items-table .badge[class*="-subtle"] { border-color: currentColor !important; border-color: color-mix(in srgb, currentColor 30%, #fff) !important; }
+    /* Tombol aksi: ubin ikon ringkas seragam */
+    .pt-aksi-deret { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .pt-detail .pt-sel-aksi .btn {
+        width: 34px; height: 34px; padding: 0 !important; margin: 0 !important;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 10px; font-size: .9rem; box-shadow: none !important;
+    }
+    .pt-detail .pt-sel-aksi .btn i.bi, .pt-detail .pt-sel-aksi .btn i.bi::before { display: block; line-height: 1; }
+    .pt-detail .pt-sel-aksi .btn-outline-primary { background: #fff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .pt-detail .pt-sel-aksi .btn-primary { background: #7c3aed; color: #fff; border: 1px solid #7c3aed; }
+    .pt-detail .pt-sel-aksi .btn-outline-secondary { background: #fff; color: #475569; border: 1px solid #e2e8f0; }
+    .pt-detail .pt-sel-aksi .btn-success { background: #16a34a; color: #fff; border: 1px solid #16a34a; }
+    @media (hover: hover) and (pointer: fine) {
+        .pt-detail .pt-sel-aksi .btn:hover { transform: translateY(-1px); }
+        .pt-detail .pt-sel-aksi .btn-outline-primary:hover { background: #f5f3ff; color: #6d28d9; }
+        .pt-detail .pt-sel-aksi .btn-outline-secondary:hover { background: #f8fafc; color: #1c1f26; }
+    }
     /* HP & tablet: tabel tetap tabel yang digeser (permintaan sebelumnya),
        tetapi kolom Aksi menempel di kanan supaya tombol kirim akun dan
        WhatsApp selalu terlihat tanpa menggeser. */
-    @media (max-width: 991.98px) {
+    @media (max-width: 1199.98px) {
         .pt-detail .items-table .pt-sel-aksi,
         .pt-detail .items-table thead th:last-child {
             position: sticky; right: 0; z-index: 2; background: #fff;
@@ -1538,7 +1587,7 @@ Detail Pesanan || lemon
                                     <i class="bi bi-person-check"></i> {{ $item->processedBy->name ?? 'Admin' }}
                                 </small>
                                 <small class="d-block text-muted" style="font-size:.72rem;">
-                                    {{ \Carbon\Carbon::parse($item->processed_at)->translatedFormat('d M Y, H:i') }} WIB
+                                    {{ \Carbon\Carbon::parse($item->processed_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
                                 </small>
                                 @endif
                             </td>
@@ -1548,7 +1597,7 @@ Detail Pesanan || lemon
                                 <small class="d-block text-muted mt-1">Tanpa masa aktif (kredit)</small>
                                 @elseif ($item->end_date)
                                 <small class="d-block text-muted mt-1">
-                                    s/d {{ \Carbon\Carbon::parse($item->end_date)->translatedFormat('d M Y') }}
+                                    s/d {{ \Carbon\Carbon::parse($item->end_date)->locale('id')->translatedFormat('d M Y') }}
                                 </small>
                                 <small class="d-block fw-semibold {{ $item->isHabis() ? 'text-danger' : 'text-success' }}">
                                     {{ $item->getRemainingLabel() }}
@@ -1568,6 +1617,7 @@ Detail Pesanan || lemon
                                 @endif
                             </td>
                             <td class="text-center text-nowrap pt-sel-aksi" data-judul="Aksi">
+                                <span class="pt-aksi-deret">
                                 <button type="button" class="btn btn-sm btn-outline-primary p-2 notes-btn"
                                     title="lihat catatan" data-account="{{ $item->account_notes }}"
                                     data-processing="{{ $item->processing_notes }}">
@@ -1617,6 +1667,7 @@ Detail Pesanan || lemon
                                     <i class="bi bi-whatsapp"></i>
                                 </button>
                                 @endif
+                                </span>
                             </td>
                         </tr>
                         @empty
