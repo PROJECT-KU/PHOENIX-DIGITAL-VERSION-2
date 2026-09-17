@@ -12,17 +12,10 @@
     $lencanaBobot = ['ringan' => 'is-hijau', 'sedang' => 'is-kuning', 'berat' => 'is-merah'];
 @endphp
 
+{{-- Tanpa kepala kartu: kepala BAGIAN di atasnya sudah menyebut nama daftar
+     ini, jumlahnya, dan urutannya. Dua judul berturut-turut yang mengatakan
+     hal yang sama membuat halaman terbaca bertele-tele. --}}
 <div class="dsb-kartu">
-    <div class="dsb-kartu-kepala">
-        <div class="dsb-kartu-kepala-kiri">
-            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-list-task"></i></span>
-            <div>
-                <h3 class="dsb-kartu-judul">Daftar Task</h3>
-                <span class="dsb-kartu-sub">Yang terbaru di atas • klik barisnya untuk membuka</span>
-            </div>
-        </div>
-    </div>
-
     <div class="dsb-tabel-bungkus">
         <table class="dsb-tabel">
             <thead>

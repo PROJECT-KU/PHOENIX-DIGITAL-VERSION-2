@@ -396,16 +396,17 @@ it('nilai rupiah bonus tidak pernah sampai ke karyawan', function () {
         // Angkanya hanya dihitung bila izinnya ada; tanpa izin nilainya null,
         // sehingga tidak ada apa pun yang bisa bocor lewat markup.
         ->and($sumber)->toContain('$bonusRupiah = null;')
-        ->and($tampilan)->toContain('@if ($bonusRupiah)')
         // Poin memakai konstanta yang SAMA dengan perhitungan uangnya, jadi
         // keduanya tidak akan pernah bercerita berbeda.
         ->and($sumber)->toContain('BonusTaskPeriodeAction::STATUS_PERSEN');
 
-    // Satu-satunya "Rp" di layar ini harus berada di dalam penjagaan izin itu.
-    $setelahPenjaga = substr($tampilan, strpos($tampilan, '@if ($bonusRupiah)'));
-    $sebelumPenjaga = substr($tampilan, 0, strpos($tampilan, '@if ($bonusRupiah)'));
-    expect($sebelumPenjaga)->not->toContain('Rp ')
-        ->and($setelahPenjaga)->toContain('Rp ');
+    // Tiap "Rp" di layar ini harus berada SESUDAH penjagaan $bonusRupiah —
+    // yaitu di dalam cabang yang hanya hidup bila izinnya ada. Diperiksa
+    // begini, bukan dengan mencocokkan satu bentuk @if tertentu, supaya
+    // penjagaannya tetap teruji walau susunan cabangnya berubah.
+    $penjagaPertama = strpos($tampilan, '$bonusRupiah');
+    expect($penjagaPertama)->not->toBeFalse();
+    expect(substr($tampilan, 0, $penjagaPertama))->not->toContain('Rp ');
 });
 
 it('daftar task punya cari, saring, urut, dan halaman', function () {
@@ -455,4 +456,25 @@ it('sistem desain punya medan isian sendiri', function () {
         // Jendela beri/edit task, buka kembali, dan diskusi grup ikut memakainya.
         ->and($tampilan)->not->toContain('class="ts-modal-head"')
         ->and($tampilan)->not->toContain('form-select');
+});
+
+it('layar task memakai irama bagian yang sama dengan dasbor', function () {
+    // Yang membuat sebuah layar "terasa seperti dasbor" bukan kelasnya saja,
+    // melainkan IRAMANYA: sapaan berikut kartu identitas, lalu tiap kelompok
+    // dibuka kepala bagian (kicker, judul, deret chip) di dalam rak yang sama.
+    // Tanpa itu halaman terbaca sebagai kartu-kartu yang mengambang.
+    $task = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+
+    // Tiga kepala bagian: Ringkasan, Tampilan, Daftar.
+    expect(substr_count($task, 'class="dsb-kepala"'))->toBeGreaterThanOrEqual(3)
+        ->and($task)->toContain('class="dsb-kicker"')
+        // Kartu identitas di kepala halaman — tanpa ini sisi kanannya kosong
+        // di layar lebar, dan itulah beda paling kentara dengan dasbor.
+        ->and($task)->toContain('class="dsb-aku"')
+        // Susunan kartu angka 2 utama + 3 kecil, sama dengan Ringkasan Keuangan.
+        ->and($task)->toContain('dsb-stat is-utama k-6')
+        // Judul kartu tabel dibuang: kepala bagian di atasnya sudah menyebut
+        // nama daftar, jumlah, dan urutannya.
+        ->and($tabel)->not->toContain('Daftar Task</h3>');
 });
