@@ -15,6 +15,7 @@ class TaskAttachment extends Model
         'uploaded_by',
         'path',
         'name',
+        'jenis',
     ];
 
     public function task(): BelongsTo

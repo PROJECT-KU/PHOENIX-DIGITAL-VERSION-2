@@ -530,3 +530,81 @@ it('baris kartu ringkasan task selalu penuh dan tidak ada kartu yang hilang', fu
             ->and(in_array($s['utama_kedua'], $s['kecil'], true))->toBeFalse();
     }
 });
+
+it('layar task menyimpan keadaannya di alamat halaman', function () {
+    // Tanpa #[Url], hasil saringan tidak bisa dikirim ke orang lain dan hilang
+    // tiap kali halaman dimuat ulang.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    foreach (["as: 'q'", "as: 'status'", "as: 'orang'", "as: 'kategori'", "as: 'arah'",
+        "as: 'urut'", "as: 'hal'", "as: 'tampilan'", "as: 'tutup'"] as $alias) {
+        expect($sumber)->toContain($alias);
+    }
+
+    // `except` menjaga alamatnya pendek: nilai bawaan tidak ikut ditulis.
+    expect($sumber)->toContain("except: 'semua'")
+        ->and($sumber)->toContain('except: 1');
+});
+
+it('grafik aktivitas ikut saringan yang sedang aktif', function () {
+    // dataAktivitas() dulu hanya menghormati tahun: menyaring "Penerima: X"
+    // lalu berpindah ke tab Aktivitas menampilkan aktivitas SEMUA orang tanpa
+    // satu pun tanda — angkanya benar untuk pertanyaan yang tidak diajukan
+    // siapa pun. Diukur sesudahnya: 48 task jadi 20 saat disaring.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    // Satu rantai saringan, dipakai dua tempat.
+    expect(substr_count($sumber, '$this->saring('))->toBeGreaterThanOrEqual(2)
+        // Status dilewati di grafik: ia memang hanya tentang yang sudah selesai.
+        ->and($sumber)->toContain('denganStatus: false');
+});
+
+it('aksi massal memeriksa ulang kelayakan tiap task di server', function () {
+    // Centangnya datang dari peramban; satu-satunya yang tahu apakah sebuah
+    // task boleh ditutup atau dihapus adalah server.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain('public function selesaikanTerpilih')
+        ->and($sumber)->toContain("->where('user_id', auth()->id())")
+        ->and($sumber)->toContain('if ($t->isLocked())')
+        ->and($sumber)->toContain('$bolehDari = $this->manageableGiverIds();')
+        // Pilihan dibersihkan saat saringan berubah: tanpa itu, baris yang
+        // tercentang lalu tersaring keluar tetap ikut terkena.
+        ->and($sumber)->toContain('$this->bersihkanPilihan();');
+});
+
+it('checklist tidak ikut menentukan bobot maupun poin', function () {
+    // Bobot adalah penilaian PEMBERI atas beratnya pekerjaan; checklist adalah
+    // cara PENERIMA memecahnya. Kalau centang menambah poin, siapa pun bisa
+    // menaikkan bonusnya sendiri dengan memecah langkah lebih halus.
+    $model = file_get_contents(app_path('Models/TaskChecklist.php'));
+    $komponen = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($model)->toContain('TIDAK ikut menentukan bobot maupun poin')
+        // poinTaskSaya hanya membaca bobot task, tidak pernah checklist.
+        ->and($komponen)->toContain('$poin = $t->bobotPoin();')
+        ->and($komponen)->not->toContain('checklists->where(\'selesai\', true)->count() * ');
+});
+
+it('task berulang punya penanda anti-ganda', function () {
+    // Penjadwal berjalan tiap hari; tanpa penanda, satu task berulang akan
+    // disalin berkali-kali dalam sehari.
+    $perintah = file_get_contents(app_path('Console/Commands/SalinTaskBerulang.php'));
+    $jadwal = file_get_contents(base_path('routes/console.php'));
+
+    expect($perintah)->toContain('ulang_terakhir_at')
+        ->and($perintah)->toContain('addMonthNoOverflow')
+        // group_id baru: salinan adalah pekerjaan tersendiri; ikut grup induknya
+        // akan memunculkan komentar periode lalu di task baru.
+        ->and($perintah)->toContain("'group_id' => Str::uuid(),")
+        ->and($jadwal)->toContain('tasks:salin-berulang');
+});
+
+it('riwayat task tidak pernah menggagalkan perubahannya sendiri', function () {
+    // Riwayat adalah catatan pinggir. Menolak menyelesaikan task karena
+    // catatannya gagal ditulis adalah pertukaran yang salah.
+    $model = file_get_contents(app_path('Models/Task.php'));
+
+    expect($model)->toContain('public function catat(')
+        ->and($model)->toContain('} catch (\Throwable $e) {');
+});

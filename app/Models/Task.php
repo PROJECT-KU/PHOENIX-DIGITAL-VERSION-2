@@ -32,6 +32,8 @@ class Task extends Model
         'assigned_notified_at',
         'deadline_notified_at',
         'overdue_notified_at',
+        'ulang',
+        'ulang_terakhir_at',
     ];
 
     protected $casts = [
@@ -41,6 +43,7 @@ class Task extends Model
         'assigned_notified_at' => 'datetime',
         'deadline_notified_at' => 'datetime',
         'overdue_notified_at' => 'datetime',
+        'ulang_terakhir_at' => 'datetime',
     ];
 
     public function karyawan(): BelongsTo
@@ -92,6 +95,50 @@ class Task extends Model
     public function groupSiblings()
     {
         return static::where('group_id', $this->group_id);
+    }
+
+    public function checklists(): HasMany
+    {
+        return $this->hasMany(TaskChecklist::class)->orderBy('urutan')->orderBy('created_at');
+    }
+
+    public function riwayats(): HasMany
+    {
+        return $this->hasMany(TaskRiwayat::class)->latest();
+    }
+
+    /**
+     * Catat satu perubahan ke riwayat task.
+     *
+     * Kegagalan mencatat TIDAK boleh menggagalkan perubahannya sendiri:
+     * riwayat adalah catatan pinggir, dan menolak menyelesaikan task karena
+     * catatannya gagal ditulis adalah pertukaran yang salah.
+     */
+    public function catat(string $aksi, ?string $dari = null, ?string $ke = null, ?string $catatan = null): void
+    {
+        try {
+            $this->riwayats()->create([
+                'user_id' => auth()->id(),
+                'aksi' => $aksi,
+                'dari' => $dari,
+                'ke' => $ke,
+                'catatan' => $catatan,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Gagal mencatat riwayat task: '.$e->getMessage());
+        }
+    }
+
+    /** Berapa langkah checklist yang sudah dicentang. */
+    public function kemajuanChecklist(): array
+    {
+        $semua = $this->checklists->count();
+
+        return [
+            'selesai' => $this->checklists->where('selesai', true)->count(),
+            'total' => $semua,
+            'persen' => $semua > 0 ? (int) round($this->checklists->where('selesai', true)->count() / $semua * 100) : null,
+        ];
     }
 
     public function attachments(): HasMany

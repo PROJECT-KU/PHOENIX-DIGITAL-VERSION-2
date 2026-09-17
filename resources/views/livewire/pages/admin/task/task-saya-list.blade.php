@@ -500,6 +500,63 @@ Task Saya || lemon
             .dsb-kepala > .ts-pandang .ts-pandang-btn { flex: 1 1 0; justify-content: center; }
         }
 
+        /* ===== Langkah (checklist) di dalam task ===== */
+        .ts-langkah { display: flex; flex-direction: column; gap: 2px; }
+        .ts-langkah-item {
+            display: flex; align-items: flex-start; gap: 9px;
+            padding: 7px 8px; border-radius: 10px;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-langkah-item:hover { background: #f8fafc; }
+        }
+        .ts-langkah-centang {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 0; border: 0; background: none; color: #7c3aed;
+            font-size: 1rem; cursor: pointer; line-height: 1; margin-top: 1px;
+        }
+        .ts-langkah-centang:disabled { color: #cbd5e1; cursor: default; }
+        .ts-langkah-centang i.bi::before { display: block; line-height: 1; }
+        .ts-langkah-teks { flex: 1 1 auto; font-size: .86rem; color: var(--dsb-tinta); line-height: 1.5; overflow-wrap: anywhere; }
+        /* Coret, bukan disembunyikan: langkah yang beres tetap bagian dari
+           ceritanya, dan daftar yang menyusut saat dikerjakan membuat orang
+           kehilangan rasa seberapa jauh ia sudah berjalan. */
+        .ts-langkah-item.is-selesai .ts-langkah-teks { text-decoration: line-through; color: #94a3b8; }
+        .ts-langkah-hapus {
+            border: 0; background: none; color: #cbd5e1; cursor: pointer;
+            padding: 2px 4px; font-size: .78rem; line-height: 1;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-langkah-hapus:hover { color: #dc2626; }
+        }
+        .ts-langkah-tambah { display: flex; gap: 8px; margin-top: 10px; }
+        .ts-langkah-tambah .dsb-isian { flex: 1 1 auto; }
+
+        /* ===== Unggah berkas hasil ===== */
+        .ts-unggah-hasil {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 10px; padding: 13px; border-radius: 13px;
+            border: 1px dashed #cbd5e1; background: #f8fafc;
+            color: #64748b; font-size: .83rem; font-weight: 600; cursor: pointer;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-unggah-hasil:hover { border-color: #a78bfa; color: #6d28d9; background: #faf8ff; }
+        }
+
+        /* ===== Riwayat ===== */
+        .ts-riwayat-tombol {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            width: 100%; padding: 0; border: 0; background: none; cursor: pointer; color: #94a3b8;
+        }
+        .ts-riwayat { display: flex; flex-direction: column; gap: 2px; margin-top: 10px; }
+        .ts-riwayat-baris { display: flex; gap: 11px; padding: 7px 0; }
+        .ts-riwayat-titik {
+            width: 8px; height: 8px; border-radius: 50%; background: #ddd6fe;
+            flex-shrink: 0; margin-top: 6px;
+        }
+        .ts-riwayat-isi { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .ts-riwayat-teks { font-size: .84rem; font-weight: 600; color: var(--dsb-tinta); }
+        .ts-riwayat-meta { font-size: .76rem; color: var(--dsb-redup); line-height: 1.5; }
+
         /* ===== Aksi massal & kotak centang ===== */
         .ts-massal {
             display: flex; align-items: center; justify-content: space-between;
@@ -1288,6 +1345,17 @@ Task Saya || lemon
 
                 <div class="row g-3">
                     <div class="col-md-4">
+                        {{-- Task berulang: laporan berkala sebelumnya dibuat ulang
+                             dengan tangan tiap periode, dan yang terlupa tidak pernah
+                             terlihat hilang. Salinannya dibuat penjadwal harian. --}}
+                        <label class="dsb-label">Ulangi</label>
+                        <select wire:model="t_ulang" class="dsb-isian">
+                            <option value="tidak">Tidak berulang</option>
+                            <option value="mingguan">Tiap minggu</option>
+                            <option value="bulanan">Tiap bulan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <label class="dsb-label">Bobot</label>
                         <select wire:model="t_bobot" class="dsb-isian">
                             <option value="ringan">Ringan (1)</option>
@@ -1420,11 +1488,108 @@ Task Saya || lemon
                     </div>
                 </div>
 
-                @if($activeTask->attachments->count())
+                @php
+                    $bolehSunting = $activeTask->user_id === auth()->id()
+                        || ($activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds));
+                    $sayaPenerima = $activeTask->user_id === auth()->id();
+                    $kemajuan = $activeTask->kemajuanChecklist();
+                    $lampiranPerintah = $activeTask->attachments->where('jenis', '!=', 'hasil');
+                    $lampiranHasil = $activeTask->attachments->where('jenis', 'hasil');
+                @endphp
+
+                {{-- ===== Langkah (checklist) =====
+                     Sengaja TIDAK ikut menentukan bobot maupun poin: bobot adalah
+                     penilaian pemberi atas beratnya pekerjaan, checklist adalah cara
+                     penerimanya memecah pekerjaan itu. Kalau centang menambah poin,
+                     siapa pun bisa menaikkan bonusnya dengan memecah langkah lebih
+                     halus. --}}
+                @if ($kemajuan['total'] > 0 || $bolehSunting)
                     <div class="ts-bagian">
-                        <span class="ts-bagian-judul"><i class="bi bi-paperclip"></i>Lampiran</span>
+                        <span class="ts-bagian-judul">
+                            <i class="bi bi-list-check"></i>Langkah
+                            @if ($kemajuan['total'] > 0)
+                                <span class="dsb-lencana is-abu">{{ $kemajuan['selesai'] }}/{{ $kemajuan['total'] }}</span>
+                            @endif
+                        </span>
+
+                        @if ($kemajuan['persen'] !== null)
+                            <span class="dsb-kemajuan" style="--c: {{ $kemajuan['persen'] === 100 ? '#16a34a' : '#7c3aed' }}; margin-bottom: 10px;">
+                                <span style="width: {{ $kemajuan['persen'] }}%"></span>
+                            </span>
+                        @endif
+
+                        <div class="ts-langkah">
+                            @forelse ($activeTask->checklists as $langkah)
+                                <div class="ts-langkah-item {{ $langkah->selesai ? 'is-selesai' : '' }}" wire:key="lk-{{ $langkah->id }}">
+                                    <button type="button" class="ts-langkah-centang"
+                                        wire:click="alihkanChecklist('{{ $langkah->id }}')"
+                                        @disabled(! $bolehSunting)
+                                        aria-label="{{ $langkah->selesai ? 'Batalkan centang' : 'Tandai selesai' }}">
+                                        <i class="bi {{ $langkah->selesai ? 'bi-check-square-fill' : 'bi-square' }}"></i>
+                                    </button>
+                                    <span class="ts-langkah-teks">{{ $langkah->teks }}</span>
+                                    @if ($bolehSunting)
+                                        <button type="button" class="ts-langkah-hapus" wire:click="hapusChecklist('{{ $langkah->id }}')"
+                                            aria-label="Hapus langkah">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    @endif
+                                </div>
+                            @empty
+                                <p class="dsb-kartu-sub">Belum ada langkah. Pecah task ini jadi beberapa langkah bila perlu.</p>
+                            @endforelse
+                        </div>
+
+                        @if ($bolehSunting)
+                            <div class="ts-langkah-tambah">
+                                <input type="text" class="dsb-isian" wire:model="checklistBaru"
+                                    wire:keydown.enter="tambahChecklist" placeholder="Tambah langkah…" maxlength="190">
+                                <button type="button" class="dsb-tombol is-lembut is-mungil" wire:click="tambahChecklist">
+                                    <i class="bi bi-plus-lg"></i><span>Tambah</span>
+                                </button>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- ===== Berkas hasil =====
+                     Dipisah dari lampiran perintah. Sebelumnya satu-satunya cara
+                     melampirkan hasil adalah lewat komentar, sehingga berkas hasil
+                     bercampur dengan percakapan. --}}
+                @if ($lampiranHasil->count() || $sayaPenerima)
+                    <div class="ts-bagian">
+                        <span class="ts-bagian-judul"><i class="bi bi-cloud-arrow-up"></i>Berkas Hasil</span>
+
+                        @if ($lampiranHasil->count())
+                            <div class="ts-lampiran">
+                                @foreach ($lampiranHasil as $att)
+                                    <a href="{{ Storage::url($att->path) }}" target="_blank" rel="noopener" class="ts-lampiran-berkas">
+                                        <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-file-earmark-check"></i></span>
+                                        <span>{{ Str::limit($att->name, 22) }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if ($sayaPenerima)
+                            <label class="ts-unggah-hasil">
+                                <input type="file" wire:model="hasilFiles" multiple class="visually-hidden">
+                                <span wire:loading.remove wire:target="hasilFiles">
+                                    <i class="bi bi-paperclip"></i>Unggah berkas hasil (maks 5 MB)
+                                </span>
+                                <span wire:loading wire:target="hasilFiles">
+                                    <span class="dsb-putar is-kecil"></span>Mengunggah…
+                                </span>
+                            </label>
+                        @endif
+                    </div>
+                @endif
+
+                @if($lampiranPerintah->count())
+                    <div class="ts-bagian">
+                        <span class="ts-bagian-judul"><i class="bi bi-paperclip"></i>Lampiran dari Pemberi</span>
                         <div class="ts-lampiran">
-                            @foreach($activeTask->attachments as $att)
+                            @foreach($lampiranPerintah as $att)
                                 @if($att->isImage())
                                     <a href="javascript:void(0)" role="button" class="ts-img-zoom ts-lampiran-gambar"
                                         data-img-url="{{ Storage::url($att->path) }}" title="Perbesar gambar">
@@ -1444,6 +1609,41 @@ Task Saya || lemon
                 @if($activeIsSolo)
                     <div class="ts-bagian">
                         @include('livewire.pages.admin.task.partials.discussion', ['activeTask' => $activeTask])
+                    </div>
+                @endif
+
+                {{-- ===== Riwayat =====
+                     Hanya-tambah dan tidak pernah disunting: gunanya justru sebagai
+                     rujukan saat ada perselisihan soal bonus, dan catatan yang bisa
+                     diubah belakangan tidak menyelesaikan perselisihan apa pun.
+                     Terlipat karena yang membukanya adalah pertanyaan, bukan
+                     kebiasaan. --}}
+                @if ($activeTask->riwayats->count())
+                    <div class="ts-bagian" x-data="{ buka: false }">
+                        <button type="button" class="ts-riwayat-tombol" x-on:click="buka = ! buka"
+                            x-bind:aria-expanded="buka ? 'true' : 'false'">
+                            <span class="ts-bagian-judul" style="margin: 0;">
+                                <i class="bi bi-clock-history"></i>Riwayat
+                                <span class="dsb-lencana is-abu">{{ $activeTask->riwayats->count() }}</span>
+                            </span>
+                            <i class="bi" x-bind:class="buka ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                        </button>
+
+                        <div class="ts-riwayat" x-show="buka" x-cloak>
+                            @foreach ($activeTask->riwayats as $r)
+                                <div class="ts-riwayat-baris">
+                                    <span class="ts-riwayat-titik"></span>
+                                    <span class="ts-riwayat-isi">
+                                        <span class="ts-riwayat-teks">{{ $r->kalimat() }}</span>
+                                        <span class="ts-riwayat-meta">
+                                            {{ $r->pelaku?->name ?? 'Sistem' }}
+                                            &bull; {{ $r->created_at->locale('id')->diffForHumans() }}
+                                            @if ($r->catatan)<br>{{ $r->catatan }}@endif
+                                        </span>
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>

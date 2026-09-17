@@ -209,7 +209,9 @@ class TaskSayaList extends Component
                 continue;
             }
 
+            $lamaProgres = $t->progress;
             $t->update(['progress' => 'selesai', 'completed_at' => now()]);
+            $t->catat('status', $lamaProgres, 'selesai', 'Lewat aksi massal');
             $berhasil++;
         }
 
@@ -256,6 +258,105 @@ class TaskSayaList extends Component
                 ? $dihapus.' task grup dihapus.'
                 : 'Tidak ada task yang boleh Anda hapus dari pilihan itu.',
         );
+    }
+
+    // ===== Checklist di dalam satu task =====
+    public string $checklistBaru = '';
+
+    /**
+     * Siapa yang boleh menyunting checklist sebuah task: PENERIMANYA, dan
+     * pemberi yang boleh mengelolanya. Bukan siapa pun yang bisa melihat —
+     * task bawahan orang lain terlihat oleh atasan rantai di atasnya, dan
+     * mereka tidak semestinya ikut mencentang pekerjaan orang.
+     */
+    protected function bolehSuntingChecklist(Task $task): bool
+    {
+        return $task->user_id === auth()->id()
+            || ($task->assigned_by && in_array($task->assigned_by, $this->manageableGiverIds(), true));
+    }
+
+    public function tambahChecklist(): void
+    {
+        $teks = trim($this->checklistBaru);
+
+        if ($teks === '' || ! $this->activeTaskId) {
+            return;
+        }
+
+        $task = Task::visibleTo()->findOrFail($this->activeTaskId);
+        if (! $this->bolehSuntingChecklist($task)) {
+            return;
+        }
+
+        $task->checklists()->create([
+            'teks' => mb_substr($teks, 0, 190),
+            'urutan' => (int) $task->checklists()->max('urutan') + 1,
+        ]);
+
+        $this->checklistBaru = '';
+    }
+
+    public function alihkanChecklist(string $id): void
+    {
+        $item = \App\Models\TaskChecklist::with('task')->findOrFail($id);
+
+        if (! $item->task || ! $this->bolehSuntingChecklist($item->task)) {
+            return;
+        }
+
+        $item->update(['selesai' => ! $item->selesai]);
+    }
+
+    public function hapusChecklist(string $id): void
+    {
+        $item = \App\Models\TaskChecklist::with('task')->findOrFail($id);
+
+        if ($item->task && $this->bolehSuntingChecklist($item->task)) {
+            $item->delete();
+        }
+    }
+
+    // ===== Berkas HASIL dari penerima =====
+    public $hasilFiles = [];
+
+    /**
+     * Unggah berkas hasil kerja ke task-nya sendiri.
+     *
+     * Sebelumnya satu-satunya cara melampirkan hasil adalah lewat komentar,
+     * sehingga berkas hasil bercampur dengan percakapan dan tidak ada tempat
+     * yang jelas untuk "ini hasilnya".
+     */
+    public function updatedHasilFiles(): void
+    {
+        if (! $this->activeTaskId) {
+            return;
+        }
+
+        $task = Task::visibleTo()->findOrFail($this->activeTaskId);
+
+        // Hanya PENERIMA yang mengunggah hasil. Pemberi punya jalurnya sendiri
+        // (lampiran perintah, lewat jendela edit).
+        if ($task->user_id !== auth()->id()) {
+            $this->hasilFiles = [];
+
+            return;
+        }
+
+        $this->validate(['hasilFiles.*' => 'file|max:5120']);
+
+        foreach ((array) $this->hasilFiles as $berkas) {
+            $path = $berkas->store('task-hasil', 'public');
+            $task->attachments()->create([
+                'uploaded_by' => auth()->id(),
+                'path' => $path,
+                'name' => $berkas->getClientOriginalName(),
+                'jenis' => 'hasil',
+            ]);
+        }
+
+        $task->catat('hasil', null, null, count((array) $this->hasilFiles).' berkas hasil diunggah');
+        $this->hasilFiles = [];
+        $this->dispatch('swal-success', message: 'Berkas hasil diunggah.');
     }
 
     /**
@@ -334,6 +435,9 @@ class TaskSayaList extends Component
     public $newLabelName = '';
 
     public $t_bobot = 'sedang';
+
+    /** 'tidak' | 'mingguan' | 'bulanan' — lihat SalinTaskBerulang. */
+    public $t_ulang = 'tidak';
 
     public $t_deadline_mulai = '';
 
@@ -495,7 +599,9 @@ class TaskSayaList extends Component
         if ($task->user_id !== auth()->id() || $task->isLocked()) {
             return;
         }
+        $lama = $task->progress;
         $task->update(['progress' => 'dikerjakan']);
+        $task->catat('status', $lama, 'dikerjakan');
     }
 
     public function tandaiSelesai($id): void
@@ -511,12 +617,14 @@ class TaskSayaList extends Component
         $selesaiPada = now();
         $periode = PeriodeGaji::dariTanggal($selesaiPada);
 
+        $lama = $task->progress;
         $task->update([
             'progress' => 'selesai',
             'completed_at' => $selesaiPada,
             'periode_bulan' => $periode['bulan'],
             'periode_tahun' => $periode['tahun'],
         ]);
+        $task->catat('status', $lama, 'selesai');
         $this->dispatch('swal-success', message: 'Task ditandai selesai.');
     }
 
@@ -620,6 +728,7 @@ class TaskSayaList extends Component
         $this->reset(['editingTaskId', 'editingGroupId', 't_user_ids', 't_nama', 't_deskripsi', 't_files', 'newFiles',
             't_category_id', 't_label_id', 'newCategoryName', 'newLabelName']);
         $this->t_bobot = 'sedang';
+        $this->t_ulang = 'tidak';
         $this->t_deadline_mulai = now()->toDateString();
         $this->t_deadline_selesai = now()->addDays(7)->toDateString();
         $this->showTaskModal = true;
@@ -643,6 +752,7 @@ class TaskSayaList extends Component
         $this->t_category_id = $task->task_category_id ?? '';
         $this->t_label_id = $task->task_category_label_id ?? '';
         $this->t_bobot = $task->bobot;
+        $this->t_ulang = $task->ulang ?? 'tidak';
         $this->t_deadline_mulai = $task->deadline_mulai?->toDateString();
         $this->t_deadline_selesai = $task->deadline_selesai?->toDateString();
         $this->t_files = [];
@@ -775,6 +885,7 @@ class TaskSayaList extends Component
             }],
             't_nama' => 'required|string|max:200',
             't_bobot' => 'required|in:ringan,sedang,berat',
+            't_ulang' => 'required|in:tidak,mingguan,bulanan',
             't_deadline_mulai' => 'required|date',
             't_deadline_selesai' => 'required|date|after_or_equal:t_deadline_mulai',
             't_files.*' => 'nullable|file|max:2048',
@@ -803,6 +914,7 @@ class TaskSayaList extends Component
             'task_category_id' => $categoryId,
             'task_category_label_id' => $labelId,
             'bobot' => $this->t_bobot,
+            'ulang' => $this->t_ulang,
             'deadline_mulai' => $this->t_deadline_mulai,
             'deadline_selesai' => $this->t_deadline_selesai,
         ];
@@ -842,6 +954,7 @@ class TaskSayaList extends Component
                 'created_by' => auth()->id(),
             ]);
             $this->attachFilesTo($task, $storedFiles);
+            $task->catat('dibuat');
             $task->karyawan?->notify(new TaskAssigned($task));
             $task->update(['assigned_notified_at' => now()]);
         }
@@ -1222,7 +1335,9 @@ class TaskSayaList extends Component
         $tasks = $this->kueriDaftar()->get();
 
         $activeTask = $this->activeTaskId
-            ? Task::visibleTo()->with(['groupComments.user', 'attachments', 'pemberi', 'karyawan'])->find($this->activeTaskId)
+            ? Task::visibleTo()
+                ->with(['groupComments.user', 'attachments', 'pemberi', 'karyawan', 'checklists', 'riwayats.pelaku'])
+                ->find($this->activeTaskId)
             : null;
 
         // Task solo (grup beranggota 1) menampilkan diskusi inline; grup di folder.

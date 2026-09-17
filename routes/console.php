@@ -131,6 +131,15 @@ Artisan::command('tasks:notify-deadlines', function () {
 $jadwalkan('tasks:notify-deadlines')->dailyAt('07:00');
 
 /**
+ * Salin task berulang (mingguan/bulanan) ke periode berikutnya.
+ *
+ * Dijalankan SEBELUM pengingat tenggat di atas supaya salinan hari itu ikut
+ * terhitung, dan sekali sehari saja — penanda ulang_terakhir_at menjaga satu
+ * task tidak tersalin dua kali walau perintahnya kebetulan berjalan ulang.
+ */
+$jadwalkan('tasks:salin-berulang')->dailyAt('06:30')->withoutOverlapping(30);
+
+/**
  * Hapus notifikasi bulan-bulan lama (sebelum awal bulan berjalan) agar DB tak menumpuk.
  * Bell hanya menampilkan bulan berjalan, jadi yang lebih lama aman dihapus permanen.
  */

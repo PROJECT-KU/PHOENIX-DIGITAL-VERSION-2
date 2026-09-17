@@ -180,6 +180,11 @@
                                         @if ($terkunci)
                                             <span class="dsb-lencana is-abu"><i class="bi bi-lock-fill"></i>Terkunci</span>
                                         @endif
+                                        @if (($first->ulang ?? 'tidak') !== 'tidak')
+                                            <span class="dsb-lencana is-nila" title="Disalin otomatis tiap {{ $first->ulang === 'mingguan' ? 'minggu' : 'bulan' }}">
+                                                <i class="bi bi-arrow-repeat"></i>Berulang
+                                            </span>
+                                        @endif
                                         @if ($disebutSaya)
                                             <span class="dsb-lencana is-kuning"><i class="bi bi-at"></i>Anda disebut</span>
                                         @endif
