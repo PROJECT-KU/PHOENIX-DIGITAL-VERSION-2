@@ -500,6 +500,59 @@ Task Saya || lemon
             .dsb-kepala > .ts-pandang .ts-pandang-btn { flex: 1 1 0; justify-content: center; }
         }
 
+        /* ===== Aksi massal & kotak centang ===== */
+        .ts-massal {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            padding: 12px clamp(14px, 2vw, 18px);
+            background: #f5f3ff; border-bottom: 1px solid #e9e3fb;
+        }
+        .ts-massal-ket { display: inline-flex; align-items: center; gap: 8px; color: #5b21b6; font-size: .84rem; font-weight: 700; }
+        .ts-massal-aksi { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        @media (max-width: 575.98px) {
+            .ts-massal { flex-direction: column; align-items: stretch; }
+            .ts-massal-aksi .dsb-tombol { flex: 1 1 auto; }
+        }
+
+        .ts-centang-kolom { width: 44px; }
+        .ts-centang { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 6px; }
+        .ts-centang input { width: 17px; height: 17px; accent-color: #7c3aed; cursor: pointer; }
+        @media (max-width: 767.98px) {
+            /* Saat baris jadi kartu bertumpuk, kotak centangnya naik ke pojok
+               kanan atas kartu — sebagai baris sendiri ia terbaca seperti data. */
+            .dsb-tabel tbody tr { position: relative; }
+            .dsb-tabel tbody td.ts-centang-kolom {
+                position: absolute; top: 9px; right: 10px; width: auto; padding: 0; justify-content: flex-end;
+            }
+            .dsb-tabel tbody td.ts-centang-kolom::before { content: none; }
+            .dsb-tabel tbody tr.ts-sub td.ts-centang-kolom { display: none; }
+        }
+
+        /* ===== Pemilih kolom ===== */
+        .ts-daftar-aksi { display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap; flex-shrink: 0; }
+        .ts-kolom { position: relative; }
+        .ts-kolom-daftar {
+            position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+            min-width: 178px; padding: 7px; border-radius: 13px;
+            background: #fff; border: 1px solid var(--dsb-tepi);
+            box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .ts-kolom-item {
+            display: flex; align-items: center; gap: 9px; width: 100%;
+            padding: 8px 10px; border: 0; border-radius: 9px; background: none;
+            color: var(--dsb-tinta); font-size: .83rem; font-weight: 600; cursor: pointer; text-align: left;
+        }
+        .ts-kolom-item i.bi { color: #7c3aed; font-size: .95rem; }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-kolom-item:hover { background: #f5f3ff; }
+        }
+        @media (max-width: 767.98px) {
+            .ts-daftar-aksi { width: 100%; }
+            .ts-daftar-aksi .dsb-tombol, .ts-kolom { flex: 1 1 0; }
+            .ts-kolom .dsb-tombol { width: 100%; }
+        }
+
         /* ===== Kaki halaman tabel ===== */
         .ts-halaman {
             display: flex; align-items: center; justify-content: space-between;
@@ -773,6 +826,13 @@ Task Saya || lemon
                             <i class="bi bi-wallet2"></i>
                             <span>Pool Rp {{ number_format($bonusRupiah['pool'], 0, ',', '.') }} &bull; sisa Rp {{ number_format($bonusRupiah['sisa'], 0, ',', '.') }}</span>
                         </p>
+                        {{-- Rincian per orang & per task ada di layar Penyelesaian
+                             Task; tanpa tautan ini angkanya jadi ujung jalan. --}}
+                        @if (\Illuminate\Support\Facades\Route::has('admin.penyelesaian-task.index'))
+                            <a class="dsb-tutup-kartu" href="{{ route('admin.penyelesaian-task.index') }}" wire:navigate>
+                                <span class="visually-hidden">Buka rincian bonus penyelesaian task</span>
+                            </a>
+                        @endif
                     </article>
                 @else
                     <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
@@ -1014,14 +1074,47 @@ Task Saya || lemon
                             @elseif ($tampilan === 'scrum')
                                 <span class="dsb-chip is-samar">Task yang sama dengan tabel, dikelompokkan per status</span>
                             @else
-                                <span class="dsb-chip is-samar">Hanya task yang sudah diselesaikan</span>
+                                <span class="dsb-chip is-samar">Hanya task yang sudah diselesaikan{{ $adaSaringan ? ', mengikuti saringan di atas' : '' }}</span>
                             @endif
                         </div>
                     </div>
+
+                    @if ($tampilan === 'daftar')
+                        <div class="ts-daftar-aksi">
+                            {{-- Kolom yang boleh ditutup: pilihan PEMBACA, bukan lebar
+                                 layar — yang lebar layar sudah diurus CSS. --}}
+                            <div class="ts-kolom" x-data="{ buka: false }" x-on:click.outside="buka = false">
+                                <button type="button" class="dsb-tombol is-lembut" x-on:click="buka = ! buka"
+                                    aria-haspopup="true" x-bind:aria-expanded="buka ? 'true' : 'false'">
+                                    <i class="bi bi-layout-three-columns"></i><span>Kolom</span>
+                                </button>
+                                <div class="ts-kolom-daftar" x-show="buka" x-cloak>
+                                    @foreach (\App\Livewire\Pages\Admin\Task\TaskSayaList::KOLOM_BISA_DITUTUP as $kunci => $nama)
+                                        <button type="button" class="ts-kolom-item" wire:click="alihkanKolom('{{ $kunci }}')">
+                                            <i class="bi {{ in_array($kunci, $kolomSembunyi, true) ? 'bi-square' : 'bi-check-square-fill' }}"></i>
+                                            <span>{{ $nama }}</span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <button type="button" wire:click="unduhExcel" class="dsb-tombol is-lembut"
+                                wire:loading.attr="disabled" wire:target="unduhExcel">
+                                <i class="bi bi-file-earmark-excel"></i><span>Unduh Excel</span>
+                            </button>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="k-12">
-                    @if ($tampilan === 'scrum')
+                    {{-- Papan dan grafik punya keadaan kosongnya sendiri. Tanpa itu,
+                         saringan yang tidak menghasilkan apa pun memunculkan papan
+                         bertiga kolom kosong — tanpa satu pun jalan keluar. --}}
+                    @if ($tampilan === 'scrum' && $tasks->isEmpty())
+                        @include('livewire.pages.admin.task.partials.task-kosong')
+                    @elseif ($tampilan === 'aktivitas' && ($aktivitas['total'] ?? 0) === 0)
+                        @include('livewire.pages.admin.task.partials.task-kosong')
+                    @elseif ($tampilan === 'scrum')
                         @include('livewire.pages.admin.task.partials.task-scrum')
                     @elseif ($tampilan === 'aktivitas')
                         @include('livewire.pages.admin.task.partials.task-aktivitas')
@@ -1067,7 +1160,8 @@ Task Saya || lemon
     @if($showTaskModal)
     <div class="ts-modal-back" wire:click="$set('showTaskModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card dsb is-datar" style="max-width:600px;">
+        <div class="ts-modal-card dsb is-datar" style="max-width:600px;" role="dialog" aria-modal="true" tabindex="-1"
+            data-tutup="showTaskModal" aria-label="{{ $editingTaskId ? 'Edit task' : 'Beri task ke bawahan' }}">
             <div class="dsb-jendela-kepala">
                 <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-{{ $editingTaskId ? 'pencil-square' : 'plus-circle' }}"></i></span>
                 <span class="dsb-jendela-teks">
@@ -1252,7 +1346,8 @@ Task Saya || lemon
     @endphp
     <div class="ts-modal-back" wire:click="$set('showModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card dsb is-datar">
+        <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" tabindex="-1"
+            data-tutup="showModal" aria-label="Detail task">
 
             <div class="dsb-jendela-kepala">
                 <span class="dsb-ikon is-kecil" style="--c: {{ $warnaTask }}"><i class="bi {{ $ikonTask }}"></i></span>
@@ -1418,7 +1513,8 @@ Task Saya || lemon
     @if($showReopenModal && $reopenTask)
     <div class="ts-modal-back" wire:click="$set('showReopenModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card dsb is-datar">
+        <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" tabindex="-1"
+            data-tutup="showReopenModal" aria-label="Buka kembali task">
             <div class="dsb-jendela-kepala">
                 <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-arrow-counterclockwise"></i></span>
                 <span class="dsb-jendela-teks">
@@ -1475,7 +1571,8 @@ Task Saya || lemon
     @if($showGroupChat && $activeTask)
     <div class="ts-modal-back" wire:click="$set('showGroupChat', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card dsb is-datar">
+        <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" tabindex="-1"
+            data-tutup="showGroupChat" aria-label="Diskusi grup">
             <div class="dsb-jendela-kepala">
                 <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-chat-dots-fill"></i></span>
                 <span class="dsb-jendela-teks">
@@ -1775,8 +1872,14 @@ Task Saya || lemon
 
             const lebarBilah = () => window.innerWidth - document.documentElement.clientWidth;
 
+            // Elemen yang dipegang fokus SEBELUM jendela terbuka, supaya bisa
+            // dikembalikan saat ditutup. Tanpa itu, pengguna papan ketik
+            // mendarat di awal halaman tiap kali menutup satu task.
+            let fokusSebelumnya = null;
+
             const perbarui = () => {
-                const adaJendela = !!document.querySelector('.ts-modal');
+                const jendela = document.querySelector('.ts-modal [role="dialog"]');
+                const adaJendela = !!jendela;
                 if (adaJendela === badan.classList.contains('ts-terkunci')) return;
 
                 if (adaJendela) {
@@ -1785,11 +1888,39 @@ Task Saya || lemon
                     // Tanpa ini, hilangnya bilah gulung melebarkan halaman dan
                     // seluruh isinya bergeser beberapa piksel saat jendela dibuka.
                     if (bilah > 0) badan.style.paddingRight = bilah + 'px';
+
+                    fokusSebelumnya = document.activeElement;
+                    // Fokus ke jendelanya, bukan ke tombol pertamanya: pembaca
+                    // layar lalu membacakan judul dialognya lebih dulu.
+                    jendela.focus({ preventScroll: true });
                 } else {
                     badan.classList.remove('ts-terkunci');
                     badan.style.paddingRight = '';
+
+                    if (fokusSebelumnya && document.contains(fokusSebelumnya)) {
+                        fokusSebelumnya.focus({ preventScroll: true });
+                    }
+                    fokusSebelumnya = null;
                 }
             };
+
+            /* Esc menutup jendela teratas.
+
+               Ditulis di sini, bukan di tiap jendela: keempat jendela di layar
+               ini ditutup lewat properti Livewire yang berbeda-beda, dan
+               nama propertinya sudah dibawa tiap kartu lewat data-tutup. */
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+
+                const jendela = [...document.querySelectorAll('.ts-modal [data-tutup]')].pop();
+                if (!jendela) return;
+
+                const akar = jendela.closest('[wire\\:id]');
+                if (!akar || !window.Livewire) return;
+
+                e.preventDefault();
+                window.Livewire.find(akar.getAttribute('wire:id'))?.set(jendela.dataset.tutup, false);
+            });
 
             perbarui();
             new MutationObserver(perbarui).observe(document.documentElement, { childList: true, subtree: true });

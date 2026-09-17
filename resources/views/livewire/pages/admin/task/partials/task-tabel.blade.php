@@ -16,6 +16,38 @@
      ini, jumlahnya, dan urutannya. Dua judul berturut-turut yang mengatakan
      hal yang sama membuat halaman terbaca bertele-tele. --}}
 <div class="dsb-kartu">
+    {{-- Baris aksi massal hanya muncul saat ADA yang dicentang: bilah aksi
+         yang selalu ada tapi selalu mati hanya menyita ruang dan mengajari
+         mata untuk melewatinya. --}}
+    @if (! empty($terpilih))
+        <div class="ts-massal">
+            <span class="ts-massal-ket">
+                <i class="bi bi-check2-square"></i>{{ count($terpilih) }} task dipilih
+            </span>
+            <span class="ts-massal-aksi">
+                <button type="button" class="dsb-tombol is-hijau is-mungil pcek-konfirmasi"
+                    data-action="selesaikanTerpilih"
+                    data-title="Tandai selesai?"
+                    data-text="Hanya task milik Anda sendiri yang akan ditandai selesai. Task terkunci dilewati."
+                    data-confirm="Ya, tandai selesai" data-icon="question">
+                    <i class="bi bi-check2-circle"></i><span>Tandai Selesai</span>
+                </button>
+                @if ($canAssign)
+                    <button type="button" class="dsb-tombol is-bahaya is-mungil pcek-konfirmasi"
+                        data-action="hapusTerpilih"
+                        data-title="Hapus task terpilih?"
+                        data-text="Hanya task yang boleh Anda kelola yang akan dihapus. Tindakan ini tidak bisa dibatalkan."
+                        data-confirm="Ya, hapus" data-icon="warning">
+                        <i class="bi bi-trash"></i><span>Hapus</span>
+                    </button>
+                @endif
+                <button type="button" class="dsb-tombol is-lembut is-mungil" wire:click="bersihkanPilihan">
+                    <span>Batal</span>
+                </button>
+            </span>
+        </div>
+    @endif
+
     <div class="dsb-tabel-bungkus">
         <table class="dsb-tabel">
             <thead>
@@ -25,14 +57,16 @@
                          sekaligus membuat tidak ada yang terbaca sebagai aktif. --}}
                     @php
                         $kepala = [
-                            ['nama', 'Task', ''],
-                            [null, 'Penerima', 'k-sedang'],
-                            [null, 'Pemberi', 'k-lebar'],
-                            ['tenggat', 'Tenggat', 'k-sedang'],
-                            ['status', 'Status', ''],
+                            ['nama', 'Task', '', null],
+                            [null, 'Penerima', 'k-sedang', 'penerima'],
+                            [null, 'Pemberi', 'k-lebar', 'pemberi'],
+                            ['tenggat', 'Tenggat', 'k-sedang', 'tenggat'],
+                            ['status', 'Status', '', null],
                         ];
                     @endphp
-                    @foreach ($kepala as [$kunci, $judul, $kelas])
+                    <th class="ts-centang-kolom"><span class="visually-hidden">Pilih</span></th>
+                    @foreach ($kepala as [$kunci, $judul, $kelas, $tutupKunci])
+                        @continue($tutupKunci && in_array($tutupKunci, $kolomSembunyi, true))
                         <th class="{{ $kelas }}">
                             @if ($kunci)
                                 <button type="button" class="dsb-tabel-urut {{ $urut === $kunci ? 'aktif' : '' }}"
@@ -110,6 +144,16 @@
                             wire:click="openTask('{{ $punyaSaya->id }}')"
                         @endif>
 
+                        {{-- Centang di luar area klik baris: menekan barisnya membuka
+                             task (atau melipat grupnya), dan itu tidak boleh ikut
+                             terjadi saat orang hanya ingin memilih. --}}
+                        <td class="ts-centang-kolom" wire:click.stop>
+                            <label class="ts-centang">
+                                <input type="checkbox" value="{{ $gid }}" wire:model.live="terpilih">
+                                <span class="visually-hidden">Pilih {{ $first->nama }}</span>
+                            </label>
+                        </td>
+
                         <td>
                             <div class="dsb-tabel-utama">
                                 {{-- Pada grup, ubin ikonnya sekaligus penanda buka-tutup:
@@ -170,6 +214,7 @@
                             </div>
                         </td>
 
+                        @unless (in_array('penerima', $kolomSembunyi, true))
                         <td class="k-sedang" data-judul="Penerima">
                             @if ($grup)
                                 <span class="dsb-lencana is-ungu">
@@ -180,11 +225,15 @@
                                 <span class="dsb-tabel-angka">{{ $first->user_id === auth()->id() ? 'Anda' : ($first->karyawan?->name ?? '-') }}</span>
                             @endif
                         </td>
+                        @endunless
 
+                        @unless (in_array('pemberi', $kolomSembunyi, true))
                         <td class="k-lebar" data-judul="Pemberi">
                             <span class="dsb-tabel-angka">{{ $first->pemberi?->name ?? $first->pembuat?->name ?? 'Admin' }}</span>
                         </td>
+                        @endunless
 
+                        @unless (in_array('tenggat', $kolomSembunyi, true))
                         <td class="k-sedang" data-judul="Tenggat">
                             <span class="dsb-tabel-teks">
                                 <span class="dsb-tabel-angka">{{ $first->deadline_selesai?->locale('id')->translatedFormat('d M Y') ?? '—' }}</span>
@@ -203,6 +252,7 @@
                                 </span>
                             </span>
                         </td>
+                        @endunless
 
                         <td data-judul="Status">
                             <span class="dsb-tabel-teks">
@@ -284,6 +334,8 @@
                                 wire:key="sub-{{ $m->id }}" x-show="buka" x-cloak
                                 wire:click="openTask('{{ $m->id }}')">
 
+                                <td class="ts-centang-kolom is-kosong"></td>
+
                                 <td data-judul="Penerima">
                                     <div class="dsb-tabel-utama ts-sub-utama">
                                         <span class="dsb-avatar is-kecil" style="--c: {{ $mSaya ? '#7c3aed' : '#94a3b8' }}">
@@ -301,8 +353,12 @@
                                     </div>
                                 </td>
 
-                                <td class="k-sedang is-kosong"></td>
-                                <td class="k-lebar is-kosong"></td>
+                                @unless (in_array('penerima', $kolomSembunyi, true))
+                                    <td class="k-sedang is-kosong"></td>
+                                @endunless
+                                @unless (in_array('pemberi', $kolomSembunyi, true))
+                                    <td class="k-lebar is-kosong"></td>
+                                @endunless
 
                                 {{-- Kolomnya berjudul "Tenggat", tetapi tenggat tiap
                                      penerima SAMA dengan induknya — mengulanginya di
@@ -310,6 +366,7 @@
                                      per orang adalah KAPAN ia rampung, jadi itu yang
                                      ditulis, berikut katanya supaya tidak terbaca
                                      sebagai tenggat yang berbeda-beda. --}}
+                                @unless (in_array('tenggat', $kolomSembunyi, true))
                                 <td class="k-sedang" data-judul="Rampung">
                                     <span class="dsb-tabel-teks">
                                         <span class="dsb-tabel-angka">
@@ -318,6 +375,7 @@
                                         <span class="dsb-tabel-meta">{{ $m->completed_at ? 'Rampung' : 'Belum rampung' }}</span>
                                     </span>
                                 </td>
+                                @endunless
 
                                 <td data-judul="Status">
                                     <span class="dsb-lencana {{ $mLewat ? 'is-merah' : ($lencanaProgres[$m->progress] ?? 'is-abu') }}">

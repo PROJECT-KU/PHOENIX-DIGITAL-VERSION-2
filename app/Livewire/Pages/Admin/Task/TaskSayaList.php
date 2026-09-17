@@ -35,28 +35,43 @@ class TaskSayaList extends Component
 
     public $commentFile;
 
-    // Filter periode (pola sama seperti Pengeluaran/Spending).
+    // Filter periode (pola sama seperti Pengeluaran/Spending). Ikut alamat
+    // halaman juga: tanpa itu, tautan ke "task September" mendarat di periode
+    // berjalan milik pembacanya, bukan periode yang dimaksud pengirimnya.
+    #[Url(as: 'bln')]
     public $bulan = '';
 
+    #[Url(as: 'thn')]
     public $tahun = '';
 
     // Mode periode (sama seperti Cashflow): 'kalender' (1 s/d akhir bulan) atau
     // 'siklus20' = siklus gaji 21–20 (mis. Juli = 21 Jun s/d 20 Jul), mengikuti
     // PeriodeGaji. Nilai 'siklus20' dipertahankan apa adanya agar state/URL lama
     // tidak rusak, walau maknanya kini siklus gaji.
+    #[Url(as: 'mode', except: 'kalender')]
     public $modePeriode = 'kalender';
 
     // ===== Pencarian & saringan daftar =====
+    //
+    // Semuanya ikut ke ALAMAT HALAMAN. Tanpa itu, hasil saringan tidak bisa
+    // dikirim ke orang lain ("coba lihat yang telat ini") dan hilang tiap kali
+    // halaman dimuat ulang atau ditinggal ke layar lain. `except` menjaga
+    // alamatnya tetap pendek: nilai bawaan tidak ditulis.
+
     /** Kata kunci nama/uraian task. */
+    #[Url(as: 'q', except: '')]
     public string $cari = '';
 
     /** '' | belum | dikerjakan | selesai | telat — 'telat' bukan nilai kolom. */
+    #[Url(as: 'status', except: '')]
     public string $saringStatus = '';
 
     /** user_id penerima tertentu. */
+    #[Url(as: 'orang', except: '')]
     public string $saringOrang = '';
 
     /** id kategori. */
+    #[Url(as: 'kategori', except: '')]
     public string $saringKategori = '';
 
     /**
@@ -64,15 +79,68 @@ class TaskSayaList extends Component
      * Bagi atasan keduanya bercampur di satu daftar padahal sifatnya berbeda:
      * yang satu harus dikerjakan, yang satu harus ditagih.
      */
+    #[Url(as: 'arah', except: 'semua')]
     public string $saringArah = 'semua';
 
     /** 'terbaru' | 'tenggat' | 'nama' | 'status'. */
+    #[Url(as: 'urut', except: 'terbaru')]
     public string $urut = 'terbaru';
 
+    #[Url(as: 'urutan', except: 'desc')]
     public string $arahUrut = 'desc';
 
     /** Halaman tabel. Dihitung atas GRUP, bukan baris. */
+    #[Url(as: 'hal', except: 1)]
     public int $halaman = 1;
+
+    /**
+     * Kolom tabel yang DISEMBUNYIKAN. Pilihan pembaca, bukan lebar layar —
+     * yang lebar layar sudah diurus CSS. Ikut alamat halaman supaya susunannya
+     * bertahan saat kembali dari detail.
+     *
+     * @var array<int, string>
+     */
+    #[Url(as: 'tutup', except: [])]
+    public array $kolomSembunyi = [];
+
+    public const KOLOM_BISA_DITUTUP = [
+        'penerima' => 'Penerima',
+        'pemberi' => 'Pemberi',
+        'tenggat' => 'Tenggat',
+    ];
+
+    public function alihkanKolom(string $kolom): void
+    {
+        if (! array_key_exists($kolom, self::KOLOM_BISA_DITUTUP)) {
+            return;
+        }
+
+        $this->kolomSembunyi = in_array($kolom, $this->kolomSembunyi, true)
+            ? array_values(array_diff($this->kolomSembunyi, [$kolom]))
+            : [...$this->kolomSembunyi, $kolom];
+    }
+
+    /**
+     * Grup task yang dicentang untuk aksi massal.
+     *
+     * Berisi group_id, bukan task id: satu baris tabel adalah satu PEKERJAAN,
+     * dan mencentangnya berarti memilih seluruh penerimanya.
+     *
+     * @var array<int, string>
+     */
+    public array $terpilih = [];
+
+    /**
+     * Bersihkan pilihan tiap kali daftarnya berubah.
+     *
+     * Tanpa ini, grup yang tercentang lalu tersaring keluar tetap ikut
+     * terkena aksi massal — pengguna menekan "Tandai Selesai" untuk tiga baris
+     * yang terlihat, dan yang berubah tujuh.
+     */
+    public function bersihkanPilihan(): void
+    {
+        $this->terpilih = [];
+    }
 
     public const PER_HALAMAN = 15;
 
@@ -81,6 +149,7 @@ class TaskSayaList extends Component
     {
         if (in_array($nama, ['cari', 'saringStatus', 'saringOrang', 'saringKategori', 'saringArah', 'bulan', 'tahun', 'modePeriode'], true)) {
             $this->halaman = 1;
+            $this->bersihkanPilihan();
         }
     }
 
@@ -106,6 +175,105 @@ class TaskSayaList extends Component
     public function keHalaman(int $ke): void
     {
         $this->halaman = max(1, $ke);
+        $this->bersihkanPilihan();
+    }
+
+    /**
+     * Tandai selesai seluruh task TERPILIH yang memang milik saya.
+     *
+     * Kelayakan tiap task diperiksa ULANG di sini, bukan dipercayakan pada
+     * daftar centang: centangnya datang dari peramban, dan satu-satunya yang
+     * tahu apakah sebuah task boleh ditutup adalah server.
+     */
+    public function selesaikanTerpilih(): void
+    {
+        if (empty($this->terpilih)) {
+            return;
+        }
+
+        $kandidat = Task::visibleTo()
+            ->whereIn('group_id', $this->terpilih)
+            ->where('user_id', auth()->id())
+            ->where('progress', '!=', 'selesai')
+            ->get();
+
+        $berhasil = 0;
+        $dilewati = 0;
+
+        foreach ($kandidat as $t) {
+            // Task terkunci (sudah selesai atau lewat tenggat & beku) tidak
+            // boleh ditutup diam-diam lewat aksi massal.
+            if ($t->isLocked()) {
+                $dilewati++;
+
+                continue;
+            }
+
+            $t->update(['progress' => 'selesai', 'completed_at' => now()]);
+            $berhasil++;
+        }
+
+        $this->bersihkanPilihan();
+
+        $pesan = $berhasil > 0
+            ? $berhasil.' task ditandai selesai'.($dilewati > 0 ? ', '.$dilewati.' dilewati karena terkunci' : '.')
+            : 'Tidak ada task yang bisa ditandai selesai dari pilihan itu.';
+
+        $this->dispatch($berhasil > 0 ? 'swal-success' : 'swal-error', message: $pesan);
+    }
+
+    /**
+     * Hapus seluruh grup task TERPILIH yang boleh saya kelola.
+     *
+     * Sama seperti di atas: yang menentukan boleh atau tidak adalah
+     * manageableGiverIds() di server, bukan tombol yang tampil di layar.
+     */
+    public function hapusTerpilih(): void
+    {
+        if (empty($this->terpilih) || ! auth()->user()?->canAssignTask()) {
+            return;
+        }
+
+        $bolehDari = $this->manageableGiverIds();
+        $dihapus = 0;
+
+        foreach ($this->terpilih as $groupId) {
+            $anggota = Task::where('group_id', $groupId)->get();
+
+            if ($anggota->isEmpty() || $anggota->contains(fn ($t) => ! in_array($t->assigned_by, $bolehDari, true))) {
+                continue;
+            }
+
+            $this->deleteGroup($groupId);
+            $dihapus++;
+        }
+
+        $this->bersihkanPilihan();
+
+        $this->dispatch(
+            $dihapus > 0 ? 'swal-success' : 'swal-error',
+            message: $dihapus > 0
+                ? $dihapus.' task grup dihapus.'
+                : 'Tidak ada task yang boleh Anda hapus dari pilihan itu.',
+        );
+    }
+
+    /**
+     * Unduh rekap task yang SEDANG TERLIHAT sebagai Excel.
+     *
+     * Mengikuti saringan yang aktif, bukan seluruh tabel: yang ingin dibawa ke
+     * rapat adalah daftar yang barusan disusun di layar. Tanpa nilai rupiah —
+     * berkas ini bisa berpindah tangan, dan besaran bonus bukan urusan
+     * penerimanya.
+     */
+    public function unduhExcel()
+    {
+        $tasks = $this->kueriDaftar()->get();
+
+        $nama = 'task-'.($this->bulan ? str_pad((string) $this->bulan, 2, '0', STR_PAD_LEFT).'-' : '')
+            .($this->tahun ?: now()->year).'-'.now()->format('Hi').'.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\TaskExport($tasks), $nama);
     }
 
     /** Apakah ada saringan selain periode yang sedang aktif. */
@@ -130,6 +298,7 @@ class TaskSayaList extends Component
     //               karyawan yang sudah ada tidak berubah.
     // 'scrum'     : papan Kanban 3 kolom (Belum / Dikerjakan / Selesai).
     // 'aktivitas' : grafik kontribusi ala GitHub + linimasa.
+    #[Url(as: 'tampilan', except: 'daftar')]
     public string $tampilan = 'daftar';
 
     /** Ganti cara pandang. Hanya mengubah tampilan, tidak menyentuh data/filter. */
@@ -845,6 +1014,10 @@ class TaskSayaList extends Component
         $selesai = Task::visibleTo()
             ->whereNotNull('completed_at')
             ->whereBetween('completed_at', [$awal, $akhir])
+            // Saringan yang sedang aktif ikut berlaku di sini. Status sengaja
+            // DILEWATI: grafik ini memang hanya tentang yang sudah selesai,
+            // jadi menyaring "belum dikerjakan" akan selalu mengosongkannya.
+            ->tap(fn ($q) => $this->saring($q, denganStatus: false))
             ->with(['karyawan', 'category', 'label'])
             ->orderByDesc('completed_at')
             ->get();
@@ -895,6 +1068,38 @@ class TaskSayaList extends Component
             'rataMingguan' => $rataMingguan,
             'linimasa' => $selesai->take(12),
         ];
+    }
+
+    /**
+     * Saringan yang TIDAK menyangkut periode: kata kunci, status, penerima,
+     * kategori, dan hubungan.
+     *
+     * Ditulis sekali dan dipakai bersama oleh tabel/papan DAN grafik
+     * aktivitas. Sebelumnya aktivitas hanya menghormati tahun: menyaring
+     * "Penerima: Aulia" lalu berpindah ke tab Aktivitas menampilkan aktivitas
+     * SEMUA orang, tanpa satu pun tanda bahwa saringannya dibuang — angkanya
+     * benar untuk pertanyaan yang tidak diajukan siapa pun.
+     */
+    protected function saring($query, bool $denganStatus = true)
+    {
+        return $query
+            ->when($this->cari !== '', function ($q) {
+                $kata = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($this->cari)).'%';
+                $q->where(fn ($qq) => $qq->where('nama', 'like', $kata)->orWhere('deskripsi', 'like', $kata));
+            })
+            ->when($denganStatus && $this->saringStatus !== '', function ($q) {
+                // 'telat' bukan nilai kolom progress — ia turunan dari tenggat
+                // yang lewat sementara pekerjaannya belum selesai.
+                if ($this->saringStatus === 'telat') {
+                    $q->where('progress', '!=', 'selesai')->whereDate('deadline_selesai', '<', today());
+                } else {
+                    $q->where('progress', $this->saringStatus);
+                }
+            })
+            ->when($this->saringOrang !== '', fn ($q) => $q->where('user_id', $this->saringOrang))
+            ->when($this->saringKategori !== '', fn ($q) => $q->where('task_category_id', $this->saringKategori))
+            ->when($this->saringArah === 'saya', fn ($q) => $q->where('user_id', auth()->id()))
+            ->when($this->saringArah === 'dari-saya', fn ($q) => $q->where('assigned_by', auth()->id()));
     }
 
     /**
@@ -974,9 +1179,16 @@ class TaskSayaList extends Component
         ];
     }
 
-    public function render()
+    /**
+     * Kueri daftar task: periode + saringan + urutan yang sedang aktif.
+     *
+     * Dipakai bersama oleh layar dan oleh unduhan Excel, supaya berkas yang
+     * diunduh berisi PERSIS apa yang barusan disusun di layar — bukan hasil
+     * kueri kedua yang kebetulan mirip.
+     */
+    protected function kueriDaftar()
     {
-        $tasks = Task::visibleTo()
+        return Task::visibleTo()
             ->with(['groupComments', 'category', 'label', 'pemberi', 'pembuat', 'karyawan'])
             // Jumlah lampiran ikut dihitung di kueri yang sama — tanpa ini tiap
             // baris tabel akan memicu kuerinya sendiri saat menampilkan angkanya.
@@ -991,25 +1203,9 @@ class TaskSayaList extends Component
                 $q->when($this->bulan, fn ($qq) => $qq->where('periode_bulan', $this->bulan))
                     ->when($this->tahun, fn ($qq) => $qq->where('periode_tahun', $this->tahun));
             })
-            // Saringan daftar. Semuanya OPSIONAL dan saling menumpuk; tanpa
-            // satu pun, hasilnya sama persis dengan sebelumnya.
-            ->when($this->cari !== '', function ($q) {
-                $kata = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($this->cari)).'%';
-                $q->where(fn ($qq) => $qq->where('nama', 'like', $kata)->orWhere('deskripsi', 'like', $kata));
-            })
-            ->when($this->saringStatus !== '', function ($q) {
-                // 'telat' bukan nilai kolom progress — ia turunan dari tenggat
-                // yang lewat sementara pekerjaannya belum selesai.
-                if ($this->saringStatus === 'telat') {
-                    $q->where('progress', '!=', 'selesai')->whereDate('deadline_selesai', '<', today());
-                } else {
-                    $q->where('progress', $this->saringStatus);
-                }
-            })
-            ->when($this->saringOrang !== '', fn ($q) => $q->where('user_id', $this->saringOrang))
-            ->when($this->saringKategori !== '', fn ($q) => $q->where('task_category_id', $this->saringKategori))
-            ->when($this->saringArah === 'saya', fn ($q) => $q->where('user_id', auth()->id()))
-            ->when($this->saringArah === 'dari-saya', fn ($q) => $q->where('assigned_by', auth()->id()))
+            // Saringan daftar — SATU tempat, dipakai juga oleh tampilan
+            // Aktivitas. Lihat catatan di saring().
+            ->tap(fn ($q) => $this->saring($q))
             // Urutan bawaan: YANG TERBARU DI ATAS. Urutan lama mendahulukan yang
             // jatuh tempo hari ini lalu progresnya, sehingga task yang baru saja
             // diberikan bisa mendarat di tengah daftar dan tidak terlihat sudah
@@ -1018,8 +1214,12 @@ class TaskSayaList extends Component
             ->when($this->urut === 'tenggat', fn ($q) => $q->orderBy('deadline_selesai', $this->arahUrut))
             ->when($this->urut === 'nama', fn ($q) => $q->orderBy('nama', $this->arahUrut))
             ->when($this->urut === 'status', fn ($q) => $q->orderByRaw("FIELD(progress,'belum','dikerjakan','selesai') ".($this->arahUrut === 'asc' ? 'asc' : 'desc')))
-            ->orderBy('created_at', $this->urut === 'terbaru' ? $this->arahUrut : 'desc')
-            ->get();
+            ->orderBy('created_at', $this->urut === 'terbaru' ? $this->arahUrut : 'desc');
+    }
+
+    public function render()
+    {
+        $tasks = $this->kueriDaftar()->get();
 
         $activeTask = $this->activeTaskId
             ? Task::visibleTo()->with(['groupComments.user', 'attachments', 'pemberi', 'karyawan'])->find($this->activeTaskId)
