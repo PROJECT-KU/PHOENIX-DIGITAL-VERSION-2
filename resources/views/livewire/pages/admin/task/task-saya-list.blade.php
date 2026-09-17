@@ -662,7 +662,9 @@ Task Saya || lemon
                     </span>
                     <span>
                         <span class="dsb-aku-nama">{{ auth()->user()->name }}</span>
-                        <span class="dsb-aku-peran">{{ $poin['total'] }} task periode ini</span>
+                        <span class="dsb-aku-peran">
+                            {{ $poin['total'] > 0 ? $poin['total'].' task untuk Anda' : (auth()->user()->role->name ?? 'Pengguna') }}
+                        </span>
                     </span>
                 </div>
 
@@ -688,13 +690,16 @@ Task Saya || lemon
             $tsBerjalan = $semua - $tsSelesai;
             $persenSelesai = $semua > 0 ? (int) round($tsSelesai / $semua * 100) : 0;
 
-            // Kartu kecil: tiga bila poin & bonus tidak berebut tempat, empat
-            // bila keduanya ada. Lebarnya ikut menyesuaikan supaya barisnya
-            // selalu penuh — deretan kartu dengan lubang di ujung adalah hal
-            // pertama yang membuat halaman terbaca tidak rapi.
+            // Susunan kartu ditentukan SEKALI di sini, lalu dirender dari
+            // daftarnya. Versi sebelumnya memakai rantai @if terpisah, dan pada
+            // satu keadaan — administrator tanpa task sendiri — kartu "Selesai"
+            // hilang sama sekali sementara barisnya menyisakan lubang di ujung.
             $adaPoin = $poin['total'] > 0;
-            $kartuKecil = 3 + (($adaPoin && $bonusRupiah) ? 1 : 0);
-            $lebarKecil = $kartuKecil === 4 ? 'k-3' : 'k-4';
+
+            $susunan = \App\Livewire\Pages\Admin\Task\TaskSayaList::susunanKartu($adaPoin, (bool) $bonusRupiah);
+            $utamaKedua = $susunan['utama_kedua'];
+            $kecil = $susunan['kecil'];
+            $lebarKecil = $susunan['lebar_kecil'];
         @endphp
 
         <section class="dsb-bagian">
@@ -724,7 +729,7 @@ Task Saya || lemon
                     <p class="dsb-stat-ket"><i class="bi bi-list-task"></i><span>Dari {{ $semua }} task periode ini</span></p>
                 </article>
 
-                @if ($adaPoin)
+                @if ($utamaKedua === 'poin')
                     {{-- POIN, bukan rupiah.
 
                          Bonus penyelesaian task memang dibagi dari satu pool
@@ -750,7 +755,7 @@ Task Saya || lemon
                             <span>Ringan 1 &bull; sedang 2 &bull; berat 3. Terlambat 60%, tidak selesai 0.</span>
                         </p>
                     </article>
-                @elseif ($bonusRupiah)
+                @elseif ($utamaKedua === 'bonus')
                     {{-- Nilai rupiahnya HANYA untuk pemegang view_all_gajikaryawan. --}}
                     <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
                         <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
@@ -781,43 +786,47 @@ Task Saya || lemon
                     </article>
                 @endif
 
-                <article class="dsb-stat {{ $lebarKecil }}" style="--c: {{ $tsHariIni > 0 ? '#d97706' : '#64748b' }}">
-                    <span class="dsb-ikon"><i class="bi bi-alarm-fill"></i></span>
-                    <p class="dsb-stat-label">Jatuh Tempo Hari Ini</p>
-                    <p class="dsb-stat-nilai">{{ $tsHariIni }}<span class="dsb-stat-satuan">task</span></p>
-                    <p class="dsb-stat-ket"><i class="bi bi-calendar-day"></i><span>{{ $tsHariIni > 0 ? 'Kerjakan yang ini lebih dulu' : 'Tidak ada yang jatuh tempo' }}</span></p>
-                </article>
-
-                <article class="dsb-stat {{ $lebarKecil }}" style="--c: {{ $tsLewat > 0 ? '#e11d48' : '#16a34a' }}">
-                    <span class="dsb-ikon"><i class="bi {{ $tsLewat > 0 ? 'bi-clipboard-x-fill' : 'bi-patch-check-fill' }}"></i></span>
-                    <p class="dsb-stat-label">Lewat Tenggat</p>
-                    <p class="dsb-stat-nilai">{{ $tsLewat }}<span class="dsb-stat-satuan">task</span></p>
-                    <p class="dsb-stat-ket"><i class="bi bi-calendar-x"></i><span>{{ $tsLewat > 0 ? 'Sudah melewati tanggalnya' : 'Tidak ada yang terlambat' }}</span></p>
-                </article>
-
-                @if ($adaPoin || ! $bonusRupiah)
-                    <article class="dsb-stat {{ $lebarKecil }}" style="--c: #16a34a">
-                        <span class="dsb-ikon"><i class="bi bi-check-circle-fill"></i></span>
-                        <p class="dsb-stat-label">Selesai</p>
-                        <p class="dsb-stat-nilai">{{ $tsSelesai }}<span class="dsb-stat-satuan">task</span></p>
-                        @if ($semua > 0)
-                            <span class="dsb-kemajuan" style="--c: #16a34a"><span style="width: {{ $persenSelesai }}%"></span></span>
-                        @endif
-                        <p class="dsb-stat-ket"><i class="bi bi-percent"></i><span>{{ $semua > 0 ? $persenSelesai.'% dari periode ini' : 'Belum ada task' }}</span></p>
-                    </article>
-                @endif
-
-                @if ($adaPoin && $bonusRupiah)
-                    <article class="dsb-stat {{ $lebarKecil }}" style="--c: #7c3aed">
-                        <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
-                        <p class="dsb-stat-label">
-                            Bonus Periode
-                            <span class="dsb-tanda-kini"><i class="bi bi-shield-lock-fill"></i>Admin</span>
-                        </p>
-                        <p class="dsb-stat-nilai">Rp {{ number_format($bonusRupiah['terpakai'], 0, ',', '.') }}</p>
-                        <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Sisa Rp {{ number_format($bonusRupiah['sisa'], 0, ',', '.') }}</span></p>
-                    </article>
-                @endif
+                {{-- Kartu kecil dirender DARI DAFTARNYA, bukan lewat rantai @if:
+                     dengan rantai, satu keadaan yang tidak terpikir membuat
+                     kartunya hilang sekaligus meninggalkan lubang di barisnya. --}}
+                @foreach ($kecil as $jenis)
+                    @if ($jenis === 'hari-ini')
+                        <article class="dsb-stat {{ $lebarKecil }}" style="--c: {{ $tsHariIni > 0 ? '#d97706' : '#64748b' }}">
+                            <span class="dsb-ikon"><i class="bi bi-alarm-fill"></i></span>
+                            <p class="dsb-stat-label">Jatuh Tempo Hari Ini</p>
+                            <p class="dsb-stat-nilai">{{ $tsHariIni }}<span class="dsb-stat-satuan">task</span></p>
+                            <p class="dsb-stat-ket"><i class="bi bi-calendar-day"></i><span>{{ $tsHariIni > 0 ? 'Kerjakan yang ini lebih dulu' : 'Tidak ada yang jatuh tempo' }}</span></p>
+                        </article>
+                    @elseif ($jenis === 'lewat')
+                        <article class="dsb-stat {{ $lebarKecil }}" style="--c: {{ $tsLewat > 0 ? '#e11d48' : '#16a34a' }}">
+                            <span class="dsb-ikon"><i class="bi {{ $tsLewat > 0 ? 'bi-clipboard-x-fill' : 'bi-patch-check-fill' }}"></i></span>
+                            <p class="dsb-stat-label">Lewat Tenggat</p>
+                            <p class="dsb-stat-nilai">{{ $tsLewat }}<span class="dsb-stat-satuan">task</span></p>
+                            <p class="dsb-stat-ket"><i class="bi bi-calendar-x"></i><span>{{ $tsLewat > 0 ? 'Sudah melewati tanggalnya' : 'Tidak ada yang terlambat' }}</span></p>
+                        </article>
+                    @elseif ($jenis === 'selesai')
+                        <article class="dsb-stat {{ $lebarKecil }}" style="--c: #16a34a">
+                            <span class="dsb-ikon"><i class="bi bi-check-circle-fill"></i></span>
+                            <p class="dsb-stat-label">Selesai</p>
+                            <p class="dsb-stat-nilai">{{ $tsSelesai }}<span class="dsb-stat-satuan">task</span></p>
+                            @if ($semua > 0)
+                                <span class="dsb-kemajuan" style="--c: #16a34a"><span style="width: {{ $persenSelesai }}%"></span></span>
+                            @endif
+                            <p class="dsb-stat-ket"><i class="bi bi-percent"></i><span>{{ $semua > 0 ? $persenSelesai.'% dari periode ini' : 'Belum ada task' }}</span></p>
+                        </article>
+                    @elseif ($jenis === 'bonus')
+                        {{-- Nilai rupiahnya HANYA untuk pemegang view_all_gajikaryawan. --}}
+                        <article class="dsb-stat {{ $lebarKecil }}" style="--c: #7c3aed">
+                            <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                            <p class="dsb-stat-label">
+                                Bonus Periode
+                                <span class="dsb-tanda-kini"><i class="bi bi-shield-lock-fill"></i>Admin</span>
+                            </p>
+                            <p class="dsb-stat-nilai">Rp {{ number_format($bonusRupiah['terpakai'], 0, ',', '.') }}</p>
+                            <p class="dsb-stat-ket"><i class="bi bi-wallet2"></i><span>Sisa Rp {{ number_format($bonusRupiah['sisa'], 0, ',', '.') }}</span></p>
+                        </article>
+                    @endif
+                @endforeach
             </div>
         </section>
 

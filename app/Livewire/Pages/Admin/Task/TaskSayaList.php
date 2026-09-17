@@ -898,6 +898,42 @@ class TaskSayaList extends Component
     }
 
     /**
+     * Susunan kartu ringkasan: mana yang menempati slot utama kedua, kartu
+     * kecil apa saja, dan selebar apa masing-masing.
+     *
+     * Ditulis di sini, bukan sebagai rantai @if di Blade: dengan rantai, satu
+     * keadaan yang tidak terpikir — administrator tanpa task sendiri —
+     * membuat kartu "Selesai" hilang sekaligus meninggalkan lubang di ujung
+     * barisnya. Sebagai daftar, tiap kartu pasti terpakai tepat sekali dan
+     * lebarnya dihitung dari jumlahnya.
+     *
+     * @return array{utama_kedua: string, kecil: array<int, string>, lebar_kecil: string}
+     */
+    public static function susunanKartu(bool $adaPoin, bool $adaBonus): array
+    {
+        // Slot utama kedua diisi kartu yang paling berarti bagi pembacanya:
+        // poin bagi yang punya task sendiri, bonus bagi administrator yang
+        // tidak punya, selesai bagi yang tidak punya keduanya.
+        $utamaKedua = $adaPoin ? 'poin' : ($adaBonus ? 'bonus' : 'selesai');
+
+        $kecil = ['hari-ini', 'lewat'];
+        if ($utamaKedua !== 'selesai') {
+            $kecil[] = 'selesai';
+        }
+        if ($adaBonus && $utamaKedua !== 'bonus') {
+            $kecil[] = 'bonus';
+        }
+
+        return [
+            'utama_kedua' => $utamaKedua,
+            'kecil' => $kecil,
+            // Barisnya harus selalu penuh — deretan kartu dengan lubang di
+            // ujung adalah hal pertama yang membuat halaman terbaca tidak rapi.
+            'lebar_kecil' => [1 => 'k-12', 2 => 'k-6', 3 => 'k-4', 4 => 'k-3'][count($kecil)] ?? 'k-3',
+        ];
+    }
+
+    /**
      * Poin task MILIK SAYA pada periode yang sedang ditampilkan.
      *
      * Poin — bukan rupiah. Besaran rupiahnya bergantung pada pool anggaran

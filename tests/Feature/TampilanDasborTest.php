@@ -503,3 +503,30 @@ it('jendela task yang menggulung hanya jendelanya, bukan halamannya', function (
         // Tombol keputusan di kaki jendela, bukan di ujung badan yang tergulung.
         ->and($task)->not->toContain('class="px-4 pb-4 d-flex justify-content-end gap-2"');
 });
+
+it('baris kartu ringkasan task selalu penuh dan tidak ada kartu yang hilang', function () {
+    // Versi rantai @if-nya punya satu keadaan yang tidak terpikir:
+    // ADMINISTRATOR TANPA TASK SENDIRI. Kartu bonus mengambil slot utama,
+    // lalu syarat kartu "Selesai" ikut gagal — kartunya hilang sama sekali
+    // dan barisnya menyisakan sepertiga lebar yang kosong di ujung.
+    $kelas = \App\Livewire\Pages\Admin\Task\TaskSayaList::class;
+
+    foreach ([[true, true], [true, false], [false, true], [false, false]] as [$adaPoin, $adaBonus]) {
+        $s = $kelas::susunanKartu($adaPoin, $adaBonus);
+        $lebar = (int) substr($s['lebar_kecil'], 2);
+
+        // Barisnya penuh: jumlah kartu kecil × lebarnya = 12 kolom.
+        expect(count($s['kecil']) * $lebar)->toBe(12);
+
+        // "Selesai" selalu ada — entah di slot utama, entah di antara yang kecil.
+        expect($s['utama_kedua'] === 'selesai' || in_array('selesai', $s['kecil'], true))->toBeTrue();
+
+        // Bonus muncul tepat sekali saat izinnya ada, dan tidak pernah saat tidak.
+        $jumlahBonus = ($s['utama_kedua'] === 'bonus' ? 1 : 0) + (int) in_array('bonus', $s['kecil'], true);
+        expect($jumlahBonus)->toBe($adaBonus ? 1 : 0);
+
+        // Tidak ada kartu yang dipakai dua kali.
+        expect($s['kecil'])->toBe(array_values(array_unique($s['kecil'])))
+            ->and(in_array($s['utama_kedua'], $s['kecil'], true))->toBeFalse();
+    }
+});
