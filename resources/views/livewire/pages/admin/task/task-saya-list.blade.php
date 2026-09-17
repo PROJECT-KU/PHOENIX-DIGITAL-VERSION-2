@@ -72,11 +72,33 @@ Task Saya || lemon
 
         /* ===== Modal glossy ===== */
         .ts-modal-back { position: fixed; inset: 0; background: rgba(15, 23, 42, .5); backdrop-filter: blur(2px); z-index: 1055; }
-        .ts-modal { position: fixed; inset: 0; z-index: 1056; display: flex; align-items: flex-start; justify-content: center; padding: 4vh 12px; overflow-y: auto; }
-        .ts-modal-card { background: #fff; border-radius: 22px; width: 100%; max-width: 560px; box-shadow: 0 30px 70px rgba(15, 23, 42, .32); overflow: hidden; }
-        .ts-modal-head { padding: 22px 24px; background: linear-gradient(135deg, #7c3aed, #4e46e5); color: #fff; position: relative; }
-        .ts-modal-head h5, .ts-modal-head small, .ts-modal-head .badge { color: #fff; }
-        .ts-modal-head .btn-close { filter: invert(1) grayscale(1) brightness(2); opacity: .9; position: absolute; top: 18px; right: 20px; }
+        /* Yang menggulung hanya JENDELANYA, bukan halaman di belakangnya.
+
+           Dulu lapisan .ts-modal sendiri yang menggulung, jadi saat jendelanya
+           panjang: kepala dan tombol keputusannya ikut menghilang ke atas
+           layar, dan halaman di belakangnya tetap bisa ikut tergulung —
+           menutup jendela lalu mendaratkan pembacanya di tempat yang berbeda
+           dari tempat ia menekan tadi. */
+        .ts-modal {
+            position: fixed; inset: 0; z-index: 1056;
+            display: flex; align-items: center; justify-content: center;
+            padding: 3vh 12px; overflow: hidden;
+        }
+        .ts-modal-card {
+            background: #fff; border-radius: 22px; width: 100%; max-width: 560px;
+            box-shadow: 0 30px 70px rgba(15, 23, 42, .32);
+            /* Kolom: kepala & kaki tetap, badan yang menggulung. */
+            display: flex; flex-direction: column;
+            max-height: 94vh; min-height: 0; overflow: hidden;
+        }
+        .ts-modal-card > .dsb-jendela-kepala,
+        .ts-modal-card > .dsb-jendela-kaki { flex: 0 0 auto; }
+        .ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+        /* Halaman di belakang dikunci selama ada jendela terbuka. Lebar bilah
+           gulung diganti padding supaya isinya tidak melompat mendatar saat
+           bilah itu hilang. */
+        body.ts-terkunci { overflow: hidden; }
 
         .ts-section-lbl { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; margin-bottom: 8px; }
 
@@ -1182,7 +1204,9 @@ Task Saya || lemon
                     </div>
                 </div>
             </div>
-            <div class="px-4 pb-4 d-flex justify-content-end gap-2">
+            {{-- Kaki jendela, bukan ujung badannya: tombol keputusan harus tetap
+                 terlihat walau isinya digulung panjang. --}}
+            <div class="dsb-jendela-kaki" style="justify-content: flex-end;">
                 <button type="button" class="dsb-tombol is-lembut" wire:click="$set('showTaskModal', false)"><span>Batal</span></button>
                 <button type="button" class="dsb-tombol is-utama"
                     wire:click="saveTask" wire:loading.attr="disabled" wire:target="saveTask">
@@ -1426,7 +1450,9 @@ Task Saya || lemon
                     </div>
                 </div>
             </div>
-            <div class="px-4 pb-4 d-flex justify-content-end gap-2">
+            {{-- Kaki jendela, bukan ujung badannya: tombol keputusan harus tetap
+                 terlihat walau isinya digulung panjang. --}}
+            <div class="dsb-jendela-kaki" style="justify-content: flex-end;">
                 <button type="button" class="dsb-tombol is-lembut" wire:click="$set('showReopenModal', false)"><span>Batal</span></button>
                 <button type="button" class="dsb-tombol is-kuning" wire:click="bukaKembali">
                     <i class="bi bi-arrow-counterclockwise" style="display:inline-flex;align-items:center;line-height:1;"></i> Buka Kembali
@@ -1728,6 +1754,44 @@ Task Saya || lemon
                 });
             };
         }
+
+        /* Kunci gulung halaman selama ada jendela terbuka.
+
+           Dipasang sebagai PENGAMAT, bukan ditempel di tiap tombol buka/tutup:
+           jendela di layar ini dibuka dan ditutup oleh Livewire (dan bisa juga
+           oleh tombol Esc, klik latar, atau perpindahan halaman), jadi satu-
+           satunya tempat yang pasti tahu keadaannya adalah DOM itu sendiri. */
+        (function () {
+            const badan = document.body;
+
+            const lebarBilah = () => window.innerWidth - document.documentElement.clientWidth;
+
+            const perbarui = () => {
+                const adaJendela = !!document.querySelector('.ts-modal');
+                if (adaJendela === badan.classList.contains('ts-terkunci')) return;
+
+                if (adaJendela) {
+                    const bilah = lebarBilah();
+                    badan.classList.add('ts-terkunci');
+                    // Tanpa ini, hilangnya bilah gulung melebarkan halaman dan
+                    // seluruh isinya bergeser beberapa piksel saat jendela dibuka.
+                    if (bilah > 0) badan.style.paddingRight = bilah + 'px';
+                } else {
+                    badan.classList.remove('ts-terkunci');
+                    badan.style.paddingRight = '';
+                }
+            };
+
+            perbarui();
+            new MutationObserver(perbarui).observe(document.documentElement, { childList: true, subtree: true });
+
+            // Berpindah halaman lewat wire:navigate tidak selalu melepas kelasnya
+            // sendiri — dan halaman berikutnya lalu tidak bisa digulung sama sekali.
+            document.addEventListener('livewire:navigating', () => {
+                badan.classList.remove('ts-terkunci');
+                badan.style.paddingRight = '';
+            });
+        })();
 
         // Bersihkan ?open_task dari URL agar hard refresh tidak membuka popup lagi.
         (function () {

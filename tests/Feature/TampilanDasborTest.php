@@ -478,3 +478,28 @@ it('layar task memakai irama bagian yang sama dengan dasbor', function () {
         // nama daftar, jumlah, dan urutannya.
         ->and($tabel)->not->toContain('Daftar Task</h3>');
 });
+
+it('jendela task yang menggulung hanya jendelanya, bukan halamannya', function () {
+    // Dulu lapisan pembungkusnya yang menggulung: kepala dan tombol keputusan
+    // ikut menghilang ke atas layar, dan halaman di belakangnya tetap bisa
+    // ikut tergulung — menutup jendela lalu mendaratkan pembacanya di tempat
+    // yang berbeda dari tempat ia menekan tadi.
+    //
+    // Diukur sesudahnya (jendela "Beri Task" pada layar setinggi 700px):
+    // kartunya muat utuh di layar, kepala & kakinya tetap di dalam kartu, dan
+    // yang menggulung hanya badannya.
+    $task = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($task)->toContain('max-height: 94vh;')
+        ->and($task)->toContain('.ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto;')
+        ->and($task)->toContain('body.ts-terkunci { overflow: hidden; }')
+        // Penguncinya PENGAMAT, bukan tempelan di tiap tombol: jendela di layar
+        // ini dibuka & ditutup Livewire, jadi satu-satunya yang pasti tahu
+        // keadaannya adalah DOM.
+        ->and($task)->toContain('new MutationObserver(perbarui)')
+        // Berpindah halaman lewat wire:navigate harus melepas kuncinya; tanpa
+        // ini halaman berikutnya tidak bisa digulung sama sekali.
+        ->and($task)->toContain('livewire:navigating')
+        // Tombol keputusan di kaki jendela, bukan di ujung badan yang tergulung.
+        ->and($task)->not->toContain('class="px-4 pb-4 d-flex justify-content-end gap-2"');
+});
