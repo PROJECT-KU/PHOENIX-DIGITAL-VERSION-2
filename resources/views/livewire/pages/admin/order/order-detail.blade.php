@@ -2,38 +2,193 @@
 @section('title')
 Detail Pesanan || lemon
 @stop
-<div class="container-fluid">
-    <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
-        <div class="card-body p-4 d-flex align-items-center">
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 header-action w-100">
-                <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">Detail Pesanan {{ $order->order_number }}</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        @php
-                        $breadcrumbs = [
-                        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                        ['name' => 'Data Pesanan Toko', 'url' => route('admin.pesanantoko.index')],
-                        ['name' => 'Detail Pesanan'],
-                        ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
+<div>
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*). Isi tiap kartu tetap,
+         hanya kulitnya yang diseragamkan (lihat gaya pt-detail di bawah). --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.order.partials.toko-gaya')
+
+    @php
+        [$hdStatus, $hdWarna] = $order->labelStatus();
+        $hdBayar = $order->labelPembayaran();
+        $hdLencana = [
+            'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
+            'danger' => 'is-merah', 'secondary' => 'is-abu', 'dark' => 'is-abu', 'light' => 'is-abu',
+        ];
+        $hdNamaStatus = [
+            'DRAFT' => 'Draft', 'PENDING' => 'Menunggu bayar', 'PAID' => 'Dibayar', 'PROCESSING' => 'Diproses',
+            'COMPLETED' => 'Selesai', 'CANCELLED' => 'Dibatalkan', 'SEDANG DIPROSES' => 'Sedang dicek',
+        ];
+        $hdWarnaStatus = ['success' => '#16a34a', 'warning' => '#d97706', 'info' => '#0284c7', 'primary' => '#4f46e5', 'danger' => '#e11d48'][$hdWarna] ?? '#64748b';
+        $hdJumlahItem = $order->items->count();
+        $hdProdukPertama = optional($order->items->first(), fn ($it) => $it->product_name ?: ($it->product->nama_akun ?? null));
+        $hdDiskon = (float) $order->total_discount;
+        $hdBisaBatal = $order->status !== 'cancelled';
+    @endphp
+
+    <div class="dsb pt-detail">
+    <header class="dsb-hero">
+        <div class="dsb-hero-teks">
+            <h1 class="dsb-salam">{{ $order->order_number }}</h1>
+            <p class="dsb-hero-ket">
+                <span class="d-block"><i class="bi bi-calendar3 me-1"></i>Dipesan {{ $order->created_at->locale('id')->translatedFormat('l, d F Y · H:i') }}</span>
+                <span class="d-block pt-lencana-kepala">
+                    <span class="dsb-lencana {{ $hdLencana[$hdWarna] ?? 'is-abu' }}">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</span>
+                    @if ($hdBayar)
+                        <span class="dsb-lencana {{ $hdLencana[$hdBayar[2]] ?? 'is-abu' }}"><i class="bi {{ $hdBayar[1] }}"></i>{{ $hdBayar[0] }}</span>
+                    @endif
+                    @if ($order->butuhUpload())
+                        <span class="dsb-lencana is-kuning"><i class="bi bi-shield-check"></i>Pesanan jasa</span>
+                    @endif
+                </span>
+            </p>
+        </div>
+
+        <div class="dsb-hero-aksi">
+            <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
+                <i class="bi bi-arrow-left"></i><span>Kembali</span>
+            </a>
+            @if ($order->getReceiptUrl())
+                <a href="{{ $order->getReceiptUrl() }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut">
+                    <i class="bi bi-receipt"></i><span>Lihat Struk</span>
+                </a>
+            @endif
+            @if ($hdBisaBatal)
+                {{-- Konfirmasi lewat penangan global .pcek-konfirmasi (skrip di bawah). --}}
+                <button type="button" class="dsb-tombol is-bahaya pcek-konfirmasi"
+                    data-action="batalkanPesanan"
+                    data-title="Batalkan pesanan ini?"
+                    data-text="Status menjadi CANCELLED, pembayaran ditandai kedaluwarsa, dan income/modal otomatis dilepas. Akun yang sudah terlanjur dikirim TIDAK ikut tertarik."
+                    data-confirm="Ya, batalkan pesanan"
+                    data-icon="warning">
+                    <i class="bi bi-x-circle"></i><span>Batalkan</span>
+                </button>
+            @endif
+        </div>
+    </header>
+
+    {{-- ================== RINGKASAN ================== --}}
+    <section class="dsb-bagian">
+        <div class="dsb-rak">
+            <div class="dsb-kepala" style="--c: {{ $hdWarnaStatus }}">
+                <span class="dsb-kepala-ikon"><i class="bi bi-bag-heart-fill"></i></span>
+                <div class="dsb-kepala-teks">
+                    <span class="dsb-kicker">Ringkasan</span>
+                    <h2 class="dsb-judul">Keadaan Pesanan</h2>
+                    <div class="dsb-chip-deret">
+                        <span class="dsb-chip"><i class="bi bi-box-seam"></i>{{ $hdJumlahItem }} item</span>
+                        @if ($order->paid_at)
+                            <span class="dsb-chip is-samar"><i class="bi bi-check2-circle"></i>Dibayar {{ $order->paid_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
+                        @endif
                     </div>
                 </div>
-                <a href="{{ $order->getReceiptUrl() }}" target="_blank"
-                    class="btn btn-outline-primary d-flex align-items-center justify-content-center px-4 flex-shrink-0">
-                    <i class="bi bi-receipt"></i>
-                    <span class="ms-2 text-nowrap">Lihat Struk</span>
-                </a>
             </div>
+
+            <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
+                <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                <p class="dsb-stat-label">Total Pembayaran</p>
+                <p class="dsb-stat-nilai">Rp {{ number_format($order->total, 0, ',', '.') }}</p>
+                <p class="dsb-stat-ket"><i class="bi bi-tags"></i><span>{{ $hdDiskon ? 'Hemat Rp '.number_format($hdDiskon, 0, ',', '.').' dari diskon' : 'Tanpa diskon' }}</span></p>
+            </article>
+
+            <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
+                <span class="dsb-ikon"><i class="bi bi-person-circle"></i></span>
+                <p class="dsb-stat-label">Pembeli</p>
+                <p class="dsb-stat-nilai pt-nilai-teks">{{ $order->customer->nama ?? '—' }}</p>
+                <p class="dsb-stat-ket"><i class="bi bi-telephone"></i><span>{{ $order->customer->no_hp ?? 'Tanpa nomor' }}</span></p>
+            </article>
+
+            <article class="dsb-stat k-4" style="--c: #0284c7">
+                <span class="dsb-ikon"><i class="bi bi-box-seam-fill"></i></span>
+                <p class="dsb-stat-label">Item</p>
+                <p class="dsb-stat-nilai">{{ $hdJumlahItem }}<span class="dsb-stat-satuan">produk</span></p>
+                <p class="dsb-stat-ket"><i class="bi bi-tag"></i><span>{{ $hdProdukPertama ? \Illuminate\Support\Str::limit($hdProdukPertama, 34) : 'Belum ada item' }}</span></p>
+            </article>
+
+            <article class="dsb-stat k-4" style="--c: {{ $hdWarnaStatus }}">
+                <span class="dsb-ikon"><i class="bi bi-flag-fill"></i></span>
+                <p class="dsb-stat-label">Status</p>
+                <p class="dsb-stat-nilai pt-nilai-teks">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</p>
+                <p class="dsb-stat-ket"><i class="bi bi-clock-history"></i><span>Diperbarui {{ $order->updated_at->locale('id')->diffForHumans() }}</span></p>
+            </article>
+
+            <article class="dsb-stat k-4" style="--c: #d97706">
+                <span class="dsb-ikon"><i class="bi {{ $hdBayar[1] ?? 'bi-wallet2' }}"></i></span>
+                <p class="dsb-stat-label">Pembayaran</p>
+                <p class="dsb-stat-nilai pt-nilai-teks">{{ $hdBayar[0] ?? '—' }}</p>
+                <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>{{ $order->paid_at ? 'Lunas '.$order->paid_at->locale('id')->translatedFormat('d M Y') : 'Belum ada pembayaran tercatat' }}</span></p>
+            </article>
+        </div>
+    </section>
+
+    {{-- ================== RINCIAN ================== --}}
+    <div class="dsb-kepala pt-kepala-sisip" style="--c: #0284c7">
+        <span class="dsb-kepala-ikon"><i class="bi bi-card-list"></i></span>
+        <div class="dsb-kepala-teks">
+            <span class="dsb-kicker">Rincian</span>
+            <h2 class="dsb-judul">Pesanan &amp; Pembeli</h2>
         </div>
     </div>
-
     <style>
 
     /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine siap.
        Layout admin tidak memuat public-custom-styles.css, jadi ditulis di sini
        — sama seperti spending-form. */
     [x-cloak] { display: none !important; }
+
+    /* ===== Kulit dasbor untuk isi lama (pt-detail) =====
+       Markup kartu lama dipertahankan — skrip WA, bonus kuota, dan
+       pengecekan bergantung padanya — tetapi tampil seperti dsb-kartu. */
+    .pt-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .pt-nilai-teks { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; line-height: 1.25; overflow-wrap: anywhere; }
+    .pt-kepala-sisip { margin: 0 0 14px !important; }
+    .pt-detail > .row.mb-4 { margin-bottom: clamp(20px, 3vw, 32px) !important; }
+    .pt-detail .detail-info-card,
+    .pt-detail > .card,
+    .pt-detail .pcek.card {
+        background: #fff !important; backdrop-filter: none !important;
+        border: 1px solid var(--dsb-tepi) !important; border-radius: 18px !important;
+        box-shadow: none !important; margin-bottom: clamp(20px, 3vw, 32px) !important;
+    }
+    .pt-detail .detail-info-card { margin-bottom: 0 !important; }
+    @media (hover: hover) and (pointer: fine) {
+        .pt-detail .detail-info-card:hover, .pt-detail > .card:hover { border-color: #dfe5ee !important; box-shadow: 0 10px 24px rgba(15, 23, 42, .05) !important; }
+    }
+    .pt-detail .detail-info-card h5, .pt-detail .card h5 { font-size: .98rem; font-weight: 800; color: var(--dsb-tinta); }
+    .pt-detail .detail-info-card > .d-flex:first-child { padding-bottom: 14px; margin-bottom: 6px !important; border-bottom: 1px solid #f1f5f9; }
+    .pt-detail .detail-info-card .info-icon {
+        --c: #7c3aed; width: 42px; height: 42px; border-radius: 12px; box-shadow: none !important;
+        background: color-mix(in srgb, var(--c) 12%, #fff) !important;
+        border: 1px solid color-mix(in srgb, var(--c) 22%, #fff); color: var(--c) !important;
+    }
+    .pt-detail .info-icon.bg-grad-green { --c: #16a34a; }
+    .pt-detail .detail-info-card .info-label { color: var(--dsb-redup); }
+    .pt-detail .method-chip { box-shadow: none !important; padding: .32rem .7rem; font-size: .74rem; }
+    .pt-detail .method-flash { background: #ffe4e6; color: #be123c; }
+    .pt-detail .method-promo { background: #ede9fe; color: #6d28d9; }
+    .pt-detail .method-point { background: #fef3c7; color: #b45309; }
+    .pt-detail .method-referral { background: #dcfce7; color: #15803d; }
+    .pt-detail .method-none { background: #f1f5f9; color: #64748b; }
+    .pt-detail .pcek .pcek-head-row { padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; }
+    .pt-detail .items-table thead th {
+        background: #f8fafc; color: #6b7280 !important; font-size: .7rem; font-weight: 800;
+        letter-spacing: .05em; text-transform: uppercase; border-bottom: 1px solid #eef2f7;
+    }
+    .pt-detail .items-table thead th:first-child { border-radius: 10px 0 0 10px; }
+    /* HP & tablet: tabel tetap tabel yang digeser (permintaan sebelumnya),
+       tetapi kolom Aksi menempel di kanan supaya tombol kirim akun dan
+       WhatsApp selalu terlihat tanpa menggeser. */
+    @media (max-width: 991.98px) {
+        .pt-detail .items-table .pt-sel-aksi,
+        .pt-detail .items-table thead th:last-child {
+            position: sticky; right: 0; z-index: 2; background: #fff;
+            box-shadow: -10px 0 12px -10px rgba(15, 23, 42, .25);
+        }
+        .pt-detail .items-table thead th:last-child { background: #f8fafc; }
+    }
+    .pt-detail .items-table thead th:last-child { border-radius: 0 10px 10px 0; }
+    .pt-detail .summary-card { background: #fff !important; border: 1px solid var(--dsb-tepi) !important; box-shadow: none !important; border-radius: 16px !important; }
+    .pt-detail .summary-card .summary-total { background: #f0fdf4; border-radius: 12px; padding: 12px 14px !important; margin-top: 8px; border: 1px solid #bbf7d0; }
 
         .detail-info-card {
             border: 1px solid rgba(108, 99, 255, 0.12);
@@ -373,18 +528,15 @@ Detail Pesanan || lemon
                 </div>
                 <div class="info-row">
                     <span class="info-label">Tanggal</span>
-                    <span class="info-value">{{ $order->created_at->format('d-m-Y H:i') }}</span>
+                    <span class="info-value">{{ $order->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Metode Pembayaran</span>
                     <span class="info-value">
                         {{-- Peta metodenya kini di Order::labelPembayaran() supaya daftar
                              pesanan memakai nama & warna yang sama persis. --}}
-                        @php $pay = $order->labelPembayaran(); @endphp
-                        @if ($pay)
-                        <span class="badge bg-{{ $pay[2] }}-subtle text-{{ $pay[2] }} border border-{{ $pay[2] }}">
-                            <i class="bi {{ $pay[1] }}"></i> {{ $pay[0] }}
-                        </span>
+                        @if ($hdBayar)
+                        <span class="dsb-lencana {{ $hdLencana[$hdBayar[2]] ?? 'is-abu' }}"><i class="bi {{ $hdBayar[1] }}"></i>{{ $hdBayar[0] }}</span>
                         @else
                         <span class="text-muted fw-normal">-</span>
                         @endif
@@ -424,20 +576,8 @@ Detail Pesanan || lemon
                 <div class="info-row">
                     <span class="info-label">Status</span>
                     <span class="info-value">
-                        @php [$stTeks, $stWarna] = $order->labelStatus(); @endphp
-                        <span class="badge bg-{{ $stWarna }}">{{ $stTeks }}</span>
-                        @if ($order->status !== 'cancelled')
-                        <button type="button"
-                            class="btn btn-sm btn-outline-danger pcek-konfirmasi ms-2"
-                            style="font-size:.72rem;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;padding:3px 9px;line-height:1;"
-                            data-action="batalkanPesanan"
-                            data-title="Batalkan pesanan ini?"
-                            data-text="Status menjadi CANCELLED, pembayaran ditandai kedaluwarsa, dan income/modal otomatis dilepas. Akun yang sudah terlanjur dikirim TIDAK ikut tertarik."
-                            data-confirm="Ya, batalkan pesanan"
-                            data-icon="warning">
-                            <i class="bi bi-x-circle"></i> Batalkan Pesanan
-                        </button>
-                        @endif
+                        <span class="dsb-lencana {{ $hdLencana[$hdWarna] ?? 'is-abu' }}">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</span>
+{{-- Tombol batal ada di kepala halaman. --}}
                     </span>
                 </div>
                 @php
@@ -522,6 +662,13 @@ Detail Pesanan || lemon
 
     {{-- ===== Pengecekan plagiasi (pesanan JASA) ===== --}}
     @if ($order->butuhUpload())
+    <div class="dsb-kepala pt-kepala-sisip" style="--c: #ea580c">
+        <span class="dsb-kepala-ikon"><i class="bi bi-shield-check"></i></span>
+        <div class="dsb-kepala-teks">
+            <span class="dsb-kicker">Jasa</span>
+            <h2 class="dsb-judul">Pengecekan Dokumen</h2>
+        </div>
+    </div>
     @php
         // Yang dilihat admin adalah PEKERJAAN yang harus diserahkan — dokumen
         // parafrase, hasil plagiasi, dan hasil AI masing-masing satu. Bukan
@@ -533,6 +680,9 @@ Detail Pesanan || lemon
         $jBonus = $order->bonusKuotaPerJenis();
         $jBonusTotal = $order->bonusKuota();
         $jJenisBonus = $this->jenisBonusTersedia();
+        // Dihitung sekali: dua kondisi "count(...)" dalam satu berkas membuat
+        // Livewire salah memasang penanda morph pada yang kedua.
+        $jJumlahJenisBonus = count($jJenisBonus);
         $jLabelJenis = [
             'ai' => 'Cek AI',
             'plagiasi' => 'Cek Plagiasi',
@@ -781,7 +931,7 @@ Detail Pesanan || lemon
                 @if ($bonusBuka)
                 <div class="pcek-bonus-form">
                     <div class="pcek-bonus-grid">
-                        @if (count($jJenisBonus) > 1)
+                        @if (1 < $jJumlahJenisBonus)
                         <div class="pcek-bonus-f">
                             <label for="bonus-jenis">Jenis pemeriksaan</label>
                             <select id="bonus-jenis" wire:model="bonusJenis">
@@ -807,7 +957,7 @@ Detail Pesanan || lemon
                         </div>
                     </div>
 
-                    @if (count($jJenisBonus) === 1)
+                    @if ($jJumlahJenisBonus === 1)
                     <div class="pcek-bonus-note">
                         <i class="bi bi-info-circle"></i>
                         <span>Bonus diberikan untuk <b>{{ $jLabelJenis[$jJenisBonus[0]] ?? ucfirst($jJenisBonus[0]) }}</b> — satu-satunya jenis pemeriksaan pada pesanan ini.</span>
@@ -1314,12 +1464,19 @@ Detail Pesanan || lemon
     </div>
     @endif
 
-    <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-body p-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <i class="bi bi-box-seam text-primary fs-5"></i>
-                <h5 class="fw-bold mb-0">Item Pesanan</h5>
+    <div class="dsb-kepala pt-kepala-sisip" style="--c: #16a34a">
+        <span class="dsb-kepala-ikon"><i class="bi bi-box-seam-fill"></i></span>
+        <div class="dsb-kepala-teks">
+            <span class="dsb-kicker">Item</span>
+            <h2 class="dsb-judul">Item Pesanan</h2>
+            <div class="dsb-chip-deret">
+                <span class="dsb-chip"><i class="bi bi-box-seam"></i>{{ $hdJumlahItem }} produk</span>
+                <span class="dsb-chip is-samar">Kirim akun & kabari pelanggan dari kolom Aksi</span>
             </div>
+        </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 pt-item-kartu">
+        <div class="card-body p-4">
             <div class="table-responsive">
                 <table class="table align-middle items-table">
                     <thead>
@@ -1337,7 +1494,7 @@ Detail Pesanan || lemon
                     <tbody>
                         @forelse ($order->items as $item)
                         <tr>
-                            <td class="fw-semibold">
+                            <td class="fw-semibold pt-sel-produk">
                                 {{-- Salinan nama saat dipesan lebih dipercaya daripada relasi:
                                      item paket bundling menyimpan nama "[Paket] Produk", dan
                                      baris lama tetap benar walau produknya kelak diganti nama. --}}
@@ -1383,8 +1540,8 @@ Detail Pesanan || lemon
                                 </div>
                                 @endif
                             </td>
-                            <td class="text-center">{{ $item->quantity }}</td>
-                            <td class="text-center">
+                            <td class="text-center" data-judul="Jumlah">{{ $item->quantity }}</td>
+                            <td class="text-center" data-judul="Durasi">
                                 {{-- Paket bundling tidak punya durasi tunggal:
                                      durasinya melekat pada tiap produk di dalamnya. --}}
                                 @if ($item->duration_type)
@@ -1413,9 +1570,9 @@ Detail Pesanan || lemon
                                     }
                                 }
                             @endphp
-                            <td class="text-end">Rp {{ number_format($hargaAsli, 0, ',', '.') }}</td>
-                            <td class="text-end fw-semibold">Rp {{ number_format($hargaAsli * $item->quantity, 0, ',', '.') }}</td>
-                            <td class="text-center">
+                            <td class="text-end" data-judul="Harga">Rp {{ number_format($hargaAsli, 0, ',', '.') }}</td>
+                            <td class="text-end fw-semibold" data-judul="Subtotal">Rp {{ number_format($hargaAsli * $item->quantity, 0, ',', '.') }}</td>
+                            <td class="text-center" data-judul="Status">
                                 {!! $item->getDeliveryStatusBadge() !!}
                                 @if ($item->processed_by && $item->processed_at)
                                 <small class="d-block text-muted mt-1" style="line-height:1.25;">
@@ -1426,7 +1583,7 @@ Detail Pesanan || lemon
                                 </small>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" data-judul="Masa Aktif">
                                 <div>{!! $item->getSubscriptionStatusBadge() !!}</div>
                                 @if ($item->pakaiKredit())
                                 <small class="d-block text-muted mt-1">Tanpa masa aktif (kredit)</small>
@@ -1451,7 +1608,7 @@ Detail Pesanan || lemon
                                 @endif
                                 @endif
                             </td>
-                            <td class="text-center text-nowrap">
+                            <td class="text-center text-nowrap pt-sel-aksi" data-judul="Aksi">
                                 <button type="button" class="btn btn-sm btn-outline-primary p-2 notes-btn"
                                     title="lihat catatan" data-account="{{ $item->account_notes }}"
                                     data-processing="{{ $item->processing_notes }}">
@@ -1573,6 +1730,8 @@ Detail Pesanan || lemon
 
         </div>
     </div>
+
+    </div>{{-- /.dsb --}}
 
     @include('livewire.layout.sweetalert')
 </div>

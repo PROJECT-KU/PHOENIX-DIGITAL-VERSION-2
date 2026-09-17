@@ -1,450 +1,408 @@
-
 @section('title')
 Data Pesanan || lemon
 @stop
 <div wire:poll.15s="watchNewPayments">
-    <div class="container-fluid">
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Data Pesanan Toko</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                            @php
-                            $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pesanan Toko']];
-                            @endphp
-                            <x-breadcrumb :items="$breadcrumbs" />
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*). Lihat partials/dasbor-gaya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.order.partials.toko-gaya')
+
+    @php
+        $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+        $adaSaringan = $search || $filterMonth || $filterYear;
+        // Warna Bootstrap dari Order::labelStatus()/labelPembayaran() → lencana dasbor.
+        $lencana = [
+            'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
+            'danger' => 'is-merah', 'secondary' => 'is-abu', 'dark' => 'is-abu', 'light' => 'is-abu',
+        ];
+        $namaStatus = [
+            'DRAFT' => 'Draft', 'PENDING' => 'Menunggu bayar', 'PAID' => 'Dibayar', 'PROCESSING' => 'Diproses',
+            'COMPLETED' => 'Selesai', 'CANCELLED' => 'Dibatalkan', 'SEDANG DIPROSES' => 'Sedang dicek',
+        ];
+        $lencanaLangganan = ['baru' => 'is-ungu', 'perpanjang' => 'is-hijau', 'pengganti' => 'is-biru', 'habis' => 'is-merah'];
+        $tabs = [
+            'all' => ['Semua', 'bi-list-check', '#7c3aed'],
+            'neworder' => ['Pesanan Baru', 'bi-bag-plus-fill', '#16a34a'],
+            'berjalan' => ['Pengecekan Berjalan', 'bi-hourglass-split', '#0284c7'],
+            'processing' => ['Diproses', 'bi-gear-fill', '#d97706'],
+            'completed' => ['Selesai', 'bi-bag-check-fill', '#4f46e5'],
+            'cancelled' => ['Dibatalkan', 'bi-x-circle-fill', '#e11d48'],
+            'draft' => ['Draft', 'bi-inbox-fill', '#64748b'],
+            'habis' => ['Akun Habis', 'bi-hourglass-bottom', '#dc2626'],
+        ];
+    @endphp
+
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Pesanan Toko</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">
+                        Pesanan dari toko online beserta pembayaran dan pengecekannya
+                        <span class="dsb-segar"><i class="bi bi-broadcast"></i>Pembayaran baru dipantau otomatis</span>
+                    </span>
+                </p>
+            </div>
+
+            <div class="dsb-hero-aksi">
+                @if (auth()->user()->hasPermission('create_pemesanantoko'))
+                    <a wire:navigate href="{{ route('admin.pesanantoko.create') }}" class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Tambah Pesanan</span>
+                    </a>
+                @endif
+            </div>
+        </header>
+
+        {{-- ================== RINGKASAN ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #7c3aed">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-bag-heart-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Ringkasan</span>
+                        <h2 class="dsb-judul">Keadaan Pesanan</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-receipt"></i>{{ number_format($tabCounts['all'], 0, ',', '.') }} pesanan</span>
+                            <span class="dsb-chip is-samar">{{ $adaSaringan ? 'Mengikuti saringan di bawah' : 'Seluruh data' }}</span>
                         </div>
                     </div>
+                </div>
 
-                    <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                        <div class="form-group position-relative flex-grow-1">
-                            <div class="form-control-icon">
-                                <i class="bi bi-search"></i>
-                            </div>
+                <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
+                    <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                    <p class="dsb-stat-label">Omzet Pesanan</p>
+                    <p class="dsb-stat-nilai">{{ $rupiah($ringkas['omzet']) }}</p>
+                    <p class="dsb-stat-ket"><i class="bi bi-check2-circle"></i><span>Dari {{ number_format($ringkas['lunas'], 0, ',', '.') }} pesanan yang sudah dibayar</span></p>
+                </article>
 
-                            <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
-                                placeholder="Cari kode pesanan, nama, no hp, email, produk, username akun...">
+                <button type="button" wire:click="setTab('neworder')" class="dsb-stat is-utama k-6 pt-stat-tombol"
+                    style="--c: {{ $ringkas['perluProses'] > 0 ? '#d97706' : '#64748b' }}">
+                    <span class="dsb-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
+                    <span class="dsb-stat-label">Perlu Diproses</span>
+                    <span class="dsb-stat-nilai">{{ $ringkas['perluProses'] }}<span class="dsb-stat-satuan">pesanan</span></span>
+                    <span class="dsb-stat-ket"><i class="bi bi-arrow-right-circle"></i><span>{{ $ringkas['perluProses'] > 0 ? 'Sudah dibayar, akunnya belum dikirim' : 'Tidak ada yang menunggu' }}</span></span>
+                </button>
 
-                            @if ($search)
-                            <span wire:click="$set('search', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
+                <button type="button" wire:click="setTab('neworder')" class="dsb-stat k-4 pt-stat-tombol" style="--c: #0284c7">
+                    <span class="dsb-ikon"><i class="bi bi-bag-plus-fill"></i></span>
+                    <span class="dsb-stat-label">Pesanan Baru</span>
+                    <span class="dsb-stat-nilai">{{ $tabCounts['neworder'] }}<span class="dsb-stat-satuan">pesanan</span></span>
+                    <span class="dsb-stat-ket"><i class="bi bi-clock-history"></i><span>Menunggu bayar atau belum diproses</span></span>
+                </button>
+
+                <button type="button" wire:click="setTab('berjalan')" class="dsb-stat k-4 pt-stat-tombol"
+                    style="--c: {{ $ringkas['cekMenunggu'] > 0 ? '#7c3aed' : '#64748b' }}">
+                    <span class="dsb-ikon"><i class="bi bi-file-earmark-check-fill"></i></span>
+                    <span class="dsb-stat-label">Pengecekan Menunggu</span>
+                    <span class="dsb-stat-nilai">{{ $ringkas['cekMenunggu'] }}<span class="dsb-stat-satuan">berkas</span></span>
+                    <span class="dsb-stat-ket"><i class="bi bi-hourglass-split"></i><span>{{ $tabCounts['berjalan'] }} pesanan sedang berjalan</span></span>
+                </button>
+
+                <button type="button" wire:click="setTab('habis')" class="dsb-stat k-4 pt-stat-tombol"
+                    style="--c: {{ $ringkas['habisBelum'] > 0 ? '#e11d48' : '#64748b' }}">
+                    <span class="dsb-ikon"><i class="bi bi-bell-fill"></i></span>
+                    <span class="dsb-stat-label">Akun Habis Belum Diberi Tahu</span>
+                    <span class="dsb-stat-nilai">{{ $ringkas['habisBelum'] }}<span class="dsb-stat-satuan">akun</span></span>
+                    <span class="dsb-stat-ket"><i class="bi bi-hourglass-bottom"></i><span>Dari {{ $tabCounts['habis'] }} akun yang sudah habis</span></span>
+                </button>
+            </div>
+        </section>
+
+        {{-- ================== SARINGAN ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #0284c7">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-funnel-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Tampilan</span>
+                        <h2 class="dsb-judul">Cari &amp; Saring</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="search,filterMonth,filterYear,resetFilters,setTab,gotoPage,nextPage,previousPage">
+                                <span class="dsb-putar is-kecil"></span>Memuat…
                             </span>
-                            @endif
+                            <span class="dsb-chip is-samar">Kode pesanan, nama, no. HP, email, produk, atau username akun</span>
                         </div>
-                        @if (auth()->user()->hasPermission('create_pemesanantoko'))
-                        <a wire:navigate href="{{ route('admin.pesanantoko.create') }}"
-                            class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                            <i class="bi bi-plus-lg"></i>
-                            <span class="ms-2">Tambah Data</span>
-                        </a>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-isi">
+                        <div class="pt-saring">
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="pt-cari">Cari</label>
+                                <div class="dsb-cari">
+                                    <i class="bi bi-search"></i>
+                                    <input id="pt-cari" type="search" class="dsb-isian" wire:model.live.debounce.300ms="search"
+                                        placeholder="Cari pesanan…">
+                                    @if ($search)
+                                        <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="pt-bulan">Bulan</label>
+                                <select id="pt-bulan" class="dsb-isian" wire:model.live="filterMonth">
+                                    <option value="">Semua bulan</option>
+                                    @foreach ($months as $month)
+                                        <option value="{{ $month['value'] }}">{{ ucfirst($month['label']) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="pt-tahun">Tahun</label>
+                                <select id="pt-tahun" class="dsb-isian" wire:model.live="filterYear">
+                                    <option value="">Semua tahun</option>
+                                    @foreach ($years as $year)
+                                        <option value="{{ $year }}">{{ $year }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        @if ($adaSaringan)
+                            <div class="pt-saring-kaki">
+                                <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> Angka tab & ringkasan mengikuti saringan</span>
+                                <button type="button" wire:click="resetFilters" class="dsb-tombol is-lembut">
+                                    <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                </button>
+                            </div>
                         @endif
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!--================== FILTER ==================-->
-        <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
-            <div class="card-body p-3 px-4">
-                <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
-                        <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
-                            style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
-                            <i class="bi bi-funnel"></i>
-                        </span>
-                        <span>Filter Periode</span>
-                    </div>
-
-                    <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                        <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
-                            <option value="">Semua Bulan</option>
-                            @foreach ($months as $month)
-                            <option value="{{ $month['value'] }}">{{ ucfirst($month['label']) }}</option>
-                            @endforeach
-                        </select>
-                        <select wire:model.live="filterYear" class="form-select rounded-3" style="min-width: 160px;">
-                            <option value="">Semua Tahun</option>
-                            @foreach ($years as $year)
-                            <option value="{{ $year }}">{{ $year }}</option>
-                            @endforeach
-                        </select>
-                        @if ($search || $filterMonth || $filterYear)
-                        <button wire:click="resetFilters" type="button"
-                            class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
-                            title="Reset filter">
-                            <i class="bi bi-x-circle"></i>
-                        </button>
-                        @endif
+        {{-- ================== DAFTAR ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: {{ $tabs[$activeTab][2] ?? '#16a34a' }}">
+                    <span class="dsb-kepala-ikon"><i class="bi {{ $tabs[$activeTab][1] ?? 'bi-list-task' }}"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Daftar</span>
+                        <h2 class="dsb-judul">{{ $activeTab === 'habis' ? 'Akun yang Sudah Habis' : 'Pesanan' }}</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>{{ $activeTab === 'habis' ? 'Masa aktif terbaru di atas' : 'Terbaru di atas' }}</span>
+                            <span class="dsb-chip is-samar">{{ $activeTab === 'habis' ? 'Satu baris = satu akun' : 'Satu baris = satu pesanan' }}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <style>
-            /* Badge "cek menunggu": ikon sejajar teks (glyph bi dirender via ::before) */
-            .pcek-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                font-size: .62rem;
-                line-height: 1;
-            }
-            .pcek-badge i.bi {
-                display: flex;
-                align-items: center;
-                line-height: 1;
-                font-size: .68rem;
-            }
-            .pcek-badge i.bi::before {
-                display: block;
-                line-height: 1;
-            }
-            /* Pusatkan ikon Bootstrap (bi) di stat-icon-wrapper */
-            .stat-icon-wrapper i.bi {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                line-height: 1;
-            }
+                <div class="k-12">
+                    <nav class="pt-tab-deret" aria-label="Saring menurut status">
+                        @foreach ($tabs as $kunci => [$label, $ikon, $warna])
+                            <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
+                                class="pt-tab {{ $activeTab === $kunci ? 'is-aktif' : '' }}"
+                                aria-pressed="{{ $activeTab === $kunci ? 'true' : 'false' }}">
+                                <i class="bi {{ $ikon }}"></i>
+                                <span>{{ $label }}</span>
+                                <span class="pt-tab-jumlah">{{ $tabCounts[$kunci] > 999 ? '999+' : $tabCounts[$kunci] }}</span>
+                            </button>
+                        @endforeach
+                    </nav>
+                </div>
 
-            .stat-icon-wrapper i.bi::before {
-                display: block;
-                line-height: 1;
-            }
-
-            .customer-glossy-tabs {
-                display: flex;
-                width: 100%;
-                gap: .5rem;
-                padding: .5rem;
-                border-radius: 999px;
-                background: rgba(255, 255, 255, 0.55);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.6);
-                box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
-                overflow-x: auto;
-            }
-
-            .customer-glossy-tab {
-                flex: 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: .6rem;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                font-weight: 600;
-                font-size: 1.05rem;
-                line-height: 1;
-                padding: .95rem 1.5rem;
-                border-radius: 999px;
-                cursor: pointer;
-                transition: all .25s ease;
-                text-transform: capitalize;
-                white-space: nowrap;
-            }
-
-            .customer-glossy-tab i {
-                font-size: 1.25rem;
-                line-height: 1;
-                display: inline-flex;
-                align-items: center;
-            }
-
-            .customer-glossy-tab:hover:not(.active) {
-                color: #4e46e5;
-                background: rgba(108, 99, 255, 0.10);
-            }
-
-            .customer-glossy-tab.active {
-                color: #fff;
-                background: linear-gradient(135deg, #6c63ff, #4e46e5);
-                box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45);
-                transform: translateY(-1px);
-            }
-
-            .customer-glossy-tab .tab-count {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                min-width: 1.75rem;
-                height: 1.75rem;
-                padding: 0 .55rem;
-                font-size: .82rem;
-                font-weight: 800;
-                line-height: 1;
-                border-radius: 999px;
-                color: #fff;
-                background: linear-gradient(135deg, #7c73ff, #4e46e5);
-                border: 1px solid rgba(255, 255, 255, 0.45);
-                box-shadow: 0 4px 10px rgba(78, 70, 229, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.45);
-                transition: all .25s ease;
-            }
-
-            .customer-glossy-tab:hover:not(.active) .tab-count {
-                transform: scale(1.08);
-            }
-
-            .customer-glossy-tab.active .tab-count {
-                color: #4e46e5;
-                background: linear-gradient(135deg, #ffffff, #eef0ff);
-                border-color: rgba(255, 255, 255, 0.9);
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.9);
-            }
-
-            @media (max-width: 575.98px) {
-                .customer-glossy-tab {
-                    flex: 0 0 auto;
-                    justify-content: center;
-                    padding: .6rem .9rem;
-                    font-size: .9rem;
-                }
-            }
-        </style>
-
-        <div class="mt-3 mb-3">
-            <div class="customer-glossy-tabs">
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'all') active @endif"
-                    wire:click="setTab('all')">
-                    <i class="bi bi-list-check"></i>
-                    <span>Semua Pesanan</span>
-                    <span class="tab-count">{{ $tabCounts['all'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'neworder') active @endif"
-                    wire:click="setTab('neworder')">
-                    <i class="bi bi-bag-plus"></i>
-                    <span>Pesanan Baru</span>
-                    <span class="tab-count">{{ $tabCounts['neworder'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'berjalan') active @endif"
-                    wire:click="setTab('berjalan')">
-                    <i class="bi bi-hourglass-split"></i>
-                    <span>Pengecekan Berjalan</span>
-                    <span class="tab-count">{{ $tabCounts['berjalan'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'processing') active @endif"
-                    wire:click="setTab('processing')">
-                    <i class="bi bi-hourglass"></i>
-                    <span>Pesanan Diproses</span>
-                    <span class="tab-count">{{ $tabCounts['processing'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'completed') active @endif"
-                    wire:click="setTab('completed')">
-                    <i class="bi bi-bag-check"></i>
-                    <span>Pesanan Selesai</span>
-                    <span class="tab-count">{{ $tabCounts['completed'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'cancelled') active @endif"
-                    wire:click="setTab('cancelled')">
-                    <i class="bi bi-x-circle"></i>
-                    <span>Pesanan Dibatalkan</span>
-                    <span class="tab-count">{{ $tabCounts['cancelled'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'draft') active @endif"
-                    wire:click="setTab('draft')">
-                    <i class="bi bi-inbox"></i>
-                    <span>Draft</span>
-                    <span class="tab-count">{{ $tabCounts['draft'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($activeTab === 'habis') active @endif"
-                    wire:click="setTab('habis')">
-                    <i class="bi bi-hourglass-bottom"></i>
-                    <span>Akun Habis</span>
-                    <span class="tab-count">{{ $tabCounts['habis'] }}</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <div class="table-responsive">
+                <div class="k-12" wire:loading.class="dsb-sedang-muat" wire:target="search,filterMonth,filterYear,resetFilters,setTab,gotoPage,nextPage,previousPage">
+                    <div class="dsb-kartu">
                     @if ($activeTab === 'habis')
-                    {{-- Tab Akun Habis: menampilkan ITEM yang habis, bukan order --}}
-                    <table class="table align-middle">
-                        <thead>
-                            <tr style="text-align: center;">
-                                <th>Kode Pesanan</th>
-                                <th>Customer</th>
-                                <th>Produk</th>
-                                <th class="text-center">Masa Aktif</th>
-                                <th class="text-center">Status Langganan</th>
-                                <th class="text-center">Pemberitahuan</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($habisItems as $item)
-                            <tr style="text-align: center;">
-                                <td class="fw-bold">{{ $item->order->order_number ?? '-' }}</td>
-                                <td>{{ $item->order->customer->nama ?? '-' }}</td>
-                                <td>{{ $item->product_name }}</td>
-                                <td class="text-center">
-                                    @if ($item->end_date)
-                                    <span class="d-block">s/d
-                                        {{ \Carbon\Carbon::parse($item->end_date)->translatedFormat('d M Y') }}</span>
-                                    <small class="fw-semibold {{ $item->isHabis() ? 'text-danger' : 'text-success' }}">
-                                        {{ $item->getRemainingLabel() }}
-                                    </small>
-                                    @else
-                                    <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">{!! $item->getSubscriptionStatusBadge() !!}</td>
-                                <td class="text-center">
-                                    @if ($item->habis_notified_at)
-                                    <span class="badge bg-success-subtle text-success border border-success"
-                                        title="Diberi tahu {{ $item->habis_notified_at->translatedFormat('d M Y H:i') }}">
-                                        <i class="bi bi-check2-circle"></i> Sudah
-                                    </span>
-                                    @else
-                                    <span class="badge bg-warning-subtle text-warning border border-warning">
-                                        <i class="bi bi-exclamation-circle"></i> Belum
-                                    </span>
-                                    @endif
-                                </td>
-                                <td class="text-center text-nowrap">
-                                    @if ($item->order)
-                                    <a wire:navigate href="{{ route('admin.pesanantoko.detail', $item->order) }}"
-                                        title="detail pesanan" class="btn btn-sm btn-primary p-2">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    @endif
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-hourglass-bottom"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                            Belum Ada Akun Habis
-                                        </h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                            Tidak ada item pesanan yang masa aktifnya sudah habis.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="mt-4">
-                        {{ $habisItems->links('vendor.pagination') }}
-                    </div>
+                        @if ($habisItems->isEmpty())
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-hourglass-bottom"></i></span>
+                                <p class="dsb-kosong-judul">Belum ada akun habis</p>
+                                <p class="dsb-kosong-ket">Tidak ada item pesanan yang masa aktifnya sudah habis{{ $adaSaringan ? ' pada saringan ini' : '' }}.</p>
+                            </div>
+                        @else
+                            <div class="dsb-tabel-bungkus">
+                                <table class="dsb-tabel">
+                                    <thead>
+                                        <tr>
+                                            <th>Akun</th>
+                                            <th class="k-sedang">Pelanggan</th>
+                                            <th>Masa Aktif</th>
+                                            <th class="k-lebar">Langganan</th>
+                                            <th>Pemberitahuan</th>
+                                            <th style="text-align: right;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($habisItems as $item)
+                                            <tr wire:key="habis-{{ $item->id }}">
+                                                <td>
+                                                    <div class="dsb-tabel-utama">
+                                                        <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-hourglass-bottom"></i></span>
+                                                        <span class="dsb-tabel-teks">
+                                                            <span class="dsb-tabel-judul">{{ $item->product_name }}</span>
+                                                            <span class="dsb-tabel-meta">
+                                                                <span class="dsb-lencana is-abu">{{ $item->order->order_number ?? '—' }}</span>
+                                                                <span class="dsb-tabel-samar"><i class="bi bi-person"></i>{{ $item->order->customer->nama ?? '—' }}</span>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="k-sedang" data-judul="Pelanggan"><span class="dsb-tabel-angka">{{ $item->order->customer->nama ?? '—' }}</span></td>
+                                                <td data-judul="Masa Aktif">
+                                                    @if ($item->end_date)
+                                                        <span class="dsb-tabel-teks">
+                                                            <span class="dsb-tabel-angka">s/d {{ \Carbon\Carbon::parse($item->end_date)->locale('id')->translatedFormat('d M Y') }}</span>
+                                                            <span class="dsb-tabel-meta"><span class="dsb-lencana {{ $item->isHabis() ? 'is-merah' : 'is-hijau' }}">{{ $item->getRemainingLabel() }}</span></span>
+                                                        </span>
+                                                    @else
+                                                        <span class="dsb-tabel-samar">—</span>
+                                                    @endif
+                                                </td>
+                                                <td class="k-lebar" data-judul="Langganan">
+                                                    <span class="dsb-lencana {{ $lencanaLangganan[$item->subscription_status] ?? 'is-abu' }}">{{ ucfirst($item->subscription_status ?: 'Tidak diketahui') }}</span>
+                                                </td>
+                                                <td data-judul="Pemberitahuan">
+                                                    @if ($item->habis_notified_at)
+                                                        <span class="dsb-lencana is-hijau" title="Diberi tahu {{ $item->habis_notified_at->locale('id')->translatedFormat('d M Y H:i') }}">
+                                                            <i class="bi bi-check2-circle"></i>Sudah
+                                                        </span>
+                                                    @else
+                                                        <span class="dsb-lencana is-kuning"><i class="bi bi-exclamation-circle"></i>Belum</span>
+                                                    @endif
+                                                </td>
+                                                <td data-judul="Aksi" style="text-align: right;">
+                                                    <span class="dsb-tabel-aksi">
+                                                        @if ($item->order)
+                                                            <a wire:navigate href="{{ route('admin.pesanantoko.detail', $item->order) }}" class="dsb-tabel-btn" title="Detail pesanan">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if ($habisItems->hasPages())
+                                <div class="pt-halaman">{{ $habisItems->links('vendor.pagination') }}</div>
+                            @endif
+                        @endif
                     @else
-                    <table class="table align-middle">
-                        <thead>
-                            <tr style="text-align: center;">
-                                <th>Kode Pesanan</th>
-                                <th>Customer</th>
-                                <th>Total</th>
-                                <th class="text-center">Metode Bayar</th>
-                                <th class="text-center">Status</th>
-                                <th>Tanggal Pemesanan</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($orders as $order)
-                            <tr style="text-align: center;">
-                                <td class="fw-bold">
-                                    {{ $order->order_number }}
-                                    @if ($order->pengecekan_menunggu_count > 0)
-                                    <span class="badge bg-warning text-dark mt-1 pcek-badge"
-                                        title="{{ $order->pengecekan_menunggu_count }} pengecekan plagiasi menunggu diproses">
-                                        <i class="bi bi-hourglass-split"></i>
-                                        <span>{{ $order->pengecekan_menunggu_count }} cek menunggu</span>
-                                    </span>
-                                    @endif
-                                    @if ($order->pengecekan_diproses_count > 0)
-                                    <span class="badge bg-info text-white mt-1 pcek-badge"
-                                        title="{{ $order->pengecekan_diproses_count }} pengecekan sedang dikerjakan admin (belum diunggah hasilnya)">
-                                        <i class="bi bi-gear-wide-connected"></i>
-                                        <span>{{ $order->pengecekan_diproses_count }} sedang dicek</span>
-                                    </span>
-                                    @endif
-                                </td>
-                                <td>{{ $order->customer->nama }}</td>
-                                <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
-                                <td class="text-center">
-                                    {{-- Nama & warna dari Order::labelPembayaran(), sumber yang sama
-                                         dgn halaman detail pesanan. --}}
-                                    @php $pay = $order->labelPembayaran(); @endphp
-                                    @if ($pay)
-                                    <span class="badge bg-{{ $pay[2] }}-subtle text-{{ $pay[2] }} border border-{{ $pay[2] }} text-nowrap"
-                                        style="font-size:.7rem;">
-                                        <i class="bi {{ $pay[1] }}"></i> {{ $pay[0] }}
-                                    </span>
-                                    @else
-                                    <span class="text-muted">-</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    @php [$stTeks, $stWarna] = $order->labelStatus(); @endphp
-                                    <span class="badge bg-{{ $stWarna }}">
-                                        {{ $stTeks }}
-                                    </span>
-                                </td>
-                                <td>{{ $order->created_at->translatedFormat('d F Y, H:i') }}</td>
-                                <td class="text-center text-nowrap">
-                                    <div class="d-inline-flex align-items-center justify-content-center gap-1">
-                                        @if ($order->status === 'draft' && $order->payment_method === 'qris_dinamis')
-                                            <a href="{{ route('admin.pesanantoko.qris', $order) }}"
-                                                title="lanjutkan pembayaran QRIS"
-                                                class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 px-2">
-                                                <i class="bi bi-play-fill"></i> <span>Lanjutkan</span>
-                                            </a>
-                                        @elseif ($order->status === 'draft' && in_array($order->payment_method, ['transfer', 'qris_statis'], true))
-                                            {{-- Draft pembayaran manual: lanjutannya bukan layar QR,
-                                                 melainkan unggah bukti. Setelah bukti masuk, pesanan
-                                                 berubah jadi pending dan baru boleh diproses. --}}
-                                            <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}"
-                                                title="unggah bukti pembayaran"
-                                                class="btn btn-sm btn-success d-inline-flex align-items-center gap-1 px-2">
-                                                <i class="bi bi-upload"></i> <span>Unggah Bukti</span>
-                                            </a>
-                                        @endif
-                                        <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}"
-                                            title="detail pesanan"
-                                            class="btn btn-sm btn-primary d-inline-flex align-items-center justify-content-center p-2">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-inbox"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                            Belum Ada Data Pesanan
-                                        </h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                            Tidak ada data pemesanan yang ditemukan saat ini.
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    <div class="mt-4">
-                        {{ $orders->links('vendor.pagination') }}
-                    </div>
+                        @if ($orders->isEmpty())
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi {{ $adaSaringan ? 'bi-funnel' : 'bi-inbox' }}"></i></span>
+                                <p class="dsb-kosong-judul">{{ $adaSaringan ? 'Tidak ada pesanan yang cocok' : 'Belum ada pesanan' }}</p>
+                                <p class="dsb-kosong-ket">{{ $adaSaringan ? 'Coba ubah kata kunci atau periode.' : 'Pesanan pada tab ini akan muncul di sini.' }}</p>
+                                @if ($adaSaringan)
+                                    <button type="button" wire:click="resetFilters" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                        <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                    </button>
+                                @endif
+                            </div>
+                        @else
+                            <div class="dsb-tabel-bungkus">
+                                <table class="dsb-tabel">
+                                    <thead>
+                                        <tr>
+                                            <th>Pesanan</th>
+                                            <th class="k-lebar">Produk</th>
+                                            <th>Total</th>
+                                            <th class="k-sedang">Pembayaran</th>
+                                            <th>Status</th>
+                                            <th class="k-lebar">Tanggal</th>
+                                            <th style="text-align: right;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($orders as $order)
+                                            @php
+                                                [$stTeks, $stWarna] = $order->labelStatus();
+                                                $pay = $order->labelPembayaran();
+                                                $produk = $order->items->map(fn ($it) => $it->product_name ?: $it->product?->nama_akun)->filter()->values();
+                                                $warnaIkon = ['success' => '#16a34a', 'warning' => '#d97706', 'info' => '#0284c7', 'primary' => '#4f46e5', 'danger' => '#e11d48'][$stWarna] ?? '#64748b';
+                                                $urlDetail = route('admin.pesanantoko.detail', $order);
+                                            @endphp
+                                            <tr wire:key="order-{{ $order->id }}" @class(['is-tanda' => $order->status === 'paid']) @if ($order->status === 'paid') style="--c: #16a34a" @endif>
+                                                <td>
+                                                    <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-utama pt-tautan">
+                                                        <span class="dsb-ikon is-kecil" style="--c: {{ $warnaIkon }}"><i class="bi bi-bag-fill"></i></span>
+                                                        <span class="dsb-tabel-teks">
+                                                            <span class="dsb-tabel-judul">{{ $order->customer->nama ?? 'Tanpa nama' }}</span>
+                                                            <span class="dsb-tabel-meta">
+                                                                <span class="dsb-lencana is-abu">{{ $order->order_number }}</span>
+                                                                @if ($order->pengecekan_menunggu_count > 0)
+                                                                    <span class="dsb-lencana is-kuning" title="{{ $order->pengecekan_menunggu_count }} pengecekan menunggu diproses">
+                                                                        <i class="bi bi-hourglass-split"></i>{{ $order->pengecekan_menunggu_count }} cek menunggu
+                                                                    </span>
+                                                                @endif
+                                                                @if ($order->pengecekan_diproses_count > 0)
+                                                                    <span class="dsb-lencana is-biru" title="{{ $order->pengecekan_diproses_count }} pengecekan sedang dikerjakan (hasil belum diunggah)">
+                                                                        <i class="bi bi-gear-wide-connected"></i>{{ $order->pengecekan_diproses_count }} sedang dicek
+                                                                    </span>
+                                                                @endif
+                                                                {{-- Salinan kolom yang disembunyikan di layar sempit. --}}
+                                                                <span class="dsb-tabel-samar"><i class="bi bi-clock"></i>{{ $order->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
+                                                            </span>
+                                                        </span>
+                                                    </a>
+                                                </td>
+                                                <td class="k-lebar {{ $produk->isEmpty() ? 'is-kosong' : '' }}" data-judul="Produk">
+                                                    @if ($produk->isEmpty())
+                                                        <span class="dsb-tabel-samar">—</span>
+                                                    @else
+                                                        <span class="dsb-tabel-angka" title="{{ $produk->implode(', ') }}">
+                                                            {{ \Illuminate\Support\Str::limit($produk->first(), 28) }}
+                                                            @if ($produk->count() > 1)
+                                                                <span class="dsb-lencana is-biru">+{{ $produk->count() - 1 }}</span>
+                                                            @endif
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                                <td data-judul="Total"><span class="pt-total">{{ $rupiah($order->total) }}</span></td>
+                                                <td class="k-sedang" data-judul="Pembayaran">
+                                                    {{-- Nama & warna dari Order::labelPembayaran(), sumber yang sama dgn detail. --}}
+                                                    @if ($pay)
+                                                        <span class="dsb-lencana {{ $lencana[$pay[2]] ?? 'is-abu' }}"><i class="bi {{ $pay[1] }}"></i>{{ $pay[0] }}</span>
+                                                    @else
+                                                        <span class="dsb-tabel-samar">—</span>
+                                                    @endif
+                                                </td>
+                                                <td data-judul="Status">
+                                                    <span class="dsb-lencana {{ $lencana[$stWarna] ?? 'is-abu' }}">{{ $namaStatus[$stTeks] ?? $stTeks }}</span>
+                                                </td>
+                                                <td class="k-lebar" data-judul="Tanggal">
+                                                    <span class="dsb-tabel-teks">
+                                                        <span class="dsb-tabel-angka">{{ $order->created_at->locale('id')->translatedFormat('d M Y') }}</span>
+                                                        <span class="dsb-tabel-meta">{{ $order->created_at->format('H:i') }}</span>
+                                                    </span>
+                                                </td>
+                                                <td data-judul="Aksi" style="text-align: right;">
+                                                    <span class="dsb-tabel-aksi">
+                                                        @if ($order->status === 'draft' && $order->payment_method === 'qris_dinamis')
+                                                            <a href="{{ route('admin.pesanantoko.qris', $order) }}" class="pt-lanjut" title="Lanjutkan pembayaran QRIS">
+                                                                <i class="bi bi-play-fill"></i><span>Lanjutkan</span>
+                                                            </a>
+                                                        @elseif ($order->status === 'draft' && in_array($order->payment_method, ['transfer', 'qris_statis'], true))
+                                                            {{-- Draft pembayaran manual: lanjutannya unggah bukti. Setelah
+                                                                 bukti masuk, pesanan menjadi pending dan baru boleh diproses. --}}
+                                                            <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}" class="pt-lanjut" title="Unggah bukti pembayaran">
+                                                                <i class="bi bi-upload"></i><span>Unggah Bukti</span>
+                                                            </a>
+                                                        @endif
+                                                        <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-btn" title="Detail pesanan">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            @if ($orders->hasPages())
+                                <div class="pt-halaman">{{ $orders->links('vendor.pagination') }}</div>
+                            @endif
+                        @endif
                     @endif
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 
     <!--================== SWEET ALERT SUCCESS & ERROR ==================-->

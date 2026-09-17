@@ -21,6 +21,8 @@ function berkasPenandaAdmin(): array
 {
     return collect([
         'pemesanan-r-s-c/*.blade.php',
+        'order/order-list.blade.php',
+        'order/order-detail.blade.php',
         'task/task-saya-list.blade.php',
         'task/partials/task-*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();

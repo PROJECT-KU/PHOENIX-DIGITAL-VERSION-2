@@ -249,7 +249,21 @@ class OrderList extends Component
             $years = collect([now()->year]);
         }
 
+        // Ringkasan kartu atas. Mengikuti cari + periode yang sama dengan
+        // tabel. Omzet memakai status yang sama dengan pengakuan pendapatan
+        // (paid/processing/completed), bukan tabel cash_flows.
+        $ringkas = [
+            'omzet' => (float) $this->baseOrderQuery()->whereIn('status', ['paid', 'processing', 'completed'])->sum('total'),
+            'lunas' => $this->baseOrderQuery()->whereIn('status', ['paid', 'processing', 'completed'])->count(),
+            'perluProses' => $this->baseOrderQuery()->where('status', 'paid')->count(),
+            'cekMenunggu' => \App\Models\OrderUpload::where('status', 'menunggu')
+                ->whereIn('order_id', $this->baseOrderQuery()->select('id'))
+                ->count(),
+            'habisBelum' => $this->baseHabisQuery()->whereNull('habis_notified_at')->count(),
+        ];
+
         return view('livewire.pages.admin.order.order-list', [
+            'ringkas' => $ringkas,
             'orders' => $this->activeTab === 'habis' ? null : $this->orders,
             'habisItems' => $this->activeTab === 'habis' ? $this->habisItems : null,
             'months' => $months,
