@@ -698,3 +698,20 @@ it('medan bawah jendela beri task disusun dua-dua, tanpa kolom kosong', function
         expect(substr($tampilan, $pembuka, 22))->toContain('col-md-6');
     }
 });
+
+it('rantai task berulang tidak pernah bercabang', function () {
+    // Versi pertamanya membuat induk DAN salinannya sama-sama berulang, dan
+    // tiap salinan ikut beranak: sekali jalan jadi 2, besoknya 4, lalu 8, 16,
+    // 32 — diuji persis begitu. Perintahnya berjalan otomatis tiap pagi, jadi
+    // sebulan tanpa ada yang melihat sudah cukup untuk membanjiri tabelnya.
+    //
+    // Sekarang tongkatnya PINDAH: sesudah menyalin, induknya berhenti
+    // berulang. Pada satu saat hanya ada SATU task di rantai itu yang
+    // berulang, dan ia selalu yang terbaru — yang juga task yang dilihat orang
+    // kalau ingin menghentikan rantainya. Diukur ulang: 2, 3, 4, 5, 6, lalu
+    // berhenti saat menyusul hari ini.
+    $perintah = file_get_contents(app_path('Console/Commands/SalinTaskBerulang.php'));
+
+    expect($perintah)->toContain("\$t->forceFill(['ulang' => 'tidak', 'ulang_terakhir_at' => \$berikutnya])->save();")
+        ->and($perintah)->toContain('TONGKAT ESTAFETNYA PINDAH');
+});

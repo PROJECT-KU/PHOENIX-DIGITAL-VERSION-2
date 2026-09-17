@@ -55,7 +55,17 @@ class SalinTaskBerulang extends Command
             }
 
             $this->salin($t, $berikutnya);
-            $t->forceFill(['ulang_terakhir_at' => $berikutnya])->save();
+
+            // TONGKAT ESTAFETNYA PINDAH ke salinan. Induknya berhenti berulang.
+            //
+            // Tanpa ini, induk dan salinannya SAMA-SAMA berulang, dan tiap
+            // salinan ikut beranak: sekali jalan jadi 2, besoknya 4, lalu 8,
+            // 16, 32 — diuji persis begitu. Dengan tongkat yang pindah, pada
+            // satu saat hanya ADA SATU task di rantai itu yang berulang, dan
+            // ia selalu yang terbaru — yang juga task yang dilihat orang kalau
+            // ingin menghentikan rantainya.
+            $t->forceFill(['ulang' => 'tidak', 'ulang_terakhir_at' => $berikutnya])->save();
+            $t->catat('berulang', null, null, 'Salinan berikutnya dibuat; task ini berhenti berulang');
             $dibuat++;
         }
 
