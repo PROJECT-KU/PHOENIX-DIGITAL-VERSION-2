@@ -58,13 +58,29 @@
                     @php
                         $kepala = [
                             ['nama', 'Task', '', null],
-                            [null, 'Penerima', 'k-sedang', 'penerima'],
-                            [null, 'Pemberi', 'k-lebar', 'pemberi'],
+                            ['penerima', 'Penerima', 'k-sedang', 'penerima'],
+                            ['pemberi', 'Pemberi', 'k-lebar', 'pemberi'],
                             ['tenggat', 'Tenggat', 'k-sedang', 'tenggat'],
                             ['status', 'Status', '', null],
                         ];
                     @endphp
-                    <th class="ts-centang-kolom"><span class="visually-hidden">Pilih</span></th>
+                    {{-- Centang induk: memilih/melepas SEMUA baris di halaman ini
+                         saja. Setengah-tercentang saat sebagian dipilih — keadaan
+                         yang tidak punya atribut HTML, jadi dipasang lewat
+                         properti `indeterminate` oleh Alpine. --}}
+                    @php
+                        $dipilihDiHalaman = count(array_intersect($gidHalaman, $terpilih));
+                        $semuaDiHalaman = ! empty($gidHalaman) && $dipilihDiHalaman === count($gidHalaman);
+                        $sebagianDiHalaman = $dipilihDiHalaman > 0 && ! $semuaDiHalaman;
+                    @endphp
+                    <th class="ts-centang-kolom">
+                        <label class="ts-centang" title="Pilih semua di halaman ini">
+                            <input type="checkbox" wire:click="alihkanSemuaHalaman"
+                                @checked($semuaDiHalaman)
+                                x-data x-effect="$el.indeterminate = {{ $sebagianDiHalaman ? 'true' : 'false' }}">
+                            <span class="visually-hidden">Pilih semua task di halaman ini</span>
+                        </label>
+                    </th>
                     @foreach ($kepala as [$kunci, $judul, $kelas, $tutupKunci])
                         @continue($tutupKunci && in_array($tutupKunci, $kolomSembunyi, true))
                         <th class="{{ $kelas }}">
@@ -212,6 +228,19 @@
                                                 <i class="bi bi-paperclip"></i>{{ $jmlLampiran }}
                                             </span>
                                         @endif
+                                        {{-- Kemajuan langkah. Untuk task solo, milik penerimanya;
+                                             untuk grup, dijumlah dari seluruh penerima — rinciannya
+                                             per orang ada di sub-baris. --}}
+                                        @php
+                                            $lkTotal = $gtasks->sum('checklists_count');
+                                            $lkSelesai = $gtasks->sum('checklists_selesai_count');
+                                        @endphp
+                                        @if ($lkTotal > 0)
+                                            <span class="ts-pil-langkah {{ $lkSelesai === $lkTotal ? 'is-tuntas' : '' }}"
+                                                title="{{ $lkSelesai }} dari {{ $lkTotal }} langkah selesai">
+                                                <i class="bi bi-list-check"></i>{{ $lkSelesai }}/{{ $lkTotal }}
+                                            </span>
+                                        @endif
                                         {{-- Salinan kolom yang hilang di layar sempit. Kolomnya
                                              boleh menghilang, isinya tidak. --}}
                                         <span class="dsb-tabel-samar">
@@ -354,9 +383,29 @@
                                                 {{ $m->karyawan?->name ?? 'Tanpa nama' }}
                                                 @if ($mSaya)<span class="dsb-lencana is-ungu">Anda</span>@endif
                                             </span>
-                                            @if ($mKunci)
-                                                <span class="dsb-tabel-meta"><i class="bi bi-lock-fill"></i>Terkunci</span>
-                                            @endif
+                                            {{-- Yang dicari saat orang menekan "N penerima":
+                                                 SIAPA sudah sampai MANA. Status saja tidak
+                                                 menjawabnya — dua orang yang sama-sama
+                                                 "dikerjakan" bisa berada di langkah 1 dan 5. --}}
+                                            <span class="dsb-tabel-meta">
+                                                @if (($m->checklists_count ?? 0) > 0)
+                                                    <span class="ts-pil-langkah {{ $m->checklists_selesai_count === $m->checklists_count ? 'is-tuntas' : '' }}">
+                                                        <i class="bi bi-list-check"></i>{{ $m->checklists_selesai_count }}/{{ $m->checklists_count }} langkah
+                                                    </span>
+                                                @endif
+                                                {{-- Komentar TIDAK ditampilkan per orang: diskusinya satu
+                                                     untuk seluruh grup, jadi angkanya akan sama di tiap
+                                                     baris dan tidak membedakan siapa pun. Yang benar-benar
+                                                     per orang adalah berkas HASIL-nya. --}}
+                                                @if (($m->hasil_count ?? 0) > 0)
+                                                    <span class="ts-pil-hasil" title="{{ $m->hasil_count }} berkas hasil diunggah">
+                                                        <i class="bi bi-cloud-check"></i>{{ $m->hasil_count }} hasil
+                                                    </span>
+                                                @endif
+                                                @if ($mKunci)
+                                                    <span><i class="bi bi-lock-fill"></i>Terkunci</span>
+                                                @endif
+                                            </span>
                                         </span>
                                     </div>
                                 </td>

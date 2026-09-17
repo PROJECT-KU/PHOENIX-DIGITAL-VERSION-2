@@ -715,3 +715,80 @@ it('rantai task berulang tidak pernah bercabang', function () {
     expect($perintah)->toContain("\$t->forceFill(['ulang' => 'tidak', 'ulang_terakhir_at' => \$berikutnya])->save();")
         ->and($perintah)->toContain('TONGKAT ESTAFETNYA PINDAH');
 });
+
+it('riwayat mencatat tenggat yang digeser dan task yang dibuka kembali', function () {
+    // Dua kejadian yang paling sering disengketakan saat bonus dihitung.
+    // Kalimatnya sudah disiapkan model sejak awal, tetapi tidak ada yang
+    // pernah menuliskannya. Diuji lewat transaksi yang di-rollback:
+    // "Tenggat digeser 15 Sep 2026 → 17 Okt 2026" dan "Dibuka kembali untuk
+    // revisi — <alasannya>".
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain("\$t->catat('tenggat', \$tenggatLama, \$tenggatBaru);")
+        ->and($sumber)->toContain("'dibuka-kembali',")
+        // Dibaca SEBELUM update: sesudahnya sudah tertimpa, dan riwayatnya
+        // akan mencatat "dari X ke X".
+        ->and(strpos($sumber, '$tenggatLama = $t->deadline_selesai'))
+        ->toBeLessThan(strpos($sumber, '$t->update($shared);'));
+});
+
+it('pilih semua hanya menyentuh halaman yang sedang terlihat', function () {
+    // Mencentang 300 baris yang tidak terlihat lalu menekan Hapus bukan
+    // sesuatu yang orang maksudkan.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+
+    expect($sumber)->toContain('public function alihkanSemuaHalaman(): void')
+        ->and($sumber)->toContain('$this->gidHalaman = array_map(')
+        // Setengah-tercentang tidak punya atribut HTML — dipasang lewat properti.
+        ->and($tabel)->toContain('$el.indeterminate');
+});
+
+it('penerima dan pemberi bisa diurutkan tanpa fungsi khusus MySQL', function () {
+    // Keduanya relasi; subkueri nama berjalan di MySQL maupun SQLite, jadi
+    // pengujian tetap menguji hal yang sama dengan yang dijalankan.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain("'penerima', 'pemberi'];")
+        ->and($sumber)->toContain("User::select('name')->whereColumn('users.id', 'tasks.user_id')")
+        ->and($sumber)->toContain("User::select('name')->whereColumn('users.id', 'tasks.assigned_by')");
+});
+
+it('badge task di sidebar hanya menghitung yang mendesak', function () {
+    // Badge yang selalu menampilkan angka berhenti dibaca — yang tidak pernah
+    // kosong tidak pernah berarti.
+    $sidebar = file_get_contents(resource_path('views/livewire/layout/sidebar.blade.php'));
+
+    expect($sidebar)->toContain('$taskMendesak')
+        ->and($sidebar)->toContain("->whereDate('deadline_selesai', '<=', today())")
+        ->and($sidebar)->toContain("->where('progress', '!=', 'selesai')");
+
+    // Angkanya ikut segar saat task dimulai / diselesaikan.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    expect(substr_count($sumber, "dispatch('sidebar-badge-updated')"))->toBeGreaterThanOrEqual(3);
+});
+
+it('sub-baris grup menunjukkan siapa sudah sampai mana', function () {
+    // Dua orang yang sama-sama "dikerjakan" bisa berada di langkah 1 dan 5.
+    // Komentar sengaja TIDAK dihitung per orang: diskusinya satu untuk grup,
+    // jadi angkanya akan sama di tiap baris.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+
+    expect($sumber)->toContain("'checklists as checklists_selesai_count'")
+        // Lampiran perintah disalin ke tiap penerima — yang per orang hanya HASIL-nya.
+        ->and($sumber)->toContain("'attachments as hasil_count'")
+        ->and($tabel)->toContain('$m->checklists_selesai_count')
+        ->and($tabel)->toContain('$m->hasil_count');
+});
+
+it('jendela detail punya alat urut langkah, saringan riwayat, dan tanda berulang', function () {
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    $layar = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($sumber)->toContain('public function geserChecklist(string $id, string $arah): void')
+        ->and($layar)->toContain("geserChecklist('{{ \$langkah->id }}', 'naik')")
+        // Disaring di peramban: daftarnya sudah ada di halaman.
+        ->and($layar)->toContain("x-data=\"{ saring: 'semua' }\"")
+        ->and($layar)->toContain('Salinan berikutnya');
+});

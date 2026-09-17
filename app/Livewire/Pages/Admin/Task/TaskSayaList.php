@@ -142,6 +142,33 @@ class TaskSayaList extends Component
         $this->terpilih = [];
     }
 
+    /**
+     * group_id yang tampil di halaman tabel saat ini.
+     *
+     * Disimpan saat render supaya "pilih semua" tidak perlu menjalankan
+     * kuerinya lagi hanya untuk tahu baris mana yang sedang terlihat.
+     *
+     * @var array<int, string>
+     */
+    public array $gidHalaman = [];
+
+    /**
+     * Centang / lepas SEMUA baris di halaman ini.
+     *
+     * Sengaja halaman ini saja, bukan seluruh hasil saringan: mencentang 300
+     * baris yang tidak terlihat lalu menekan Hapus bukan sesuatu yang orang
+     * maksudkan, dan tidak ada layar yang menunjukkan apa saja yang ikut.
+     */
+    public function alihkanSemuaHalaman(): void
+    {
+        $semuaTercentang = ! empty($this->gidHalaman)
+            && empty(array_diff($this->gidHalaman, $this->terpilih));
+
+        $this->terpilih = $semuaTercentang
+            ? array_values(array_diff($this->terpilih, $this->gidHalaman))
+            : array_values(array_unique([...$this->terpilih, ...$this->gidHalaman]));
+    }
+
     public const PER_HALAMAN = 15;
 
     /** Saringan apa pun berubah -> kembali ke halaman pertama. */
@@ -155,7 +182,7 @@ class TaskSayaList extends Component
 
     public function urutkan(string $kolom): void
     {
-        $sah = ['terbaru', 'tenggat', 'nama', 'status'];
+        $sah = ['terbaru', 'tenggat', 'nama', 'status', 'penerima', 'pemberi'];
         if (! in_array($kolom, $sah, true)) {
             return;
         }
@@ -166,7 +193,9 @@ class TaskSayaList extends Component
             $this->arahUrut = $this->arahUrut === 'asc' ? 'desc' : 'asc';
         } else {
             $this->urut = $kolom;
-            $this->arahUrut = $kolom === 'nama' ? 'asc' : ($kolom === 'tenggat' ? 'asc' : 'desc');
+            // Nama orang & nama task dicari menaik (A→Z); tenggat menaik (yang
+            // paling dekat dulu); sisanya menurun.
+            $this->arahUrut = in_array($kolom, ['nama', 'tenggat', 'penerima', 'pemberi'], true) ? 'asc' : 'desc';
         }
 
         $this->halaman = 1;
@@ -216,6 +245,7 @@ class TaskSayaList extends Component
         }
 
         $this->bersihkanPilihan();
+        $this->dispatch('sidebar-badge-updated');
 
         $pesan = $berhasil > 0
             ? $berhasil.' task ditandai selesai'.($dilewati > 0 ? ', '.$dilewati.' dilewati karena terkunci' : '.')
@@ -304,6 +334,42 @@ class TaskSayaList extends Component
         }
 
         $item->update(['selesai' => ! $item->selesai]);
+    }
+
+    /**
+     * Geser satu langkah naik atau turun satu posisi.
+     *
+     * Tombol naik/turun, bukan seret-lepas: seret-lepas butuh pustaka baru
+     * dan di layar sentuh justru paling sulit dipakai — padahal sebagian
+     * besar karyawan membuka layar ini dari ponsel.
+     */
+    public function geserChecklist(string $id, string $arah): void
+    {
+        $item = \App\Models\TaskChecklist::with('task')->findOrFail($id);
+
+        if (! $item->task || ! $this->bolehSuntingChecklist($item->task) || ! in_array($arah, ['naik', 'turun'], true)) {
+            return;
+        }
+
+        // Nomor urut dirapikan dulu (0, 1, 2, …): langkah lama bisa saja
+        // bernomor sama, dan menukar dua nomor yang sama tidak menggeser apa pun.
+        $daftar = $item->task->checklists()->get()->values();
+        foreach ($daftar as $i => $l) {
+            if ($l->urutan !== $i) {
+                $l->update(['urutan' => $i]);
+            }
+        }
+
+        $posisi = $daftar->search(fn ($l) => $l->id === $item->id);
+        $tujuan = $arah === 'naik' ? $posisi - 1 : $posisi + 1;
+
+        if ($posisi === false || $tujuan < 0 || $tujuan >= $daftar->count()) {
+            return;
+        }
+
+        $tetangga = $daftar[$tujuan];
+        $tetangga->update(['urutan' => $posisi]);
+        $item->update(['urutan' => $tujuan]);
     }
 
     public function hapusChecklist(string $id): void
@@ -671,6 +737,9 @@ class TaskSayaList extends Component
         $lama = $task->progress;
         $task->update(['progress' => 'dikerjakan']);
         $task->catat('status', $lama, 'dikerjakan');
+        // Badge "Task Saya" di sidebar ikut dihitung ulang — angkanya berubah
+        // begitu ada yang selesai atau dimulai.
+        $this->dispatch('sidebar-badge-updated');
     }
 
     public function tandaiSelesai($id): void
@@ -694,6 +763,7 @@ class TaskSayaList extends Component
             'periode_tahun' => $periode['tahun'],
         ]);
         $task->catat('status', $lama, 'selesai');
+        $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: 'Task ditandai selesai.');
     }
 
@@ -1117,7 +1187,17 @@ class TaskSayaList extends Component
 
         foreach ($userIds as $uid) {
             if ($t = $byUser->get($uid)) {
+                // Tenggat lama dibaca SEBELUM update, dan dicatat per sub-task:
+                // satu grup menyebar ke banyak orang, dan tiap orang punya
+                // riwayatnya sendiri.
+                $tenggatLama = $t->deadline_selesai?->locale('id')->translatedFormat('d M Y');
+
                 $t->update($shared); // progres & completed_at tidak diubah
+
+                $tenggatBaru = $t->fresh()->deadline_selesai?->locale('id')->translatedFormat('d M Y');
+                if ($tenggatLama !== $tenggatBaru) {
+                    $t->catat('tenggat', $tenggatLama, $tenggatBaru);
+                }
             } else {
                 $t = Task::create($shared + [
                     'group_id' => $this->editingGroupId,
@@ -1233,6 +1313,10 @@ class TaskSayaList extends Component
         // deadline baru; akan ditandai ulang dari tanggal selesai putaran ini.
         $periodeReopen = PeriodeGaji::dariTanggal($deadline);
 
+        // Dibaca SEBELUM update: sesudahnya sudah tertimpa, dan riwayatnya
+        // akan mencatat "dari X ke X".
+        $tenggatLama = $task->deadline_selesai?->locale('id')->translatedFormat('d M Y');
+
         $task->update([
             'progress' => 'dikerjakan',
             'completed_at' => null,
@@ -1244,6 +1328,13 @@ class TaskSayaList extends Component
             'deadline_notified_at' => null,
             'overdue_notified_at' => null,
         ]);
+
+        $task->catat(
+            'dibuka-kembali',
+            $tenggatLama,
+            $deadline->locale('id')->translatedFormat('d M Y'),
+            $this->reopen_alasan,
+        );
 
         // Catat alasan sebagai komentar bertipe "revisi" (ditandai badge di thread grup).
         TaskComment::create([
@@ -1463,7 +1554,17 @@ class TaskSayaList extends Component
             ->with(['groupComments', 'category', 'label', 'pemberi', 'pembuat', 'karyawan'])
             // Jumlah lampiran ikut dihitung di kueri yang sama — tanpa ini tiap
             // baris tabel akan memicu kuerinya sendiri saat menampilkan angkanya.
-            ->withCount('attachments')
+            ->withCount([
+                'attachments',
+                // Kemajuan langkah dihitung di kueri yang SAMA — tanpa ini tiap
+                // baris tabel akan memicu dua kueri sendiri saat menampilkannya.
+                'checklists',
+                'checklists as checklists_selesai_count' => fn ($q) => $q->where('selesai', true),
+                // Berkas HASIL dihitung terpisah: lampiran perintah disalin ke
+                // tiap penerima, jadi jumlah lampiran biasa sama di semua baris
+                // dan tidak memberi tahu siapa yang sudah mengunggah hasilnya.
+                'attachments as hasil_count' => fn ($q) => $q->where('jenis', 'hasil'),
+            ])
             ->when($this->usesSiklus(), function ($q) {
                 // Siklus gaji 21–20: filter berdasarkan tanggal deadline_selesai.
                 [$mulai, $akhir] = $this->siklusRange();
@@ -1485,6 +1586,15 @@ class TaskSayaList extends Component
             ->when($this->urut === 'tenggat', fn ($q) => $q->orderBy('deadline_selesai', $this->arahUrut))
             ->when($this->urut === 'nama', fn ($q) => $q->orderBy('nama', $this->arahUrut))
             ->when($this->urut === 'status', fn ($q) => $q->orderByRaw("FIELD(progress,'belum','dikerjakan','selesai') ".($this->arahUrut === 'asc' ? 'asc' : 'desc')))
+            // Penerima & pemberi adalah RELASI, jadi tidak bisa orderBy kolom
+            // biasa. Subkueri nama berjalan di MySQL maupun SQLite, sehingga
+            // pengujian tetap menguji hal yang sama dengan yang dijalankan.
+            ->when($this->urut === 'penerima', fn ($q) => $q->orderBy(
+                User::select('name')->whereColumn('users.id', 'tasks.user_id'), $this->arahUrut
+            ))
+            ->when($this->urut === 'pemberi', fn ($q) => $q->orderBy(
+                User::select('name')->whereColumn('users.id', 'tasks.assigned_by'), $this->arahUrut
+            ))
             ->orderBy('created_at', $this->urut === 'terbaru' ? $this->arahUrut : 'desc');
     }
 
@@ -1563,6 +1673,7 @@ class TaskSayaList extends Component
         $totalHalaman = max(1, (int) ceil($totalGrup / self::PER_HALAMAN));
         $halamanKini = min(max(1, $this->halaman), $totalHalaman);
         $grupHalaman = $semuaGrup->slice(($halamanKini - 1) * self::PER_HALAMAN, self::PER_HALAMAN);
+        $this->gidHalaman = array_map('strval', array_keys($grupHalaman->all()));
 
         // ===== Poin task SAYA =====
         // Poin, bukan rupiah. Nilai rupiahnya urusan penggajian dan hanya
@@ -1597,6 +1708,7 @@ class TaskSayaList extends Component
             // Livewire, dan itu membuatnya mustahil diuji terpisah.
             'adaSaringan' => $this->adaSaringan(),
             'grupHalaman' => $grupHalaman,
+            'gidHalaman' => $this->gidHalaman,
             'halamanKini' => $halamanKini,
             'totalHalaman' => $totalHalaman,
             'totalGrup' => $totalGrup,

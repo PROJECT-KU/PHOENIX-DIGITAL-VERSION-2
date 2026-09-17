@@ -558,6 +558,47 @@ Task Saya || lemon
             .ts-langkah-draf-item button:hover { color: #dc2626; }
         }
 
+        /* ===== Pil kemajuan langkah & berkas hasil di tabel ===== */
+        .ts-pil-langkah, .ts-pil-hasil {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 999px;
+            font-size: .7rem; font-weight: 700; white-space: nowrap;
+        }
+        .ts-pil-langkah { background: #f5f3ff; color: #6d28d9; }
+        .ts-pil-langkah.is-tuntas { background: #dcfce7; color: #15803d; }
+        .ts-pil-hasil { background: #ecfeff; color: #0e7490; }
+
+        /* ===== Alat per langkah: naik, turun, hapus ===== */
+        .ts-langkah-alat { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .ts-langkah-geser {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; padding: 0; border: 0; border-radius: 8px;
+            background: none; color: #94a3b8; cursor: pointer; font-size: .78rem;
+        }
+        .ts-langkah-geser:disabled { opacity: .3; cursor: default; }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-langkah-geser:not(:disabled):hover { background: #f1f5f9; color: #7c3aed; }
+        }
+        @media (max-width: 991.98px), (pointer: coarse) {
+            /* Di layar sentuh kotaknya dibesarkan: tiga tombol berdampingan
+               setinggi 26px terlalu rapat untuk jempol. */
+            .ts-langkah-geser, .ts-langkah-hapus { width: 34px; height: 34px; }
+        }
+
+        /* ===== Chip saringan riwayat ===== */
+        .ts-riwayat-chip { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .ts-riwayat-chip button {
+            padding: 4px 11px; border-radius: 999px; min-height: 28px;
+            border: 1px solid #e9edf3; background: #fff; color: #64748b;
+            font-size: .74rem; font-weight: 700; cursor: pointer;
+        }
+        .ts-riwayat-chip button.aktif { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
+        @media (max-width: 991.98px), (pointer: coarse) {
+            .ts-riwayat-chip button { min-height: 34px; }
+        }
+
+        .ts-data-ket { color: #94a3b8; font-weight: 500; font-size: .76rem; }
+
         /* ===== Unggah berkas hasil ===== */
         .ts-unggah-hasil {
             display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -1525,6 +1566,9 @@ Task Saya || lemon
                         @if ($locked)
                             <span class="dsb-lencana is-abu"><i class="bi bi-lock-fill"></i>Terkunci</span>
                         @endif
+                        @if (($activeTask->ulang ?? 'tidak') !== 'tidak')
+                            <span class="dsb-lencana is-nila"><i class="bi bi-arrow-repeat"></i>Berulang {{ $activeTask->ulang }}</span>
+                        @endif
                     </span>
                 </span>
                 <button type="button" class="dsb-jendela-tutup" wire:click="$set('showModal', false)" title="Tutup">
@@ -1558,6 +1602,24 @@ Task Saya || lemon
                             {{ $activeTask->deadline_selesai?->locale('id')->translatedFormat('d M Y') ?? '—' }}
                         </span>
                     </div>
+                    @if (($activeTask->ulang ?? 'tidak') !== 'tidak' && $activeTask->deadline_selesai)
+                        {{-- Kapan salinan berikutnya muncul. Tanpa baris ini, task
+                             berulang tidak bisa dibedakan dari task biasa saat
+                             dibuka — dan orang tidak tahu bahwa di sinilah rantainya
+                             bisa dihentikan (ubah "Ulangi" jadi "Tidak berulang"). --}}
+                        @php
+                            $berikutnya = $activeTask->ulang === 'mingguan'
+                                ? $activeTask->deadline_selesai->copy()->addWeek()
+                                : $activeTask->deadline_selesai->copy()->addMonthNoOverflow();
+                        @endphp
+                        <div class="dsb-data-baris">
+                            <span class="dsb-data-label"><i class="bi bi-arrow-repeat"></i>Salinan berikutnya</span>
+                            <span class="dsb-data-nilai">
+                                {{ $berikutnya->locale('id')->translatedFormat('d M Y') }}
+                                <span class="ts-data-ket">(tiap {{ $activeTask->ulang === 'mingguan' ? 'minggu' : 'bulan' }})</span>
+                            </span>
+                        </div>
+                    @endif
                     <div class="dsb-data-baris">
                         <span class="dsb-data-label"><i class="bi bi-hourglass-split"></i>Sisa waktu</span>
                         <span class="dsb-data-nilai">
@@ -1619,10 +1681,22 @@ Task Saya || lemon
                                     </button>
                                     <span class="ts-langkah-teks">{{ $langkah->teks }}</span>
                                     @if ($bolehSunting)
-                                        <button type="button" class="ts-langkah-hapus" wire:click="hapusChecklist('{{ $langkah->id }}')"
-                                            aria-label="Hapus langkah">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
+                                        <span class="ts-langkah-alat">
+                                            <button type="button" class="ts-langkah-geser"
+                                                wire:click="geserChecklist('{{ $langkah->id }}', 'naik')"
+                                                @disabled($loop->first) aria-label="Naikkan langkah">
+                                                <i class="bi bi-chevron-up"></i>
+                                            </button>
+                                            <button type="button" class="ts-langkah-geser"
+                                                wire:click="geserChecklist('{{ $langkah->id }}', 'turun')"
+                                                @disabled($loop->last) aria-label="Turunkan langkah">
+                                                <i class="bi bi-chevron-down"></i>
+                                            </button>
+                                            <button type="button" class="ts-langkah-hapus" wire:click="hapusChecklist('{{ $langkah->id }}')"
+                                                aria-label="Hapus langkah">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </span>
                                     @endif
                                 </div>
                             @empty
@@ -1719,9 +1793,39 @@ Task Saya || lemon
                             <i class="bi" x-bind:class="buka ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
                         </button>
 
-                        <div class="ts-riwayat" x-show="buka" x-cloak>
+                        {{-- Saringnya di PERAMBAN, bukan memanggil server: daftarnya
+                             sudah ada di halaman, dan permintaan ulang hanya menambah
+                             tunggu. Jenis yang tidak punya satu baris pun tidak
+                             ditampilkan sebagai chip — chip yang selalu mengosongkan
+                             daftar hanya jebakan. --}}
+                        @php
+                            $jenisRiwayat = [
+                                'status' => ['Status', ['status']],
+                                'tenggat' => ['Tenggat', ['tenggat', 'dibuka-kembali']],
+                                'berkas' => ['Berkas', ['hasil']],
+                                'lain' => ['Lainnya', ['dibuat', 'berulang']],
+                            ];
+                            $adaJenis = collect($jenisRiwayat)->filter(
+                                fn ($j) => $activeTask->riwayats->whereIn('aksi', $j[1])->isNotEmpty()
+                            );
+                            $kelompokAksi = fn ($aksi) => collect($jenisRiwayat)
+                                ->search(fn ($j) => in_array($aksi, $j[1], true)) ?: 'lain';
+                        @endphp
+                        <div class="ts-riwayat" x-show="buka" x-cloak x-data="{ saring: 'semua' }">
+                            @if ($adaJenis->count() > 1)
+                                <div class="ts-riwayat-chip">
+                                    <button type="button" x-on:click="saring = 'semua'"
+                                        x-bind:class="saring === 'semua' ? 'aktif' : ''">Semua</button>
+                                    @foreach ($adaJenis as $kunci => [$label])
+                                        <button type="button" x-on:click="saring = '{{ $kunci }}'"
+                                            x-bind:class="saring === '{{ $kunci }}' ? 'aktif' : ''">{{ $label }}</button>
+                                    @endforeach
+                                </div>
+                            @endif
+
                             @foreach ($activeTask->riwayats as $r)
-                                <div class="ts-riwayat-baris">
+                                <div class="ts-riwayat-baris"
+                                    x-show="saring === 'semua' || saring === '{{ $kelompokAksi($r->aksi) }}'">
                                     <span class="ts-riwayat-titik"></span>
                                     <span class="ts-riwayat-isi">
                                         <span class="ts-riwayat-teks">{{ $r->kalimat() }}</span>

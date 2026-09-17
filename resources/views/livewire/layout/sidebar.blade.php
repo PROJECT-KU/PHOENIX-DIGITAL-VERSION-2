@@ -5,6 +5,7 @@ use App\Models\CustomerMessage;
 use App\Models\Order;
 use App\Models\OrderUpload;
 use App\Models\ProductReview;
+use App\Models\Task;
 use App\Models\Testimoni;
 use Livewire\Attributes\On;
 use Livewire\Volt\Component;
@@ -61,6 +62,18 @@ new class extends Component
         $helpdeskBaru = $login && $u->hasPermission('view_customer_message')
             ? CustomerMessage::unread()->count() : 0;
 
+        // Task SAYA yang sudah mendesak: lewat tenggat atau jatuh tempo hari
+        // ini. Sengaja BUKAN semua yang belum selesai — badge yang selalu
+        // menampilkan angka berhenti dibaca, dan yang tidak pernah kosong
+        // tidak pernah berarti.
+        $taskMendesak = $login && $u->hasPermission('view_task')
+            ? Task::where('user_id', $u->id)
+                ->where('progress', '!=', 'selesai')
+                ->whereNotNull('deadline_selesai')
+                ->whereDate('deadline_selesai', '<=', today())
+                ->count()
+            : 0;
+
         // Pengecekan plagiasi yang menunggu diproses. Penting karena paket 5x
         // diunggah bertahap: file ke-2 dst bisa masuk berhari-hari kemudian.
         $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
@@ -79,6 +92,7 @@ new class extends Component
             'ulasanBaru' => $ulasanBaru,
             'helpdeskBaru' => $helpdeskBaru,
             'pengecekanBaru' => $pengecekanBaru,
+            'taskMendesak' => $taskMendesak,
             'orchaPerlu' => $orchaPerlu,
             'modeOrcha' => request()->routeIs('admin.orcha.*'),
 
@@ -647,6 +661,12 @@ new class extends Component
                     <a href="{{ route('admin.task-saya.index') }}" class="sidebar-link" wire:navigate>
                         <i class="bi bi-clipboard-check"></i>
                         <span>Task Saya</span>
+                        @if ($taskMendesak > 0)
+                            <span class="sidebar-badge ms-auto"
+                                title="{{ $taskMendesak }} task Anda sudah jatuh tempo atau lewat tenggat">
+                                {{ $taskMendesak > 99 ? '99+' : $taskMendesak }}
+                            </span>
+                        @endif
                     </a>
                 </li>
 
