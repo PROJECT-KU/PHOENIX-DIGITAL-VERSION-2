@@ -422,6 +422,33 @@ Proses Pesanan || lemon
         .pt-proses form .btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; border-radius: 14px; font-weight: 700; }
         .pt-proses form .btn-danger:hover { background: #dc2626; color: #fff; }
         .pt-proses .pa-picker-btn::after { content: none; }
+        /* ===== Tata letak proses: form + panel ringkasan ===== */
+        .pp-tata { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+        @media (min-width: 1200px) {
+            .pp-tata { grid-template-columns: minmax(0, 1fr) 340px; }
+            .pp-samping { position: sticky; top: 84px; }
+        }
+        .pp-utama > .proc-section, .pp-utama > .alert { margin-bottom: 16px !important; }
+        .pp-kepala-teks { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .pp-kepala-teks small { color: #6b7280; font-size: .78rem; line-height: 1.45; }
+        .pp-langkah { color: #f26522; font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+        .pp-pemisah { height: 1px; background: #f1f5f9; margin: 18px 0; }
+        .pp-ring-kepala { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+        .pp-ring { margin: 0; display: flex; flex-direction: column; }
+        .pp-ring > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed #eef2f7; font-size: .84rem; }
+        .pp-ring dt { color: #6b7280; font-weight: 600; }
+        .pp-ring dd { margin: 0; color: #1c1f26; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+        .pp-plus { color: #16a34a; font-weight: 800; }
+        .pp-ring-sorot { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; padding: 12px; border-radius: 14px; background: #f8fafc; border: 1px solid #eef2f7; }
+        .pp-ring-baris { display: flex; gap: 10px; align-items: flex-start; }
+        .pp-ring-baris i.bi { color: #cbd5e1; font-size: 1rem; line-height: 1.3; }
+        .pp-ring-baris i.bi.is-ok { color: #16a34a; }
+        .pp-ring-baris b { display: block; font-size: .82rem; color: #1c1f26; }
+        .pp-ring-baris small { display: block; font-size: .76rem; color: #6b7280; overflow-wrap: anywhere; }
+        .pp-tombol { display: flex; flex-direction: column; gap: 8px; }
+        .pt-proses .pp-tombol .btn-primary, .pt-proses .pp-tombol .btn-danger { border-radius: 14px; }
+        .pp-admin { margin: 12px 0 0; font-size: .74rem; color: #6b7280; line-height: 1.5; text-align: center; }
+        .ebook-pick { height: 100%; }
         @media (max-width: 575.98px) {
             .pt-proses form > .border-top { flex-direction: column-reverse; }
             .pt-proses form > .border-top .btn { width: 100%; }
@@ -442,36 +469,20 @@ Proses Pesanan || lemon
     </div>
     @endif
 
-    <!-- Ringkasan Pesanan -->
-    <section class="dsb-bagian">
-        <div class="dsb-rak">
-            <div class="dsb-kepala" style="--c: #7c3aed">
-                <span class="dsb-kepala-ikon"><i class="bi bi-bag-check-fill"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Item yang diproses</span>
-                    <h2 class="dsb-judul">{{ $orderItem->product_name }}</h2>
-                </div>
-            </div>
-            <article class="dsb-stat k-4" style="--c: #0284c7">
-                <span class="dsb-ikon"><i class="bi bi-hourglass-split"></i></span>
-                <p class="dsb-stat-label">Durasi</p>
-                <p class="dsb-stat-nilai pt-proses-nilai">{{ $orderItem->getDurationLabel() }}</p>
-            </article>
-            <article class="dsb-stat k-4" style="--c: #16a34a">
-                <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
-                <p class="dsb-stat-label">Harga</p>
-                <p class="dsb-stat-nilai pt-proses-nilai">Rp {{ number_format($orderItem->price, 0, ',', '.') }}</p>
-            </article>
-            <article class="dsb-stat k-4" style="--c: #d97706">
-                <span class="dsb-ikon"><i class="bi bi-stack"></i></span>
-                <p class="dsb-stat-label">Jumlah</p>
-                <p class="dsb-stat-nilai pt-proses-nilai">{{ $orderItem->quantity }}<span class="dsb-stat-satuan">akun</span></p>
-            </article>
-        </div>
-    </section>
+    @php
+        $pkKredit = $this->pakaiKredit();
+        $ppPembeli = $order->customer->nama ?? 'Pelanggan';
+        $ppTgl = fn ($d) => $d ? \Carbon\Carbon::parse($d)->locale('id')->translatedFormat('d M Y') : null;
+        $ppMulai = $ppTgl($startDate);
+        $ppAkhir = $ppTgl($endDate);
+        $ppAdaBonus = 0 < (int) $bonusDurationValue;
+        $ppAkunTerisi = filled($accountUsername);
+        $ppLabelStatus = ['baru' => 'Baru', 'perpanjang' => 'Perpanjang', 'pengganti' => 'Pengganti'][$subscriptionStatus] ?? ucfirst((string) $subscriptionStatus);
+    @endphp
 
-    @php $pkKredit = $this->pakaiKredit(); @endphp
-
+    <form wire:submit="processOrder">
+    <div class="pp-tata">
+    <div class="pp-utama">
     {{-- Pesanan KREDIT: tidak ada akun baru yang dikirim. Admin menambah kredit
          ke akun milik pembeli, alamatnya ditulis pembeli di Catatan. --}}
     @if ($pkKredit)
@@ -495,12 +506,25 @@ Proses Pesanan || lemon
         </div>
     @endif
 
-    <form wire:submit="processOrder">
+        @if ($this->belumLunas)
+        <div class="alert alert-warning rounded-4 border-0 shadow-sm mb-3 d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div>
+                <strong>Pembayaran QRIS belum masuk (masih pending).</strong><br>
+                <span class="small">Pastikan pembayaran benar-benar sudah diterima sebelum mengirim akun. Kamu akan diminta konfirmasi saat menekan "Proses".</span>
+            </div>
+        </div>
+        @endif
+
         <!-- Pilih Data Akun -->
         <div class="proc-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-4">
                 <span class="proc-section-icon"><i class="bi bi-key-fill"></i></span>
-                <h5 class="fw-bold mb-0">Pilih Akun Premium</h5>
+                <div class="pp-kepala-teks">
+                    <span class="pp-langkah">Langkah 1</span>
+                    <h5 class="fw-bold mb-0">{{ $pkKredit ? 'Akun Tujuan Kredit' : 'Akun yang Dikirim' }}</h5>
+                    <small>{{ $pkKredit ? 'Isi email akun milik pelanggan yang ditambah kreditnya.' : 'Pilih dari stok akun, atau isi manual bila akunnya belum ada di daftar.' }}</small>
+                </div>
             </div>
 
             <div class="mb-3">
@@ -522,7 +546,7 @@ Proses Pesanan || lemon
                 <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
                 <small class="text-muted">
-                    Pilih dari akun yang tersedia atau isi manual di form bawah
+                    Memilih akun mengisi username, password, dan link di bawah secara otomatis.
                 </small>
             </div>
 
@@ -569,7 +593,11 @@ Proses Pesanan || lemon
         <div class="proc-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-4">
                 <span class="proc-section-icon icon-green"><i class="bi bi-calendar-range-fill"></i></span>
-                <h5 class="fw-bold mb-0">Periode Berlangganan</h5>
+                <div class="pp-kepala-teks">
+                    <span class="pp-langkah">Langkah 2</span>
+                    <h5 class="fw-bold mb-0">Masa Aktif</h5>
+                    <small>Tanggal akhir dihitung otomatis dari tanggal mulai, durasi, dan bonus.</small>
+                </div>
             </div>
 
             <div class="row">
@@ -638,7 +666,7 @@ Proses Pesanan || lemon
                 </div>
             </div>
 
-            <hr class="my-3">
+            <div class="pp-pemisah"></div>
 
             <div class="mb-0">
                 <label class="form-label">Status Pembelian *</label>
@@ -658,7 +686,11 @@ Proses Pesanan || lemon
         <div class="proc-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-4">
                 <span class="proc-section-icon icon-amber"><i class="bi bi-gift-fill"></i></span>
-                <h5 class="fw-bold mb-0">Bonus untuk Pelanggan <span class="text-muted fs-6">(opsional)</span></h5>
+                <div class="pp-kepala-teks">
+                    <span class="pp-langkah">Langkah 3 · opsional</span>
+                    <h5 class="fw-bold mb-0">Bonus untuk Pelanggan</h5>
+                    <small>Ebook yang dicentang ikut terkirim sebagai tautan di pesan WhatsApp.</small>
+                </div>
             </div>
 
             <div class="mb-3">
@@ -673,7 +705,7 @@ Proses Pesanan || lemon
                 @if (count($availableEbooks) > 0)
                 <div class="row g-3">
                     @foreach ($availableEbooks as $eb)
-                    <div class="col-md-6">
+                    <div class="col-md-6 col-xxl-4">
                         <label class="ebook-pick">
                             <input type="checkbox" value="{{ $eb->id }}" wire:model="selectedEbooks">
                             <span class="ep-icon"><i class="bi bi-journal-bookmark-fill"></i></span>
@@ -687,10 +719,6 @@ Proses Pesanan || lemon
                     @endforeach
                 </div>
                 @error('selectedEbooks.*') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
-                <small class="text-muted d-block mt-2">
-                    <i class="bi bi-info-circle me-1"></i>Centang ebook yang ingin diberikan — tautan unduhnya otomatis
-                    ikut di pesan WhatsApp.
-                </small>
                 @else
                 <div class="ebook-empty">
                     <i class="bi bi-journal-x"></i>
@@ -715,11 +743,15 @@ Proses Pesanan || lemon
         <!-- Catatan Admin -->
         <div class="proc-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-4">
-                <span class="proc-section-icon icon-amber"><i class="bi bi-journal-text"></i></span>
-                <h5 class="fw-bold mb-0">Catatan Internal (Admin)</h5>
+                <span class="proc-section-icon icon-blue"><i class="bi bi-journal-text"></i></span>
+                <div class="pp-kepala-teks">
+                    <span class="pp-langkah">Langkah 4 · opsional</span>
+                    <h5 class="fw-bold mb-0">Catatan Internal</h5>
+                    <small>Hanya terlihat oleh admin, tidak dikirim ke pelanggan.</small>
+                </div>
             </div>
 
-            <div class="mb-3">
+            <div class="mb-0">
                 <label class="form-label">Catatan Proses</label>
                 <textarea class="form-control @error('processingNotes') is-invalid @enderror" wire:model="processingNotes"
                     rows="3" placeholder="Catatan internal untuk admin (tidak dilihat customer)"></textarea>
@@ -728,40 +760,76 @@ Proses Pesanan || lemon
                 @enderror
             </div>
 
-            <div class="mb-0 alert alert-info rounded-4 mb-0">
-                <i class="bi bi-info-circle"></i>
-                <strong>Admin yang memproses:</strong> {{ auth()->user()->name }}<br>
-                <strong>Waktu proses:</strong> {{ now()->format('d F Y, H:i') }} WIB
-            </div>
         </div>
 
-        @if ($this->belumLunas)
-        <div class="alert alert-warning rounded-4 border-0 shadow-sm mt-3 mb-0 d-flex align-items-start gap-2">
-            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-            <div>
-                <strong>Pembayaran QRIS belum masuk (masih pending).</strong><br>
-                <span class="small">Pastikan pembayaran benar-benar sudah diterima sebelum mengirim akun. Kamu akan diminta konfirmasi saat menekan "Proses".</span>
-            </div>
-        </div>
-        @endif
+    </div>{{-- /.pp-utama --}}
 
-        <!-- Action Buttons -->
-        <div class="mt-4 pt-3 border-top d-flex gap-2">
-            <button type="button" wire:click="cancelProcessing"
-                class="btn btn-danger px-5 d-inline-flex align-items-center justify-content-center"
-                style="height: 52px;">
-                <i class="bi bi-x-circle me-2 fs-5"></i>
-                <span>Batal</span>
-            </button>
-            <button type="submit"
-                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-                style="height: 52px;" wire:loading.attr="disabled">
-                <span wire:loading.remove class="d-inline-flex align-items-center justify-content-center">
-                    <i class="bi bi-check2-circle me-2 fs-5"></i>
-                    <span>Proses &amp; Lanjut ke Pengiriman</span>
-                </span>
-            </button>
+    {{-- Panel ringkasan: apa yang diproses dan apa yang akan tercatat,
+         bersama tombol simpan — tidak perlu menggulir ke ujung form. --}}
+    <aside class="pp-samping">
+        <div class="proc-section p-4">
+            <div class="pp-ring-kepala">
+                <span class="proc-section-icon"><i class="bi bi-bag-check-fill"></i></span>
+                <div class="pp-kepala-teks">
+                    <span class="pp-langkah">Ringkasan</span>
+                    <h5 class="fw-bold mb-0">{{ $orderItem->product_name }}</h5>
+                </div>
+            </div>
+
+            <dl class="pp-ring">
+                <div><dt>Pembeli</dt><dd>{{ $ppPembeli }}</dd></div>
+                <div><dt>Durasi</dt><dd>{{ $orderItem->getDurationLabel() }}@if ($ppAdaBonus) <span class="pp-plus">+ {{ $bonusDurationValue }} {{ $bonusDurationType }}</span>@endif</dd></div>
+                <div><dt>Harga</dt><dd>Rp {{ number_format($orderItem->price, 0, ',', '.') }} × {{ $orderItem->quantity }}</dd></div>
+                <div><dt>Status</dt><dd>{{ $ppLabelStatus }}</dd></div>
+            </dl>
+
+            <div class="pp-ring-sorot">
+                <div class="pp-ring-baris">
+                    <i class="bi {{ $ppAkunTerisi ? 'bi-check-circle-fill is-ok' : 'bi-circle' }}"></i>
+                    <span>
+                        <b>Akun</b>
+                        <small>{{ $ppAkunTerisi ? $accountUsername : 'Belum diisi' }}</small>
+                    </span>
+                </div>
+                <div class="pp-ring-baris">
+                    <i class="bi {{ $ppMulai ? 'bi-check-circle-fill is-ok' : 'bi-circle' }}"></i>
+                    <span>
+                        <b>Masa aktif</b>
+                        <small>
+                            @if ($pkKredit)
+                                Kredit — tanpa tanggal akhir
+                            @elseif ($ppMulai)
+                                {{ $ppMulai }} – {{ $ppAkhir ?? '…' }}
+                            @else
+                                Tanggal mulai belum diisi
+                            @endif
+                        </small>
+                    </span>
+                </div>
+            </div>
+
+            <div class="pp-tombol">
+                <button type="submit" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center"
+                    style="height: 50px;" wire:loading.attr="disabled" wire:target="processOrder">
+                    <span wire:loading.remove wire:target="processOrder" class="d-inline-flex align-items-center justify-content-center">
+                        <i class="bi bi-check2-circle me-2 fs-5"></i>
+                        <span>Proses &amp; Lanjut ke Pengiriman</span>
+                    </span>
+                    <span wire:loading wire:target="processOrder">Menyimpan…</span>
+                </button>
+                <button type="button" wire:click="cancelProcessing"
+                    class="btn btn-danger w-100 d-inline-flex align-items-center justify-content-center" style="height: 44px;">
+                    <i class="bi bi-x-circle me-2"></i><span>Batal, kembali ke daftar</span>
+                </button>
+            </div>
+
+            <p class="pp-admin">
+                <i class="bi bi-person-check"></i>
+                Diproses oleh <b>{{ auth()->user()->name }}</b> · {{ now()->locale('id')->translatedFormat('d M Y, H:i') }} WIB
+            </p>
         </div>
+    </aside>
+    </div>{{-- /.pp-tata --}}
     </form>
     </div>{{-- /.dsb --}}
 
