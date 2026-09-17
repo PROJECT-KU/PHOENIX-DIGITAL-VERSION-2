@@ -91,6 +91,7 @@
     .rsc-salin.is-tersalin { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
     .rsc-telp { display: inline-flex; align-items: center; gap: 8px; }
     .rsc-wa { color: #16a34a; }
+    .rsc-wa.is-habis { color: #e11d48; }
     @media (hover: hover) and (pointer: fine) {
         .rsc-wa:hover { background: #16a34a; color: #fff; border-color: transparent; }
     }

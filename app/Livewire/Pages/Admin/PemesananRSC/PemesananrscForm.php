@@ -86,6 +86,9 @@ class PemesananrscForm extends Component
      */
     public ?string $kunciAsal = null;
 
+    /** Status batch saat edit dibuka; "perpanjang" lama tetap boleh disimpan. */
+    public ?string $statusAsal = null;
+
     /** Pesan untuk layar ini, tampil di atas form (bukan flash session:
      *  flash baru terbaca di halaman berikutnya, padahal di sini tidak ada
      *  perpindahan halaman). */
@@ -100,6 +103,7 @@ class PemesananrscForm extends Component
         if ($this->pemesananrsc && ! empty($this->pemesananBatch)) {
             $this->muatDariBatch(collect($this->pemesananBatch), false);
             $this->kunciAsal = $this->nama_camp.'|'.$this->batch_camp;
+            $this->statusAsal = $this->status;
             $this->mode = 'edit';
         } else {
             $this->mode = 'create';
@@ -196,6 +200,22 @@ class PemesananrscForm extends Component
                 'harga' => $sumberAkun ? $this->toNumber($sumberAkun->harga_satuan) : 0,
             ];
         }
+    }
+
+    /**
+     * Status yang boleh dipilih. "Perpanjang" hanya untuk batch lama yang
+     * memang sudah berstatus itu — perpanjangan baru lewat Pemesanan Toko.
+     *
+     * @return array<int, string>
+     */
+    public function pilihanStatus(): array
+    {
+        $pilihan = PemesananRsc::STATUS_PILIHAN;
+        if ($this->mode === 'edit' && $this->statusAsal === 'perpanjang') {
+            $pilihan[] = 'perpanjang';
+        }
+
+        return $pilihan;
     }
 
     /** Nomor batch berikutnya untuk satu kategori (angka terbesar + 1). */
@@ -482,7 +502,7 @@ class PemesananrscForm extends Component
                 'jumlah_pemesanan' => 'required|numeric|min:0',
                 'akun' => 'required',
                 'pic' => 'required',
-                'status' => 'required|in:habis,pengganti,perpanjang,baru',
+                'status' => ['required', \Illuminate\Validation\Rule::in($this->pilihanStatus())],
                 'peserta.*.nama_pembeli' => 'required',
                 'peserta.*.telp_pembeli' => ['required', function ($attr, $value, $fail) {
                     // Setelah dirapikan ke +62…, sisa digitnya 8–13 (nomor HP Indonesia).
@@ -536,7 +556,7 @@ class PemesananrscForm extends Component
             'pic.required' => 'PIC harus diisi.',
 
             'status.required' => 'Status harus dipilih.',
-            'status.in' => 'Status hanya boleh: habis, pengganti, perpanjang, atau baru.',
+            'status.in' => 'Status hanya boleh Baru, Pengganti, atau Habis. Perpanjangan akun dibeli pelanggan lewat Pemesanan Toko.',
         ];
     }
 
@@ -707,50 +727,10 @@ class PemesananrscForm extends Component
         return '+62'.$number;
     }
 
-    /**
-     * Catat cash flow untuk seluruh batch sebagai SATU entri (total batch), bukan
-     * per peserta. Entri dilampirkan ke satu baris representatif (tertua); cash flow
-     * baris lain dalam batch dihapus agar tidak terpecah-pecah di laporan cash flow.
-     */
+    /** Cash flow dicatat sekali per batch — lihat SyncRscBatchCashFlowAction. */
     private function syncRscBatchCashFlow(SyncCashFlowAction $action): void
     {
-        $rows = PemesananRsc::where('nama_camp', $this->nama_camp)
-            ->where('batch_camp', $this->batch_camp)
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->get();
-
-        if ($rows->isEmpty()) {
-            return;
-        }
-
-        $representatif = $rows->first();
-        $totalBatch = (int) $rows->sum('total');
-
-        // Sisakan hanya cash flow milik baris representatif — pemasukan DAN modal.
-        // Modal hanya boleh menempel di representatif; bersihkan sisanya supaya
-        // tidak pernah terhitung dobel walau representatif berganti.
-        $modalAction = app(\App\Actions\Finance\SyncRscPrivateCostAction::class);
-        foreach ($rows as $row) {
-            if ($row->id !== $representatif->id) {
-                $action->delete($row);
-                $modalAction->delete($row);
-            }
-        }
-
-        // Satu entri untuk seluruh batch. execute() self-guard lewat shouldRecord()
-        // (status 'baru'): bila tak layak dicatat, cash flow representatif dihapus.
-        $action->execute($representatif, [
-            'amount' => $totalBatch,
-            'type' => 'income',
-            'date' => $representatif->tanggal_pemesanan,
-            'category' => 'PemesananRSC',
-            'description' => 'Pesanan Rumah Scopus - '.$this->nama_camp.' Batch '.$this->batch_camp,
-        ]);
-
-        // Modal akun PRIVATE (bila akunnya private) — baris terpisah, idempoten.
-        // Non-private/tak layak → self-delete di dalam action, jadi aman dipanggil selalu.
-        app(\App\Actions\Finance\SyncRscPrivateCostAction::class)->execute($representatif);
+        app(\App\Actions\Finance\SyncRscBatchCashFlowAction::class)->execute((string) $this->nama_camp, (string) $this->batch_camp);
     }
 
     private function createpemesananrsc(SyncCashFlowAction $action)

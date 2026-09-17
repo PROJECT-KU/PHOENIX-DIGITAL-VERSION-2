@@ -362,7 +362,7 @@ Detail Pesanan RSC || lemon
                             <div class="dsb-chip-deret">
                                 <span class="dsb-chip"><i class="bi bi-people"></i>{{ $pesertaList->count() }} orang</span>
                                 <span class="dsb-chip"><i class="bi bi-cash-stack"></i>{{ $rupiah($batchData->total_harga) }}</span>
-                                <span class="dsb-chip is-samar">Urut nama</span>
+                                <span class="dsb-chip is-samar"><i class="bi bi-whatsapp"></i>{{ (collect($waPeserta)->first()['jenis'] ?? null) === 'habis' ? 'Tombol WA mengirim info masa aktif habis' : 'Tombol WA mengirim akses akun' }}</span>
                             </div>
                         </div>
                     </div>
@@ -409,9 +409,6 @@ Detail Pesanan RSC || lemon
                                             @foreach ($pesertaList as $index => $peserta)
                                                 @php
                                                     $digitWa = preg_replace('/\D/', '', (string) $peserta->telp_pembeli);
-                                                    if (str_starts_with($digitWa, '0')) {
-                                                        $digitWa = '62'.substr($digitWa, 1);
-                                                    }
                                                     $cariPs = mb_strtolower($peserta->nama_pembeli.' '.$peserta->telp_pembeli.' '.$digitWa.' '.$peserta->id_transaksi);
                                                 @endphp
                                                 <tr wire:key="ps-{{ $peserta->id }}" data-cari="{{ $cariPs }}"
@@ -432,12 +429,15 @@ Detail Pesanan RSC || lemon
                                                     <td data-judul="No. Telp">
                                                         <span class="rsc-telp">
                                                             <span class="dsb-tabel-angka">{{ $peserta->telp_pembeli ?? '—' }}</span>
-                                                            @if (strlen($digitWa) >= 9)
-                                                                {{-- Tautan wa.me biasa: tidak ada data yang dikirim
-                                                                     ke layanan lain dari server. --}}
-                                                                <a href="https://wa.me/{{ $digitWa }}" target="_blank" rel="noopener"
-                                                                    class="dsb-tabel-btn rsc-wa" title="Chat WhatsApp {{ $peserta->nama_pembeli }}"
-                                                                    aria-label="Chat WhatsApp {{ $peserta->nama_pembeli }}">
+                                                            @php $wa = $waPeserta[$peserta->id] ?? null; @endphp
+                                                            @if ($wa && $wa['url'])
+                                                                {{-- api.whatsapp.com dengan pesan siap kirim, sama seperti
+                                                                     Pesanan Toko. Isinya dirakit di server dan hanya
+                                                                     dibuka oleh admin sendiri. --}}
+                                                                <a href="{{ $wa['url'] }}" target="_blank" rel="noopener"
+                                                                    class="dsb-tabel-btn rsc-wa {{ $wa['jenis'] === 'habis' ? 'is-habis' : '' }}"
+                                                                    title="{{ $wa['jenis'] === 'habis' ? 'Kirim info masa aktif habis' : 'Kirim akses akun' }} ke {{ $peserta->nama_pembeli }}"
+                                                                    aria-label="{{ $wa['jenis'] === 'habis' ? 'Kirim info masa aktif habis' : 'Kirim akses akun' }} ke {{ $peserta->nama_pembeli }} lewat WhatsApp">
                                                                     <i class="bi bi-whatsapp"></i>
                                                                 </a>
                                                             @endif

@@ -453,17 +453,15 @@ class PemesananrscList extends Component
             ->paginate($this->perPage);
 
         // Ringkasan: dihitung dari tabel mentah dengan saringan yang SAMA.
-        // Nilai hanya dari status 'baru' — sama dengan aturan buku kas
-        // (SyncCashFlowAction): status lain tidak menghasilkan uang masuk,
-        // jadi menjumlahkannya akan membuat angka di sini lebih besar dari
-        // pemasukan yang sebenarnya tercatat.
+        // Nilai = yang dicatat di buku kas (SyncCashFlowAction), supaya
+        // angka di sini selalu sama dengan pemasukan RSC di Cash Flow.
         $dasar = PemesananRsc::query();
         $this->saring($dasar);
 
         $ringkas = [
             'batch' => (int) $pemesananrsc->total(),
             'peserta' => (int) (clone $dasar)->count(),
-            'nilai' => (float) (clone $dasar)->where('status', 'baru')->sum('total'),
+            'nilai' => (float) (clone $dasar)->dicatatDiKas()->sum('total'),
             'berjalan' => (int) (clone $dasar)
                 ->whereDate('tanggal_mulai_camp', '<=', today())
                 ->whereDate('tanggal_akhir_camp', '>=', today())
@@ -531,6 +529,6 @@ class PemesananrscList extends Component
             'ringkas',
             'pilihanAkun',
             'pilihanPic',
-        ));
+        ))->with('adaPerpanjang', PemesananRsc::where('status', 'perpanjang')->exists());
     }
 }

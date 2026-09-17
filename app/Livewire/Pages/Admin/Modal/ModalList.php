@@ -308,7 +308,7 @@ class ModalList extends Component
      */
     private function modalRscRincianRange(Carbon $mulai, Carbon $akhirEks): array
     {
-        $reps = \App\Models\PemesananRsc::where('status', 'baru')
+        $reps = \App\Models\PemesananRsc::dicatatDiKas()
             ->when(! $this->search, fn ($q) => $q
                 ->where('tanggal_pemesanan', '>=', $mulai->toDateString())
                 ->where('tanggal_pemesanan', '<', $akhirEks->toDateString()))

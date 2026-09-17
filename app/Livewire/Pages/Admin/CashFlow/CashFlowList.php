@@ -603,7 +603,7 @@ class CashFlowList extends Component
      *
      * Syarat & tanggal dibuat SAMA PERSIS dengan pencatatan cash flow RSC supaya
      * tidak melenceng dari uang yang benar-benar diakui:
-     *  - status 'baru'   → sama dgn SyncCashFlowAction::shouldRecord()
+     *  - status dicatat  → sama dgn SyncCashFlowAction::shouldRecord()
      *  - tanggal_pemesanan → sama dgn tanggal cash flow RSC
      *
      * Akun tanpa tautan produk dilewati (tidak bisa diakui ke produk mana pun).
@@ -614,7 +614,7 @@ class CashFlowList extends Component
     {
         $rows = PemesananRsc::query()
             ->join('data_akuns', 'data_akuns.id', '=', 'pemesanan_rsc.akun')
-            ->where('pemesanan_rsc.status', 'baru')
+            ->whereIn('pemesanan_rsc.status', PemesananRsc::STATUS_DICATAT)
             ->whereNotNull('data_akuns.product_id')
             ->when($this->usesSiklus(), function ($q) {
                 [$mulai, $akhir] = $this->siklusRange();
@@ -657,11 +657,11 @@ class CashFlowList extends Component
             return [];
         }
 
-        // Ambil satu baris REPRESENTATIF tiap batch dalam periode (status 'baru').
+        // Ambil satu baris REPRESENTATIF tiap batch dalam periode (yang dicatat di kas).
         // Batch-nya sendiri yang self-filter private di modalPerProduk(); di sini
         // cukup persempit ke batch yang tanggalnya masuk periode.
         $representatif = PemesananRsc::query()
-            ->where('status', 'baru')
+            ->dicatatDiKas()
             ->when($this->usesSiklus(), function ($q) {
                 [$mulai, $akhir] = $this->siklusRange();
                 $q->whereDate('tanggal_pemesanan', '>=', $mulai->toDateString())

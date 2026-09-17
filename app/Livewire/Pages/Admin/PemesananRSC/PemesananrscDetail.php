@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\PemesananRSC;
 use App\Exports\CampBatchExport;
 use App\Models\PemesananRsc;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -161,7 +162,15 @@ class PemesananrscDetail extends Component
             }
         }
 
+        $waPeserta = [];
+        if ($batchData) {
+            foreach ($pesertaList as $peserta) {
+                $waPeserta[$peserta->id] = self::tautanWa($peserta, $batchData, $extraAkuns);
+            }
+        }
+
         return view('livewire.pages.admin.pemesanan-r-s-c.pemesananrsc-detail', [
+            'waPeserta' => $waPeserta,
             'batchData' => $batchData,
             'pesertaList' => $pesertaList,
             'extraAkuns' => $extraAkuns,
@@ -169,5 +178,77 @@ class PemesananrscDetail extends Component
             'akunBreakdown' => $akunBreakdown,
             'sumHargaAkun' => collect($akunBreakdown)->sum('harga'),
         ]);
+    }
+
+    /**
+     * Tautan api.whatsapp.com lengkap dengan pesannya — pola yang sama dengan
+     * Pesanan Toko (order-detail), supaya pelanggan menerima pesan yang
+     * seragam dari dua jalur.
+     *
+     * Jenis pesan mengikuti masa akun:
+     *  - "akses": akun masih aktif → kirim username/password/link semua akun.
+     *  - "habis": status Habis atau tanggal berakhir sudah lewat → beri tahu
+     *    masa aktifnya habis dan arahkan perpanjangan ke Pemesanan Toko.
+     *
+     * @return array{url: string|null, jenis: string}
+     */
+    public static function tautanWa(PemesananRsc $peserta, $batch, $extraAkuns): array
+    {
+        $digit = preg_replace('/\D/', '', (string) $peserta->telp_pembeli);
+        if (str_starts_with($digit, '0')) {
+            $digit = '62'.substr($digit, 1);
+        }
+
+        $berakhir = $batch->tanggal_berakhir ? Carbon::parse($batch->tanggal_berakhir)->startOfDay() : null;
+        $habis = $batch->status === 'habis' || ($berakhir && $berakhir->lt(today()));
+        $tgl = fn ($d) => $d ? Carbon::parse($d)->locale('id')->translatedFormat('d F Y') : '-';
+
+        $produk = $batch->dataakun?->product;
+        $namaAkun = $produk?->nama_akun ?: ($batch->dataakun->nama_akun ?? 'akun');
+        $kepala = 'ID Transaksi: '.$peserta->id_transaksi."\n\nHalo ".$peserta->nama_pembeli.',';
+        $penutup = "Jika ada kendala, jangan ragu untuk menghubungi kami.\n"
+            ."Terima kasih telah menggunakan layanan kami.\n\n"
+            ."Salam hangat,\nPhoenix Digital Warehouse\n"
+            ."Instagram: phoenixdigital_warehouse\n"
+            .'Website: https://phoenixdigitalwarehouse.com/';
+
+        if ($habis) {
+            $tautanBeli = $produk
+                ? route('shop.detail-product', $produk->id)
+                : 'https://phoenixdigitalwarehouse.com/';
+
+            $pesan = $kepala."\n"
+                .'Akun *'.$namaAkun.'* dari *'.$batch->nama_camp.' Batch '.$batch->batch_camp.'* '
+                .'yang aktif sejak *'.$tgl($batch->tanggal_pemesanan).'* sampai *'.$tgl($batch->tanggal_berakhir).'* '
+                ."*SUDAH HABIS MASA AKTIFNYA*.\n\n"
+                ."Jika ingin memperpanjang akun *{$namaAkun}*, silakan order langsung melalui website kami:\n"
+                .$tautanBeli."\n\n"
+                .$penutup;
+        } else {
+            $blok = fn ($nama, $user, $pass, $link) => '*'.$nama."*\n"
+                .'• Username: '.($user ?: '-')."\n"
+                .'• Password: *'.($pass ?: '-')."*\n"
+                .'• Link Login: '.($link ?: '-');
+
+            $akun = [$blok($namaAkun, $batch->username, $batch->password, $batch->link_akses)];
+            foreach ($extraAkuns as $ea) {
+                $nama = $ea->dataakun?->product?->nama_akun ?: ($ea->nama_akun ?: 'Akun');
+                $akun[] = $blok($nama, $ea->username, $ea->password, $ea->link_akses);
+            }
+
+            $pesan = $kepala."\n"
+                .'Terima kasih telah mengikuti *'.$batch->nama_camp.' Batch '.$batch->batch_camp.'*. '
+                .'Akun Anda aktif mulai *'.$tgl($batch->tanggal_pemesanan).'* sampai *'.$tgl($batch->tanggal_berakhir).'*. '
+                .'Detail akunnya sebagai berikut:'."\n\n"
+                .implode("\n\n", $akun)."\n\n"
+                .$penutup;
+        }
+
+        return [
+            'url' => strlen($digit) >= 9
+                ? 'https://api.whatsapp.com/send?phone='.$digit.'&text='.rawurlencode($pesan)
+                : null,
+            'jenis' => $habis ? 'habis' : 'akses',
+        ];
     }
 }

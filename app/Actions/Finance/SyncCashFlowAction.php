@@ -89,7 +89,11 @@ class SyncCashFlowAction
             return true;
         }
         if ($model instanceof \App\Models\PemesananRsc) {
-            return $model->status === 'baru';
+            // Semua status RSC dicatat. Status menggambarkan MASA AKUN
+            // (baru/habis/pengganti), bukan pembayaran: batch yang akunnya
+            // sudah habis tetap uang yang sudah diterima. Perpanjangan tidak
+            // lagi dibuat di RSC — pelanggan membelinya lewat Pemesanan Toko.
+            return \App\Models\PemesananRsc::dicatatDiKas($model->status);
         }
 
         return false;

@@ -286,6 +286,85 @@ it('form menampilkan status berwarna, bar simpan, dan pemilih bergaya jendela le
 
     $detail = file_get_contents(resource_path('views/livewire/pages/admin/pemesanan-r-s-c/pemesananrsc-detail.blade.php'));
     expect($detail)->toContain("route('admin.pesananrsc.create', ['salin' =>")
-        ->and($detail)->toContain('https://wa.me/')
+        ->and($detail)->toContain('href="{{ $wa[\'url\'] }}"')
         ->and($detail)->toContain('rsc-salin');
+});
+
+it('semua status rsc tercatat di cash flow, termasuk habis', function () {
+    $admin = adminRsc();
+    $akun = akunRsc();
+    batchRsc($admin, $akun, 'Camp Habis', '1', [['Ani', '+6281234567890'], ['Budi', '+6281298765432']], ['status' => 'habis']);
+    batchRsc($admin, $akun, 'Camp Ganti', '1', [['Caca', '+6281200000000']], ['status' => 'pengganti']);
+
+    // Data lama: belum ada baris cash flow sama sekali.
+    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->count())->toBe(0);
+
+    $this->artisan('rsc:sinkron-cashflow', ['--kering' => true])->assertSuccessful();
+    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->count())->toBe(0);
+
+    $this->artisan('rsc:sinkron-cashflow')->assertSuccessful();
+    $kas = \App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->get();
+    expect($kas)->toHaveCount(2)
+        ->and((int) $kas->sum('amount'))->toBe(45000);
+
+    // Idempoten.
+    $this->artisan('rsc:sinkron-cashflow')->assertSuccessful();
+    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->count())->toBe(2);
+
+    // Kartu nilai di daftar ikut menghitung semua status.
+    expect(Livewire::actingAs($admin)->test(PemesananrscList::class)->viewData('ringkas')['nilai'])->toBe(45000.0);
+});
+
+it('mengubah status ke habis tidak menghapus pemasukan batch', function () {
+    $admin = adminRsc();
+    $akun = akunRsc();
+    batchRsc($admin, $akun, 'Camp Uji', '3', [['Ani', '+6281234567890']]);
+    $rows = PemesananRsc::all();
+
+    Livewire::actingAs($admin)
+        ->test(PemesananrscForm::class, ['pemesananrsc' => $rows->first(), 'pemesananBatch' => $rows])
+        ->set('status', 'habis')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->sum('amount'))->toEqual(15000);
+});
+
+it('batch baru tidak bisa berstatus perpanjang, batch lama tetap bisa disimpan', function () {
+    $admin = adminRsc();
+    $akun = akunRsc();
+
+    $lw = isiFormRsc(Livewire::actingAs($admin)->test(PemesananrscForm::class), $akun, $admin, 'Camp Uji', '1', [['Ani', '081234567890']]);
+    expect($lw->instance()->pilihanStatus())->toBe(['baru', 'pengganti', 'habis']);
+    $lw->set('status', 'perpanjang')->call('save')->assertHasErrors(['status']);
+
+    batchRsc($admin, $akun, 'Camp Lama', '1', [['Budi', '+6281298765432']], ['status' => 'perpanjang']);
+    $rows = PemesananRsc::where('nama_camp', 'Camp Lama')->get();
+    $edit = Livewire::actingAs($admin)
+        ->test(PemesananrscForm::class, ['pemesananrsc' => $rows->first(), 'pemesananBatch' => $rows]);
+    expect($edit->instance()->pilihanStatus())->toContain('perpanjang');
+    $edit->call('save')->assertHasNoErrors();
+});
+
+it('tombol wa memakai api.whatsapp.com dengan pesan akses atau masa habis', function () {
+    $admin = adminRsc();
+    $akun = akunRsc();
+    batchRsc($admin, $akun, 'Camp Aktif', '1', [['Ani', '081234567890']], ['tanggal_berakhir' => today()->addMonth()]);
+    batchRsc($admin, $akun, 'Camp Selesai', '1', [['Budi', '+6281298765432']], ['tanggal_berakhir' => today()->subDay()]);
+
+    $aktif = Livewire::actingAs($admin)->test(\App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail::class, ['nama_camp' => 'Camp Aktif', 'batch_camp' => '1']);
+    $wa = collect($aktif->viewData('waPeserta'))->first();
+    parse_str(parse_url($wa['url'], PHP_URL_QUERY), $q);
+    expect($wa['url'])->toStartWith('https://api.whatsapp.com/send?phone=6281234567890&text=')
+        ->and($wa['jenis'])->toBe('akses')
+        ->and($q['text'])->toContain('Halo Ani,')
+        ->and($q['text'])->toContain('• Password: *rahasia-uji*')
+        ->and($q['text'])->toContain('Camp Aktif Batch 1');
+
+    $selesai = Livewire::actingAs($admin)->test(\App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail::class, ['nama_camp' => 'Camp Selesai', 'batch_camp' => '1']);
+    $wa = collect($selesai->viewData('waPeserta'))->first();
+    parse_str(parse_url($wa['url'], PHP_URL_QUERY), $q);
+    expect($wa['jenis'])->toBe('habis')
+        ->and($q['text'])->toContain('SUDAH HABIS MASA AKTIFNYA')
+        ->and($q['text'])->not->toContain('rahasia-uji');
 });

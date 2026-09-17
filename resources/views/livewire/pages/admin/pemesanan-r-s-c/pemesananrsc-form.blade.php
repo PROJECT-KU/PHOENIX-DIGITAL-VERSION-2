@@ -100,7 +100,9 @@
         .rsc-lipat:not(.is-buka) > .d-flex:first-child { padding-bottom: 0; margin-bottom: 0 !important; border-bottom: 0; }
 
         /* Status: empat pilihan berwarna, bukan kotak pilih */
-        .rsc-status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .rsc-status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+        .rsc-status.is-empat { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        @media (max-width: 380px) { .rsc-status { grid-template-columns: minmax(0, 1fr); } }
         .rsc-status-opsi {
             position: relative; display: flex; align-items: center; justify-content: center; gap: 7px;
             min-height: 40px; padding: 0 10px; border-radius: 11px; cursor: pointer; margin: 0;
@@ -118,7 +120,7 @@
         @media (hover: hover) and (pointer: fine) {
             .rsc-status-opsi:hover { border-color: color-mix(in srgb, var(--c) 40%, #fff); }
         }
-        .rsc-status-ket { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0 0; color: #b45309; font-size: .76rem; line-height: 1.45; }
+        .rsc-status-ket { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0 0; color: #6b7280; font-size: .76rem; line-height: 1.45; }
 
         /* Bar simpan bawah (< 1200px) */
         .rsc-bar-simpan { display: none; }
@@ -825,27 +827,26 @@
                 <div class="col-md-6 col-xl-12">
                     <span class="of-form-label d-block" id="rsc-status-label">Status <span class="text-danger">*</span></span>
                     @php
-                        $pilihanStatus = [
+                        $gayaStatus = [
                             'baru' => ['Baru', 'bi-stars', '#16a34a'],
-                            'perpanjang' => ['Perpanjang', 'bi-arrow-repeat', '#0284c7'],
                             'pengganti' => ['Pengganti', 'bi-arrow-left-right', '#d97706'],
                             'habis' => ['Habis', 'bi-hourglass-bottom', '#e11d48'],
+                            'perpanjang' => ['Perpanjang', 'bi-arrow-repeat', '#0284c7'],
                         ];
+                        $opsiStatus = $this->pilihanStatus();
                     @endphp
-                    <div class="rsc-status" role="radiogroup" aria-labelledby="rsc-status-label">
-                        @foreach ($pilihanStatus as $nilai => [$label, $ikon, $warna])
+                    <div class="rsc-status {{ count($opsiStatus) > 3 ? 'is-empat' : '' }}" role="radiogroup" aria-labelledby="rsc-status-label">
+                        @foreach ($opsiStatus as $nilai)
+                            @php [$label, $ikon, $warna] = $gayaStatus[$nilai]; @endphp
                             <label class="rsc-status-opsi {{ $status === $nilai ? 'is-dipilih' : '' }}" style="--c: {{ $warna }}">
                                 <input type="radio" name="status" value="{{ $nilai }}" wire:model.live="status">
                                 <i class="bi {{ $ikon }}"></i><span>{{ $label }}</span>
                             </label>
                         @endforeach
                     </div>
-                    {{-- Aturan buku kas (SyncCashFlowAction): hanya "baru" yang
-                         menjadi pemasukan. Diberi tahu di sini supaya pilihan
-                         status tidak diam-diam menghapus pemasukan batch. --}}
-                    @if ($status && $status !== 'baru')
-                        <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>Status selain <b>Baru</b> tidak dicatat sebagai pemasukan di Cash Flow.</span></p>
-                    @endif
+                    {{-- Semua status tercatat di Cash Flow: status menggambarkan
+                         masa akun, bukan pembayaran. --}}
+                    <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>Semua status tetap tercatat di Cash Flow. Perpanjangan akun dibeli pelanggan lewat <b>Pemesanan Toko</b>.</span></p>
                     @error('status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">

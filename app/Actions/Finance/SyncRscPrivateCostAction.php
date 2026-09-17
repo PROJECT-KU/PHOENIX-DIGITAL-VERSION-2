@@ -76,7 +76,7 @@ class SyncRscPrivateCostAction
      *  - execute()                       → dijumlah jadi satu baris cash flow
      *  - CashFlowList::modalRscPrivate() → diakumulasi per produk untuk omset
      *
-     * Return kosong bila status bukan 'baru' atau tidak ada akun private.
+     * Return kosong bila batch tidak dicatat di kas atau tidak ada akun private.
      *
      * @param  PemesananRsc  $rep  baris representatif batch
      * @return array<string,float> product_id => total modal
@@ -103,7 +103,7 @@ class SyncRscPrivateCostAction
      */
     public function rincianModal(PemesananRsc $rep): array
     {
-        if ($rep->status !== 'baru') {
+        if (! PemesananRsc::dicatatDiKas($rep->status)) {
             return [];
         }
 

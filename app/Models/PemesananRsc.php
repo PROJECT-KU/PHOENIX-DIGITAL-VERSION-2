@@ -106,6 +106,28 @@ class PemesananRsc extends Model
 
     // Scope filter status
     /**
+     * Status yang dicatat sebagai pemasukan (dan modal) di Cash Flow.
+     *
+     * Semua status. "perpanjang" tetap ada di sini untuk data lama; batch
+     * baru tidak lagi memakainya (perpanjangan lewat Pemesanan Toko).
+     */
+    public const STATUS_DICATAT = ['baru', 'habis', 'pengganti', 'perpanjang'];
+
+    /** Status yang boleh dipilih untuk batch baru. */
+    public const STATUS_PILIHAN = ['baru', 'pengganti', 'habis'];
+
+    public static function dicatatDiKas(?string $status): bool
+    {
+        return in_array($status, self::STATUS_DICATAT, true);
+    }
+
+    /** Kueri: hanya baris yang dicatat di Cash Flow. */
+    public function scopeDicatatDiKas($query)
+    {
+        return $query->whereIn($query->getModel()->getTable().'.status', self::STATUS_DICATAT);
+    }
+
+    /**
      * Baris yang akunnya berakhir dalam $hari hari ke depan (termasuk hari
      * ini). Status "habis" tidak ikut: akunnya memang sudah dinyatakan selesai.
      */

@@ -61,8 +61,7 @@ Data Pesanan RSC || lemon
                     <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
                     <p class="dsb-stat-label">Nilai Pemesanan</p>
                     <p class="dsb-stat-nilai">{{ $rupiah($ringkas['nilai']) }}</p>
-                    {{-- Hanya status "baru" — aturan yang sama dengan buku kas. --}}
-                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>Dari status "baru" — sama dengan yang tercatat di Cash Flow</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>Semua status — sama dengan yang tercatat di Cash Flow</span></p>
                 </article>
 
                 <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
@@ -151,7 +150,11 @@ Data Pesanan RSC || lemon
                                 <select id="rsc-status" class="dsb-isian" wire:model.live="statusFilter">
                                     <option value="">Semua status</option>
                                     <option value="baru">Baru</option>
-                                    <option value="perpanjang">Perpanjang</option>
+                                    {{-- Perpanjangan kini lewat Pemesanan Toko; opsi hanya
+                                         tampil selama masih ada batch lama berstatus itu. --}}
+                                    @if ($adaPerpanjang)
+                                        <option value="perpanjang">Perpanjang</option>
+                                    @endif
                                     <option value="pengganti">Pengganti</option>
                                     <option value="habis">Habis</option>
                                 </select>
@@ -304,9 +307,8 @@ Data Pesanan RSC || lemon
                                                 $masa = null;
                                                 if ($berakhirAkun && $item->status !== 'habis') {
                                                     if ($sisaHari < 0) {
-                                                        // Abu-abu, bukan merah: batch lama memang tidak
-                                                        // ditandai "habis" (status itu melepas pemasukan
-                                                        // dari Cash Flow), jadi ini keterangan, bukan alarm.
+                                                        // Abu-abu, bukan merah: masa sudah lewat hanyalah
+                                                        // keterangan; statusnya bisa diubah ke "Habis".
                                                         $masa = ['is-abu', 'bi-calendar-x', 'Sudah berakhir'];
                                                     } elseif ($sisaHari === 0) {
                                                         $masa = ['is-merah', 'bi-hourglass-bottom', 'Berakhir hari ini'];
