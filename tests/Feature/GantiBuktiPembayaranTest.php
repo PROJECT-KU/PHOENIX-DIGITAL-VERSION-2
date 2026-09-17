@@ -185,3 +185,14 @@ it('kartu pembeli menampilkan status member, poin, jumlah pesanan, dan tombol wh
         ->and($html)->toContain('1 pesanan')
         ->and($html)->toContain('https://api.whatsapp.com/send?phone=6281234567890');
 });
+
+it('pesanan qris dinamis menampilkan referensi dan id transaksi qris', function () {
+    $order = orderBayar('qris_dinamis', 'paid');
+    $order->update(['payment_reference' => 'INV-REF-UJI-ABCD', 'qris_trx_id' => '43809182']);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+
+    expect($html)->toContain('Referensi Pembayaran')
+        ->and($html)->toContain('INV-REF-UJI-ABCD')
+        ->and($html)->toContain('43809182');
+});

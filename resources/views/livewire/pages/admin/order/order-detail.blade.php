@@ -26,6 +26,9 @@ Detail Pesanan || lemon
         $hdBolehGanti = $this->bolehGantiBukti();
         $hdBarisBukti = $hdBuktiTercatat || $hdBolehGanti;
 
+        $hdRefBayar = $order->payment_reference;
+        $hdIdQris = $order->qris_trx_id;
+
         // Data pembeli (kartu kanan).
         $pbl = $order->customer;
         $pblMember = $pbl && $pbl->status_member === 'active';
@@ -128,6 +131,12 @@ Detail Pesanan || lemon
     .pt-nilai-teks { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; line-height: 1.25; overflow-wrap: anywhere; }
     .pt-kepala-sisip { margin: 0 0 14px !important; }
     .pt-detail > .row.mb-4 { margin-bottom: clamp(20px, 3vw, 32px) !important; }
+    /* Kartu setinggi isinya masing-masing: isi kartu pembayaran berbeda
+       menurut metode bayar, jadi menyamakan tinggi selalu menyisakan
+       kotak kosong di salah satunya. */
+    .pt-detail > .row.mb-4 { align-items: flex-start; }
+    .pt-detail > .row.mb-4 .detail-info-card { height: auto !important; }
+    .pt-kode { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; overflow-wrap: anywhere; }
     .pt-detail .detail-info-card,
     .pt-detail > .card,
     .pt-detail .pcek.card {
@@ -136,7 +145,7 @@ Detail Pesanan || lemon
         box-shadow: none !important; margin-bottom: clamp(20px, 3vw, 32px) !important;
     }
     .pt-detail .detail-info-card { margin-bottom: 0 !important; display: flex; flex-direction: column; }
-    .pt-pembeli-aksi { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+    .pt-pembeli-aksi { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 16px; }
     .pt-pembeli-aksi:empty { display: none; }
     .pt-tombol-wa i.bi { color: #16a34a; }
     @media (hover: hover) and (pointer: fine) {
@@ -567,6 +576,20 @@ Detail Pesanan || lemon
                         {{ $order->paid_at ? $order->paid_at->locale('id')->translatedFormat('d M Y, H:i') : 'Belum ada pembayaran tercatat' }}
                     </span>
                 </div>
+                {{-- Nomor pencocokan dari penyedia QRIS: dipakai saat mencocokkan
+                     mutasi. Hanya tampil bila ada (transfer manual tidak punya). --}}
+                @if ($hdRefBayar)
+                <div class="info-row">
+                    <span class="info-label">Referensi Pembayaran</span>
+                    <span class="info-value pt-kode">{{ $hdRefBayar }}</span>
+                </div>
+                @endif
+                @if ($hdIdQris)
+                <div class="info-row">
+                    <span class="info-label">ID Transaksi QRIS</span>
+                    <span class="info-value pt-kode">{{ $hdIdQris }}</span>
+                </div>
+                @endif
                 @if ($hdBarisBukti)
                 {{-- Bukti pembayaran: kotak sendiri (bukan di sisi kanan baris), supaya
                      thumbnail, keadaan berkas, dan tombolnya punya ruang. --}}
@@ -702,8 +725,7 @@ Detail Pesanan || lemon
                     <span class="info-value">{{ $pblPesanan }} pesanan</span>
                 </div>
 
-                {{-- Tombol di dasar kartu: kartu ini setinggi kartu pembayaran di
-                     sebelahnya, jadi tombolnya ditambatkan ke bawah. --}}
+                {{-- Tombol hubungi pembeli. --}}
                 <div class="pt-pembeli-aksi">
                     @if ($pblAdaWa)
                         <a href="https://api.whatsapp.com/send?phone={{ $pblWa }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut is-mungil pt-tombol-wa">
