@@ -102,7 +102,9 @@
                     @php
                         $first = $gtasks->first();
                         $jumlah = $gtasks->count();
-                        $grup = $jumlah > 1;
+                        // Ditulis "1 < $jumlah" (bukan lebih-dari): tanda lebih-dari pertama
+                        // sesudah direktif blok membuat Livewire melewati penanda morph-nya.
+                        $grup = 1 < $jumlah;
 
                         // Task milik SAYA di dalam grup — itulah yang dibuka saat
                         // barisnya ditekan. Kalau saya bukan penerimanya (mis.

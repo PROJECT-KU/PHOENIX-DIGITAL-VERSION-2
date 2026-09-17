@@ -6,6 +6,10 @@ Detail Pesanan RSC || lemon
     @include('livewire.pages.admin.pemesanan-r-s-c.partials.rsc-gaya')
 
     @php
+        // Izin dihitung sekali di sini: dua kondisi izin berkurung bersarang
+        // dalam satu berkas membuat Livewire salah memasang penanda morph.
+        $bolehBuat = auth()->user()->hasPermission('create_pesananrsc');
+        $bolehEdit = auth()->user()->hasPermission('edit_pesananrsc');
         $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
         // locale('id'): APP_LOCALE=en, tanpa ini bulan tertulis "Aug", bukan "Agu".
         $tgl = fn ($d) => $d ? \Carbon\Carbon::parse($d)->locale('id')->translatedFormat('d M Y') : '—';
@@ -50,7 +54,7 @@ Detail Pesanan RSC || lemon
                     wire:loading.attr="disabled" wire:target="unduhInvoice">
                     <i class="bi bi-file-earmark-pdf"></i><span>Invoice</span>
                 </button>
-                @if (auth()->user()->hasPermission('create_pesananrsc'))
+                @if ($bolehBuat)
                     {{-- Batch berikutnya biasanya berisi kategori, akun, PIC, dan
                          peserta yang sama: disalin, lalu tinggal isi nomor
                          batch & jadwal baru. --}}
@@ -59,7 +63,7 @@ Detail Pesanan RSC || lemon
                         <i class="bi bi-files"></i><span>Salin Batch</span>
                     </a>
                 @endif
-                @if (auth()->user()->hasPermission('edit_pesananrsc'))
+                @if ($bolehEdit)
                     <a wire:navigate href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $nama_camp, 'batch_camp' => $batch_camp]) }}"
                         class="dsb-tombol is-utama">
                         <i class="bi bi-pencil"></i><span>Edit Batch</span>

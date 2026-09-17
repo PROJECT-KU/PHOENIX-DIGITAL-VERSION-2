@@ -877,6 +877,9 @@ Task Saya || lemon
                     <p class="dsb-stat-ket"><i class="bi bi-list-task"></i><span>Dari {{ $semua }} task periode ini</span></p>
                 </article>
 
+                {{-- Dihitung di luar blok: tanda lebih-dari di antara direktif blok
+                     dan tag berikutnya membuat Livewire melewati penanda morph-nya. --}}
+                @php $warnaPoin = ($poin['persen'] ?? 0) >= 80 ? '#16a34a' : (($poin['persen'] ?? 0) >= 50 ? '#d97706' : '#e11d48'); @endphp
                 @if ($utamaKedua === 'poin')
                     {{-- POIN, bukan rupiah.
 
@@ -886,7 +889,6 @@ Task Saya || lemon
                          melihatnya. Yang dilihat semua orang adalah POIN: bobot
                          dikali persentase status, memakai konstanta yang SAMA
                          dengan perhitungan uangnya. --}}
-                    @php $warnaPoin = $poin['persen'] >= 80 ? '#16a34a' : ($poin['persen'] >= 50 ? '#d97706' : '#e11d48'); @endphp
                     <article class="dsb-stat is-utama k-6" style="--c: {{ $warnaPoin }}">
                         <span class="dsb-ikon"><i class="bi bi-award-fill"></i></span>
                         <p class="dsb-stat-label">Poin Task Saya</p>

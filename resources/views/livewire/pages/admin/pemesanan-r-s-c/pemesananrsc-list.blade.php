@@ -8,6 +8,11 @@ Data Pesanan RSC || lemon
     @include('livewire.pages.admin.pemesanan-r-s-c.partials.rsc-gaya')
 
     @php
+        // Izin dihitung sekali di sini: dua kondisi izin berkurung bersarang
+        // dalam satu berkas membuat Livewire salah memasang penanda morph.
+        $bolehBuat = auth()->user()->hasPermission('create_pesananrsc');
+        $bolehEdit = auth()->user()->hasPermission('edit_pesananrsc');
+        $bolehHapus = auth()->user()->hasPermission('delete_pesananrsc');
         $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
         // Warna tiap status. Sama persis di daftar, detail, dan formulir —
         // status yang berganti warna antar-layar terbaca sebagai status lain.
@@ -31,7 +36,7 @@ Data Pesanan RSC || lemon
                 <button wire:click="openExportModal" type="button" class="dsb-tombol is-lembut">
                     <i class="bi bi-download"></i><span>Unduh</span>
                 </button>
-                @if (auth()->user()->hasPermission('create_pesananrsc'))
+                @if ($bolehBuat)
                     <a wire:navigate href="{{ route('admin.pesananrsc.create') }}" class="dsb-tombol is-utama">
                         <i class="bi bi-plus-lg"></i><span>Tambah Batch</span>
                     </a>
@@ -395,13 +400,13 @@ Data Pesanan RSC || lemon
                                                         <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-btn" title="Lihat detail">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
-                                                        @if (auth()->user()->hasPermission('edit_pesananrsc'))
+                                                        @if ($bolehEdit)
                                                             <a wire:navigate href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
                                                                 class="dsb-tabel-btn" title="Edit batch">
                                                                 <i class="bi bi-pencil"></i>
                                                             </a>
                                                         @endif
-                                                        @if (auth()->user()->hasPermission('delete_pesananrsc'))
+                                                        @if ($bolehHapus)
                                                             <button type="button" title="Hapus batch"
                                                                 class="dsb-tabel-btn is-bahaya rsc-delete-batch"
                                                                 data-nama="{{ $item->nama_camp }}" data-batch="{{ $item->batch_camp }}"
