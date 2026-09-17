@@ -4,6 +4,7 @@ use App\Livewire\Actions\Logout;
 use App\Models\CustomerMessage;
 use App\Models\Order;
 use App\Models\OrderUpload;
+use App\Models\PemesananRsc;
 use App\Models\ProductReview;
 use App\Models\Task;
 use App\Models\Testimoni;
@@ -74,6 +75,13 @@ new class extends Component
                 ->count()
             : 0;
 
+        // Batch RSC yang akunnya berakhir dalam 7 hari: waktunya perpanjang
+        // atau mengganti akun. Hitungan per BATCH, bukan per peserta.
+        $rscSegera = $login && $u->hasPermission('view_pesananrsc')
+            ? PemesananRsc::segeraBerakhir(\App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList::BATAS_SEGERA)
+                ->select('nama_camp', 'batch_camp')->distinct()->get()->count()
+            : 0;
+
         // Pengecekan plagiasi yang menunggu diproses. Penting karena paket 5x
         // diunggah bertahap: file ke-2 dst bisa masuk berhari-hari kemudian.
         $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
@@ -93,6 +101,7 @@ new class extends Component
             'helpdeskBaru' => $helpdeskBaru,
             'pengecekanBaru' => $pengecekanBaru,
             'taskMendesak' => $taskMendesak,
+            'rscSegera' => $rscSegera,
             'orchaPerlu' => $orchaPerlu,
             'modeOrcha' => request()->routeIs('admin.orcha.*'),
 
@@ -693,17 +702,27 @@ new class extends Component
                             class="{{ request()->routeIs('admin.pesananrsc.*') || request()->routeIs('admin.pesanantoko.*') || request()->routeIs('admin.ebook.*') ? 'text-primary' : '' }}">
                             Pesanan
                         </span>
-                        @if ($pesananTokoBadge > 0)
-                        <span class="sidebar-badge ms-auto" title="{{ $pesananTokoTitle }}">
-                            {{ $pesananTokoBadge > 99 ? '99+' : $pesananTokoBadge }}
+                        @php
+                            $pesananBadge = $pesananTokoBadge + $rscSegera;
+                            $pesananTitle = trim($pesananTokoTitle.($rscSegera > 0 ? " {$rscSegera} batch RSC akunnya segera berakhir." : ''));
+                        @endphp
+                        @if ($pesananBadge > 0)
+                        <span class="sidebar-badge ms-auto" title="{{ $pesananTitle }}">
+                            {{ $pesananBadge > 99 ? '99+' : $pesananBadge }}
                         </span>
                         @endif
                     </a>
                     <ul class="submenu">
                         @if (auth()->user()->hasPermission('view_pesananrsc'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesananrsc.*') ? 'active' : '' }}">
-                            <a wire:navigate href="{{ route('admin.pesananrsc.index') }}" class="submenu-link">
-                                Pesanan RSC
+                            <a wire:navigate href="{{ $rscSegera > 0 ? route('admin.pesananrsc.index', ['masa' => 'segera']) : route('admin.pesananrsc.index') }}"
+                                class="submenu-link @if ($rscSegera > 0) has-badge @endif">
+                                <span>Pesanan RSC</span>
+                                @if ($rscSegera > 0)
+                                <span class="sidebar-badge ms-auto" title="{{ $rscSegera }} batch RSC akunnya berakhir dalam 7 hari">
+                                    {{ $rscSegera > 99 ? '99+' : $rscSegera }}
+                                </span>
+                                @endif
                             </a>
                         </li>
                         @endif

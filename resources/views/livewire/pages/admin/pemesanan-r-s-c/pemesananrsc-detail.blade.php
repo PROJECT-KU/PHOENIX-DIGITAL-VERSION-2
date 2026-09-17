@@ -50,6 +50,15 @@ Detail Pesanan RSC || lemon
                     wire:loading.attr="disabled" wire:target="unduhInvoice">
                     <i class="bi bi-file-earmark-pdf"></i><span>Invoice</span>
                 </button>
+                @if (auth()->user()->hasPermission('create_pesananrsc'))
+                    {{-- Batch berikutnya biasanya berisi kategori, akun, PIC, dan
+                         peserta yang sama: disalin, lalu tinggal isi nomor
+                         batch & jadwal baru. --}}
+                    <a wire:navigate href="{{ route('admin.pesananrsc.create', ['salin' => $nama_camp.'|'.$batch_camp]) }}"
+                        class="dsb-tombol is-lembut">
+                        <i class="bi bi-files"></i><span>Salin Batch</span>
+                    </a>
+                @endif
                 @if (auth()->user()->hasPermission('edit_pesananrsc'))
                     <a wire:navigate href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $nama_camp, 'batch_camp' => $batch_camp]) }}"
                         class="dsb-tombol is-utama">
@@ -178,6 +187,18 @@ Detail Pesanan RSC || lemon
                                 <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-person-badge-fill"></i></span>
                                 <div><h3 class="dsb-kartu-judul">Akun Utama</h3><span class="dsb-kartu-sub">{{ $batchData->dataakun->nama_akun ?? 'Belum dipilih' }}</span></div>
                             </div>
+                            @php
+                                $teksKredensial = implode("\n", array_filter([
+                                    ($batchData->dataakun->nama_akun ?? 'Akun'),
+                                    'Username: '.($batchData->username ?? '-'),
+                                    'Password: '.($batchData->password ?? '-'),
+                                    $batchData->link_akses ? 'Link: '.$batchData->link_akses : null,
+                                ]));
+                            @endphp
+                            <button type="button" class="dsb-tabel-btn rsc-salin" data-salin="{{ $teksKredensial }}"
+                                title="Salin username, password, dan link" aria-label="Salin kredensial akun utama">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
                         </div>
                         <div class="dsb-kartu-isi">
                             <div class="dsb-data">
@@ -270,9 +291,22 @@ Detail Pesanan RSC || lemon
                                 <div class="rsc-harga-akun">
                                     @foreach ($extraAkuns as $ea)
                                         <div class="rsc-akun-kartu" x-data="{ lihat: false }" wire:key="ea-{{ $ea->id }}">
+                                            @php
+                                                $namaEa = $ea->nama_akun ?? optional($ea->dataakun)->nama_akun ?? 'Akun';
+                                                $teksEa = implode("\n", array_filter([
+                                                    $namaEa,
+                                                    'Username: '.($ea->username ?? '-'),
+                                                    'Password: '.($ea->password ?? '-'),
+                                                    $ea->link_akses ? 'Link: '.$ea->link_akses : null,
+                                                ]));
+                                            @endphp
                                             <div class="rsc-akun-kartu-judul">
                                                 <span class="dsb-ikon is-kecil" style="--c: #16a34a; width: 28px; height: 28px; border-radius: 9px; font-size: .8rem;"><i class="bi bi-person-badge-fill"></i></span>
-                                                <span>{{ $ea->nama_akun ?? optional($ea->dataakun)->nama_akun ?? 'Akun' }}</span>
+                                                <span style="flex: 1 1 auto; min-width: 0;">{{ $namaEa }}</span>
+                                                <button type="button" class="dsb-tabel-btn rsc-salin" data-salin="{{ $teksEa }}"
+                                                    title="Salin username, password, dan link" aria-label="Salin kredensial {{ $namaEa }}">
+                                                    <i class="bi bi-clipboard"></i>
+                                                </button>
                                             </div>
                                             <div class="dsb-data">
                                                 <div class="dsb-data-baris"><span class="dsb-data-label">Username</span><span class="dsb-data-nilai rsc-rahasia-nilai">{{ $ea->username ?? '—' }}</span></div>
@@ -334,7 +368,20 @@ Detail Pesanan RSC || lemon
                     </div>
 
                     <div class="k-12">
-                        <div class="dsb-kartu">
+                        <div class="dsb-kartu" x-data="{ q: '' }">
+                            @if ($pesertaList->count() > 5)
+                                {{-- Cari di peramban: semua peserta batch sudah ada di
+                                     halaman, tidak perlu bolak-balik ke server. --}}
+                                <div class="rsc-cari-peserta">
+                                    <div class="dsb-cari">
+                                        <i class="bi bi-search"></i>
+                                        <input type="search" class="dsb-isian" x-model="q" placeholder="Cari nama, no. telp, atau ID transaksi…" aria-label="Cari peserta">
+                                    </div>
+                                    <span class="dsb-kartu-sub" x-show="q" x-cloak>
+                                        <span x-text="[...$root.querySelectorAll('tbody tr')].filter(r => r.dataset.cari.includes(q.toLowerCase().trim())).length"></span> cocok
+                                    </span>
+                                </div>
+                            @endif
                             @if ($pesertaList->isEmpty())
                                 <div class="dsb-kosong">
                                     <span class="dsb-kosong-ikon"><i class="bi bi-inbox"></i></span>
@@ -360,7 +407,15 @@ Detail Pesanan RSC || lemon
                                         </thead>
                                         <tbody>
                                             @foreach ($pesertaList as $index => $peserta)
-                                                <tr wire:key="ps-{{ $peserta->id }}">
+                                                @php
+                                                    $digitWa = preg_replace('/\D/', '', (string) $peserta->telp_pembeli);
+                                                    if (str_starts_with($digitWa, '0')) {
+                                                        $digitWa = '62'.substr($digitWa, 1);
+                                                    }
+                                                    $cariPs = mb_strtolower($peserta->nama_pembeli.' '.$peserta->telp_pembeli.' '.$digitWa.' '.$peserta->id_transaksi);
+                                                @endphp
+                                                <tr wire:key="ps-{{ $peserta->id }}" data-cari="{{ $cariPs }}"
+                                                    x-show="! q || $el.dataset.cari.includes(q.toLowerCase().trim())">
                                                     <td>
                                                         <div class="dsb-tabel-utama">
                                                             <span class="dsb-avatar is-kecil" style="--c: #7c3aed">{{ \Illuminate\Support\Str::substr($peserta->nama_pembeli ?? '?', 0, 1) }}</span>
@@ -374,7 +429,20 @@ Detail Pesanan RSC || lemon
                                                         </div>
                                                     </td>
                                                     <td class="k-sedang" data-judul="ID Transaksi"><span class="dsb-lencana is-abu rsc-rahasia-nilai">{{ $peserta->id_transaksi }}</span></td>
-                                                    <td data-judul="No. Telp"><span class="dsb-tabel-angka">{{ $peserta->telp_pembeli ?? '—' }}</span></td>
+                                                    <td data-judul="No. Telp">
+                                                        <span class="rsc-telp">
+                                                            <span class="dsb-tabel-angka">{{ $peserta->telp_pembeli ?? '—' }}</span>
+                                                            @if (strlen($digitWa) >= 9)
+                                                                {{-- Tautan wa.me biasa: tidak ada data yang dikirim
+                                                                     ke layanan lain dari server. --}}
+                                                                <a href="https://wa.me/{{ $digitWa }}" target="_blank" rel="noopener"
+                                                                    class="dsb-tabel-btn rsc-wa" title="Chat WhatsApp {{ $peserta->nama_pembeli }}"
+                                                                    aria-label="Chat WhatsApp {{ $peserta->nama_pembeli }}">
+                                                                    <i class="bi bi-whatsapp"></i>
+                                                                </a>
+                                                            @endif
+                                                        </span>
+                                                    </td>
                                                     <td class="k-lebar" data-judul="Durasi"><span class="dsb-tabel-angka">{{ $peserta->jumlah_pemesanan ?? '—' }} bulan</span></td>
                                                     @unless ($perAkun)
                                                         <td class="k-sedang" data-judul="Harga" style="text-align: right;"><span class="dsb-tabel-angka">{{ $rupiah($peserta->harga_satuan ?? 0) }}</span></td>
@@ -384,6 +452,10 @@ Detail Pesanan RSC || lemon
                                             @endforeach
                                         </tbody>
                                     </table>
+                                    <div class="dsb-kosong" x-show="q && ! [...$root.querySelectorAll('tbody tr')].some(r => r.dataset.cari.includes(q.toLowerCase().trim()))" x-cloak>
+                                        <span class="dsb-kosong-ikon"><i class="bi bi-search"></i></span>
+                                        <p class="dsb-kosong-judul">Tidak ada peserta yang cocok</p>
+                                    </div>
                                 </div>
 
                                 <div class="rsc-harga-akun-rumus" style="margin: 0; padding: 14px clamp(14px, 2vw, 20px);">
@@ -397,4 +469,25 @@ Detail Pesanan RSC || lemon
             </section>
         @endif
     </div>
+
+    <script>
+        // Tombol salin kredensial. Satu pendengar di dokumen (dipasang sekali),
+        // karena halaman ini dibuka ulang lewat wire:navigate.
+        if (!window.__rscSalinTerpasang) {
+            window.__rscSalinTerpasang = true;
+            document.addEventListener('click', async (e) => {
+                const tombol = e.target.closest('.rsc-salin');
+                if (!tombol) return;
+                const ikon = tombol.querySelector('i');
+                try {
+                    await navigator.clipboard.writeText(tombol.dataset.salin);
+                    ikon.className = 'bi bi-clipboard-check';
+                    tombol.classList.add('is-tersalin');
+                } catch (_) {
+                    ikon.className = 'bi bi-x-lg';
+                }
+                setTimeout(() => { ikon.className = 'bi bi-clipboard'; tombol.classList.remove('is-tersalin'); }, 1600);
+            });
+        }
+    </script>
 </div>

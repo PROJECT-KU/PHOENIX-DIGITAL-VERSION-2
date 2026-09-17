@@ -105,6 +105,24 @@ class PemesananRsc extends Model
     }
 
     // Scope filter status
+    /**
+     * Baris yang akunnya berakhir dalam $hari hari ke depan (termasuk hari
+     * ini). Status "habis" tidak ikut: akunnya memang sudah dinyatakan selesai.
+     */
+    public function scopeSegeraBerakhir($query, int $hari = 7)
+    {
+        return $query->where('status', '!=', 'habis')
+            ->whereDate('tanggal_berakhir', '>=', today())
+            ->whereDate('tanggal_berakhir', '<=', today()->addDays($hari));
+    }
+
+    /** Baris yang masa akunnya sudah lewat tetapi statusnya belum "habis". */
+    public function scopeLewatMasa($query)
+    {
+        return $query->where('status', '!=', 'habis')
+            ->whereDate('tanggal_berakhir', '<', today());
+    }
+
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);

@@ -12,7 +12,8 @@ Data Pesanan RSC || lemon
         // Warna tiap status. Sama persis di daftar, detail, dan formulir —
         // status yang berganti warna antar-layar terbaca sebagai status lain.
         $lencanaStatus = ['baru' => 'is-hijau', 'perpanjang' => 'is-biru', 'pengganti' => 'is-kuning', 'habis' => 'is-luring'];
-        $adaSaringan = $search || $filterMonth || $filterYear || $statusFilter;
+        $adaSaringan = $search || $filterMonth || $filterYear || $statusFilter || $akunFilter || $picFilter || $masaFilter;
+        $batasSegera = \App\Livewire\Pages\Admin\PemesananRSC\PemesananrscList::BATAS_SEGERA;
     @endphp
 
     <div class="dsb">
@@ -85,12 +86,28 @@ Data Pesanan RSC || lemon
                     <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>{{ $ringkas['berjalan'] > 0 ? 'Sedang berlangsung hari ini' : 'Tidak ada camp hari ini' }}</span></p>
                 </article>
 
-                <article class="dsb-stat k-4" style="--c: #e11d48">
-                    <span class="dsb-ikon"><i class="bi bi-calculator-fill"></i></span>
-                    <p class="dsb-stat-label">Rata-rata per Batch</p>
-                    <p class="dsb-stat-nilai">{{ $ringkas['batch'] > 0 ? round($ringkas['peserta'] / $ringkas['batch']) : 0 }}<span class="dsb-stat-satuan">peserta</span></p>
-                    <p class="dsb-stat-ket"><i class="bi bi-graph-up"></i><span>Ukuran batch pada umumnya</span></p>
-                </article>
+                {{-- Kartu ini bisa diklik: menyaring daftar ke batch yang akunnya
+                     segera berakhir. Status TIDAK diubah otomatis — buku kas hanya
+                     mencatat status "baru", jadi mengubahnya ke "habis" akan
+                     menghapus pemasukan batch itu dari Cash Flow. --}}
+                <button type="button" wire:click="saringMasa('segera')"
+                    class="dsb-stat k-4 rsc-stat-tombol {{ $masaFilter === 'segera' ? 'is-dipilih' : '' }}"
+                    style="--c: {{ $ringkas['segera'] > 0 ? '#e11d48' : '#64748b' }}"
+                    aria-pressed="{{ $masaFilter === 'segera' ? 'true' : 'false' }}">
+                    <span class="dsb-ikon"><i class="bi bi-hourglass-bottom"></i></span>
+                    <span class="dsb-stat-label">Akun Segera Berakhir</span>
+                    <span class="dsb-stat-nilai">{{ $ringkas['segera'] }}<span class="dsb-stat-satuan">batch</span></span>
+                    <span class="dsb-stat-ket">
+                        <i class="bi {{ $masaFilter === 'segera' ? 'bi-funnel-fill' : 'bi-calendar-x' }}"></i>
+                        <span>
+                            @if ($masaFilter === 'segera')
+                                Sedang disaring — klik lagi untuk melepas
+                            @else
+                                Dalam {{ $batasSegera }} hari{{ $ringkas['lewat'] ? ' · '.$ringkas['lewat'].' sudah lewat' : '' }}
+                            @endif
+                        </span>
+                    </span>
+                </button>
             </div>
         </section>
 
@@ -104,7 +121,7 @@ Data Pesanan RSC || lemon
                         <h2 class="dsb-judul">Cari &amp; Saring</h2>
                         <div class="dsb-chip-deret">
                             <span class="dsb-chip is-memuat" wire:loading.inline-flex
-                                wire:target="search,filterMonth,filterYear,statusFilter,resetFilters,gotoPage,nextPage,previousPage">
+                                wire:target="search,filterMonth,filterYear,statusFilter,akunFilter,picFilter,masaFilter,saringMasa,urutkan,resetFilters,gotoPage,nextPage,previousPage">
                                 <span class="dsb-putar is-kecil"></span>Menyaring…
                             </span>
                             <span class="dsb-chip is-samar">Pencarian mencakup camp, batch, peserta, no. telp, akun, PIC, dan tanggal</span>
@@ -159,6 +176,35 @@ Data Pesanan RSC || lemon
                                     @endforeach
                                 </select>
                             </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-akun">Akun utama</label>
+                                <select id="rsc-akun" class="dsb-isian" wire:model.live="akunFilter">
+                                    <option value="">Semua akun</option>
+                                    @foreach ($pilihanAkun as $pa)
+                                        <option value="{{ $pa->id }}">{{ $pa->nama_akun }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-pic">PIC</label>
+                                <select id="rsc-pic" class="dsb-isian" wire:model.live="picFilter">
+                                    <option value="">Semua PIC</option>
+                                    @foreach ($pilihanPic as $pp)
+                                        <option value="{{ $pp->id }}">{{ $pp->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-masa">Masa akun</label>
+                                <select id="rsc-masa" class="dsb-isian" wire:model.live="masaFilter">
+                                    <option value="">Semua masa</option>
+                                    <option value="segera">Berakhir ≤ {{ $batasSegera }} hari</option>
+                                    <option value="lewat">Sudah lewat</option>
+                                </select>
+                            </div>
                         </div>
 
                         @if ($adaSaringan)
@@ -176,7 +222,7 @@ Data Pesanan RSC || lemon
 
         {{-- ================== DAFTAR ================== --}}
         <section class="dsb-bagian" wire:loading.class="dsb-sedang-muat"
-            wire:target="search,filterMonth,filterYear,statusFilter,resetFilters,gotoPage,nextPage,previousPage">
+            wire:target="search,filterMonth,filterYear,statusFilter,akunFilter,picFilter,masaFilter,saringMasa,urutkan,resetFilters,gotoPage,nextPage,previousPage">
             <div class="dsb-rak">
                 <div class="dsb-kepala" style="--c: #16a34a">
                     <span class="dsb-kepala-ikon"><i class="bi bi-list-task"></i></span>
@@ -184,7 +230,8 @@ Data Pesanan RSC || lemon
                         <span class="dsb-kicker">Daftar</span>
                         <h2 class="dsb-judul">Batch Camp</h2>
                         <div class="dsb-chip-deret">
-                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>Terbaru dibuat di atas</span>
+                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>{{ ['dibuat' => 'Urut waktu dibuat', 'mulai' => 'Urut jadwal camp', 'berakhir' => 'Urut masa akun', 'peserta' => 'Urut jumlah peserta', 'total' => 'Urut total'][$urut] ?? 'Terbaru dibuat di atas' }}</span>
+                            <span class="dsb-chip is-samar">Klik judul kolom untuk mengurutkan</span>
                             <span class="dsb-chip is-samar">Satu baris = satu batch</span>
                         </div>
                     </div>
@@ -212,13 +259,31 @@ Data Pesanan RSC || lemon
                             <div class="dsb-tabel-bungkus">
                                 <table class="dsb-tabel">
                                     <thead>
+                                        @php
+                                            $kolomTabel = [
+                                                ['Batch', 'dibuat', ''],
+                                                ['Akun', null, 'k-sedang'],
+                                                ['Jadwal Camp', 'mulai', 'k-lebar'],
+                                                ['Masa Akun', 'berakhir', 'k-sedang'],
+                                                ['Peserta', 'peserta', ''],
+                                                ['Status', null, 'k-sedang'],
+                                                ['Total', 'total', ''],
+                                            ];
+                                        @endphp
                                         <tr>
-                                            <th>Batch</th>
-                                            <th class="k-sedang">Akun</th>
-                                            <th class="k-lebar">Jadwal Camp</th>
-                                            <th>Peserta</th>
-                                            <th class="k-sedang">Status</th>
-                                            <th>Total</th>
+                                            @foreach ($kolomTabel as [$judul, $kunci, $kelas])
+                                                <th class="{{ $kelas }}">
+                                                    @if ($kunci)
+                                                        <button type="button" class="dsb-tabel-urut {{ $urut === $kunci ? 'aktif' : '' }}"
+                                                            wire:click="urutkan('{{ $kunci }}')" title="Urutkan menurut {{ strtolower($judul) }}">
+                                                            <span>{{ $judul }}</span>
+                                                            <i class="bi {{ $urut === $kunci ? ($arahUrut === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up' }}"></i>
+                                                        </button>
+                                                    @else
+                                                        {{ $judul }}
+                                                    @endif
+                                                </th>
+                                            @endforeach
                                             <th style="text-align: right;">Aksi</th>
                                         </tr>
                                     </thead>
@@ -234,6 +299,21 @@ Data Pesanan RSC || lemon
                                                 $mulai = $item->tanggal_mulai_camp ? \Carbon\Carbon::parse($item->tanggal_mulai_camp) : null;
                                                 $akhir = $item->tanggal_akhir_camp ? \Carbon\Carbon::parse($item->tanggal_akhir_camp) : null;
                                                 $berjalan = $mulai && $akhir && today()->between($mulai->copy()->startOfDay(), $akhir->copy()->endOfDay());
+                                                $berakhirAkun = $item->akun_berakhir ? \Carbon\Carbon::parse($item->akun_berakhir)->startOfDay() : null;
+                                                $sisaHari = $berakhirAkun ? (int) today()->diffInDays($berakhirAkun, false) : null;
+                                                $masa = null;
+                                                if ($berakhirAkun && $item->status !== 'habis') {
+                                                    if ($sisaHari < 0) {
+                                                        // Abu-abu, bukan merah: batch lama memang tidak
+                                                        // ditandai "habis" (status itu melepas pemasukan
+                                                        // dari Cash Flow), jadi ini keterangan, bukan alarm.
+                                                        $masa = ['is-abu', 'bi-calendar-x', 'Sudah berakhir'];
+                                                    } elseif ($sisaHari === 0) {
+                                                        $masa = ['is-merah', 'bi-hourglass-bottom', 'Berakhir hari ini'];
+                                                    } elseif ($sisaHari <= $batasSegera) {
+                                                        $masa = ['is-kuning', 'bi-hourglass-split', $sisaHari.' hari lagi'];
+                                                    }
+                                                }
                                                 $urlDetail = route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]);
                                             @endphp
                                             <tr wire:key="rsc-{{ md5($key) }}" class="{{ $berjalan ? 'is-tanda' : '' }}" @if ($berjalan) style="--c: #d97706" @endif>
@@ -248,6 +328,10 @@ Data Pesanan RSC || lemon
                                                                 <span class="dsb-lencana is-ungu">Batch #{{ $item->batch_camp }}</span>
                                                                 @if ($berjalan)
                                                                     <span class="dsb-lencana is-kuning"><i class="bi bi-broadcast"></i>Berjalan</span>
+                                                                @endif
+                                                                @if ($masa)
+                                                                    {{-- Salinan kolom Masa Akun untuk layar sempit. --}}
+                                                                    <span class="dsb-lencana {{ $masa[0] }} rsc-masa-sempit"><i class="bi {{ $masa[1] }}"></i>{{ $masa[2] }}</span>
                                                                 @endif
                                                                 {{-- Salinan kolom yang disembunyikan di layar sempit. --}}
                                                                 <span class="dsb-tabel-samar">
@@ -279,6 +363,15 @@ Data Pesanan RSC || lemon
                                                         </span>
                                                         @if ($mulai && $akhir)
                                                             <span class="dsb-tabel-meta">{{ (int) $mulai->diffInDays($akhir) + 1 }} hari</span>
+                                                        @endif
+                                                    </span>
+                                                </td>
+
+                                                <td class="k-sedang" data-judul="Masa Akun">
+                                                    <span class="dsb-tabel-teks">
+                                                        <span class="dsb-tabel-angka">{{ $berakhirAkun?->locale('id')->translatedFormat('d M Y') ?? '—' }}</span>
+                                                        @if ($masa)
+                                                            <span class="dsb-tabel-meta"><span class="dsb-lencana {{ $masa[0] }}"><i class="bi {{ $masa[1] }}"></i>{{ $masa[2] }}</span></span>
                                                         @endif
                                                     </span>
                                                 </td>

@@ -76,79 +76,176 @@ class PemesananrscForm extends Component
 
     public $pemesananBatch = [];
 
+    /** "nama|batch" batch sumber saat menyalin batch (mode create). */
+    public ?string $salinDari = null;
+
+    /**
+     * Kunci batch saat halaman edit dibuka. Dipakai untuk menolak ganti
+     * nama/nomor ke batch yang sudah ada, dan membersihkan akun tambahan
+     * yang tertinggal di kunci lama.
+     */
+    public ?string $kunciAsal = null;
+
+    /** Pesan untuk layar ini, tampil di atas form (bukan flash session:
+     *  flash baru terbaca di halaman berikutnya, padahal di sini tidak ada
+     *  perpindahan halaman). */
+    public ?string $pesanGalat = null;
+
+    public ?string $pesanSukses = null;
+
     public function mount()
     {
         $this->users = User::select('id', 'name')->orderBy('name')->get();
 
         if ($this->pemesananrsc && ! empty($this->pemesananBatch)) {
-            $first = $this->pemesananrsc;
-
-            $this->nama_camp = $first->nama_camp;
-            $this->batch_camp = $first->batch_camp;
-            $this->tanggal_mulai_camp = $first->tanggal_mulai_camp
-                ? Carbon::parse($first->tanggal_mulai_camp)->format('Y-m-d')
-                : null;
-            $this->tanggal_akhir_camp = $first->tanggal_akhir_camp
-                ? Carbon::parse($first->tanggal_akhir_camp)->format('Y-m-d')
-                : null;
-            $this->jumlah_pemesanan = $first->jumlah_pemesanan;
-            $this->metode_harga = $first->metode_harga ?? 'per_peserta';
-            $this->tanggal_pemesanan = $first->tanggal_pemesanan
-                ? Carbon::parse($first->tanggal_pemesanan)->format('Y-m-d')
-                : null;
-            $this->tanggal_berakhir = $first->tanggal_berakhir
-                ? Carbon::parse($first->tanggal_berakhir)->format('Y-m-d')
-                : null;
-            $this->harga_satuan = $this->formatRupiah($first->harga_satuan);
-            $this->akun = $first->akun;
-            $this->username = $first->username;
-            $this->password = $first->password;
-            $this->link_akses = $first->link_akses;
-            $this->pic = $first->pic;
-            $this->deskripsi = $first->deskripsi;
-            $this->status = $first->status;
-
-            // Load semua peserta ke array
-            $this->peserta = [];
-            foreach ($this->pemesananBatch as $p) {
-                $this->peserta[$p->id] = [
-                    'tmp_id' => $p->id, // Gunakan ID asli sebagai tmp_id
-                    'nama_pembeli' => $p->nama_pembeli,
-                    'telp_pembeli' => $p->telp_pembeli,
-                ];
-            }
-            // Muat akun tambahan batch (kredensial saja).
-            $this->akunTambahan = [];
-            $extra = \App\Models\RscBatchAkun::where('nama_camp', $this->nama_camp)
-                ->where('batch_camp', $this->batch_camp)
-                ->orderBy('id')
-                ->get();
-            foreach ($extra as $e) {
-                $key = 'db-'.$e->id;
-                $hargaAkun = $e->akun_id ? $this->toNumber(optional(\App\Models\DataAkun::find($e->akun_id))->harga_satuan) : 0;
-                $this->akunTambahan[$key] = [
-                    'tmp_id' => $key,
-                    'akun_id' => $e->akun_id,
-                    'nama_akun' => $e->nama_akun,
-                    'username' => $e->username,
-                    'password' => $e->password,
-                    'link_akses' => $e->link_akses,
-                    'harga' => $hargaAkun,
-                ];
-            }
-
+            $this->muatDariBatch(collect($this->pemesananBatch), false);
+            $this->kunciAsal = $this->nama_camp.'|'.$this->batch_camp;
             $this->mode = 'edit';
         } else {
             $this->mode = 'create';
-            $this->tanggal_pemesanan = now()->format('Y-m-d');
-            $tmpId = (string) Str::uuid();
-            $this->peserta[$tmpId] = [
-                'tmp_id' => $tmpId,
-                'nama_pembeli' => '',
-                'telp_pembeli' => '',
-            ];
+            $sumber = $this->salinDari ? $this->barisBatch($this->salinDari) : collect();
+
+            if ($sumber->isNotEmpty()) {
+                $this->muatDariBatch($sumber, true);
+            } else {
+                $this->salinDari = null;
+                $this->tanggal_pemesanan = now()->format('Y-m-d');
+                $tmpId = (string) Str::uuid();
+                $this->peserta[$tmpId] = [
+                    'tmp_id' => $tmpId,
+                    'nama_pembeli' => '',
+                    'telp_pembeli' => '',
+                ];
+            }
         }
         $this->hitungTanggalBerakhir();
+    }
+
+    private function barisBatch(string $kunci)
+    {
+        [$nama, $batch] = array_pad(explode('|', $kunci, 2), 2, null);
+
+        return PemesananRsc::where('nama_camp', $nama)->where('batch_camp', $batch)
+            ->orderBy('created_at')->orderBy('id')->get();
+    }
+
+    /**
+     * Isi form dari baris-baris satu batch.
+     *
+     * $salin = true: dipakai "Salin Batch". Peserta & akun tambahan diberi
+     * kunci sementara baru (disimpan sebagai data BARU), jadwal camp
+     * dikosongkan, tanggal pesan = hari ini, dan nomor batch diusulkan
+     * nomor berikutnya supaya tidak bertabrakan dengan batch sumber.
+     */
+    private function muatDariBatch($rows, bool $salin): void
+    {
+        $first = $rows->first();
+        $tgl = fn ($d) => $d ? Carbon::parse($d)->format('Y-m-d') : null;
+
+        $this->nama_camp = $first->nama_camp;
+        $this->batch_camp = $salin ? $this->nomorBatchBerikutnya($first->nama_camp) : $first->batch_camp;
+        $this->tanggal_mulai_camp = $salin ? null : $tgl($first->tanggal_mulai_camp);
+        $this->tanggal_akhir_camp = $salin ? null : $tgl($first->tanggal_akhir_camp);
+        $this->jumlah_pemesanan = $first->jumlah_pemesanan;
+        $this->metode_harga = $first->metode_harga ?? 'per_peserta';
+        $this->tanggal_pemesanan = $salin ? now()->format('Y-m-d') : $tgl($first->tanggal_pemesanan);
+        $this->tanggal_berakhir = $salin ? null : $tgl($first->tanggal_berakhir);
+        $this->harga_satuan = $this->formatRupiah($first->harga_satuan);
+        $this->akun = $first->akun;
+        $this->username = $first->username;
+        $this->password = $first->password;
+        $this->link_akses = $first->link_akses;
+        $this->pic = $first->pic;
+        $this->deskripsi = $first->deskripsi;
+        $this->status = $salin ? 'baru' : $first->status;
+
+        // Akun utama disalin dengan data TERKINI dari Data Akun (harga &
+        // kredensial bisa sudah berubah sejak batch sumber dibuat).
+        if ($salin && ($akun = DataAkun::find($first->akun))) {
+            $this->username = $akun->username_akun ?: 'Tidak ada';
+            $this->password = $akun->password_akun ?: 'Tidak ada';
+            $this->link_akses = $akun->link_login_akun ?: 'Tidak ada';
+            $this->harga_satuan = $akun->harga_satuan ?? 0;
+        }
+
+        $this->peserta = [];
+        foreach ($rows as $p) {
+            $key = $salin ? (string) Str::uuid() : $p->id;
+            $this->peserta[$key] = [
+                'tmp_id' => $key,
+                'nama_pembeli' => $p->nama_pembeli,
+                'telp_pembeli' => $p->telp_pembeli,
+            ];
+        }
+
+        $this->akunTambahan = [];
+        $extra = \App\Models\RscBatchAkun::where('nama_camp', $first->nama_camp)
+            ->where('batch_camp', $first->batch_camp)
+            ->orderBy('id')
+            ->get();
+        foreach ($extra as $e) {
+            $key = $salin ? (string) Str::uuid() : 'db-'.$e->id;
+            $sumberAkun = $e->akun_id ? DataAkun::find($e->akun_id) : null;
+            $this->akunTambahan[$key] = [
+                'tmp_id' => $key,
+                'akun_id' => $e->akun_id,
+                'nama_akun' => $e->nama_akun,
+                'username' => $salin && $sumberAkun ? ($sumberAkun->username_akun ?: 'Tidak ada') : $e->username,
+                'password' => $salin && $sumberAkun ? ($sumberAkun->password_akun ?: 'Tidak ada') : $e->password,
+                'link_akses' => $salin && $sumberAkun ? ($sumberAkun->link_login_akun ?: 'Tidak ada') : $e->link_akses,
+                'harga' => $sumberAkun ? $this->toNumber($sumberAkun->harga_satuan) : 0,
+            ];
+        }
+    }
+
+    /** Nomor batch berikutnya untuk satu kategori (angka terbesar + 1). */
+    private function nomorBatchBerikutnya(string $namaCamp): string
+    {
+        $terbesar = PemesananRsc::where('nama_camp', $namaCamp)->pluck('batch_camp')
+            ->map(fn ($b) => (int) preg_replace('/\D/', '', (string) $b))
+            ->max();
+
+        return (string) (((int) $terbesar) + 1);
+    }
+
+    /** Apakah batch nama+nomor ini sudah dipakai (selain batch yang sedang diedit)? */
+    private function batchSudahAda(): bool
+    {
+        $kunci = trim((string) $this->nama_camp).'|'.trim((string) $this->batch_camp);
+        if ($this->mode === 'edit' && $kunci === $this->kunciAsal) {
+            return false;
+        }
+
+        return PemesananRsc::where('nama_camp', trim((string) $this->nama_camp))
+            ->where('batch_camp', trim((string) $this->batch_camp))
+            ->exists();
+    }
+
+    /**
+     * Nomor telepon yang sama dipakai lebih dari satu peserta.
+     *
+     * Hanya PERINGATAN (tidak menahan simpan): satu nomor bisa sah dipakai
+     * bersama, mis. pendaftaran lewat satu admin kampus. Baris yang nama
+     * DAN nomornya sama persis ditolak saat simpan.
+     *
+     * @return array<int, array{telp: string, nomor: array<int, int>}>
+     */
+    public function telpGanda(): array
+    {
+        $grup = [];
+        $no = 0;
+        foreach ($this->peserta as $p) {
+            $no++;
+            $digit = preg_replace('/\D/', '', (string) ($p['telp_pembeli'] ?? ''));
+            if (strlen($digit) < 6) {
+                continue;
+            }
+            $normal = $this->formatPhoneNumber($digit);
+            $grup[$normal][] = $no;
+        }
+
+        return collect($grup)->filter(fn ($n) => count($n) > 1)
+            ->map(fn ($n, $t) => ['telp' => $t, 'nomor' => $n])->values()->all();
     }
 
     // Download template Excel untuk import peserta.
@@ -163,6 +260,8 @@ class PemesananrscForm extends Component
     // import excel file
     public function updatedFileExcel()
     {
+        $this->pesanGalat = null;
+        $this->pesanSukses = null;
 
         $this->validate([
             'file_excel' => 'required|mimes:xlsx,xls,csv|max:2048',
@@ -194,7 +293,7 @@ class PemesananrscForm extends Component
                     $this->nama_camp = $firstDataRow[0];
                     $this->batch_camp = $firstDataRow[1];
                 } else {
-                    session()->flash('error', 'Nama Camp dan Batch Camp tidak ditemukan di baris pertama.');
+                    $this->pesanGalat = 'Nama Camp dan Batch Camp tidak ditemukan di baris pertama.';
 
                     return;
                 }
@@ -211,12 +310,13 @@ class PemesananrscForm extends Component
                         ];
                     }
                 }
-                $this->dispatch('success-upload-excel');
+                $this->pesanGalat = null;
+                $this->pesanSukses = count($this->peserta).' peserta dimuat dari file. Periksa datanya, lalu simpan.';
             } else {
-                session()->flash('error', 'File Excel kosong atau tidak sesuai format.');
+                $this->pesanGalat = 'File Excel kosong atau tidak sesuai format.';
             }
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal import file: '.$e->getMessage());
+            $this->pesanGalat = 'Gagal import file: '.$e->getMessage();
         }
     }
 
@@ -237,7 +337,7 @@ class PemesananrscForm extends Component
             }, $this->file_excel)->first();
 
             if (! $data || $data->count() <= 1) {
-                session()->flash('error', 'File Excel kosong atau tidak sesuai format.');
+                $this->pesanGalat = 'File Excel kosong atau tidak sesuai format.';
 
                 return;
             }
@@ -261,12 +361,13 @@ class PemesananrscForm extends Component
             $this->reset('file_excel');
 
             if ($ditambah > 0) {
-                $this->dispatch('success-upload-excel', message: $ditambah.' peserta berhasil ditambahkan dari file. Klik "Update" untuk menyimpan.');
+                $this->pesanGalat = null;
+                $this->pesanSukses = $ditambah.' peserta ditambahkan dari file. Klik "Simpan Perubahan" untuk menyimpan.';
             } else {
-                session()->flash('error', 'Tidak ada nama peserta pada kolom C yang bisa ditambahkan.');
+                $this->pesanGalat = 'Tidak ada nama peserta pada kolom C yang bisa ditambahkan.';
             }
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal import file: '.$e->getMessage());
+            $this->pesanGalat = 'Gagal import file: '.$e->getMessage();
         }
     }
 
@@ -315,26 +416,89 @@ class PemesananrscForm extends Component
 
     public function save(SyncCashFlowAction $syncCashFlow)
     {
-        $this->validate([
-            'nama_camp' => 'required',
-            'batch_camp' => 'required|numeric',
-            'tanggal_mulai_camp' => 'required|date',
-            'tanggal_akhir_camp' => 'required|date|after_or_equal:tanggal_mulai_camp',
-            'tanggal_pemesanan' => 'required|date',
-            'jumlah_pemesanan' => 'required|numeric|min:0',
-            'akun' => 'required',
-            'pic' => 'required',
-            'status' => 'required|in:habis,pengganti,perpanjang,baru',
-            'peserta.*.nama_pembeli' => 'required',
-            'peserta.*.telp_pembeli' => 'required',
-        ], $this->messages());
+        $this->pesanGalat = null;
+        $this->pesanSukses = null;
+
+        try {
+            $this->validasiSimpan();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Form ini panjang: beri tahu halaman supaya menggulung ke isian
+            // salah yang pertama, bukan membiarkan admin mencarinya sendiri.
+            $this->dispatch('rsc-form-galat');
+
+            throw $e;
+        }
 
         $this->hitungTanggalBerakhir();
 
         if ($this->mode === 'create') {
-            $this->createpemesananrsc($syncCashFlow);
-        } else {
-            $this->updatepemesananrsc($syncCashFlow);
+            return $this->createpemesananrsc($syncCashFlow);
+        }
+
+        return $this->updatepemesananrsc($syncCashFlow);
+    }
+
+    private function validasiSimpan(): void
+    {
+        $this->nama_camp = trim((string) $this->nama_camp);
+        $this->batch_camp = trim((string) $this->batch_camp);
+
+        $galat = [];
+
+        // Satu nama+nomor batch = satu batch. Tanpa penjagaan ini, batch
+        // "baru" dengan nama & nomor yang sama diam-diam TERGABUNG ke batch
+        // lama — peserta, total, dan Cash Flow keduanya ikut bercampur.
+        if ($this->batchSudahAda()) {
+            $galat['batch_camp'] = 'Batch '.$this->nama_camp.' #'.$this->batch_camp.' sudah ada. Buka batch itu lewat Edit untuk menambah peserta, atau pakai nomor batch lain.';
+        }
+
+        // Baris yang nama DAN nomornya sama persis: hampir pasti dobel
+        // (sering terjadi setelah impor Excel dua kali).
+        $sudah = [];
+        $urutan = 0;
+        foreach ($this->peserta as $tmpId => $p) {
+            $urutan++;
+            $nama = mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $p['nama_pembeli'])));
+            if ($nama === '') {
+                continue; // baris kosong ditangani aturan "wajib diisi"
+            }
+            $kunci = $nama.'|'.$this->formatPhoneNumber((string) $p['telp_pembeli']);
+            if (isset($sudah[$kunci])) {
+                $galat['peserta.'.$tmpId.'.nama_pembeli'] = 'Peserta nomor '.$urutan.' sama persis dengan peserta nomor '.$sudah[$kunci].'.';
+            } else {
+                $sudah[$kunci] = $urutan;
+            }
+        }
+
+        // Aturan dasar dan pemeriksaan di atas dilaporkan BERSAMA: admin
+        // melihat semua yang perlu dibetulkan sekaligus, bukan satu per satu.
+        try {
+            $this->validate([
+                'nama_camp' => 'required',
+                'batch_camp' => 'required|numeric',
+                'tanggal_mulai_camp' => 'required|date',
+                'tanggal_akhir_camp' => 'required|date|after_or_equal:tanggal_mulai_camp',
+                'tanggal_pemesanan' => 'required|date',
+                'jumlah_pemesanan' => 'required|numeric|min:0',
+                'akun' => 'required',
+                'pic' => 'required',
+                'status' => 'required|in:habis,pengganti,perpanjang,baru',
+                'peserta.*.nama_pembeli' => 'required',
+                'peserta.*.telp_pembeli' => ['required', function ($attr, $value, $fail) {
+                    // Setelah dirapikan ke +62…, sisa digitnya 8–13 (nomor HP Indonesia).
+                    $digit = preg_replace('/\D/', '', (string) $value);
+                    $sisa = strlen(preg_replace('/^(0|62)/', '', $digit));
+                    if ($sisa < 8 || $sisa > 13) {
+                        $fail('Nomor telepon tidak valid (contoh: 0812 3456 7890).');
+                    }
+                }],
+            ], $this->messages());
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $galat = array_merge($galat, array_map(fn ($m) => $m[0], $e->errors()));
+        }
+
+        if ($galat) {
+            throw \Illuminate\Validation\ValidationException::withMessages($galat);
         }
     }
 
@@ -354,6 +518,8 @@ class PemesananrscForm extends Component
 
             'nama_pembeli.required' => 'Nama pembeli harus diisi.',
             'telp_pembeli.required' => 'Nomor telepon pembeli harus diisi.',
+            'peserta.*.nama_pembeli.required' => 'Nama peserta harus diisi.',
+            'peserta.*.telp_pembeli.required' => 'Nomor telepon peserta harus diisi.',
 
             'tanggal_pemesanan.required' => 'Tanggal akhir camp harus diisi.',
             'tanggal_pemesanan.date' => 'Tanggal akhir camp harus berupa tanggal yang valid.',
@@ -637,7 +803,9 @@ class PemesananrscForm extends Component
 
             return redirect()->route('admin.pesananrsc.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'Gagal menambahkan Pemesanan: '.$e->getMessage());
+            DB::rollBack();
+            $this->pesanGalat = 'Gagal menyimpan batch: '.$e->getMessage();
+            $this->dispatch('rsc-form-galat');
         }
     }
 
@@ -646,6 +814,14 @@ class PemesananrscForm extends Component
         DB::beginTransaction();
 
         try {
+            // Nama/nomor batch diganti: akun tambahan di kunci lama ikut
+            // dipindah (simpanAkunTambahan() hanya membersihkan kunci baru).
+            $kunciBaru = $this->nama_camp.'|'.$this->batch_camp;
+            if ($this->kunciAsal && $this->kunciAsal !== $kunciBaru) {
+                [$namaLama, $batchLama] = explode('|', $this->kunciAsal, 2);
+                \App\Models\RscBatchAkun::where('nama_camp', $namaLama)->where('batch_camp', $batchLama)->delete();
+            }
+
             $existingIds = collect($this->peserta)
                 ->filter(fn ($p) => ! Str::isUuid($p['tmp_id']) || PemesananRsc::where('id', $p['tmp_id'])->exists())
                 ->pluck('tmp_id')
@@ -716,7 +892,8 @@ class PemesananrscForm extends Component
             return redirect()->route('admin.pesananrsc.index');
         } catch (Exception $e) {
             DB::rollBack();
-            session()->flash('error', 'Gagal update data: '.$e->getMessage());
+            $this->pesanGalat = 'Gagal menyimpan perubahan: '.$e->getMessage();
+            $this->dispatch('rsc-form-galat');
         }
     }
 

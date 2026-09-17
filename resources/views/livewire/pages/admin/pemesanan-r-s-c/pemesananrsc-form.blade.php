@@ -44,6 +44,8 @@
         }
         .rsc-form textarea.form-control { font-weight: 500; line-height: 1.6; }
         .rsc-form .form-control.is-invalid, .rsc-form .form-select.is-invalid { border-color: #fca5a5; }
+        /* Ikon galat Bootstrap menimpa akhiran "Bulan" di dalam isian. */
+        .rsc-form #jumlah_pemesanan.is-invalid { background-image: none; }
 
         /* ===== Tata letak: kolom utama + kolom ringkasan lengket =====
            Di layar lebar, harga/PIC/status dan tombol simpan selalu terlihat
@@ -75,6 +77,66 @@
             .rsc-simpan:hover { background: #6d28d9; transform: translateY(-2px); }
         }
         .rsc-simpan-muat { display: none; }
+
+        /* Pesan di atas form */
+        .rsc-pesan {
+            --c: #dc2626;
+            display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;
+            padding: 13px 15px; border-radius: 14px;
+            background: color-mix(in srgb, var(--c) 7%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 25%, #fff);
+            color: #1c1f26; font-size: .86rem; scroll-margin-top: 90px;
+        }
+        .rsc-pesan.is-sukses { --c: #16a34a; }
+        .rsc-pesan.is-peringatan { --c: #d97706; margin-bottom: 0; }
+        .rsc-pesan-ikon { color: var(--c); font-size: 1.15rem; line-height: 1; padding-top: 1px; }
+        .rsc-pesan-isi { flex: 1 1 auto; min-width: 0; }
+        .rsc-pesan-isi ul { margin: 6px 0 0; padding-left: 18px; }
+        .rsc-pesan-isi li { margin: 2px 0; overflow-wrap: anywhere; }
+        .rsc-pesan-ket { display: block; margin-top: 4px; color: #6b7280; font-size: .78rem; }
+        .rsc-pesan-tutup { border: 0; background: transparent; color: #6b7280; padding: 2px 4px; line-height: 1; }
+
+        /* Bagian impor yang dilipat: garis kepala hanya saat terbuka */
+        .rsc-lipat:not(.is-buka) > .d-flex:first-child { padding-bottom: 0; margin-bottom: 0 !important; border-bottom: 0; }
+
+        /* Status: empat pilihan berwarna, bukan kotak pilih */
+        .rsc-status { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .rsc-status-opsi {
+            position: relative; display: flex; align-items: center; justify-content: center; gap: 7px;
+            min-height: 40px; padding: 0 10px; border-radius: 11px; cursor: pointer; margin: 0;
+            border: 1px solid #e9edf3; background: #fff; color: #475569; font-size: .84rem; font-weight: 700;
+            transition: border-color .15s ease, background .15s ease, color .15s ease;
+        }
+        .rsc-status-opsi input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+        .rsc-status-opsi i.bi { color: var(--c); line-height: 1; }
+        .rsc-status-opsi.is-dipilih {
+            background: color-mix(in srgb, var(--c) 10%, #fff); color: var(--c);
+            border-color: color-mix(in srgb, var(--c) 40%, #fff);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 12%, transparent);
+        }
+        .rsc-status-opsi:focus-within { outline: 2px solid #7c3aed; outline-offset: 2px; }
+        @media (hover: hover) and (pointer: fine) {
+            .rsc-status-opsi:hover { border-color: color-mix(in srgb, var(--c) 40%, #fff); }
+        }
+        .rsc-status-ket { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0 0; color: #b45309; font-size: .76rem; line-height: 1.45; }
+
+        /* Bar simpan bawah (< 1200px) */
+        .rsc-bar-simpan { display: none; }
+        @media (max-width: 1199.98px) {
+            .rsc-simpan-kartu { display: none; }
+            .rsc-form { padding-bottom: 84px; }
+            .rsc-bar-simpan {
+                display: flex; align-items: center; gap: 12px;
+                position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030;
+                padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+                background: rgba(255, 255, 255, .96); backdrop-filter: blur(8px);
+                border-top: 1px solid #e9edf3; box-shadow: 0 -8px 24px rgba(15, 23, 42, .08);
+            }
+            .rsc-bar-simpan .rsc-simpan { width: auto; flex: 0 0 auto; min-height: 44px; padding: 0 20px; }
+            .rsc-bar-total { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+            .rsc-bar-total span { color: #6b7280; font-size: .72rem; font-weight: 700; }
+            .rsc-bar-total b { color: #14532d; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        }
         .rsc-simpan-ket { color: #6b7280; font-size: .74rem; text-align: center; margin: 8px 0 0; }
 
         /* ===== Field read-only (otomatis dari akun) ===== */
@@ -269,9 +331,16 @@
         /* ===== Picker akun (popup select searchable, seperti toko) ===== */
         .of-picker-btn { cursor: pointer; }
         /* Panahnya sudah digambar .form-select; ::after lama membuatnya ganda. */
-        .of-pick-list { max-height: 320px; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: .4rem; padding: .2rem; }
+        .of-pick-list { max-height: 46vh; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: .4rem; padding: .2rem; }
+        .of-pick-item[hidden], .of-pick-empty[hidden] { display: none !important; }
+        .of-pick-item { display: flex !important; align-items: center; gap: 10px; }
+        .of-pick-inisial {
+            flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; font-weight: 800; font-size: .8rem;
+        }
         .of-pick-item { display: block; width: 100%; text-align: left; border: 1px solid #e6e8f2; background: #fff; border-radius: 12px; padding: .7rem .9rem; font-weight: 600; color: #1e293b; font-size: .92rem; transition: all .15s ease; }
-        .of-pick-item:hover { border-color: #6c63ff; background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04)); transform: translateY(-1px); }
+        .of-pick-item:hover, .of-pick-item:focus-visible { border-color: #c4b5fd; background: #f5f3ff; outline: none; }
         .of-pick-empty { text-align: center; color: #94a3b8; padding: 1.5rem; font-size: .9rem; }
 
         /* Mobile: tombol/badge tertentu memenuhi lebar & isi (ikon+teks) di tengah.
@@ -309,11 +378,42 @@
         }
     </style>
 
-    <form wire:submit="save" x-cloak class="rsc-form">
+    <form wire:submit="save" x-cloak class="rsc-form" id="rsc-form" data-rsc-form>
+        {{-- Pesan layar & ringkasan kesalahan: form ini panjang, jadi yang
+             salah dikumpulkan di atas, lalu halaman menggulung ke isian salah
+             yang pertama (lihat skrip rsc-form-galat di bawah). --}}
+        @if ($pesanGalat || $errors->any())
+            <div class="rsc-pesan is-galat" role="alert" id="rsc-ringkasan-galat">
+                <span class="rsc-pesan-ikon"><i class="bi bi-exclamation-octagon-fill"></i></span>
+                <div class="rsc-pesan-isi">
+                    <strong>{{ $pesanGalat ? $pesanGalat : 'Belum bisa disimpan — periksa '.count($errors->all()).' isian berikut:' }}</strong>
+                    @if ($errors->any())
+                        <ul>
+                            @foreach (collect($errors->all())->unique()->take(6) as $galat)
+                                <li>{{ $galat }}</li>
+                            @endforeach
+                            @if (count(array_unique($errors->all())) > 6)
+                                <li>… dan {{ count(array_unique($errors->all())) - 6 }} lainnya</li>
+                            @endif
+                        </ul>
+                    @endif
+                </div>
+            </div>
+        @endif
+        @if ($pesanSukses && ! $errors->any())
+            <div class="rsc-pesan is-sukses" role="status">
+                <span class="rsc-pesan-ikon"><i class="bi bi-check-circle-fill"></i></span>
+                <div class="rsc-pesan-isi"><strong>{{ $pesanSukses }}</strong></div>
+                <button type="button" class="rsc-pesan-tutup" wire:click="$set('pesanSukses', null)" aria-label="Tutup pesan"><i class="bi bi-x-lg"></i></button>
+            </div>
+        @endif
+
         <div class="rsc-form-tata">
         <div class="rsc-form-utama">
-        {{-- ================== Import Excel (create & edit) ================== --}}
-        <div class="of-section p-4 mb-4">
+        {{-- ================== Import Excel (create & edit) ==================
+             Dilipat bawaan: impor opsional, dan kotak unggah besar tidak perlu
+             memenuhi layar pertama. Terbuka sendiri bila ada galat berkas. --}}
+        <div class="of-section p-4 mb-4 rsc-lipat" x-data="{ buka: @js($errors->has('file_excel')) }" :class="{ 'is-buka': buka }">
             <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
                 <span class="of-icon amber"><i class="bi bi-file-earmark-spreadsheet-fill"></i></span>
                 <div class="flex-grow-1">
@@ -326,6 +426,14 @@
                         @endif
                     </small>
                 </div>
+                <button type="button" class="rsc-tambah rsc-m-full" x-on:click="buka = ! buka" x-bind:aria-expanded="buka ? 'true' : 'false'" aria-controls="rsc-impor-isi">
+                    <i class="bi" x-bind:class="buka ? 'bi-chevron-up' : 'bi-upload'"></i>
+                    <span x-text="buka ? 'Tutup' : 'Impor dari Excel'"></span>
+                </button>
+            </div>
+
+            <div id="rsc-impor-isi" x-show="buka" x-transition.opacity>
+            <div class="d-flex justify-content-end mb-2">
                 <button type="button" onclick="rscTemplatePopup(this)" class="btn rsc-btn-template rsc-m-full">
                     <span><i class="bi bi-download me-1"></i>Download Template</span>
                 </button>
@@ -361,6 +469,7 @@
                     @endif
                 </span>
             </div>
+            </div>{{-- /#rsc-impor-isi --}}
         </div>
 
         {{-- ================== Data Kategori ================== --}}
@@ -416,13 +525,13 @@
                 <span class="of-icon green"><i class="bi bi-person-badge-fill"></i></span>
                 <div>
                     <h5 class="fw-bold mb-0">Data Akun Utama</h5>
-                    <small class="text-muted">Harga satuan &amp; perhitungan diambil dari akun ini</small>
+                    <small class="text-muted">Kredensial &amp; harga diambil otomatis dari Data Akun{{ $akun ? ' · harga Rp '.number_format($this->hargaUtama(), 0, ',', '.').'/bulan' : '' }}</small>
                 </div>
             </div>
             <div class="row g-3">
                 <div class="col-12">
                     <label class="of-form-label d-block">Pilih Akun <span class="text-danger">*</span></label>
-                    @php $selAkun = $akuns->firstWhere('id', (int) $akun); @endphp
+                    @php $selAkun = $akuns->firstWhere('id', (string) $akun); @endphp
                     <button type="button" onclick="rscAkunPicker(this)"
                         class="form-select text-start of-picker-btn @error('akun') is-invalid @enderror">
                         @if($selAkun)
@@ -433,7 +542,7 @@
                     </button>
                     @error('akun')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="of-form-label d-block">Username</label>
                     <div class="rsc-ro-field">
                         <i class="bi bi-person rsc-ro-ico"></i>
@@ -441,7 +550,7 @@
                         <i class="bi bi-lock-fill rsc-ro-lock" title="Otomatis dari akun"></i>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="of-form-label d-block">Password</label>
                     <div class="rsc-ro-field">
                         <i class="bi bi-key rsc-ro-ico"></i>
@@ -449,20 +558,11 @@
                         <i class="bi bi-lock-fill rsc-ro-lock" title="Otomatis dari akun"></i>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="of-form-label d-block">Link Akses</label>
                     <div class="rsc-ro-field">
                         <i class="bi bi-link-45deg rsc-ro-ico"></i>
                         <input type="text" wire:model="link_akses" class="rsc-ro-input" placeholder="—" readonly>
-                        <i class="bi bi-lock-fill rsc-ro-lock" title="Otomatis dari akun"></i>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <label for="harga_satuan" class="of-form-label d-block">Harga Satuan</label>
-                    <div class="rsc-ro-field">
-                        <i class="bi bi-cash-coin rsc-ro-ico"></i>
-                        <input type="text" wire:model="harga_satuan" x-nominal x-currency id="harga_satuan"
-                            class="rsc-ro-input" placeholder="—" readonly>
                         <i class="bi bi-lock-fill rsc-ro-lock" title="Otomatis dari akun"></i>
                     </div>
                 </div>
@@ -573,8 +673,9 @@
                                     <span class="rsc-ico-left"><i class="bi bi-telephone"></i></span>
                                     <input type="text" wire:model.defer="peserta.{{ $tmpId }}.telp_pembeli"
                                         class="form-control rsc-has-ico @error('peserta.'.$tmpId.'.telp_pembeli') is-invalid @enderror"
-                                        placeholder="0812..." onkeypress="filterPhoneNumberInput(event)">
+                                        placeholder="0812..." inputmode="tel" onkeypress="filterPhoneNumberInput(event)">
                                 </div>
+                                @error('peserta.'.$tmpId.'.telp_pembeli')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                             </td>
                             <td class="text-center">
                                 @if(count($peserta) > 1)
@@ -589,6 +690,22 @@
                     </tbody>
                 </table>
             </div>
+
+            @php $telpGanda = $this->telpGanda(); @endphp
+            @if ($telpGanda)
+                <div class="rsc-pesan is-peringatan mt-3" role="status">
+                    <span class="rsc-pesan-ikon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                    <div class="rsc-pesan-isi">
+                        <strong>Nomor telepon yang sama dipakai beberapa peserta</strong>
+                        <ul>
+                            @foreach ($telpGanda as $g)
+                                <li>{{ $g['telp'] }} — peserta nomor {{ implode(', ', $g['nomor']) }}</li>
+                            @endforeach
+                        </ul>
+                        <span class="rsc-pesan-ket">Tetap bisa disimpan. Periksa lagi bila ini hasil impor ganda.</span>
+                    </div>
+                </div>
+            @endif
 
             <div class="d-flex justify-content-end mt-3">
                 <span class="rsc-jumlah-peserta rsc-m-full">
@@ -659,7 +776,7 @@
                     {{-- Rincian harga tiap akun (utama + tambahan) --}}
                     <div class="rsc-rincian-akun mb-2">
                         <div class="fw-semibold small text-dark mb-2"><i class="bi bi-list-ul me-1"></i>Rincian harga per akun</div>
-                        @php $selUtama = $akuns->firstWhere('id', (int) $akun); @endphp
+                        @php $selUtama = $akuns->firstWhere('id', (string) $akun); @endphp
                         @if($akun)
                         <div class="rsc-akun-row d-flex justify-content-between align-items-center small py-1 border-bottom">
                             <span><i class="bi bi-star-fill text-warning me-1"></i>{{ $selUtama->nama_akun ?? 'Akun Utama' }}
@@ -683,7 +800,7 @@
                     </div>
                     @else
                     <div class="rsc-rumus mb-2">
-                        <i class="bi bi-calculator"></i>{{ (int)($jumlah_pemesanan ?: 0) }} bulan × {{ $harga_satuan ?: 'Rp 0' }} × {{ count($peserta) }} peserta
+                        <i class="bi bi-calculator"></i>{{ (int)($jumlah_pemesanan ?: 0) }} bulan × Rp {{ number_format($this->hargaUtama(), 0, ',', '.') }} × {{ count($peserta) }} peserta
                     </div>
                     @endif
 
@@ -706,14 +823,30 @@
                     @error('pic')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6 col-xl-12">
-                    <label for="status" class="of-form-label d-block">Pilih Status <span class="text-danger">*</span></label>
-                    <select wire:model="status" id="status" class="form-select">
-                        <option value="">-- Pilih Status --</option>
-                        <option value="habis">Habis</option>
-                        <option value="pengganti">Pengganti</option>
-                        <option value="perpanjang">Perpanjang</option>
-                        <option value="baru">Baru</option>
-                    </select>
+                    <span class="of-form-label d-block" id="rsc-status-label">Status <span class="text-danger">*</span></span>
+                    @php
+                        $pilihanStatus = [
+                            'baru' => ['Baru', 'bi-stars', '#16a34a'],
+                            'perpanjang' => ['Perpanjang', 'bi-arrow-repeat', '#0284c7'],
+                            'pengganti' => ['Pengganti', 'bi-arrow-left-right', '#d97706'],
+                            'habis' => ['Habis', 'bi-hourglass-bottom', '#e11d48'],
+                        ];
+                    @endphp
+                    <div class="rsc-status" role="radiogroup" aria-labelledby="rsc-status-label">
+                        @foreach ($pilihanStatus as $nilai => [$label, $ikon, $warna])
+                            <label class="rsc-status-opsi {{ $status === $nilai ? 'is-dipilih' : '' }}" style="--c: {{ $warna }}">
+                                <input type="radio" name="status" value="{{ $nilai }}" wire:model.live="status">
+                                <i class="bi {{ $ikon }}"></i><span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    {{-- Aturan buku kas (SyncCashFlowAction): hanya "baru" yang
+                         menjadi pemasukan. Diberi tahu di sini supaya pilihan
+                         status tidak diam-diam menghapus pemasukan batch. --}}
+                    @if ($status && $status !== 'baru')
+                        <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>Status selain <b>Baru</b> tidak dicatat sebagai pemasukan di Cash Flow.</span></p>
+                    @endif
+                    @error('status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">
                     <label for="deskripsi" class="of-form-label d-block">Deskripsi</label>
@@ -727,7 +860,7 @@
             </div>
         </div>
 
-        <div class="of-section">
+        <div class="of-section rsc-simpan-kartu">
             <button type="submit" class="rsc-simpan" wire:loading.attr="disabled" wire:target="save">
                 <i class="bi bi-check2-circle" wire:loading.class="rsc-simpan-muat" wire:target="save"></i>
                 <span wire:loading.remove wire:target="save">{{ $this->mode === 'create' ? 'Simpan Batch' : 'Simpan Perubahan' }}</span>
@@ -737,6 +870,20 @@
         </div>
         </aside>
         </div>{{-- /.rsc-form-tata --}}
+
+        {{-- Bar simpan di layar < 1200px: total & tombol selalu terjangkau
+             tanpa menggulung ke ujung form yang panjang. --}}
+        <div class="rsc-bar-simpan">
+            <div class="rsc-bar-total">
+                <span>Total harga</span>
+                <b>Rp {{ number_format($this->grand_total, 0, ',', '.') }}</b>
+            </div>
+            <button type="submit" class="rsc-simpan" wire:loading.attr="disabled" wire:target="save">
+                <i class="bi bi-check2-circle" wire:loading.class="rsc-simpan-muat" wire:target="save"></i>
+                <span wire:loading.remove wire:target="save">{{ $this->mode === 'create' ? 'Simpan' : 'Simpan Perubahan' }}</span>
+                <span wire:loading wire:target="save">Menyimpan…</span>
+            </button>
+        </div>
     </form>
 </div>
 
@@ -792,33 +939,77 @@
             buttonsStyling: false, showConfirmButton: false, showCloseButton: true, width: 480, padding: '1.25rem',
         };
 
-        // Picker generik (dipakai akun & PIC)
-        window.__rscPicker = function (title, placeholder, items, emptyText, onPick) {
-            if (typeof Swal === 'undefined') return;
-            const rows = items.length
-                ? items.map(it => `<button type="button" class="of-pick-item" data-id="${it.id}" data-search="${it.name.toLowerCase()}">${it.name}</button>`).join('')
-                : `<div class="of-pick-empty">${emptyText}</div>`;
+        // Picker generik (dipakai akun & PIC).
+        //
+        // Jendelanya memakai cangkang yang sama dengan jendela lain di lemon
+        // (ts-modal + dsb-jendela, partials/dasbor-gaya), bukan popup
+        // SweetAlert: gaya seragam, dan pengunci gulir halaman ikut bekerja
+        // karena pengamatnya mencari .ts-modal [role="dialog"].
+        const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-            Swal.fire({
-                title: title,
-                html: `<input id="rscPickSearch" class="form-control mb-2" placeholder="${placeholder}">
-                       <div id="rscPickList" class="of-pick-list">${rows}</div>`,
-                ...rscGlossy,
-                didOpen: () => {
-                    const search = document.getElementById('rscPickSearch');
-                    const listEl = document.getElementById('rscPickList');
-                    if (search) {
-                        search.addEventListener('input', () => {
-                            const q = search.value.toLowerCase();
-                            listEl.querySelectorAll('.of-pick-item').forEach(b => { b.style.display = b.dataset.search.includes(q) ? '' : 'none'; });
-                        });
-                        setTimeout(() => search.focus(), 100);
-                    }
-                    listEl.querySelectorAll('.of-pick-item').forEach(b => {
-                        b.addEventListener('click', () => { onPick(b.dataset.id); Swal.close(); });
-                    });
-                }
+        window.__rscPicker = function (title, placeholder, items, emptyText, onPick) {
+            document.getElementById('rsc-pilih-jendela')?.remove();
+
+            const rows = items.length
+                ? items.map(it => `<button type="button" class="of-pick-item" data-id="${esc(it.id)}" data-search="${esc(it.name.toLowerCase())}">
+                        <span class="of-pick-inisial">${esc(it.name.charAt(0).toUpperCase())}</span><span>${esc(it.name)}</span></button>`).join('')
+                : '';
+
+            const wadah = document.createElement('div');
+            wadah.id = 'rsc-pilih-jendela';
+            wadah.innerHTML = `
+                <div class="ts-modal-back" data-tutup-pilih></div>
+                <div class="ts-modal" data-tutup-pilih-luar>
+                    <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" aria-label="${esc(title)}" tabindex="-1" style="max-width: 460px;">
+                        <div class="dsb-jendela-kepala">
+                            <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-search"></i></span>
+                            <span class="dsb-jendela-teks">
+                                <h5 class="dsb-jendela-judul">${esc(title)}</h5>
+                                <span class="dsb-kartu-sub">${items.length} pilihan</span>
+                            </span>
+                            <button type="button" class="dsb-jendela-tutup" data-tutup-pilih title="Tutup"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                        <div class="dsb-jendela-isi">
+                            <div class="dsb-cari" style="margin-bottom: 12px;">
+                                <i class="bi bi-search"></i>
+                                <input type="search" class="dsb-isian" placeholder="${esc(placeholder)}" autocomplete="off">
+                            </div>
+                            <div class="of-pick-list">${rows}</div>
+                            <div class="of-pick-empty" ${items.length ? 'hidden' : ''}>${esc(items.length ? 'Tidak ada yang cocok' : emptyText)}</div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.appendChild(wadah);
+
+            const tutup = () => { wadah.remove(); document.removeEventListener('keydown', tombol); };
+            const tombol = (e) => { if (e.key === 'Escape') { e.preventDefault(); tutup(); } };
+            document.addEventListener('keydown', tombol);
+            document.addEventListener('livewire:navigating', tutup, { once: true });
+
+            wadah.querySelectorAll('[data-tutup-pilih]').forEach(el => el.addEventListener('click', tutup));
+            wadah.querySelector('[data-tutup-pilih-luar]').addEventListener('click', (e) => { if (e.target === e.currentTarget) tutup(); });
+
+            const cari = wadah.querySelector('input[type="search"]');
+            const kosong = wadah.querySelector('.of-pick-empty');
+            const tombolPilih = [...wadah.querySelectorAll('.of-pick-item')];
+            cari.addEventListener('input', () => {
+                const q = cari.value.toLowerCase().trim();
+                let ada = 0;
+                tombolPilih.forEach(b => { const cocok = b.dataset.search.includes(q); b.hidden = !cocok; ada += cocok ? 1 : 0; });
+                if (items.length) kosong.hidden = ada > 0;
             });
+            // Enter memilih hasil pertama yang terlihat.
+            cari.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                tombolPilih.find(b => !b.hidden)?.click();
+            });
+            tombolPilih.forEach(b => b.addEventListener('click', () => {
+                onPick(b.dataset.id);
+                window.__rscTandaiUbah?.();
+                tutup();
+            }));
+            setTimeout(() => cari.focus(), 60);
         };
 
         window.rscAkunPicker = function (btn) {
@@ -905,3 +1096,57 @@
     }
 </script>
 <!--================== END PICKER AKUN & PIC ==================-->
+
+<!--================== PERUBAHAN BELUM DISIMPAN & GULIR KE GALAT ==================-->
+<script>
+    if (!window.__rscFormJaga) {
+        window.__rscFormJaga = true;
+        let berubah = false;
+        const adaForm = () => document.querySelector('[data-rsc-form]');
+
+        window.__rscTandaiUbah = () => { if (adaForm()) berubah = true; };
+
+        // Hanya masukan DARI PENGGUNA di dalam form yang dihitung.
+        document.addEventListener('input', (e) => { if (e.target.closest?.('[data-rsc-form]')) berubah = true; }, true);
+        document.addEventListener('change', (e) => { if (e.target.closest?.('[data-rsc-form]')) berubah = true; }, true);
+        document.addEventListener('click', (e) => {
+            const t = e.target.closest?.('[data-rsc-form] [wire\\:click]');
+            if (t) berubah = true;
+        }, true);
+        // Dikirim = tidak perlu ditanya lagi saat dialihkan sesudah simpan.
+        // Bila simpan ditolak, penanda dipasang lagi oleh rsc-form-galat.
+        document.addEventListener('submit', (e) => { if (e.target.matches?.('[data-rsc-form]')) berubah = false; }, true);
+
+        // Menutup/memuat ulang tab.
+        window.addEventListener('beforeunload', (e) => {
+            if (!berubah || !adaForm()) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        // Berpindah halaman lewat wire:navigate (menu samping, tombol kembali).
+        document.addEventListener('livewire:navigate', (e) => {
+            if (!berubah || !adaForm()) return;
+            if (!window.confirm('Perubahan pada form belum disimpan. Tinggalkan halaman ini?')) {
+                e.preventDefault();
+                return;
+            }
+            berubah = false;
+        });
+        document.addEventListener('livewire:navigated', () => { berubah = false; });
+
+        window.addEventListener('rsc-form-galat', () => {
+            // Simpan ditolak: isiannya tetap belum tersimpan.
+            berubah = true;
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const pertama = document.querySelector('[data-rsc-form] .is-invalid, [data-rsc-form] .invalid-feedback');
+                const sasaran = pertama || document.getElementById('rsc-ringkasan-galat');
+                if (!sasaran) return;
+                sasaran.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const isian = sasaran.matches('input, select, textarea, button') ? sasaran : sasaran.closest('div')?.querySelector('input, select, textarea, button');
+                isian?.focus({ preventScroll: true });
+            }));
+        });
+    }
+</script>
+<!--================== END ==================-->

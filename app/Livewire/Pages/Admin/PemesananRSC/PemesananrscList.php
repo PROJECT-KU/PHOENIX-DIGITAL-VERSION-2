@@ -39,6 +39,31 @@ class PemesananrscList extends Component
 
     public $batchFilter = '';
 
+    // Saringan akun utama & PIC. $akunFilter sudah dirujuk saring() sejak
+    // lama tetapi propertinya tidak pernah ada.
+    public $akunFilter = '';
+
+    public $picFilter = '';
+
+    /** Masa akun: '' | 'segera' (≤ BATAS_SEGERA hari lagi) | 'lewat'. */
+    public $masaFilter = '';
+
+    public $urut = 'dibuat';
+
+    public $arahUrut = 'desc';
+
+    /** Akun dianggap "segera berakhir" bila berakhir dalam sekian hari. */
+    public const BATAS_SEGERA = 7;
+
+    /** Kolom yang boleh dipakai mengurutkan => ekspresi di kueri per batch. */
+    protected const URUTAN = [
+        'dibuat' => 'batch_created',
+        'mulai' => 'tanggal_mulai_camp',
+        'berakhir' => 'akun_berakhir',
+        'peserta' => 'total_peserta',
+        'total' => 'total_harga',
+    ];
+
     public $perPage = 10;
 
     // property export data
@@ -122,6 +147,11 @@ class PemesananrscList extends Component
         'pembeliFilter' => ['except' => ''],
         'kategoriFilter' => ['except' => ''],
         'batchFilter' => ['except' => ''],
+        'akunFilter' => ['except' => '', 'as' => 'akun'],
+        'picFilter' => ['except' => '', 'as' => 'pic'],
+        'masaFilter' => ['except' => '', 'as' => 'masa'],
+        'urut' => ['except' => 'dibuat'],
+        'arahUrut' => ['except' => 'desc', 'as' => 'arah'],
         'page' => ['except' => 1],
     ];
 
@@ -144,7 +174,46 @@ class PemesananrscList extends Component
     // Reset filter periode (seragam dengan Pesanan Toko).
     public function resetFilters()
     {
-        $this->reset(['search', 'filterMonth', 'filterYear', 'statusFilter']);
+        $this->reset(['search', 'filterMonth', 'filterYear', 'statusFilter', 'akunFilter', 'picFilter', 'masaFilter']);
+        $this->resetPage();
+    }
+
+    public function updatingAkunFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPicFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingMasaFilter()
+    {
+        $this->resetPage();
+    }
+
+    /** Kartu "segera berakhir" bisa diklik: menyaring, klik lagi melepas. */
+    public function saringMasa(string $masa): void
+    {
+        $this->masaFilter = $this->masaFilter === $masa ? '' : $masa;
+        $this->resetPage();
+    }
+
+    /** Klik judul kolom: kolom baru mulai dari besar→kecil, kolom sama dibalik. */
+    public function urutkan(string $kolom): void
+    {
+        if (! array_key_exists($kolom, self::URUTAN)) {
+            return;
+        }
+
+        if ($this->urut === $kolom) {
+            $this->arahUrut = $this->arahUrut === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->urut = $kolom;
+            $this->arahUrut = $kolom === 'mulai' || $kolom === 'berakhir' ? 'asc' : 'desc';
+        }
+
         $this->resetPage();
     }
 
@@ -288,9 +357,20 @@ class PemesananrscList extends Component
             });
         }
 
-        // 🔹 Filter berdasarkan akun
+        // 🔹 Filter berdasarkan akun utama & PIC
         if (! empty($this->akunFilter)) {
             $query->where('akun', $this->akunFilter);
+        }
+        if (! empty($this->picFilter)) {
+            $query->where('pic', $this->picFilter);
+        }
+
+        // 🔹 Masa akun. "Habis" tidak ikut dihitung: statusnya sudah
+        // menandakan akunnya selesai.
+        if ($this->masaFilter === 'segera') {
+            $query->segeraBerakhir(self::BATAS_SEGERA);
+        } elseif ($this->masaFilter === 'lewat') {
+            $query->lewatMasa();
         }
 
         // 🔹 Filter berdasarkan tanggal
@@ -341,12 +421,12 @@ class PemesananrscList extends Component
                 'status',
                 DB::raw('MIN(id) as first_id'),
                 DB::raw('COUNT(*) as total_peserta'),
-                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
                 DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
                 // Waktu batch DIBUAT = created_at peserta paling awal di batch itu.
                 // Wajib diagregasi (MIN) karena query ini di-GROUP BY per batch;
                 // created_at mentah tidak boleh dipakai di ORDER BY tanpa agregat.
                 DB::raw('MIN(created_at) as batch_created'),
+                DB::raw('MIN(tanggal_berakhir) as akun_berakhir'),
             ])
             ->with(['dataakun', 'users'])
             ->groupBy([
@@ -364,7 +444,13 @@ class PemesananrscList extends Component
         // 🔹 Ambil hasil — urut dari batch yang PALING BARU DIBUAT.
         // Dulu diurut tanggal_mulai_camp: batch yang baru diinput tapi campnya
         // dijadwalkan lama tenggelam di bawah, padahal itu yang baru dikerjakan.
-        $pemesananrsc = $query->orderByDesc('batch_created')->paginate($this->perPage);
+        // Bawaan: batch yang PALING BARU DIBUAT di atas; judul kolom bisa
+        // mengganti urutannya. Kunci urutan dicek terhadap daftar putih.
+        $kolomUrut = self::URUTAN[$this->urut] ?? 'batch_created';
+        $arah = $this->arahUrut === 'asc' ? 'asc' : 'desc';
+        $pemesananrsc = $query->orderBy($kolomUrut, $arah)
+            ->orderByDesc('batch_created')
+            ->paginate($this->perPage);
 
         // Ringkasan: dihitung dari tabel mentah dengan saringan yang SAMA.
         // Nilai hanya dari status 'baru' — sama dengan aturan buku kas
@@ -383,6 +469,24 @@ class PemesananrscList extends Component
                 ->whereDate('tanggal_akhir_camp', '>=', today())
                 ->select('nama_camp', 'batch_camp')->distinct()->get()->count(),
         ];
+
+        // Masa akun dihitung TANPA saringan masa, supaya kartunya tetap
+        // menunjukkan jumlahnya saat saringan itu sedang dipakai.
+        $tanpaMasa = PemesananRsc::query();
+        $masa = $this->masaFilter;
+        $this->masaFilter = '';
+        $this->saring($tanpaMasa);
+        $this->masaFilter = $masa;
+        $ringkas['segera'] = (int) (clone $tanpaMasa)->segeraBerakhir(self::BATAS_SEGERA)
+            ->select('nama_camp', 'batch_camp')->distinct()->get()->count();
+        $ringkas['lewat'] = (int) (clone $tanpaMasa)->lewatMasa()
+            ->select('nama_camp', 'batch_camp')->distinct()->get()->count();
+
+        // Pilihan saringan: hanya akun & PIC yang memang pernah dipakai RSC.
+        $pilihanAkun = \App\Models\DataAkun::whereIn('id', PemesananRsc::query()->select('akun')->distinct())
+            ->orderBy('nama_akun')->get(['id', 'nama_akun']);
+        $pilihanPic = \App\Models\User::whereIn('id', PemesananRsc::query()->select('pic')->distinct())
+            ->orderBy('name')->get(['id', 'name']);
 
         // 🔹 Peta akun TAMBAHAN per batch (hanya untuk batch di halaman ini) agar
         // kolom Akun bisa menampilkan "akun utama + N akun lain" tanpa N+1 query.
@@ -405,11 +509,15 @@ class PemesananrscList extends Component
             'label' => \Carbon\Carbon::create()->month($m)->locale('id')->isoFormat('MMMM'),
         ]);
 
-        $years = PemesananRsc::selectRaw('YEAR(tanggal_mulai_camp) as tahun')
-            ->whereNotNull('tanggal_mulai_camp')
+        // Tahun dihitung di PHP, bukan YEAR() milik MySQL, supaya kueri yang
+        // sama juga berjalan di basis data uji (SQLite).
+        $years = PemesananRsc::whereNotNull('tanggal_mulai_camp')
             ->distinct()
-            ->orderByDesc('tahun')
-            ->pluck('tahun');
+            ->pluck('tanggal_mulai_camp')
+            ->map(fn ($t) => (int) substr((string) $t, 0, 4))
+            ->unique()
+            ->sortDesc()
+            ->values();
 
         if ($years->isEmpty()) {
             $years = collect([now()->year]);
@@ -421,6 +529,8 @@ class PemesananrscList extends Component
             'months',
             'years',
             'ringkas',
+            'pilihanAkun',
+            'pilihanPic',
         ));
     }
 }
