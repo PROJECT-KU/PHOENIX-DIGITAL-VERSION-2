@@ -383,3 +383,76 @@ it('task grup menyimpan penerimanya sebagai sub-baris yang bisa dibuka', functio
         // Pemisah antar-task harus bertahan walau tiap task punya tbody sendiri.
         ->and($gaya)->toContain('.dsb-tabel tbody:last-child tr:last-child td { border-bottom: 0; }');
 });
+
+it('nilai rupiah bonus tidak pernah sampai ke karyawan', function () {
+    // Bonus penyelesaian task dibagi dari satu pool anggaran. Karyawan boleh
+    // melihat POIN-nya, tetapi besaran rupiahnya urusan penggajian — dijaga
+    // izin view_all_gajikaryawan, izin yang sama yang memisahkan "boleh melihat
+    // gaji orang lain" dari "boleh melihat gaji sendiri".
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    $tampilan = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($sumber)->toContain("hasPermission('view_all_gajikaryawan')")
+        // Angkanya hanya dihitung bila izinnya ada; tanpa izin nilainya null,
+        // sehingga tidak ada apa pun yang bisa bocor lewat markup.
+        ->and($sumber)->toContain('$bonusRupiah = null;')
+        ->and($tampilan)->toContain('@if ($bonusRupiah)')
+        // Poin memakai konstanta yang SAMA dengan perhitungan uangnya, jadi
+        // keduanya tidak akan pernah bercerita berbeda.
+        ->and($sumber)->toContain('BonusTaskPeriodeAction::STATUS_PERSEN');
+
+    // Satu-satunya "Rp" di layar ini harus berada di dalam penjagaan izin itu.
+    $setelahPenjaga = substr($tampilan, strpos($tampilan, '@if ($bonusRupiah)'));
+    $sebelumPenjaga = substr($tampilan, 0, strpos($tampilan, '@if ($bonusRupiah)'));
+    expect($sebelumPenjaga)->not->toContain('Rp ')
+        ->and($setelahPenjaga)->toContain('Rp ');
+});
+
+it('daftar task punya cari, saring, urut, dan halaman', function () {
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+
+    expect($sumber)->toContain('public string $cari')
+        ->and($sumber)->toContain('public string $saringStatus')
+        ->and($sumber)->toContain('public string $saringArah')
+        ->and($sumber)->toContain('public function urutkan(')
+        // Halaman dipenggal per GRUP: memenggal per baris bisa memotong satu
+        // task grup di tengah, sehingga sebagian penerimanya pindah halaman
+        // tanpa induknya.
+        ->and($sumber)->toContain('$semuaGrup = $tasks->groupBy(')
+        ->and($tabel)->toContain('dsb-tabel-urut')
+        ->and($tabel)->toContain('wire:click="keHalaman(');
+});
+
+it('ketiga cara pandang task memakai bahasa rupa yang sama', function () {
+    // Sebelumnya satu layar memuat tiga dialek: dsb (tabel), scrum-*, dan akt-*.
+    // Menekan tab "Papan Scrum" terasa seperti pindah aplikasi.
+    $scrum = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-scrum.blade.php'));
+    $akt = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-aktivitas.blade.php'));
+
+    expect($scrum)->toContain('dsb-kartu k-4')
+        ->and($scrum)->toContain('dsb-lencana')
+        ->and($scrum)->not->toContain('scrum-col-head')
+        ->and($akt)->toContain('dsb-stat k-3')
+        ->and($akt)->toContain('dsb-daftar')
+        ->and($akt)->not->toContain('akt-stat-angka');
+
+    // Partial lama yang sudah tidak dipanggil siapa pun ikut dibuang.
+    expect(file_exists(resource_path('views/livewire/pages/admin/task/partials/task-card.blade.php')))->toBeFalse()
+        ->and(file_exists(resource_path('views/livewire/pages/admin/task/partials/task-folder.blade.php')))->toBeFalse();
+});
+
+it('sistem desain punya medan isian sendiri', function () {
+    // Sampai sekarang sistem ini hanya punya cara MENAMPILKAN, belum cara
+    // MEMINTA — jadi tiap layar berformulir jatuh kembali ke kotak isian
+    // bawaan Bootstrap dan formulirnya tidak mirip apa pun di sekitarnya.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+    $tampilan = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($gaya)->toContain('.dsb-isian {')
+        ->and($gaya)->toContain('.dsb-label {')
+        ->and($gaya)->toContain('.dsb-cari {')
+        // Jendela beri/edit task, buka kembali, dan diskusi grup ikut memakainya.
+        ->and($tampilan)->not->toContain('class="ts-modal-head"')
+        ->and($tampilan)->not->toContain('form-select');
+});

@@ -27,11 +27,31 @@
         <table class="dsb-tabel">
             <thead>
                 <tr>
-                    <th>Task</th>
-                    <th class="k-sedang">Penerima</th>
-                    <th class="k-lebar">Pemberi</th>
-                    <th class="k-sedang">Tenggat</th>
-                    <th>Status</th>
+                    {{-- Kepala yang bisa diurutkan. Panahnya hanya muncul di kolom
+                         yang sedang dipakai mengurutkan — panah di semua kolom
+                         sekaligus membuat tidak ada yang terbaca sebagai aktif. --}}
+                    @php
+                        $kepala = [
+                            ['nama', 'Task', ''],
+                            [null, 'Penerima', 'k-sedang'],
+                            [null, 'Pemberi', 'k-lebar'],
+                            ['tenggat', 'Tenggat', 'k-sedang'],
+                            ['status', 'Status', ''],
+                        ];
+                    @endphp
+                    @foreach ($kepala as [$kunci, $judul, $kelas])
+                        <th class="{{ $kelas }}">
+                            @if ($kunci)
+                                <button type="button" class="dsb-tabel-urut {{ $urut === $kunci ? 'aktif' : '' }}"
+                                    wire:click="urutkan('{{ $kunci }}')" title="Urutkan menurut {{ strtolower($judul) }}">
+                                    <span>{{ $judul }}</span>
+                                    <i class="bi {{ $urut === $kunci ? ($arahUrut === 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up' }}"></i>
+                                </button>
+                            @else
+                                {{ $judul }}
+                            @endif
+                        </th>
+                    @endforeach
                     <th class="k-lebar" style="text-align: right;">Aksi</th>
                 </tr>
             </thead>
@@ -128,6 +148,24 @@
                                         @endif
                                         @if ($komentarBaru)
                                             <span class="dsb-lencana is-merah"><i class="bi bi-chat-dots-fill"></i>{{ $komentarBaru > 9 ? '9+' : $komentarBaru }} baru</span>
+                                        @endif
+                                        {{-- Jumlah komentar & lampiran: sebelumnya yang
+                                             terlihat hanya komentar BARU, jadi task yang
+                                             ramai diskusinya tampak sama sepinya dengan
+                                             yang belum pernah dibicarakan. --}}
+                                        @php
+                                            $jmlKomentar = $first->groupComments->count();
+                                            $jmlLampiran = $gtasks->sum('attachments_count');
+                                        @endphp
+                                        @if ($jmlKomentar > 0)
+                                            <span class="dsb-tabel-samar" title="{{ $jmlKomentar }} komentar">
+                                                <i class="bi bi-chat-left-text"></i>{{ $jmlKomentar }}
+                                            </span>
+                                        @endif
+                                        @if ($jmlLampiran > 0)
+                                            <span class="dsb-tabel-samar" title="{{ $jmlLampiran }} lampiran">
+                                                <i class="bi bi-paperclip"></i>{{ $jmlLampiran }}
+                                            </span>
                                         @endif
                                         {{-- Salinan kolom yang hilang di layar sempit. Kolomnya
                                              boleh menghilang, isinya tidak. --}}
@@ -309,4 +347,26 @@
                 @endforeach
         </table>
     </div>
+
+    @if ($totalHalaman > 1)
+        {{-- Halaman dihitung atas GRUP, bukan baris: "15 dari 35 task" berarti
+             tiga puluh lima PEKERJAAN, angka yang sama dengan kartu ringkasan
+             di atas. --}}
+        <div class="ts-halaman">
+            <span class="ts-halaman-ket">
+                Menampilkan {{ $grupHalaman->count() }} dari {{ $totalGrup }} task
+                &bull; halaman {{ $halamanKini }}/{{ $totalHalaman }}
+            </span>
+            <span class="ts-halaman-aksi">
+                <button type="button" class="dsb-tabel-btn" wire:click="keHalaman({{ $halamanKini - 1 }})"
+                    @disabled($halamanKini <= 1) title="Halaman sebelumnya">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="dsb-tabel-btn" wire:click="keHalaman({{ $halamanKini + 1 }})"
+                    @disabled($halamanKini >= $totalHalaman) title="Halaman berikutnya">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </span>
+        </div>
+    @endif
 </div>

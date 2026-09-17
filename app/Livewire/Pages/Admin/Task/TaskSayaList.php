@@ -46,6 +46,85 @@ class TaskSayaList extends Component
     // tidak rusak, walau maknanya kini siklus gaji.
     public $modePeriode = 'kalender';
 
+    // ===== Pencarian & saringan daftar =====
+    /** Kata kunci nama/uraian task. */
+    public string $cari = '';
+
+    /** '' | belum | dikerjakan | selesai | telat — 'telat' bukan nilai kolom. */
+    public string $saringStatus = '';
+
+    /** user_id penerima tertentu. */
+    public string $saringOrang = '';
+
+    /** id kategori. */
+    public string $saringKategori = '';
+
+    /**
+     * 'semua' | 'saya' (ditugaskan ke saya) | 'dari-saya' (saya yang memberi).
+     * Bagi atasan keduanya bercampur di satu daftar padahal sifatnya berbeda:
+     * yang satu harus dikerjakan, yang satu harus ditagih.
+     */
+    public string $saringArah = 'semua';
+
+    /** 'terbaru' | 'tenggat' | 'nama' | 'status'. */
+    public string $urut = 'terbaru';
+
+    public string $arahUrut = 'desc';
+
+    /** Halaman tabel. Dihitung atas GRUP, bukan baris. */
+    public int $halaman = 1;
+
+    public const PER_HALAMAN = 15;
+
+    /** Saringan apa pun berubah -> kembali ke halaman pertama. */
+    public function updated($nama): void
+    {
+        if (in_array($nama, ['cari', 'saringStatus', 'saringOrang', 'saringKategori', 'saringArah', 'bulan', 'tahun', 'modePeriode'], true)) {
+            $this->halaman = 1;
+        }
+    }
+
+    public function urutkan(string $kolom): void
+    {
+        $sah = ['terbaru', 'tenggat', 'nama', 'status'];
+        if (! in_array($kolom, $sah, true)) {
+            return;
+        }
+
+        // Menekan kolom yang sama membalik arahnya; kolom lain mulai dari
+        // arah yang paling sering dicari untuk kolom itu.
+        if ($this->urut === $kolom) {
+            $this->arahUrut = $this->arahUrut === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->urut = $kolom;
+            $this->arahUrut = $kolom === 'nama' ? 'asc' : ($kolom === 'tenggat' ? 'asc' : 'desc');
+        }
+
+        $this->halaman = 1;
+    }
+
+    public function keHalaman(int $ke): void
+    {
+        $this->halaman = max(1, $ke);
+    }
+
+    /** Apakah ada saringan selain periode yang sedang aktif. */
+    public function adaSaringan(): bool
+    {
+        return $this->cari !== '' || $this->saringStatus !== '' || $this->saringOrang !== ''
+            || $this->saringKategori !== '' || $this->saringArah !== 'semua';
+    }
+
+    public function kosongkanSaringan(): void
+    {
+        $this->cari = '';
+        $this->saringStatus = '';
+        $this->saringOrang = '';
+        $this->saringKategori = '';
+        $this->saringArah = 'semua';
+        $this->halaman = 1;
+    }
+
     // ===== Cara pandang task (murni tampilan — data & filter tidak berubah) =====
     // 'daftar'    : tampilan asli (folder + kartu), tetap default agar kebiasaan
     //               karyawan yang sudah ada tidak berubah.
@@ -818,10 +897,54 @@ class TaskSayaList extends Component
         ];
     }
 
+    /**
+     * Poin task MILIK SAYA pada periode yang sedang ditampilkan.
+     *
+     * Poin — bukan rupiah. Besaran rupiahnya bergantung pada pool anggaran
+     * periode itu dan hanya boleh dilihat pemegang view_all_gajikaryawan.
+     *
+     * Persentasenya sengaja memakai konstanta yang SAMA dengan perhitungan
+     * uangnya (BonusTaskPeriodeAction::STATUS_PERSEN), jadi poin di layar ini
+     * tidak akan pernah bercerita hal yang berbeda dengan slip gajinya.
+     *
+     * @return array{didapat: float, maksimum: int, persen: ?int, selesai: int, total: int}
+     */
+    protected function poinTaskSaya($tasks): array
+    {
+        $milikSaya = $tasks->where('user_id', auth()->id());
+
+        $maks = 0;
+        $didapat = 0.0;
+        $selesai = 0;
+
+        foreach ($milikSaya as $t) {
+            $poin = $t->bobotPoin();
+            $maks += $poin;
+
+            $status = $t->bonusStatus();
+            if ($status === 'selesai' || $t->progress === 'selesai') {
+                $selesai++;
+            }
+
+            $didapat += $poin * (\App\Actions\Gaji\BonusTaskPeriodeAction::STATUS_PERSEN[$status] ?? 0);
+        }
+
+        return [
+            'didapat' => round($didapat, 1),
+            'maksimum' => $maks,
+            'persen' => $maks > 0 ? (int) round($didapat / $maks * 100) : null,
+            'selesai' => $selesai,
+            'total' => $milikSaya->count(),
+        ];
+    }
+
     public function render()
     {
         $tasks = Task::visibleTo()
             ->with(['groupComments', 'category', 'label', 'pemberi', 'pembuat', 'karyawan'])
+            // Jumlah lampiran ikut dihitung di kueri yang sama — tanpa ini tiap
+            // baris tabel akan memicu kuerinya sendiri saat menampilkan angkanya.
+            ->withCount('attachments')
             ->when($this->usesSiklus(), function ($q) {
                 // Siklus gaji 21–20: filter berdasarkan tanggal deadline_selesai.
                 [$mulai, $akhir] = $this->siklusRange();
@@ -832,14 +955,34 @@ class TaskSayaList extends Component
                 $q->when($this->bulan, fn ($qq) => $qq->where('periode_bulan', $this->bulan))
                     ->when($this->tahun, fn ($qq) => $qq->where('periode_tahun', $this->tahun));
             })
-            // YANG TERBARU DI ATAS. Urutan lama mendahulukan yang jatuh tempo
-            // hari ini lalu progresnya, sehingga task yang baru saja diberikan
-            // bisa mendarat di tengah daftar dan tidak terlihat sudah masuk.
-            //
-            // Yang mendesak tidak hilang, hanya pindah cara tandanya: baris
-            // lewat tenggat dan jatuh tempo hari ini diberi pita warna di tepi
-            // kiri tabel, dan jumlahnya dihitung di kartu ringkasan atas.
-            ->latest()
+            // Saringan daftar. Semuanya OPSIONAL dan saling menumpuk; tanpa
+            // satu pun, hasilnya sama persis dengan sebelumnya.
+            ->when($this->cari !== '', function ($q) {
+                $kata = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($this->cari)).'%';
+                $q->where(fn ($qq) => $qq->where('nama', 'like', $kata)->orWhere('deskripsi', 'like', $kata));
+            })
+            ->when($this->saringStatus !== '', function ($q) {
+                // 'telat' bukan nilai kolom progress — ia turunan dari tenggat
+                // yang lewat sementara pekerjaannya belum selesai.
+                if ($this->saringStatus === 'telat') {
+                    $q->where('progress', '!=', 'selesai')->whereDate('deadline_selesai', '<', today());
+                } else {
+                    $q->where('progress', $this->saringStatus);
+                }
+            })
+            ->when($this->saringOrang !== '', fn ($q) => $q->where('user_id', $this->saringOrang))
+            ->when($this->saringKategori !== '', fn ($q) => $q->where('task_category_id', $this->saringKategori))
+            ->when($this->saringArah === 'saya', fn ($q) => $q->where('user_id', auth()->id()))
+            ->when($this->saringArah === 'dari-saya', fn ($q) => $q->where('assigned_by', auth()->id()))
+            // Urutan bawaan: YANG TERBARU DI ATAS. Urutan lama mendahulukan yang
+            // jatuh tempo hari ini lalu progresnya, sehingga task yang baru saja
+            // diberikan bisa mendarat di tengah daftar dan tidak terlihat sudah
+            // masuk. Yang mendesak tidak hilang, hanya pindah cara tandanya:
+            // pita warna di tepi baris dan kartu ringkasan di atas.
+            ->when($this->urut === 'tenggat', fn ($q) => $q->orderBy('deadline_selesai', $this->arahUrut))
+            ->when($this->urut === 'nama', fn ($q) => $q->orderBy('nama', $this->arahUrut))
+            ->when($this->urut === 'status', fn ($q) => $q->orderByRaw("FIELD(progress,'belum','dikerjakan','selesai') ".($this->arahUrut === 'asc' ? 'asc' : 'desc')))
+            ->orderBy('created_at', $this->urut === 'terbaru' ? $this->arahUrut : 'desc')
             ->get();
 
         $activeTask = $this->activeTaskId
@@ -896,7 +1039,56 @@ class TaskSayaList extends Component
             $siklusAkhir = $saEks->copy()->subDay();
         }
 
+        // ===== Halaman tabel, dihitung atas GRUP =====
+        // Dipenggal per grup, bukan per baris: memenggal per baris bisa
+        // memotong satu task grup di tengah, sehingga sebagian penerimanya
+        // pindah ke halaman berikutnya tanpa induknya.
+        $semuaGrup = $tasks->groupBy('group_id')->toBase();
+        $totalGrup = $semuaGrup->count();
+        $totalHalaman = max(1, (int) ceil($totalGrup / self::PER_HALAMAN));
+        $halamanKini = min(max(1, $this->halaman), $totalHalaman);
+        $grupHalaman = $semuaGrup->slice(($halamanKini - 1) * self::PER_HALAMAN, self::PER_HALAMAN);
+
+        // ===== Poin task SAYA =====
+        // Poin, bukan rupiah. Nilai rupiahnya urusan penggajian dan hanya
+        // boleh dilihat pemegang view_all_gajikaryawan — lihat $bonusRupiah.
+        $poin = $this->poinTaskSaya($tasks);
+
+        // ===== Nilai rupiah bonus (ADMIN SAJA) =====
+        // Dijaga izin view_all_gajikaryawan, izin yang sama yang memisahkan
+        // "boleh melihat gaji orang lain" dari "boleh melihat gaji sendiri".
+        // Karyawan TIDAK BOLEH melihat angka ini.
+        $bonusRupiah = null;
+        if (auth()->user()?->hasPermission('view_all_gajikaryawan') && $this->bulan && $this->tahun) {
+            $d = (new \App\Actions\Gaji\BonusTaskPeriodeAction)->distribusi((int) $this->bulan, (int) $this->tahun);
+            $bonusRupiah = [
+                'pool' => $d['pool'],
+                'terpakai' => $d['terpakai'],
+                'sisa' => $d['sisa'],
+            ];
+        }
+
+        // Pilihan saringan diambil dari task yang TERLIHAT, bukan seluruh tabel:
+        // daftar nama yang memuat orang tanpa satu pun task hanya menambah
+        // pilihan yang selalu menghasilkan layar kosong.
+        $daftarOrang = $tasks->map(fn ($t) => ['id' => $t->user_id, 'nama' => $t->karyawan?->name])
+            ->filter(fn ($o) => $o['id'] && $o['nama'])->unique('id')->sortBy('nama')->values();
+        $daftarKategoriSaring = $tasks->map(fn ($t) => $t->category)
+            ->filter()->unique('id')->sortBy('nama')->values();
+
         return view('livewire.pages.admin.task.task-saya-list', [
+            // Dikirim sebagai data, bukan dibaca lewat $this di Blade: view yang
+            // memanggil metode komponennya sendiri hanya bisa dirender oleh
+            // Livewire, dan itu membuatnya mustahil diuji terpisah.
+            'adaSaringan' => $this->adaSaringan(),
+            'grupHalaman' => $grupHalaman,
+            'halamanKini' => $halamanKini,
+            'totalHalaman' => $totalHalaman,
+            'totalGrup' => $totalGrup,
+            'poin' => $poin,
+            'bonusRupiah' => $bonusRupiah,
+            'daftarOrang' => $daftarOrang,
+            'daftarKategoriSaring' => $daftarKategoriSaring,
             // Data aktivitas hanya dihitung bila mode itu yang dipilih.
             'aktivitas' => $this->tampilan === 'aktivitas' ? $this->dataAktivitas() : null,
             'siklusMulai' => $siklusMulai,

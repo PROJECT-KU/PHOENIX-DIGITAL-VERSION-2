@@ -59,40 +59,43 @@
     };
 @endphp
 
-<div class="akt-wrap">
-    {{-- Ringkasan angka --}}
-    <div class="akt-stats">
-        <div class="akt-stat">
-            <span class="akt-stat-angka">{{ $aktivitas['total'] }}</span>
-            <span class="akt-stat-label">task selesai di {{ $tahun }}</span>
-        </div>
-        <div class="akt-stat">
-            <span class="akt-stat-angka">{{ $aktivitas['streak'] }}</span>
-            <span class="akt-stat-label">hari beruntun terpanjang</span>
-        </div>
-        <div class="akt-stat">
-            <span class="akt-stat-angka">{{ $aktivitas['rataMingguan'] }}</span>
-            <span class="akt-stat-label">rata-rata per minggu</span>
-        </div>
-        <div class="akt-stat">
-            <span class="akt-stat-angka">{{ $aktivitas['terbaik']['jumlah'] }}</span>
-            <span class="akt-stat-label">
-                hari terbaik
-                @if ($aktivitas['terbaik']['tanggal'])
-                    ({{ \Carbon\Carbon::parse($aktivitas['terbaik']['tanggal'])->locale('id')->translatedFormat('d M') }})
-                @endif
-            </span>
-        </div>
-    </div>
+{{-- Rupanya memakai bahasa rupa dasbor (dsb-*) seperti tabel dan papan
+     scrum: kartu angka, ubin ikon berwarna, dan baris daftar yang sama.
+     Yang tetap khas layar ini hanya kisi kontribusinya. --}}
+<div class="dsb-rak">
+    @php
+        $angkaAkt = [
+            ['#16a34a', 'bi-check-circle-fill', $aktivitas['total'], 'Task selesai', 'Sepanjang '.$tahun],
+            ['#f26522', 'bi-fire', $aktivitas['streak'], 'Hari beruntun', 'Rentetan terpanjang tahun ini'],
+            ['#0284c7', 'bi-speedometer2', $aktivitas['rataMingguan'], 'Rata-rata', 'Task selesai per minggu'],
+            ['#7c3aed', 'bi-trophy-fill', $aktivitas['terbaik']['jumlah'], 'Hari terbaik',
+                $aktivitas['terbaik']['tanggal']
+                    ? \Carbon\Carbon::parse($aktivitas['terbaik']['tanggal'])->locale('id')->translatedFormat('d M Y')
+                    : 'Belum ada'],
+        ];
+    @endphp
+
+    @foreach ($angkaAkt as [$warna, $ikon, $nilai, $label, $ket])
+        <article class="dsb-stat k-3" style="--c: {{ $warna }}">
+            <span class="dsb-ikon"><i class="bi {{ $ikon }}"></i></span>
+            <p class="dsb-stat-label">{{ $label }}</p>
+            <p class="dsb-stat-nilai">{{ $nilai }}</p>
+            <p class="dsb-stat-ket"><i class="bi bi-dot"></i><span>{{ $ket }}</span></p>
+        </article>
+    @endforeach
 
     {{-- Grafik kontribusi --}}
-    <div class="akt-graf-card">
-        <div class="akt-graf-head">
-            <span class="fw-bold text-dark" style="font-size:.9rem;">
-                <i class="bi bi-grid-3x3 me-1"></i>Grafik Aktivitas {{ $tahun }}
-            </span>
-            <span class="text-muted" style="font-size:.75rem;">Ganti tahun lewat filter di atas</span>
+    <div class="dsb-kartu k-12">
+        <div class="dsb-kartu-kepala">
+            <div class="dsb-kartu-kepala-kiri">
+                <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                <div>
+                    <h3 class="dsb-kartu-judul">Grafik Aktivitas {{ $tahun }}</h3>
+                    <span class="dsb-kartu-sub">Ganti tahunnya lewat saringan di atas</span>
+                </div>
+            </div>
         </div>
+        <div class="dsb-kartu-isi">
 
         <div class="akt-scroll">
             <div class="akt-graf">
@@ -138,40 +141,52 @@
             <span class="akt-kotak akt-l3"></span>
             <span class="akt-kotak akt-l4"></span>
             <span>Banyak</span>
+            </div>
         </div>
     </div>
 
     {{-- Linimasa --}}
-    <div class="akt-linimasa-card">
-        <div class="fw-bold text-dark mb-3" style="font-size:.9rem;">
-            <i class="bi bi-clock-history me-1"></i>Aktivitas Terbaru
-        </div>
-
-        @forelse ($aktivitas['linimasa'] as $t)
-            @php $telat = $t->hariTerlambat(); @endphp
-            <div class="akt-lini-item">
-                <span class="akt-lini-dot {{ $telat > 0 ? 'is-telat' : '' }}">
-                    <i class="bi {{ $telat > 0 ? 'bi-exclamation' : 'bi-check-lg' }}"></i>
-                </span>
-                <div class="akt-lini-isi">
-                    <button type="button" class="akt-lini-judul" wire:click="openTask('{{ $t->id }}')">{{ $t->nama }}</button>
-                    <div class="akt-lini-meta">
-                        diselesaikan {{ $t->completed_at->locale('id')->translatedFormat('d M Y') }}
-                        @if ($t->karyawan)
-                            oleh {{ \Illuminate\Support\Str::of($t->karyawan->name)->explode(' ')->first() }}
-                        @endif
-                        @if ($telat > 0)
-                            <span class="text-danger fw-semibold">— telat {{ $telat }} hari</span>
-                        @else
-                            <span class="text-success fw-semibold">— tepat waktu</span>
-                        @endif
-                    </div>
+    <div class="dsb-kartu k-12">
+        <div class="dsb-kartu-kepala">
+            <div class="dsb-kartu-kepala-kiri">
+                <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-clock-history"></i></span>
+                <div>
+                    <h3 class="dsb-kartu-judul">Aktivitas Terbaru</h3>
+                    <span class="dsb-kartu-sub">Task yang terakhir diselesaikan</span>
                 </div>
             </div>
-        @empty
-            <p class="text-muted mb-0" style="font-size:.88rem;">
-                Belum ada task yang diselesaikan di tahun {{ $tahun }}.
-            </p>
-        @endforelse
+        </div>
+
+        <div class="dsb-daftar">
+            @forelse ($aktivitas['linimasa'] as $t)
+                @php $telat = $t->hariTerlambat(); @endphp
+                <div class="dsb-baris" wire:key="akt-{{ $t->id }}" wire:click="openTask('{{ $t->id }}')" style="cursor: pointer;">
+                    <span class="dsb-avatar" style="--c: {{ $telat > 0 ? '#d97706' : '#16a34a' }}">
+                        <i class="bi {{ $telat > 0 ? 'bi-exclamation-lg' : 'bi-check-lg' }}"></i>
+                    </span>
+                    <span class="dsb-baris-isi">
+                        <span class="dsb-baris-judul">{{ $t->nama }}</span>
+                        <span class="dsb-baris-meta">
+                            <span>{{ $t->completed_at->locale('id')->translatedFormat('d M Y') }}</span>
+                            @if ($t->karyawan)
+                                <span class="dsb-pisah">&bull;</span>
+                                <span>{{ \Illuminate\Support\Str::of($t->karyawan->name)->explode(' ')->first() }}</span>
+                            @endif
+                        </span>
+                    </span>
+                    <span class="dsb-baris-kanan">
+                        <span class="dsb-lencana {{ $telat > 0 ? 'is-kuning' : 'is-hijau' }}">
+                            {{ $telat > 0 ? 'Telat '.$telat.' hari' : 'Tepat waktu' }}
+                        </span>
+                    </span>
+                </div>
+            @empty
+                <div class="dsb-kosong">
+                    <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
+                    <p class="dsb-kosong-judul">Belum ada yang diselesaikan</p>
+                    <p class="dsb-kosong-ket">Belum ada task yang diselesaikan sepanjang {{ $tahun }}.</p>
+                </div>
+            @endforelse
+        </div>
     </div>
 </div>

@@ -871,6 +871,10 @@
     .dsb-tombol.is-kuning { background: #d97706; color: #fff; box-shadow: 0 8px 18px rgba(217, 119, 6, .24); }
     .dsb-tombol.is-biru { background: #fff; color: #0369a1; border-color: #bae6fd; }
     .dsb-tombol:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+    /* Tombol mungil untuk di dalam kartu kecil (kartu papan scrum), tempat
+       tombol setinggi 44px akan setinggi separuh kartunya sendiri. */
+    .dsb-tombol.is-mungil { height: 32px; padding: 0 12px; font-size: .78rem; border-radius: 10px; }
+    .dsb-tombol.is-mungil i.bi { font-size: .85rem; }
     @media (hover: hover) and (pointer: fine) {
         .dsb-tombol.is-biru:hover { background: #0284c7; color: #fff; border-color: transparent; }
         .dsb-tombol:disabled:hover { transform: none; }
@@ -880,6 +884,64 @@
            hanya selebar ~150px dan teksnya terpotong. */
         .dsb-tombol.is-penuh-sempit { width: 100%; }
     }
+
+    /* ===== Medan isian ===============================================
+       Sampai sekarang sistem desain ini hanya punya cara MENAMPILKAN, belum
+       cara MEMINTA. Akibatnya tiap layar yang butuh formulir jatuh kembali ke
+       kotak isian bawaan Bootstrap — dan formulirnya lalu tidak mirip apa pun
+       di sekitarnya. */
+    .dsb-medan { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .dsb-label {
+        display: inline-flex; align-items: center; gap: 6px;
+        color: var(--dsb-tinta); font-size: .8rem; font-weight: 700;
+    }
+    .dsb-label .dsb-wajib { color: #dc2626; }
+    .dsb-label-ket { color: var(--dsb-redup); font-size: .76rem; font-weight: 500; }
+
+    .dsb-isian {
+        width: 100%; min-height: 40px; padding: 9px 13px;
+        border: 1px solid var(--dsb-tepi); border-radius: 11px; background: #fff;
+        color: var(--dsb-tinta); font-size: .86rem; font-weight: 600; font-family: inherit;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .dsb-isian::placeholder { color: #9aa5b5; font-weight: 500; }
+    .dsb-isian:focus {
+        outline: none; border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124, 58, 237, .14);
+    }
+    .dsb-isian:disabled { background: #f8fafc; color: #94a3b8; cursor: not-allowed; }
+    textarea.dsb-isian { min-height: 92px; line-height: 1.6; font-weight: 500; resize: vertical; }
+
+    /* Panah kotak pilih digambar sendiri sebagai data URI: berkas gambar luar
+       tidak ikut ter-deploy (public/build di-gitignore). */
+    select.dsb-isian {
+        appearance: none; padding-right: 32px; cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2364748b'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 11px center; background-size: 16px;
+    }
+
+    /* Kotak cari: ikon DI DALAM kotaknya, bukan tombol terpisah di sebelahnya. */
+    .dsb-cari { position: relative; display: flex; align-items: center; min-width: 0; }
+    .dsb-cari > i.bi {
+        position: absolute; left: 12px; color: #94a3b8; font-size: .9rem;
+        pointer-events: none; line-height: 1;
+    }
+    .dsb-cari > i.bi::before { display: block; line-height: 1; }
+    .dsb-cari .dsb-isian { padding-left: 36px; }
+    .dsb-cari-hapus {
+        position: absolute; right: 8px; display: inline-flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px; border-radius: 8px; border: 0; background: transparent;
+        color: #94a3b8; cursor: pointer; padding: 0; font-size: .8rem;
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-cari-hapus:hover { background: #f1f5f9; color: var(--dsb-tinta); }
+    }
+
+    .dsb-galat { color: #dc2626; font-size: .76rem; font-weight: 600; }
+    /* Medan yang ditolak validasi. Warnanya di TEPI, bukan latar merah penuh:
+       latar merah membuat teks yang sudah diketik jadi susah dibaca justru
+       ketika orang harus membacanya untuk memperbaikinya. */
+    .dsb-isian.is-galat { border-color: #fca5a5; }
+    .dsb-isian.is-galat:focus { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, .14); }
 
     /* ===== Isi jendela (modal) =======================================
        Kepala, badan, dan kaki jendela. Ditulis di sistem desain karena
@@ -984,6 +1046,23 @@
        ber-align-items: flex-start ia menyusut sampai selebar nol. */
     .dsb-tabel .dsb-tabel-teks > .dsb-kemajuan { align-self: stretch; min-width: 90px; }
     .dsb-tabel .dsb-tabel-aksi { display: inline-flex; align-items: center; gap: 6px; }
+
+    /* Kepala kolom yang bisa diurutkan. Panah hanya muncul pada kolom yang
+       sedang dipakai; panah di semua kolom sekaligus membuat tidak ada yang
+       terbaca sebagai aktif. */
+    .dsb-tabel-urut {
+        display: inline-flex; align-items: center; gap: 6px; padding: 0;
+        background: none; border: 0; cursor: pointer; color: inherit;
+        font: inherit; letter-spacing: inherit; text-transform: inherit;
+    }
+    .dsb-tabel-urut i.bi { font-size: .78rem; opacity: .45; }
+    .dsb-tabel-urut i.bi::before { display: block; line-height: 1; }
+    .dsb-tabel-urut.aktif { color: var(--dsb-tinta); }
+    .dsb-tabel-urut.aktif i.bi { opacity: 1; color: #7c3aed; }
+    @media (hover: hover) and (pointer: fine) {
+        .dsb-tabel-urut:hover { color: var(--dsb-tinta); }
+        .dsb-tabel-urut:hover i.bi { opacity: .85; }
+    }
 
     /* Salinan isi kolom yang menghilang di layar sempit. Di layar lebar ia
        tidak perlu — kolomnya sendiri sudah ada — jadi disembunyikan supaya

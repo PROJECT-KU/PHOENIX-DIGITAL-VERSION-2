@@ -315,46 +315,6 @@ Task Saya || lemon
         .tampilan-btn.aktif { background: #fff; color: #7c3aed; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
         @media (max-width: 575.98px) { .tampilan-switch { width: 100%; } .tampilan-btn { flex: 1; justify-content: center; padding: 8px 6px; } .tampilan-btn span { display: none; } }
 
-        /* ===================== Papan Scrum ===================== */
-        .scrum-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
-        @media (max-width: 991.98px) { .scrum-board { grid-template-columns: 1fr; } }
-        .scrum-col { background: #f8fafc; border: 1px solid #e9edf3; border-radius: 14px; padding: 12px; }
-        .scrum-col-head { display: flex; align-items: center; gap: 8px; padding: 4px 4px 12px; border-bottom: 2px solid var(--k); margin-bottom: 12px; }
-        .scrum-col-ico { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--k) 15%, #fff); color: var(--k); flex-shrink: 0; }
-        .scrum-col-ico i.bi { display: block; line-height: 1; font-size: .85rem; }
-        .scrum-col-judul { font-weight: 800; font-size: .85rem; color: #1e293b; flex: 1; }
-        .scrum-col-badge { background: var(--k); color: #fff; font-weight: 800; font-size: .72rem; padding: 2px 9px; border-radius: 999px; }
-        .scrum-col-body { display: flex; flex-direction: column; gap: 10px; min-height: 60px; }
-        .scrum-card { background: #fff; border: 1px solid #e9edf3; border-left: 3px solid #cbd5e1; border-radius: 11px; padding: 11px 12px; }
-        .scrum-card.is-telat { border-left-color: #dc2626; background: rgba(254, 226, 226, .25); }
-        .scrum-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
-        .scrum-tags { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
-        /* Kategori (induk) & label (anak) — warna mengikuti kartu Daftar:
-           kategori biru, label cyan — supaya karyawan mengenali polanya. */
-        /* line-height:1 pada pill + ikon → tinggi kotak teks & ikon sama persis,
-           jadi align-items:center benar-benar melurusakan keduanya. Tinggi pill
-           diatur lewat padding, bukan line-height. */
-        .scrum-kategori { display: inline-flex; align-items: center; gap: 4px; font-size: .66rem; font-weight: 700; color: #2563eb; background: rgba(37, 99, 235, .1); border: 1px solid rgba(37, 99, 235, .25); padding: 4px 8px; border-radius: 999px; line-height: 1; }
-        .scrum-kategori i.bi { font-size: .66rem; }
-        .scrum-label { display: inline-flex; align-items: center; font-size: .66rem; font-weight: 700; color: #0e7490; background: rgba(6, 182, 212, .12); border: 1px solid rgba(6, 182, 212, .3); padding: 4px 8px; border-radius: 999px; line-height: 1; }
-        .scrum-bobot { font-size: .66rem; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; }
-        .scrum-bobot.bobot-ringan { background: rgba(5, 150, 105, .12); color: #059669; }
-        .scrum-bobot.bobot-sedang { background: rgba(217, 119, 6, .12); color: #d97706; }
-        .scrum-bobot.bobot-berat { background: rgba(220, 38, 38, .12); color: #dc2626; }
-        .scrum-card-judul { display: block; width: 100%; text-align: left; border: none; background: none; padding: 0; font-weight: 700; font-size: .88rem; color: #1e293b; line-height: 1.35; }
-        .scrum-card-judul:hover { color: #7c3aed; }
-        .scrum-card-meta { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
-        .scrum-meta-item { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; color: #64748b; }
-        .scrum-meta-item i.bi { line-height: 1; }
-        .scrum-card-aksi { margin-top: 10px; }
-        .scrum-btn { display: inline-flex; align-items: center; gap: 4px; border: none; border-radius: 8px; font-weight: 700; font-size: .74rem; padding: 5px 11px; color: #fff; }
-        .scrum-btn i.bi { line-height: 1; }
-        .scrum-btn-mulai { background: #d97706; }
-        .scrum-btn-selesai { background: #059669; }
-        .scrum-btn:hover { filter: brightness(1.08); color: #fff; }
-        .scrum-kosong { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 18px; color: #cbd5e1; font-size: .78rem; }
-        .scrum-kosong i.bi { font-size: 1.2rem; }
-
         /* ===================== Aktivitas (ala GitHub) ===================== */
         .akt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
         @media (max-width: 767.98px) { .akt-stats { grid-template-columns: repeat(2, 1fr); } }
@@ -397,12 +357,7 @@ Task Saya || lemon
            flex, sehingga glyph dipusatkan flexbox (mengabaikan metrik font).
            Diletakkan paling akhir agar menang atas aturan di atas; font-size
            masing-masing tetap dipakai karena tidak ditimpa di sini. */
-        .tampilan-btn i.bi,
-        .scrum-col-ico i.bi,
-        .scrum-kategori i.bi,
-        .scrum-meta-item i.bi,
-        .scrum-btn i.bi,
-        .scrum-kosong i.bi,
+        .scrum-kartu-meta i.bi,
         .akt-lini-dot i.bi {
             display: inline-flex;
             align-items: center;
@@ -412,12 +367,7 @@ Task Saya || lemon
             flex-shrink: 0;
         }
 
-        .tampilan-btn i.bi::before,
-        .scrum-col-ico i.bi::before,
-        .scrum-kategori i.bi::before,
-        .scrum-meta-item i.bi::before,
-        .scrum-btn i.bi::before,
-        .scrum-kosong i.bi::before,
+        .scrum-kartu-meta i.bi::before,
         .akt-lini-dot i.bi::before {
             display: block;
             line-height: 1;
@@ -426,6 +376,10 @@ Task Saya || lemon
            Gaya dasarnya dari sistem desain dasbor; yang di sini hanya yang
            memang tidak ada di sana. */
         .ts-saring { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        /* .dsb-isian melebar 100% (benar untuk medan di dalam formulir), tetapi
+           di baris kepala ini ketiga kotak pilih harus berdampingan — dengan
+           lebar penuh masing-masing merebut satu baris sendiri. */
+        .ts-saring .ts-pilih { width: auto; min-width: 168px; flex: 0 1 auto; }
         .ts-pilih {
             appearance: none;
             padding: 8px 32px 8px 13px; border-radius: 11px; min-height: 36px;
@@ -457,6 +411,66 @@ Task Saya || lemon
         @media (hover: hover) and (pointer: fine) {
             .ts-pandang-btn:hover { border-color: color-mix(in srgb, var(--c) 35%, #fff); color: var(--dsb-tinta, #1f2b3d); }
         }
+        /* ===== Kartu di papan scrum =====
+           Yang tersisa khas papan ini hanya kartunya sendiri; kolom, lencana,
+           tombol, dan keadaan kosongnya sudah memakai bahasa rupa dasbor. */
+        .scrum-tumpuk { display: flex; flex-direction: column; gap: 10px; }
+        .scrum-kartu {
+            border: 1px solid #eef2f7; border-radius: 14px; padding: 12px 13px;
+            background: #fff; display: flex; flex-direction: column; gap: 9px;
+        }
+        /* Pita merah di tepi, bukan seluruh kartu diwarnai: kartu merah penuh
+           membuat judulnya susah dibaca justru saat paling perlu dibaca. */
+        .scrum-kartu.is-telat { box-shadow: inset 3px 0 0 #e11d48; border-color: #fecdd3; }
+        .scrum-kartu-atas { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .scrum-kartu-judul {
+            display: block; width: 100%; text-align: left; padding: 0;
+            background: none; border: 0; cursor: pointer;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif;
+            font-weight: 700; font-size: .88rem; line-height: 1.35;
+            color: var(--dsb-tinta); overflow-wrap: anywhere;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .scrum-kartu-judul:hover { color: #7c3aed; }
+        }
+        .scrum-kartu-meta {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 4px 11px;
+            color: var(--dsb-redup); font-size: .76rem;
+        }
+        .scrum-kartu-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+        .scrum-kartu-meta .is-telat { color: #e11d48; font-weight: 700; }
+        .scrum-kartu-meta .is-tunda { color: #b45309; font-weight: 700; }
+        .scrum-kartu-aksi { display: flex; gap: 8px; }
+        .scrum-kartu-aksi .dsb-tombol { flex: 1 1 auto; }
+
+        /* ===== Rak saringan =====
+           Kisi yang melipat sendiri: tiap medan minimal 180px, kotak cari dua
+           kali lebih lebar karena isinya kalimat, bukan pilihan. */
+        .ts-saring-rak {
+            display: grid; gap: 12px; margin-bottom: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+        .ts-medan-cari { grid-column: span 2; }
+        @media (max-width: 575.98px) {
+            .ts-saring-rak { grid-template-columns: 1fr; }
+            .ts-medan-cari { grid-column: span 1; }
+        }
+        .ts-saring-kaki {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+            padding-top: 12px; border-top: 1px solid #f1f5f9;
+        }
+
+        /* ===== Kaki halaman tabel ===== */
+        .ts-halaman {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px;
+            padding: 13px clamp(16px, 2.2vw, 20px); border-top: 1px solid #f1f5f9;
+        }
+        .ts-halaman-ket { color: #6b7280; font-size: .8rem; }
+        .ts-halaman-aksi { display: inline-flex; align-items: center; gap: 8px; }
+        .ts-halaman-aksi .dsb-tabel-btn:disabled { opacity: .45; cursor: not-allowed; }
+
         /* ===== Sub-baris penerima grup =====
            Task grup adalah SATU pekerjaan untuk beberapa orang. Barisnya tetap
            satu, dan daftar penerimanya dibuka dengan menekan barisnya —
@@ -659,6 +673,57 @@ Task Saya || lemon
                     @endif
                     <p class="dsb-stat-ket"><i class="bi bi-percent"></i><span>{{ $semua > 0 ? round($tsSelesai / $semua * 100).'% dari periode ini' : 'Belum ada task' }}</span></p>
                 </article>
+
+                {{-- POIN, bukan rupiah.
+
+                     Bonus penyelesaian task memang dibagi dari satu pool anggaran,
+                     tetapi besaran rupiahnya urusan penggajian — hanya pemegang
+                     view_all_gajikaryawan yang boleh melihatnya (kartu di
+                     sebelah). Yang dilihat semua orang adalah POIN: bobot task
+                     dikali persentase status, memakai konstanta yang SAMA dengan
+                     perhitungan uangnya, jadi angkanya tidak pernah bercerita
+                     berbeda dengan slip gajinya. --}}
+                @if ($poin['total'] > 0)
+                    <article class="dsb-stat {{ $bonusRupiah ? 'k-6' : 'k-12' }}" style="--c: #d97706">
+                        <span class="dsb-ikon"><i class="bi bi-award-fill"></i></span>
+                        <p class="dsb-stat-label">Poin Task Saya</p>
+                        <p class="dsb-stat-nilai">
+                            {{ rtrim(rtrim(number_format($poin['didapat'], 1, ',', '.'), '0'), ',') }}<span class="dsb-stat-satuan">dari {{ $poin['maksimum'] }} poin</span>
+                        </p>
+                        @if ($poin['persen'] !== null)
+                            <span class="dsb-kemajuan" style="--c: {{ $poin['persen'] >= 80 ? '#16a34a' : ($poin['persen'] >= 50 ? '#d97706' : '#e11d48') }}">
+                                <span style="width: {{ min($poin['persen'], 100) }}%"></span>
+                            </span>
+                        @endif
+                        <p class="dsb-stat-ket">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Bobot ringan 1 &bull; sedang 2 &bull; berat 3. Terlambat dihitung 60%, tidak selesai 0.</span>
+                        </p>
+                    </article>
+                @endif
+
+                {{-- Nilai rupiahnya HANYA untuk pemegang view_all_gajikaryawan —
+                     izin yang sama yang memisahkan "boleh melihat gaji orang
+                     lain" dari "boleh melihat gaji sendiri". --}}
+                @if ($bonusRupiah)
+                    <article class="dsb-stat k-6" style="--c: #7c3aed">
+                        <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                        <p class="dsb-stat-label">
+                            Bonus Periode Ini
+                            <span class="dsb-tanda-kini"><i class="bi bi-shield-lock-fill"></i>Hanya administrator</span>
+                        </p>
+                        <p class="dsb-stat-nilai">Rp {{ number_format($bonusRupiah['terpakai'], 0, ',', '.') }}</p>
+                        @if ($bonusRupiah['pool'] > 0)
+                            <span class="dsb-kemajuan" style="--c: #7c3aed">
+                                <span style="width: {{ min(round($bonusRupiah['terpakai'] / $bonusRupiah['pool'] * 100), 100) }}%"></span>
+                            </span>
+                        @endif
+                        <p class="dsb-stat-ket">
+                            <i class="bi bi-wallet2"></i>
+                            <span>Pool Rp {{ number_format($bonusRupiah['pool'], 0, ',', '.') }} &bull; sisa Rp {{ number_format($bonusRupiah['sisa'], 0, ',', '.') }}</span>
+                        </p>
+                    </article>
+                @endif
             </div>
         </section>
 
@@ -678,17 +743,17 @@ Task Saya || lemon
                     </div>
 
                     <div class="ts-saring">
-                        <select wire:model.live="modePeriode" class="ts-pilih" title="Cara menghitung periode">
+                        <select wire:model.live="modePeriode" class="dsb-isian ts-pilih" title="Cara menghitung periode">
                             <option value="kalender">Kalender (1–akhir bulan)</option>
                             <option value="siklus20">Siklus gaji (21–20)</option>
                         </select>
-                        <select wire:model.live="bulan" class="ts-pilih">
+                        <select wire:model.live="bulan" class="dsb-isian ts-pilih">
                             <option value="">Semua bulan</option>
                             @foreach ($daftarBulan as $num => $nama)
                                 <option value="{{ $num }}">{{ $nama }}</option>
                             @endforeach
                         </select>
-                        <select wire:model.live="tahun" class="ts-pilih">
+                        <select wire:model.live="tahun" class="dsb-isian ts-pilih">
                             <option value="">Semua tahun</option>
                             @foreach ($daftarTahun as $th)
                                 <option value="{{ $th }}">{{ $th }}</option>
@@ -699,14 +764,87 @@ Task Saya || lemon
                                  berisi ikon silang saja lalu berdiri sendirian di satu
                                  baris — terbaca seperti sisa tata letak yang gagal.
                                  Di sana ia diberi teks dan ikut melebar. --}}
-                            <button type="button" wire:click="resetFilter" class="dsb-tabel-btn ts-reset" title="Kosongkan saringan">
-                                <i class="bi bi-x-lg"></i><span class="ts-reset-teks">Kosongkan saringan</span>
+                            <button type="button" wire:click="resetFilter" class="dsb-tabel-btn ts-reset" title="Kembalikan periode ke bawaan">
+                                <i class="bi bi-x-lg"></i><span class="ts-reset-teks">Kosongkan periode</span>
                             </button>
                         @endif
                     </div>
                 </div>
 
                 <div class="dsb-kartu-isi">
+                    {{-- Cari & saring. Sebelumnya saringannya hanya periode: untuk
+                         menjawab "siapa yang telat" seluruh tabel harus dibaca
+                         dengan mata, dan mencari satu task berarti memindai. --}}
+                    <div class="ts-saring-rak">
+                        <div class="dsb-medan ts-medan-cari">
+                            <label class="dsb-label" for="ts-cari">Cari task</label>
+                            <div class="dsb-cari">
+                                <i class="bi bi-search"></i>
+                                <input id="ts-cari" type="search" class="dsb-isian"
+                                    wire:model.live.debounce.400ms="cari" placeholder="Nama atau isi task…">
+                                @if ($cari !== '')
+                                    <button type="button" class="dsb-cari-hapus" wire:click="$set('cari', '')" title="Hapus pencarian">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="ts-status">Status</label>
+                            <select id="ts-status" class="dsb-isian" wire:model.live="saringStatus">
+                                <option value="">Semua status</option>
+                                <option value="belum">Belum dikerjakan</option>
+                                <option value="dikerjakan">Sedang dikerjakan</option>
+                                <option value="selesai">Selesai</option>
+                                <option value="telat">Lewat tenggat</option>
+                            </select>
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="ts-orang">Penerima</label>
+                            <select id="ts-orang" class="dsb-isian" wire:model.live="saringOrang">
+                                <option value="">Semua orang</option>
+                                @foreach ($daftarOrang as $o)
+                                    <option value="{{ $o['id'] }}">{{ $o['id'] === auth()->id() ? $o['nama'].' (Anda)' : $o['nama'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="ts-kategori">Kategori</label>
+                            <select id="ts-kategori" class="dsb-isian" wire:model.live="saringKategori">
+                                <option value="">Semua kategori</option>
+                                @foreach ($daftarKategoriSaring as $kat)
+                                    <option value="{{ $kat->id }}">{{ $kat->nama }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Bagi atasan, "task untuk saya" dan "task yang saya berikan"
+                             bercampur di satu daftar padahal sifatnya berbeda: yang satu
+                             harus dikerjakan, yang satu harus ditagih. --}}
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="ts-arah">Hubungan</label>
+                            <select id="ts-arah" class="dsb-isian" wire:model.live="saringArah">
+                                <option value="semua">Semua task</option>
+                                <option value="saya">Ditugaskan ke saya</option>
+                                <option value="dari-saya">Saya yang memberi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    @if ($adaSaringan)
+                        <div class="ts-saring-kaki">
+                            <span class="dsb-chip">
+                                <i class="bi bi-funnel-fill"></i>{{ $totalGrup }} task cocok dengan saringan
+                            </span>
+                            <button type="button" wire:click="kosongkanSaringan" class="dsb-tombol is-lembut">
+                                <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                            </button>
+                        </div>
+                    @endif
+
                     <div class="ts-pandang">
                         @foreach ([
                             'daftar' => ['bi-table', 'Tabel', '#7c3aed'],
@@ -733,13 +871,13 @@ Task Saya || lemon
 
         {{-- ================== ISI ================== --}}
         @php
-            // toBase() supaya merge memakai Support Collection (bukan Eloquent
-            // yang memanggil getKey). Urutan dari query dipertahankan: yang
-            // terbaru di atas.
-            $ordered = $tasks->groupBy('group_id')->toBase();
+            // Satu halaman saja — dipenggal per GRUP di komponen, bukan per
+            // baris, supaya satu task grup tidak terpotong di tengah.
+            $ordered = $grupHalaman;
         @endphp
 
-        <section class="dsb-bagian">
+        <section class="dsb-bagian" wire:loading.class="dsb-sedang-muat"
+            wire:target="cari,saringStatus,saringOrang,saringKategori,saringArah,bulan,tahun,modePeriode,urutkan,keHalaman,kosongkanSaringan,resetFilter,gantiTampilan">
             @if ($tampilan === 'scrum')
                 @include('livewire.pages.admin.task.partials.task-scrum')
             @elseif ($tampilan === 'aktivitas')
@@ -748,18 +886,29 @@ Task Saya || lemon
                 <div class="dsb-kartu">
                     <div class="dsb-kosong">
                         <span class="dsb-kosong-ikon"><i class="bi {{ ($bulan || $tahun) ? 'bi-calendar-x' : 'bi-clipboard-check' }}"></i></span>
-                        <p class="dsb-kosong-judul">{{ ($bulan || $tahun) ? 'Tidak ada task di periode ini' : 'Belum ada task' }}</p>
-                        <p class="dsb-kosong-ket">
-                            @if ($bulan || $tahun)
-                                Coba ganti periodenya di saringan atas, atau tampilkan semua.
-                            @else
-                                Task yang ditugaskan kepada Anda akan muncul di sini.
-                            @endif
-                        </p>
-                        @if ($bulan || $tahun)
-                            <button type="button" wire:click="resetFilter" class="dsb-tombol is-utama" style="margin-top: 14px;">
-                                <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua periode</span>
+                        {{-- Layar kosong karena SARINGAN berbeda dari layar kosong
+                             karena memang belum ada task: yang pertama punya jalan
+                             keluar, yang kedua tidak. --}}
+                        @if ($adaSaringan)
+                            <p class="dsb-kosong-judul">Tidak ada task yang cocok</p>
+                            <p class="dsb-kosong-ket">Tidak ada task yang cocok dengan saringan yang sedang aktif.</p>
+                            <button type="button" wire:click="kosongkanSaringan" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
                             </button>
+                        @else
+                            <p class="dsb-kosong-judul">{{ ($bulan || $tahun) ? 'Tidak ada task di periode ini' : 'Belum ada task' }}</p>
+                            <p class="dsb-kosong-ket">
+                                @if ($bulan || $tahun)
+                                    Coba ganti periodenya di saringan atas, atau tampilkan semua.
+                                @else
+                                    Task yang ditugaskan kepada Anda akan muncul di sini.
+                                @endif
+                            </p>
+                            @if ($bulan || $tahun)
+                                <button type="button" wire:click="resetFilter" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                    <i class="bi bi-arrow-counterclockwise"></i><span>Tampilkan semua periode</span>
+                                </button>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -773,24 +922,27 @@ Task Saya || lemon
     @if($showTaskModal)
     <div class="ts-modal-back" wire:click="$set('showTaskModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card" style="max-width:600px;">
-            <div class="ts-modal-head">
-                <button type="button" class="btn-close" wire:click="$set('showTaskModal', false)"></button>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-{{ $editingTaskId ? 'pencil-square' : 'plus-circle' }}" style="display:inline-flex;align-items:center;line-height:1;font-size:1.15rem;"></i>
-                    <h5 class="fw-bold mb-0">{{ $editingTaskId ? 'Edit Task' : 'Beri Task ke Bawahan' }}</h5>
-                </div>
+        <div class="ts-modal-card dsb is-datar" style="max-width:600px;">
+            <div class="dsb-jendela-kepala">
+                <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-{{ $editingTaskId ? 'pencil-square' : 'plus-circle' }}"></i></span>
+                <span class="dsb-jendela-teks">
+                    <h5 class="dsb-jendela-judul">{{ $editingTaskId ? 'Edit Task' : 'Beri Task ke Bawahan' }}</h5>
+                    <span class="dsb-kartu-sub">{{ $editingTaskId ? 'Perubahan berlaku untuk seluruh penerima task ini' : 'Bisa diberikan ke lebih dari satu orang sekaligus' }}</span>
+                </span>
+                <button type="button" class="dsb-jendela-tutup" wire:click="$set('showTaskModal', false)" title="Tutup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-            <div class="p-4">
+            <div class="dsb-jendela-isi">
                 <div class="mb-3">
-                    <label class="ts-form-label">Penerima <span class="text-danger">*</span>
-                        <span class="text-muted fw-normal" style="font-size:.8rem;">— bisa pilih lebih dari satu</span>
+                    <label class="dsb-label">Penerima <span class="dsb-wajib">*</span>
+                        <span class="dsb-label-ket">— bisa pilih lebih dari satu</span>
                     </label>
                     <div x-data="{ q: '', names: @js($bawahan->pluck('name')->map(fn ($n) => mb_strtolower($n))->values()), get anyVisible() { return this.names.some(n => n.includes(this.q.toLowerCase())); } }">
                         @if($bawahan->count() > 5)
                         <div class="ts-multi-search">
                             <i class="bi bi-search"></i>
-                            <input type="text" x-model="q" placeholder="Cari nama bawahan..." class="form-control form-control-sm">
+                            <input type="text" x-model="q" placeholder="Cari nama bawahan..." class="dsb-isian">
                         </div>
                         @endif
                         <div class="ts-multi @error('t_user_ids') is-invalid @enderror">
@@ -816,14 +968,14 @@ Task Saya || lemon
                 </div>
 
                 <div class="mb-3">
-                    <label class="ts-form-label">Nama Task <span class="text-danger">*</span></label>
-                    <input type="text" wire:model="t_nama" class="form-control rounded-3 @error('t_nama') is-invalid @enderror" placeholder="Mis. Susun laporan mingguan">
+                    <label class="dsb-label">Nama Task <span class="dsb-wajib">*</span></label>
+                    <input type="text" wire:model="t_nama" class="dsb-isian @error('t_nama') is-galat @enderror" placeholder="Mis. Susun laporan mingguan">
                     @error('t_nama')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="mb-3">
-                    <label class="ts-form-label">Deskripsi</label>
-                    <textarea wire:model="t_deskripsi" rows="2" class="form-control rounded-3" placeholder="Rincian task (opsional)"></textarea>
+                    <label class="dsb-label">Deskripsi</label>
+                    <textarea wire:model="t_deskripsi" rows="2" class="dsb-isian" placeholder="Rincian task (opsional)"></textarea>
                 </div>
 
                 {{-- Kategori & Label — popup picker (Select2-style, bisa tambah & hapus) --}}
@@ -836,16 +988,16 @@ Task Saya || lemon
                     data-labels='@json($categoryLabels->map(fn ($l) => ['id' => (string) $l->id, 'name' => $l->nama])->values())'></div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="ts-form-label">Kategori</label>
-                        <button type="button" onclick="tsKategoriPicker(this)" class="form-select text-start of-picker-btn rounded-3">
+                        <label class="dsb-label">Kategori</label>
+                        <button type="button" onclick="tsKategoriPicker(this)" class="dsb-isian of-picker-btn" style="text-align: left;">
                             @if($selCat)<span class="text-dark">{{ $selCat->nama }}</span>
                             @else<span class="text-muted">Pilih kategori</span>@endif
                         </button>
                     </div>
                     @if($t_category_id)
                     <div class="col-md-6">
-                        <label class="ts-form-label">Label <span class="text-muted fw-normal" style="font-size:.8rem;">— mis. bug / improvement</span></label>
-                        <button type="button" onclick="tsLabelPicker(this)" class="form-select text-start of-picker-btn rounded-3">
+                        <label class="dsb-label">Label <span class="dsb-label-ket">— mis. bug / improvement</span></label>
+                        <button type="button" onclick="tsLabelPicker(this)" class="dsb-isian of-picker-btn" style="text-align: left;">
                             @if($selLab)<span class="text-dark">{{ $selLab->nama }}</span>
                             @else<span class="text-muted">Pilih label</span>@endif
                         </button>
@@ -854,7 +1006,7 @@ Task Saya || lemon
                 </div>
 
                 <div class="mb-3">
-                    <label class="ts-form-label">Lampiran <span class="text-muted fw-normal" style="font-size:.8rem;">— gambar/file, bisa banyak (maks 2 MB)</span></label>
+                    <label class="dsb-label">Lampiran <span class="dsb-label-ket">— gambar/file, bisa banyak (maks 2 MB)</span></label>
                     <div class="ts-drop" wire:loading.class="opacity-50" wire:target="newFiles">
                         <input type="file" wire:model="newFiles" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
                         <span class="ts-drop-ico"><i class="bi bi-cloud-arrow-up"></i></span>
@@ -897,28 +1049,28 @@ Task Saya || lemon
 
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="ts-form-label">Bobot</label>
-                        <select wire:model="t_bobot" class="form-select rounded-3">
+                        <label class="dsb-label">Bobot</label>
+                        <select wire:model="t_bobot" class="dsb-isian">
                             <option value="ringan">Ringan (1)</option>
                             <option value="sedang">Sedang (2)</option>
                             <option value="berat">Berat (3)</option>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="ts-form-label">Deadline Mulai</label>
-                        <input type="date" wire:model="t_deadline_mulai" class="form-control rounded-3 @error('t_deadline_mulai') is-invalid @enderror">
+                        <label class="dsb-label">Deadline Mulai</label>
+                        <input type="date" wire:model="t_deadline_mulai" class="dsb-isian @error('t_deadline_mulai') is-galat @enderror">
                         @error('t_deadline_mulai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-4">
-                        <label class="ts-form-label">Deadline Selesai</label>
-                        <input type="date" wire:model="t_deadline_selesai" class="form-control rounded-3 @error('t_deadline_selesai') is-invalid @enderror">
+                        <label class="dsb-label">Deadline Selesai</label>
+                        <input type="date" wire:model="t_deadline_selesai" class="dsb-isian @error('t_deadline_selesai') is-galat @enderror">
                         @error('t_deadline_selesai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>
             <div class="px-4 pb-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-danger rounded-pill px-4" wire:click="$set('showTaskModal', false)">Batal</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center gap-2"
+                <button type="button" class="dsb-tombol is-lembut" wire:click="$set('showTaskModal', false)"><span>Batal</span></button>
+                <button type="button" class="dsb-tombol is-utama"
                     wire:click="saveTask" wire:loading.attr="disabled" wire:target="saveTask">
                     <i class="bi bi-check2-circle" style="display:inline-flex;align-items:center;line-height:1;"></i>
                     <span>Simpan</span>
@@ -1119,30 +1271,33 @@ Task Saya || lemon
     @if($showReopenModal && $reopenTask)
     <div class="ts-modal-back" wire:click="$set('showReopenModal', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card">
-            <div class="ts-modal-head">
-                <button type="button" class="btn-close" wire:click="$set('showReopenModal', false)"></button>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-arrow-counterclockwise" style="display:inline-flex;align-items:center;line-height:1;font-size:1.15rem;"></i>
-                    <h5 class="fw-bold mb-0">Buka Kembali Task</h5>
-                </div>
+        <div class="ts-modal-card dsb is-datar">
+            <div class="dsb-jendela-kepala">
+                <span class="dsb-ikon is-kecil" style="--c: #d97706"><i class="bi bi-arrow-counterclockwise"></i></span>
+                <span class="dsb-jendela-teks">
+                    <h5 class="dsb-jendela-judul">Buka Kembali Task</h5>
+                    <span class="dsb-kartu-sub">Task yang terkunci dibuka lagi untuk direvisi</span>
+                </span>
+                <button type="button" class="dsb-jendela-tutup" wire:click="$set('showReopenModal', false)" title="Tutup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-            <div class="p-4">
+            <div class="dsb-jendela-isi">
                 <p class="text-muted mb-3" style="font-size:.9rem;">
                     <b class="text-dark">{{ $reopenTask->nama }}</b> akan diaktifkan kembali menjadi
                     <span class="badge bg-info-subtle text-info border border-info rounded-pill">Dikerjakan</span>
                     agar bawahan bisa mengerjakan revisi. Alasan di bawah dikirim sebagai komentar &amp; notifikasi.
                 </p>
                 <div class="mb-3">
-                    <label class="ts-form-label">Alasan revisi <span class="text-danger">*</span></label>
-                    <textarea wire:model="reopen_alasan" rows="2" class="form-control rounded-3 @error('reopen_alasan') is-invalid @enderror" placeholder="Mis. Ada bug pada fitur login / revisi tanda tangan surat"></textarea>
+                    <label class="dsb-label">Alasan revisi <span class="dsb-wajib">*</span></label>
+                    <textarea wire:model="reopen_alasan" rows="2" class="dsb-isian @error('reopen_alasan') is-galat @enderror" placeholder="Mis. Ada bug pada fitur login / revisi tanda tangan surat"></textarea>
                     @error('reopen_alasan')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="row g-3">
                     @if($reopenTask->category && $reopenTask->category->labels->count())
                     <div class="col-md-6">
-                        <label class="ts-form-label">Label baru <span class="text-muted fw-normal" style="font-size:.8rem;">— opsional</span></label>
-                        <select wire:model="reopen_label_id" class="form-select rounded-3">
+                        <label class="dsb-label">Label baru <span class="dsb-label-ket">— opsional</span></label>
+                        <select wire:model="reopen_label_id" class="dsb-isian">
                             <option value="">— Tanpa label —</option>
                             @foreach($reopenTask->category->labels as $lab)
                             <option value="{{ $lab->id }}">{{ $lab->nama }}</option>
@@ -1151,15 +1306,15 @@ Task Saya || lemon
                     </div>
                     @endif
                     <div class="col-md-6">
-                        <label class="ts-form-label">Deadline baru <span class="text-danger">*</span></label>
-                        <input type="date" wire:model="reopen_deadline" class="form-control rounded-3 @error('reopen_deadline') is-invalid @enderror">
+                        <label class="dsb-label">Deadline baru <span class="dsb-wajib">*</span></label>
+                        <input type="date" wire:model="reopen_deadline" class="dsb-isian @error('reopen_deadline') is-galat @enderror">
                         @error('reopen_deadline')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
             </div>
             <div class="px-4 pb-4 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-danger rounded-pill px-4" wire:click="$set('showReopenModal', false)">Batal</button>
-                <button type="button" class="btn btn-warning rounded-pill px-4 d-inline-flex align-items-center gap-2" wire:click="bukaKembali">
+                <button type="button" class="dsb-tombol is-lembut" wire:click="$set('showReopenModal', false)"><span>Batal</span></button>
+                <button type="button" class="dsb-tombol is-kuning" wire:click="bukaKembali">
                     <i class="bi bi-arrow-counterclockwise" style="display:inline-flex;align-items:center;line-height:1;"></i> Buka Kembali
                 </button>
             </div>
@@ -1171,16 +1326,18 @@ Task Saya || lemon
     @if($showGroupChat && $activeTask)
     <div class="ts-modal-back" wire:click="$set('showGroupChat', false)"></div>
     <div class="ts-modal">
-        <div class="ts-modal-card">
-            <div class="ts-modal-head">
-                <button type="button" class="btn-close" wire:click="$set('showGroupChat', false)"></button>
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-chat-dots" style="display:inline-flex;align-items:center;line-height:1;font-size:1.15rem;"></i>
-                    <h5 class="fw-bold mb-0">Diskusi Grup</h5>
-                </div>
-                <small class="d-block mt-1" style="opacity:.85;">{{ $activeTask->nama }}</small>
+        <div class="ts-modal-card dsb is-datar">
+            <div class="dsb-jendela-kepala">
+                <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-chat-dots-fill"></i></span>
+                <span class="dsb-jendela-teks">
+                    <h5 class="dsb-jendela-judul">Diskusi Grup</h5>
+                    <span class="dsb-kartu-sub">Satu kolom komentar untuk seluruh penerima task ini</span>
+                </span>
+                <button type="button" class="dsb-jendela-tutup" wire:click="$set('showGroupChat', false)" title="Tutup">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
-            <div class="p-4">
+            <div class="dsb-jendela-isi">
                 @include('livewire.pages.admin.task.partials.discussion', ['activeTask' => $activeTask, 'mentionMembers' => $chatMembers])
             </div>
         </div>
