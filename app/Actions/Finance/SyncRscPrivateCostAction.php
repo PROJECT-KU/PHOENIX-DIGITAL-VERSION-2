@@ -103,7 +103,7 @@ class SyncRscPrivateCostAction
      */
     public function rincianModal(PemesananRsc $rep): array
     {
-        if (! PemesananRsc::dicatatDiKas($rep->status)) {
+        if (! $rep->tercatatDiKas()) {
             return [];
         }
 

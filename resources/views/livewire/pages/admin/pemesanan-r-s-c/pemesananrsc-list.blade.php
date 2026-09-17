@@ -61,7 +61,7 @@ Data Pesanan RSC || lemon
                     <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
                     <p class="dsb-stat-label">Nilai Pemesanan</p>
                     <p class="dsb-stat-nilai">{{ $rupiah($ringkas['nilai']) }}</p>
-                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>Tanpa status Pengganti — sama dengan yang tercatat di Cash Flow</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>Dicatat sekali saat batch Baru — sama dengan Cash Flow</span></p>
                 </article>
 
                 <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">

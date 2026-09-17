@@ -20,7 +20,11 @@ class SyncRscBatchCashFlowAction
         private SyncRscPrivateCostAction $modal,
     ) {}
 
-    public function execute(string $namaCamp, string $batchCamp): void
+    /**
+     * @param  bool  $paksaCatat  dipakai rsc:sinkron-cashflow untuk memulihkan
+     *                            pemasukan batch lama yang dulu terhapus.
+     */
+    public function execute(string $namaCamp, string $batchCamp, bool $paksaCatat = false): void
     {
         $rows = PemesananRsc::where('nama_camp', $namaCamp)
             ->where('batch_camp', $batchCamp)
@@ -34,6 +38,12 @@ class SyncRscBatchCashFlowAction
 
         $representatif = $rows->first();
         $totalBatch = (int) $rows->sum('total');
+
+        // Dicek SEBELUM baris lain dibersihkan: pemasukan batch bisa saja
+        // menempel di baris lama yang bukan representatif lagi.
+        $representatif->batchTercatatDiKas = $paksaCatat || PemesananRsc::whereIn('id', $rows->pluck('id'))
+            ->whereHas('cashFlow')
+            ->exists();
 
         // Sisakan hanya cash flow milik baris representatif — pemasukan DAN modal.
         foreach ($rows as $row) {

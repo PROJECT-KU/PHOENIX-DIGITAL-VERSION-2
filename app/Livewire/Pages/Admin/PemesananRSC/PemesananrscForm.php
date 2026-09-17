@@ -728,9 +728,10 @@ class PemesananrscForm extends Component
     }
 
     /** Cash flow dicatat sekali per batch — lihat SyncRscBatchCashFlowAction. */
-    private function syncRscBatchCashFlow(SyncCashFlowAction $action): void
+    private function syncRscBatchCashFlow(SyncCashFlowAction $action, bool $sudahTercatat = false): void
     {
-        app(\App\Actions\Finance\SyncRscBatchCashFlowAction::class)->execute((string) $this->nama_camp, (string) $this->batch_camp);
+        app(\App\Actions\Finance\SyncRscBatchCashFlowAction::class)
+            ->execute((string) $this->nama_camp, (string) $this->batch_camp, paksaCatat: $sudahTercatat);
     }
 
     private function createpemesananrsc(SyncCashFlowAction $action)
@@ -794,6 +795,15 @@ class PemesananrscForm extends Component
         DB::beginTransaction();
 
         try {
+            // Sudah punya pemasukan? Dicek SEBELUM peserta dihapus: baris
+            // pemasukan menempel di satu peserta, dan menghapus peserta itu
+            // ikut menghapus barisnya — padahal batch ini tetap harus tercatat.
+            [$namaAsal, $batchAsal] = explode('|', (string) $this->kunciAsal, 2) + [null, null];
+            $sudahTercatat = PemesananRsc::where('nama_camp', $namaAsal)
+                ->where('batch_camp', $batchAsal)
+                ->whereHas('cashFlow')
+                ->exists();
+
             // Nama/nomor batch diganti: akun tambahan di kunci lama ikut
             // dipindah (simpanAkunTambahan() hanya membersihkan kunci baru).
             $kunciBaru = $this->nama_camp.'|'.$this->batch_camp;
@@ -864,7 +874,7 @@ class PemesananrscForm extends Component
             $this->simpanAkunTambahan();
 
             // Cash flow dicatat sekali per batch (total batch), bukan per peserta.
-            $this->syncRscBatchCashFlow($action);
+            $this->syncRscBatchCashFlow($action, $sudahTercatat);
 
             DB::commit();
             session()->flash('success', 'Berhasil Update data!');

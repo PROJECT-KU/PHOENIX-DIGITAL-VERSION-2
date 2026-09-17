@@ -106,29 +106,47 @@ class PemesananRsc extends Model
 
     // Scope filter status
     /**
-     * Status yang dicatat sebagai pemasukan (dan modal) di Cash Flow.
+     * ATURAN PEMASUKAN RSC (keputusan pemilik, 17 Sep 2026):
+     * pemasukan batch dicatat SATU KALI, yaitu saat batch berstatus "baru".
+     * Sesudah tercatat, mengganti status ke habis/pengganti/perpanjang tidak
+     * menghapus maupun menambah pemasukannya. Batch yang sejak dibuat bukan
+     * "baru" tidak dicatat.
      *
-     * - baru & habis: uang yang sudah diterima; masa akun yang habis tidak
-     *   membatalkan pemasukannya.
-     * - pengganti: TIDAK — akun pengganti bukan penjualan baru.
-     * - perpanjang: hanya data lama; perpanjangan kini lewat Pemesanan Toko.
-     *
-     * Satu batch = satu baris pemasukan (lihat SyncRscBatchCashFlowAction).
+     * Diisi SyncRscBatchCashFlowAction sebelum pencatatan: batch ini sudah
+     * punya baris pemasukan (dicek sebelum baris lain dalam batch dibersihkan).
      */
-    public const STATUS_DICATAT = ['baru', 'habis', 'perpanjang'];
+    public bool $batchTercatatDiKas = false;
 
     /** Status yang boleh dipilih untuk batch baru. */
     public const STATUS_PILIHAN = ['baru', 'pengganti', 'habis'];
 
-    public static function dicatatDiKas(?string $status): bool
+    /** Apakah batch baris ini dicatat (atau tetap dicatat) sebagai pemasukan? */
+    public function tercatatDiKas(): bool
     {
-        return in_array($status, self::STATUS_DICATAT, true);
+        if ($this->status === 'baru' || $this->batchTercatatDiKas) {
+            return true;
+        }
+
+        return static::where('nama_camp', $this->nama_camp)
+            ->where('batch_camp', $this->batch_camp)
+            ->whereHas('cashFlow')
+            ->exists();
     }
 
-    /** Kueri: hanya baris yang dicatat di Cash Flow. */
+    /** Kueri: baris yang batch-nya punya baris pemasukan di Cash Flow. */
     public function scopeDicatatDiKas($query)
     {
-        return $query->whereIn($query->getModel()->getTable().'.status', self::STATUS_DICATAT);
+        $tabel = $query->getModel()->getTable();
+
+        return $query->whereExists(function ($q) use ($tabel) {
+            $q->selectRaw('1')
+                ->from('cash_flows as rsc_kas')
+                ->join($tabel.' as rsc_rep', 'rsc_rep.id', '=', 'rsc_kas.sourceable_id')
+                ->where('rsc_kas.sourceable_type', static::class)
+                ->where('rsc_kas.category', 'PemesananRSC')
+                ->whereColumn('rsc_rep.nama_camp', $tabel.'.nama_camp')
+                ->whereColumn('rsc_rep.batch_camp', $tabel.'.batch_camp');
+        });
     }
 
     /**

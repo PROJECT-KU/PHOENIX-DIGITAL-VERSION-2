@@ -846,10 +846,10 @@
                     </div>
                     {{-- Aturan buku kas: lihat PemesananRsc::STATUS_DICATAT. --}}
                     <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>
-                        @if ($status === 'pengganti')
-                            <b>Pengganti</b> tidak dihitung sebagai pemasukan di Cash Flow.
+                        @if ($mode === 'create' && $status !== 'baru')
+                            Batch yang dibuat dengan status ini <b>tidak</b> dicatat sebagai pemasukan. Pemasukan hanya dicatat untuk batch <b>Baru</b>.
                         @else
-                            Baru &amp; Habis dicatat sekali sebagai pemasukan batch. Pengganti tidak dihitung. Perpanjangan dibeli lewat <b>Pemesanan Toko</b>.
+                            Pemasukan dicatat sekali saat batch <b>Baru</b>; mengganti status sesudahnya tidak mengubah pemasukan. Perpanjangan dibeli lewat <b>Pemesanan Toko</b>.
                         @endif
                     </span></p>
                     @error('status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror

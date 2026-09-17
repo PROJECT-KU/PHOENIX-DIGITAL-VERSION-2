@@ -614,7 +614,7 @@ class CashFlowList extends Component
     {
         $rows = PemesananRsc::query()
             ->join('data_akuns', 'data_akuns.id', '=', 'pemesanan_rsc.akun')
-            ->whereIn('pemesanan_rsc.status', PemesananRsc::STATUS_DICATAT)
+            ->dicatatDiKas()
             ->whereNotNull('data_akuns.product_id')
             ->when($this->usesSiklus(), function ($q) {
                 [$mulai, $akhir] = $this->siklusRange();
