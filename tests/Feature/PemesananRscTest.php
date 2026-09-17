@@ -290,7 +290,7 @@ it('form menampilkan status berwarna, bar simpan, dan pemilih bergaya jendela le
         ->and($detail)->toContain('rsc-salin');
 });
 
-it('semua status rsc tercatat di cash flow, termasuk habis', function () {
+it('status baru dan habis tercatat di cash flow, pengganti tidak', function () {
     $admin = adminRsc();
     $akun = akunRsc();
     batchRsc($admin, $akun, 'Camp Habis', '1', [['Ani', '+6281234567890'], ['Budi', '+6281298765432']], ['status' => 'habis']);
@@ -304,15 +304,16 @@ it('semua status rsc tercatat di cash flow, termasuk habis', function () {
 
     $this->artisan('rsc:sinkron-cashflow')->assertSuccessful();
     $kas = \App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->get();
-    expect($kas)->toHaveCount(2)
-        ->and((int) $kas->sum('amount'))->toBe(45000);
+    // Satu baris untuk batch habis (2 peserta); batch pengganti tidak dihitung.
+    expect($kas)->toHaveCount(1)
+        ->and((int) $kas->sum('amount'))->toBe(30000);
 
     // Idempoten.
     $this->artisan('rsc:sinkron-cashflow')->assertSuccessful();
-    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->count())->toBe(2);
+    expect(\App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income')->count())->toBe(1);
 
-    // Kartu nilai di daftar ikut menghitung semua status.
-    expect(Livewire::actingAs($admin)->test(PemesananrscList::class)->viewData('ringkas')['nilai'])->toBe(45000.0);
+    // Kartu nilai di daftar memakai aturan yang sama.
+    expect(Livewire::actingAs($admin)->test(PemesananrscList::class)->viewData('ringkas')['nilai'])->toBe(30000.0);
 });
 
 it('mengubah status ke habis tidak menghapus pemasukan batch', function () {
@@ -367,4 +368,33 @@ it('tombol wa memakai api.whatsapp.com dengan pesan akses atau masa habis', func
     expect($wa['jenis'])->toBe('habis')
         ->and($q['text'])->toContain('SUDAH HABIS MASA AKTIFNYA')
         ->and($q['text'])->not->toContain('rahasia-uji');
+});
+
+it('satu batch hanya tercatat satu kali walau disimpan dan statusnya diganti berulang', function () {
+    $admin = adminRsc();
+    $akun = akunRsc();
+    batchRsc($admin, $akun, 'Camp Uji', '5', [['Ani', '+6281234567890'], ['Budi', '+6281298765432'], ['Caca', '+6281200000000']]);
+
+    $pemasukan = fn () => \App\Models\CashFlow::where('sourceable_type', PemesananRsc::class)->where('type', 'income');
+
+    foreach (['baru', 'habis', 'baru', 'habis'] as $status) {
+        $rows = PemesananRsc::all();
+        Livewire::actingAs($admin)
+            ->test(PemesananrscForm::class, ['pemesananrsc' => $rows->first(), 'pemesananBatch' => $rows])
+            ->set('status', $status)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($pemasukan()->count())->toBe(1)
+            ->and((int) $pemasukan()->sum('amount'))->toBe(45000);
+    }
+
+    // Diganti jadi pengganti: pemasukannya dilepas, bukan digandakan.
+    $rows = PemesananRsc::all();
+    Livewire::actingAs($admin)
+        ->test(PemesananrscForm::class, ['pemesananrsc' => $rows->first(), 'pemesananBatch' => $rows])
+        ->set('status', 'pengganti')
+        ->call('save')
+        ->assertHasNoErrors();
+    expect($pemasukan()->count())->toBe(0);
 });

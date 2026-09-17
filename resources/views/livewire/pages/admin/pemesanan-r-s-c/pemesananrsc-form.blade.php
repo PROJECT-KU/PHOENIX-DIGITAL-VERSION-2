@@ -844,9 +844,14 @@
                             </label>
                         @endforeach
                     </div>
-                    {{-- Semua status tercatat di Cash Flow: status menggambarkan
-                         masa akun, bukan pembayaran. --}}
-                    <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>Semua status tetap tercatat di Cash Flow. Perpanjangan akun dibeli pelanggan lewat <b>Pemesanan Toko</b>.</span></p>
+                    {{-- Aturan buku kas: lihat PemesananRsc::STATUS_DICATAT. --}}
+                    <p class="rsc-status-ket"><i class="bi bi-info-circle"></i><span>
+                        @if ($status === 'pengganti')
+                            <b>Pengganti</b> tidak dihitung sebagai pemasukan di Cash Flow.
+                        @else
+                            Baru &amp; Habis dicatat sekali sebagai pemasukan batch. Pengganti tidak dihitung. Perpanjangan dibeli lewat <b>Pemesanan Toko</b>.
+                        @endif
+                    </span></p>
                     @error('status')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">

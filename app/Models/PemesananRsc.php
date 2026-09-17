@@ -108,10 +108,14 @@ class PemesananRsc extends Model
     /**
      * Status yang dicatat sebagai pemasukan (dan modal) di Cash Flow.
      *
-     * Semua status. "perpanjang" tetap ada di sini untuk data lama; batch
-     * baru tidak lagi memakainya (perpanjangan lewat Pemesanan Toko).
+     * - baru & habis: uang yang sudah diterima; masa akun yang habis tidak
+     *   membatalkan pemasukannya.
+     * - pengganti: TIDAK — akun pengganti bukan penjualan baru.
+     * - perpanjang: hanya data lama; perpanjangan kini lewat Pemesanan Toko.
+     *
+     * Satu batch = satu baris pemasukan (lihat SyncRscBatchCashFlowAction).
      */
-    public const STATUS_DICATAT = ['baru', 'habis', 'pengganti', 'perpanjang'];
+    public const STATUS_DICATAT = ['baru', 'habis', 'perpanjang'];
 
     /** Status yang boleh dipilih untuk batch baru. */
     public const STATUS_PILIHAN = ['baru', 'pengganti', 'habis'];

@@ -7,12 +7,13 @@ use App\Models\PemesananRsc;
 use Illuminate\Console\Command;
 
 /**
- * Selaraskan cash flow SEMUA batch RSC dengan aturan pencatatan terkini.
+ * Selaraskan cash flow SEMUA batch RSC dengan aturan pencatatan terkini
+ * (PemesananRsc::STATUS_DICATAT).
  *
- * Dijalankan sekali sesudah deploy perubahan "semua status RSC dicatat":
- * batch lama berstatus habis/pengganti/perpanjang belum punya baris cash
- * flow, karena dulu hanya status "baru" yang dicatat. Idempoten — aman
- * dijalankan berulang.
+ * Dijalankan sekali sesudah deploy perubahan aturan: batch lama berstatus
+ * habis/perpanjang belum punya baris cash flow karena dulu hanya "baru" yang
+ * dicatat, sedangkan batch pengganti tidak boleh tercatat. Satu batch selalu
+ * berakhir dengan paling banyak satu baris pemasukan. Idempoten.
  */
 class SinkronCashFlowRsc extends Command
 {
@@ -29,15 +30,22 @@ class SinkronCashFlowRsc extends Command
             ->orderBy('batch_camp')
             ->get();
 
-        $belumTercatat = 0;
+        $akanDicatat = 0;
+        $akanDihapus = 0;
         foreach ($batch as $b) {
-            $ada = PemesananRsc::where('nama_camp', $b->nama_camp)
-                ->where('batch_camp', $b->batch_camp)
-                ->whereHas('cashFlow')
-                ->exists();
-            if (! $ada) {
-                $belumTercatat++;
-                $this->line("  belum tercatat: {$b->nama_camp} #{$b->batch_camp}");
+            $baris = PemesananRsc::where('nama_camp', $b->nama_camp)
+                ->where('batch_camp', $b->batch_camp);
+            $ada = (clone $baris)->whereHas('cashFlow')->exists();
+            $layak = PemesananRsc::dicatatDiKas(
+                (clone $baris)->orderBy('created_at')->orderBy('id')->value('status')
+            );
+
+            if ($layak && ! $ada) {
+                $akanDicatat++;
+                $this->line("  akan dicatat: {$b->nama_camp} #{$b->batch_camp}");
+            } elseif (! $layak && $ada) {
+                $akanDihapus++;
+                $this->line("  akan dihapus (tidak dihitung): {$b->nama_camp} #{$b->batch_camp}");
             }
 
             if (! $this->option('kering')) {
@@ -46,7 +54,7 @@ class SinkronCashFlowRsc extends Command
         }
 
         $this->info(($this->option('kering') ? '[kering] ' : '')
-            ."{$batch->count()} batch diperiksa, {$belumTercatat} sebelumnya belum tercatat di cash flow.");
+            ."{$batch->count()} batch diperiksa, {$akanDicatat} dicatat, {$akanDihapus} dihapus dari cash flow.");
 
         return self::SUCCESS;
     }
