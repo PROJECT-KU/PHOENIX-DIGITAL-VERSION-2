@@ -328,19 +328,31 @@ Pembayaran QRIS || lemon
             .qris-info-col { text-align: center; }
             .qris-info-col .qris-note { justify-content: center; }
         }
+
+        /* ===== Kulit dasbor ===== */
+        .qris-halaman .qris-card { background: #fff !important; border: 1px solid #e9edf3 !important; border-radius: 20px !important; box-shadow: none !important; max-width: 900px; margin: 0 auto; }
+        @media (max-width: 420px) {
+            .qris-halaman .qris-btn { font-size: .82rem; padding-left: .5rem; padding-right: .5rem; }
+            .qris-halaman .qris-btn span { white-space: nowrap; }
+        }
     </style>
 
-    <div class="container py-4" style="max-width: 760px;">
-        <div class="d-flex align-items-center gap-2 mb-3">
-            <a href="{{ route('admin.pesanantoko.index') }}" class="btn btn-sm btn-light rounded-circle">
-                <i class="bi bi-arrow-left"></i>
-            </a>
-            <div>
-                <h4 class="fw-bold mb-0">Pembayaran QRIS Dinamis</h4>
-                <small class="text-muted">{{ $order->order_number }} ·
-                    {{ $order->customer->nama ?? 'Pelanggan' }}</small>
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    <div class="dsb qris-halaman">
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Pembayaran QRIS</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-receipt me-1"></i>{{ $order->order_number }} · {{ $order->customer->nama ?? 'Pelanggan' }}</span>
+                    <span class="d-block">Tunjukkan atau kirim QR ini ke pelanggan. Status pembayaran dicek otomatis.</span>
+                </p>
             </div>
-        </div>
+            <div class="dsb-hero-aksi">
+                <a href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
+                    <i class="bi bi-arrow-left"></i><span>Pesanan Toko</span>
+                </a>
+            </div>
+        </header>
 
         @if ($errorMessage)
         <div class="alert alert-danger d-flex align-items-center gap-2 rounded-3">

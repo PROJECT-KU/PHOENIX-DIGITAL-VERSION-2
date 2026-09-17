@@ -238,13 +238,7 @@
             cursor: pointer;
         }
 
-        .of-picker-btn::after {
-            content: "\F282";
-            font-family: "bootstrap-icons";
-            float: right;
-            color: #94a3b8;
-            font-size: .8rem;
-        }
+        /* Panahnya sudah digambar .form-select; ::after lama membuatnya ganda. */
 
         /* Daftar di dalam SweetAlert picker */
         .of-pick-list {
@@ -467,6 +461,62 @@
                 appearance: textfield;
             }
         }
+
+        /* ===== Kulit dasbor (dsb-kartu) =====
+           Markup & skrip form tidak berubah; hanya tampilannya diseragamkan
+           dengan dasbor: kartu putih rata, ikon lembut berwarna di tengah. */
+        .of-section, .of-summary {
+            background: #fff !important; border: 1px solid #e9edf3 !important;
+            border-radius: 18px !important; box-shadow: none !important;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .of-section:hover { border-color: #dfe5ee !important; box-shadow: 0 10px 24px rgba(15, 23, 42, .05) !important; }
+        }
+        .of-section > .d-flex:first-child { padding-bottom: 14px; margin-bottom: 18px !important; border-bottom: 1px solid #f1f5f9; }
+        .of-section h5, .of-summary h5 { font-size: .98rem; font-weight: 800 !important; color: #1c1f26; }
+        .of-icon {
+            --c: #7c3aed; width: 42px; height: 42px; box-shadow: none !important; color: var(--c) !important;
+            background: color-mix(in srgb, var(--c) 12%, #fff) !important;
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+        }
+        .of-icon.green { --c: #16a34a; }
+        .of-icon.amber { --c: #d97706; }
+        .of-form-label { font-weight: 700; color: #334155; font-size: .8rem; margin-bottom: 6px; }
+        .of-section .form-control, .of-section .form-select {
+            min-height: 42px; border: 1px solid #e9edf3; border-radius: 11px; font-size: .88rem; font-weight: 600; box-shadow: none;
+        }
+        .of-section .form-control:focus, .of-section .form-select:focus { border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124, 58, 237, .14); }
+        .of-section .form-control::placeholder { color: #9aa5b5; font-weight: 500; }
+        .of-item { border-color: #eef2f7 !important; border-radius: 14px !important; box-shadow: none !important; }
+        .pay-opt { border-radius: 14px !important; }
+        .of-summary { position: sticky; top: 84px !important; }
+        .of-summary h5 i.bi { color: #7c3aed !important; }
+        .of-summary .row-line { border-bottom: 1px dashed #eef2f7; }
+        .of-total-box { background: #f0fdf4 !important; color: #14532d !important; border: 1px solid #bbf7d0; border-radius: 14px !important; }
+        .of-total-box span:first-child { color: #166534; opacity: 1 !important; font-weight: 800; }
+        .of-summary .btn-primary {
+            background: #7c3aed !important; border: 0 !important; border-radius: 14px !important;
+            box-shadow: 0 10px 22px rgba(124, 58, 237, .28) !important; font-weight: 800;
+        }
+        .of-summary .btn-primary:hover { background: #6d28d9 !important; }
+        .promo-chip { box-shadow: none; }
+        .chip-flash { background: #ffe4e6 !important; color: #be123c !important; }
+        .chip-promo { background: #ede9fe !important; color: #6d28d9 !important; }
+        .of-section .btn-outline-primary { border-color: #ddd6fe; color: #6d28d9; background: #f5f3ff; font-weight: 700; }
+        .of-section .btn-outline-primary:hover { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+        @media (max-width: 991.98px) { .of-summary { position: static !important; } }
+        .of-section .btn-success {
+            background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 999px; font-weight: 700;
+        }
+        .of-section .btn-success:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
+        .of-section .btn-primary { background: #7c3aed; border-color: #7c3aed; border-radius: 11px; font-weight: 700; }
+        .of-section .btn-primary:hover { background: #6d28d9; border-color: #6d28d9; }
+        .of-section .alert-info {
+            background: #eff6ff !important; color: #1e40af !important; border: 1px solid #bfdbfe !important;
+        }
+        .of-section .alert-info a, .of-section .alert-info b { color: #1d4ed8; }
+        .of-item-body .form-select { padding-right: 26px; background-position: right 8px center; }
     </style>
 
     <form wire:submit="save">
@@ -788,25 +838,25 @@
                         <span>Subtotal</span>
                         <span class="fw-semibold text-dark">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                     </div>
-                    @if ($promoDiscount > 0)
+                    @if (0 < $promoDiscount)
                     <div class="row-line text-danger">
                         <span><i class="bi bi-tags-fill"></i> Diskon Promo</span>
                         <span class="fw-semibold">- Rp {{ number_format($promoDiscount, 0, ',', '.') }}</span>
                     </div>
                     @endif
-                    @if ($referralDiscount > 0)
+                    @if (0 < $referralDiscount)
                     <div class="row-line text-danger">
                         <span><i class="bi bi-people-fill"></i> Diskon Referral</span>
                         <span class="fw-semibold">- Rp {{ number_format($referralDiscount, 0, ',', '.') }}</span>
                     </div>
                     @endif
-                    @if ($pointsDiscount > 0)
+                    @if (0 < $pointsDiscount)
                     <div class="row-line text-danger">
                         <span><i class="bi bi-coin"></i> Potongan Poin</span>
                         <span class="fw-semibold">- Rp {{ number_format($pointsDiscount, 0, ',', '.') }}</span>
                     </div>
                     @endif
-                    @if ($uniqueCode > 0)
+                    @if (0 < $uniqueCode)
                     <div class="row-line">
                         <span>Kode Unik</span>
                         <span class="fw-semibold">+ Rp {{ number_format($uniqueCode, 0, ',', '.') }}</span>
@@ -903,7 +953,9 @@
             $h = \App\Support\HargaPaket::untuk($b);
             $teks = 'Rp ' . number_format($h['bayar'], 0, ',', '.');
 
-            if ($h['potongan'] > 0) {
+            // "0 <" (bukan lebih-dari): tanda lebih-dari di blok ini membuat
+            // Livewire melewati penanda morph direktif sebelumnya.
+            if (0 < $h['potongan']) {
                 $teks .= ' · hemat Rp ' . number_format($h['potongan'], 0, ',', '.');
             }
 

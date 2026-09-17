@@ -2,7 +2,15 @@
 @section('title')
 Proses Pesanan || lemon
 @stop
-<div class="container-fluid">
+<div>
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @php
+        // Dibaca sekali: dua kondisi "session()->has(...)" dalam satu berkas
+        // membuat Livewire salah memasang penanda morph pada yang kedua.
+        $pesanGalat = session('error');
+        $pesanInfo = session('info');
+    @endphp
+    <div class="dsb pt-proses">
     <style>
         /* Tombol pemicu picker (mirip form-select) */
         .pa-picker-btn {
@@ -64,26 +72,20 @@ Proses Pesanan || lemon
             color: #94a3b8;
         }
     </style>
-    <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
-        <div class="card-body p-4 d-flex align-items-center">
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 header-action w-100">
-                <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">Proses Pesanan</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        @php
-                        $breadcrumbs = [
-                        ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                        ['name' => 'Data Pesanan', 'url' => route('admin.pesanantoko.index')],
-                        ['name' => 'Detail Pesanan', 'url' => route('admin.pesanantoko.detail', $order)],
-                        ['name' => 'Proses Pesanan'],
-                        ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </div>
-                </div>
-            </div>
+    <header class="dsb-hero">
+        <div class="dsb-hero-teks">
+            <h1 class="dsb-salam">Proses Pesanan</h1>
+            <p class="dsb-hero-ket">
+                <span class="d-block"><i class="bi bi-receipt me-1"></i>{{ $order->order_number }} · {{ $order->customer->nama ?? 'Pelanggan' }}</span>
+                <span class="d-block">Pilih akun, atur masa berlangganan, lalu kirim ke pelanggan.</span>
+            </p>
         </div>
-    </div>
+        <div class="dsb-hero-aksi">
+            <a wire:navigate href="{{ route('admin.pesanantoko.detail', $order) }}" class="dsb-tombol is-lembut">
+                <i class="bi bi-arrow-left"></i><span>Detail Pesanan</span>
+            </a>
+        </div>
+    </header>
 
     <style>
         .proc-section {
@@ -392,55 +394,81 @@ Proses Pesanan || lemon
                 text-overflow: ellipsis;
             }
         }
+
+        /* ===== Kulit dasbor ===== */
+        .pt-proses-nilai { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; }
+        .pt-proses .proc-section {
+            background: #fff !important; border: 1px solid #e9edf3 !important; border-radius: 18px !important; box-shadow: none !important;
+        }
+        .pt-proses .proc-section > .d-flex:first-child { padding-bottom: 14px; margin-bottom: 18px !important; border-bottom: 1px solid #f1f5f9; }
+        .pt-proses .proc-section h5 { font-size: .98rem; font-weight: 800; color: #1c1f26; }
+        .pt-proses .proc-section-icon {
+            --c: #7c3aed; width: 42px; height: 42px; box-shadow: none !important; color: var(--c) !important;
+            background: color-mix(in srgb, var(--c) 12%, #fff) !important;
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+        }
+        .pt-proses .proc-section-icon.icon-green { --c: #16a34a; }
+        .pt-proses .proc-section-icon.icon-amber { --c: #d97706; }
+        .pt-proses .proc-section-icon.icon-rose, .pt-proses .proc-section-icon.icon-red { --c: #e11d48; }
+        .pt-proses .proc-section-icon.icon-blue { --c: #0284c7; }
+        .pt-proses .form-control, .pt-proses .form-select {
+            min-height: 42px; border: 1px solid #e9edf3; border-radius: 11px; font-size: .88rem; box-shadow: none;
+        }
+        .pt-proses .form-control:focus, .pt-proses .form-select:focus { border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124, 58, 237, .14); }
+        .pt-proses .proc-section .alert-info { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .pt-proses form > .border-top { border-color: #eef2f7 !important; }
+        .pt-proses form .btn-primary { background: #7c3aed; border: 0; border-radius: 14px; box-shadow: 0 10px 22px rgba(124, 58, 237, .28); font-weight: 800; }
+        .pt-proses form .btn-primary:hover { background: #6d28d9; }
+        .pt-proses form .btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; border-radius: 14px; font-weight: 700; }
+        .pt-proses form .btn-danger:hover { background: #dc2626; color: #fff; }
+        .pt-proses .pa-picker-btn::after { content: none; }
+        @media (max-width: 575.98px) {
+            .pt-proses form > .border-top { flex-direction: column-reverse; }
+            .pt-proses form > .border-top .btn { width: 100%; }
+        }
     </style>
 
-    @if (session()->has('error'))
+    @if ($pesanGalat)
     <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ session('error') }}
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ $pesanGalat }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
-    @if (session()->has('info'))
+    @if ($pesanInfo)
     <div class="alert alert-info alert-dismissible fade show rounded-4 border-0 shadow-sm">
-        <i class="bi bi-info-circle-fill me-1"></i>{{ session('info') }}
+        <i class="bi bi-info-circle-fill me-1"></i>{{ $pesanInfo }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
 
     <!-- Ringkasan Pesanan -->
-    <div class="order-summary-card p-4 mb-4">
-        <div class="d-flex align-items-center gap-3 mb-3">
-            <span class="proc-section-icon"><i class="bi bi-bag-check-fill"></i></span>
-            <h4 class="fw-bold mb-0">{{ $order->order_number }}</h4>
+    <section class="dsb-bagian">
+        <div class="dsb-rak">
+            <div class="dsb-kepala" style="--c: #7c3aed">
+                <span class="dsb-kepala-ikon"><i class="bi bi-bag-check-fill"></i></span>
+                <div class="dsb-kepala-teks">
+                    <span class="dsb-kicker">Item yang diproses</span>
+                    <h2 class="dsb-judul">{{ $orderItem->product_name }}</h2>
+                </div>
+            </div>
+            <article class="dsb-stat k-4" style="--c: #0284c7">
+                <span class="dsb-ikon"><i class="bi bi-hourglass-split"></i></span>
+                <p class="dsb-stat-label">Durasi</p>
+                <p class="dsb-stat-nilai pt-proses-nilai">{{ $orderItem->getDurationLabel() }}</p>
+            </article>
+            <article class="dsb-stat k-4" style="--c: #16a34a">
+                <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                <p class="dsb-stat-label">Harga</p>
+                <p class="dsb-stat-nilai pt-proses-nilai">Rp {{ number_format($orderItem->price, 0, ',', '.') }}</p>
+            </article>
+            <article class="dsb-stat k-4" style="--c: #d97706">
+                <span class="dsb-ikon"><i class="bi bi-stack"></i></span>
+                <p class="dsb-stat-label">Jumlah</p>
+                <p class="dsb-stat-nilai pt-proses-nilai">{{ $orderItem->quantity }}<span class="dsb-stat-satuan">akun</span></p>
+            </article>
         </div>
-        <div class="row g-3">
-            <div class="col-6 col-lg-3">
-                <div class="summary-stat">
-                    <div class="label">Nama Produk</div>
-                    <div class="value">{{ $orderItem->product_name }}</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="summary-stat">
-                    <div class="label">Durasi</div>
-                    <div class="value">{{ $orderItem->getDurationLabel() }}</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="summary-stat">
-                    <div class="label">Harga</div>
-                    <div class="value">Rp {{ number_format($orderItem->price, 0, ',', '.') }}</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-3">
-                <div class="summary-stat">
-                    <div class="label">Jumlah</div>
-                    <div class="value">{{ $orderItem->quantity }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
 
     @php $pkKredit = $this->pakaiKredit(); @endphp
 
@@ -565,7 +593,7 @@ Proses Pesanan || lemon
                                 Kredit tidak kedaluwarsa — tanpa tanggal akhir.
                             @else
                                 Otomatis: mulai + {{ $orderItem->getDurationLabel() }}
-                                @if ((int) $bonusDurationValue > 0)
+                                @if ($bonusDurationValue)
                                 + bonus {{ $bonusDurationValue }} {{ $bonusDurationType }}
                                 @endif
                             @endif
@@ -735,6 +763,7 @@ Proses Pesanan || lemon
             </button>
         </div>
     </form>
+    </div>{{-- /.dsb --}}
 
     @push('scripts')
     <script>

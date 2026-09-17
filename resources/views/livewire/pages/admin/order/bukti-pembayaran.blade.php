@@ -2,7 +2,8 @@
 Unggah Bukti Pembayaran || lemon
 @stop
 
-<div class="container-fluid">
+<div>
+    @include('livewire.pages.admin.partials.dasbor-gaya')
     <style>
         /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine
            siap. Layout admin tidak memuat public-custom-styles.css. */
@@ -158,29 +159,39 @@ Unggah Bukti Pembayaran || lemon
             .bp-baris { font-size: .84rem; }
             .bp-total { font-size: 1.35rem; }
         }
+
+        /* ===== Kulit dasbor ===== */
+        .bp-card { background: #fff !important; border: 1px solid #e9edf3 !important; border-radius: 18px !important; box-shadow: none !important; }
+        .bp-head { padding-bottom: 14px; border-bottom: 1px solid #f1f5f9; }
+        .bp-head-title { font-weight: 800; color: #1c1f26; }
+        .bp-chip { --c: #7c3aed; box-shadow: none !important; background: color-mix(in srgb, var(--c) 12%, #fff) !important; border: 1px solid color-mix(in srgb, var(--c) 22%, #fff); color: var(--c) !important; }
+        .bp-chip.bg-gradient-blue { --c: #0284c7; }
+        .bp-chip.bg-gradient-green { --c: #16a34a; }
+        .bp-chip.bg-gradient-purple { --c: #7c3aed; }
+        .bp-chip.bg-gradient-red { --c: #e11d48; }
+        .bp-drop-ic.bg-gradient-purple { background: #f5f3ff !important; color: #7c3aed !important; border: 1px solid #ddd6fe; box-shadow: none !important; }
+        .bp-wrap .btn-primary { background: #7c3aed; border: 0; box-shadow: 0 10px 22px rgba(124, 58, 237, .28); font-weight: 800; }
+        .bp-wrap .btn-primary:hover { background: #6d28d9; }
+        .bp-wrap .btn-secondary { background: #fff; color: #475569; border: 1px solid #e9edf3; font-weight: 700; }
+        .bp-wrap .btn-secondary:hover { background: #f8fafc; color: #1c1f26; }
     </style>
 
-    <div class="bp-wrap">
-        {{-- Kepala halaman: pola yang sama dengan Tambah Pesanan. --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4 fixed-header-card">
-            <div class="card-body p-4">
-                <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">{{ $gantiSaja ? 'Ganti Bukti Pembayaran' : 'Unggah Bukti Pembayaran' }}</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        {{-- Kuncinya 'name', bukan 'label' — itu yang dibaca
-                             resources/views/components/breadcrumb.blade.php. --}}
-                        @php
-                            $breadcrumbs = [
-                                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                                ['name' => 'Data Pemesanan', 'url' => route('admin.pesanantoko.index')],
-                                ['name' => $gantiSaja ? 'Ganti Bukti' : 'Unggah Bukti'],
-                            ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </div>
-                </div>
+    <div class="bp-wrap dsb">
+        {{-- Kepala halaman: bahasa rupa dasbor, sama dengan Tambah Pesanan. --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">{{ $gantiSaja ? 'Ganti Bukti Pembayaran' : 'Unggah Bukti Pembayaran' }}</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-receipt me-1"></i>{{ $order->order_number }} · {{ $order->customer->nama ?? 'Pelanggan' }}</span>
+                    <span class="d-block">{{ $gantiSaja ? 'Bukti lama diganti; status pesanan tidak berubah.' : 'Setelah bukti tersimpan, pesanan aktif dan siap diproses.' }}</span>
+                </p>
             </div>
-        </div>
+            <div class="dsb-hero-aksi">
+                <a href="{{ $gantiSaja ? route('admin.pesanantoko.detail', $order) : route('admin.pesanantoko.index', ['activeTab' => 'draft']) }}" class="dsb-tombol is-lembut">
+                    <i class="bi bi-arrow-left"></i><span>Kembali</span>
+                </a>
+            </div>
+        </header>
 
         <div class="row g-3">
             {{-- Ringkasan --}}
@@ -314,7 +325,7 @@ Unggah Bukti Pembayaran || lemon
                                 wire:target="simpan"
                                 class="btn btn-primary rounded-pill px-4 d-inline-flex align-items-center justify-content-center gap-2">
                                 <i class="bi bi-check2-circle"></i>
-                                <span wire:loading.remove wire:target="simpan">{{ $gantiSaja ? 'Simpan Bukti' : 'Simpan &amp; Aktifkan Pesanan' }}</span>
+                                <span wire:loading.remove wire:target="simpan">{{ $gantiSaja ? 'Simpan Bukti' : 'Simpan & Aktifkan Pesanan' }}</span>
                                 <span wire:loading wire:target="simpan">Memproses...</span>
                             </button>
                         </div>

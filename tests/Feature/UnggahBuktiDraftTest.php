@@ -36,13 +36,17 @@ it('halaman unggah bukti draft terbuka tanpa galat', function () {
         ->assertStatus(200);
 });
 
-it('remah roti unggah bukti memakai kunci name yang benar', function () {
+it('kepala unggah bukti menyebut pesanan dan jalan kembali', function () {
     $order = orderDraft('transfer');
 
     $html = Livewire::test(BuktiPembayaran::class, ['order' => $order])->html();
 
-    expect($html)->toContain('Data Pemesanan')
-        ->and($html)->toContain('Unggah Bukti');
+    // Seperti layar lemon lain yang bergaya dasbor: tanpa remah roti, dengan
+    // nomor pesanan di kepala dan tombol Kembali.
+    expect($html)->toContain('Unggah Bukti Pembayaran')
+        ->and($html)->toContain($order->order_number)
+        ->and($html)->toContain('Kembali')
+        ->and($html)->not->toContain('breadcrumb-custom');
 });
 
 it('qris statis juga bisa membuka halaman unggah bukti', function () {
@@ -89,11 +93,13 @@ it('memakai sistem desain admin, bukan gaya karangan sendiri', function () {
 
     $html = Livewire::test(BuktiPembayaran::class, ['order' => $order])->html();
 
-    // Kepala halaman mengikuti pola halaman Tambah Pesanan, dan keping ikon
-    // memakai gradasi milik layout admin.
-    foreach (['fixed-header-card', 'gradient-text', 'breadcrumb-custom', 'bg-gradient-purple', 'bg-gradient-blue'] as $kelas) {
+    // Kepala halaman mengikuti bahasa rupa dasbor (sama dengan Tambah
+    // Pesanan); keping ikon tetap memakai kelas warna layout admin.
+    foreach (['dsb-hero', 'dsb-salam', 'bp-chip bg-gradient-purple', 'bp-chip bg-gradient-blue'] as $kelas) {
         expect($html)->toContain($kelas);
     }
+    expect($html)->not->toContain('fixed-header-card')
+        ->and($html)->not->toContain('class="gradient-text');
 });
 
 it('kotak unggah tidak menampilkan penanda "sedang mengunggah"', function () {

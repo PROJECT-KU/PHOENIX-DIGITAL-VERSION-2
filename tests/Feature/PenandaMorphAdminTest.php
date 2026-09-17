@@ -23,6 +23,11 @@ function berkasPenandaAdmin(): array
         'pemesanan-r-s-c/*.blade.php',
         'order/order-list.blade.php',
         'order/order-detail.blade.php',
+        'order/order-create.blade.php',
+        'order/order-form.blade.php',
+        'order/process-order.blade.php',
+        'order/qris-payment.blade.php',
+        'order/bukti-pembayaran.blade.php',
         'task/task-saya-list.blade.php',
         'task/partials/task-*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
