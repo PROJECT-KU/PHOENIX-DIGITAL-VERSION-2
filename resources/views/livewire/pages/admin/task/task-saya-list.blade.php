@@ -1489,7 +1489,7 @@ Task Saya || lemon
                 </div>
 
                 @php
-                    $bolehSunting = $activeTask->user_id === auth()->id()
+                    $bolehSunting = $activeTask->user_id === auth()->id() || $bolehKelolaSemua
                         || ($activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds));
                     $sayaPenerima = $activeTask->user_id === auth()->id();
                     $kemajuan = $activeTask->kemajuanChecklist();
@@ -1651,7 +1651,8 @@ Task Saya || lemon
             @php
                 $isOwner = $activeTask->user_id === auth()->id();
                 $isPemberi = $activeTask->assigned_by === auth()->id();
-                $canManageActive = $activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds);
+                $canManageActive = $bolehKelolaSemua
+                    || ($activeTask->assigned_by && in_array($activeTask->assigned_by, $manageGiverIds));
                 $lewat = $activeTask->isLewatDeadline();
             @endphp
             <div class="dsb-jendela-kaki">

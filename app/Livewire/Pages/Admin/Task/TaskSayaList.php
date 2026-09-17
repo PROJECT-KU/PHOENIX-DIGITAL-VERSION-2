@@ -232,17 +232,16 @@ class TaskSayaList extends Component
      */
     public function hapusTerpilih(): void
     {
-        if (empty($this->terpilih) || ! auth()->user()?->canAssignTask()) {
+        if (empty($this->terpilih) || ! $this->bolehBeriTask()) {
             return;
         }
 
-        $bolehDari = $this->manageableGiverIds();
         $dihapus = 0;
 
         foreach ($this->terpilih as $groupId) {
-            $anggota = Task::where('group_id', $groupId)->get();
+            $anggota = Task::visibleTo()->where('group_id', $groupId)->get();
 
-            if ($anggota->isEmpty() || $anggota->contains(fn ($t) => ! in_array($t->assigned_by, $bolehDari, true))) {
+            if ($anggota->isEmpty() || $anggota->contains(fn ($t) => ! $this->bolehKelolaTask($t))) {
                 continue;
             }
 
@@ -693,7 +692,16 @@ class TaskSayaList extends Component
     /** Task hanya bisa diberikan ke user yang ada di downline si atasan. */
     protected function assignableIds(): array
     {
-        return auth()->user()->bawahanIds();
+        $u = auth()->user();
+
+        // Pemegang manage_task tidak selalu punya bawahan di struktur, tetapi
+        // ia tetap perlu bisa menugaskan — daftarnya jadi seluruh karyawan
+        // selain dirinya sendiri.
+        if ($u->hasPermission('manage_task') && empty($u->bawahanIds())) {
+            return User::whereKeyNot($u->id)->whereHas('detail')->pluck('id')->all();
+        }
+
+        return $u->bawahanIds();
     }
 
     /**
@@ -710,15 +718,62 @@ class TaskSayaList extends Component
         return array_merge([$u->id], $u->bawahanIds());
     }
 
+    /**
+     * Boleh mengelola (edit / hapus / buka kembali) sebuah task?
+     *
+     * DUA jalur, bukan satu:
+     *
+     *  1. PEMEGANG manage_task — izin yang sama yang membuka layar
+     *     Penyelesaian Task. Ia pengurus task perusahaan, jadi task apa pun
+     *     yang terlihat olehnya boleh ia kelola.
+     *  2. PEMBERINYA, atau atasan dari pemberinya.
+     *
+     * Sebelumnya hanya jalur kedua yang ada, dan syaratnya `assigned_by` ada
+     * di daftar. Padahal task yang dibuat dari layar Penyelesaian Task
+     * ber-assigned_by NULL — dan NULL tidak pernah cocok dengan whereIn().
+     * Akibatnya seluruh task semacam itu tidak bisa dihapus SIAPA PUN,
+     * termasuk administrator, sementara tombolnya memang tidak pernah muncul.
+     */
+    public function bolehKelolaTask(?Task $task): bool
+    {
+        if (! $task) {
+            return false;
+        }
+
+        if (auth()->user()?->hasPermission('manage_task')) {
+            return true;
+        }
+
+        return $task->assigned_by && in_array($task->assigned_by, $this->manageableGiverIds(), true);
+    }
+
+    /**
+     * Boleh memberi task baru?
+     *
+     * Pemegang manage_task juga boleh, walau tidak punya bawahan seorang pun —
+     * canAssignTask() mensyaratkan bawahan, dan itu benar untuk atasan biasa
+     * tetapi menutup administrator yang memang tidak ada di dalam struktur.
+     */
+    public function bolehBeriTask(): bool
+    {
+        $u = auth()->user();
+
+        return (bool) ($u?->canAssignTask() || $u?->hasPermission('manage_task'));
+    }
+
     /** Ambil task yang boleh saya kelola atau 403/404. */
     protected function findManageableTask($id): Task
     {
-        return Task::whereIn('assigned_by', $this->manageableGiverIds())->findOrFail($id);
+        $task = Task::visibleTo()->findOrFail($id);
+
+        abort_unless($this->bolehKelolaTask($task), 403);
+
+        return $task;
     }
 
     protected function ensureCanAssign(): void
     {
-        abort_unless(auth()->user()?->canAssignTask(), 403);
+        abort_unless($this->bolehBeriTask(), 403);
     }
 
     public function openCreateTask(): void
@@ -1014,21 +1069,37 @@ class TaskSayaList extends Component
 
     public function deleteTask($id): void
     {
-        $this->ensureCanAssign();
+        $task = Task::visibleTo()->find($id);
 
-        // Boleh menghapus task yang diberikan oleh diri sendiri ATAU bawahannya.
-        Task::whereIn('assigned_by', $this->manageableGiverIds())->whereKey($id)->delete();
+        if (! $this->bolehKelolaTask($task)) {
+            // Berkata jujur saat tidak ada yang terhapus. Versi lama selalu
+            // menjawab "Task dihapus." walau kuerinya menghapus nol baris —
+            // dan tidak ada cara bagi siapa pun untuk menyadarinya.
+            $this->dispatch('swal-error', message: 'Anda tidak berhak menghapus task ini.');
+
+            return;
+        }
+
+        $task->delete();
         $this->dispatch('swal-success', message: 'Task dihapus.');
     }
 
     /** Hapus seluruh grup (semua sub-task/penerima) sekaligus. */
     public function deleteGroup($groupId): void
     {
-        $this->ensureCanAssign();
+        $anggota = Task::visibleTo()->where('group_id', $groupId)->get();
 
-        Task::where('group_id', $groupId)
-            ->whereIn('assigned_by', $this->manageableGiverIds())
-            ->delete();
+        // Satu anggota saja yang tidak boleh dikelola sudah cukup untuk
+        // menolak: menghapus separuh grup meninggalkan pekerjaan yang
+        // penerimanya tinggal sebagian, dan tidak ada layar yang menjelaskan
+        // kenapa.
+        if ($anggota->isEmpty() || $anggota->contains(fn ($t) => ! $this->bolehKelolaTask($t))) {
+            $this->dispatch('swal-error', message: 'Anda tidak berhak menghapus task ini.');
+
+            return;
+        }
+
+        Task::where('group_id', $groupId)->delete();
         $this->dispatch('swal-success', message: 'Seluruh grup task dihapus.');
     }
 
@@ -1354,7 +1425,7 @@ class TaskSayaList extends Component
             : [];
 
         // Data untuk modal beri task (hanya relevan bila boleh assign).
-        $canAssign = auth()->user()?->canAssignTask() ?? false;
+        $canAssign = $this->bolehBeriTask();
         $bawahan = $canAssign
             ? User::whereIn('id', $this->assignableIds())->orderBy('name')->get(['id', 'name'])
             : collect();
@@ -1372,7 +1443,7 @@ class TaskSayaList extends Component
             : null;
 
         // Pemberi task yang boleh saya kelola (untuk memunculkan tombol di kartu/modal).
-        $manageGiverIds = $canAssign ? $this->manageableGiverIds() : [];
+        $manageGiverIds = $this->manageableGiverIds();
 
         // Status baca komentar per user PER GROUP (untuk badge "komentar baru" kartu).
         $reads = TaskCommentRead::where('user_id', auth()->id())
@@ -1458,6 +1529,11 @@ class TaskSayaList extends Component
             'reopenTask' => $reopenTask,
             'reads' => $reads,
             'manageGiverIds' => $manageGiverIds,
+            // Pemegang manage_task boleh mengelola task apa pun yang terlihat
+            // olehnya. Dikirim sebagai bendera terpisah supaya tampilan bisa
+            // memakai ATURAN YANG SAMA dengan server tanpa memanggil metode
+            // komponen dari dalam Blade.
+            'bolehKelolaSemua' => (bool) auth()->user()?->hasPermission('manage_task'),
         ]);
     }
 }

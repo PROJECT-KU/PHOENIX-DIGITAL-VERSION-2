@@ -567,7 +567,8 @@ it('aksi massal memeriksa ulang kelayakan tiap task di server', function () {
     expect($sumber)->toContain('public function selesaikanTerpilih')
         ->and($sumber)->toContain("->where('user_id', auth()->id())")
         ->and($sumber)->toContain('if ($t->isLocked())')
-        ->and($sumber)->toContain('$bolehDari = $this->manageableGiverIds();')
+        // Hapus massal memakai aturan hak kelola yang sama dengan hapus satuan.
+        ->and($sumber)->toContain('$anggota->contains(fn ($t) => ! $this->bolehKelolaTask($t))')
         // Pilihan dibersihkan saat saringan berubah: tanpa itu, baris yang
         // tercentang lalu tersaring keluar tetap ikut terkena.
         ->and($sumber)->toContain('$this->bersihkanPilihan();');
@@ -607,4 +608,37 @@ it('riwayat task tidak pernah menggagalkan perubahannya sendiri', function () {
 
     expect($model)->toContain('public function catat(')
         ->and($model)->toContain('} catch (\Throwable $e) {');
+});
+
+it('hak kelola task punya dua jalur, dan penolakannya dikatakan terus terang', function () {
+    // Task yang dibuat dari layar Penyelesaian Task ber-assigned_by NULL, dan
+    // NULL tidak pernah cocok dengan whereIn(). Akibatnya seluruh task semacam
+    // itu tidak bisa dihapus SIAPA PUN — termasuk administrator — sementara
+    // tombolnya memang tidak pernah muncul, jadi tidak ada yang menyadari.
+    // Di basis data ini: 71 dari 71 task ber-assigned_by NULL.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain('public function bolehKelolaTask(?Task $task): bool')
+        // Jalur 1: pemegang manage_task — izin yang sama yang membuka layar
+        // Penyelesaian Task.
+        ->and($sumber)->toContain("auth()->user()?->hasPermission('manage_task')")
+        // Jalur 2: pemberinya, atau atasan pemberinya.
+        ->and($sumber)->toContain('in_array($task->assigned_by, $this->manageableGiverIds(), true)')
+        // Memberi task juga terbuka bagi manage_task walau tanpa bawahan:
+        // canAssignTask() mensyaratkan bawahan, dan itu menutup administrator
+        // yang memang tidak ada di dalam struktur.
+        ->and($sumber)->toContain('public function bolehBeriTask(): bool');
+
+    // Versi lama selalu menjawab "Task dihapus." walau kuerinya menghapus nol
+    // baris. Sekarang penolakannya dikatakan.
+    expect($sumber)->toContain("message: 'Anda tidak berhak menghapus task ini.'");
+
+    // Tampilan memakai ATURAN YANG SAMA, lewat bendera yang dikirim komponen —
+    // bukan menyalin syaratnya sendiri dan menyimpang diam-diam.
+    $tabel = file_get_contents(resource_path('views/livewire/pages/admin/task/partials/task-tabel.blade.php'));
+    $layar = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($tabel)->toContain('$bolehKelolaSemua')
+        ->and($layar)->toContain('$bolehKelolaSemua')
+        ->and($sumber)->toContain("'bolehKelolaSemua' =>");
 });

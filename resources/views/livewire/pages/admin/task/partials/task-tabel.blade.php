@@ -107,7 +107,10 @@
                         $hariIni = ! $selesai && ! $lewat && $sisa === 0;
 
                         $terkunci = $gtasks->contains(fn ($t) => $t->isLocked());
-                        $bolehKelola = $gtasks->contains(fn ($t) => $t->assigned_by && in_array($t->assigned_by, $manageGiverIds));
+                        // Aturan yang SAMA dengan bolehKelolaTask() di komponen:
+                        // pemegang manage_task, atau pemberinya / atasan pemberinya.
+                        $bolehKelola = $bolehKelolaSemua
+                            || $gtasks->contains(fn ($t) => $t->assigned_by && in_array($t->assigned_by, $manageGiverIds));
 
                         $terakhirBaca = ($reads[$first->group_id] ?? null)
                             ? \Illuminate\Support\Carbon::parse($reads[$first->group_id]) : null;
@@ -333,7 +336,7 @@
                                 $mSelesai = $m->progress === 'selesai';
                                 $mLewat = ! $mSelesai && $m->bonusStatus() === 'tidak_selesai';
                                 $mKunci = $m->isLocked();
-                                $mKelola = $m->assigned_by && in_array($m->assigned_by, $manageGiverIds);
+                                $mKelola = $bolehKelolaSemua || ($m->assigned_by && in_array($m->assigned_by, $manageGiverIds));
                             @endphp
                             <tr class="ts-sub is-klik {{ $mSaya ? 'is-saya' : '' }}"
                                 wire:key="sub-{{ $m->id }}" x-show="buka" x-cloak
