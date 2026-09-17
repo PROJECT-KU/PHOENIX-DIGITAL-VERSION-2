@@ -1426,7 +1426,15 @@ Task Saya || lemon
                         </div>
                     </div>
 
-                    <div class="col-md-4">
+                    {{-- Empat medan ini disusun 2 + 2, bukan 3 + 1.
+
+                         Sebelum ada "Ulangi" jumlahnya tiga dan pas satu baris;
+                         begitu jadi empat, yang keempat turun sendirian dan
+                         menyisakan dua pertiga baris kosong di sebelahnya.
+
+                         Pasangannya juga jadi lebih masuk akal: dua tanggal
+                         berdampingan, dua pilihan berdampingan. --}}
+                    <div class="col-md-6">
                         {{-- Task berulang: laporan berkala sebelumnya dibuat ulang
                              dengan tangan tiap periode, dan yang terlupa tidak pernah
                              terlihat hilang. Salinannya dibuat penjadwal harian. --}}
@@ -1437,7 +1445,7 @@ Task Saya || lemon
                             <option value="bulanan">Tiap bulan</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="dsb-label">Bobot</label>
                         <select wire:model="t_bobot" class="dsb-isian">
                             <option value="ringan">Ringan (1)</option>
@@ -1445,12 +1453,12 @@ Task Saya || lemon
                             <option value="berat">Berat (3)</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="dsb-label">Deadline Mulai</label>
                         <input type="date" wire:model="t_deadline_mulai" class="dsb-isian @error('t_deadline_mulai') is-galat @enderror">
                         @error('t_deadline_mulai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="dsb-label">Deadline Selesai</label>
                         <input type="date" wire:model="t_deadline_selesai" class="dsb-isian @error('t_deadline_selesai') is-galat @enderror">
                         @error('t_deadline_selesai')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror

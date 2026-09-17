@@ -681,3 +681,20 @@ it('menyimpan grup task tidak lagi gagal diam-diam pada task tanpa pemberi', fun
     expect($sumber)->toContain("\$existing = Task::visibleTo()->where('group_id', \$this->editingGroupId)->get();")
         ->and($sumber)->not->toContain("->whereIn('assigned_by', \$this->manageableGiverIds())");
 });
+
+it('medan bawah jendela beri task disusun dua-dua, tanpa kolom kosong', function () {
+    // Sebelum ada "Ulangi", jumlahnya tiga dan pas satu baris. Begitu jadi
+    // empat, yang keempat (Deadline Selesai) turun sendirian dan menyisakan
+    // dua pertiga baris kosong di sebelahnya. Diukur sesudahnya pada lebar
+    // 1440 & 768: dua baris berisi dua medan selebar sama, tanpa sisa.
+    $tampilan = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    // Keempatnya seperdua lebar, bukan sepertiga.
+    foreach (['Ulangi', 'Bobot', 'Deadline Mulai', 'Deadline Selesai'] as $label) {
+        $i = strpos($tampilan, '>'.$label.'</label>');
+        expect($i)->not->toBeFalse();
+
+        $pembuka = strrpos(substr($tampilan, 0, $i), '<div class="col-md-');
+        expect(substr($tampilan, $pembuka, 22))->toContain('col-md-6');
+    }
+});
