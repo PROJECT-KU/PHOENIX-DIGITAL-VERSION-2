@@ -21,10 +21,7 @@ Data Pesanan RSC || lemon
             <div class="dsb-hero-teks">
                 <h1 class="dsb-salam">Pemesanan RSC</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">
-                        @php $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Pemesanan RSC']]; @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     <span class="d-block">Batch camp, peserta, dan akun yang dipakai tiap batch.</span>
                 </p>
             </div>

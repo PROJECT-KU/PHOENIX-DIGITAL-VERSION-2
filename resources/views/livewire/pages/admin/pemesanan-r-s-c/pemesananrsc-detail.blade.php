@@ -19,16 +19,7 @@ Detail Pesanan RSC || lemon
             <div class="dsb-hero-teks">
                 <h1 class="dsb-salam">{{ $batchData->nama_camp ?? $nama_camp }}</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">
-                        @php
-                            $breadcrumbs = [
-                                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                                ['name' => 'Pemesanan RSC', 'url' => route('admin.pesananrsc.index')],
-                                ['name' => 'Batch #'.$batch_camp],
-                            ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     @if ($batchData)
                         <span class="d-block rsc-lencana-kepala">
                             <span class="dsb-lencana is-ungu">Batch #{{ $batchData->batch_camp }}</span>

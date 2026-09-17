@@ -809,7 +809,10 @@ it('semua layar pemesanan rsc memakai bahasa rupa dasbor', function () {
             ->and($isi)->toContain('class="dsb-hero"')
             // Kartu di dalam kartu dan judul bergradasi dari versi lama.
             ->and($isi)->not->toContain('gradient-text')
-            ->and($isi)->not->toContain('fixed-header-card');
+            ->and($isi)->not->toContain('fixed-header-card')
+            // Seperti Dasbor & Task Saya: baris tanggal, bukan breadcrumb.
+            ->and($isi)->not->toContain('x-breadcrumb')
+            ->and($isi)->toContain("translatedFormat('l, d F Y')");
     }
 
     // Form: markup lama dipertahankan (JS picker bergantung padanya), kulitnya

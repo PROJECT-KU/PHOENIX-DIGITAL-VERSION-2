@@ -10,16 +10,7 @@ Update Pesanan RSC || lemon
             <div class="dsb-hero-teks">
                 <h1 class="dsb-salam">Edit Batch RSC</h1>
                 <p class="dsb-hero-ket">
-                    <span class="d-block">
-                        @php
-                            $breadcrumbs = [
-                                ['name' => 'Beranda', 'url' => route('admin.dashboard')],
-                                ['name' => 'Pemesanan RSC', 'url' => route('admin.pesananrsc.index')],
-                                ['name' => 'Edit Batch'],
-                            ];
-                        @endphp
-                        <x-breadcrumb :items="$breadcrumbs" />
-                    </span>
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     <span class="d-block rsc-lencana-kepala">
                         <span class="dsb-lencana is-ungu"><i class="bi bi-folder2-open"></i>{{ $nama_camp }}</span>
                         <span class="dsb-lencana is-nila">Batch #{{ $batch_camp }}</span>
