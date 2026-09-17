@@ -54,61 +54,6 @@ Data Pesanan || lemon
             </div>
         </header>
 
-        {{-- ================== RINGKASAN ================== --}}
-        <section class="dsb-bagian">
-            <div class="dsb-rak">
-                <div class="dsb-kepala" style="--c: #7c3aed">
-                    <span class="dsb-kepala-ikon"><i class="bi bi-bag-heart-fill"></i></span>
-                    <div class="dsb-kepala-teks">
-                        <span class="dsb-kicker">Ringkasan</span>
-                        <h2 class="dsb-judul">Keadaan Pesanan</h2>
-                        <div class="dsb-chip-deret">
-                            <span class="dsb-chip"><i class="bi bi-receipt"></i>{{ number_format($tabCounts['all'], 0, ',', '.') }} pesanan</span>
-                            <span class="dsb-chip is-samar">{{ $adaSaringan ? 'Mengikuti saringan di bawah' : 'Seluruh data' }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
-                    <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
-                    <p class="dsb-stat-label">Omzet Pesanan</p>
-                    <p class="dsb-stat-nilai">{{ $rupiah($ringkas['omzet']) }}</p>
-                    <p class="dsb-stat-ket"><i class="bi bi-check2-circle"></i><span>Dari {{ number_format($ringkas['lunas'], 0, ',', '.') }} pesanan yang sudah dibayar</span></p>
-                </article>
-
-                <button type="button" wire:click="setTab('neworder')" class="dsb-stat is-utama k-6 pt-stat-tombol"
-                    style="--c: {{ $ringkas['perluProses'] > 0 ? '#d97706' : '#64748b' }}">
-                    <span class="dsb-ikon"><i class="bi bi-lightning-charge-fill"></i></span>
-                    <span class="dsb-stat-label">Perlu Diproses</span>
-                    <span class="dsb-stat-nilai">{{ $ringkas['perluProses'] }}<span class="dsb-stat-satuan">pesanan</span></span>
-                    <span class="dsb-stat-ket"><i class="bi bi-arrow-right-circle"></i><span>{{ $ringkas['perluProses'] > 0 ? 'Sudah dibayar, akunnya belum dikirim' : 'Tidak ada yang menunggu' }}</span></span>
-                </button>
-
-                <button type="button" wire:click="setTab('neworder')" class="dsb-stat k-4 pt-stat-tombol" style="--c: #0284c7">
-                    <span class="dsb-ikon"><i class="bi bi-bag-plus-fill"></i></span>
-                    <span class="dsb-stat-label">Pesanan Baru</span>
-                    <span class="dsb-stat-nilai">{{ $tabCounts['neworder'] }}<span class="dsb-stat-satuan">pesanan</span></span>
-                    <span class="dsb-stat-ket"><i class="bi bi-clock-history"></i><span>Menunggu bayar atau belum diproses</span></span>
-                </button>
-
-                <button type="button" wire:click="setTab('berjalan')" class="dsb-stat k-4 pt-stat-tombol"
-                    style="--c: {{ $ringkas['cekMenunggu'] > 0 ? '#7c3aed' : '#64748b' }}">
-                    <span class="dsb-ikon"><i class="bi bi-file-earmark-check-fill"></i></span>
-                    <span class="dsb-stat-label">Pengecekan Menunggu</span>
-                    <span class="dsb-stat-nilai">{{ $ringkas['cekMenunggu'] }}<span class="dsb-stat-satuan">berkas</span></span>
-                    <span class="dsb-stat-ket"><i class="bi bi-hourglass-split"></i><span>{{ $tabCounts['berjalan'] }} pesanan sedang berjalan</span></span>
-                </button>
-
-                <button type="button" wire:click="setTab('habis')" class="dsb-stat k-4 pt-stat-tombol"
-                    style="--c: {{ $ringkas['habisBelum'] > 0 ? '#e11d48' : '#64748b' }}">
-                    <span class="dsb-ikon"><i class="bi bi-bell-fill"></i></span>
-                    <span class="dsb-stat-label">Akun Habis Belum Diberi Tahu</span>
-                    <span class="dsb-stat-nilai">{{ $ringkas['habisBelum'] }}<span class="dsb-stat-satuan">akun</span></span>
-                    <span class="dsb-stat-ket"><i class="bi bi-hourglass-bottom"></i><span>Dari {{ $tabCounts['habis'] }} akun yang sudah habis</span></span>
-                </button>
-            </div>
-        </section>
-
         {{-- ================== SARINGAN ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
@@ -164,7 +109,7 @@ Data Pesanan || lemon
 
                         @if ($adaSaringan)
                             <div class="pt-saring-kaki">
-                                <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> Angka tab & ringkasan mengikuti saringan</span>
+                                <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> Angka di tab mengikuti saringan</span>
                                 <button type="button" wire:click="resetFilters" class="dsb-tombol is-lembut">
                                     <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
                                 </button>
