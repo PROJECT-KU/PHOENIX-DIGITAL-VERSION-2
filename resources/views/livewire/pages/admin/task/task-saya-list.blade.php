@@ -70,36 +70,6 @@ Task Saya || lemon
 
         .ts-badge { font-weight: 700; letter-spacing: .2px; }
 
-        /* ===== Modal glossy ===== */
-        .ts-modal-back { position: fixed; inset: 0; background: rgba(15, 23, 42, .5); backdrop-filter: blur(2px); z-index: 1055; }
-        /* Yang menggulung hanya JENDELANYA, bukan halaman di belakangnya.
-
-           Dulu lapisan .ts-modal sendiri yang menggulung, jadi saat jendelanya
-           panjang: kepala dan tombol keputusannya ikut menghilang ke atas
-           layar, dan halaman di belakangnya tetap bisa ikut tergulung —
-           menutup jendela lalu mendaratkan pembacanya di tempat yang berbeda
-           dari tempat ia menekan tadi. */
-        .ts-modal {
-            position: fixed; inset: 0; z-index: 1056;
-            display: flex; align-items: center; justify-content: center;
-            padding: 3vh 12px; overflow: hidden;
-        }
-        .ts-modal-card {
-            background: #fff; border-radius: 22px; width: 100%; max-width: 560px;
-            box-shadow: 0 30px 70px rgba(15, 23, 42, .32);
-            /* Kolom: kepala & kaki tetap, badan yang menggulung. */
-            display: flex; flex-direction: column;
-            max-height: 94vh; min-height: 0; overflow: hidden;
-        }
-        .ts-modal-card > .dsb-jendela-kepala,
-        .ts-modal-card > .dsb-jendela-kaki { flex: 0 0 auto; }
-        .ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-
-        /* Halaman di belakang dikunci selama ada jendela terbuka. Lebar bilah
-           gulung diganti padding supaya isinya tidak melompat mendatar saat
-           bilah itu hilang. */
-        body.ts-terkunci { overflow: hidden; }
-
         .ts-section-lbl { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #94a3b8; margin-bottom: 8px; }
 
         /* Chat bubbles */
@@ -2255,78 +2225,6 @@ Task Saya || lemon
                 });
             };
         }
-
-        /* Kunci gulung halaman selama ada jendela terbuka.
-
-           Dipasang sebagai PENGAMAT, bukan ditempel di tiap tombol buka/tutup:
-           jendela di layar ini dibuka dan ditutup oleh Livewire (dan bisa juga
-           oleh tombol Esc, klik latar, atau perpindahan halaman), jadi satu-
-           satunya tempat yang pasti tahu keadaannya adalah DOM itu sendiri. */
-        (function () {
-            const badan = document.body;
-
-            const lebarBilah = () => window.innerWidth - document.documentElement.clientWidth;
-
-            // Elemen yang dipegang fokus SEBELUM jendela terbuka, supaya bisa
-            // dikembalikan saat ditutup. Tanpa itu, pengguna papan ketik
-            // mendarat di awal halaman tiap kali menutup satu task.
-            let fokusSebelumnya = null;
-
-            const perbarui = () => {
-                const jendela = document.querySelector('.ts-modal [role="dialog"]');
-                const adaJendela = !!jendela;
-                if (adaJendela === badan.classList.contains('ts-terkunci')) return;
-
-                if (adaJendela) {
-                    const bilah = lebarBilah();
-                    badan.classList.add('ts-terkunci');
-                    // Tanpa ini, hilangnya bilah gulung melebarkan halaman dan
-                    // seluruh isinya bergeser beberapa piksel saat jendela dibuka.
-                    if (bilah > 0) badan.style.paddingRight = bilah + 'px';
-
-                    fokusSebelumnya = document.activeElement;
-                    // Fokus ke jendelanya, bukan ke tombol pertamanya: pembaca
-                    // layar lalu membacakan judul dialognya lebih dulu.
-                    jendela.focus({ preventScroll: true });
-                } else {
-                    badan.classList.remove('ts-terkunci');
-                    badan.style.paddingRight = '';
-
-                    if (fokusSebelumnya && document.contains(fokusSebelumnya)) {
-                        fokusSebelumnya.focus({ preventScroll: true });
-                    }
-                    fokusSebelumnya = null;
-                }
-            };
-
-            /* Esc menutup jendela teratas.
-
-               Ditulis di sini, bukan di tiap jendela: keempat jendela di layar
-               ini ditutup lewat properti Livewire yang berbeda-beda, dan
-               nama propertinya sudah dibawa tiap kartu lewat data-tutup. */
-            document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Escape') return;
-
-                const jendela = [...document.querySelectorAll('.ts-modal [data-tutup]')].pop();
-                if (!jendela) return;
-
-                const akar = jendela.closest('[wire\\:id]');
-                if (!akar || !window.Livewire) return;
-
-                e.preventDefault();
-                window.Livewire.find(akar.getAttribute('wire:id'))?.set(jendela.dataset.tutup, false);
-            });
-
-            perbarui();
-            new MutationObserver(perbarui).observe(document.documentElement, { childList: true, subtree: true });
-
-            // Berpindah halaman lewat wire:navigate tidak selalu melepas kelasnya
-            // sendiri — dan halaman berikutnya lalu tidak bisa digulung sama sekali.
-            document.addEventListener('livewire:navigating', () => {
-                badan.classList.remove('ts-terkunci');
-                badan.style.paddingRight = '';
-            });
-        })();
 
         // Bersihkan ?open_task dari URL agar hard refresh tidak membuka popup lagi.
         (function () {

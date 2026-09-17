@@ -2,409 +2,415 @@
 Data Pesanan RSC || lemon
 @stop
 <div>
-    <style>
-        /* Pusatkan ikon Bootstrap (bi) di stat-icon-wrapper (kartu Filter Periode) */
-        .stat-icon-wrapper i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
-        .stat-icon-wrapper i.bi::before { display: block; line-height: 1; }
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*) supaya layar ini terbaca
+         sebagai bagian dari aplikasi yang sama. Lihat partials/dasbor-gaya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.pemesanan-r-s-c.partials.rsc-gaya')
 
-        /* ===== Modal Export (glossy) ===== */
-        .rsc-export-backdrop {
-            position: fixed; inset: 0; z-index: 1055; display: flex; align-items: center; justify-content: center;
-            padding: 1rem; background: rgba(30, 27, 75, .38); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-            animation: rscFade .18s ease;
-        }
-        @keyframes rscFade { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes rscPop { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
-        .rsc-export-card {
-            width: 100%; max-width: 620px; background: rgba(255, 255, 255, .96); border-radius: 22px; overflow: hidden;
-            box-shadow: 0 30px 70px rgba(15, 23, 42, .32); border: 1px solid rgba(255, 255, 255, .6); animation: rscPop .22s ease;
-            display: flex; flex-direction: column; max-height: 92vh;
-        }
-        .rsc-export-head {
-            display: flex; align-items: center; gap: 14px; padding: 20px 24px;
-            background: linear-gradient(135deg, #16a34a, #059669); color: #fff; position: relative;
-        }
-        .rsc-export-head-ico {
-            width: 46px; height: 46px; flex: 0 0 46px; border-radius: 13px; display: inline-flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; background: rgba(255, 255, 255, .2); box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-        }
-        .rsc-export-head-ico i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .rsc-export-head h5 { margin: 0; font-weight: 800; font-size: 1.08rem; line-height: 1.2; }
-        .rsc-export-head p { margin: 2px 0 0; font-size: .8rem; opacity: .9; }
-        .rsc-export-close {
-            margin-left: auto; width: 34px; height: 34px; border-radius: 10px; border: 0; color: #fff; font-size: 1.05rem;
-            background: rgba(255, 255, 255, .16); display: inline-flex; align-items: center; justify-content: center; transition: background .15s;
-        }
-        .rsc-export-close:hover { background: rgba(255, 255, 255, .3); }
-        .rsc-export-close i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-        .rsc-export-close i.bi::before { display: block; line-height: 1; }
-        .rsc-export-body { padding: 20px 24px; overflow-y: auto; }
-        .rsc-export-search { position: relative; margin-bottom: 14px; }
-        .rsc-export-search .bi {
-            position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;
-            display: inline-flex; align-items: center; justify-content: center; line-height: 1; pointer-events: none;
-        }
-        .rsc-export-search .bi::before { display: block; line-height: 1; }
-        .rsc-export-search input {
-            width: 100%; border: 1px solid #e6e8f2; border-radius: 13px; padding: 11px 14px 11px 40px; font-size: .92rem; transition: all .15s;
-        }
-        .rsc-export-search input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .12); }
-        .rsc-export-list {
-            border: 1px solid #eef0f7; border-radius: 15px; max-height: 300px; overflow-y: auto; background: #fbfcfe;
-        }
-        .rsc-export-row {
-            display: flex; align-items: center; gap: 12px; padding: 11px 16px; cursor: pointer; border-bottom: 1px solid #f1f3f9; transition: background .12s;
-        }
-        .rsc-export-row:last-child { border-bottom: 0; }
-        .rsc-export-row:hover { background: #f4fbf6; }
-        .rsc-export-row.is-checked { background: linear-gradient(135deg, rgba(22,163,74,.10), rgba(5,150,105,.05)); }
-        .rsc-export-row .form-check-input { margin: 0; cursor: pointer; }
-        .rsc-export-row .form-check-input:checked { background-color: #16a34a; border-color: #16a34a; }
-        .rsc-export-row-name { font-weight: 700; color: #1e293b; font-size: .92rem; }
-        .rsc-export-row-batch {
-            margin-left: auto; font-size: .74rem; font-weight: 700; color: #0f766e;
-            background: #d1fae5; border-radius: 999px; padding: 3px 11px;
-        }
-        .rsc-export-empty { text-align: center; color: #94a3b8; padding: 2rem 1rem; font-size: .9rem; }
-        .rsc-export-counter {
-            display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: .8rem; font-weight: 700; color: #475569;
-        }
-        .rsc-export-counter b { color: #16a34a; }
-        .rsc-export-foot {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-            padding: 16px 24px; background: #f8fafc; border-top: 1px solid #eef0f7;
-        }
-        .rsc-x-btn {
-            display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: .86rem; border: 0; border-radius: 12px;
-            padding: 10px 18px; transition: all .16s ease; white-space: nowrap; line-height: 1;
-        }
-        .rsc-x-btn i.bi { display: inline-flex; align-items: center; line-height: 1; }
-        .rsc-x-btn:disabled { opacity: .55; cursor: not-allowed; }
-        .rsc-x-cancel { background: #eef1f6; color: #475569; }
-        .rsc-x-cancel:hover { background: #e2e6ee; }
-        .rsc-x-preview { background: #e0f2fe; color: #0369a1; }
-        .rsc-x-preview:hover { background: #bae6fd; color: #075985; }
-        .rsc-x-pdf { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; box-shadow: 0 8px 18px rgba(239,68,68,.30); }
-        .rsc-x-pdf:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(239,68,68,.4); }
-        .rsc-x-excel { background: linear-gradient(135deg, #16a34a, #059669); color: #fff; box-shadow: 0 8px 18px rgba(22,163,74,.30); }
-        .rsc-x-excel:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(22,163,74,.4); }
-    </style>
+    @php
+        $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
+        // Warna tiap status. Sama persis di daftar, detail, dan formulir —
+        // status yang berganti warna antar-layar terbaca sebagai status lain.
+        $lencanaStatus = ['baru' => 'is-hijau', 'perpanjang' => 'is-biru', 'pengganti' => 'is-kuning', 'habis' => 'is-luring'];
+        $adaSaringan = $search || $filterMonth || $filterYear || $statusFilter;
+    @endphp
 
-    {{-- Header (seragam dengan Pesanan Toko) --}}
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                <div class="title-wrapper text-center text-md-start w-100">
-                    <h3 class="gradient-text fw-bold mb-1">Data Pemesanan RSC</h3>
-                    <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                        @php
-                        $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Pemesanan RSC']];
-                        @endphp
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Pemesanan RSC</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block">
+                        @php $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Pemesanan RSC']]; @endphp
                         <x-breadcrumb :items="$breadcrumbs" />
+                    </span>
+                    <span class="d-block">Batch camp, peserta, dan akun yang dipakai tiap batch.</span>
+                </p>
+            </div>
+
+            <div class="dsb-hero-aksi">
+                <button wire:click="openExportModal" type="button" class="dsb-tombol is-lembut">
+                    <i class="bi bi-download"></i><span>Unduh</span>
+                </button>
+                @if (auth()->user()->hasPermission('create_pesananrsc'))
+                    <a wire:navigate href="{{ route('admin.pesananrsc.create') }}" class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Tambah Batch</span>
+                    </a>
+                @endif
+            </div>
+        </header>
+
+        {{-- ================== RINGKASAN ==================
+             Empat angka yang sebelumnya tidak ada di mana pun: layar ini hanya
+             menampilkan tabel, jadi "berapa peserta bulan ini" harus dijumlah
+             sendiri dari kolomnya. Semua mengikuti saringan yang aktif. --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #7c3aed">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-mortarboard-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Ringkasan</span>
+                        <h2 class="dsb-judul">Keadaan Batch</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-collection"></i>{{ $ringkas['batch'] }} batch</span>
+                            <span class="dsb-chip is-samar">{{ $adaSaringan ? 'Mengikuti saringan di bawah' : 'Seluruh data' }}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                    <div class="form-group position-relative flex-grow-1 mb-0">
-                        <div class="form-control-icon">
-                            <i class="bi bi-search"></i>
+                <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
+                    <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
+                    <p class="dsb-stat-label">Nilai Pemesanan</p>
+                    <p class="dsb-stat-nilai">{{ $rupiah($ringkas['nilai']) }}</p>
+                    {{-- Hanya status "baru" — aturan yang sama dengan buku kas. --}}
+                    <p class="dsb-stat-ket"><i class="bi bi-info-circle"></i><span>Dari status "baru" — sama dengan yang tercatat di Cash Flow</span></p>
+                </article>
+
+                <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
+                    <span class="dsb-ikon"><i class="bi bi-people-fill"></i></span>
+                    <p class="dsb-stat-label">Total Peserta</p>
+                    <p class="dsb-stat-nilai">{{ number_format($ringkas['peserta'], 0, ',', '.') }}<span class="dsb-stat-satuan">orang</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-collection"></i><span>Tersebar di {{ $ringkas['batch'] }} batch</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #0284c7">
+                    <span class="dsb-ikon"><i class="bi bi-collection-fill"></i></span>
+                    <p class="dsb-stat-label">Jumlah Batch</p>
+                    <p class="dsb-stat-nilai">{{ $ringkas['batch'] }}<span class="dsb-stat-satuan">batch</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-list-ul"></i><span>{{ $pemesananrsc->count() }} tampil di halaman ini</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: {{ $ringkas['berjalan'] > 0 ? '#d97706' : '#64748b' }}">
+                    <span class="dsb-ikon"><i class="bi bi-broadcast"></i></span>
+                    <p class="dsb-stat-label">Camp Berjalan</p>
+                    <p class="dsb-stat-nilai">{{ $ringkas['berjalan'] }}<span class="dsb-stat-satuan">batch</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>{{ $ringkas['berjalan'] > 0 ? 'Sedang berlangsung hari ini' : 'Tidak ada camp hari ini' }}</span></p>
+                </article>
+
+                <article class="dsb-stat k-4" style="--c: #e11d48">
+                    <span class="dsb-ikon"><i class="bi bi-calculator-fill"></i></span>
+                    <p class="dsb-stat-label">Rata-rata per Batch</p>
+                    <p class="dsb-stat-nilai">{{ $ringkas['batch'] > 0 ? round($ringkas['peserta'] / $ringkas['batch']) : 0 }}<span class="dsb-stat-satuan">peserta</span></p>
+                    <p class="dsb-stat-ket"><i class="bi bi-graph-up"></i><span>Ukuran batch pada umumnya</span></p>
+                </article>
+            </div>
+        </section>
+
+        {{-- ================== SARINGAN ================== --}}
+        <section class="dsb-bagian">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #0284c7">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-funnel-fill"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Tampilan</span>
+                        <h2 class="dsb-judul">Cari &amp; Saring</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip is-memuat" wire:loading.inline-flex
+                                wire:target="search,filterMonth,filterYear,statusFilter,resetFilters,gotoPage,nextPage,previousPage">
+                                <span class="dsb-putar is-kecil"></span>Menyaring…
+                            </span>
+                            <span class="dsb-chip is-samar">Pencarian mencakup camp, batch, peserta, no. telp, akun, PIC, dan tanggal</span>
                         </div>
-                        <input wire:model.live.debounce.300ms="search" type="text" class="form-control ps-5 pe-5"
-                            placeholder="Cari apa saja: camp, batch, peserta, no. telp, akun, PIC, status, tanggal...">
-                        @if ($search)
-                        <span wire:click="$set('search', '')"
-                            class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                            style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                            <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                        </span>
+                    </div>
+                </div>
+
+                <div class="dsb-kartu k-12">
+                    <div class="dsb-kartu-isi">
+                        <div class="rsc-saring">
+                            <div class="dsb-medan rsc-medan-cari">
+                                <label class="dsb-label" for="rsc-cari">Cari</label>
+                                <div class="dsb-cari">
+                                    <i class="bi bi-search"></i>
+                                    <input id="rsc-cari" type="search" class="dsb-isian"
+                                        wire:model.live.debounce.300ms="search" placeholder="Camp, peserta, no. telp, akun…">
+                                    @if ($search)
+                                        <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-status">Status</label>
+                                <select id="rsc-status" class="dsb-isian" wire:model.live="statusFilter">
+                                    <option value="">Semua status</option>
+                                    <option value="baru">Baru</option>
+                                    <option value="perpanjang">Perpanjang</option>
+                                    <option value="pengganti">Pengganti</option>
+                                    <option value="habis">Habis</option>
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-bulan">Bulan mulai camp</label>
+                                <select id="rsc-bulan" class="dsb-isian" wire:model.live="filterMonth">
+                                    <option value="">Semua bulan</option>
+                                    @foreach ($months as $month)
+                                        <option value="{{ $month['value'] }}">{{ ucfirst($month['label']) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="dsb-medan">
+                                <label class="dsb-label" for="rsc-tahun">Tahun</label>
+                                <select id="rsc-tahun" class="dsb-isian" wire:model.live="filterYear">
+                                    <option value="">Semua tahun</option>
+                                    @foreach ($years as $year)
+                                        <option value="{{ $year }}">{{ $year }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        @if ($adaSaringan)
+                            <div class="rsc-saring-kaki">
+                                <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> {{ $ringkas['batch'] }} batch cocok dengan saringan</span>
+                                <button type="button" wire:click="resetFilters" class="dsb-tombol is-lembut">
+                                    <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                </button>
+                            </div>
                         @endif
                     </div>
-                    <button wire:click="openExportModal" type="button"
-                        class="btn btn-success d-flex align-items-center justify-content-center px-4">
-                        <i class="bi bi-download"></i>
-                        <span class="ms-2 text-nowrap">Download</span>
-                    </button>
-                    <a wire:navigate href="{{ route('admin.pesananrsc.create') }}"
-                        class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                        <i class="bi bi-plus-lg"></i>
-                        <span class="ms-2 text-nowrap">Tambah Data</span>
-                    </a>
                 </div>
             </div>
-        </div>
+        </section>
+
+        {{-- ================== DAFTAR ================== --}}
+        <section class="dsb-bagian" wire:loading.class="dsb-sedang-muat"
+            wire:target="search,filterMonth,filterYear,statusFilter,resetFilters,gotoPage,nextPage,previousPage">
+            <div class="dsb-rak">
+                <div class="dsb-kepala" style="--c: #16a34a">
+                    <span class="dsb-kepala-ikon"><i class="bi bi-list-task"></i></span>
+                    <div class="dsb-kepala-teks">
+                        <span class="dsb-kicker">Daftar</span>
+                        <h2 class="dsb-judul">Batch Camp</h2>
+                        <div class="dsb-chip-deret">
+                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>Terbaru dibuat di atas</span>
+                            <span class="dsb-chip is-samar">Satu baris = satu batch</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="k-12">
+                    @if ($pemesananrsc->isEmpty())
+                        <div class="dsb-kartu">
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi {{ $adaSaringan ? 'bi-funnel' : 'bi-inbox' }}"></i></span>
+                                @if ($adaSaringan)
+                                    <p class="dsb-kosong-judul">Tidak ada batch yang cocok</p>
+                                    <p class="dsb-kosong-ket">Tidak ada batch yang cocok dengan saringan yang sedang aktif.</p>
+                                    <button type="button" wire:click="resetFilters" class="dsb-tombol is-utama" style="margin-top: 14px;">
+                                        <i class="bi bi-x-circle"></i><span>Kosongkan saringan</span>
+                                    </button>
+                                @else
+                                    <p class="dsb-kosong-judul">Belum ada pemesanan RSC</p>
+                                    <p class="dsb-kosong-ket">Batch yang dibuat akan muncul di sini.</p>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <div class="dsb-kartu">
+                            <div class="dsb-tabel-bungkus">
+                                <table class="dsb-tabel">
+                                    <thead>
+                                        <tr>
+                                            <th>Batch</th>
+                                            <th class="k-sedang">Akun</th>
+                                            <th class="k-lebar">Jadwal Camp</th>
+                                            <th>Peserta</th>
+                                            <th class="k-sedang">Status</th>
+                                            <th>Total</th>
+                                            <th style="text-align: right;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($pemesananrsc as $item)
+                                            @php
+                                                $key = $item->nama_camp.'|'.$item->batch_camp;
+                                                $tambahan = $akunTambahanPerBatch[$key] ?? [];
+                                                $utama = $item->dataakun?->nama_akun;
+                                                // Newline ASLI ("\n"), bukan entity — {{ }} meng-escape '&' jadi
+                                                // '&#10;' tak akan jadi baris baru. title native menampilkan \n multi-baris.
+                                                $judulTambahan = "Akun tambahan:\n• ".implode("\n• ", $tambahan);
+                                                $mulai = $item->tanggal_mulai_camp ? \Carbon\Carbon::parse($item->tanggal_mulai_camp) : null;
+                                                $akhir = $item->tanggal_akhir_camp ? \Carbon\Carbon::parse($item->tanggal_akhir_camp) : null;
+                                                $berjalan = $mulai && $akhir && today()->between($mulai->copy()->startOfDay(), $akhir->copy()->endOfDay());
+                                                $urlDetail = route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]);
+                                            @endphp
+                                            <tr wire:key="rsc-{{ md5($key) }}" class="{{ $berjalan ? 'is-tanda' : '' }}" @if ($berjalan) style="--c: #d97706" @endif>
+                                                <td>
+                                                    <a href="{{ $urlDetail }}" wire:navigate class="dsb-tabel-utama rsc-tautan-baris">
+                                                        <span class="dsb-ikon is-kecil" style="--c: {{ $berjalan ? '#d97706' : '#7c3aed' }}">
+                                                            <i class="bi {{ $berjalan ? 'bi-broadcast' : 'bi-mortarboard-fill' }}"></i>
+                                                        </span>
+                                                        <span class="dsb-tabel-teks">
+                                                            <span class="dsb-tabel-judul">{{ $item->nama_camp }}</span>
+                                                            <span class="dsb-tabel-meta">
+                                                                <span class="dsb-lencana is-ungu">Batch #{{ $item->batch_camp }}</span>
+                                                                @if ($berjalan)
+                                                                    <span class="dsb-lencana is-kuning"><i class="bi bi-broadcast"></i>Berjalan</span>
+                                                                @endif
+                                                                {{-- Salinan kolom yang disembunyikan di layar sempit. --}}
+                                                                <span class="dsb-tabel-samar">
+                                                                    <i class="bi bi-person-badge"></i>{{ $utama ?? 'Tanpa akun' }}{{ count($tambahan) ? ' +'.count($tambahan) : '' }}
+                                                                </span>
+                                                            </span>
+                                                        </span>
+                                                    </a>
+                                                </td>
+
+                                                <td class="k-sedang" data-judul="Akun">
+                                                    @if (count($tambahan) === 0)
+                                                        <span class="dsb-tabel-angka">{{ $utama ?? '—' }}</span>
+                                                    @else
+                                                        {{-- Akun utama tampil, sisanya ringkas di lencana "+N".
+                                                             Nama akun tambahan muncul saat hover. --}}
+                                                        <span class="rsc-akun">
+                                                            <span class="dsb-tabel-angka">{{ $utama ?? '—' }}</span>
+                                                            <span class="dsb-lencana is-biru" style="cursor: help;" title="{{ $judulTambahan }}">+{{ count($tambahan) }}</span>
+                                                        </span>
+                                                    @endif
+                                                </td>
+
+                                                <td class="k-lebar" data-judul="Jadwal">
+                                                    <span class="dsb-tabel-teks">
+                                                        <span class="dsb-tabel-angka">
+                                                            {{ $mulai?->locale('id')->translatedFormat('d M') ?? '—' }}
+                                                            &ndash; {{ $akhir?->locale('id')->translatedFormat('d M Y') ?? '—' }}
+                                                        </span>
+                                                        @if ($mulai && $akhir)
+                                                            <span class="dsb-tabel-meta">{{ (int) $mulai->diffInDays($akhir) + 1 }} hari</span>
+                                                        @endif
+                                                    </span>
+                                                </td>
+
+                                                <td data-judul="Peserta">
+                                                    <span class="dsb-lencana is-nila"><i class="bi bi-people-fill"></i>{{ $item->total_peserta }} orang</span>
+                                                </td>
+
+                                                <td class="k-sedang" data-judul="Status">
+                                                    <span class="dsb-lencana {{ $lencanaStatus[$item->status] ?? 'is-abu' }}">{{ ucfirst($item->status) }}</span>
+                                                </td>
+
+                                                <td data-judul="Total">
+                                                    <span class="dsb-tabel-angka rsc-total">{{ $rupiah($item->total_harga) }}</span>
+                                                </td>
+
+                                                <td data-judul="Aksi" style="text-align: right;">
+                                                    <span class="dsb-tabel-aksi">
+                                                        <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-btn" title="Lihat detail">
+                                                            <i class="bi bi-eye"></i>
+                                                        </a>
+                                                        @if (auth()->user()->hasPermission('edit_pesananrsc'))
+                                                            <a wire:navigate href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
+                                                                class="dsb-tabel-btn" title="Edit batch">
+                                                                <i class="bi bi-pencil"></i>
+                                                            </a>
+                                                        @endif
+                                                        @if (auth()->user()->hasPermission('delete_pesananrsc'))
+                                                            <button type="button" title="Hapus batch"
+                                                                class="dsb-tabel-btn is-bahaya rsc-delete-batch"
+                                                                data-nama="{{ $item->nama_camp }}" data-batch="{{ $item->batch_camp }}"
+                                                                data-total="{{ $item->total_peserta }}">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {{-- Satu kali saja. Versi lama mencetak pagination DUA kali —
+                                 sekali di bawah tabel, sekali lagi di bawah jendela WA yang
+                                 tersembunyi — sehingga ada dua deret nomor halaman. --}}
+                            @if ($pemesananrsc->hasPages())
+                                <div class="rsc-halaman">
+                                    {{ $pemesananrsc->links('vendor.pagination') }}
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </section>
     </div>
 
-    {{-- Filter Periode (seragam dengan Pesanan Toko) --}}
-    <div class="card border-0 shadow-sm rounded-4 stat-card overflow-hidden mb-4">
-        <div class="card-body p-3 px-4">
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-                <div class="d-flex align-items-center gap-2 text-dark fw-semibold">
-                    <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
-                        style="width: 40px; height: 40px; font-size: 1.1rem; border-radius: 12px;">
-                        <i class="bi bi-funnel"></i>
+    {{-- ================== JENDELA UNDUH ================== --}}
+    @if ($showExportModal)
+        <div class="ts-modal-back rsc-modal-back" wire:click="closeExportModal"></div>
+        <div class="ts-modal rsc-modal">
+            <div class="ts-modal-card dsb is-datar rsc-modal-card" role="dialog" aria-modal="true"
+                aria-label="Unduh data pemesanan RSC" tabindex="-1" data-tutup="showExportModal">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-cloud-arrow-down-fill"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Unduh Data Peserta</h5>
+                        <span class="dsb-kartu-sub">Pilih batch, lalu unduh sebagai Excel atau invoice PDF</span>
                     </span>
-                    <span>Filter Periode</span>
-                </div>
-
-                <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
-                    <select wire:model.live="filterMonth" class="form-select rounded-3" style="min-width: 180px;">
-                        <option value="">Semua Bulan</option>
-                        @foreach ($months as $month)
-                        <option value="{{ $month['value'] }}">{{ ucfirst($month['label']) }}</option>
-                        @endforeach
-                    </select>
-                    <select wire:model.live="filterYear" class="form-select rounded-3" style="min-width: 160px;">
-                        <option value="">Semua Tahun</option>
-                        @foreach ($years as $year)
-                        <option value="{{ $year }}">{{ $year }}</option>
-                        @endforeach
-                    </select>
-                    @if ($search || $filterMonth || $filterYear)
-                    <button wire:click="resetFilters" type="button"
-                        class="btn btn-light-danger rounded-3 d-inline-flex align-items-center justify-content-center"
-                        title="Reset filter">
-                        <i class="bi bi-x-circle"></i>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="closeExportModal" title="Tutup">
+                        <i class="bi bi-x-lg"></i>
                     </button>
-                    @endif
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr style="text-align: center;">
-                                    <th>Kategori</th>
-                                    <th>Batch</th>
-                                    <th>Akun</th>
-                                    <th class="text-center">Jumlah Peserta</th>
-                                    <th class="text-center">Status</th>
-                                    <th>Total Harga</th>
-                                    <th class="text-center">Aksi</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @forelse($pemesananrsc as $item)
-                                <tr style="text-align: center;">
-                                    <td>{{ $item->nama_camp }}</td>
-                                    <td>#{{ $item->batch_camp }}</td>
-                                    <td>
-                                        @php
-                                            $key = $item->nama_camp.'|'.$item->batch_camp;
-                                            $tambahan = $akunTambahanPerBatch[$key] ?? [];
-                                            $utama = $item->dataakun?->nama_akun;
-                                            $totalAkun = ($utama ? 1 : 0) + count($tambahan);
-                                            // Newline ASLI ("\n"), bukan entity — {{ }} meng-escape '&' jadi
-                                            // '&#10;' tak akan jadi baris baru. title native menampilkan \n multi-baris.
-                                            $judulTambahan = "Akun tambahan:\n• ".implode("\n• ", $tambahan);
-                                        @endphp
-                                        @if($totalAkun <= 1)
-                                            {{-- Satu akun (atau kosong): tetap polos seperti biasa --}}
-                                            {{ $utama ?? '-' }}
-                                        @else
-                                            {{-- Lebih dari satu akun: akun utama tampil, sisanya ringkas di
-                                                 badge "+N". Nama akun tambahan muncul saat hover (title native
-                                                 agar tak terpotong tepi .table-responsive). --}}
-                                            <span class="d-inline-flex align-items-center gap-1">
-                                                <span class="fw-semibold text-dark">{{ $utama ?? '—' }}</span>
-                                                <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill rsc-akun-more"
-                                                    style="font-size:.66rem; cursor:help;"
-                                                    title="{{ $judulTambahan }}">
-                                                    +{{ count($tambahan) }}
-                                                </span>
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3 py-2">{{ $item->total_peserta }} Peserta</span>
-                                    </td>
-                                    <td class="text-center">
-                                        @php $sc = $item->status === 'baru' ? 'success' : ($item->status === 'habis' ? 'danger' : ($item->status === 'perpanjang' ? 'info' : 'warning')); @endphp
-                                        <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }} rounded-pill px-3 py-2 text-capitalize">
-                                            {{ ucfirst($item->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="fw-semibold text-dark">Rp {{ number_format($item->total_harga, 0, ',', '.') }}</td>
-                                    <td>
-                                        <div>
-                                            {{-- Edit menuju ke batch group --}}
-                                            @if (auth()->user()->hasPermission('edit_pesananrsc'))
-                                            <a href="{{ route('admin.pesananrsc.edit', ['nama_camp' => $item->nama_camp, 'batch_camp' => $item->batch_camp]) }}"
-                                                wire:navigate
-                                                class="btn btn-sm btn-warning text-white me-1"
-                                                title="Edit Batch">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-                                            @endif
-
-                                            {{-- Delete batch --}}
-                                            @if (auth()->user()->hasPermission('delete_pesananrsc'))
-                                            <button type="button" title="Hapus Batch"
-                                                class="btn btn-danger btn-sm rsc-delete-batch"
-                                                data-nama="{{ $item->nama_camp }}" data-batch="{{ $item->batch_camp }}"
-                                                data-total="{{ $item->total_peserta }}">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                            @endif
-
-                                            {{-- Detail peserta --}}
-                                            <a wire:navigate href="{{ route('admin.pesananrsc.detail', ['nama_camp' => urlencode($item->nama_camp), 'batch_camp' => urlencode($item->batch_camp)]) }}"
-                                                class="btn btn-primary btn-sm"
-                                                title="Lihat Detail">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="7" class="text-center py-5">
-                                        <div class="d-flex flex-column align-items-center justify-content-center">
-                                            <div class="empty-state-icon-wrapper mb-3">
-                                                <i class="bi bi-inbox"></i>
-                                            </div>
-                                            <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">Belum Ada Data</h5>
-                                            <p class="text-muted mb-0" style="font-size: 0.95rem;">Tidak ada data pemesanan RSC yang ditemukan.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                <div class="dsb-jendela-isi">
+                    <div class="dsb-cari" style="margin-bottom: 12px;">
+                        <i class="bi bi-search"></i>
+                        <input type="search" class="dsb-isian" placeholder="Cari nama camp atau batch…"
+                            wire:model.live.debounce.300ms="searchBatchExport">
                     </div>
 
-                    @if ($pemesananrsc->hasPages())
-                    <div class="mt-4">
-                        {{ $pemesananrsc->links('vendor.pagination') }}
-                    </div>
-                    @endif
-
-                    <div class="modal fade" id="modalWaOptions" tabindex="-1" aria-labelledby="modalWaLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Kirim WhatsApp</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-
-                                <div class="modal-body">
-                                    <p>Pilih jenis pesan yang ingin dikirim ke pelanggan:</p>
-                                    <input type="hidden" id="waId">
-                                    <input type="hidden" id="waIdTransaksi">
-                                    <input type="hidden" id="waNumber">
-                                    <input type="hidden" id="waNama">
-                                    <input type="hidden" id="waAkun">
-                                    <input type="hidden" id="waPemesanan">
-                                    <input type="hidden" id="waBerakhir">
-                                    <input type="hidden" id="waUsername">
-                                    <input type="hidden" id="waPassword">
-                                    <input type="hidden" id="waLinkAkses">
-                                    <div class="list-group">
-                                        <button class="list-group-item list-group-item-action" onclick="kirimWa('pengiriman')">📦 Pengiriman Akun</button>
-                                        <button class="list-group-item list-group-item-action" onclick="kirimWa('pembaharuan')">♻️ Pembaharuan Akun</button>
-                                        <button class="list-group-item list-group-item-action" onclick="kirimWa('habis')">⛔ Akun Habis</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pagination -->
-                    <div class="mt-4">
-                        {{ $pemesananrsc->links('vendor.pagination') }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- modal select batch (glossy) -->
-            @if($showExportModal)
-            <div class="rsc-export-backdrop" wire:click.self="closeExportModal">
-                <div class="rsc-export-card">
-                    {{-- Header --}}
-                    <div class="rsc-export-head">
-                        <span class="rsc-export-head-ico"><i class="bi bi-cloud-arrow-down-fill"></i></span>
-                        <div>
-                            <h5>Export Data Peserta</h5>
-                            <p>Pilih batch, lalu unduh sebagai Excel atau Invoice PDF</p>
-                        </div>
-                        <button type="button" class="rsc-export-close" wire:click="closeExportModal"><i class="bi bi-x-lg"></i></button>
-                    </div>
-
-                    {{-- Body --}}
-                    <div class="rsc-export-body">
-                        <div class="rsc-export-search">
-                            <i class="bi bi-search"></i>
-                            <input type="text" placeholder="Cari Nama Camp atau Batch..."
-                                wire:model.live.debounce.300ms="searchBatchExport">
-                        </div>
-
-                        <div class="rsc-export-list">
-                            @if($this->availableBatchesForExport->isEmpty())
-                            <div class="rsc-export-empty">
-                                <i class="bi bi-inbox d-block mb-2" style="font-size:1.6rem;"></i>
-                                Batch tidak ditemukan.
-                            </div>
-                            @else
-                            @foreach($this->availableBatchesForExport as $batch)
-                            <label class="rsc-export-row {{ in_array($batch->key, $selectedBatches) ? 'is-checked' : '' }}">
-                                <input type="checkbox" class="form-check-input"
-                                    value="{{ $batch->key }}" wire:model.live="selectedBatches">
-                                <span class="rsc-export-row-name">{{ $batch->nama_camp }}</span>
-                                <span class="rsc-export-row-batch">Batch {{ $batch->batch_camp }}</span>
+                    <div class="rsc-pilih-batch">
+                        @forelse ($this->availableBatchesForExport as $batch)
+                            @php $dipilih = in_array($batch->key, $selectedBatches); @endphp
+                            <label class="rsc-pilih-baris {{ $dipilih ? 'is-dipilih' : '' }}" wire:key="ex-{{ md5($batch->key) }}">
+                                <input type="checkbox" value="{{ $batch->key }}" wire:model.live="selectedBatches">
+                                <span class="dsb-ikon is-kecil" style="--c: {{ $dipilih ? '#16a34a' : '#94a3b8' }}">
+                                    <i class="bi {{ $dipilih ? 'bi-check-lg' : 'bi-mortarboard' }}"></i>
+                                </span>
+                                <span class="rsc-pilih-nama">{{ $batch->nama_camp }}</span>
+                                <span class="dsb-lencana is-ungu">Batch {{ $batch->batch_camp }}</span>
                             </label>
-                            @endforeach
-                            @endif
-                        </div>
-
-                        <div class="rsc-export-counter">
-                            <i class="bi bi-check2-circle"></i> <b>{{ count($selectedBatches) }}</b> batch dipilih
-                        </div>
+                        @empty
+                            <div class="dsb-kosong">
+                                <span class="dsb-kosong-ikon"><i class="bi bi-inbox"></i></span>
+                                <p class="dsb-kosong-judul">Batch tidak ditemukan</p>
+                            </div>
+                        @endforelse
                     </div>
+                    @error('selectedBatches')<p class="dsb-galat" style="margin-top: 8px;">{{ $message }}</p>@enderror
+                </div>
 
-                    {{-- Footer --}}
-                    <div class="rsc-export-foot">
-                        <button type="button" class="rsc-x-btn rsc-x-cancel" wire:click="closeExportModal">
-                            <i class="bi bi-x-lg"></i> Batal
-                        </button>
-
-                        <div class="d-flex gap-2 flex-wrap">
-                            @if(!empty($selectedBatches))
+                <div class="dsb-jendela-kaki">
+                    <span class="dsb-jendela-kaki-ket">
+                        <i class="bi bi-check2-square"></i><span><b>{{ count($selectedBatches) }}</b> batch dipilih</span>
+                    </span>
+                    <span class="dsb-jendela-aksi">
+                        @if (! empty($selectedBatches))
                             <a href="{{ route('admin.preview.invoice', ['batches' => $selectedBatches]) }}"
-                                target="_blank" class="rsc-x-btn rsc-x-preview">
-                                <i class="bi bi-eye"></i> Preview PDF
+                                target="_blank" rel="noopener" class="dsb-tombol is-lembut is-penuh-sempit">
+                                <i class="bi bi-eye"></i><span>Pratinjau</span>
                             </a>
-                            @endif
-
-                            <button type="button" class="rsc-x-btn rsc-x-pdf" wire:click="exportInvoice"
-                                wire:loading.attr="disabled" @disabled(empty($selectedBatches))>
-                                <span wire:loading.remove wire:target="exportInvoice"><i class="bi bi-file-earmark-pdf"></i></span>
-                                <span wire:loading wire:target="exportInvoice" class="spinner-border spinner-border-sm"></span>
-                                Invoice
-                            </button>
-
-                            <button type="button" class="rsc-x-btn rsc-x-excel" wire:click="exportExcel"
-                                wire:loading.attr="disabled" @disabled(empty($selectedBatches))>
-                                <span wire:loading.remove wire:target="exportExcel"><i class="bi bi-file-earmark-excel"></i></span>
-                                <span wire:loading wire:target="exportExcel" class="spinner-border spinner-border-sm"></span>
-                                Data Excel
-                            </button>
-                        </div>
-                    </div>
+                        @endif
+                        <button type="button" class="dsb-tombol is-bahaya is-penuh-sempit" wire:click="exportInvoice"
+                            wire:loading.attr="disabled" wire:target="exportInvoice" @disabled(empty($selectedBatches))>
+                            <i class="bi bi-file-earmark-pdf"></i><span>Invoice PDF</span>
+                        </button>
+                        <button type="button" class="dsb-tombol is-hijau is-penuh-sempit" wire:click="exportExcel"
+                            wire:loading.attr="disabled" wire:target="exportExcel" @disabled(empty($selectedBatches))>
+                            <i class="bi bi-file-earmark-excel"></i><span>Excel</span>
+                        </button>
+                    </span>
                 </div>
             </div>
-            @endif
         </div>
-    </div>
+    @endif
 
-    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
-    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 </div>
 
 <!--================== SWEET ALERT DELETE (glossy, seragam banners) ==================-->
@@ -473,98 +479,3 @@ Data Pesanan RSC || lemon
     }
 </script>
 <!--================== END SWEET ALERT DELETE ==================-->
-
-<!--================== MODAL PENGIRIMAN AKUN ==================-->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.send-wa-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                document.getElementById('waId').value = this.dataset.id;
-                document.getElementById('waIdTransaksi').value = this.dataset.idtransaksi;
-                document.getElementById('waNumber').value = this.dataset.wa;
-                document.getElementById('waNama').value = this.dataset.nama;
-                document.getElementById('waAkun').value = this.dataset.akun;
-                document.getElementById('waPemesanan').value = this.dataset.pemesanan;
-                document.getElementById('waBerakhir').value = this.dataset.berakhir;
-                document.getElementById('waUsername').value = this.dataset.username;
-                document.getElementById('waPassword').value = this.dataset.password;
-                document.getElementById('waLinkAkses').value = this.dataset.linkakses;
-                var modal = new bootstrap.Modal(document.getElementById('modalWaOptions'));
-                modal.show();
-            });
-        });
-    });
-
-    function kirimWa(type) {
-        const idtransaksi = document.getElementById('waIdTransaksi').value;
-        const nama = document.getElementById('waNama').value;
-        const noWa = document.getElementById('waNumber').value;
-        const akun = document.getElementById('waAkun').value;
-        const pemesanan = document.getElementById('waPemesanan').value;
-        const berakhir = document.getElementById('waBerakhir').value;
-        const username = document.getElementById('waUsername').value;
-        const password = document.getElementById('waPassword').value;
-        const linkakses = document.getElementById('waLinkAkses').value;
-
-        let pesan = '';
-
-        if (type === 'pengiriman') {
-            pesan =
-                `ID Transaksi: ${idtransaksi}
-
-Halo ${nama},
-Kami dari Phoenix Digital Warehouse bermaksud mengirimkan akun ${akun} yang bisa Anda gunakan mulai tanggal ${pemesanan} dengan masa aktif sampai tanggal ${berakhir}.
-
-Berikut detail akun Anda:
-
-• Username: ${username}
-• Password: ${password}
-• Link Login: ${linkakses}
-
-Jika ada kendala, jangan ragu untuk menghubungi kami.
-Terima kasih telah menggunakan layanan kami.
-
-Salam hangat,
-Phoenix Digital Warehouse
-Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigitalwarehouse.com/`;
-        } else if (type === 'pembaharuan') {
-            pesan =
-                `ID Transaksi: ${idtransaksi}
-
-Halo ${nama},
-Akun ${akun} yang anda order pada tanggal ${pemesanan} dengan masa aktif sampai tanggal ${berakhir}, terdapat pembaharuan akun ${akun}.
-
-Berikut detail akun Anda:
-
-• Username: ${username}
-• Password: ${password}
-• Link Login: ${linkakses}
-
-Jika ada kendala, jangan ragu untuk menghubungi kami.
-Terima kasih telah menggunakan layanan kami.
-
-Salam hangat,
-Phoenix Digital Warehouse
-Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigitalwarehouse.com/`;
-        } else if (type === 'habis') {
-            pesan =
-                `ID Transaksi: ${idtransaksi}
-
-Halo ${nama},
-Akun ${akun} yang anda order pada tanggal ${berakhir} sudah habis. Jika Anda ingin memperpanjang akun ${akun} Anda, silakan hubungi kami.
-
-Terima kasih telah menggunakan layanan kami.
-
-Salam hangat,
-Phoenix Digital Warehouse
-Instagram: phoenixdigital_warehouse
-Website: https://phoenixdigitalwarehouse.com/`;
-        }
-
-        const url = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
-        window.open(url, '_blank');
-    }
-</script>
-<!--================== END ==================-->

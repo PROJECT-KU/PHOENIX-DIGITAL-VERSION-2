@@ -1,36 +1,93 @@
 <div>
     <style>
+        /* Kulit bagian form mengikuti kartu dasbor (dsb-kartu): putih rata,
+           garis tipis, ikon berwarna lembut di tengah ubinnya. Kelas lama
+           (of-section/of-icon) dipertahankan agar markup & JS tidak berubah. */
+        .rsc-form { --c: #7c3aed; }
         .of-section {
-            border: 1px solid rgba(108, 99, 255, 0.12);
-            border-radius: 1rem;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 255, 0.95));
-            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.08);
+            background: #fff; border: 1px solid #e9edf3; border-radius: 18px;
+            padding: clamp(16px, 2.2vw, 22px) !important; margin-bottom: 16px !important;
+            transition: border-color .2s ease, box-shadow .2s ease;
         }
+        @media (hover: hover) and (pointer: fine) {
+            .of-section:hover { border-color: #dfe5ee; box-shadow: 0 10px 24px rgba(15, 23, 42, .05); }
+        }
+        .of-section > .d-flex:first-child {
+            padding-bottom: 14px; margin-bottom: 16px !important; border-bottom: 1px solid #f1f5f9;
+        }
+        .of-section h5 { font-size: .98rem; font-weight: 800 !important; color: #1c1f26; line-height: 1.25; }
+        .of-section h5 + small, .of-section .text-muted { font-size: .78rem; }
         .of-icon {
-            width: 44px; height: 44px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.2rem; color: #fff; flex-shrink: 0;
-            background: linear-gradient(135deg, #6c63ff, #4e46e5);
-            box-shadow: 0 6px 14px rgba(78, 70, 229, 0.35);
+            --c: #7c3aed;
+            width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem;
+            background: color-mix(in srgb, var(--c) 12%, #fff);
+            border: 1px solid color-mix(in srgb, var(--c) 22%, #fff);
+            color: var(--c);
         }
-        .of-icon.green { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35); }
-        .of-icon.amber { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 6px 14px rgba(217, 119, 6, 0.35); }
-        .of-icon.rose { background: linear-gradient(135deg, #f43f5e, #e11d48); box-shadow: 0 6px 14px rgba(225, 29, 72, 0.35); }
-        .of-icon i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; width: 100%; height: 100%; }
-        .of-form-label { font-weight: 600; color: #475569; font-size: .85rem; margin-bottom: .35rem; }
+        .of-icon.green { --c: #16a34a; }
+        .of-icon.amber { --c: #d97706; }
+        .of-icon.rose { --c: #e11d48; }
+        .of-icon.blue { --c: #0284c7; }
+        .of-icon i.bi, .of-icon i.bi::before { display: block; line-height: 1; }
+        .of-form-label { font-weight: 700; color: #334155; font-size: .8rem; margin-bottom: 6px; }
+
+        /* Isian Bootstrap dibuat serupa .dsb-isian */
+        .rsc-form .form-control, .rsc-form .form-select {
+            min-height: 42px; border: 1px solid #e9edf3; border-radius: 11px !important;
+            color: #1c1f26; font-size: .88rem; font-weight: 600; box-shadow: none;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+        .rsc-form .form-control::placeholder { color: #9aa5b5; font-weight: 500; }
+        .rsc-form .form-control:focus, .rsc-form .form-select:focus {
+            border-color: #c4b5fd; box-shadow: 0 0 0 3px rgba(124, 58, 237, .14);
+        }
+        .rsc-form textarea.form-control { font-weight: 500; line-height: 1.6; }
+        .rsc-form .form-control.is-invalid, .rsc-form .form-select.is-invalid { border-color: #fca5a5; }
+
+        /* ===== Tata letak: kolom utama + kolom ringkasan lengket =====
+           Di layar lebar, harga/PIC/status dan tombol simpan selalu terlihat
+           sambil mengisi peserta yang panjang. Di bawah 1200px kolomnya
+           kembali bertumpuk sesuai urutan semula. */
+        .rsc-form-tata { display: flex; flex-direction: column; gap: 0; }
+        .rsc-form-utama, .rsc-form-samping { min-width: 0; }
+        @media (min-width: 1200px) {
+            .rsc-form-tata { flex-direction: row; align-items: flex-start; gap: 16px; }
+            .rsc-form-utama { flex: 1 1 auto; }
+            .rsc-form-samping { flex: 0 0 380px; }
+        }
+        /* Lengket hanya bila kolomnya muat setinggi layar; di laptop pendek
+           kolom lengket yang lebih tinggi dari layar menyembunyikan tombol
+           simpan sampai halaman habis digulung. */
+        @media (min-width: 1200px) and (min-height: 980px) {
+            .rsc-form-samping { position: sticky; top: 84px; }
+        }
+        .rsc-simpan {
+            display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%;
+            min-height: 50px; border: 0; border-radius: 14px; cursor: pointer;
+            background: #7c3aed; color: #fff; font-weight: 800; font-size: .95rem;
+            box-shadow: 0 10px 22px rgba(124, 58, 237, .28);
+            transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+        }
+        .rsc-simpan i.bi { font-size: 1.1rem; line-height: 1; }
+        .rsc-simpan:disabled { opacity: .7; cursor: wait; }
+        @media (hover: hover) and (pointer: fine) {
+            .rsc-simpan:hover { background: #6d28d9; transform: translateY(-2px); }
+        }
+        .rsc-simpan-muat { display: none; }
+        .rsc-simpan-ket { color: #6b7280; font-size: .74rem; text-align: center; margin: 8px 0 0; }
 
         /* ===== Field read-only (otomatis dari akun) ===== */
         .rsc-ro-field {
-            display: flex; align-items: center; gap: 9px; height: 42px; padding: 0 13px;
-            background: linear-gradient(135deg, #f8f9ff, #f4f6fb);
-            border: 1px solid #e9ebf5; border-radius: .7rem;
+            display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 13px; min-width: 0;
+            background: #f8fafc;
+            border: 1px dashed #e2e8f0; border-radius: 11px;
         }
         .rsc-ro-field .rsc-ro-ico { color: #94a3b8; font-size: 1rem; line-height: 1; flex-shrink: 0; display: inline-flex; }
         .rsc-ro-field .rsc-ro-input { border: 0; outline: 0; background: transparent; width: 100%; color: #475569; font-weight: 500; font-size: .9rem; padding: 0; }
         .rsc-ro-field .rsc-ro-input::placeholder { color: #b6bcc6; }
         .rsc-ro-field .rsc-ro-lock { color: #cbd5e1; font-size: .78rem; line-height: 1; flex-shrink: 0; display: inline-flex; }
         .rsc-ro-field .rsc-ro-input[type="date"]::-webkit-calendar-picker-indicator { opacity: .35; }
-        .of-section .form-control, .of-section .form-select { border-radius: .7rem; }
 
         /* ===== Ikon di dalam input (sejajar teks) ===== */
         .rsc-ico-wrap { position: relative; }
@@ -49,35 +106,58 @@
         .rsc-del-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; transform: translateY(-1px); }
         .rsc-del-btn i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .of-total-box {
-            border-radius: .8rem; padding: 14px 18px; color: #fff; font-weight: 800; font-size: 1.15rem;
-            background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 8px 18px rgba(16, 185, 129, .28);
+            display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+            border-radius: 14px; padding: 14px 16px; font-weight: 800;
+            background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;
         }
+        .of-total-box-label { display: inline-flex; align-items: center; gap: 8px; font-size: .8rem; color: #166534; }
+        .of-total-box-label i.bi { line-height: 1; }
+        .of-total-box-nilai { font-size: clamp(1.15rem, 2.4vw, 1.4rem); letter-spacing: -.01em; color: #14532d; }
+
+        .rsc-tambah {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            min-height: 38px; padding: 0 14px; border-radius: 11px; white-space: nowrap;
+            background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;
+            font-size: .82rem; font-weight: 700; transition: background .15s ease, color .15s ease;
+        }
+        .rsc-tambah i.bi { line-height: 1; }
+        @media (hover: hover) and (pointer: fine) {
+            .rsc-tambah:hover { background: #7c3aed; color: #fff; border-color: transparent; }
+        }
+        .rsc-akun-card { border: 1px solid #eef2f7 !important; border-radius: 14px !important; }
+        .rsc-jumlah-peserta {
+            display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 0 12px;
+            border-radius: 999px; background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe;
+            font-size: .78rem; font-weight: 700;
+        }
+        .rsc-rincian-akun { border: 1px solid #eef2f7; border-radius: 14px; padding: 12px 14px; background: #fcfcfd; }
+        .rsc-rumus { display: flex; align-items: center; gap: 7px; color: #6b7280; font-size: .78rem; }
 
         /* ===== Tabs metode harga ===== */
         .rsc-price-tabs { display: flex; gap: .5rem; }
         .rsc-price-tab {
-            flex: 1 1 0; text-align: center; border: 1.5px solid #e6e8f2; background: #fff; border-radius: .8rem;
+            flex: 1 1 0; text-align: center; border: 1px solid #e9edf3; background: #fff; border-radius: 12px;
             padding: 10px 12px; font-weight: 700; color: #64748b; transition: all .15s; cursor: pointer; line-height: 1.25;
         }
         .rsc-price-tab small { font-weight: 500; font-size: .72rem; color: #94a3b8; }
         .rsc-price-tab:hover { border-color: #c7d2fe; }
-        .rsc-price-tab.active { border-color: #7c3aed; background: linear-gradient(135deg, rgba(124,58,237,.08), rgba(78,70,229,.04)); color: #6d28d9; }
+        .rsc-price-tab.active { border-color: #c4b5fd; background: #f5f3ff; color: #6d28d9; box-shadow: 0 0 0 3px rgba(124, 58, 237, .10); }
         .rsc-price-tab.active small { color: #7c3aed; }
 
         /* ===== Drop zone import Excel ===== */
         .rsc-drop {
             display: block; position: relative; cursor: pointer; text-align: center;
-            border: 2px dashed #d9dcea; border-radius: 16px; padding: 26px 18px;
-            background: linear-gradient(135deg, #fffdf7, #fff9ee);
+            border: 1.5px dashed #e2e8f0; border-radius: 16px; padding: 22px 18px;
+            background: #fcfcfd;
             transition: border-color .15s, background .15s, box-shadow .15s;
         }
-        .rsc-drop:hover { border-color: #f59e0b; background: linear-gradient(135deg, #fff8e6, #fff3d6); box-shadow: 0 8px 20px rgba(245, 158, 11, .12); }
+        .rsc-drop:hover { border-color: #fcd34d; background: #fffbeb; }
         .rsc-drop.is-loading { opacity: .7; pointer-events: none; }
         .rsc-drop-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
         .rsc-drop-ico {
             width: 54px; height: 54px; margin: 0 auto 10px; border-radius: 14px;
-            display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #fff;
-            background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 16px rgba(217, 119, 6, .32);
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #d97706;
+            background: #fef3c7; border: 1px solid #fde68a;
         }
         .rsc-drop-ico i.bi { display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
         .rsc-drop-file {
@@ -97,10 +177,10 @@
         .rsc-fmt-note { font-size: .75rem; color: #94a3b8; }
         .rsc-btn-template {
             display: inline-flex; align-items: center; font-size: .84rem; font-weight: 700; color: #b45309;
-            background: linear-gradient(135deg, #fff8e6, #ffefc7); border: 1px solid #fcd34d; border-radius: 12px;
-            padding: 8px 16px; transition: all .18s ease; white-space: nowrap;
+            background: #fff; border: 1px solid #fde68a; border-radius: 12px;
+            padding: 0 15px; min-height: 40px; gap: 6px; transition: all .18s ease; white-space: nowrap;
         }
-        .rsc-btn-template:hover { color: #92400e; box-shadow: 0 6px 16px rgba(245, 158, 11, .22); transform: translateY(-1px); }
+        .rsc-btn-template:hover { color: #92400e; background: #fffbeb; transform: translateY(-1px); }
         .rsc-btn-template:disabled { opacity: .65; }
         .rsc-btn-template span { display: inline-flex; align-items: center; line-height: 1; }
         .rsc-btn-template i.bi { display: inline-flex; align-items: center; line-height: 1; }
@@ -156,7 +236,7 @@
 
         /* ===== Picker akun (popup select searchable, seperti toko) ===== */
         .of-picker-btn { cursor: pointer; }
-        .of-picker-btn::after { content: "\F282"; font-family: "bootstrap-icons"; float: right; color: #94a3b8; font-size: .8rem; }
+        /* Panahnya sudah digambar .form-select; ::after lama membuatnya ganda. */
         .of-pick-list { max-height: 320px; overflow-y: auto; text-align: left; display: flex; flex-direction: column; gap: .4rem; padding: .2rem; }
         .of-pick-item { display: block; width: 100%; text-align: left; border: 1px solid #e6e8f2; background: #fff; border-radius: 12px; padding: .7rem .9rem; font-weight: 600; color: #1e293b; font-size: .92rem; transition: all .15s ease; }
         .of-pick-item:hover { border-color: #6c63ff; background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.04)); transform: translateY(-1px); }
@@ -172,6 +252,19 @@
                 justify-content: center !important;
                 text-align: center;
             }
+
+            /* Tabel peserta ditumpuk: nomor & tombol hapus mengapit dua
+               isian yang selebar layar, bukan empat kolom yang berdesakan. */
+            .of-peserta-table thead { display: none; }
+            .of-peserta-table tr {
+                display: grid; grid-template-columns: 26px minmax(0, 1fr) 36px;
+                gap: 8px 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+            }
+            .of-peserta-table td { display: block; padding: 0 !important; border: 0 !important; }
+            .of-peserta-table td:nth-child(1) { grid-column: 1; grid-row: 1 / span 2; font-weight: 800; color: #6d28d9; }
+            .of-peserta-table td:nth-child(2) { grid-column: 2; grid-row: 1; }
+            .of-peserta-table td:nth-child(3) { grid-column: 2; grid-row: 2; }
+            .of-peserta-table td:nth-child(4) { grid-column: 3; grid-row: 1 / span 2; }
 
             /* Tombol hapus akun tambahan: pindah ke pojok kanan atas card, bulat & menarik.
                Beri ruang di atas (padding-top) agar tak menimpa select Akun. */
@@ -198,7 +291,9 @@
         }
     </style>
 
-    <form wire:submit="save" x-cloak>
+    <form wire:submit="save" x-cloak class="rsc-form">
+        <div class="rsc-form-tata">
+        <div class="rsc-form-utama">
         {{-- ================== Import Excel (create & edit) ================== --}}
         <div class="of-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
@@ -360,14 +455,14 @@
         <div class="of-section p-4 mb-4">
             <div class="d-flex align-items-center justify-content-between gap-3 mb-3 flex-wrap">
                 <div class="d-flex align-items-center gap-3">
-                    <span class="of-icon"><i class="bi bi-collection-fill"></i></span>
+                    <span class="of-icon blue"><i class="bi bi-collection-fill"></i></span>
                     <div>
                         <h5 class="fw-bold mb-0">Akun Tambahan</h5>
                         <small class="text-muted">Kredensial saja (mis. Grammarly, DeepL) — tidak memengaruhi harga</small>
                     </div>
                 </div>
                 <button type="button" wire:click="addAkunTambahan"
-                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center justify-content-center gap-1 rsc-m-full">
+                    class="rsc-tambah rsc-m-full">
                     <i class="bi bi-plus-circle"></i> Tambah Akun
                 </button>
             </div>
@@ -430,7 +525,7 @@
                     <h5 class="fw-bold mb-0">Data Pembeli</h5>
                 </div>
                 <button type="button" wire:click="addPeserta"
-                    class="btn btn-primary btn-sm rounded-pill px-3 d-inline-flex align-items-center justify-content-center gap-1 rsc-m-full">
+                    class="rsc-tambah rsc-m-full">
                     <i class="bi bi-plus-circle"></i> Tambah Peserta
                 </button>
             </div>
@@ -481,8 +576,8 @@
             </div>
 
             <div class="d-flex justify-content-end mt-3">
-                <span class="badge bg-primary-subtle text-primary border border-primary rounded-pill px-3 py-2 rsc-m-full">
-                    <i class="bi bi-people-fill me-1"></i> Total Peserta: {{ count($peserta) }} orang
+                <span class="rsc-jumlah-peserta rsc-m-full">
+                    <i class="bi bi-people-fill"></i> Total peserta: {{ count($peserta) }} orang
                 </span>
             </div>
 
@@ -517,11 +612,17 @@
             </div>
         </div>
 
-        {{-- ================== Data Lainnya ================== --}}
+        </div>{{-- /.rsc-form-utama --}}
+
+        <aside class="rsc-form-samping">
+        {{-- ================== Harga & Status ================== --}}
         <div class="of-section p-4 mb-4">
             <div class="d-flex align-items-center gap-3 mb-3">
                 <span class="of-icon amber"><i class="bi bi-sliders"></i></span>
-                <h5 class="fw-bold mb-0">Data Lainnya</h5>
+                <div>
+                    <h5 class="fw-bold mb-0">Harga &amp; Status</h5>
+                    <small class="text-muted">Total dihitung otomatis</small>
+                </div>
             </div>
             <div class="row g-3">
                 <div class="col-12">
@@ -541,7 +642,7 @@
 
                     @if($metode_harga==='per_akun')
                     {{-- Rincian harga tiap akun (utama + tambahan) --}}
-                    <div class="border rounded-3 p-3 mb-2" style="background:#fff;">
+                    <div class="rsc-rincian-akun mb-2">
                         <div class="fw-semibold small text-dark mb-2"><i class="bi bi-list-ul me-1"></i>Rincian harga per akun</div>
                         @php $selUtama = $akuns->firstWhere('id', (int) $akun); @endphp
                         @if($akun)
@@ -566,14 +667,17 @@
                         <div class="text-muted mt-1" style="font-size:.75rem;">× {{ (int)($jumlah_pemesanan ?: 0) }} bulan</div>
                     </div>
                     @else
-                    <div class="text-muted small mb-2">
-                        <i class="bi bi-calculator me-1"></i>{{ (int)($jumlah_pemesanan ?: 0) }} bulan × {{ $harga_satuan ?: 'Rp 0' }} × {{ count($peserta) }} peserta
+                    <div class="rsc-rumus mb-2">
+                        <i class="bi bi-calculator"></i>{{ (int)($jumlah_pemesanan ?: 0) }} bulan × {{ $harga_satuan ?: 'Rp 0' }} × {{ count($peserta) }} peserta
                     </div>
                     @endif
 
-                    <div class="of-total-box"><i class="bi bi-cash-stack me-2"></i>Rp {{ number_format($this->grand_total, 0, ',', '.') }}</div>
+                    <div class="of-total-box">
+                        <span class="of-total-box-label"><i class="bi bi-cash-stack"></i>Total harga</span>
+                        <span class="of-total-box-nilai">Rp {{ number_format($this->grand_total, 0, ',', '.') }}</span>
+                    </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 col-xl-12">
                     <label class="of-form-label d-block">Pilih PIC <span class="text-danger">*</span></label>
                     @php $selPic = $users->firstWhere('id', (int) $pic); @endphp
                     <button type="button" onclick="rscPicPicker(this)"
@@ -586,7 +690,7 @@
                     </button>
                     @error('pic')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-6 col-xl-12">
                     <label for="status" class="of-form-label d-block">Pilih Status <span class="text-danger">*</span></label>
                     <select wire:model="status" id="status" class="form-select">
                         <option value="">-- Pilih Status --</option>
@@ -608,14 +712,16 @@
             </div>
         </div>
 
-        <div class="mt-4 pt-3 border-top d-flex gap-2">
-            <button type="submit"
-                class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-                style="height: 52px;">
-                <i class="bi bi-check2-circle me-2 fs-5"></i>
-                <span>{{ $this->mode === 'create' ? 'Simpan Data' : 'Update Data' }}</span>
+        <div class="of-section">
+            <button type="submit" class="rsc-simpan" wire:loading.attr="disabled" wire:target="save">
+                <i class="bi bi-check2-circle" wire:loading.class="rsc-simpan-muat" wire:target="save"></i>
+                <span wire:loading.remove wire:target="save">{{ $this->mode === 'create' ? 'Simpan Batch' : 'Simpan Perubahan' }}</span>
+                <span wire:loading wire:target="save">Menyimpan…</span>
             </button>
+            <p class="rsc-simpan-ket">Kolom bertanda <span class="text-danger">*</span> wajib diisi</p>
         </div>
+        </aside>
+        </div>{{-- /.rsc-form-tata --}}
     </form>
 </div>
 

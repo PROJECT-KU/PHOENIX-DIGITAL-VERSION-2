@@ -144,7 +144,7 @@ class PemesananrscList extends Component
     // Reset filter periode (seragam dengan Pesanan Toko).
     public function resetFilters()
     {
-        $this->reset(['search', 'filterMonth', 'filterYear']);
+        $this->reset(['search', 'filterMonth', 'filterYear', 'statusFilter']);
         $this->resetPage();
     }
 
@@ -245,38 +245,15 @@ class PemesananrscList extends Component
         }
     }
 
-    #[Layout('livewire.layout.templateindex')]
-    public function render()
+    /**
+     * Seluruh saringan daftar di SATU tempat.
+     *
+     * Dipakai bersama oleh tabel dan oleh kartu ringkasan di atasnya, supaya
+     * angka ringkasan selalu menceritakan baris yang sama dengan yang terlihat
+     * — bukan hasil kueri kedua yang kebetulan mirip.
+     */
+    protected function saring($query): void
     {
-        $query = PemesananRsc::query()
-            ->select([
-                'nama_camp',
-                'batch_camp',
-                'tanggal_mulai_camp',
-                'tanggal_akhir_camp',
-                'akun',
-                'pic',
-                'status',
-                DB::raw('MIN(id) as first_id'),
-                DB::raw('COUNT(*) as total_peserta'),
-                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
-                DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
-                // Waktu batch DIBUAT = created_at peserta paling awal di batch itu.
-                // Wajib diagregasi (MIN) karena query ini di-GROUP BY per batch;
-                // created_at mentah tidak boleh dipakai di ORDER BY tanpa agregat.
-                DB::raw('MIN(created_at) as batch_created'),
-            ])
-            ->with(['dataakun', 'users'])
-            ->groupBy([
-                'nama_camp',
-                'batch_camp',
-                'tanggal_mulai_camp',
-                'tanggal_akhir_camp',
-                'akun',
-                'pic',
-                'status',
-            ]);
-
         // 🔍 Filter: Pencarian umum (mencari SEMUA data).
         // Memakai subquery per-batch agar batch tetap tampil utuh (jumlah peserta
         // & daftar nama tidak terpotong) meski yang cocok hanya satu peserta.
@@ -348,10 +325,64 @@ class PemesananrscList extends Component
             $query->where('batch_camp', $this->batchFilter);
         }
 
+    }
+
+    #[Layout('livewire.layout.templateindex')]
+    public function render()
+    {
+        $query = PemesananRsc::query()
+            ->select([
+                'nama_camp',
+                'batch_camp',
+                'tanggal_mulai_camp',
+                'tanggal_akhir_camp',
+                'akun',
+                'pic',
+                'status',
+                DB::raw('MIN(id) as first_id'),
+                DB::raw('COUNT(*) as total_peserta'),
+                DB::raw('GROUP_CONCAT(DISTINCT nama_pembeli SEPARATOR ", ") as nama_pembeli_list'),
+                DB::raw('SUM(CAST(total as DECIMAL(15,2))) as total_harga'),
+                // Waktu batch DIBUAT = created_at peserta paling awal di batch itu.
+                // Wajib diagregasi (MIN) karena query ini di-GROUP BY per batch;
+                // created_at mentah tidak boleh dipakai di ORDER BY tanpa agregat.
+                DB::raw('MIN(created_at) as batch_created'),
+            ])
+            ->with(['dataakun', 'users'])
+            ->groupBy([
+                'nama_camp',
+                'batch_camp',
+                'tanggal_mulai_camp',
+                'tanggal_akhir_camp',
+                'akun',
+                'pic',
+                'status',
+            ]);
+
+        $this->saring($query);
+
         // 🔹 Ambil hasil — urut dari batch yang PALING BARU DIBUAT.
         // Dulu diurut tanggal_mulai_camp: batch yang baru diinput tapi campnya
         // dijadwalkan lama tenggelam di bawah, padahal itu yang baru dikerjakan.
         $pemesananrsc = $query->orderByDesc('batch_created')->paginate($this->perPage);
+
+        // Ringkasan: dihitung dari tabel mentah dengan saringan yang SAMA.
+        // Nilai hanya dari status 'baru' — sama dengan aturan buku kas
+        // (SyncCashFlowAction): status lain tidak menghasilkan uang masuk,
+        // jadi menjumlahkannya akan membuat angka di sini lebih besar dari
+        // pemasukan yang sebenarnya tercatat.
+        $dasar = PemesananRsc::query();
+        $this->saring($dasar);
+
+        $ringkas = [
+            'batch' => (int) $pemesananrsc->total(),
+            'peserta' => (int) (clone $dasar)->count(),
+            'nilai' => (float) (clone $dasar)->where('status', 'baru')->sum('total'),
+            'berjalan' => (int) (clone $dasar)
+                ->whereDate('tanggal_mulai_camp', '<=', today())
+                ->whereDate('tanggal_akhir_camp', '>=', today())
+                ->select('nama_camp', 'batch_camp')->distinct()->get()->count(),
+        ];
 
         // 🔹 Peta akun TAMBAHAN per batch (hanya untuk batch di halaman ini) agar
         // kolom Akun bisa menampilkan "akun utama + N akun lain" tanpa N+1 query.
@@ -389,6 +420,7 @@ class PemesananrscList extends Component
             'akunTambahanPerBatch',
             'months',
             'years',
+            'ringkas',
         ));
     }
 }

@@ -488,18 +488,24 @@ it('jendela task yang menggulung hanya jendelanya, bukan halamannya', function (
     // Diukur sesudahnya (jendela "Beri Task" pada layar setinggi 700px):
     // kartunya muat utuh di layar, kepala & kakinya tetap di dalam kartu, dan
     // yang menggulung hanya badannya.
+    //
+    // Cangkang jendelanya kini milik bersama (partials/dasbor-gaya) karena
+    // jendela unduh Pemesanan RSC memakainya juga; layar Task tetap
+    // memuat berkas itu.
     $task = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
 
-    expect($task)->toContain('max-height: 94vh;')
-        ->and($task)->toContain('.ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto;')
-        ->and($task)->toContain('body.ts-terkunci { overflow: hidden; }')
+    expect($task)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')")
+        ->and($gaya)->toContain('max-height: 94vh;')
+        ->and($gaya)->toContain('.ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto;')
+        ->and($gaya)->toContain('body.ts-terkunci { overflow: hidden; }')
         // Penguncinya PENGAMAT, bukan tempelan di tiap tombol: jendela di layar
         // ini dibuka & ditutup Livewire, jadi satu-satunya yang pasti tahu
         // keadaannya adalah DOM.
-        ->and($task)->toContain('new MutationObserver(perbarui)')
+        ->and($gaya)->toContain('new MutationObserver(perbarui)')
         // Berpindah halaman lewat wire:navigate harus melepas kuncinya; tanpa
         // ini halaman berikutnya tidak bisa digulung sama sekali.
-        ->and($task)->toContain('livewire:navigating')
+        ->and($gaya)->toContain('livewire:navigating')
         // Tombol keputusan di kaki jendela, bukan di ujung badan yang tergulung.
         ->and($task)->not->toContain('class="px-4 pb-4 d-flex justify-content-end gap-2"');
 });
@@ -791,4 +797,51 @@ it('jendela detail punya alat urut langkah, saringan riwayat, dan tanda berulang
         // Disaring di peramban: daftarnya sudah ada di halaman.
         ->and($layar)->toContain("x-data=\"{ saring: 'semua' }\"")
         ->and($layar)->toContain('Salinan berikutnya');
+});
+
+it('semua layar pemesanan rsc memakai bahasa rupa dasbor', function () {
+    $dir = resource_path('views/livewire/pages/admin/pemesanan-r-s-c/');
+
+    foreach (['pemesananrsc-list', 'pemesananrsc-detail', 'pemesananrsc-create', 'pemesananrsc-edit'] as $n) {
+        $isi = file_get_contents($dir.$n.'.blade.php');
+
+        expect($isi)->toContain("@include('livewire.pages.admin.partials.dasbor-gaya')")
+            ->and($isi)->toContain('class="dsb-hero"')
+            // Kartu di dalam kartu dan judul bergradasi dari versi lama.
+            ->and($isi)->not->toContain('gradient-text')
+            ->and($isi)->not->toContain('fixed-header-card');
+    }
+
+    // Form: markup lama dipertahankan (JS picker bergantung padanya), kulitnya
+    // yang diganti ke ikon lembut berwarna.
+    $form = file_get_contents($dir.'pemesananrsc-form.blade.php');
+    expect($form)->toContain('background: color-mix(in srgb, var(--c) 12%, #fff);')
+        ->and($form)->toContain('class="rsc-form-samping"')
+        ->and($form)->toContain('window.rscAkunPicker')
+        ->and($form)->not->toContain('background: linear-gradient(135deg, #6c63ff, #4e46e5);');
+});
+
+it('daftar pemesanan rsc hanya punya satu paginasi dan tanpa jendela wa mati', function () {
+    $isi = file_get_contents(resource_path('views/livewire/pages/admin/pemesanan-r-s-c/pemesananrsc-list.blade.php'));
+
+    expect(substr_count($isi, '->links('))->toBe(1)
+        // Jendela WA lama tidak pernah bisa dibuka, tetapi membawa isian
+        // password akun di HTML setiap halaman.
+        ->and($isi)->not->toContain('kirimWa');
+});
+
+it('detail pemesanan rsc tidak menaruh data batch di snapshot livewire', function () {
+    $kelas = new ReflectionClass(\App\Livewire\Pages\Admin\PemesananRSC\PemesananrscDetail::class);
+    $publik = collect($kelas->getProperties(ReflectionProperty::IS_PUBLIC))
+        ->filter(fn ($p) => $p->class === $kelas->getName())
+        ->map->getName()->sort()->values()->all();
+
+    // Username & password akun dulu ikut terkirim sebagai properti publik.
+    expect($publik)->toBe(['batch_camp', 'nama_camp'])
+        ->and($kelas->hasMethod('unduhInvoice'))->toBeTrue()
+        ->and($kelas->hasMethod('unduhExcel'))->toBeTrue();
+
+    $isi = file_get_contents(resource_path('views/livewire/pages/admin/pemesanan-r-s-c/pemesananrsc-detail.blade.php'));
+    expect($isi)->toContain("->locale('id')->translatedFormat")
+        ->and($isi)->toContain('wire:click="unduhInvoice"');
 });
