@@ -106,6 +106,33 @@ class OrderDetail extends Component
         return in_array($this->order->payment_method, ['transfer', 'qris_statis'], true);
     }
 
+    /**
+     * Apakah berkas bukti pembayaran benar-benar ada di penyimpanan?
+     *
+     * Kolomnya bisa terisi tetapi berkasnya hilang (mis. database disalin
+     * tanpa folder unggahan). Tanpa pemeriksaan ini halaman menampilkan
+     * gambar rusak. Disk yang dicoba sama dengan BerkasPrivatController.
+     */
+    public function buktiTersedia(): bool
+    {
+        $path = $this->order->bukti_pembayaran;
+        if (! $path) {
+            return false;
+        }
+
+        try {
+            foreach (['local', 'public'] as $disk) {
+                if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($path)) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return false;
+    }
+
     public function updateSubscriptionStatus(string $itemId, string $status): void
     {
         $allowed = ['baru', 'perpanjang', 'pengganti', 'habis'];

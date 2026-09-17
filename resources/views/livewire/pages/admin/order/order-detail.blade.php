@@ -21,6 +21,10 @@ Detail Pesanan || lemon
         ];
         $hdJumlahItem = $order->items->count();
         $hdBisaBatal = $order->status !== 'cancelled';
+        $hdBuktiTercatat = (bool) $order->bukti_pembayaran;
+        $hdBuktiTersedia = $hdBuktiTercatat && $this->buktiTersedia();
+        $hdBolehGanti = $this->bolehGantiBukti();
+        $hdBarisBukti = $hdBuktiTercatat || $hdBolehGanti;
     @endphp
 
     <div class="dsb pt-detail">
@@ -75,6 +79,41 @@ Detail Pesanan || lemon
        Markup kartu lama dipertahankan — skrip WA, bonus kuota, dan
        pengecekan bergantung padanya — tetapi tampil seperti dsb-kartu. */
     .pt-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+    /* Kotak bukti pembayaran */
+    .pt-bukti {
+        display: flex; align-items: center; gap: 12px; margin: 10px 0 4px;
+        padding: 10px 12px; border: 1px solid #eef2f7; border-radius: 14px; background: #fcfcfd;
+    }
+    .pt-bukti-gambar { flex: 0 0 56px; width: 56px; height: 56px; }
+    .pt-bukti-thumb {
+        display: block; width: 56px; height: 56px; padding: 0; border: 1px solid #e9edf3;
+        border-radius: 11px; overflow: hidden; background: #fff; cursor: zoom-in;
+    }
+    .pt-bukti-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pt-bukti-ikon {
+        display: none; width: 56px; height: 56px; border-radius: 11px;
+        align-items: center; justify-content: center; font-size: 1.35rem;
+    }
+    .pt-bukti-ikon i.bi, .pt-bukti-ikon i.bi::before { display: block; line-height: 1; }
+    .pt-bukti-ikon-gagal { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .pt-bukti-ikon-kosong { background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1; }
+    .pt-bukti-teks { flex: 1 1 0; min-width: 140px; display: flex; flex-direction: column; gap: 2px; }
+    .pt-bukti-judul { font-size: .86rem; font-weight: 800; color: var(--dsb-tinta); }
+    .pt-bukti-ket { font-size: .76rem; color: var(--dsb-redup); line-height: 1.4; }
+    .pt-bukti-ket-gagal, .pt-bukti-ket-kosong { display: none; }
+    .pt-bukti-aksi { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .pt-bukti.is-gagal { border-color: #fecaca; background: #fff7f7; }
+    .pt-bukti.is-gagal .pt-bukti-thumb, .pt-bukti.is-gagal .pt-bukti-ket-ada, .pt-bukti.is-gagal .pt-bukti-buka { display: none; }
+    .pt-bukti.is-gagal .pt-bukti-ikon-gagal { display: flex; }
+    .pt-bukti.is-gagal .pt-bukti-ket-gagal { display: block; color: #b91c1c; }
+    .pt-bukti.is-kosong .pt-bukti-ket-ada { display: none; }
+    .pt-bukti.is-kosong .pt-bukti-ikon-kosong { display: flex; }
+    .pt-bukti.is-kosong .pt-bukti-ket-kosong { display: block; }
+    @media (max-width: 420px) {
+        .pt-bukti { flex-wrap: wrap; }
+        .pt-bukti-aksi { width: 100%; justify-content: flex-end; }
+    }
     .pt-nilai-teks { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; line-height: 1.25; overflow-wrap: anywhere; }
     .pt-kepala-sisip { margin: 0 0 14px !important; }
     .pt-detail > .row.mb-4 { margin-bottom: clamp(20px, 3vw, 32px) !important; }
@@ -465,35 +504,44 @@ Detail Pesanan || lemon
                         {{ $order->paid_at ? $order->paid_at->locale('id')->translatedFormat('d M Y, H:i') : 'Belum ada pembayaran tercatat' }}
                     </span>
                 </div>
-                @if($order->bukti_pembayaran || $this->bolehGantiBukti())
-                <div class="info-row">
-                    <span class="info-label">Bukti Pembayaran</span>
-                    <span class="info-value">
-                        @if($order->bukti_pembayaran)
-                        <a href="javascript:void(0)" role="button" class="bukti-zoom-trigger d-inline-block"
-                            data-bukti-url="{{ route('admin.pesanantoko.bukti', $order) }}" title="Perbesar bukti pembayaran">
-                            <img src="{{ route('admin.pesanantoko.bukti', $order) }}" alt="Bukti pembayaran"
-                                style="max-height:64px; border-radius:8px; border:1px solid #e6e8f2; cursor:zoom-in;">
-                        </a>
-                        @else
-                        <span class="text-muted fw-normal">Belum ada</span>
+                @if ($hdBarisBukti)
+                {{-- Bukti pembayaran: kotak sendiri (bukan di sisi kanan baris), supaya
+                     thumbnail, keadaan berkas, dan tombolnya punya ruang. --}}
+                <div class="pt-bukti {{ $hdBuktiTercatat && ! $hdBuktiTersedia ? 'is-gagal' : '' }} {{ $hdBuktiTercatat ? '' : 'is-kosong' }}">
+                    <div class="pt-bukti-gambar">
+                        @if ($hdBuktiTersedia)
+                            <button type="button" class="bukti-zoom-trigger pt-bukti-thumb"
+                                data-bukti-url="{{ route('admin.pesanantoko.bukti', $order) }}" title="Perbesar bukti pembayaran">
+                                {{-- onerror: bila berkas gagal dimuat di peramban, tampilkan keadaan gagal. --}}
+                                <img src="{{ route('admin.pesanantoko.bukti', $order) }}" alt="Bukti pembayaran" loading="lazy"
+                                    onerror="this.closest('.pt-bukti').classList.add('is-gagal')">
+                            </button>
                         @endif
-
-                        {{-- Ganti bukti: hanya untuk pembayaran yang buktinya
-                             diunggah manual (transfer / QRIS statis). QRIS dinamis
-                             dikonfirmasi penyedia, jadi tidak ada yang diganti.
-                             Formulirnya dibuka sebagai popup di bawah halaman. --}}
-                        @if($this->bolehGantiBukti())
-                        {{-- Mengarah ke halaman unggah bukti yang sama dengan alur draft,
-                             supaya satu pekerjaan tidak punya dua tampilan. --}}
-                        <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}"
-                            class="btn btn-sm btn-outline-primary mt-2"
-                            style="font-size:.72rem;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;line-height:1.5;">
-                            <i class="bi bi-arrow-repeat"></i>
-                            <span>{{ $order->bukti_pembayaran ? 'Ganti Bukti' : 'Unggah Bukti' }}</span>
-                        </a>
+                        <span class="pt-bukti-ikon pt-bukti-ikon-gagal"><i class="bi bi-file-earmark-x"></i></span>
+                        <span class="pt-bukti-ikon pt-bukti-ikon-kosong"><i class="bi bi-image"></i></span>
+                    </div>
+                    <div class="pt-bukti-teks">
+                        <span class="pt-bukti-judul">Bukti Pembayaran</span>
+                        <span class="pt-bukti-ket pt-bukti-ket-ada">Klik gambar untuk memperbesar</span>
+                        <span class="pt-bukti-ket pt-bukti-ket-gagal">Berkas tercatat, tetapi tidak ditemukan di server{{ $hdBolehGanti ? ' — unggah ulang' : '' }}</span>
+                        <span class="pt-bukti-ket pt-bukti-ket-kosong">Belum ada bukti yang diunggah</span>
+                    </div>
+                    <div class="pt-bukti-aksi">
+                        @if ($hdBuktiTersedia)
+                            <a href="{{ route('admin.pesanantoko.bukti', $order) }}" target="_blank" rel="noopener"
+                                class="dsb-tabel-btn pt-bukti-buka" title="Buka di tab baru" aria-label="Buka bukti di tab baru">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
                         @endif
-                    </span>
+                        @if ($hdBolehGanti)
+                            {{-- Halaman unggah bukti yang sama dengan alur draft, supaya
+                                 satu pekerjaan tidak punya dua tampilan. --}}
+                            <a href="{{ route('admin.pesanantoko.unggah-bukti', $order) }}" class="dsb-tombol is-lembut is-mungil">
+                                <i class="bi {{ $hdBuktiTercatat ? 'bi-arrow-repeat' : 'bi-upload' }}"></i>
+                                <span>{{ $hdBuktiTercatat ? 'Ganti' : 'Unggah' }}</span>
+                            </a>
+                        @endif
+                    </div>
                 </div>
                 @endif
                 @php

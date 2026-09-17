@@ -132,3 +132,44 @@ it('pratinjau dibaca di browser, tidak meminta ke server', function () {
     expect($blade)->toContain('URL.createObjectURL')
         ->and($blade)->not->toContain('$bukti->temporaryUrl');
 });
+
+it('detail menampilkan bukti bila berkasnya ada', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+
+    $order = orderBayar('transfer', 'processing');
+    $path = UploadedFile::fake()->image('bukti.jpg')->store('bukti_pembayaran', 'local');
+    $order->update(['bukti_pembayaran' => $path]);
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order]);
+
+    expect($t->instance()->buktiTersedia())->toBeTrue()
+        ->and($t->html())->toContain('alt="Bukti pembayaran"')
+        ->and($t->html())->not->toContain('class="pt-bukti is-gagal');
+});
+
+it('detail tidak memasang gambar rusak bila berkas bukti hilang', function () {
+    Storage::fake('local');
+    Storage::fake('public');
+
+    // Kolomnya terisi, berkasnya tidak ada (mis. database disalin tanpa unggahan).
+    $order = orderBayar('transfer', 'processing');
+    $order->update(['bukti_pembayaran' => 'bukti_pembayaran/tidak-ada.jpg']);
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order]);
+
+    expect($t->instance()->buktiTersedia())->toBeFalse()
+        ->and($t->html())->not->toContain('alt="Bukti pembayaran"')
+        ->and($t->html())->toContain('pt-bukti is-gagal')
+        ->and($t->html())->toContain('tidak ditemukan di server');
+});
+
+it('detail menandai bukti yang belum diunggah', function () {
+    $order = orderBayar('transfer', 'pending');
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order])->html();
+
+    expect($html)->toContain('is-kosong')
+        ->and($html)->toContain('Belum ada bukti yang diunggah')
+        ->and($html)->not->toContain('alt="Bukti pembayaran"');
+});
