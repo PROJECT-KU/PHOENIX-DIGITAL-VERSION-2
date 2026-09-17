@@ -126,11 +126,11 @@
         }
         .rsc-akun-card {
             border: 1px solid #eef2f7; border-radius: 14px; background: #fcfcfd;
-            padding: 12px 14px 14px; margin-bottom: 10px;
+            padding: 10px 12px; margin-bottom: 8px;
         }
         .rsc-akun-card-kepala {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px dashed #e9edf3;
+            margin-bottom: 8px;
         }
         .rsc-akun-card-no {
             flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px;
@@ -148,7 +148,13 @@
         }
         .rsc-akun-card-harga i.bi { line-height: 1; }
         .rsc-akun-card-kepala .rsc-del-btn { flex-shrink: 0; margin-left: auto; }
-        .rsc-akun-card-isi { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+        /* Tiga kredensial selalu satu baris sejajar (tanpa label: ikon &
+           tooltip sudah menjelaskan); bertumpuk hanya di HP. */
+        .rsc-akun-card-isi { display: grid; gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        @media (max-width: 575.98px) { .rsc-akun-card-isi { grid-template-columns: minmax(0, 1fr); } }
+        .rsc-akun-card .rsc-ro-field { min-height: 38px; padding: 0 11px; }
+        .rsc-akun-card .rsc-ro-input { font-size: .84rem; text-overflow: ellipsis; }
+        .rsc-akun-card-pilih { min-height: 38px !important; }
         .rsc-akun-card-medan { min-width: 0; }
         .rsc-akun-card .rsc-ro-field { background: #fff; }
         .rsc-jumlah-peserta {
@@ -500,24 +506,21 @@
                 </div>
                 <div class="rsc-akun-card-isi">
                     <div class="rsc-akun-card-medan">
-                        <span class="of-form-label d-block">Username</span>
-                        <div class="rsc-ro-field" title="{{ $a['username'] }}">
+                        <div class="rsc-ro-field" title="Username: {{ $a['username'] }}">
                             <i class="bi bi-person rsc-ro-ico"></i>
-                            <input type="text" class="rsc-ro-input" value="{{ $a['username'] }}" placeholder="—" readonly>
+                            <input type="text" class="rsc-ro-input" value="{{ $a['username'] }}" placeholder="Username" aria-label="Username" readonly>
                         </div>
                     </div>
                     <div class="rsc-akun-card-medan">
-                        <span class="of-form-label d-block">Password</span>
-                        <div class="rsc-ro-field" title="{{ $a['password'] }}">
+                        <div class="rsc-ro-field" title="Password: {{ $a['password'] }}">
                             <i class="bi bi-key rsc-ro-ico"></i>
-                            <input type="text" class="rsc-ro-input" value="{{ $a['password'] }}" placeholder="—" readonly>
+                            <input type="text" class="rsc-ro-input" value="{{ $a['password'] }}" placeholder="Password" aria-label="Password" readonly>
                         </div>
                     </div>
                     <div class="rsc-akun-card-medan">
-                        <span class="of-form-label d-block">Link Akses</span>
-                        <div class="rsc-ro-field" title="{{ $a['link_akses'] }}">
+                        <div class="rsc-ro-field" title="Link Akses: {{ $a['link_akses'] }}">
                             <i class="bi bi-link-45deg rsc-ro-ico"></i>
-                            <input type="text" class="rsc-ro-input" value="{{ $a['link_akses'] }}" placeholder="—" readonly>
+                            <input type="text" class="rsc-ro-input" value="{{ $a['link_akses'] }}" placeholder="Link Akses" aria-label="Link Akses" readonly>
                         </div>
                     </div>
                 </div>
