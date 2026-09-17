@@ -19,10 +19,7 @@ Detail Pesanan || lemon
             'DRAFT' => 'Draft', 'PENDING' => 'Menunggu bayar', 'PAID' => 'Dibayar', 'PROCESSING' => 'Diproses',
             'COMPLETED' => 'Selesai', 'CANCELLED' => 'Dibatalkan', 'SEDANG DIPROSES' => 'Sedang dicek',
         ];
-        $hdWarnaStatus = ['success' => '#16a34a', 'warning' => '#d97706', 'info' => '#0284c7', 'primary' => '#4f46e5', 'danger' => '#e11d48'][$hdWarna] ?? '#64748b';
         $hdJumlahItem = $order->items->count();
-        $hdProdukPertama = optional($order->items->first(), fn ($it) => $it->product_name ?: ($it->product->nama_akun ?? null));
-        $hdDiskon = (float) $order->total_discount;
         $hdBisaBatal = $order->status !== 'cancelled';
     @endphp
 
@@ -67,68 +64,6 @@ Detail Pesanan || lemon
         </div>
     </header>
 
-    {{-- ================== RINGKASAN ================== --}}
-    <section class="dsb-bagian">
-        <div class="dsb-rak">
-            <div class="dsb-kepala" style="--c: {{ $hdWarnaStatus }}">
-                <span class="dsb-kepala-ikon"><i class="bi bi-bag-heart-fill"></i></span>
-                <div class="dsb-kepala-teks">
-                    <span class="dsb-kicker">Ringkasan</span>
-                    <h2 class="dsb-judul">Keadaan Pesanan</h2>
-                    <div class="dsb-chip-deret">
-                        <span class="dsb-chip"><i class="bi bi-box-seam"></i>{{ $hdJumlahItem }} item</span>
-                        @if ($order->paid_at)
-                            <span class="dsb-chip is-samar"><i class="bi bi-check2-circle"></i>Dibayar {{ $order->paid_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <article class="dsb-stat is-utama k-6" style="--c: #16a34a">
-                <span class="dsb-ikon"><i class="bi bi-cash-stack"></i></span>
-                <p class="dsb-stat-label">Total Pembayaran</p>
-                <p class="dsb-stat-nilai">Rp {{ number_format($order->total, 0, ',', '.') }}</p>
-                <p class="dsb-stat-ket"><i class="bi bi-tags"></i><span>{{ $hdDiskon ? 'Hemat Rp '.number_format($hdDiskon, 0, ',', '.').' dari diskon' : 'Tanpa diskon' }}</span></p>
-            </article>
-
-            <article class="dsb-stat is-utama k-6" style="--c: #7c3aed">
-                <span class="dsb-ikon"><i class="bi bi-person-circle"></i></span>
-                <p class="dsb-stat-label">Pembeli</p>
-                <p class="dsb-stat-nilai pt-nilai-teks">{{ $order->customer->nama ?? '—' }}</p>
-                <p class="dsb-stat-ket"><i class="bi bi-telephone"></i><span>{{ $order->customer->no_hp ?? 'Tanpa nomor' }}</span></p>
-            </article>
-
-            <article class="dsb-stat k-4" style="--c: #0284c7">
-                <span class="dsb-ikon"><i class="bi bi-box-seam-fill"></i></span>
-                <p class="dsb-stat-label">Item</p>
-                <p class="dsb-stat-nilai">{{ $hdJumlahItem }}<span class="dsb-stat-satuan">produk</span></p>
-                <p class="dsb-stat-ket"><i class="bi bi-tag"></i><span>{{ $hdProdukPertama ? \Illuminate\Support\Str::limit($hdProdukPertama, 34) : 'Belum ada item' }}</span></p>
-            </article>
-
-            <article class="dsb-stat k-4" style="--c: {{ $hdWarnaStatus }}">
-                <span class="dsb-ikon"><i class="bi bi-flag-fill"></i></span>
-                <p class="dsb-stat-label">Status</p>
-                <p class="dsb-stat-nilai pt-nilai-teks">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</p>
-                <p class="dsb-stat-ket"><i class="bi bi-clock-history"></i><span>Diperbarui {{ $order->updated_at->locale('id')->diffForHumans() }}</span></p>
-            </article>
-
-            <article class="dsb-stat k-4" style="--c: #d97706">
-                <span class="dsb-ikon"><i class="bi {{ $hdBayar[1] ?? 'bi-wallet2' }}"></i></span>
-                <p class="dsb-stat-label">Pembayaran</p>
-                <p class="dsb-stat-nilai pt-nilai-teks">{{ $hdBayar[0] ?? '—' }}</p>
-                <p class="dsb-stat-ket"><i class="bi bi-calendar-check"></i><span>{{ $order->paid_at ? 'Lunas '.$order->paid_at->locale('id')->translatedFormat('d M Y') : 'Belum ada pembayaran tercatat' }}</span></p>
-            </article>
-        </div>
-    </section>
-
-    {{-- ================== RINCIAN ================== --}}
-    <div class="dsb-kepala pt-kepala-sisip" style="--c: #0284c7">
-        <span class="dsb-kepala-ikon"><i class="bi bi-card-list"></i></span>
-        <div class="dsb-kepala-teks">
-            <span class="dsb-kicker">Rincian</span>
-            <h2 class="dsb-judul">Pesanan &amp; Pembeli</h2>
-        </div>
-    </div>
     <style>
 
     /* Tanpa aturan ini elemen ber-x-cloak sempat terlihat sebelum Alpine siap.
@@ -520,26 +455,14 @@ Detail Pesanan || lemon
             <div class="detail-info-card p-4">
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <span class="info-icon bg-grad-purple"><i class="bi bi-receipt"></i></span>
-                    <h5 class="fw-bold mb-0">Data Pesanan</h5>
+                    <h5 class="fw-bold mb-0">Pembayaran &amp; Catatan</h5>
                 </div>
+                {{-- Nomor, tanggal, status, dan metode bayar ada di kepala halaman;
+                     total ada di ringkasan biaya di bawah tabel item. --}}
                 <div class="info-row">
-                    <span class="info-label">No. Order</span>
-                    <span class="info-value">{{ $order->order_number }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Tanggal</span>
-                    <span class="info-value">{{ $order->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Metode Pembayaran</span>
+                    <span class="info-label">Dibayar</span>
                     <span class="info-value">
-                        {{-- Peta metodenya kini di Order::labelPembayaran() supaya daftar
-                             pesanan memakai nama & warna yang sama persis. --}}
-                        @if ($hdBayar)
-                        <span class="dsb-lencana {{ $hdLencana[$hdBayar[2]] ?? 'is-abu' }}"><i class="bi {{ $hdBayar[1] }}"></i>{{ $hdBayar[0] }}</span>
-                        @else
-                        <span class="text-muted fw-normal">-</span>
-                        @endif
+                        {{ $order->paid_at ? $order->paid_at->locale('id')->translatedFormat('d M Y, H:i') : 'Belum ada pembayaran tercatat' }}
                     </span>
                 </div>
                 @if($order->bukti_pembayaran || $this->bolehGantiBukti())
@@ -573,20 +496,15 @@ Detail Pesanan || lemon
                     </span>
                 </div>
                 @endif
-                <div class="info-row">
-                    <span class="info-label">Status</span>
-                    <span class="info-value">
-                        <span class="dsb-lencana {{ $hdLencana[$hdWarna] ?? 'is-abu' }}">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</span>
-{{-- Tombol batal ada di kepala halaman. --}}
-                    </span>
-                </div>
                 @php
                 $promos = collect($order->applied_promos ?? []);
                 $usedFlash = $promos->contains(fn($p) => ($p['tipe_promo'] ?? '') === 'flash_sale');
                 $usedKodePromo = $promos->contains(fn($p) => ($p['tipe_promo'] ?? '') === 'kode_promo');
                 $usedAutoPromo = $promos->contains(fn($p) => ($p['tipe_promo'] ?? '') === 'auto_promo');
-                $usedPoint = $order->used_points || $order->points_discount > 0;
-                $usedReferral = !empty($order->referral_code) || $order->referral_discount > 0;
+                // Ditulis "0 <" (bukan lebih-dari): blok ini tepat sesudah direktif
+                // penutup, dan tanda lebih-dari membuat Livewire melewati penandanya.
+                $usedPoint = $order->used_points || 0 < $order->points_discount;
+                $usedReferral = !empty($order->referral_code) || 0 < $order->referral_discount;
                 $adaDiskon = $usedFlash || $usedKodePromo || $usedAutoPromo || $usedPoint || $usedReferral;
                 @endphp
                 <div class="info-row">
@@ -662,13 +580,6 @@ Detail Pesanan || lemon
 
     {{-- ===== Pengecekan plagiasi (pesanan JASA) ===== --}}
     @if ($order->butuhUpload())
-    <div class="dsb-kepala pt-kepala-sisip" style="--c: #ea580c">
-        <span class="dsb-kepala-ikon"><i class="bi bi-shield-check"></i></span>
-        <div class="dsb-kepala-teks">
-            <span class="dsb-kicker">Jasa</span>
-            <h2 class="dsb-judul">Pengecekan Dokumen</h2>
-        </div>
-    </div>
     @php
         // Yang dilihat admin adalah PEKERJAAN yang harus diserahkan — dokumen
         // parafrase, hasil plagiasi, dan hasil AI masing-masing satu. Bukan
