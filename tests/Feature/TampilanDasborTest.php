@@ -642,3 +642,42 @@ it('hak kelola task punya dua jalur, dan penolakannya dikatakan terus terang', f
         ->and($layar)->toContain('$bolehKelolaSemua')
         ->and($sumber)->toContain("'bolehKelolaSemua' =>");
 });
+
+it('langkah bisa disiapkan sejak task dibuat, dan tidak pernah menggandakan', function () {
+    // Tiap penerima mendapat SALINANNYA SENDIRI — satu orang mencentang
+    // langkahnya tidak boleh ikut mencentang milik orang lain.
+    //
+    // Diuji lewat transaksi yang di-rollback: satu task ke dua penerima,
+    // masing-masing menerima dua langkah yang sama; menyimpan ulang dengan
+    // langkah yang sudah ada tidak menambah apa pun, langkah baru masuk ke
+    // keduanya.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain('public array $t_langkah = [];')
+        ->and($sumber)->toContain('protected function pasangLangkah(Task $task): void')
+        // Hanya MENAMBAH: menyimpan ulang jendela edit tidak boleh menggandakan
+        // daftar milik orang lain.
+        ->and($sumber)->toContain('if (in_array(mb_strtolower($teks), $sudahAda, true)) {')
+        // Dipasang di dua jalur: saat dibuat dan saat diperbarui.
+        ->and(substr_count($sumber, '$this->pasangLangkah('))->toBe(2);
+
+    // Langkah yang SUDAH ada ditampilkan sebagai keterangan, bukan daftar yang
+    // bisa disunting: menghapusnya dari sini berarti menghapusnya dari semua
+    // penerima termasuk yang sudah mencentangnya, dan catatan bahwa ia sudah
+    // mengerjakannya ikut hilang.
+    $tampilan = file_get_contents(resource_path('views/livewire/pages/admin/task/task-saya-list.blade.php'));
+
+    expect($tampilan)->toContain('ts-langkah-ada')
+        ->and($tampilan)->toContain('Menghapus langkah');
+});
+
+it('menyimpan grup task tidak lagi gagal diam-diam pada task tanpa pemberi', function () {
+    // Jebakan yang sama dengan hapus: updateGroup() menyaring
+    // whereIn('assigned_by', …), dan task dari layar Penyelesaian Task
+    // ber-assigned_by NULL — grup semacam itu gagal disimpan tanpa satu pun
+    // pesan.
+    $sumber = file_get_contents(app_path('Livewire/Pages/Admin/Task/TaskSayaList.php'));
+
+    expect($sumber)->toContain("\$existing = Task::visibleTo()->where('group_id', \$this->editingGroupId)->get();")
+        ->and($sumber)->not->toContain("->whereIn('assigned_by', \$this->manageableGiverIds())");
+});

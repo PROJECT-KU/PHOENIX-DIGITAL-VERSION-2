@@ -531,6 +531,33 @@ Task Saya || lemon
         .ts-langkah-tambah { display: flex; gap: 8px; margin-top: 10px; }
         .ts-langkah-tambah .dsb-isian { flex: 1 1 auto; }
 
+        /* ===== Langkah awal di jendela beri/edit task ===== */
+        .ts-langkah-ada {
+            display: flex; flex-direction: column; gap: 5px;
+            padding: 11px 13px; margin-bottom: 10px; border-radius: 12px;
+            background: #f5f3ff; border: 1px solid #e9e3fb;
+        }
+        .ts-langkah-ada-judul {
+            display: inline-flex; align-items: center; gap: 7px;
+            color: #5b21b6; font-size: .78rem; font-weight: 800;
+        }
+        .ts-langkah-ada-teks { color: #4c1d95; font-size: .82rem; line-height: 1.6; overflow-wrap: anywhere; }
+        .ts-langkah-ada-ket { color: #7c6bb0; font-size: .75rem; line-height: 1.55; }
+
+        .ts-langkah-draf { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+        .ts-langkah-draf-item {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 8px 12px; border-radius: 10px;
+            background: #f8fafc; border: 1px solid #eef2f7;
+            color: var(--dsb-tinta); font-size: .84rem; font-weight: 600;
+        }
+        .ts-langkah-draf-item button {
+            border: 0; background: none; color: #cbd5e1; cursor: pointer; padding: 2px 4px; line-height: 1;
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .ts-langkah-draf-item button:hover { color: #dc2626; }
+        }
+
         /* ===== Unggah berkas hasil ===== */
         .ts-unggah-hasil {
             display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -1344,6 +1371,61 @@ Task Saya || lemon
                 </div>
 
                 <div class="row g-3">
+                    <div class="col-12">
+                        {{-- ===== Langkah awal =====
+                             Disiapkan pemberi di sini, lalu TIAP PENERIMA mendapat
+                             salinannya sendiri — satu orang mencentang langkahnya
+                             tidak boleh ikut mencentang milik orang lain.
+
+                             Opsional: task sederhana tidak perlu dipecah, dan daftar
+                             kosong tetap sah. --}}
+                        <label class="dsb-label">
+                            Langkah
+                            <span class="dsb-label-ket">— opsional, tiap penerima dapat salinannya sendiri</span>
+                        </label>
+
+                        @if (! empty($t_langkah_ada))
+                            {{-- Yang sudah ada ditampilkan sebagai KETERANGAN, bukan
+                                 daftar yang bisa disunting: menghapusnya dari sini
+                                 berarti menghapusnya dari semua penerima termasuk
+                                 yang sudah mencentangnya, dan catatan bahwa ia sudah
+                                 mengerjakannya ikut hilang. Penghapusan tetap ada —
+                                 di jendela detail, oleh orang yang mengerjakannya. --}}
+                            <div class="ts-langkah-ada">
+                                <span class="ts-langkah-ada-judul">
+                                    <i class="bi bi-check2-square"></i>{{ count($t_langkah_ada) }} langkah sudah ada
+                                </span>
+                                <span class="ts-langkah-ada-teks">{{ implode(' • ', $t_langkah_ada) }}</span>
+                                <span class="ts-langkah-ada-ket">
+                                    Menambah di bawah akan menambahkannya ke semua penerima. Menghapus langkah
+                                    dilakukan penerimanya sendiri di jendela detail.
+                                </span>
+                            </div>
+                        @endif
+
+                        @if (! empty($t_langkah))
+                            <div class="ts-langkah-draf">
+                                @foreach ($t_langkah as $i => $teks)
+                                    <span class="ts-langkah-draf-item" wire:key="draf-{{ $i }}">
+                                        <span>{{ $loop->iteration }}. {{ $teks }}</span>
+                                        <button type="button" wire:click="hapusLangkahBaru({{ $i }})" aria-label="Hapus langkah">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <div class="ts-langkah-tambah">
+                            <input type="text" class="dsb-isian" wire:model="t_langkah_baru"
+                                wire:keydown.enter.prevent="tambahLangkahBaru"
+                                placeholder="Mis. Kumpulkan bahan" maxlength="190">
+                            <button type="button" class="dsb-tombol is-lembut is-mungil" wire:click="tambahLangkahBaru">
+                                <i class="bi bi-plus-lg"></i><span>Tambah</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="col-md-4">
                         {{-- Task berulang: laporan berkala sebelumnya dibuat ulang
                              dengan tangan tiap periode, dan yang terlupa tidak pernah

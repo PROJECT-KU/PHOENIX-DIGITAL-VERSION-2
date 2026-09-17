@@ -438,6 +438,76 @@ class TaskSayaList extends Component
     /** 'tidak' | 'mingguan' | 'bulanan' — lihat SalinTaskBerulang. */
     public $t_ulang = 'tidak';
 
+    /**
+     * Langkah AWAL yang ikut dibuat bersama task-nya.
+     *
+     * Disiapkan pemberi, lalu tiap penerima mendapat salinannya sendiri —
+     * satu orang mencentang langkahnya tidak boleh ikut mencentang milik
+     * orang lain.
+     *
+     * @var array<int, string>
+     */
+    public array $t_langkah = [];
+
+    /** Kotak isian untuk menambah satu langkah ke daftar di atas. */
+    public string $t_langkah_baru = '';
+
+    /**
+     * Langkah yang SUDAH ada pada grup yang sedang diedit — ditampilkan
+     * sebagai keterangan, bukan sebagai daftar yang bisa disunting.
+     *
+     * Menghapusnya dari sini berarti menghapusnya dari semua penerima,
+     * termasuk yang sudah mencentangnya — dan catatan bahwa seseorang sudah
+     * mengerjakan langkah itu ikut hilang bersamanya. Penghapusan tetap ada,
+     * tetapi di jendela detail, oleh orang yang mengerjakannya.
+     *
+     * @var array<int, string>
+     */
+    public array $t_langkah_ada = [];
+
+    public function tambahLangkahBaru(): void
+    {
+        $teks = trim($this->t_langkah_baru);
+
+        if ($teks === '') {
+            return;
+        }
+
+        $this->t_langkah[] = mb_substr($teks, 0, 190);
+        $this->t_langkah_baru = '';
+    }
+
+    public function hapusLangkahBaru(int $indeks): void
+    {
+        unset($this->t_langkah[$indeks]);
+        $this->t_langkah = array_values($this->t_langkah);
+    }
+
+    /**
+     * Pasang langkah awal ke sebuah task.
+     *
+     * Hanya MENAMBAH: langkah yang teksnya sudah ada dilewati, supaya
+     * menyimpan ulang jendela edit tidak menggandakan daftar orang lain.
+     */
+    protected function pasangLangkah(Task $task): void
+    {
+        if (empty($this->t_langkah)) {
+            return;
+        }
+
+        $sudahAda = $task->checklists()->pluck('teks')->map(fn ($t) => mb_strtolower($t))->all();
+        $urutan = (int) $task->checklists()->max('urutan');
+
+        foreach ($this->t_langkah as $teks) {
+            if (in_array(mb_strtolower($teks), $sudahAda, true)) {
+                continue;
+            }
+
+            $task->checklists()->create(['teks' => $teks, 'urutan' => ++$urutan]);
+            $sudahAda[] = mb_strtolower($teks);
+        }
+    }
+
     public $t_deadline_mulai = '';
 
     public $t_deadline_selesai = '';
@@ -781,9 +851,12 @@ class TaskSayaList extends Component
         $this->ensureCanAssign();
 
         $this->reset(['editingTaskId', 'editingGroupId', 't_user_ids', 't_nama', 't_deskripsi', 't_files', 'newFiles',
-            't_category_id', 't_label_id', 'newCategoryName', 'newLabelName']);
+            't_category_id', 't_label_id', 'newCategoryName', 'newLabelName', 't_langkah', 't_langkah_baru', 't_langkah_ada']);
         $this->t_bobot = 'sedang';
         $this->t_ulang = 'tidak';
+        $this->t_langkah = [];
+        $this->t_langkah_baru = '';
+        $this->t_langkah_ada = [];
         $this->t_deadline_mulai = now()->toDateString();
         $this->t_deadline_selesai = now()->addDays(7)->toDateString();
         $this->showTaskModal = true;
@@ -808,6 +881,11 @@ class TaskSayaList extends Component
         $this->t_label_id = $task->task_category_label_id ?? '';
         $this->t_bobot = $task->bobot;
         $this->t_ulang = $task->ulang ?? 'tidak';
+        $this->t_langkah = [];
+        $this->t_langkah_baru = '';
+        // Yang sudah ada ditampilkan sebagai keterangan saja — lihat catatan
+        // di $t_langkah_ada.
+        $this->t_langkah_ada = $task->checklists()->orderBy('urutan')->pluck('teks')->all();
         $this->t_deadline_mulai = $task->deadline_mulai?->toDateString();
         $this->t_deadline_selesai = $task->deadline_selesai?->toDateString();
         $this->t_files = [];
@@ -913,8 +991,12 @@ class TaskSayaList extends Component
     {
         $this->ensureCanAssign();
 
-        $att = TaskAttachment::whereHas('task', fn ($q) => $q->whereIn('assigned_by', $this->manageableGiverIds()))->find($id);
-        if (! $att || ! $att->task) {
+        // Jebakan yang sama dengan hapus task: task dari layar Penyelesaian
+        // Task ber-assigned_by NULL, dan NULL tidak pernah cocok dengan
+        // whereIn — lampirannya lalu tidak bisa dihapus siapa pun.
+        $att = TaskAttachment::with('task')->find($id);
+
+        if (! $att || ! $att->task || ! $this->bolehKelolaTask($att->task)) {
             return;
         }
 
@@ -1009,6 +1091,7 @@ class TaskSayaList extends Component
                 'created_by' => auth()->id(),
             ]);
             $this->attachFilesTo($task, $storedFiles);
+            $this->pasangLangkah($task);
             $task->catat('dibuat');
             $task->karyawan?->notify(new TaskAssigned($task));
             $task->update(['assigned_notified_at' => now()]);
@@ -1020,10 +1103,13 @@ class TaskSayaList extends Component
     /** Update grup: ubah field bersama, tambah penerima baru, hapus yang dibuang. */
     private function updateGroup(array $shared, array $userIds, array $storedFiles): void
     {
-        $existing = Task::where('group_id', $this->editingGroupId)
-            ->whereIn('assigned_by', $this->manageableGiverIds())
-            ->get();
-        if ($existing->isEmpty()) {
+        // visibleTo() + bolehKelolaTask(), BUKAN whereIn('assigned_by', …):
+        // task yang dibuat dari layar Penyelesaian Task ber-assigned_by NULL,
+        // dan NULL tidak pernah cocok dengan whereIn — grup semacam itu dulu
+        // gagal disimpan tanpa satu pun pesan.
+        $existing = Task::visibleTo()->where('group_id', $this->editingGroupId)->get();
+
+        if ($existing->isEmpty() || $existing->contains(fn ($t) => ! $this->bolehKelolaTask($t))) {
             return;
         }
 
@@ -1042,6 +1128,7 @@ class TaskSayaList extends Component
                 $t->update(['assigned_notified_at' => now()]);
             }
             $this->attachFilesTo($t, $storedFiles);
+            $this->pasangLangkah($t);
         }
 
         // Penerima yang dihapus dari daftar -> sub-task-nya dihapus.
@@ -1438,9 +1525,15 @@ class TaskSayaList extends Component
                 ->latest()->get()->unique('path')->values()
             : collect();
 
+        // Sama: jendela "Buka Kembali" dulu tidak menemukan apa pun untuk task
+        // ber-assigned_by NULL, sehingga terbuka dalam keadaan kosong.
         $reopenTask = $this->reopenTaskId
-            ? Task::with('category.labels')->whereIn('assigned_by', $canAssign ? $this->manageableGiverIds() : [])->find($this->reopenTaskId)
+            ? Task::visibleTo()->with('category.labels')->find($this->reopenTaskId)
             : null;
+
+        if ($reopenTask && ! $this->bolehKelolaTask($reopenTask)) {
+            $reopenTask = null;
+        }
 
         // Pemberi task yang boleh saya kelola (untuk memunculkan tombol di kartu/modal).
         $manageGiverIds = $this->manageableGiverIds();
