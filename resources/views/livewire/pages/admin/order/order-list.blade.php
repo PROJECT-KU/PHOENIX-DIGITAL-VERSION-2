@@ -25,16 +25,20 @@ Data Pesanan || lemon
         ];
         $lencanaLangganan = ['baru' => 'is-ungu', 'perpanjang' => 'is-hijau', 'pengganti' => 'is-biru', 'habis' => 'is-merah'];
         $tabs = [
-            'all' => ['Semua', 'bi-list-check', '#7c3aed'],
-            'neworder' => ['Pesanan Baru', 'bi-bag-plus-fill', '#16a34a'],
-            'berjalan' => ['Pengecekan Berjalan', 'bi-hourglass-split', '#0284c7'],
+            'all' => ['Semua', 'bi-grid-fill', '#7c3aed'],
+            'neworder' => ['Baru', 'bi-bag-plus-fill', '#16a34a'],
+            'berjalan' => ['Cek Berjalan', 'bi-hourglass-split', '#0284c7'],
             'processing' => ['Diproses', 'bi-gear-fill', '#d97706'],
             'completed' => ['Selesai', 'bi-bag-check-fill', '#4f46e5'],
             'cancelled' => ['Dibatalkan', 'bi-x-circle-fill', '#e11d48'],
-            'draft' => ['Draft', 'bi-inbox-fill', '#64748b'],
+            'draft' => ['Draft', 'bi-pencil-square', '#64748b'],
             'catatan' => ['Ada Catatan', 'bi-sticky-fill', '#d97706'],
             'segera' => ['Segera Habis', 'bi-alarm-fill', '#ea580c'],
             'habis' => ['Akun Habis', 'bi-hourglass-bottom', '#dc2626'],
+        ];
+        $grupTab = [
+            ['Status pesanan', 'Menurut tahap pesanan', ['all', 'neworder', 'berjalan', 'processing', 'completed', 'cancelled', 'draft']],
+            ['Perlu ditindaklanjuti', 'Catatan & masa aktif akun', ['catatan', 'segera', 'habis']],
         ];
         $judulDaftar = ['segera' => 'Akun yang Segera Habis', 'habis' => 'Akun yang Sudah Habis'][$activeTab] ?? 'Pesanan';
         $ketUrut = ['segera' => 'Paling dekat habis di atas', 'habis' => 'Masa aktif terbaru di atas'][$activeTab] ?? $this::URUTAN[$urut];
@@ -217,18 +221,37 @@ Data Pesanan || lemon
                 </div>
 
                 <div class="k-12">
-                    <nav class="pt-tab-deret" aria-label="Saring menurut status"
-                        x-data x-init="const t = $el.querySelector('.is-aktif'); if (t) $el.scrollLeft = t.offsetLeft - 12">
-                        @foreach ($tabs as $kunci => [$label, $ikon, $warna])
-                            <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
-                                class="pt-tab {{ $activeTab === $kunci ? 'is-aktif' : '' }}"
-                                aria-pressed="{{ $activeTab === $kunci ? 'true' : 'false' }}">
-                                <i class="bi {{ $ikon }}"></i>
-                                <span>{{ $label }}</span>
-                                <span class="pt-tab-jumlah">{{ $tabCounts[$kunci] > 999 ? '999+' : $tabCounts[$kunci] }}</span>
-                            </button>
+                    {{-- Tab sebagai kartu status: dua kelompok supaya 10 pilihan tetap rapi.
+                         Layar sempit: tiap kelompok digulir mendatar. --}}
+                    <div class="pt-grup-deret">
+                        @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
+                            <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                <div class="pt-grup-kepala">
+                                    <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                    <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                </div>
+                                <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}" x-data
+                                    x-init="const t = $el.querySelector('.is-aktif'); if (t) $el.scrollLeft = t.offsetLeft - 8">
+                                    @foreach ($kunciGrup as $kunci)
+                                        @php
+                                            [$label, $ikon, $warna] = $tabs[$kunci];
+                                            $jumlahTab = $tabCounts[$kunci];
+                                            $tabAktif = $activeTab === $kunci;
+                                        @endphp
+                                        <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
+                                            class="pt-kartu-tab {{ $tabAktif ? 'is-aktif' : '' }} {{ $jumlahTab ? '' : 'is-nol' }}"
+                                            aria-pressed="{{ $tabAktif ? 'true' : 'false' }}">
+                                            <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                            <span class="pt-kartu-teks">
+                                                <span class="pt-kartu-angka">{{ 999 < $jumlahTab ? '999+' : number_format($jumlahTab, 0, ',', '.') }}</span>
+                                                <span class="pt-kartu-label">{{ $label }}</span>
+                                            </span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </nav>
                         @endforeach
-                    </nav>
+                    </div>
                 </div>
 
                 <div class="k-12" wire:loading.class="dsb-sedang-muat" wire:target="{{ $targetMuat }}">

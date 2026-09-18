@@ -37,6 +37,53 @@
         .pt-tab:not(.is-aktif):hover { background: #f8fafc; color: #1c1f26; }
     }
 
+    /* ===== Tab sebagai kartu status (dua kelompok) ===== */
+    .pt-grup-deret { display: grid; gap: 12px; grid-template-columns: minmax(0, 7fr) minmax(0, 3fr); }
+    @media (max-width: 1199.98px) { .pt-grup-deret { grid-template-columns: minmax(0, 1fr); } }
+    .pt-grup {
+        min-width: 0; padding: 12px; background: #fff;
+        border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 18px;
+    }
+    .pt-grup-kepala { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 10px; min-width: 0; }
+    .pt-grup-judul { flex: 0 0 auto; font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #f26522; }
+    .pt-grup-ket { min-width: 0; font-size: .74rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pt-kartu-deret { display: grid; gap: 8px; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); }
+    .pt-kartu-tab {
+        --c: #7c3aed;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+        min-height: 104px; padding: 12px 8px; border-radius: 14px; cursor: pointer; text-align: center;
+        background: #f8fafc; border: 1px solid transparent; color: #475569;
+        transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+    .pt-kartu-ikon {
+        width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.05rem; color: var(--c); background: color-mix(in srgb, var(--c) 13%, #fff);
+        transition: background .15s ease, color .15s ease;
+    }
+    .pt-kartu-teks { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+    .pt-kartu-angka { font-size: 1.2rem; font-weight: 800; line-height: 1.1; color: #1c1f26; font-variant-numeric: tabular-nums; }
+    .pt-kartu-label { font-size: .76rem; font-weight: 700; line-height: 1.25; color: #64748b; white-space: nowrap; }
+    .pt-kartu-tab.is-nol .pt-kartu-angka { color: #cbd5e1; }
+    .pt-kartu-tab.is-aktif {
+        background: color-mix(in srgb, var(--c) 8%, #fff); border-color: color-mix(in srgb, var(--c) 45%, #fff);
+        box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--c) 60%, transparent);
+    }
+    .pt-kartu-tab.is-aktif .pt-kartu-ikon { background: var(--c); color: #fff; }
+    .pt-kartu-tab.is-aktif .pt-kartu-angka, .pt-kartu-tab.is-aktif .pt-kartu-label { color: var(--c); }
+    .pt-kartu-tab:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (hover: hover) and (pointer: fine) {
+        .pt-kartu-tab:not(.is-aktif):hover { background: #fff; border-color: color-mix(in srgb, var(--c) 30%, #fff); transform: translateY(-1px); }
+    }
+    /* Layar sempit: kartu mendatar yang bisa digulir, bukan tumpukan panjang. */
+    @media (max-width: 767.98px) {
+        .pt-kartu-deret {
+            display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+            margin: 0 -12px; padding: 0 12px 2px; -webkit-overflow-scrolling: touch;
+        }
+        .pt-kartu-deret::-webkit-scrollbar { display: none; }
+        .pt-kartu-tab { flex: 0 0 104px; min-height: 96px; scroll-snap-align: start; }
+    }
+
     /* ===== Saringan ===== */
     .pt-saring { display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
     @media (max-width: 767.98px) { .pt-saring { grid-template-columns: minmax(0, 1fr); } }
