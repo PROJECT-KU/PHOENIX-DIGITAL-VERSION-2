@@ -852,3 +852,14 @@ it('detail pemesanan rsc tidak menaruh data batch di snapshot livewire', functio
     expect($isi)->toContain("->locale('id')->translatedFormat")
         ->and($isi)->toContain('wire:click="unduhInvoice"');
 });
+
+it('pengunci gulir jendela selalu memakai body yang sedang tampil', function () {
+    // wire:navigate mengganti elemen <body>. Kunci yang dipasang ke <body>
+    // yang disimpan sejak awal tidak berpengaruh: halaman di belakang jendela
+    // (mis. jendela unggah hasil jasa) tetap ikut tergulir.
+    $gaya = file_get_contents(resource_path('views/livewire/pages/admin/partials/dasbor-gaya.blade.php'));
+
+    expect($gaya)->toContain('const badan = () => document.body;')
+        ->and($gaya)->not->toContain('const badan = document.body;')
+        ->and($gaya)->toContain('overscroll-behavior: contain;');
+});

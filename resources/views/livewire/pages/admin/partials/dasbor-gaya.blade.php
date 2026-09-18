@@ -1020,6 +1020,8 @@
     .ts-modal-card > .dsb-jendela-kepala,
     .ts-modal-card > .dsb-jendela-kaki { flex: 0 0 auto; }
     .ts-modal-card > .dsb-jendela-isi { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    /* Guliran yang mentok di ujung jendela tidak diteruskan ke halaman. */
+    .ts-modal-card > .dsb-jendela-isi { overscroll-behavior: contain; }
 
     /* Halaman di belakang dikunci selama ada jendela terbuka. Lebar bilah
        gulung diganti padding supaya isinya tidak melompat mendatar saat
@@ -1205,7 +1207,11 @@
             if (window.__dsbJendelaTerpasang) return;
             window.__dsbJendelaTerpasang = true;
 
-            const badan = document.body;
+            // SELALU <body> yang sedang tampil, jangan disimpan sekali di awal:
+            // wire:navigate mengganti elemen <body> tiap pindah halaman, dan
+            // kunci yang dipasang ke <body> lama tidak berpengaruh apa-apa —
+            // halaman di belakang jendela tetap ikut tergulir.
+            const badan = () => document.body;
 
             const lebarBilah = () => window.innerWidth - document.documentElement.clientWidth;
 
@@ -1217,22 +1223,22 @@
             const perbarui = () => {
                 const jendela = document.querySelector('.ts-modal [role="dialog"]');
                 const adaJendela = !!jendela;
-                if (adaJendela === badan.classList.contains('ts-terkunci')) return;
+                if (adaJendela === badan().classList.contains('ts-terkunci')) return;
 
                 if (adaJendela) {
                     const bilah = lebarBilah();
-                    badan.classList.add('ts-terkunci');
+                    badan().classList.add('ts-terkunci');
                     // Tanpa ini, hilangnya bilah gulung melebarkan halaman dan
                     // seluruh isinya bergeser beberapa piksel saat jendela dibuka.
-                    if (bilah > 0) badan.style.paddingRight = bilah + 'px';
+                    if (bilah > 0) badan().style.paddingRight = bilah + 'px';
 
                     fokusSebelumnya = document.activeElement;
                     // Fokus ke jendelanya, bukan ke tombol pertamanya: pembaca
                     // layar lalu membacakan judul dialognya lebih dulu.
                     jendela.focus({ preventScroll: true });
                 } else {
-                    badan.classList.remove('ts-terkunci');
-                    badan.style.paddingRight = '';
+                    badan().classList.remove('ts-terkunci');
+                    badan().style.paddingRight = '';
 
                     if (fokusSebelumnya && document.contains(fokusSebelumnya)) {
                         fokusSebelumnya.focus({ preventScroll: true });
@@ -1265,8 +1271,8 @@
             // Berpindah halaman lewat wire:navigate tidak selalu melepas kelasnya
             // sendiri — dan halaman berikutnya lalu tidak bisa digulung sama sekali.
             document.addEventListener('livewire:navigating', () => {
-                badan.classList.remove('ts-terkunci');
-                badan.style.paddingRight = '';
+                badan().classList.remove('ts-terkunci');
+                badan().style.paddingRight = '';
             });
         })();
 </script>
