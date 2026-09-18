@@ -73,20 +73,41 @@ Data Pesanan || lemon
             </div>
         </header>
 
-        {{-- ================== SARINGAN ================== --}}
+        {{-- ================== STATUS & SARINGAN ================== --}}
+        {{-- Tanpa judul besar: data harus terlihat di layar pertama. --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
-                <div class="dsb-kepala" style="--c: #0284c7">
-                    <span class="dsb-kepala-ikon"><i class="bi bi-funnel-fill"></i></span>
-                    <div class="dsb-kepala-teks">
-                        <span class="dsb-kicker">Tampilan</span>
-                        <h2 class="dsb-judul">Cari &amp; Saring</h2>
-                        <div class="dsb-chip-deret">
-                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $targetMuat }}">
-                                <span class="dsb-putar is-kecil"></span>Memuat…
-                            </span>
-                            <span class="dsb-chip is-samar">Kode pesanan, nama, no. HP, email, produk, atau username akun</span>
-                        </div>
+                <div class="k-12">
+                    {{-- Tab sebagai kartu status: dua kelompok supaya 10 pilihan tetap rapi.
+                         Layar sempit: tiap kelompok digulir mendatar. --}}
+                    <div class="pt-grup-deret">
+                        @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
+                            <nav class="pt-grup" aria-label="{{ $judulGrup }}">
+                                <div class="pt-grup-kepala">
+                                    <span class="pt-grup-judul">{{ $judulGrup }}</span>
+                                    <span class="pt-grup-ket">{{ $ketGrup }}</span>
+                                </div>
+                                <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}" x-data
+                                    x-init="const t = $el.querySelector('.is-aktif'); if (t) $el.scrollLeft = t.offsetLeft - 8">
+                                    @foreach ($kunciGrup as $kunci)
+                                        @php
+                                            [$label, $ikon, $warna] = $tabs[$kunci];
+                                            $jumlahTab = $tabCounts[$kunci];
+                                            $tabAktif = $activeTab === $kunci;
+                                        @endphp
+                                        <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
+                                            class="pt-kartu-tab {{ $tabAktif ? 'is-aktif' : '' }} {{ $jumlahTab ? '' : 'is-nol' }}"
+                                            aria-pressed="{{ $tabAktif ? 'true' : 'false' }}">
+                                            <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
+                                            <span class="pt-kartu-teks">
+                                                <span class="pt-kartu-angka">{{ 999 < $jumlahTab ? '999+' : number_format($jumlahTab, 0, ',', '.') }}</span>
+                                                <span class="pt-kartu-label">{{ $label }}</span>
+                                            </span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </nav>
+                        @endforeach
                     </div>
                 </div>
 
@@ -98,7 +119,7 @@ Data Pesanan || lemon
                                 <div class="dsb-cari">
                                     <i class="bi bi-search"></i>
                                     <input id="pt-cari" type="search" class="dsb-isian" wire:model.live.debounce.300ms="search"
-                                        placeholder="Cari pesanan…">
+                                        placeholder="Kode, nama, no. HP, email, produk, username akun…">
                                     @if ($search)
                                         <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian">
                                             <i class="bi bi-x-lg"></i>
@@ -208,54 +229,18 @@ Data Pesanan || lemon
         {{-- ================== DAFTAR ================== --}}
         <section class="dsb-bagian">
             <div class="dsb-rak">
-                <div class="dsb-kepala" style="--c: {{ $tabs[$activeTab][2] ?? '#16a34a' }}">
-                    <span class="dsb-kepala-ikon"><i class="bi {{ $tabs[$activeTab][1] ?? 'bi-list-task' }}"></i></span>
-                    <div class="dsb-kepala-teks">
-                        <span class="dsb-kicker">Daftar</span>
-                        <h2 class="dsb-judul">{{ $judulDaftar }}</h2>
-                        <div class="dsb-chip-deret">
-                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>{{ $ketUrut }}</span>
-                            <span class="dsb-chip is-samar">{{ $tabAkun ? 'Satu baris = satu akun' : 'Satu baris = satu pesanan' }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="k-12">
-                    {{-- Tab sebagai kartu status: dua kelompok supaya 10 pilihan tetap rapi.
-                         Layar sempit: tiap kelompok digulir mendatar. --}}
-                    <div class="pt-grup-deret">
-                        @foreach ($grupTab as [$judulGrup, $ketGrup, $kunciGrup])
-                            <nav class="pt-grup" aria-label="{{ $judulGrup }}">
-                                <div class="pt-grup-kepala">
-                                    <span class="pt-grup-judul">{{ $judulGrup }}</span>
-                                    <span class="pt-grup-ket">{{ $ketGrup }}</span>
-                                </div>
-                                <div class="pt-kartu-deret" style="--n: {{ count($kunciGrup) }}" x-data
-                                    x-init="const t = $el.querySelector('.is-aktif'); if (t) $el.scrollLeft = t.offsetLeft - 8">
-                                    @foreach ($kunciGrup as $kunci)
-                                        @php
-                                            [$label, $ikon, $warna] = $tabs[$kunci];
-                                            $jumlahTab = $tabCounts[$kunci];
-                                            $tabAktif = $activeTab === $kunci;
-                                        @endphp
-                                        <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
-                                            class="pt-kartu-tab {{ $tabAktif ? 'is-aktif' : '' }} {{ $jumlahTab ? '' : 'is-nol' }}"
-                                            aria-pressed="{{ $tabAktif ? 'true' : 'false' }}">
-                                            <span class="pt-kartu-ikon"><i class="bi {{ $ikon }}"></i></span>
-                                            <span class="pt-kartu-teks">
-                                                <span class="pt-kartu-angka">{{ 999 < $jumlahTab ? '999+' : number_format($jumlahTab, 0, ',', '.') }}</span>
-                                                <span class="pt-kartu-label">{{ $label }}</span>
-                                            </span>
-                                        </button>
-                                    @endforeach
-                                </div>
-                            </nav>
-                        @endforeach
-                    </div>
-                </div>
-
                 <div class="k-12" wire:loading.class="dsb-sedang-muat" wire:target="{{ $targetMuat }}">
                     <div class="dsb-kartu">
+                    <div class="pt-daftar-kepala" style="--c: {{ $tabs[$activeTab][2] ?? '#16a34a' }}">
+                        <span class="dsb-ikon is-kecil"><i class="bi {{ $tabs[$activeTab][1] ?? 'bi-list-task' }}"></i></span>
+                        <div class="pt-daftar-judul">
+                            <b>{{ $judulDaftar }}</b>
+                            <span>{{ $ketUrut }} · {{ $tabAkun ? 'satu baris = satu akun' : 'satu baris = satu pesanan' }}</span>
+                        </div>
+                        <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $targetMuat }}">
+                            <span class="dsb-putar is-kecil"></span>Memuat…
+                        </span>
+                    </div>
                     @if ($tabAkun)
                         @include('livewire.pages.admin.order.partials.tabel-akun', [
                             'items' => $activeTab === 'segera' ? $segeraItems : $habisItems,
@@ -275,7 +260,7 @@ Data Pesanan || lemon
                             </div>
                         @else
                             <div class="dsb-tabel-bungkus">
-                                <table class="dsb-tabel">
+                                <table class="dsb-tabel pt-tabel-pesanan">
                                     <thead>
                                         <tr>
                                             <th>Pesanan</th>

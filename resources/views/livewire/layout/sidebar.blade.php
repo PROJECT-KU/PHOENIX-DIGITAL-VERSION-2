@@ -82,6 +82,14 @@ new class extends Component
                 ->select('nama_camp', 'batch_camp')->distinct()->get()->count()
             : 0;
 
+        // Akun Pesanan Toko yang habis dalam 7 hari dan BELUM diingatkan
+        // (yang sudah diperpanjang tidak dihitung — PengingatPerpanjangan).
+        $tokoSegera = $login && $u->hasPermission('view_pemesanantoko')
+            ? \App\Models\OrderItem::query()
+                ->tap(fn ($q) => \App\Support\PengingatPerpanjangan::scopeSegeraHabis($q))
+                ->whereNull('ingat_perpanjang_at')->count()
+            : 0;
+
         // Pengecekan plagiasi yang menunggu diproses. Penting karena paket 5x
         // diunggah bertahap: file ke-2 dst bisa masuk berhari-hari kemudian.
         $pengecekanBaru = $login && $u->hasPermission('view_pemesanantoko')
@@ -102,6 +110,7 @@ new class extends Component
             'pengecekanBaru' => $pengecekanBaru,
             'taskMendesak' => $taskMendesak,
             'rscSegera' => $rscSegera,
+            'tokoSegera' => $tokoSegera,
             'orchaPerlu' => $orchaPerlu,
             'modeOrcha' => request()->routeIs('admin.orcha.*'),
 
@@ -306,6 +315,12 @@ new class extends Component
             flex-shrink: 0;
             box-shadow: 0 2px 6px rgba(239, 68, 68, .45);
         }
+
+        /* Pengingat perpanjangan (akun segera habis): oranye, beda dari "baru". */
+        #sidebar .sidebar-badge.sidebar-badge-segera {
+            gap: 3px; background: #f97316; box-shadow: 0 2px 6px rgba(249, 115, 22, .4);
+        }
+        #sidebar .sidebar-badge.sidebar-badge-segera i.bi { font-size: .62rem; line-height: 1; }
 
         /* Menu dropdown punya chevron absolut di kanan (right:15px, lebar 20px) —
            beri jarak agar badge tidak tertimpa chevron. */
@@ -708,8 +723,8 @@ new class extends Component
                             Pesanan
                         </span>
                         @php
-                            $pesananBadge = $pesananTokoBadge + $rscSegera;
-                            $pesananTitle = trim($pesananTokoTitle.($rscSegera > 0 ? " {$rscSegera} batch RSC akunnya segera berakhir." : ''));
+                            $pesananBadge = $pesananTokoBadge + $rscSegera + $tokoSegera;
+                            $pesananTitle = trim($pesananTokoTitle.($rscSegera > 0 ? " {$rscSegera} batch RSC akunnya segera berakhir." : '').(0 < $tokoSegera ? " {$tokoSegera} akun toko segera habis & belum diingatkan." : ''));
                         @endphp
                         @if ($pesananBadge > 0)
                         <span class="sidebar-badge ms-auto" title="{{ $pesananTitle }}">
@@ -733,12 +748,18 @@ new class extends Component
                         @endif
                         @if (auth()->user()->hasPermission('view_pemesanantoko'))
                         <li class="submenu-item {{ request()->routeIs('admin.pesanantoko.*') ? 'active' : '' }}">
-                            <a wire:navigate class="submenu-link @if ($pesananTokoBadge > 0) has-badge @endif"
-                                href="{{ route('admin.pesanantoko.index') }}">
+                            {{-- Hanya pengingat perpanjangan: tautan langsung ke tab Segera Habis. --}}
+                            <a wire:navigate class="submenu-link @if ($pesananTokoBadge || $tokoSegera) has-badge @endif"
+                                href="{{ ! $pesananTokoBadge && $tokoSegera ? route('admin.pesanantoko.index', ['activeTab' => 'segera']) : route('admin.pesanantoko.index') }}">
                                 <span>Pesanan Toko</span>
                                 @if ($pesananTokoBadge > 0)
                                 <span class="sidebar-badge ms-auto" title="{{ $pesananTokoTitle }}">
                                     {{ $pesananTokoBadge > 99 ? '99+' : $pesananTokoBadge }}
+                                </span>
+                                @endif
+                                @if ($tokoSegera)
+                                <span class="sidebar-badge sidebar-badge-segera {{ $pesananTokoBadge ? '' : 'ms-auto' }}" title="{{ $tokoSegera }} akun segera habis dan belum diingatkan">
+                                    <i class="bi bi-alarm"></i>{{ 99 < $tokoSegera ? '99+' : $tokoSegera }}
                                 </span>
                                 @endif
                             </a>

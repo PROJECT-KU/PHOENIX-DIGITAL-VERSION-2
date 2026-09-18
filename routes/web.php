@@ -269,6 +269,7 @@ Route::middleware('permission:view_pemesanantoko')->group(function () {
         ->name('admin.pesanantoko.bukti');
     Route::get('/admin/pesanantoko/create', OrderCreate::class)->middleware('permission:create_pemesanantoko')->name('admin.pesanantoko.create');
     Route::get('/admin/pesanantoko/{id}/process', ProcessOrder::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.process');
+    Route::get('/admin/pesanantoko/{order}/ubah', \App\Livewire\Pages\Admin\Order\OrderEdit::class)->middleware('permission:edit_pemesanantoko')->name('admin.pesanantoko.edit');
     Route::get('/admin/pesanantoko/{order}/qris', \App\Livewire\Pages\Admin\Order\QrisPayment::class)->name('admin.pesanantoko.qris');
     // Unggah bukti untuk pesanan DRAFT bermetode transfer / QRIS statis.
     // Namanya sengaja 'unggah-bukti', bukan 'bukti' — nama itu sudah dipakai

@@ -289,6 +289,7 @@ class OrderList extends Component
     protected function baseHabisQuery()
     {
         return $this->saringKueriItem(OrderItem::query()
+            ->tap(fn ($x) => PengingatPerpanjangan::scopeBelumDiperpanjang($x))
             ->where(function ($q) {
                 $q->where('subscription_status', 'habis')
                     ->orWhere(function ($q2) {

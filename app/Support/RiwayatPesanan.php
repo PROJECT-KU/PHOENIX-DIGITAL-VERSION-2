@@ -98,6 +98,10 @@ class RiwayatPesanan
             if ($it->wasChanged('ingat_perpanjang_at') && $it->ingat_perpanjang_at) {
                 self::catat($it->order_id, 'wa', "Pelanggan diingatkan akun {$nama} segera habis");
             }
+            if ($it->wasChanged('diperpanjang_oleh_item_id') && $it->diperpanjang_oleh_item_id) {
+                $nomor = OrderItem::with('order:id,order_number')->find($it->diperpanjang_oleh_item_id)?->order?->order_number;
+                self::catat($it->order_id, 'langganan', "Akun {$nama} diperpanjang".($nomor ? " lewat pesanan {$nomor}" : ''));
+            }
             if ($it->wasChanged('processing_notes') && blank($it->processing_notes) && filled($it->getOriginal('processing_notes'))) {
                 self::catat($it->order_id, 'catatan', "Catatan internal {$nama} diselesaikan");
             }

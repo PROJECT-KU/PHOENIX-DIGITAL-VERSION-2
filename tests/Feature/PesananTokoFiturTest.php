@@ -234,3 +234,101 @@ it('pencatatan riwayat tidak pernah menggagalkan pesanan walau tabelnya belum ad
     expect($order->fresh()->status)->toBe('completed')
         ->and(RiwayatPesanan::untuk($order->fresh())->pluck('teks')->all())->toContain('Pesanan dibuat');
 });
+
+it('akun yang sudah dibeli ulang pelanggan yang sama tidak muncul lagi di Segera Habis & Akun Habis', function () {
+    $this->actingAs(tokoAdmin());
+    $produk = Product::create(['nama_akun' => 'Netflix']);
+    $lama = tokoPesanan([], ['product_name' => 'Netflix Lama', 'end_date' => today()->addDays(2)], $produk);
+    $habis = tokoPesanan(['customer_id' => $lama->customer_id], ['product_name' => 'Netflix Habis', 'end_date' => today()->subDays(2)], $produk);
+    $habis->forceFill(['created_at' => now()->subMonths(2)])->saveQuietly();
+    $lama->forceFill(['created_at' => now()->subMonth()])->saveQuietly();
+
+    // Belum ada pembelian ulang: keduanya muncul.
+    Livewire::test(OrderList::class)->call('setTab', 'segera')->assertSee('Netflix Lama');
+
+    // Pembelian ulang yang BELUM dibayar tidak dihitung.
+    $ulang = tokoPesanan(['customer_id' => $lama->customer_id, 'status' => 'pending'], [], $produk);
+    Livewire::test(OrderList::class)->call('setTab', 'segera')->assertSee('Netflix Lama');
+
+    $ulang->update(['status' => 'paid']);
+    Livewire::test(OrderList::class)->call('setTab', 'segera')->assertDontSee('Netflix Lama');
+    Livewire::test(OrderList::class)->call('setTab', 'habis')->assertDontSee('Netflix Habis');
+});
+
+it('pesanan lewat tombol Perpanjang menautkan akun lama, walau produknya diganti', function () {
+    $this->actingAs(tokoAdmin());
+    $lama = tokoPesanan([], ['product_name' => 'Akun Lama X', 'end_date' => today()->addDays(3)]);
+    $item = $lama->items->first();
+    $lain = Product::create(['nama_akun' => 'Produk Pengganti', 'harga_perbulan' => 20000]);
+
+    Livewire::test(OrderForm::class, ['perpanjang' => (string) $item->id])
+        ->set('items.0.product_id', $lain->id)
+        ->set('payment_method', 'qris_dinamis')
+        ->call('save');
+
+    $baru = OrderItem::where('product_id', $lain->id)->latest()->first();
+    expect($item->fresh()->diperpanjang_oleh_item_id)->toBe((string) $baru->id);
+
+    // Masih menunggu bayar → tetap diingatkan; setelah dibayar → hilang.
+    Livewire::test(OrderList::class)->call('setTab', 'segera')->assertSee('Akun Lama X');
+    $baru->order->update(['status' => 'paid']);
+    Livewire::test(OrderList::class)->call('setTab', 'segera')->assertDontSee('Akun Lama X');
+});
+
+it('pesanan belum dibayar bisa diubah; total dihitung ulang dan tercatat di riwayat', function () {
+    $this->actingAs(tokoAdmin());
+    $a = Product::create(['nama_akun' => 'Produk A', 'harga_perbulan' => 30000]);
+    $b = Product::create(['nama_akun' => 'Produk B', 'harga_perbulan' => 45000]);
+    $order = tokoPesanan(['status' => 'draft', 'unique_code' => 123, 'total' => 30123, 'subtotal' => 30000], ['price' => 30000, 'subtotal' => 30000], $a);
+
+    Livewire::test(\App\Livewire\Pages\Admin\Order\OrderEdit::class, ['order' => $order])
+        ->assertSee('Total baru')
+        ->set('baris.0.product_id', $b->id)
+        ->set('baris.0.duration_value', 2)
+        ->call('simpan')
+        ->assertRedirect(route('admin.pesanantoko.detail', $order));
+
+    $order->refresh();
+    expect((int) $order->subtotal)->toBe(90000)
+        ->and((int) $order->total)->toBe(90123)
+        ->and($order->items()->count())->toBe(1)
+        ->and($order->items()->first()->product_name)->toBe('Produk B')
+        ->and(OrderRiwayat::where('order_id', $order->id)->where('aksi', 'diubah')->value('keterangan'))
+        ->toContain('Rp 30.123 → Rp 90.123');
+});
+
+it('pesanan yang sudah dibayar, ber-bukti, ber-QRIS, atau berdiskon tidak bisa diubah', function (array $isian, string $potongan) {
+    $this->actingAs(tokoAdmin());
+    $order = tokoPesanan(array_merge(['status' => 'pending'], $isian));
+
+    expect(\App\Support\EditPesanan::alasanTidakBisa($order))->toContain($potongan);
+
+    Livewire::test(\App\Livewire\Pages\Admin\Order\OrderEdit::class, ['order' => $order])
+        ->assertSee('tidak bisa diubah')
+        ->call('simpan');
+    expect($order->fresh()->items()->count())->toBe(1);
+})->with([
+    'dibayar' => [['status' => 'paid'], 'belum dibayar'],
+    'bukti' => [['bukti_pembayaran' => 'bukti_pembayaran/x.jpg'], 'Bukti pembayaran'],
+    'qris' => [['payment_method' => 'qris_dinamis', 'qris_content' => '000201'], 'QRIS sudah dibuat'],
+    'diskon' => [['total_discount' => 5000], 'promo'],
+]);
+
+it('tombol Ubah hanya tampil di detail pesanan yang boleh diubah', function () {
+    $this->actingAs(tokoAdmin());
+
+    Livewire::test(OrderDetail::class, ['order' => tokoPesanan(['status' => 'draft'])])
+        ->assertSee('/ubah', false);
+    Livewire::test(OrderDetail::class, ['order' => tokoPesanan(['status' => 'completed'])])
+        ->assertDontSee('/ubah', false);
+});
+
+it('menu samping menandai akun toko yang segera habis dan belum diingatkan', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan([], ['end_date' => today()->addDays(2)]);
+    tokoPesanan([], ['end_date' => today()->addDays(2), 'ingat_perpanjang_at' => now()]);
+
+    $html = \Livewire\Volt\Volt::test('layout.sidebar')->html();
+    expect($html)->toContain('sidebar-badge-segera')
+        ->toContain('1 akun segera habis dan belum diingatkan');
+});

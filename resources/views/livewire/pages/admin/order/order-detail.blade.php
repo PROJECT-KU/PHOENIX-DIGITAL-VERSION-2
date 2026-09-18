@@ -42,6 +42,7 @@ Detail Pesanan || lemon
         $pblBolehLihat = $pbl && (bool) auth()->user()?->hasPermission('view_customer');
         $hdBolehUbah = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
         $hdCatatanDitangani = $order->catatan_ditangani_at;
+        $hdBisaDiubah = ! \App\Support\EditPesanan::alasanTidakBisa($order);
         // Warna Bootstrap (statusWarna/jenisWarna) → lencana dasbor, supaya seragam.
         $lencanaBs = [
             'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
@@ -71,6 +72,11 @@ Detail Pesanan || lemon
             <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
                 <i class="bi bi-arrow-left"></i><span>Kembali</span>
             </a>
+            @if ($hdBolehUbah && $hdBisaDiubah)
+                <a wire:navigate href="{{ route('admin.pesanantoko.edit', $order) }}" class="dsb-tombol is-lembut" title="Ubah produk, durasi, atau jumlah — hanya sebelum dibayar">
+                    <i class="bi bi-pencil-square"></i><span>Ubah</span>
+                </a>
+            @endif
             <button type="button" class="dsb-tombol is-lembut" wire:click="$set('lihatRiwayat', true)">
                 <i class="bi bi-clock-history"></i><span>Riwayat</span>
             </button>
@@ -127,7 +133,7 @@ Detail Pesanan || lemon
     .pt-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 
     /* ===== Blok jasa pengecekan ===== */
-    .pt-detail .pcek .pcek-head-row { padding-bottom: 16px; margin-bottom: 16px !important; border-bottom: 1px solid #f1f5f9; }
+    .pt-detail .pcek .pcek-head-row {margin-bottom: 16px !important;}
     .pcek-kicker { display: block; color: #f26522; font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
     .pcek-kuota { margin-bottom: 16px; }
     .pcek-kuota-angka { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
@@ -388,22 +394,14 @@ Detail Pesanan || lemon
     .pt-detail .summary-card .summary-total { background: #f0fdf4; border-radius: 12px; padding: 12px 14px !important; margin-top: 8px; border: 1px solid #bbf7d0; }
 
         .detail-info-card {
-            border: 1px solid rgba(108, 99, 255, 0.12);
-            border-radius: 1rem;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 255, 0.9));
-            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.08);
             height: 100%;
         }
 
         .detail-info-card .info-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 1.25rem;
-            color: #fff;
             flex-shrink: 0;
         }
 
@@ -424,9 +422,7 @@ Detail Pesanan || lemon
             display: inline-flex;
             align-items: center;
             gap: .4rem;
-            padding: .4rem .85rem;
             border-radius: 999px;
-            font-size: .82rem;
             font-weight: 700;
             line-height: 1;
             color: #fff;
@@ -438,29 +434,21 @@ Detail Pesanan || lemon
         }
 
         .method-flash {
-            background: linear-gradient(135deg, #f43f5e, #e11d48);
             box-shadow: 0 4px 12px rgba(225, 29, 72, 0.30);
         }
 
         .method-promo {
-            background: linear-gradient(135deg, #6c63ff, #4e46e5);
             box-shadow: 0 4px 12px rgba(78, 70, 229, 0.30);
         }
 
         .method-point {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
             box-shadow: 0 4px 12px rgba(217, 119, 6, 0.30);
         }
 
         .method-referral {
-            background: linear-gradient(135deg, #10b981, #059669);
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.30);
         }
 
-        .method-none {
-            background: #e2e8f0;
-            color: #64748b;
-        }
 
         .info-icon.bg-grad-purple {
             background: linear-gradient(135deg, #6c63ff, #4e46e5);
@@ -486,7 +474,6 @@ Detail Pesanan || lemon
         }
 
         .detail-info-card .info-label {
-            color: #6b7280;
             font-size: .9rem;
             font-weight: 500;
         }
@@ -499,26 +486,10 @@ Detail Pesanan || lemon
         }
 
         .items-table thead th {
-            background: linear-gradient(135deg, rgba(108, 99, 255, 0.10), rgba(78, 70, 229, 0.08));
-            color: #4e46e5;
-            font-weight: 700;
-            font-size: .82rem;
-            text-transform: uppercase;
-            letter-spacing: .03em;
             border: none;
-            white-space: nowrap;
         }
 
-        .items-table tbody td {
-            vertical-align: middle;
-        }
 
-        .summary-card {
-            border: 1px solid rgba(108, 99, 255, 0.12);
-            border-radius: 1rem;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 255, 0.95));
-            box-shadow: 0 8px 24px rgba(108, 99, 255, 0.08);
-        }
 
         .summary-card .summary-row {
             display: flex;
@@ -531,7 +502,6 @@ Detail Pesanan || lemon
 
         .summary-card .summary-total {
             border-top: 2px dashed rgba(108, 99, 255, 0.20);
-            margin-top: .35rem;
             padding-top: .85rem;
         }
 
@@ -545,13 +515,10 @@ Detail Pesanan || lemon
                 flex-direction: column;
                 align-items: stretch;
                 gap: .15rem;
-                padding: .5rem 0;
             }
-            .detail-info-card .info-label { font-size: .78rem; }
             .detail-info-card .info-value {
                 text-align: left;
                 width: 100%;
-                font-size: .9rem;
                 min-width: 0;
             }
             /* Nilai berupa flex (status + tombol batal, chip diskon) → rata kiri
@@ -945,7 +912,7 @@ Detail Pesanan || lemon
         .pcek .pcek-item { border: 1px solid #eef0f6; border-radius: 15px; padding: 1rem 1.1rem; background: #fff; transition: box-shadow .2s, border-color .2s; }
         .pcek .pcek-item:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, .06); border-color: #e2e8f0; }
         /* Panel bonus kuota (kompensasi admin) */
-        .pcek .pcek-bonus { padding: 13px 15px; margin-bottom: 16px; border: 1px solid #fde68a; border-radius: 13px; background: linear-gradient(180deg, #fffbeb, #fff); }
+        .pcek .pcek-bonus { padding: 13px 15px; margin-bottom: 16px; border: 1px solid #fde68a; border-radius: 13px;}
         .pcek .pcek-bonus-head { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; }
         .pcek .pcek-bonus-ic { width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.02rem; }
         .pcek .pcek-bonus-ic i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
@@ -961,7 +928,7 @@ Detail Pesanan || lemon
         .pcek .pcek-bonus-grid { display: flex; flex-wrap: wrap; gap: 10px; }
         .pcek .pcek-bonus-f { flex: 1 1 180px; min-width: 0; }
         .pcek .pcek-bonus-f.narrow { flex: 0 0 110px; }
-        .pcek .pcek-bonus-f label { display: block; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #94a3b8; margin-bottom: 5px; }
+        .pcek .pcek-bonus-f label { display: block;font-weight: 700;margin-bottom: 5px; }
         .pcek .pcek-bonus-f select, .pcek .pcek-bonus-f input { width: 100%; height: 38px; padding: 0 11px; font-size: .84rem; color: #334155; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; outline: none; transition: border-color .18s, box-shadow .18s; }
         .pcek .pcek-bonus-f select:focus, .pcek .pcek-bonus-f input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .15); }
         .pcek .pcek-bonus-err { display: block; margin-top: 5px; font-size: .74rem; color: #dc2626; }
@@ -1047,7 +1014,7 @@ Detail Pesanan || lemon
         .pcek .pcek-btn.danger { background: #fff; border-color: #fecaca; color: #dc2626; }
         .pcek .pcek-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; }
         /* Form unggah hasil */
-        .pcek .pcek-form { margin-top: 14px; padding: 15px; border: 1px solid #d1fae5; border-radius: 14px; background: linear-gradient(180deg, #f6fefa, #fff); }
+        .pcek .pcek-form { margin-top: 14px;border: 1px solid #d1fae5; border-radius: 14px;}
         /* Dropzone hasil (admin) */
         .pcek .pcek-drop { position: relative; display: block; padding: 16px 14px; border: 2px dashed #bbf7d0; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; transition: border-color .18s, background .18s; }
         .pcek .pcek-drop:hover { border-color: #4ade80; background: #f6fefa; }
@@ -1083,25 +1050,19 @@ Detail Pesanan || lemon
         }
         /* Baris aksi form hasil — dua tombol mengisi penuh, tanpa ruang kosong */
         .pcek .pcek-aksi { display: flex; gap: 8px; margin-top: 14px; }
-        .pcek .pcek-aksi .pcek-btn { flex: 1; }
-        .pcek .pcek-aksi .pcek-btn.success { flex: 2; }
 
         /* Slot berkas hasil (plagiasi / AI / dokumen) */
-        .pcek .pcek-slot { display: flex; gap: 11px; padding: 13px; margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
-        .pcek .pcek-slot-no { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: #dcfce7; color: #15803d; font-size: .76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .pcek .pcek-slot { display: flex; gap: 11px;margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; }
+        .pcek .pcek-slot-no { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%;font-size: .76rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
         .pcek .pcek-slot-body { flex: 1; min-width: 0; }
-        .pcek .pcek-slot-lbl { display: block; font-size: .82rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
-        .pcek .pcek-slot-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
-        .pcek .pcek-slot .pcek-drop { padding: 12px 10px; }
-        .pcek .pcek-slot .pcek-persen-wrap { max-width: 150px; }
+        .pcek .pcek-slot-lbl {font-weight: 700;}
 
         /* Persen kemiripan */
         .pcek .pcek-lbl { display: block; font-size: .78rem; font-weight: 700; color: #334155; margin-bottom: 6px; }
         .pcek .pcek-lbl span { font-weight: 500; color: #94a3b8; font-size: .72rem; }
         .pcek .pcek-persen-wrap { position: relative; max-width: 180px; }
-        .pcek .pcek-persen-num { width: 100%; height: 40px; padding: 0 46px 0 13px; font-size: .95rem; font-weight: 700; color: #334155; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; outline: none; transition: border-color .18s, box-shadow .18s; }
-        .pcek .pcek-persen-num:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .13); }
-        .pcek .pcek-persen-suffix { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); min-width: 34px; text-align: center; padding: 6px 8px; border-radius: 8px; background: #dcfce7; color: #15803d; font-size: .82rem; font-weight: 700; pointer-events: none; }
+        .pcek .pcek-persen-num { width: 100%;padding: 0 46px 0 13px; font-size: .95rem; font-weight: 700; color: #334155; border: 1px solid #e2e8f0;background: #fff; outline: none; transition: border-color .18s, box-shadow .18s; }
+        .pcek .pcek-persen-suffix { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); min-width: 34px; text-align: center; padding: 6px 8px; border-radius: 8px;font-size: .82rem; font-weight: 700; pointer-events: none; }
         .pcek .pcek-auto { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #15803d; line-height: 1.45; }
         .pcek .pcek-manual { display: flex; align-items: flex-start; gap: 7px; margin-top: 8px; font-size: .76rem; color: #b45309; line-height: 1.45; }
         .pcek .pcek-pilih { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }

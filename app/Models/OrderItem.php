@@ -66,6 +66,7 @@ class OrderItem extends Model
         'delivery_status',
         'habis_notified_at',
         'ingat_perpanjang_at',
+        'diperpanjang_oleh_item_id',
         'processed_by',
         'processed_at',
         'processing_notes',

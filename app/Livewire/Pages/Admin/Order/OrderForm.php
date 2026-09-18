@@ -101,6 +101,10 @@ class OrderForm extends Component
     /** Keterangan pesanan asal bila form dibuka sebagai perpanjangan (?perpanjang=). */
     public ?array $perpanjangInfo = null;
 
+    /** Item lama yang diperpanjang — ditautkan ke item baru saat pesanan disimpan. */
+    #[\Livewire\Attributes\Locked]
+    public ?string $perpanjangDariId = null;
+
     public function mount(?string $perpanjang = null)
     {
         $this->items[] = $this->blankItem();
@@ -141,6 +145,7 @@ class OrderForm extends Component
             'quantity' => max(1, (int) $item->quantity),
         ])];
 
+        $this->perpanjangDariId = (string) $item->id;
         $this->perpanjangInfo = [
             'nomor' => $item->order->order_number,
             'produk' => $item->product_name ?: $item->product->nama_akun,
@@ -766,6 +771,15 @@ class OrderForm extends Component
                     'quantity' => $item['quantity'],
                     'subtotal' => $item['subtotal'],
                 ]);
+            }
+
+            // Perpanjangan: tautkan akun lama ke item baru dengan produk yang sama
+            // (atau item pertama bila produknya diganti admin).
+            if ($this->perpanjangDariId && ($lama = OrderItem::find($this->perpanjangDariId))) {
+                $baru = $order->items()->where('product_id', $lama->product_id)->first() ?? $order->items()->first();
+                if ($baru) {
+                    $lama->update(['diperpanjang_oleh_item_id' => $baru->id]);
+                }
             }
 
             foreach ($this->appliedPromos as $promoData) {

@@ -84,9 +84,43 @@
         .pt-kartu-tab { flex: 0 0 104px; min-height: 96px; scroll-snap-align: start; }
     }
 
+    /* ===== Judul kecil di dalam kartu tabel ===== */
+    .pt-daftar-kepala {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        padding: 14px clamp(14px, 2vw, 18px); border-bottom: 1px solid #f1f5f9;
+    }
+    .pt-daftar-judul { flex: 1 1 auto; min-width: 0; }
+    .pt-daftar-judul b { display: block; font-size: 1rem; font-weight: 800; color: #1c1f26; }
+    .pt-daftar-judul span { display: block; font-size: .76rem; color: #94a3b8; }
+
+    /* ===== Tabel pesanan di HP: kartu ringkas 3 baris, bukan 7 baris berlabel =====
+       Urutan sel: 1 pesanan, 2 produk, 3 total, 4 pembayaran, 5 status, 6 tanggal, 7 aksi. */
+    @media (max-width: 767.98px) {
+        .pt-tabel-pesanan tbody tr {
+            display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto;
+            column-gap: 8px; row-gap: 8px; align-items: center;
+        }
+        .pt-tabel-pesanan tbody td { display: block; padding: 0; min-width: 0; }
+        .pt-tabel-pesanan tbody td::before { display: none !important; }
+        .pt-tabel-pesanan tbody td:nth-child(1) { grid-column: 1 / 4; grid-row: 1; padding: 0; }
+        .pt-tabel-pesanan tbody td:nth-child(3) { grid-column: 4; grid-row: 1; text-align: right; align-self: start; }
+        .pt-tabel-pesanan tbody td:nth-child(2) { grid-column: 1 / 4; grid-row: 2; font-size: .8rem; color: #64748b; }
+        /* Tanggal pindah ke baris meta di bawah nama (salinan .dsb-tabel-samar). */
+        .pt-tabel-pesanan tbody td:nth-child(6) { display: none !important; }
+        .pt-tabel-pesanan tbody td:nth-child(4) { grid-column: 1; grid-row: 3; }
+        .pt-tabel-pesanan tbody td:nth-child(5) { grid-column: 2; grid-row: 3; }
+        .pt-tabel-pesanan tbody td:nth-child(7) { grid-column: 3 / 5; grid-row: 3; text-align: right; }
+        .pt-tabel-pesanan tbody td.is-kosong { display: none; }
+        .pt-tabel-pesanan .dsb-tabel-samar { display: inline-flex !important; font-size: .74rem; }
+    }
+
     /* ===== Saringan ===== */
     .pt-saring { display: grid; gap: 12px; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); }
-    @media (max-width: 767.98px) { .pt-saring { grid-template-columns: minmax(0, 1fr); } }
+    /* HP: pencarian selebar penuh, bulan & tahun berdampingan. */
+    @media (max-width: 767.98px) {
+        .pt-saring { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .pt-saring:not(.pt-saring-lanjut) > .dsb-medan:first-child { grid-column: 1 / -1; }
+    }
     .pt-saring-kaki {
         display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
         margin-top: 14px; padding-top: 13px; border-top: 1px solid #f1f5f9;
