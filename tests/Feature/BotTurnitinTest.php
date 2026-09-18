@@ -577,3 +577,72 @@ it('sumber halaman customer memang tidak memuat kolom bot', function () {
         }
     }
 });
+
+it('kartu dokumen menyebut siapa yang mengerjakan di setiap keadaan', function () {
+    $order = pesananPlagiasi();
+    $judul = fn (array $isian) => BotTurnitin::pengerja(unggahanBot($order, $isian))['judul'] ?? null;
+
+    expect($judul(['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'diambil', 'bot_diperbarui_at' => now()]))
+        ->toBe('Bot sedang mengunggah ke submitin.id')
+        ->and($judul(['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'menunggu_hasil', 'bot_kode' => 'SC-1', 'bot_diperbarui_at' => now()->subHour()]))
+        ->toBe('Bot tidak memberi kabar')
+        ->and($judul(['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'gagal']))
+        ->toBe('Bot gagal — kerjakan manual')
+        ->and($judul(['status' => 'diproses', 'diproses_at' => now()]))
+        ->toBe('Sedang dikerjakan admin')
+        ->and($judul(['status' => 'selesai', 'dikerjakan_oleh' => 'admin']))
+        ->toBe('Selesai dikerjakan admin')
+        ->and($judul(['status' => 'selesai', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'selesai']))
+        ->toBe('Selesai dikerjakan bot')
+        ->and($judul(['status' => 'dibatalkan']))->toBeNull();
+});
+
+it('dokumen menunggu: antre bot bila bot aktif, kerjakan manual bila bot mati', function () {
+    $up = unggahanBot(pesananPlagiasi());
+    BotTurnitin::buatToken();
+
+    expect(BotTurnitin::pengerja($up)['judul'])->toBe('Bot sedang tidak aktif — kerjakan manual');
+
+    BotTurnitin::catatDetak();
+    expect(BotTurnitin::pengerja($up))->toMatchArray(['judul' => 'Antre untuk bot', 'antre_bot' => true]);
+
+    BotTurnitin::setJeda(true);
+    expect(BotTurnitin::pengerja($up)['judul'])->toBe('Bot sedang dijeda — kerjakan manual');
+});
+
+it('coba lagi hanya ditawarkan bila dokumen belum pernah terkirim ke submitin', function () {
+    $order = pesananPlagiasi();
+    $belum = unggahanBot($order, ['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'gagal']);
+    $sudah = unggahanBot($order, ['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'gagal', 'bot_kode' => 'SC-9']);
+
+    expect(BotTurnitin::pengerja($belum)['aksi'])->toBe(['coba_lagi'])
+        ->and(BotTurnitin::pengerja($sudah)['aksi'])->toBe([]);
+});
+
+it('detail pesanan: saat bot bekerja Unggah Hasil tidak mencolok, dan admin bisa ambil alih', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    $order = pesananPlagiasi();
+    $up = unggahanBot($order, ['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'menunggu_hasil', 'bot_kode' => 'SC-7', 'bot_diperbarui_at' => now()]);
+
+    $t = Livewire\Livewire::test(\App\Livewire\Pages\Admin\Order\OrderDetail::class, ['order' => $order]);
+    $html = $t->html();
+    expect($html)->toContain('Bot menunggu laporan dari submitin.id')
+        ->toContain('data-action="ambilAlihBot"')
+        ->toMatch('/class="pcek-btn ghost">\s*<i class="bi bi-cloud-arrow-up"><\/i> Unggah Hasil/');
+
+    $t->call('ambilAlihBot', $up->id);
+    expect($up->fresh()->bot_status)->toBe('manual');
+    expect($t->html())->toContain('Diambil alih admin');
+});
+
+it('detail pesanan: dokumen gagal sebelum terkirim bisa diserahkan lagi ke bot', function () {
+    $this->actingAs(\App\Models\User::factory()->create());
+    $order = pesananPlagiasi();
+    $up = unggahanBot($order, ['status' => 'diproses', 'dikerjakan_oleh' => 'bot', 'bot_status' => 'gagal', 'bot_pesan' => 'Form berubah']);
+
+    Livewire\Livewire::test(\App\Livewire\Pages\Admin\Order\OrderDetail::class, ['order' => $order])
+        ->assertSee('Form berubah')
+        ->call('cobaLagiBot', $up->id);
+
+    expect($up->fresh())->status->toBe('menunggu')->bot_status->toBeNull();
+});

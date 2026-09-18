@@ -557,6 +557,90 @@ class BotTurnitin
             && $up->bot_diperbarui_at->lt(now()->subMinutes(self::MACET_MENIT));
     }
 
+    /**
+     * Keterangan "siapa yang mengerjakan" untuk kartu dokumen di detail pesanan.
+     *
+     * Satu tempat untuk semua keadaan, supaya admin yang membuka pesanan
+     * langsung tahu: dokumen ini urusan bot (jangan disentuh), urusan admin,
+     * atau bot butuh bantuan. Sebelumnya dokumen yang dikerjakan admin tidak
+     * diberi tanda sama sekali, dan tombol "Unggah Hasil" tetap mencolok saat
+     * bot sedang bekerja — mengundang admin mengerjakan dua kali.
+     *
+     * nada: biru | hijau | kuning | merah | abu
+     * aksi: daftar tombol bot yang pantas untuk keadaan ini (ambil_alih, coba_lagi)
+     *
+     * @return array{pelaku: string, nada: string, ikon: string, judul: string, ket: ?string, aksi: string[], bot_bekerja: bool, antre_bot: bool}|null
+     */
+    public static function pengerja(OrderUpload $up): ?array
+    {
+        if ($up->status === 'dibatalkan') {
+            return null;
+        }
+
+        $jadi = fn (string $pelaku, string $nada, string $ikon, string $judul, ?string $ket = null, array $aksi = [], bool $botBekerja = false, bool $antreBot = false) => [
+            'pelaku' => $pelaku, 'nada' => $nada, 'ikon' => $ikon, 'judul' => $judul, 'ket' => $ket,
+            'aksi' => $aksi, 'bot_bekerja' => $botBekerja, 'antre_bot' => $antreBot,
+        ];
+        $jam = fn (?Carbon $t) => $t ? $t->locale('id')->translatedFormat('d M Y, H:i') : null;
+
+        if ($up->status === 'selesai') {
+            return $up->dikerjakan_oleh === 'bot'
+                ? $jadi('bot', 'hijau', 'bi-robot', 'Selesai dikerjakan bot', $jam($up->selesai_at))
+                : $jadi('admin', 'abu', 'bi-person-check', 'Selesai dikerjakan admin', $jam($up->selesai_at));
+        }
+
+        $belumTerkirim = ! $up->bot_kode;
+
+        if (self::macet($up)) {
+            return $jadi('bot', 'kuning', 'bi-hourglass-split', 'Bot tidak memberi kabar',
+                'Sudah lebih dari '.self::MACET_MENIT.' menit. Periksa tab Chrome bot, atau ambil alih dan kerjakan manual.',
+                $belumTerkirim ? ['coba_lagi', 'ambil_alih'] : ['ambil_alih']);
+        }
+
+        return match ($up->bot_status) {
+            self::DIAMBIL => $jadi('bot', 'biru', 'bi-robot', 'Bot sedang mengunggah ke submitin.id',
+                'Tidak perlu dikerjakan manual — laporannya masuk sendiri.', ['ambil_alih'], true),
+            self::MENUNGGU_HASIL => $jadi('bot', 'biru', 'bi-robot', 'Bot menunggu laporan dari submitin.id',
+                'Tidak perlu dikerjakan manual — laporannya masuk sendiri.', ['ambil_alih'], true),
+            self::GAGAL => $jadi('bot', 'merah', 'bi-exclamation-triangle', 'Bot gagal — kerjakan manual',
+                $up->bot_pesan ?: 'Unggah hasilnya sendiri lewat tombol Unggah Hasil.',
+                $belumTerkirim ? ['coba_lagi'] : []),
+            self::PERLU_DILENGKAPI => $jadi('bot', 'kuning', 'bi-puzzle', 'Bot selesai sebagian — lengkapi manual',
+                $up->bot_pesan ?: 'Laporan plagiasi sudah masuk. Unggah hasil yang masih kurang.'),
+            self::MANUAL => $jadi('admin', 'abu', 'bi-person-gear', 'Diambil alih admin',
+                'Bot tidak akan menyentuh dokumen ini lagi.'),
+            default => self::pengerjaTanpaBot($up, $jadi, $jam),
+        };
+    }
+
+    /** Dokumen yang belum pernah disentuh bot. */
+    private static function pengerjaTanpaBot(OrderUpload $up, \Closure $jadi, \Closure $jam): ?array
+    {
+        if ($up->status === 'diproses') {
+            return $jadi('admin', 'abu', 'bi-person-workspace', 'Sedang dikerjakan admin',
+                $up->diproses_at ? 'Mulai '.$jam($up->diproses_at) : null);
+        }
+
+        // Menunggu: akankah bot mengambilnya sendiri?
+        $bisaBot = $up->jenis === 'plagiasi' && $up->path && self::skemaSiap() && self::sudahDipasang();
+        if (! $bisaBot) {
+            return null;
+        }
+
+        $halangan = match (true) {
+            self::dijeda() => 'Bot sedang dijeda',
+            (bool) self::kuotaHabis() => 'Kuota submitin habis',
+            ! self::botAktif() => 'Bot sedang tidak aktif',
+            default => null,
+        };
+
+        return $halangan
+            ? $jadi('admin', 'abu', 'bi-person', $halangan.' — kerjakan manual',
+                'Tekan Mulai Proses supaya bot tidak mengambilnya saat aktif lagi.')
+            : $jadi('bot', 'biru', 'bi-robot', 'Antre untuk bot',
+                'Bot akan mengambilnya otomatis. Tekan Kerjakan Sendiri bila ingin manual.', [], false, true);
+    }
+
     /** Admin mengambil alih: bot tidak akan menyentuh unggahan ini lagi. */
     public static function ambilAlih(OrderUpload $up): bool
     {

@@ -989,17 +989,35 @@ Detail Pesanan || lemon
         .pcek-berkas-hilang b { color: #334155; }
         .pcek-actions.pcek-actions-lanjut { margin-top: 10px; }
 
-        /* Penanda bot Turnitin / manual admin */
-        .pcek-bot { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 9px 12px; border-radius: 12px; font-size: .8rem; line-height: 1.45; border: 1px solid transparent; }
-        .pcek-bot > i { font-size: 1rem; line-height: 1.2; }
-        .pcek-bot b { display: block; font-weight: 700; }
-        .pcek-bot span { display: block; color: #4b5563; }
-        .pcek-bot a { font-weight: 600; }
-        .pcek-bot-success { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
-        .pcek-bot-info { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-        .pcek-bot-warning { background: #fffbeb; border-color: #fde68a; color: #b45309; }
-        .pcek-bot-danger { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
-        .pcek-bot-secondary { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+        /* Siapa yang mengerjakan: bot Turnitin / admin */
+        .pcek-pj { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 12px; border-radius: 13px; border: 1px solid #e2e8f0; background: #f8fafc; }
+        .pcek-pj-ic { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.05rem; color: #fff; background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .pcek-pj-teks { flex: 1 1 auto; min-width: 0; font-size: .8rem; line-height: 1.45; color: #475569; }
+        .pcek-pj-teks small { display: block; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+        .pcek-pj-teks b { display: block; font-size: .86rem; font-weight: 700; color: #1e293b; }
+        .pcek-pj-teks span { display: block; }
+        .pcek-pj-teks a { font-weight: 700; }
+        .pcek-pj-aksi { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+        .pcek-pj.is-biru { background: #eff6ff; border-color: #bfdbfe; }
+        .pcek-pj.is-biru .pcek-pj-ic { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+        .pcek-pj.is-biru small { color: #2563eb; }
+        .pcek-pj.is-hijau { background: #ecfdf5; border-color: #bbf7d0; }
+        .pcek-pj.is-hijau .pcek-pj-ic { background: linear-gradient(135deg, #34d399, #059669); }
+        .pcek-pj.is-hijau small { color: #059669; }
+        .pcek-pj.is-kuning { background: #fffbeb; border-color: #fde68a; }
+        .pcek-pj.is-kuning .pcek-pj-ic { background: linear-gradient(135deg, #fbbf24, #d97706); }
+        .pcek-pj.is-kuning small { color: #b45309; }
+        .pcek-pj.is-merah { background: #fef2f2; border-color: #fecaca; }
+        .pcek-pj.is-merah .pcek-pj-ic { background: linear-gradient(135deg, #f87171, #dc2626); }
+        .pcek-pj.is-merah small { color: #dc2626; }
+        .pcek-pj.is-abu small { color: #64748b; }
+        @media (max-width: 575.98px) {
+            .pcek-pj { flex-wrap: wrap; align-items: flex-start; }
+            .pcek-pj-teks { flex-basis: calc(100% - 48px); }
+            .pcek-pj-aksi { flex-basis: 100%; justify-content: stretch; }
+            .pcek-pj-aksi .pcek-btn { flex: 1 1 auto; justify-content: center; }
+        }
+
 
         /* Setelan exclude + catatan customer */
         .pcek .pcek-set { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #eef0f6; }
@@ -1305,38 +1323,52 @@ Detail Pesanan || lemon
                     </span>
                 </div>
 
-                {{-- Siapa yang mengerjakan: bot Turnitin atau admin --}}
-                @if ($up->dikerjakan_oleh || $up->bot_status)
-                    @php
-                        $botMacet = \App\Support\BotTurnitin::macet($up);
-                        $botInfo = match (true) {
-                            $botMacet => ['warning', 'bi-hourglass-split', 'Bot tidak memberi kabar lebih dari '.\App\Support\BotTurnitin::MACET_MENIT.' menit'],
-                            $up->bot_status === 'diambil' => ['info', 'bi-robot', 'Bot sedang mengunggah ke submitin.id'],
-                            $up->bot_status === 'menunggu_hasil' => ['info', 'bi-robot', 'Bot menunggu laporan dari submitin.id'],
-                            $up->bot_status === 'gagal' => ['danger', 'bi-exclamation-triangle', 'Bot gagal — kerjakan manual'],
-                            $up->bot_status === 'perlu_dilengkapi' => ['warning', 'bi-puzzle', 'Bot selesai sebagian — lengkapi manual'],
-                            $up->bot_status === 'manual' => ['secondary', 'bi-person-gear', 'Diambil alih admin'],
-                            $up->dikerjakan_oleh === 'bot' => ['success', 'bi-robot', 'Dikerjakan bot'],
-                            $up->dikerjakan_oleh === 'admin' => ['secondary', 'bi-person-check', 'Dikerjakan manual admin'],
-                            default => null,
-                        };
-                    @endphp
-                    @if ($botInfo)
-                    <div class="pcek-bot pcek-bot-{{ $botInfo[0] }}">
-                        <i class="bi {{ $botInfo[1] }}"></i>
-                        <div>
-                            <b>{{ $botInfo[2] }}</b>
-                            @if ($up->bot_pesan)
-                                <span>{{ $up->bot_pesan }}</span>
-                            @endif
-                            @if ($up->bot_kode)
-                                <span>Kode submitin:
-                                    <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
-                                </span>
-                            @endif
-                        </div>
+                {{-- Siapa yang mengerjakan: bot Turnitin atau admin (BotTurnitin::pengerja) --}}
+                @php
+                    $pj = \App\Support\BotTurnitin::skemaSiap() ? \App\Support\BotTurnitin::pengerja($up) : null;
+                    $pjAksi = $pj ? $pj['aksi'] : [];
+                    $pjBotBekerja = $pj && $pj['bot_bekerja'];
+                    $pjAntreBot = $pj && $pj['antre_bot'];
+                @endphp
+                @if ($pj)
+                <div class="pcek-pj is-{{ $pj['nada'] }}">
+                    <span class="pcek-pj-ic"><i class="bi {{ $pj['ikon'] }}"></i></span>
+                    <div class="pcek-pj-teks">
+                        <small>{{ $pj['pelaku'] === 'bot' ? 'Bot Turnitin' : 'Admin' }}</small>
+                        <b>{{ $pj['judul'] }}</b>
+                        @if ($pj['ket'])
+                        <span>{{ $pj['ket'] }}</span>
+                        @endif
+                        @if ($up->bot_kode)
+                        <span>Kode submitin:
+                            <a href="https://submitin.id/status?order={{ urlencode($up->bot_kode) }}" target="_blank" rel="noopener">{{ $up->bot_kode }}</a>
+                        </span>
+                        @endif
+                    </div>
+                    @if ($pjAksi)
+                    <div class="pcek-pj-aksi">
+                        @foreach ($pjAksi as $aksi)
+                        @if ($aksi === 'coba_lagi')
+                        <button type="button" class="pcek-btn ghost pcek-konfirmasi"
+                            data-action="cobaLagiBot" data-arg="{{ $up->id }}"
+                            data-title="Serahkan lagi ke bot?"
+                            data-text="Dokumen ini masuk antrean bot lagi dan dikerjakan otomatis."
+                            data-confirm="Ya, serahkan ke bot" data-icon="question">
+                            <i class="bi bi-arrow-repeat"></i> Coba Lagi pakai Bot
+                        </button>
+                        @else
+                        <button type="button" class="pcek-btn ghost pcek-konfirmasi"
+                            data-action="ambilAlihBot" data-arg="{{ $up->id }}"
+                            data-title="Ambil alih dari bot?"
+                            data-text="Bot berhenti mengerjakan dokumen ini. Anda yang mengunggah hasilnya."
+                            data-confirm="Ya, saya kerjakan" data-icon="warning">
+                            <i class="bi bi-person-check"></i> Ambil Alih
+                        </button>
+                        @endif
+                        @endforeach
                     </div>
                     @endif
+                </div>
                 @endif
 
                 {{-- Setelan exclude + catatan dari customer --}}
@@ -1388,6 +1420,8 @@ Detail Pesanan || lemon
                         // satu berkas membuat Livewire salah memasang penanda morph.
                         $upBerjalan = in_array($up->status, ['menunggu', 'diproses'], true);
                         $adaHasil = $up->hasil_path || $up->hasil_ai_path || $up->hasil_docx_path;
+                        // Bot sedang bekerja: tombol unggah tetap ada, tapi tidak mencolok.
+                        $pjTombolUtama = $up->status === 'diproses' && ! $pjBotBekerja;
                     @endphp
                     @if ($adaBerkasPelanggan)
                     @if ($up->perlu_diringkas)
@@ -1414,15 +1448,15 @@ Detail Pesanan || lemon
                     @endif
 
                     @if ($up->status === 'menunggu')
-                    <button type="button" wire:click="mulaiProses('{{ $up->id }}')" wire:loading.attr="disabled" wire:target="mulaiProses('{{ $up->id }}')" class="pcek-btn primary">
-                        <span wire:loading.remove wire:target="mulaiProses('{{ $up->id }}')" class="pcek-isi"><i class="bi bi-play-fill"></i> Mulai Proses</span>
+                    <button type="button" wire:click="mulaiProses('{{ $up->id }}')" wire:loading.attr="disabled" wire:target="mulaiProses('{{ $up->id }}')" class="pcek-btn {{ $pjAntreBot ? 'ghost' : 'primary' }}">
+                        <span wire:loading.remove wire:target="mulaiProses('{{ $up->id }}')" class="pcek-isi"><i class="bi {{ $pjAntreBot ? 'bi-person-check' : 'bi-play-fill' }}"></i> {{ $pjAntreBot ? 'Kerjakan Sendiri' : 'Mulai Proses' }}</span>
                         <span wire:loading.inline-flex wire:target="mulaiProses('{{ $up->id }}')" class="pcek-isi-muat"><span class="pcek-putar"></span> Memulai…</span>
                     </button>
                     @endif
 
                     @if ($upBerjalan)
                     <button type="button" wire:click="bukaUploadHasil('{{ $up->id }}')"
-                        class="pcek-btn {{ $up->status === 'diproses' ? 'primary' : 'ghost' }}">
+                        class="pcek-btn {{ $pjTombolUtama ? 'primary' : 'ghost' }}">
                         <i class="bi bi-cloud-arrow-up"></i> Unggah Hasil
                     </button>
                     @endif

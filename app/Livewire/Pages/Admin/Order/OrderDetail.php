@@ -422,6 +422,32 @@ class OrderDetail extends Component
         $this->dispatch('order-updated', message: 'Pengecekan ditandai sedang diproses.');
     }
 
+    /** Admin mengambil alih dokumen dari bot Turnitin (sama dengan tombol di panel bot). */
+    public function ambilAlihBot(string $uploadId): void
+    {
+        abort_unless(\App\Support\BotTurnitin::skemaSiap(), 403);
+
+        $ok = \App\Support\BotTurnitin::ambilAlih($this->pengecekan($uploadId));
+        $this->reloadOrder();
+
+        $ok
+            ? $this->dispatch('order-updated', message: 'Diambil alih. Bot tidak akan menyentuh dokumen ini lagi.')
+            : $this->dispatch('swal-error', message: 'Laporan plagiasinya sudah ada — tinggal lengkapi lewat Unggah Hasil.');
+    }
+
+    /** Serahkan lagi ke bot — hanya bila belum pernah terkirim ke submitin. */
+    public function cobaLagiBot(string $uploadId): void
+    {
+        abort_unless(\App\Support\BotTurnitin::skemaSiap(), 403);
+
+        $ok = \App\Support\BotTurnitin::cobaLagi($this->pengecekan($uploadId));
+        $this->reloadOrder();
+
+        $ok
+            ? $this->dispatch('order-updated', message: 'Dikembalikan ke antrean bot.')
+            : $this->dispatch('swal-error', message: 'Dokumen ini sudah pernah terkirim ke submitin — kerjakan manual supaya kuota tidak terpakai dua kali.');
+    }
+
     /** Buka form unggah hasil untuk satu pengecekan. */
     public function bukaUploadHasil(string $uploadId): void
     {
