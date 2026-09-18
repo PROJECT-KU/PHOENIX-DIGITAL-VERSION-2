@@ -120,7 +120,19 @@ Detail Pesanan || lemon
     .pcek-daftar { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-items: start; }
     @media (min-width: 1200px) { .pcek-daftar:not(.is-tunggal) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .pcek-daftar > .pcek-item { margin: 0 !important; }
-    .pcek-daftar > .pcek-item.is-aktif, .pcek-daftar > .pcek-kosong { grid-column: 1 / -1; }
+    .pcek-daftar > .pcek-kosong { grid-column: 1 / -1; }
+    /* Jendela unggah hasil */
+    .pcek-jendela { max-width: 760px !important; }
+    .pcek-jendela .dsb-jendela-teks { min-width: 0; }
+    .pcek-jendela-berkas { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pt-detail .pcek.pcek-jendela .pcek-form { margin: 0; border: 0; border-radius: 0; background: #fff; padding: 16px 18px; }
+    .pcek-jendela-info {
+        display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; padding: 10px 12px;
+        border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: .8rem; line-height: 1.5;
+    }
+    .pcek-jendela-info i.bi { line-height: 1.4; }
+    .pt-detail .pcek.pcek-jendela .pcek-aksi { margin-top: 0; }
+    .pt-detail .pcek.pcek-jendela .pcek-slot:last-child { margin-bottom: 0; }
     .pcek-kosong { text-align: center; color: #6b7280; padding: 26px 12px; border: 1px dashed #e2e8f0; border-radius: 14px; }
     .pcek-kosong i.bi { display: block; font-size: 1.8rem; opacity: .45; margin-bottom: 6px; }
     .pt-detail .pcek .pcek-actions-lanjut:empty { display: none; }
@@ -1233,7 +1245,7 @@ Detail Pesanan || lemon
             </div>
             <div class="pcek-daftar {{ $jJumlahBerkas === 1 ? 'is-tunggal' : '' }}">
             @forelse ($order->uploads->sortByDesc('created_at') as $up)
-            <div class="pcek-item {{ $uploadAktifId === $up->id ? 'is-aktif' : '' }}" wire:key="adm-up-{{ $up->id }}">
+            <div class="pcek-item" wire:key="adm-up-{{ $up->id }}">
                 <div class="d-flex align-items-start gap-3 pcek-file-row">
                     <div class="pcek-fileic"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="flex-grow-1" style="min-width:0;">
@@ -1448,17 +1460,32 @@ Detail Pesanan || lemon
                 </div>
                 @endif
 
-                {{-- Form unggah hasil (inline, saat aktif) --}}
+                {{-- Form unggah hasil: JENDELA tersendiri, bukan di dalam kartu.
+                     Di dalam kartu, status "Selesai" + hasil lama + form baru
+                     bercampur jadi satu dan membingungkan. --}}
                 @if ($uploadAktifId === $up->id)
-                <div class="pcek-form" wire:key="adm-hasilform-{{ $up->id }}">
-                    <div class="pcek-form-head">
-                        <span class="pcek-form-ic"><i class="bi bi-file-earmark-arrow-up"></i></span>
-                        <div class="flex-grow-1" style="min-width:0;">
-                            <b>Unggah Hasil</b>
-                            <small class="text-truncate" title="{{ $up->nama_asli }}">Untuk berkas <b class="d-inline">{{ $up->nama_asli }}</b> · langsung bisa diunduh customer setelah disimpan</small>
-                        </div>
-                        <button type="button" wire:click="tutupUploadHasil" class="pcek-form-x" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                @php $upGanti = $up->status === 'selesai'; @endphp
+                <div class="ts-modal-back" wire:click="tutupUploadHasil"></div>
+                <div class="ts-modal" wire:key="adm-hasilform-{{ $up->id }}">
+                <div class="ts-modal-card dsb is-datar pcek pcek-jendela" role="dialog" aria-modal="true"
+                    aria-label="Unggah hasil pengecekan" tabindex="-1"
+                    x-on:keydown.escape.window="$wire.tutupUploadHasil()">
+                    <div class="dsb-jendela-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: {{ $upGanti ? '#d97706' : '#16a34a' }}"><i class="bi {{ $upGanti ? 'bi-arrow-repeat' : 'bi-cloud-arrow-up' }}"></i></span>
+                        <span class="dsb-jendela-teks">
+                            <h5 class="dsb-jendela-judul">{{ $upGanti ? 'Ganti Hasil Pengecekan' : 'Unggah Hasil Pengecekan' }}</h5>
+                            <span class="dsb-kartu-sub pcek-jendela-berkas" title="{{ $up->nama_asli }}"><i class="bi bi-file-earmark-text"></i> {{ $up->nama_asli }}</span>
+                        </span>
+                        <button type="button" class="dsb-jendela-tutup" wire:click="tutupUploadHasil" title="Tutup"><i class="bi bi-x-lg"></i></button>
                     </div>
+
+                    <div class="dsb-jendela-isi pcek-form">
+                    @if ($upGanti)
+                        <div class="pcek-jendela-info">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Berkas ini sudah punya hasil. Berkas yang Anda unggah di sini <b>menggantikan</b> hasil lama; slot yang tidak diisi tetap memakai berkas lama.</span>
+                        </div>
+                    @endif
 
                     {{-- Hasil cek PLAGIASI — hanya bila layanannya memang dibeli --}}
                     @if ($this->slotTampil('plagiasi'))
@@ -1633,7 +1660,10 @@ Detail Pesanan || lemon
                     </div>
                     @endif
 
-                    {{-- Aksi — kedua tombol mengisi penuh lebar form --}}
+                    </div>{{-- /.dsb-jendela-isi --}}
+
+                    <div class="dsb-jendela-kaki">
+                        <span class="dsb-jendela-kaki-ket">Hasil langsung bisa diunduh customer setelah disimpan.</span>
                     <div class="pcek-aksi">
                         <button type="button" wire:click="tutupUploadHasil" class="pcek-btn ghost">Batal</button>
                         <button type="button" wire:click="simpanHasil" wire:loading.attr="disabled"
@@ -1645,6 +1675,8 @@ Detail Pesanan || lemon
                             <span wire:loading.inline-flex wire:target="simpanHasil" class="pcek-isi-muat"><span class="pcek-putar"></span> Menyimpan…</span>
                         </button>
                     </div>
+                    </div>{{-- /.dsb-jendela-kaki --}}
+                </div>
                 </div>
                 @endif
             </div>

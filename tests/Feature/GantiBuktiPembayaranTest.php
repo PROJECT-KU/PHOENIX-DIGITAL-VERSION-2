@@ -235,3 +235,25 @@ it('blok jasa memakai nama jasa, angka kuota, dan tetap memuat aksi berkas yang 
         ->and($html)->toContain('data-action="batalkanPengecekan"')
         ->and($html)->toContain('pcek-daftar is-tunggal');
 });
+
+it('form unggah hasil tampil sebagai jendela terpisah, bukan di dalam kartu berkas', function () {
+    $order = orderBayar('qris_dinamis', 'paid');
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Cek Plagiasi Turnitin', 'butuh_file' => 1, 'harga_perbulan' => 5000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Cek Plagiasi Turnitin',
+        'quantity' => 1, 'price' => 5000, 'subtotal' => 5000, 'duration_value' => 1, 'duration_type' => 'kali',
+    ]);
+    $up = \App\Models\OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'plagiasi', 'nama_asli' => 'naskah-selesai.pdf', 'status' => 'selesai',
+    ]);
+
+    $t = Livewire::test(OrderDetail::class, ['order' => $order->fresh()]);
+    expect($t->html())->not->toContain('pcek-jendela');
+
+    $html = $t->call('bukaUploadHasil', $up->id)->html();
+    expect($html)->toContain('class="ts-modal-card dsb is-datar pcek pcek-jendela"')
+        ->and($html)->toContain('Ganti Hasil Pengecekan')
+        ->and($html)->toContain('menggantikan');
+
+    expect($t->call('tutupUploadHasil')->html())->not->toContain('pcek-jendela');
+});
