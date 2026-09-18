@@ -1,0 +1,126 @@
+{
+    "data": {
+        "id": 3,
+        "kode": "RAB-2609-R24J",
+        "judul": "Jogja Heritage 3H2M",
+        "nama_pelanggan": "Keluarga Hendra",
+        "whatsapp": "081234567890",
+        "email": null,
+        "provinsi": "DI Yogyakarta",
+        "daerah": "Yogyakarta",
+        "tanggal_mulai": "2026-10-10",
+        "jumlah_hari": 3,
+        "jumlah_malam": 2,
+        "jumlah_peserta": 17,
+        "margin_jenis": "persen",
+        "margin_nilai": 20,
+        "pembulatan": 1000,
+        "status": "draf",
+        "status_label": "Draf",
+        "berlaku_sampai": "2026-10-02",
+        "kedaluwarsa": false,
+        "kode_pendaftaran": null,
+        "dibuat_oleh": "tidak diketahui",
+        "dibuat_pada": "2026-09-18T19:26:18+07:00",
+        "pendaftaran_id": null,
+        "catatan": null,
+        "catatan_penawaran": null,
+        "itinerary": [
+            {
+                "id": 15,
+                "hari_ke": 1,
+                "urutan": 1,
+                "jam": "09:00",
+                "nama": "Candi Prambanan",
+                "keterangan": null,
+                "destinasi": "Candi Prambanan"
+            },
+            {
+                "id": 16,
+                "hari_ke": 2,
+                "urutan": 1,
+                "jam": null,
+                "nama": "Malioboro",
+                "keterangan": null,
+                "destinasi": "Malioboro"
+            }
+        ],
+        "ringkasan": {
+            "modal_variabel": 850000,
+            "modal_tetap": 6600000,
+            "modal_total": 7450000,
+            "modal_per_kepala": 438235,
+            "margin_diminta": 1490000,
+            "harga_per_orang": 526000,
+            "harga_total": 8942000,
+            "untung": 1492000,
+            "baris": [
+                {
+                    "id": 17,
+                    "master_harga_id": 1,
+                    "kategori": "tiket",
+                    "kategori_label": "Tiket & Retribusi",
+                    "nama": "Tiket Candi Prambanan",
+                    "satuan": "orang",
+                    "satuan_label": "per orang",
+                    "harga_satuan": 50000,
+                    "kapasitas": null,
+                    "jumlah": 1,
+                    "faktor": 17,
+                    "penjelasan": "Rp 50.000 × 17 orang",
+                    "subtotal": 850000,
+                    "subtotal_teks": "Rp 850.000",
+                    "variabel": true,
+                    "harga_master_kini": 60000
+                },
+                {
+                    "id": 18,
+                    "master_harga_id": 2,
+                    "kategori": "transportasi",
+                    "kategori_label": "Transportasi",
+                    "nama": "Sewa Hiace + driver",
+                    "satuan": "unit_hari",
+                    "satuan_label": "per unit per hari",
+                    "harga_satuan": 1100000,
+                    "kapasitas": 14,
+                    "jumlah": 1,
+                    "faktor": 6,
+                    "penjelasan": "Rp 1.100.000 × 2 unit × 3 hari",
+                    "subtotal": 6600000,
+                    "subtotal_teks": "Rp 6.600.000",
+                    "variabel": false,
+                    "harga_master_kini": null
+                }
+            ],
+            "per_kategori": [
+                {
+                    "kategori": "tiket",
+                    "label": "Tiket & Retribusi",
+                    "total": 850000,
+                    "total_teks": "Rp 850.000"
+                },
+                {
+                    "kategori": "transportasi",
+                    "label": "Transportasi",
+                    "total": 6600000,
+                    "total_teks": "Rp 6.600.000"
+                }
+            ],
+            "persen_untung": 20,
+            "untuk_pendaftaran": {
+                "harga_jual": 526000,
+                "harga_modal": 50000,
+                "biaya_tetap": 6600000
+            },
+            "ada_harga_basi": true,
+            "modal_variabel_teks": "Rp 850.000",
+            "modal_tetap_teks": "Rp 6.600.000",
+            "modal_total_teks": "Rp 7.450.000",
+            "modal_per_kepala_teks": "Rp 438.235",
+            "margin_diminta_teks": "Rp 1.490.000",
+            "harga_per_orang_teks": "Rp 526.000",
+            "harga_total_teks": "Rp 8.942.000",
+            "untung_teks": "Rp 1.492.000"
+        }
+    }
+}

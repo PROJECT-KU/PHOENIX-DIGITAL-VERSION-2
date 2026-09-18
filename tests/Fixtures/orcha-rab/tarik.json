@@ -1,0 +1,106 @@
+{
+    "data": {
+        "id": 3,
+        "kode": "RAB-2609-R24J",
+        "judul": "Jogja Heritage 3H2M",
+        "nama_pelanggan": "Keluarga Hendra",
+        "whatsapp": "081234567890",
+        "email": null,
+        "provinsi": "DI Yogyakarta",
+        "daerah": "Yogyakarta",
+        "tanggal_mulai": "2026-10-10",
+        "jumlah_hari": 3,
+        "jumlah_malam": 2,
+        "jumlah_peserta": 17,
+        "margin_jenis": "persen",
+        "margin_nilai": 20,
+        "pembulatan": 1000,
+        "status": "draf",
+        "status_label": "Draf",
+        "berlaku_sampai": "2026-10-02",
+        "kedaluwarsa": false,
+        "kode_pendaftaran": null,
+        "dibuat_oleh": "tidak diketahui",
+        "dibuat_pada": "2026-09-18T19:26:18+07:00",
+        "pendaftaran_id": null,
+        "catatan": null,
+        "catatan_penawaran": null,
+        "itinerary": [
+            {
+                "id": 15,
+                "hari_ke": 1,
+                "urutan": 1,
+                "jam": "09:00",
+                "nama": "Candi Prambanan",
+                "keterangan": null,
+                "destinasi": "Candi Prambanan"
+            },
+            {
+                "id": 16,
+                "hari_ke": 2,
+                "urutan": 1,
+                "jam": null,
+                "nama": "Malioboro",
+                "keterangan": null,
+                "destinasi": "Malioboro"
+            }
+        ],
+        "ringkasan": {
+            "modal_variabel": 850000,
+            "modal_tetap": 0,
+            "modal_total": 850000,
+            "modal_per_kepala": 50000,
+            "margin_diminta": 170000,
+            "harga_per_orang": 60000,
+            "harga_total": 1020000,
+            "untung": 170000,
+            "baris": [
+                {
+                    "id": 17,
+                    "master_harga_id": 1,
+                    "kategori": "tiket",
+                    "kategori_label": "Tiket & Retribusi",
+                    "nama": "Tiket Candi Prambanan",
+                    "satuan": "orang",
+                    "satuan_label": "per orang",
+                    "harga_satuan": 50000,
+                    "kapasitas": null,
+                    "jumlah": 1,
+                    "faktor": 17,
+                    "penjelasan": "Rp 50.000 × 17 orang",
+                    "subtotal": 850000,
+                    "subtotal_teks": "Rp 850.000",
+                    "variabel": true,
+                    "harga_master_kini": null
+                }
+            ],
+            "per_kategori": [
+                {
+                    "kategori": "tiket",
+                    "label": "Tiket & Retribusi",
+                    "total": 850000,
+                    "total_teks": "Rp 850.000"
+                }
+            ],
+            "persen_untung": 20,
+            "untuk_pendaftaran": {
+                "harga_jual": 60000,
+                "harga_modal": 50000,
+                "biaya_tetap": 0
+            },
+            "ada_harga_basi": false,
+            "modal_variabel_teks": "Rp 850.000",
+            "modal_tetap_teks": "Rp 0",
+            "modal_total_teks": "Rp 850.000",
+            "modal_per_kepala_teks": "Rp 50.000",
+            "margin_diminta_teks": "Rp 170.000",
+            "harga_per_orang_teks": "Rp 60.000",
+            "harga_total_teks": "Rp 1.020.000",
+            "untung_teks": "Rp 170.000"
+        }
+    },
+    "pesan": "1 biaya ditarik dari itinerary.",
+    "tanpa_tiket": [
+        "Malioboro"
+    ]
+}

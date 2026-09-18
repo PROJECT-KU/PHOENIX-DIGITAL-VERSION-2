@@ -1,0 +1,193 @@
+{
+    "data": {
+        "provinsi": [
+            "Aceh",
+            "Bali",
+            "Banten",
+            "DI Yogyakarta",
+            "DKI Jakarta",
+            "Gorontalo",
+            "Jambi",
+            "Jawa Barat",
+            "Jawa Tengah",
+            "Jawa Timur",
+            "Kalimantan Selatan",
+            "Kalimantan Tengah",
+            "Kalimantan Timur",
+            "Kepulauan Bangka Belitung",
+            "Kepulauan Riau",
+            "Lampung",
+            "Maluku",
+            "Maluku Utara",
+            "Nusa Tenggara Barat",
+            "Nusa Tenggara Timur",
+            "Papua Barat Daya",
+            "Papua Pegunungan",
+            "Sulawesi Selatan",
+            "Sulawesi Tengah",
+            "Sulawesi Tenggara",
+            "Sulawesi Utara",
+            "Sumatera Barat",
+            "Sumatera Utara"
+        ],
+        "destinasi": [
+            {
+                "nama": "Candi Prambanan",
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Sleman",
+                "punya_tiket": true
+            },
+            {
+                "nama": "Goa Jomblang",
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Gunungkidul",
+                "punya_tiket": false
+            },
+            {
+                "nama": "Goa Pindul",
+                "provinsi": "DI Yogyakarta",
+                "daerah": null,
+                "punya_tiket": false
+            },
+            {
+                "nama": "Gunung Merapi",
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Sleman",
+                "punya_tiket": false
+            },
+            {
+                "nama": "Heha Sky View",
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Gunungkidul",
+                "punya_tiket": false
+            },
+            {
+                "nama": "Malioboro",
+                "provinsi": "DI Yogyakarta",
+                "daerah": null,
+                "punya_tiket": false
+            },
+            {
+                "nama": "Pantai Indrayanti",
+                "provinsi": "DI Yogyakarta",
+                "daerah": null,
+                "punya_tiket": false
+            },
+            {
+                "nama": "Pantai Parangtritis",
+                "provinsi": "DI Yogyakarta",
+                "daerah": null,
+                "punya_tiket": false
+            },
+            {
+                "nama": "Pantai Timang",
+                "provinsi": "DI Yogyakarta",
+                "daerah": "Gunungkidul",
+                "punya_tiket": false
+            },
+            {
+                "nama": "Tebing Breksi",
+                "provinsi": "DI Yogyakarta",
+                "daerah": null,
+                "punya_tiket": false
+            }
+        ],
+        "master": [
+            {
+                "id": 1,
+                "kategori": "tiket",
+                "kategori_label": "Tiket & Retribusi",
+                "nama": "Tiket Candi Prambanan",
+                "destinasi": "Candi Prambanan",
+                "daerah": null,
+                "satuan": "orang",
+                "satuan_label": "per orang",
+                "harga": 60000,
+                "harga_teks": "Rp 60.000",
+                "kapasitas": null,
+                "otomatis": false,
+                "umum": false
+            },
+            {
+                "id": 2,
+                "kategori": "transportasi",
+                "kategori_label": "Transportasi",
+                "nama": "Sewa Hiace + driver",
+                "destinasi": null,
+                "daerah": null,
+                "satuan": "unit_hari",
+                "satuan_label": "per unit per hari",
+                "harga": 1100000,
+                "harga_teks": "Rp 1.100.000",
+                "kapasitas": 14,
+                "otomatis": false,
+                "umum": false
+            }
+        ],
+        "paket": [
+            {
+                "id": 1,
+                "nama": "Open Trip Banyuwangi",
+                "kategori": "open_trip"
+            },
+            {
+                "id": 2,
+                "nama": "Open Trip Jogja Hemat",
+                "kategori": "open_trip"
+            },
+            {
+                "id": 3,
+                "nama": "Open Trip Pantai Gunungkidul",
+                "kategori": "open_trip"
+            },
+            {
+                "id": 70,
+                "nama": "Private Trip Jogja",
+                "kategori": "private_trip"
+            },
+            {
+                "id": 5,
+                "nama": "Private Trip Premium",
+                "kategori": "private_trip"
+            },
+            {
+                "id": 8,
+                "nama": "Quis ut in voluptate",
+                "kategori": "open_trip"
+            }
+        ],
+        "kosakata": {
+            "kategori": {
+                "tiket": "Tiket & Retribusi",
+                "transportasi": "Transportasi",
+                "akomodasi": "Akomodasi",
+                "konsumsi": "Konsumsi",
+                "pemandu": "Pemandu & Kru",
+                "lainnya": "Lain-lain"
+            },
+            "satuan": {
+                "orang": "per orang",
+                "orang_hari": "per orang per hari",
+                "rombongan": "per rombongan",
+                "hari": "per hari",
+                "unit_hari": "per unit per hari",
+                "kamar_malam": "per kamar per malam"
+            },
+            "satuan_berkapasitas": [
+                "unit_hari",
+                "kamar_malam"
+            ],
+            "margin_jenis": {
+                "persen": "Persen dari modal",
+                "per_orang": "Nominal per orang",
+                "total": "Nominal per rombongan"
+            },
+            "status": {
+                "draf": "Draf",
+                "dikirim": "Dikirim ke pelanggan",
+                "disetujui": "Disetujui",
+                "batal": "Batal"
+            }
+        }
+    }
+}

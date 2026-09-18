@@ -81,7 +81,9 @@ beforeEach(function () {
             return Http::response(['data' => [[
                 'id' => 11, 'kode' => 'OT-0309-A1B2', 'nama' => 'Teman Budi',
                 'nama_paket' => 'Trip Uji', 'tanggal_berangkat' => now()->addDays(9)->toDateString(),
-                'status' => 'dp_masuk', 'imbalan' => 75000, 'dibayar_pada' => null,
+                // Lunas & berhak: imbalan baru bisa ditandai dibayar setelah
+                // pendaftarannya lunas — keputusannya dikirim Orcha lewat 'berhak'.
+                'status' => 'lunas', 'berhak' => true, 'imbalan' => 75000, 'dibayar_pada' => null,
             ]]]);
         }
 

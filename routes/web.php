@@ -587,6 +587,14 @@ Route::middleware('permission:akses_orcha')->group(function () {
 
     Route::get('/admin/orcha/keuntungan', OrchaKeuntunganList::class)->name('admin.orcha.keuntungan');
 
+    // RAB & itinerary private trip, beserta master harga yang dipakainya.
+    Route::get('/admin/orcha/rab', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabList::class)->name('admin.orcha.rab');
+    Route::get('/admin/orcha/rab/{rab}', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaRabSusun::class)
+        ->whereNumber('rab')->name('admin.orcha.rab.susun');
+    Route::get('/admin/orcha/rab/{rab}/pdf', [OrchaEksporController::class, 'rab'])
+        ->whereNumber('rab')->name('admin.orcha.rab.pdf');
+    Route::get('/admin/orcha/master-harga', \App\Livewire\Pages\Admin\Orcha\Rab\OrchaMasterHargaList::class)->name('admin.orcha.master-harga');
+
     Route::get('/admin/orcha/armada', OrchaArmadaList::class)->name('admin.orcha.armada');
     Route::get('/admin/orcha/armada/tambah', OrchaArmadaForm::class)->name('admin.orcha.armada.tambah');
     Route::get('/admin/orcha/armada/{kendaraan}/ubah', OrchaArmadaForm::class)->name('admin.orcha.armada.ubah');

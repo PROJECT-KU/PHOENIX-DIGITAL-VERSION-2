@@ -1,0 +1,79 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "kategori": "tiket",
+            "kategori_label": "Tiket & Retribusi",
+            "nama": "Tiket Candi Prambanan",
+            "provinsi": "DI Yogyakarta",
+            "daerah": null,
+            "destinasi": "Candi Prambanan",
+            "satuan": "orang",
+            "satuan_label": "per orang",
+            "harga": 60000,
+            "harga_teks": "Rp 60.000",
+            "kapasitas": null,
+            "otomatis": false,
+            "aktif": true,
+            "catatan": null,
+            "diubah_pada": "2026-09-18T19:26:18+07:00"
+        },
+        {
+            "id": 2,
+            "kategori": "transportasi",
+            "kategori_label": "Transportasi",
+            "nama": "Sewa Hiace + driver",
+            "provinsi": "DI Yogyakarta",
+            "daerah": null,
+            "destinasi": null,
+            "satuan": "unit_hari",
+            "satuan_label": "per unit per hari",
+            "harga": 1100000,
+            "harga_teks": "Rp 1.100.000",
+            "kapasitas": 14,
+            "otomatis": false,
+            "aktif": true,
+            "catatan": null,
+            "diubah_pada": "2026-09-18T19:26:18+07:00"
+        }
+    ],
+    "meta": {
+        "halaman": 1,
+        "per_halaman": 25,
+        "total": 2,
+        "halaman_terakhir": 1,
+        "kosakata": {
+            "kategori": {
+                "tiket": "Tiket & Retribusi",
+                "transportasi": "Transportasi",
+                "akomodasi": "Akomodasi",
+                "konsumsi": "Konsumsi",
+                "pemandu": "Pemandu & Kru",
+                "lainnya": "Lain-lain"
+            },
+            "satuan": {
+                "orang": "per orang",
+                "orang_hari": "per orang per hari",
+                "rombongan": "per rombongan",
+                "hari": "per hari",
+                "unit_hari": "per unit per hari",
+                "kamar_malam": "per kamar per malam"
+            },
+            "satuan_berkapasitas": [
+                "unit_hari",
+                "kamar_malam"
+            ],
+            "margin_jenis": {
+                "persen": "Persen dari modal",
+                "per_orang": "Nominal per orang",
+                "total": "Nominal per rombongan"
+            },
+            "status": {
+                "draf": "Draf",
+                "dikirim": "Dikirim ke pelanggan",
+                "disetujui": "Disetujui",
+                "batal": "Batal"
+            }
+        }
+    }
+}

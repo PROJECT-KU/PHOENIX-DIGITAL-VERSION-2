@@ -30,6 +30,7 @@ function berkasPenandaAdmin(): array
         'order/bukti-pembayaran.blade.php',
         'task/task-saya-list.blade.php',
         'task/partials/task-*.blade.php',
+        'orcha/rab/*.blade.php',
     ])->flatMap(fn ($pola) => glob(resource_path('views/livewire/pages/admin/'.$pola)))->values()->all();
 }
 

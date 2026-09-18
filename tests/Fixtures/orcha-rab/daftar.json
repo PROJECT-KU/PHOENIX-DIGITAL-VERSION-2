@@ -1,0 +1,72 @@
+{
+    "data": [
+        {
+            "id": 3,
+            "kode": "RAB-2609-R24J",
+            "judul": "Jogja Heritage 3H2M",
+            "nama_pelanggan": "Keluarga Hendra",
+            "whatsapp": "081234567890",
+            "email": null,
+            "provinsi": "DI Yogyakarta",
+            "daerah": "Yogyakarta",
+            "tanggal_mulai": "2026-10-10",
+            "jumlah_hari": 3,
+            "jumlah_malam": 2,
+            "jumlah_peserta": 17,
+            "margin_jenis": "persen",
+            "margin_nilai": 20,
+            "pembulatan": 1000,
+            "status": "draf",
+            "status_label": "Draf",
+            "berlaku_sampai": "2026-10-02",
+            "kedaluwarsa": false,
+            "kode_pendaftaran": null,
+            "dibuat_oleh": "tidak diketahui",
+            "dibuat_pada": "2026-09-18T19:26:18+07:00",
+            "harga_total_teks": "Rp 8.942.000",
+            "harga_per_orang_teks": "Rp 526.000",
+            "untung_teks": "Rp 1.492.000",
+            "persen_untung": 20,
+            "jumlah_biaya": 2
+        }
+    ],
+    "meta": {
+        "halaman": 1,
+        "per_halaman": 25,
+        "total": 1,
+        "halaman_terakhir": 1,
+        "kosakata": {
+            "kategori": {
+                "tiket": "Tiket & Retribusi",
+                "transportasi": "Transportasi",
+                "akomodasi": "Akomodasi",
+                "konsumsi": "Konsumsi",
+                "pemandu": "Pemandu & Kru",
+                "lainnya": "Lain-lain"
+            },
+            "satuan": {
+                "orang": "per orang",
+                "orang_hari": "per orang per hari",
+                "rombongan": "per rombongan",
+                "hari": "per hari",
+                "unit_hari": "per unit per hari",
+                "kamar_malam": "per kamar per malam"
+            },
+            "satuan_berkapasitas": [
+                "unit_hari",
+                "kamar_malam"
+            ],
+            "margin_jenis": {
+                "persen": "Persen dari modal",
+                "per_orang": "Nominal per orang",
+                "total": "Nominal per rombongan"
+            },
+            "status": {
+                "draf": "Draf",
+                "dikirim": "Dikirim ke pelanggan",
+                "disetujui": "Disetujui",
+                "batal": "Batal"
+            }
+        }
+    }
+}

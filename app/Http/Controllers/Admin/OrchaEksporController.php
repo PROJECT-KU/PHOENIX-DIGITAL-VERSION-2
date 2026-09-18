@@ -167,6 +167,18 @@ class OrchaEksporController extends Controller
         return $this->teruskanBerkas("/penyewaan/{$penyewaan}/kwitansi");
     }
 
+    /**
+     * PDF RAB: penawaran untuk pelanggan, atau internal berisi modal & margin.
+     * Jenis lain dianggap penawaran — salah ketik tidak boleh jatuh ke berkas
+     * yang memuat modal.
+     */
+    public function rab(Request $request, int $rab)
+    {
+        $jenis = $request->query('jenis') === 'internal' ? 'internal' : 'penawaran';
+
+        return $this->teruskanBerkas("/rab/{$rab}/pdf", ['jenis' => $jenis]);
+    }
+
     /** Berkas dibuat di Orcha lalu diteruskan apa adanya, tanpa digambar ulang. */
     /**
      * @param  array<string, mixed>  $parameter
