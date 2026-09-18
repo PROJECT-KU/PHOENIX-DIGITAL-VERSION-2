@@ -261,6 +261,9 @@ Data Pesanan || lemon
                                                 $produk = $order->items->map(fn ($it) => $it->product_name ?: $it->product?->nama_akun)->filter()->values();
                                                 $warnaIkon = ['success' => '#16a34a', 'warning' => '#d97706', 'info' => '#0284c7', 'primary' => '#4f46e5', 'danger' => '#e11d48'][$stWarna] ?? '#64748b';
                                                 $urlDetail = route('admin.pesanantoko.detail', $order);
+                                                // Catatan terlihat dari daftar: admin tidak perlu membuka pesanan satu per satu.
+                                                $catatanPelanggan = trim((string) $order->customer_notes);
+                                                $catatanAdmin = $order->items->pluck('processing_notes')->map(fn ($c) => trim((string) $c))->filter()->implode(' · ');
                                             @endphp
                                             <tr wire:key="order-{{ $order->id }}" @class(['is-tanda' => $order->status === 'paid']) @if ($order->status === 'paid') style="--c: #16a34a" @endif>
                                                 <td>
@@ -280,9 +283,20 @@ Data Pesanan || lemon
                                                                         <i class="bi bi-gear-wide-connected"></i>{{ $order->pengecekan_diproses_count }} sedang dicek
                                                                     </span>
                                                                 @endif
+                                                                @if ($catatanAdmin)
+                                                                    <span class="dsb-lencana is-kuning" title="Catatan admin: {{ $catatanAdmin }}"><i class="bi bi-lock-fill"></i>Catatan admin</span>
+                                                                @endif
+                                                                @if ($catatanPelanggan)
+                                                                    <span class="dsb-lencana is-hijau" title="Catatan pelanggan: {{ $catatanPelanggan }}"><i class="bi bi-chat-left-text-fill"></i>Catatan pelanggan</span>
+                                                                @endif
                                                                 {{-- Salinan kolom yang disembunyikan di layar sempit. --}}
                                                                 <span class="dsb-tabel-samar"><i class="bi bi-clock"></i>{{ $order->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                                                             </span>
+                                                            @if ($catatanAdmin || $catatanPelanggan)
+                                                                <span class="pt-catatan-ringkas" title="{{ $catatanAdmin ?: $catatanPelanggan }}">
+                                                                    <i class="bi {{ $catatanAdmin ? 'bi-lock-fill' : 'bi-chat-left-text' }}"></i>{{ \Illuminate\Support\Str::limit($catatanAdmin ?: $catatanPelanggan, 90) }}
+                                                                </span>
+                                                            @endif
                                                         </span>
                                                     </a>
                                                 </td>

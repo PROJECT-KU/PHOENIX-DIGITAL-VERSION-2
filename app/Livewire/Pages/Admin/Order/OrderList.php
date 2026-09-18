@@ -240,10 +240,13 @@ class OrderList extends Component
             'label' => \Carbon\Carbon::create()->month($m)->locale('id')->isoFormat('MMMM'),
         ]);
 
-        $years = Order::selectRaw('YEAR(created_at) as tahun')
-            ->distinct()
-            ->orderByDesc('tahun')
-            ->pluck('tahun');
+        // Rentang tahun dari pesanan tertua s/d terbaru. Bukan YEAR() milik
+        // MySQL, supaya daftar ini juga bisa dirender di basis data uji.
+        $tertua = Order::min('created_at');
+        $terbaru = Order::max('created_at');
+        $years = $tertua
+            ? collect(range((int) substr((string) $terbaru, 0, 4), (int) substr((string) $tertua, 0, 4)))
+            : collect();
 
         if ($years->isEmpty()) {
             $years = collect([now()->year]);

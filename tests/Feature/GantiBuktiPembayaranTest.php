@@ -276,3 +276,26 @@ it('baris item jasa menampilkan kemajuan pengecekan, bukan status kirim akun', f
         // Halaman proses akun tidak ditawarkan untuk item jasa.
         ->and($html)->not->toContain(route('admin.pesanantoko.process', $item->id));
 });
+
+it('catatan admin & pelanggan terlihat di detail dan di daftar tanpa membuka popup', function () {
+    $order = orderBayar('transfer', 'processing');
+    $order->update(['customer_notes' => 'Tolong kirim sore']);
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Super AI Premium', 'harga_perbulan' => 10000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Super AI Premium',
+        'quantity' => 1, 'price' => 10000, 'subtotal' => 10000, 'duration_value' => 1, 'duration_type' => 'bulan',
+        'processing_notes' => 'super ai error diganti chatgpt', 'account_notes' => 'Login lewat Google',
+    ]);
+
+    $detail = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+    expect($detail)->toContain('pt-catatan is-internal')
+        ->and($detail)->toContain('super ai error diganti chatgpt')
+        ->and($detail)->toContain('pt-catatan is-pelanggan')
+        ->and($detail)->toContain('Login lewat Google');
+
+    $daftar = Livewire::actingAs(\App\Models\User::factory()->create())
+        ->test(\App\Livewire\Pages\Admin\Order\OrderList::class)->html();
+    expect($daftar)->toContain('Catatan admin')
+        ->and($daftar)->toContain('Catatan pelanggan')
+        ->and($daftar)->toContain('super ai error diganti chatgpt');
+});

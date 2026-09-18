@@ -45,6 +45,12 @@
     @media (hover: hover) and (pointer: fine) {
         .pt-tautan:hover .dsb-tabel-judul { color: #6d28d9; }
     }
+    /* Potongan catatan di bawah nama pelanggan (daftar) */
+    .pt-catatan-ringkas {
+        display: flex; align-items: flex-start; gap: 5px; margin-top: 4px; max-width: 360px;
+        font-size: .74rem; font-weight: 500; line-height: 1.4; color: #92400e; white-space: normal;
+    }
+    .pt-catatan-ringkas i.bi { line-height: 1.4; flex-shrink: 0; }
     .pt-total { font-weight: 800; color: var(--dsb-tinta, #1c1f26); white-space: nowrap; }
     .pt-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
     .pt-halaman .pagination { margin: 0; justify-content: center; flex-wrap: wrap; }

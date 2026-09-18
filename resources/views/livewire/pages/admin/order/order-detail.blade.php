@@ -291,6 +291,15 @@ Detail Pesanan || lemon
     .pt-detail .items-table td[data-judul="Subtotal"] { color: var(--dsb-tinta); }
     /* Harga: nominal di atas, keterangan hitungannya di bawah. */
     .pt-harga { display: block; font-weight: 700; color: var(--dsb-tinta); white-space: nowrap; }
+    /* Catatan item di bawah nama produk */
+    .pt-catatan {
+        display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; padding: 6px 9px; max-width: 420px;
+        border-radius: 9px; font-size: .74rem; font-weight: 500; line-height: 1.45; white-space: normal;
+    }
+    .pt-catatan i.bi { line-height: 1.45; flex-shrink: 0; }
+    .pt-catatan b { font-weight: 700; }
+    .pt-catatan.is-internal { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    .pt-catatan.is-pelanggan { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
     /* Nominal tidak dipatah, tetapi rincian di bawahnya boleh turun baris
        supaya tabel tidak melebar dan menutup kolom lain. */
     .pt-detail .items-table td[data-judul="Subtotal"] { min-width: 132px; max-width: 170px; white-space: normal; }
@@ -1766,6 +1775,19 @@ Detail Pesanan || lemon
                                         <i class="bi bi-gift"></i> {{ $item->bonus_description }}
                                     </span>
                                     @endif
+                                </div>
+                                @endif
+                                {{-- Catatan langsung terlihat, tanpa membuka popup catatan satu per satu. --}}
+                                @if (filled($item->processing_notes))
+                                <div class="pt-catatan is-internal" title="{{ $item->processing_notes }}">
+                                    <i class="bi bi-lock-fill"></i>
+                                    <span><b>Internal:</b> {{ \Illuminate\Support\Str::limit($item->processing_notes, 160) }}</span>
+                                </div>
+                                @endif
+                                @if (filled($item->account_notes))
+                                <div class="pt-catatan is-pelanggan" title="{{ $item->account_notes }}">
+                                    <i class="bi bi-chat-heart"></i>
+                                    <span><b>Untuk pelanggan:</b> {{ \Illuminate\Support\Str::limit($item->account_notes, 160) }}</span>
                                 </div>
                                 @endif
                             </td>
