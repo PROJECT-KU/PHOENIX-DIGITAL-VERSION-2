@@ -40,6 +40,8 @@ Detail Pesanan || lemon
         }
         $pblAdaWa = strlen($pblWa) >= 9;
         $pblBolehLihat = $pbl && (bool) auth()->user()?->hasPermission('view_customer');
+        $hdBolehUbah = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
+        $hdCatatanDitangani = $order->catatan_ditangani_at;
     @endphp
 
     <div class="dsb pt-detail">
@@ -300,6 +302,14 @@ Detail Pesanan || lemon
     .pt-catatan b { font-weight: 700; }
     .pt-catatan.is-internal { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
     .pt-catatan.is-pelanggan { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .pt-catatan > span { flex: 1 1 auto; min-width: 0; }
+    .pt-catatan-selesai {
+        flex-shrink: 0; margin-left: 4px; padding: 1px 8px; border-radius: 999px; border: 1px solid #fcd34d;
+        background: #fff; color: #92400e; font-size: .7rem; font-weight: 700; line-height: 1.6; cursor: pointer;
+    }
+    .pt-catatan-selesai:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+    .pt-catatan-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 0 2px; }
+    .pt-catatan-status small { color: var(--dsb-redup); font-size: .74rem; }
     /* Nominal tidak dipatah, tetapi rincian di bawahnya boleh turun baris
        supaya tabel tidak melebar dan menutup kolom lain. */
     .pt-detail .items-table td[data-judul="Subtotal"] { min-width: 132px; max-width: 170px; white-space: normal; }
@@ -805,6 +815,26 @@ Detail Pesanan || lemon
                         @endif
                     </span>
                 </div>
+                {{-- Catatan pelanggan tidak dihapus (bagian data pesanan); cukup
+                     ditandai ditangani supaya hilang dari tab "Ada Catatan". --}}
+                @if (filled($order->customer_notes))
+                <div class="pt-catatan-status">
+                    @if ($hdCatatanDitangani)
+                        <span class="dsb-lencana is-hijau"><i class="bi bi-check2-circle"></i>Sudah ditangani</span>
+                        <small>{{ $order->penanganCatatan->name ?? 'Admin' }} · {{ $hdCatatanDitangani->locale('id')->translatedFormat('d M Y, H:i') }}</small>
+                    @elseif ($hdBolehUbah)
+                        <span class="dsb-lencana is-kuning"><i class="bi bi-exclamation-circle"></i>Belum ditangani</span>
+                        <button type="button" class="dsb-tombol is-lembut is-mungil pcek-konfirmasi"
+                            data-action="tandaiCatatanDitangani"
+                            data-title="Tandai catatan pelanggan sudah ditangani?"
+                            data-text="Catatannya tetap tersimpan, hanya tidak lagi muncul di tab Ada Catatan."
+                            data-confirm="Ya, sudah ditangani"
+                            data-icon="question">
+                            <i class="bi bi-check2"></i><span>Tandai ditangani</span>
+                        </button>
+                    @endif
+                </div>
+                @endif
             </div>
         </div>
         <div class="col-lg-6">
@@ -1782,6 +1812,17 @@ Detail Pesanan || lemon
                                 <div class="pt-catatan is-internal" title="{{ $item->processing_notes }}">
                                     <i class="bi bi-lock-fill"></i>
                                     <span><b>Internal:</b> {{ \Illuminate\Support\Str::limit($item->processing_notes, 160) }}</span>
+                                    @if ($hdBolehUbah)
+                                    <button type="button" class="pt-catatan-selesai pcek-konfirmasi" title="Sudah dikerjakan — hapus catatan"
+                                        data-action="hapusCatatanInternal"
+                                        data-arg="{{ $item->id }}"
+                                        data-title="Catatan internal sudah dikerjakan?"
+                                        data-text="Catatan internal item ini akan dihapus."
+                                        data-confirm="Ya, hapus catatan"
+                                        data-icon="question">
+                                        <i class="bi bi-check2"></i> Selesai
+                                    </button>
+                                    @endif
                                 </div>
                                 @endif
                                 @if (filled($item->account_notes))

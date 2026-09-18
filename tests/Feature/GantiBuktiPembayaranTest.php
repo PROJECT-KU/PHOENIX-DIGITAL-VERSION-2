@@ -310,3 +310,69 @@ it('catatan admin & pelanggan terlihat di detail dan di daftar tanpa membuka pop
     expect($tab->viewData('orders')->pluck('id')->all())->toBe([$order->id])
         ->and($tab->viewData('tabCounts')['catatan'])->toBe(1);
 });
+
+function adminPesananToko(): \App\Models\User
+{
+    $peran = \App\Models\Role::firstOrCreate(['name' => 'uji-toko'], ['description' => 'uji']);
+    $izin = \App\Models\Permission::firstOrCreate(['name' => 'edit_pemesanantoko'], ['display_name' => 'edit_pemesanantoko', 'group' => 'uji', 'description' => 'uji']);
+    if (! $peran->permissions()->where('permissions.id', $izin->id)->exists()) {
+        $peran->permissions()->attach($izin->id);
+    }
+
+    return \App\Models\User::factory()->create(['role_id' => $peran->id, 'status' => 'active']);
+}
+
+function pesananBercatatan(): array
+{
+    $order = orderBayar('transfer', 'processing');
+    $order->update(['customer_notes' => 'Tolong kirim sore']);
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Super AI Premium', 'harga_perbulan' => 10000]);
+    $item = \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Super AI Premium',
+        'quantity' => 1, 'price' => 10000, 'subtotal' => 10000, 'duration_value' => 1, 'duration_type' => 'bulan',
+        'processing_notes' => 'super ai error diganti chatgpt', 'account_notes' => 'Login lewat Google',
+    ]);
+
+    return [$order->fresh(), $item];
+}
+
+it('detail: catatan internal dihapus, catatan pelanggan hanya ditandai ditangani', function () {
+    [$order, $item] = pesananBercatatan();
+    $admin = adminPesananToko();
+
+    Livewire::actingAs($admin)->test(OrderDetail::class, ['order' => $order])
+        ->call('hapusCatatanInternal', $item->id)
+        ->call('tandaiCatatanDitangani')
+        ->assertSee('Sudah ditangani');
+
+    $order->refresh();
+    expect($item->fresh()->processing_notes)->toBeNull()
+        ->and($item->fresh()->account_notes)->toBe('Login lewat Google') // catatan untuk pelanggan tidak disentuh
+        ->and($order->customer_notes)->toBe('Tolong kirim sore')        // catatan pelanggan tetap tersimpan
+        ->and($order->catatan_ditangani_at)->not->toBeNull()
+        ->and($order->catatan_ditangani_oleh)->toBe($admin->id);
+});
+
+it('daftar: tandai selesai menghapus pesanan dari tab Ada Catatan', function () {
+    [$order, $item] = pesananBercatatan();
+
+    $t = Livewire::actingAs(adminPesananToko())->test(\App\Livewire\Pages\Admin\Order\OrderList::class)->call('setTab', 'catatan');
+    expect($t->viewData('tabCounts')['catatan'])->toBe(1);
+
+    $t->call('selesaikanCatatan', $order->id)->assertDispatched('catatan-diselesaikan');
+    expect($t->viewData('tabCounts')['catatan'])->toBe(0)
+        ->and($t->viewData('orders')->count())->toBe(0)
+        ->and($item->fresh()->processing_notes)->toBeNull()
+        ->and($order->fresh()->catatan_ditangani_at)->not->toBeNull();
+});
+
+it('pengguna tanpa izin ubah pesanan tidak bisa menyelesaikan catatan', function () {
+    [$order, $item] = pesananBercatatan();
+
+    Livewire::actingAs(\App\Models\User::factory()->create())
+        ->test(\App\Livewire\Pages\Admin\Order\OrderList::class)
+        ->call('selesaikanCatatan', $order->id)
+        ->assertForbidden();
+
+    expect($item->fresh()->processing_notes)->toBe('super ai error diganti chatgpt');
+});

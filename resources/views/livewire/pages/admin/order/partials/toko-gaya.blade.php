@@ -48,6 +48,8 @@
     /* Tombol & jendela catatan (daftar) */
     .pt-catatan-btn.is-admin { color: #b45309; background: #fffbeb; border-color: #fde68a; }
     .pt-catatan-btn.is-pelanggan { color: #15803d; background: #f0fdf4; border-color: #bbf7d0; }
+    .pt-catatan-btn.is-selesai { color: #94a3b8; }
+    #pt-catatan-jendela .dsb-jendela-kaki > .dsb-tombol { margin-left: auto; }
     .pt-cj-blok { --c: #d97706; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--c) 25%, #fff); background: color-mix(in srgb, var(--c) 6%, #fff); }
     .pt-cj-blok + .pt-cj-blok { margin-top: 10px; }
     .pt-cj-judul { display: flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 800; color: var(--c); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }

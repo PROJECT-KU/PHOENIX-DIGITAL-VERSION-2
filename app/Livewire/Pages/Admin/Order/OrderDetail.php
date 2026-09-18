@@ -802,6 +802,29 @@ class OrderDetail extends Component
      * dari status). Akun yang sudah terkirim TIDAK ikut tertarik — itu di luar
      * kendali sistem, cukup catatan bagi admin.
      */
+    /** Hapus catatan internal satu item setelah pekerjaannya beres. */
+    public function hapusCatatanInternal(string $itemId): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_pemesanantoko'), 403);
+
+        $item = OrderItem::where('order_id', $this->order->id)->where('id', $itemId)->firstOrFail();
+        \App\Support\CatatanPesanan::hapusInternal($item);
+
+        $this->reloadOrder();
+        $this->dispatch('order-updated', message: 'Catatan internal dihapus.');
+    }
+
+    /** Tandai catatan pelanggan sudah ditangani (catatannya tetap tersimpan). */
+    public function tandaiCatatanDitangani(): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_pemesanantoko'), 403);
+
+        \App\Support\CatatanPesanan::tandaiPelangganDitangani($this->order);
+
+        $this->reloadOrder();
+        $this->dispatch('order-updated', message: 'Catatan pelanggan ditandai sudah ditangani.');
+    }
+
     public function batalkanPesanan(): void
     {
         if (! $this->order || $this->order->status === 'cancelled') {

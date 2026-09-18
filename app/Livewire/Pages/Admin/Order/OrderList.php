@@ -180,19 +180,24 @@ class OrderList extends Component
             ->paginate(10);
     }
 
-    /**
-     * Pesanan yang punya catatan: catatan pelanggan saat memesan, atau
-     * catatan internal/untuk pelanggan yang diisi admin di salah satu item.
-     */
+    /** Pesanan dengan catatan yang masih perlu ditindaklanjuti (lihat Order::scopeCatatanTerbuka). */
     protected function punyaCatatan($q)
     {
-        return $q->where(function ($w) {
-            $w->where(fn ($c) => $c->whereNotNull('customer_notes')->where('customer_notes', '!=', ''))
-                ->orWhereHas('items', fn ($i) => $i->where(function ($x) {
-                    $x->where(fn ($n) => $n->whereNotNull('processing_notes')->where('processing_notes', '!=', ''))
-                        ->orWhere(fn ($n) => $n->whereNotNull('account_notes')->where('account_notes', '!=', ''));
-                }));
-        });
+        return $q->catatanTerbuka();
+    }
+
+    /**
+     * Tandai semua catatan pesanan ini selesai: catatan internal di item
+     * dihapus, catatan pelanggan ditandai ditangani (tidak dihapus).
+     */
+    public function selesaikanCatatan(string $orderId): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_pemesanantoko'), 403);
+
+        $order = Order::with('items')->findOrFail($orderId);
+        \App\Support\CatatanPesanan::selesaikanSemua($order);
+
+        $this->dispatch('catatan-diselesaikan', pesan: 'Catatan pesanan '.$order->order_number.' ditandai selesai.');
     }
 
     // Tab "Akun Habis" menampilkan ITEM yang habis (bukan order),

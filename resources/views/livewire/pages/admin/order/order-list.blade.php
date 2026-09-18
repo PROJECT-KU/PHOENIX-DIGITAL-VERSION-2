@@ -9,6 +9,7 @@ Data Pesanan || lemon
     @php
         $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
         $adaSaringan = $search || $filterMonth || $filterYear;
+        $bolehUbahPesanan = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
         // Warna Bootstrap dari Order::labelStatus()/labelPembayaran() → lencana dasbor.
         $lencana = [
             'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
@@ -267,6 +268,11 @@ Data Pesanan || lemon
                                                 $catatanAdmin = $order->items->pluck('processing_notes')->map(fn ($c) => trim((string) $c))->filter()->implode("\n");
                                                 $catatanUntuk = $order->items->pluck('account_notes')->map(fn ($c) => trim((string) $c))->filter()->implode("\n");
                                                 $adaCatatan = $catatanAdmin || $catatanPelanggan || $catatanUntuk;
+                                                // Yang masih perlu ditindaklanjuti: catatan internal, atau catatan
+                                                // pelanggan yang belum ditandai ditangani.
+                                                $pelangganTerbuka = $catatanPelanggan && ! $order->catatan_ditangani_at;
+                                                $catatanTerbuka = $catatanAdmin || $pelangganTerbuka;
+                                                $kelasCatatan = $catatanAdmin ? 'is-admin' : ($pelangganTerbuka ? 'is-pelanggan' : 'is-selesai');
                                             @endphp
                                             <tr wire:key="order-{{ $order->id }}" @class(['is-tanda' => $order->status === 'paid']) @if ($order->status === 'paid') style="--c: #16a34a" @endif>
                                                 <td>
@@ -338,10 +344,13 @@ Data Pesanan || lemon
                                                         @endif
                                                         {{-- Catatan dibuka sebagai jendela kecil, tidak memakan baris. --}}
                                                         @if ($adaCatatan)
-                                                            <button type="button" class="dsb-tabel-btn pt-catatan-btn {{ $catatanAdmin ? 'is-admin' : 'is-pelanggan' }}"
-                                                                title="Lihat catatan" aria-label="Lihat catatan pesanan {{ $order->order_number }}"
+                                                            <button type="button" class="dsb-tabel-btn pt-catatan-btn {{ $kelasCatatan }}"
+                                                                title="{{ $catatanTerbuka ? 'Lihat catatan (belum ditangani)' : 'Lihat catatan (sudah ditangani)' }}" aria-label="Lihat catatan pesanan {{ $order->order_number }}"
                                                                 data-nomor="{{ $order->order_number }}" data-nama="{{ $order->customer->nama ?? '' }}"
-                                                                data-admin="{{ $catatanAdmin }}" data-pelanggan="{{ $catatanPelanggan }}" data-untuk="{{ $catatanUntuk }}">
+                                                                data-admin="{{ $catatanAdmin }}" data-pelanggan="{{ $catatanPelanggan }}" data-untuk="{{ $catatanUntuk }}"
+                                                                data-ditangani="{{ $order->catatan_ditangani_at ? '1' : '' }}"
+                                                                data-bisa-selesai="{{ $catatanTerbuka && $bolehUbahPesanan ? '1' : '' }}"
+                                                                data-order="{{ $order->id }}" data-komponen="{{ $this->getId() }}">
                                                                 <i class="bi bi-sticky-fill"></i>
                                                             </button>
                                                         @endif
@@ -381,11 +390,26 @@ Data Pesanan || lemon
                 const tutup = () => document.getElementById('pt-catatan-jendela')?.remove();
                 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('pt-catatan-jendela')) { e.preventDefault(); tutup(); } });
                 document.addEventListener('livewire:navigating', tutup);
+                window.addEventListener('catatan-diselesaikan', (e) => {
+                    const d = Array.isArray(e.detail) ? (e.detail[0] || {}) : (e.detail || {});
+                    if (typeof Swal === 'undefined') return;
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: d.pesan || 'Catatan ditandai selesai.', timer: 2200, showConfirmButton: false,
+                        background: 'rgba(255,255,255,.95)', customClass: { popup: 'swal-glossy-popup rounded-4 shadow-lg border-0' } });
+                });
                 document.addEventListener('click', (e) => {
                     if (e.target.closest('[data-tutup-catatan]')) { tutup(); return; }
+                    const selesai = e.target.closest('[data-selesaikan-catatan]');
+                    if (selesai) {
+                        const asal = window.__ptCatatanAsal;
+                        selesai.disabled = true;
+                        selesai.querySelector('span').textContent = 'Menyimpan…';
+                        window.Livewire?.find(asal.komponen)?.call('selesaikanCatatan', asal.order).then(tutup);
+                        return;
+                    }
                     const btn = e.target.closest('.pt-catatan-btn');
                     if (!btn) return;
                     e.preventDefault();
+                    window.__ptCatatanAsal = { komponen: btn.dataset.komponen, order: btn.dataset.order };
                     const blok = (ikon, judul, teks, warna) => teks ? `
                         <div class="pt-cj-blok" style="--c:${warna}">
                             <div class="pt-cj-judul"><i class="bi ${ikon}"></i> ${judul}</div>
@@ -407,9 +431,16 @@ Data Pesanan || lemon
                                 </div>
                                 <div class="dsb-jendela-isi">
                                     ${blok('bi-lock-fill', 'Catatan admin (internal)', btn.dataset.admin, '#d97706')}
-                                    ${blok('bi-chat-left-text-fill', 'Catatan dari pelanggan', btn.dataset.pelanggan, '#16a34a')}
+                                    ${blok('bi-chat-left-text-fill', 'Catatan dari pelanggan' + (btn.dataset.ditangani ? ' · sudah ditangani' : ''), btn.dataset.pelanggan, '#16a34a')}
                                     ${blok('bi-chat-heart', 'Catatan untuk pelanggan', btn.dataset.untuk, '#0284c7')}
                                 </div>
+                                ${btn.dataset.bisaSelesai ? `
+                                <div class="dsb-jendela-kaki">
+                                    <span class="dsb-jendela-kaki-ket">Catatan internal dihapus; catatan pelanggan hanya ditandai ditangani.</span>
+                                    <button type="button" class="dsb-tombol is-utama is-mungil" data-selesaikan-catatan>
+                                        <i class="bi bi-check2-all"></i><span>Tandai selesai</span>
+                                    </button>
+                                </div>` : ''}
                             </div>
                         </div>`;
                     document.body.appendChild(wadah);

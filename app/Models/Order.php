@@ -31,6 +31,8 @@ class Order extends Model
         'expired_at',
         'customer_notes',
         'admin_notes',
+        'catatan_ditangani_at',
+        'catatan_ditangani_oleh',
         'referral_code',
         'referrer_id',
         'applied_promos',
@@ -48,6 +50,7 @@ class Order extends Model
         'paid_at' => 'datetime',
         'expired_at' => 'datetime',
         'meta_purchase_sent_at' => 'datetime',
+        'catatan_ditangani_at' => 'datetime',
         'applied_promos' => 'array',
         'promo_discount' => 'decimal:0',
         'referral_discount' => 'decimal:0',
@@ -838,5 +841,24 @@ class Order extends Model
         return $query->whereIn('status', ['paid', 'processing'])
             ->whereHas('items.product', fn ($p) => $p->where('butuh_file', 1))
             ->whereHas('uploads', fn ($u) => $u->where('status', 'selesai'));
+    }
+
+    /**
+     * Pesanan yang catatannya MASIH perlu ditindaklanjuti: catatan pelanggan
+     * yang belum ditandai ditangani, atau catatan internal admin di item.
+     * Catatan "untuk pelanggan" bukan pekerjaan, jadi tidak dihitung.
+     */
+    public function scopeCatatanTerbuka($query)
+    {
+        return $query->where(function ($w) {
+            $w->where(fn ($c) => $c->whereNotNull('customer_notes')->where('customer_notes', '!=', '')->whereNull('catatan_ditangani_at'))
+                ->orWhereHas('items', fn ($i) => $i->whereNotNull('processing_notes')->where('processing_notes', '!=', ''));
+        });
+    }
+
+    /** Pengguna yang menandai catatan pelanggan sudah ditangani. */
+    public function penanganCatatan()
+    {
+        return $this->belongsTo(User::class, 'catatan_ditangani_oleh');
     }
 }
