@@ -98,9 +98,56 @@ class OrderForm extends Component
         $this->promoService = $promoService;
     }
 
-    public function mount()
+    /** Keterangan pesanan asal bila form dibuka sebagai perpanjangan (?perpanjang=). */
+    public ?array $perpanjangInfo = null;
+
+    public function mount(?string $perpanjang = null)
     {
         $this->items[] = $this->blankItem();
+
+        if ($perpanjang) {
+            $this->isiPerpanjangan($perpanjang);
+        }
+    }
+
+    /**
+     * Perpanjangan satu klik: pelanggan, produk, satuan, durasi, dan jumlah
+     * disalin dari item pesanan lama. Admin tetap memeriksa lalu menekan
+     * Buat Pesanan — tidak ada yang tersimpan otomatis. Harga dihitung ulang
+     * dari katalog SEKARANG, bukan harga lama.
+     */
+    private function isiPerpanjangan(string $itemId): void
+    {
+        $item = OrderItem::with('order.customer', 'product')->find($itemId);
+        if (! $item || ! $item->product || ! $item->order) {
+            return;
+        }
+
+        if ($c = $item->order->customer) {
+            $this->foundCustomer = $c;
+            $this->customer_id = $c->id;
+            $this->no_hp = $c->no_hp;
+            $this->nama = $c->nama;
+            $this->email = $c->email;
+            $this->customerFound = true;
+            $this->pointsValue = ($c->status_member === 'active' && $c->point > 0) ? $c->getPointValue() : 0;
+            $this->checkReferralEligibility();
+        }
+
+        $this->items = [array_merge($this->blankItem(), [
+            'product_id' => $item->product_id,
+            'duration_type' => $item->duration_type ?: 'bulan',
+            'duration_value' => max(1, (int) $item->duration_value),
+            'quantity' => max(1, (int) $item->quantity),
+        ])];
+
+        $this->perpanjangInfo = [
+            'nomor' => $item->order->order_number,
+            'produk' => $item->product_name ?: $item->product->nama_akun,
+            'berakhir' => $item->end_date?->locale('id')->translatedFormat('d M Y'),
+        ];
+
+        $this->calculateTotals();
     }
 
     private function blankItem(): array

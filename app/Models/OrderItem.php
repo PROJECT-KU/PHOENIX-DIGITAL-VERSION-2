@@ -65,6 +65,7 @@ class OrderItem extends Model
         'delivered_at',
         'delivery_status',
         'habis_notified_at',
+        'ingat_perpanjang_at',
         'processed_by',
         'processed_at',
         'processing_notes',
@@ -82,6 +83,7 @@ class OrderItem extends Model
         'delivered_at' => 'datetime',
         'processed_at' => 'datetime',
         'habis_notified_at' => 'datetime',
+        'ingat_perpanjang_at' => 'datetime',
     ];
 
     // Relationships

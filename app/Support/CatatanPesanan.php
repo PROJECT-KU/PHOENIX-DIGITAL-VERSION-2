@@ -32,6 +32,8 @@ class CatatanPesanan
             'catatan_ditangani_at' => now(),
             'catatan_ditangani_oleh' => auth()->id(),
         ])->saveQuietly();
+
+        RiwayatPesanan::catat($order->id, 'catatan', 'Catatan pelanggan ditandai ditangani');
     }
 
     public static function selesaikanSemua(Order $order): void

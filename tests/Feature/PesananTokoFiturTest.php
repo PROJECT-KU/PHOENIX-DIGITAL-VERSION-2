@@ -1,0 +1,236 @@
+<?php
+
+use App\Livewire\Pages\Admin\Order\OrderDetail;
+use App\Livewire\Pages\Admin\Order\OrderForm;
+use App\Livewire\Pages\Admin\Order\OrderList;
+use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderRiwayat;
+use App\Models\Product;
+use App\Support\PengingatPerpanjangan;
+use App\Support\RiwayatPesanan;
+use Illuminate\Support\Str;
+use Livewire\Livewire;
+use Maatwebsite\Excel\Facades\Excel;
+
+/**
+ * Pesanan Toko: Segera Habis + pengingat WA, saringan di URL, saringan
+ * lanjutan, urutan, ekspor Excel, riwayat pesanan, perpanjangan satu klik.
+ */
+beforeEach(function () {
+    RiwayatPesanan::lupakan();
+});
+
+function tokoAdmin(array $izin = ['view_pemesanantoko', 'edit_pemesanantoko', 'create_pemesanantoko']): \App\Models\User
+{
+    $peran = \App\Models\Role::create(['name' => 'uji-'.Str::random(6), 'description' => 'uji']);
+    foreach ($izin as $nama) {
+        $p = \App\Models\Permission::firstOrCreate(['name' => $nama], ['display_name' => $nama, 'group' => 'uji', 'description' => 'uji']);
+        $peran->permissions()->attach($p->id);
+    }
+
+    return \App\Models\User::factory()->create(['role_id' => $peran->id, 'status' => 'active']);
+}
+
+function tokoPesanan(array $isian = [], array $item = [], ?Product $produk = null): Order
+{
+    $order = Order::create(array_merge([
+        'id' => Str::uuid(),
+        'order_number' => 'INV-UJI-'.Str::upper(Str::random(6)),
+        'customer_id' => Customer::create([
+            'nama' => 'Sari', 'no_hp' => '0812'.random_int(10000000, 99999999), 'email' => uniqid().'@contoh.test',
+        ])->id,
+        'subtotal' => 50000, 'total' => 50000, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now()->addDay(),
+    ], $isian));
+
+    $produk ??= Product::create(['nama_akun' => 'Canva Pro']);
+    OrderItem::create(array_merge([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => $produk->nama_akun,
+        'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 50000, 'quantity' => 1, 'subtotal' => 50000,
+    ], $item));
+
+    return $order->fresh('items', 'customer');
+}
+
+it('tab Segera Habis hanya memuat akun yang berakhir dalam 7 hari pada pesanan yang dibayar', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan([], ['product_name' => 'Akun Tiga Hari', 'end_date' => today()->addDays(3)]);
+    tokoPesanan([], ['product_name' => 'Akun Sepuluh Hari', 'end_date' => today()->addDays(10)]);
+    tokoPesanan(['status' => 'cancelled'], ['product_name' => 'Akun Batal', 'end_date' => today()->addDays(2)]);
+    tokoPesanan([], ['product_name' => 'Akun Ditandai Habis', 'end_date' => today()->addDays(2), 'subscription_status' => 'habis']);
+
+    Livewire::test(OrderList::class)
+        ->call('setTab', 'segera')
+        ->assertSee('Akun Tiga Hari')
+        ->assertSee('3 hari lagi')
+        ->assertSee('api.whatsapp.com/send', false)
+        ->assertDontSee('Akun Sepuluh Hari')
+        ->assertDontSee('Akun Batal')
+        ->assertDontSee('Akun Ditandai Habis');
+});
+
+it('pesan pengingat WA berisi sisa hari dan tautan beli produk yang sama', function () {
+    $order = tokoPesanan([], ['end_date' => today()->addDay()]);
+    $item = $order->items->first();
+
+    $url = urldecode(PengingatPerpanjangan::tautanWa($item, 'segera'));
+
+    expect($url)->toStartWith('https://api.whatsapp.com/send?phone=62')
+        ->toContain('*BESOK*')
+        ->toContain(route('shop.detail-product', $item->product_id))
+        ->toContain($order->order_number);
+});
+
+it('menandai dihubungi (satu & massal) mengisi kolom yang benar dan tercatat di riwayat', function () {
+    $this->actingAs(tokoAdmin());
+    $a = tokoPesanan([], ['end_date' => today()->addDays(2)])->items->first();
+    $b = tokoPesanan([], ['end_date' => today()->addDays(4)])->items->first();
+    $habis = tokoPesanan([], ['end_date' => today()->subDays(3)])->items->first();
+
+    $t = Livewire::test(OrderList::class)->call('setTab', 'segera');
+    $t->call('tandaiDihubungi', (string) $a->id);
+    expect($a->fresh()->ingat_perpanjang_at)->not->toBeNull()
+        ->and($b->fresh()->ingat_perpanjang_at)->toBeNull();
+
+    $t->set('terpilih', [(string) $b->id])->call('tandaiDihubungi');
+    expect($b->fresh()->ingat_perpanjang_at)->not->toBeNull();
+
+    $t->call('setTab', 'habis')->set('terpilih', [(string) $habis->id])->call('tandaiDihubungi');
+    expect($habis->fresh()->habis_notified_at)->not->toBeNull()
+        ->and(OrderRiwayat::where('order_id', $a->order_id)->where('aksi', 'wa')->exists())->toBeTrue();
+});
+
+it('menandai dihubungi ditolak tanpa izin ubah pesanan', function () {
+    $this->actingAs(tokoAdmin(['view_pemesanantoko']));
+    $item = tokoPesanan([], ['end_date' => today()->addDays(2)])->items->first();
+
+    Livewire::test(OrderList::class)->call('setTab', 'segera')
+        ->call('tandaiDihubungi', (string) $item->id)
+        ->assertForbidden();
+});
+
+it('saringan dibaca dari alamat halaman, jadi tetap ada setelah kembali dari detail', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan(['order_number' => 'INV-CARI-111']);
+    tokoPesanan(['order_number' => 'INV-LAIN-222']);
+
+    Livewire::withQueryParams(['cari' => 'CARI-111'])
+        ->test(OrderList::class)
+        ->assertSet('search', 'CARI-111')
+        ->assertSee('INV-CARI-111')
+        ->assertDontSee('INV-LAIN-222');
+});
+
+it('saringan lanjutan: metode bayar, jenis, produk, dan rentang tanggal', function () {
+    $this->actingAs(tokoAdmin());
+    $jasa = Product::create(['nama_akun' => 'Cek Plagiasi', 'butuh_file' => true]);
+    tokoPesanan(['order_number' => 'INV-QRIS-1', 'payment_method' => 'qris_dinamis']);
+    tokoPesanan(['order_number' => 'INV-JASA-1'], [], $jasa);
+    $lama = tokoPesanan(['order_number' => 'INV-LAMA-1']);
+    $lama->forceFill(['created_at' => now()->subMonths(2)])->saveQuietly();
+
+    Livewire::test(OrderList::class)->set('metode', 'qris_dinamis')
+        ->assertSee('INV-QRIS-1')->assertDontSee('INV-JASA-1');
+
+    Livewire::test(OrderList::class)->set('jenis', 'jasa')
+        ->assertSee('INV-JASA-1')->assertDontSee('INV-QRIS-1');
+
+    Livewire::test(OrderList::class)->set('jenis', 'akun')
+        ->assertSee('INV-QRIS-1')->assertDontSee('INV-JASA-1');
+
+    Livewire::test(OrderList::class)->set('produk', (string) $jasa->id)
+        ->assertSee('INV-JASA-1')->assertDontSee('INV-QRIS-1');
+
+    Livewire::test(OrderList::class)->set('tglDari', now()->subDays(5)->toDateString())
+        ->assertSee('INV-QRIS-1')->assertDontSee('INV-LAMA-1');
+});
+
+it('urutan total terbesar menaruh pesanan termahal di atas; nilai urut karangan dikembalikan', function () {
+    $this->actingAs(tokoAdmin());
+    tokoPesanan(['order_number' => 'INV-MURAH', 'total' => 10000]);
+    tokoPesanan(['order_number' => 'INV-MAHAL', 'total' => 900000]);
+
+    $html = Livewire::test(OrderList::class)->set('urut', 'total_tinggi')->html();
+    expect(strpos($html, 'INV-MAHAL'))->toBeLessThan(strpos($html, 'INV-MURAH'));
+
+    Livewire::test(OrderList::class)->set('urut', 'sembarang')->assertSet('urut', 'terbaru')
+        ->set('perHalaman', 999)->assertSet('perHalaman', 10);
+});
+
+it('ekspor Excel mengikuti tab, dan hanya untuk pengelola pesanan', function () {
+    $this->freezeTime();
+    Excel::fake();
+    tokoPesanan(['order_number' => 'INV-EKSPOR-1']);
+
+    $this->actingAs(tokoAdmin());
+    Livewire::test(OrderList::class)->call('unduhExcel');
+    Excel::assertDownloaded('Pesanan-Toko_all_'.now()->format('Ymd-His').'.xlsx', function (\App\Exports\PesananTokoExport $e) {
+        return str_contains($e->view()->render(), 'INV-EKSPOR-1');
+    });
+
+    $this->actingAs(tokoAdmin(['view_pemesanantoko']));
+    Livewire::test(OrderList::class)->call('unduhExcel')->assertForbidden();
+});
+
+it('riwayat mencatat pesanan dibuat, status berubah, dan akun dikirim beserta pelakunya', function () {
+    $admin = tokoAdmin();
+    $this->actingAs($admin);
+    $order = tokoPesanan(['status' => 'paid']);
+
+    $order->update(['status' => 'processing']);
+    $order->items->first()->update(['delivery_status' => 'delivered']);
+
+    $teks = RiwayatPesanan::untuk($order->fresh())->pluck('teks')->all();
+    expect($teks)->toContain('Status Dibayar → Diproses')
+        ->toContain('Akun Canva Pro dikirim ke pelanggan')
+        ->and(OrderRiwayat::where('order_id', $order->id)->where('aksi', 'status')->first()->user_id)->toBe($admin->id);
+});
+
+it('pesanan lama tanpa jejak tetap punya riwayat dari data pesanan', function () {
+    $order = tokoPesanan(['paid_at' => now()->subDay()]);
+    OrderRiwayat::where('order_id', $order->id)->delete();
+
+    $r = RiwayatPesanan::untuk($order->fresh());
+
+    expect($r->pluck('teks')->all())->toContain('Pesanan dibuat')->toContain('Pembayaran diterima')
+        ->and($r->every(fn ($x) => $x['dari_data']))->toBeTrue();
+});
+
+it('detail pesanan membuka jendela riwayat', function () {
+    $this->actingAs(tokoAdmin());
+    $order = tokoPesanan();
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->assertDontSee('Riwayat Pesanan')
+        ->set('lihatRiwayat', true)
+        ->assertSee('Riwayat Pesanan')
+        ->assertSee('Dibuat admin');
+});
+
+it('perpanjangan satu klik mengisi pelanggan, produk, dan durasi dari item lama', function () {
+    $this->actingAs(tokoAdmin());
+    $produk = Product::create(['nama_akun' => 'ChatGPT Plus', 'harga_perbulan' => 35000]);
+    $order = tokoPesanan([], ['duration_value' => 3, 'end_date' => today()->addDays(2)], $produk);
+    $item = $order->items->first();
+
+    Livewire::test(OrderForm::class, ['perpanjang' => (string) $item->id])
+        ->assertSet('customer_id', $order->customer_id)
+        ->assertSet('nama', 'Sari')
+        ->assertSet('items.0.product_id', $produk->id)
+        ->assertSet('items.0.duration_value', 3)
+        ->assertSee('Perpanjangan ChatGPT Plus')
+        ->assertSee($order->order_number);
+});
+
+it('pencatatan riwayat tidak pernah menggagalkan pesanan walau tabelnya belum ada', function () {
+    \Illuminate\Support\Facades\Schema::drop('order_riwayat');
+    RiwayatPesanan::lupakan();
+
+    $order = tokoPesanan(['status' => 'paid']);
+    $order->update(['status' => 'completed']);
+
+    expect($order->fresh()->status)->toBe('completed')
+        ->and(RiwayatPesanan::untuk($order->fresh())->pluck('teks')->all())->toContain('Pesanan dibuat');
+});

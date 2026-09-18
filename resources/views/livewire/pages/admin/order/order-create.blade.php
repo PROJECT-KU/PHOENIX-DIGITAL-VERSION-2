@@ -7,7 +7,7 @@ Tambah Pesanan || lemon
     <div class="dsb">
         <header class="dsb-hero">
             <div class="dsb-hero-teks">
-                <h1 class="dsb-salam">Tambah Pesanan</h1>
+                <h1 class="dsb-salam">{{ $perpanjang ? 'Pesanan Perpanjangan' : 'Tambah Pesanan' }}</h1>
                 <p class="dsb-hero-ket">
                     <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
                     <span class="d-block">Isi pelanggan, akun yang dibeli, diskon, dan metode pembayaran. Proses tiap akun dilakukan di Detail Pesanan.</span>
@@ -20,7 +20,7 @@ Tambah Pesanan || lemon
             </div>
         </header>
 
-        <livewire:pages.admin.order.order-form />
+        <livewire:pages.admin.order.order-form :perpanjang="$perpanjang" />
     </div>
 
     @include('livewire.layout.sweetalert')

@@ -27,6 +27,12 @@
     .pt-tab.is-aktif { background: color-mix(in srgb, var(--c) 10%, #fff); color: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, #fff); }
     .pt-tab.is-aktif .pt-tab-jumlah { background: var(--c); color: #fff; }
     .pt-tab:focus-visible { outline: 2px solid #7c3aed; outline-offset: 1px; }
+    /* Layar lebar: tab membungkus ke baris kedua supaya semuanya terlihat
+       (10 tab tidak muat satu baris; yang di ujung kanan jadi tak terlihat). */
+    @media (min-width: 992px) {
+        .pt-tab-deret { flex-wrap: wrap; overflow: visible; }
+        .pt-tab { flex: 0 1 auto; }
+    }
     @media (hover: hover) and (pointer: fine) {
         .pt-tab:not(.is-aktif):hover { background: #f8fafc; color: #1c1f26; }
     }
@@ -63,6 +69,60 @@
         text-decoration: none; white-space: nowrap;
     }
     .pt-lanjut:hover { background: #15803d; color: #fff; }
+    .pt-lanjut.is-wa { background: #25d366; }
+    .pt-lanjut.is-wa:hover { background: #1ebe5a; }
+    .pt-lanjut.is-ungu { background: #f5f3ff; color: #6d28d9; box-shadow: inset 0 0 0 1px #ddd6fe; }
+    .pt-lanjut.is-ungu:hover { background: #7c3aed; color: #fff; }
+
+    /* ===== Saringan lanjutan, urutan, baris ===== */
+    .pt-lanjutan { margin-top: 14px; padding-top: 13px; border-top: 1px solid #f1f5f9; }
+    .pt-lanjutan-kepala { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .pt-lanjutan-panah { transition: transform .15s ease; font-size: .75rem; }
+    .pt-lanjutan-panah.is-buka { transform: rotate(180deg); }
+    .pt-tab-jumlah.is-isi { background: #7c3aed; color: #fff; min-width: 20px; height: 20px; }
+    .pt-urut { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pt-urut .dsb-label { margin: 0; }
+    .pt-urut .dsb-isian { width: auto; min-width: 150px; }
+    .pt-urut .dsb-isian.pt-baris { min-width: 76px; }
+    .pt-urut .dsb-isian:disabled { opacity: .55; }
+    .pt-saring.pt-saring-lanjut { margin-top: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .pt-saring-lanjut .pt-medan-produk { grid-column: 1 / -1; }
+    @media (max-width: 991.98px) { .pt-saring.pt-saring-lanjut { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 575.98px) {
+        .pt-saring.pt-saring-lanjut { grid-template-columns: minmax(0, 1fr); }
+        .pt-urut { width: 100%; }
+        .pt-urut .dsb-isian { flex: 1 1 0; min-width: 0; }
+    }
+    .pt-isi-tombol { display: inline-flex; align-items: center; gap: 8px; }
+
+    /* ===== Linimasa riwayat pesanan ===== */
+    .pt-riwayat { list-style: none; margin: 0; padding: 0; position: relative; }
+    .pt-riwayat::before { content: ''; position: absolute; left: 17px; top: 8px; bottom: 8px; width: 2px; background: #eef2f7; }
+    .pt-riwayat-baris { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 7px 0; }
+    .pt-riwayat-ikon {
+        flex: 0 0 36px; width: 36px; height: 36px; border-radius: 11px; position: relative; z-index: 1;
+        display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: .95rem;
+        background: var(--c); box-shadow: 0 0 0 4px #fff;
+    }
+    .pt-riwayat-teks { min-width: 0; padding-top: 2px; font-size: .8rem; color: #64748b; line-height: 1.45; }
+    .pt-riwayat-teks b { display: block; font-size: .88rem; color: #1e293b; font-weight: 700; }
+    .pt-riwayat-teks span { display: block; }
+    .pt-riwayat-catatan { margin: 12px 0 0; padding: 9px 12px; border-radius: 11px; background: #f8fafc; color: #64748b; font-size: .76rem; }
+
+    /* ===== Aksi massal (tab Segera Habis / Akun Habis) ===== */
+    .pt-massal {
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+        padding: 10px 16px; border-bottom: 1px solid #f1f5f9; font-size: .82rem; color: #475569;
+    }
+    .pt-massal.is-aktif { background: #f5f3ff; }
+    .pt-massal-aksi { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pt-massal-aksi b { color: #6d28d9; }
+    .pt-centang { display: inline-flex; align-items: center; gap: 8px; margin: 0; cursor: pointer; font-weight: 600; }
+    .pt-centang input, .pt-centang-kotak { width: 18px; height: 18px; accent-color: #7c3aed; cursor: pointer; }
+    .dsb-tabel th.pt-kol-centang, .dsb-tabel td.pt-kol-centang { width: 44px; padding-right: 0; }
+    @media (max-width: 767.98px) {
+        .dsb-tabel td.pt-kol-centang { width: auto; }
+    }
 
     /* Kartu ringkasan yang bisa diklik (pindah tab) */
     .pt-stat-tombol { font: inherit; text-align: left; cursor: pointer; width: 100%; }

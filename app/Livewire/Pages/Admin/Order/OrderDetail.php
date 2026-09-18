@@ -868,8 +868,13 @@ class OrderDetail extends Component
     }
 
     #[Layout('livewire.layout.templateindex')]
+    /** Jendela Riwayat Pesanan terbuka? Jejaknya baru dimuat saat dibuka. */
+    public bool $lihatRiwayat = false;
+
     public function render()
     {
-        return view('livewire.pages.admin.order.order-detail');
+        return view('livewire.pages.admin.order.order-detail', [
+            'riwayat' => $this->lihatRiwayat ? \App\Support\RiwayatPesanan::untuk($this->order) : collect(),
+        ]);
     }
 }

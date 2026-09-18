@@ -501,6 +501,11 @@
         }
         .of-icon.green { --c: #16a34a; }
         .of-icon.amber { --c: #d97706; }
+        .of-icon.purple { --c: #7c3aed; }
+        .of-perpanjang { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 16px; border: 1px solid #ddd6fe; background: linear-gradient(180deg, #f5f3ff, #fff); }
+        .of-perpanjang > div { font-size: .86rem; color: #475569; line-height: 1.5; }
+        .of-perpanjang > div > b { display: block; font-size: .98rem; color: #1e1b4b; margin-bottom: 2px; }
+        .of-perpanjang > div > span b { color: #4c1d95; }
         .of-form-label { font-weight: 700; color: #334155; font-size: .8rem; margin-bottom: 6px; }
         .of-section .form-control, .of-section .form-select {
             min-height: 42px; border: 1px solid #e9edf3; border-radius: 11px; font-size: .88rem; font-weight: 600; box-shadow: none;
@@ -541,6 +546,19 @@
     <form wire:submit="save">
         <div class="row g-4">
             <div class="col-lg-8">
+                @if ($perpanjangInfo)
+                    {{-- Dibuka dari tab Segera Habis / Akun Habis. --}}
+                    <div class="of-perpanjang mb-4">
+                        <span class="of-icon purple"><i class="bi bi-arrow-repeat"></i></span>
+                        <div>
+                            <b>Perpanjangan {{ $perpanjangInfo['produk'] }}</b>
+                            <span>
+                                Dari pesanan {{ $perpanjangInfo['nomor'] }}@if ($perpanjangInfo['berakhir']), masa aktif s/d {{ $perpanjangInfo['berakhir'] }}@endif.
+                                Pelanggan, produk, dan durasi sudah terisi; harga memakai harga katalog sekarang. Periksa dulu, lalu tekan <b>Buat Pesanan</b>.
+                            </span>
+                        </div>
+                    </div>
+                @endif
                 <!-- ============ CUSTOMER ============ -->
                 <div class="of-section p-4 mb-4">
                     <div class="d-flex align-items-center gap-3 mb-4">

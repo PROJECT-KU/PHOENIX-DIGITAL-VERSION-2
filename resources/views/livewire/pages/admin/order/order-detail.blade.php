@@ -42,6 +42,11 @@ Detail Pesanan || lemon
         $pblBolehLihat = $pbl && (bool) auth()->user()?->hasPermission('view_customer');
         $hdBolehUbah = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
         $hdCatatanDitangani = $order->catatan_ditangani_at;
+        // Warna Bootstrap (statusWarna/jenisWarna) → lencana dasbor, supaya seragam.
+        $lencanaBs = [
+            'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
+            'danger' => 'is-merah', 'secondary' => 'is-abu', 'dark' => 'is-abu', 'light' => 'is-abu',
+        ];
     @endphp
 
     <div class="dsb pt-detail">
@@ -66,6 +71,9 @@ Detail Pesanan || lemon
             <a wire:navigate href="{{ route('admin.pesanantoko.index') }}" class="dsb-tombol is-lembut">
                 <i class="bi bi-arrow-left"></i><span>Kembali</span>
             </a>
+            <button type="button" class="dsb-tombol is-lembut" wire:click="$set('lihatRiwayat', true)">
+                <i class="bi bi-clock-history"></i><span>Riwayat</span>
+            </button>
             @if ($order->getReceiptUrl())
                 <a href="{{ $order->getReceiptUrl() }}" target="_blank" rel="noopener" class="dsb-tombol is-lembut">
                     <i class="bi bi-receipt"></i><span>Lihat Struk</span>
@@ -84,6 +92,27 @@ Detail Pesanan || lemon
             @endif
         </div>
     </header>
+
+    {{-- Jendela Riwayat Pesanan (App\Support\RiwayatPesanan) --}}
+    @if ($lihatRiwayat)
+        <div class="ts-modal-back" wire:click="$set('lihatRiwayat', false)"></div>
+        <div class="ts-modal" wire:key="riwayat-pesanan">
+            <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" aria-label="Riwayat pesanan" tabindex="-1"
+                style="max-width: 560px" x-on:keydown.escape.window="$wire.set('lihatRiwayat', false)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #4f46e5"><i class="bi bi-clock-history"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Riwayat Pesanan</h5>
+                        <span class="dsb-kartu-sub">{{ $order->order_number }} · terbaru di atas</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="$set('lihatRiwayat', false)" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi">
+                    @include('livewire.pages.admin.order.partials.riwayat-daftar', ['riwayat' => $riwayat])
+                </div>
+            </div>
+        </div>
+    @endif
 
     <style>
 
@@ -139,13 +168,9 @@ Detail Pesanan || lemon
     .pt-detail .pcek.pcek-jendela .pcek-slot:last-child { margin-bottom: 0; }
     .pcek-kosong { text-align: center; color: #6b7280; padding: 26px 12px; border: 1px dashed #e2e8f0; border-radius: 14px; }
     .pcek-kosong i.bi { display: block; font-size: 1.8rem; opacity: .45; margin-bottom: 6px; }
-    .pt-detail .pcek .pcek-actions-lanjut:empty { display: none; }
 
     /* ===== Form unggah hasil ===== */
     .pt-detail .pcek .pcek-form { border-color: #e9edf3; background: #fcfcfd; padding: 16px; }
-    .pt-detail .pcek .pcek-form-head { padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
-    .pt-detail .pcek .pcek-form-head > div { min-width: 0; }
-    .pt-detail .pcek .pcek-form-head small b { color: #1c1f26; font-weight: 700; }
     .pt-detail .pcek .pcek-slot { --c: #0284c7; border-color: #eef2f7; border-left: 3px solid var(--c); padding: 14px; }
     .pt-detail .pcek .pcek-slot.is-plagiasi { --c: #0284c7; }
     .pt-detail .pcek .pcek-slot.is-ai { --c: #7c3aed; }
@@ -230,7 +255,6 @@ Detail Pesanan || lemon
         .pt-bukti { flex-wrap: wrap; }
         .pt-bukti-aksi { width: 100%; justify-content: flex-end; }
     }
-    .pt-nilai-teks { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; line-height: 1.25; overflow-wrap: anywhere; }
     .pt-kepala-sisip { margin: 0 0 14px !important; }
     .pt-detail > .row.mb-4 { margin-bottom: clamp(20px, 3vw, 32px) !important; }
     /* Kartu setinggi isinya masing-masing: isi kartu pembayaran berbeda
@@ -535,23 +559,6 @@ Detail Pesanan || lemon
             .detail-info-card .info-value.d-flex {
                 justify-content: flex-start !important;
             }
-            /* Header lebih ringkas di HP. */
-            .fixed-header-card .card-body { padding: 1.15rem !important; }
-            .header-action .btn { width: 100%; }
-
-            /* Breadcrumb: PAKSA 1 baris (geser horizontal bila perlu), tak turun. */
-            .breadcrumb-custom { overflow: hidden; max-width: 100%; }
-            .breadcrumb-custom .breadcrumb {
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                white-space: nowrap;
-                font-size: .72rem;
-                margin-bottom: 0;
-                scrollbar-width: none;
-                -webkit-overflow-scrolling: touch;
-            }
-            .breadcrumb-custom .breadcrumb::-webkit-scrollbar { display: none; }
-            .breadcrumb-custom .breadcrumb-item { white-space: nowrap; }
 
             /* Tombol "Batalkan Pesanan": kotak ringkas sendiri di bawah badge status. */
             .detail-info-card .info-value .pcek-konfirmasi {
@@ -606,9 +613,6 @@ Detail Pesanan || lemon
             }
             .summary-card .summary-total .fs-5 { font-size: 1.55rem !important; }
 
-            /* Judul "Detail Pesanan …" jangan raksasa memenuhi 2 baris. */
-            .title-wrapper .gradient-text { font-size: 1.2rem !important; line-height: 1.25 !important; word-break: break-word; }
-
             /* Header kartu "Pengecekan Plagiasi": rapi — ikon & judul kiri, badge
                "N sisa" di kanan-ATAS sejajar; deskripsi lebih kecil. */
             .pcek-head-row { flex-wrap: nowrap; align-items: flex-start; gap: 12px !important; }
@@ -627,7 +631,7 @@ Detail Pesanan || lemon
                di baris 2. */
             .pcek-file-row { flex-wrap: wrap; align-items: center; }
             .pcek-file-row > .pcek-fileic { order: 1; }
-            .pcek-file-row > .badge { order: 2; margin: 0 0 0 auto !important; }
+            .pcek-file-row > .pcek-status { order: 2; margin: 0 0 0 auto !important; }
             .pcek-file-row > .flex-grow-1 { order: 3; width: 100%; margin-top: .55rem; }
             .pcek-file-row .text-muted.d-inline-flex { font-size: .74rem !important; }
 
@@ -940,12 +944,6 @@ Detail Pesanan || lemon
         .pcek .pcek-link-box button:hover { background: #fff7ed; }
         .pcek .pcek-item { border: 1px solid #eef0f6; border-radius: 15px; padding: 1rem 1.1rem; background: #fff; transition: box-shadow .2s, border-color .2s; }
         .pcek .pcek-item:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, .06); border-color: #e2e8f0; }
-        .pcek .pcek-tag { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; }
-        /* Panel penyelesaian pesanan jasa */
-        .pcek .pcek-finish { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; padding: 13px 15px; border: 1px solid #ddd6fe; border-radius: 13px; background: linear-gradient(180deg, #f5f3ff, #fff); }
-        .pcek .pcek-finish b { display: block; font-size: .85rem; color: #4338ca; }
-        .pcek .pcek-finish small { display: block; font-size: .76rem; color: #64748b; line-height: 1.45; margin-top: 2px; }
-        .pcek .pcek-finish small b { display: inline; color: #4338ca; }
         /* Panel bonus kuota (kompensasi admin) */
         .pcek .pcek-bonus { padding: 13px 15px; margin-bottom: 16px; border: 1px solid #fde68a; border-radius: 13px; background: linear-gradient(180deg, #fffbeb, #fff); }
         .pcek .pcek-bonus-head { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; }
@@ -987,7 +985,8 @@ Detail Pesanan || lemon
         }
         .pcek-berkas-hilang > i { font-size: .95rem; line-height: 1.3; color: #94a3b8; }
         .pcek-berkas-hilang b { color: #334155; }
-        .pcek-actions.pcek-actions-lanjut { margin-top: 10px; }
+        .pcek-status { flex-shrink: 0; }
+        .pcek-persen-lencana { font-size: .8rem; padding: 5px 11px; }
 
         /* Siapa yang mengerjakan: bot Turnitin / admin */
         .pcek-pj { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 12px; border-radius: 13px; border: 1px solid #e2e8f0; background: #f8fafc; }
@@ -1049,15 +1048,6 @@ Detail Pesanan || lemon
         .pcek .pcek-btn.danger:hover { background: #fef2f2; border-color: #fca5a5; }
         /* Form unggah hasil */
         .pcek .pcek-form { margin-top: 14px; padding: 15px; border: 1px solid #d1fae5; border-radius: 14px; background: linear-gradient(180deg, #f6fefa, #fff); }
-        .pcek .pcek-form-head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }
-        .pcek .pcek-form-ic { width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; background: #dcfce7; color: #15803d; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; }
-        .pcek .pcek-form-ic i.bi { display: flex; align-items: center; justify-content: center; line-height: 1; }
-        .pcek .pcek-form-ic i.bi::before { display: block; line-height: 1; }
-        .pcek .pcek-form-head b { display: block; font-size: .88rem; font-weight: 700; color: #14532d; }
-        .pcek .pcek-form-head small { display: block; font-size: .74rem; color: #64748b; }
-        .pcek .pcek-form-x { flex-shrink: 0; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #94a3b8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .16s, color .16s; }
-        .pcek .pcek-form-x:hover { background: #f1f5f9; color: #475569; }
-        .pcek .pcek-form-x i.bi { display: flex; line-height: 1; font-size: .82rem; }
         /* Dropzone hasil (admin) */
         .pcek .pcek-drop { position: relative; display: block; padding: 16px 14px; border: 2px dashed #bbf7d0; border-radius: 12px; background: #fff; cursor: pointer; text-align: center; transition: border-color .18s, background .18s; }
         .pcek .pcek-drop:hover { border-color: #4ade80; background: #f6fefa; }
@@ -1086,15 +1076,10 @@ Detail Pesanan || lemon
         @media (prefers-reduced-motion: reduce) { .pcek-putar { animation-duration: 2s; } }
         @keyframes pcekSpin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) { .pcek .pcek-spin { animation: none; } }
-        /* Baris bawah form: persen di kiri, tombol rata kanan */
-        .pcek .pcek-form-foot { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 14px; }
-        .pcek .pcek-form-btns { display: flex; gap: 8px; margin-left: auto; }
+        /* Baris bawah form: persen di kiri { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 14px; }
         @media (max-width: 479px) {
-            .pcek .pcek-form-foot { align-items: stretch; }
             .pcek .pcek-persen { width: 100%; }
             .pcek .pcek-persen-wrap { max-width: none; }
-            .pcek .pcek-form-btns { width: 100%; margin-left: 0; }
-            .pcek .pcek-form-btns .pcek-btn { flex: 1; }
         }
         /* Baris aksi form hasil — dua tombol mengisi penuh, tanpa ruang kosong */
         .pcek .pcek-aksi { display: flex; gap: 8px; margin-top: 14px; }
@@ -1311,14 +1296,14 @@ Detail Pesanan || lemon
                         <div class="fw-semibold text-dark text-truncate" title="{{ $up->nama_asli }}">{{ $up->nama_asli }}</div>
                         <div class="text-muted d-inline-flex align-items-center gap-2 flex-wrap" style="font-size:.8rem;">
                             @if ($up->jenisLabel())
-                            <span class="badge bg-{{ $up->jenisWarna() }}-subtle text-{{ $up->jenisWarna() }} rounded-pill" style="font-size:.68rem;">{{ $up->jenisLabel() }}</span>
+                            <span class="dsb-lencana {{ $lencanaBs[$up->jenisWarna()] ?? 'is-abu' }}">{{ $up->jenisLabel() }}</span>
                             @endif
                             <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $up->created_at->locale('id')->translatedFormat('d M Y H:i') }}</span>
                             <span class="text-secondary">&middot;</span>
                             <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-hdd"></i> {{ $up->ukuranLabel() }}</span>
                         </div>
                     </div>
-                    <span class="badge bg-{{ $up->statusWarna() }}-subtle text-{{ $up->statusWarna() }} rounded-pill flex-shrink-0 d-inline-flex align-items-center gap-1 px-3 py-2">
+                    <span class="dsb-lencana pcek-status {{ $lencanaBs[$up->statusWarna()] ?? 'is-abu' }}">
                         <i class="bi {{ $up->statusIcon() }}"></i> {{ $up->statusLabel() }}
                     </span>
                 </div>
@@ -1396,12 +1381,12 @@ Detail Pesanan || lemon
                 @if ($up->status === 'selesai' && (! is_null($up->persentase) || $up->labelPersenAi()))
                 <div class="mt-2 d-flex flex-wrap gap-1">
                     @if (! is_null($up->persentase))
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
+                    <span class="dsb-lencana is-ungu pcek-persen-lencana">
                         <i class="bi bi-graph-up"></i> Plagiasi: {{ $up->persentase }}%
                     </span>
                     @endif
                     @if ($up->labelPersenAi())
-                    <span class="badge bg-info-subtle text-info rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1">
+                    <span class="dsb-lencana is-biru pcek-persen-lencana">
                         <i class="bi bi-robot"></i> AI: {{ $up->labelPersenAi() }}
                     </span>
                     @endif
@@ -1481,6 +1466,19 @@ Detail Pesanan || lemon
                         <i class="bi bi-arrow-repeat"></i> Ganti Hasil
                     </button>
                     @endif
+
+                    {{-- Satu baris dengan aksi lain, di ujung kanan (tidak memakan baris sendiri). --}}
+                    @if ($upBerjalan)
+                    <button type="button" class="pcek-btn danger pcek-push pcek-konfirmasi" title="Batalkan pengecekan"
+                        data-action="batalkanPengecekan"
+                        data-arg="{{ $up->id }}"
+                        data-title="Batalkan pengecekan ini?"
+                        data-text="Kuota customer akan dikembalikan."
+                        data-confirm="Ya, batalkan"
+                        data-icon="warning">
+                        <i class="bi bi-x-lg"></i> Batalkan
+                    </button>
+                    @endif
                 </div>
 
                 {{-- Kenapa tidak ada yang bisa diunduh.
@@ -1521,19 +1519,6 @@ Detail Pesanan || lemon
                 </div>
                 @endif
 
-                @if ($upBerjalan)
-                <div class="pcek-actions pcek-actions-lanjut">
-                    <button type="button" class="pcek-btn danger pcek-push pcek-konfirmasi" title="Batalkan pengecekan"
-                        data-action="batalkanPengecekan"
-                        data-arg="{{ $up->id }}"
-                        data-title="Batalkan pengecekan ini?"
-                        data-text="Kuota customer akan dikembalikan."
-                        data-confirm="Ya, batalkan"
-                        data-icon="warning">
-                        <i class="bi bi-x-lg"></i> Batalkan
-                    </button>
-                </div>
-                @endif
 
                 {{-- Form unggah hasil: JENDELA tersendiri, bukan di dalam kartu.
                      Di dalam kartu, status "Selesai" + hasil lama + form baru

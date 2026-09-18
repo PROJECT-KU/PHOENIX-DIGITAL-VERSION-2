@@ -42,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
         });
         Order::observe(OrderObserver::class);
         Order::observe(\App\Observers\OrderEmailObserver::class);
+        // Jejak pesanan toko — hanya mencatat, tidak mengubah alur apa pun.
+        \App\Support\RiwayatPesanan::pasang();
 
         // Kirim Web Push otomatis untuk setiap notifikasi database (badge PWA di background).
         Event::listen(NotificationSent::class, SendWebPushNotification::class);

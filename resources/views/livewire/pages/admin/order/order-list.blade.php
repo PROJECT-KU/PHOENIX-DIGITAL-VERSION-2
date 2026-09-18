@@ -8,8 +8,12 @@ Data Pesanan || lemon
 
     @php
         $rupiah = fn ($n) => 'Rp '.number_format((float) $n, 0, ',', '.');
-        $adaSaringan = $search || $filterMonth || $filterYear;
+        $jumlahLanjut = $this->jumlahSaringanLanjut();
+        $adaSaringan = $search || $filterMonth || $filterYear || $jumlahLanjut;
         $bolehUbahPesanan = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
+        $bolehBuatPesanan = (bool) auth()->user()?->hasPermission('create_pemesanantoko');
+        $tabAkun = $this->tabItem();
+        $targetMuat = 'search,filterMonth,filterYear,tglDari,tglSampai,metode,produk,jenis,urut,perHalaman,resetFilters,setTab,gotoPage,nextPage,previousPage';
         // Warna Bootstrap dari Order::labelStatus()/labelPembayaran() → lencana dasbor.
         $lencana = [
             'success' => 'is-hijau', 'warning' => 'is-kuning', 'info' => 'is-biru', 'primary' => 'is-ungu',
@@ -29,8 +33,11 @@ Data Pesanan || lemon
             'cancelled' => ['Dibatalkan', 'bi-x-circle-fill', '#e11d48'],
             'draft' => ['Draft', 'bi-inbox-fill', '#64748b'],
             'catatan' => ['Ada Catatan', 'bi-sticky-fill', '#d97706'],
+            'segera' => ['Segera Habis', 'bi-alarm-fill', '#ea580c'],
             'habis' => ['Akun Habis', 'bi-hourglass-bottom', '#dc2626'],
         ];
+        $judulDaftar = ['segera' => 'Akun yang Segera Habis', 'habis' => 'Akun yang Sudah Habis'][$activeTab] ?? 'Pesanan';
+        $ketUrut = ['segera' => 'Paling dekat habis di atas', 'habis' => 'Masa aktif terbaru di atas'][$activeTab] ?? $this::URUTAN[$urut];
     @endphp
 
     <div class="dsb">
@@ -48,7 +55,13 @@ Data Pesanan || lemon
             </div>
 
             <div class="dsb-hero-aksi">
-                @if (auth()->user()->hasPermission('create_pemesanantoko'))
+                @if ($bolehUbahPesanan)
+                    <button type="button" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel" class="dsb-tombol is-lembut" title="Unduh Excel sesuai tab & saringan yang tampil">
+                        <span wire:loading.remove wire:target="unduhExcel" class="pt-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Unduh Excel</span></span>
+                        <span wire:loading.inline-flex wire:target="unduhExcel" class="pt-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
+                    </button>
+                @endif
+                @if ($bolehBuatPesanan)
                     <a wire:navigate href="{{ route('admin.pesanantoko.create') }}" class="dsb-tombol is-utama">
                         <i class="bi bi-plus-lg"></i><span>Tambah Pesanan</span>
                     </a>
@@ -65,7 +78,7 @@ Data Pesanan || lemon
                         <span class="dsb-kicker">Tampilan</span>
                         <h2 class="dsb-judul">Cari &amp; Saring</h2>
                         <div class="dsb-chip-deret">
-                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="search,filterMonth,filterYear,resetFilters,setTab,gotoPage,nextPage,previousPage">
+                            <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $targetMuat }}">
                                 <span class="dsb-putar is-kecil"></span>Memuat…
                             </span>
                             <span class="dsb-chip is-samar">Kode pesanan, nama, no. HP, email, produk, atau username akun</span>
@@ -109,6 +122,72 @@ Data Pesanan || lemon
                             </div>
                         </div>
 
+                        {{-- Saringan lanjutan: terbuka sendiri bila ada yang aktif. --}}
+                        <div x-data="{ buka: {{ $jumlahLanjut ? 'true' : 'false' }} }" class="pt-lanjutan">
+                            <div class="pt-lanjutan-kepala">
+                                <button type="button" class="dsb-tombol is-lembut is-mungil" x-on:click="buka = !buka" :aria-expanded="buka">
+                                    <i class="bi bi-sliders"></i><span>Saringan lanjutan</span>
+                                    @if ($jumlahLanjut)
+                                        <span class="pt-tab-jumlah is-isi">{{ $jumlahLanjut }}</span>
+                                    @endif
+                                    <i class="bi bi-chevron-down pt-lanjutan-panah" :class="buka && 'is-buka'"></i>
+                                </button>
+                                <div class="pt-urut">
+                                    {{-- Tab akun punya urutan tetap (paling dekat habis / terbaru habis). --}}
+                                    @unless ($tabAkun)
+                                        <label class="dsb-label" for="pt-urut">Urutkan</label>
+                                        <select id="pt-urut" class="dsb-isian" wire:model.live="urut">
+                                            @foreach ($this::URUTAN as $kunci => $label)
+                                                <option value="{{ $kunci }}">{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endunless
+                                    <label class="dsb-label" for="pt-baris">Baris</label>
+                                    <select id="pt-baris" class="dsb-isian pt-baris" wire:model.live="perHalaman">
+                                        @foreach ($this::PILIHAN_BARIS as $n)
+                                            <option value="{{ $n }}">{{ $n }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="pt-saring pt-saring-lanjut" x-show="buka" x-cloak>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pt-dari">Dari tanggal</label>
+                                    <input id="pt-dari" type="date" class="dsb-isian" wire:model.live="tglDari">
+                                </div>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pt-sampai">Sampai tanggal</label>
+                                    <input id="pt-sampai" type="date" class="dsb-isian" wire:model.live="tglSampai">
+                                </div>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pt-metode">Metode bayar</label>
+                                    <select id="pt-metode" class="dsb-isian" wire:model.live="metode">
+                                        <option value="">Semua metode</option>
+                                        @foreach ($this::METODE as $kunci => $label)
+                                            <option value="{{ $kunci }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="dsb-medan">
+                                    <label class="dsb-label" for="pt-jenis">Jenis</label>
+                                    <select id="pt-jenis" class="dsb-isian" wire:model.live="jenis">
+                                        <option value="">Akun &amp; jasa</option>
+                                        <option value="akun">Akun saja</option>
+                                        <option value="jasa">Jasa saja (cek plagiasi, AI, parafrase)</option>
+                                    </select>
+                                </div>
+                                <div class="dsb-medan pt-medan-produk">
+                                    <label class="dsb-label" for="pt-produk">Produk</label>
+                                    <select id="pt-produk" class="dsb-isian" wire:model.live="produk">
+                                        <option value="">Semua produk</option>
+                                        @foreach ($produkPilihan as $p)
+                                            <option value="{{ $p->id }}">{{ $p->nama_akun }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         @if ($adaSaringan)
                             <div class="pt-saring-kaki">
                                 <span class="dsb-kartu-sub"><i class="bi bi-funnel"></i> Angka di tab mengikuti saringan</span>
@@ -129,16 +208,17 @@ Data Pesanan || lemon
                     <span class="dsb-kepala-ikon"><i class="bi {{ $tabs[$activeTab][1] ?? 'bi-list-task' }}"></i></span>
                     <div class="dsb-kepala-teks">
                         <span class="dsb-kicker">Daftar</span>
-                        <h2 class="dsb-judul">{{ $activeTab === 'habis' ? 'Akun yang Sudah Habis' : 'Pesanan' }}</h2>
+                        <h2 class="dsb-judul">{{ $judulDaftar }}</h2>
                         <div class="dsb-chip-deret">
-                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>{{ $activeTab === 'habis' ? 'Masa aktif terbaru di atas' : 'Terbaru di atas' }}</span>
-                            <span class="dsb-chip is-samar">{{ $activeTab === 'habis' ? 'Satu baris = satu akun' : 'Satu baris = satu pesanan' }}</span>
+                            <span class="dsb-chip"><i class="bi bi-sort-down"></i>{{ $ketUrut }}</span>
+                            <span class="dsb-chip is-samar">{{ $tabAkun ? 'Satu baris = satu akun' : 'Satu baris = satu pesanan' }}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="k-12">
-                    <nav class="pt-tab-deret" aria-label="Saring menurut status">
+                    <nav class="pt-tab-deret" aria-label="Saring menurut status"
+                        x-data x-init="const t = $el.querySelector('.is-aktif'); if (t) $el.scrollLeft = t.offsetLeft - 12">
                         @foreach ($tabs as $kunci => [$label, $ikon, $warna])
                             <button type="button" wire:click="setTab('{{ $kunci }}')" style="--c: {{ $warna }}"
                                 class="pt-tab {{ $activeTab === $kunci ? 'is-aktif' : '' }}"
@@ -151,84 +231,13 @@ Data Pesanan || lemon
                     </nav>
                 </div>
 
-                <div class="k-12" wire:loading.class="dsb-sedang-muat" wire:target="search,filterMonth,filterYear,resetFilters,setTab,gotoPage,nextPage,previousPage">
+                <div class="k-12" wire:loading.class="dsb-sedang-muat" wire:target="{{ $targetMuat }}">
                     <div class="dsb-kartu">
-                    @if ($activeTab === 'habis')
-                        @if ($habisItems->isEmpty())
-                            <div class="dsb-kosong">
-                                <span class="dsb-kosong-ikon"><i class="bi bi-hourglass-bottom"></i></span>
-                                <p class="dsb-kosong-judul">Belum ada akun habis</p>
-                                <p class="dsb-kosong-ket">Tidak ada item pesanan yang masa aktifnya sudah habis{{ $adaSaringan ? ' pada saringan ini' : '' }}.</p>
-                            </div>
-                        @else
-                            <div class="dsb-tabel-bungkus">
-                                <table class="dsb-tabel">
-                                    <thead>
-                                        <tr>
-                                            <th>Akun</th>
-                                            <th class="k-sedang">Pelanggan</th>
-                                            <th>Masa Aktif</th>
-                                            <th class="k-lebar">Langganan</th>
-                                            <th>Pemberitahuan</th>
-                                            <th style="text-align: right;">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach ($habisItems as $item)
-                                            <tr wire:key="habis-{{ $item->id }}">
-                                                <td>
-                                                    <div class="dsb-tabel-utama">
-                                                        <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-hourglass-bottom"></i></span>
-                                                        <span class="dsb-tabel-teks">
-                                                            <span class="dsb-tabel-judul">{{ $item->product_name }}</span>
-                                                            <span class="dsb-tabel-meta">
-                                                                <span class="dsb-lencana is-abu">{{ $item->order->order_number ?? '—' }}</span>
-                                                                <span class="dsb-tabel-samar"><i class="bi bi-person"></i>{{ $item->order->customer->nama ?? '—' }}</span>
-                                                            </span>
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                <td class="k-sedang" data-judul="Pelanggan"><span class="dsb-tabel-angka">{{ $item->order->customer->nama ?? '—' }}</span></td>
-                                                <td data-judul="Masa Aktif">
-                                                    @if ($item->end_date)
-                                                        <span class="dsb-tabel-teks">
-                                                            <span class="dsb-tabel-angka">s/d {{ \Carbon\Carbon::parse($item->end_date)->locale('id')->translatedFormat('d M Y') }}</span>
-                                                            <span class="dsb-tabel-meta"><span class="dsb-lencana {{ $item->isHabis() ? 'is-merah' : 'is-hijau' }}">{{ $item->getRemainingLabel() }}</span></span>
-                                                        </span>
-                                                    @else
-                                                        <span class="dsb-tabel-samar">—</span>
-                                                    @endif
-                                                </td>
-                                                <td class="k-lebar" data-judul="Langganan">
-                                                    <span class="dsb-lencana {{ $lencanaLangganan[$item->subscription_status] ?? 'is-abu' }}">{{ ucfirst($item->subscription_status ?: 'Tidak diketahui') }}</span>
-                                                </td>
-                                                <td data-judul="Pemberitahuan">
-                                                    @if ($item->habis_notified_at)
-                                                        <span class="dsb-lencana is-hijau" title="Diberi tahu {{ $item->habis_notified_at->locale('id')->translatedFormat('d M Y H:i') }}">
-                                                            <i class="bi bi-check2-circle"></i>Sudah
-                                                        </span>
-                                                    @else
-                                                        <span class="dsb-lencana is-kuning"><i class="bi bi-exclamation-circle"></i>Belum</span>
-                                                    @endif
-                                                </td>
-                                                <td data-judul="Aksi" style="text-align: right;">
-                                                    <span class="dsb-tabel-aksi">
-                                                        @if ($item->order)
-                                                            <a wire:navigate href="{{ route('admin.pesanantoko.detail', $item->order) }}" class="dsb-tabel-btn" title="Detail pesanan">
-                                                                <i class="bi bi-eye"></i>
-                                                            </a>
-                                                        @endif
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @if ($habisItems->hasPages())
-                                <div class="pt-halaman">{{ $habisItems->links('vendor.pagination') }}</div>
-                            @endif
-                        @endif
+                    @if ($tabAkun)
+                        @include('livewire.pages.admin.order.partials.tabel-akun', [
+                            'items' => $activeTab === 'segera' ? $segeraItems : $habisItems,
+                            'jenisTab' => $activeTab,
+                        ])
                     @else
                         @if ($orders->isEmpty())
                             <div class="dsb-kosong">

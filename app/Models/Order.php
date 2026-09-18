@@ -185,6 +185,12 @@ class Order extends Model
     }
 
     /** File yang diunggah customer untuk pesanan jasa (mis. dokumen cek plagiasi). */
+    /** Jejak pesanan (App\Support\RiwayatPesanan), terbaru di atas. */
+    public function riwayat()
+    {
+        return $this->hasMany(OrderRiwayat::class)->latest('created_at')->latest('id');
+    }
+
     public function uploads()
     {
         return $this->hasMany(OrderUpload::class);

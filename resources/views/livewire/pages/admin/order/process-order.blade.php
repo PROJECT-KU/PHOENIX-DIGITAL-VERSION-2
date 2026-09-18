@@ -837,7 +837,7 @@ Proses Pesanan || lemon
                          penyembunyi Livewire sehingga dua keadaan tampil bersamaan. --}}
                     <span wire:loading.remove wire:target="processOrder" class="pp-isi-tombol">
                         <i class="bi bi-check2-circle me-2 fs-5"></i>
-                        <span>Proses &amp; Lanjut ke Pengiriman</span>
+                        <span>Proses &amp; Kirim</span>
                     </span>
                     <span wire:loading.inline-flex wire:target="processOrder" class="pp-isi-muat">
                         <span class="pp-putar"></span> Menyimpan…
