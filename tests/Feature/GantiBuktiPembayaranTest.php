@@ -196,3 +196,21 @@ it('pesanan qris dinamis menampilkan referensi dan id transaksi qris', function 
         ->and($html)->toContain('INV-REF-UJI-ABCD')
         ->and($html)->toContain('43809182');
 });
+
+it('tabel item menampilkan harga satuan dan rincian harga paket', function () {
+    $order = orderBayar('transfer', 'processing');
+    $produk = \App\Models\Product::factory()->create(['harga_perbulan' => 20000, 'harga_5_perbulan' => 60000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Produk Uji',
+        'quantity' => 1, 'price' => 60000, 'subtotal' => 60000, 'duration_value' => 5, 'duration_type' => 'bulan',
+    ]);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+
+    expect($html)->toContain('Harga Satuan')
+        ->and($html)->toContain('Rp 20.000')
+        ->and($html)->toContain('per bulan')
+        ->and($html)->toContain('Harga paket 5 bulan')
+        ->and($html)->toContain('Rp 100.000')
+        ->and($html)->toContain('hemat Rp 40.000');
+});

@@ -184,13 +184,21 @@ Detail Pesanan || lemon
     .pt-detail .items-table tbody tr:hover td { background: transparent !important; }
     .pt-detail .items-table .pt-sel-produk { color: var(--dsb-tinta); font-weight: 700 !important; min-width: 220px; }
     /* Angka, durasi, dan tanggal tidak dipatah ("Rp" / "60.000"). */
-    .pt-detail .items-table td[data-judul="Jumlah"],
     .pt-detail .items-table td[data-judul="Durasi"],
-    .pt-detail .items-table td[data-judul="Harga"],
-    .pt-detail .items-table td[data-judul="Subtotal"],
+    .pt-detail .items-table td[data-judul="Harga Satuan"],
     .pt-detail .items-table td[data-judul="Status"],
     .pt-detail .items-table td[data-judul="Masa Aktif"] { white-space: nowrap; }
-    .pt-detail .items-table td[data-judul="Subtotal"] { color: var(--dsb-tinta); font-weight: 800 !important; }
+    .pt-detail .items-table td[data-judul="Subtotal"] { color: var(--dsb-tinta); }
+    /* Harga: nominal di atas, keterangan hitungannya di bawah. */
+    .pt-harga { display: block; font-weight: 700; color: var(--dsb-tinta); white-space: nowrap; }
+    /* Nominal tidak dipatah, tetapi rincian di bawahnya boleh turun baris
+       supaya tabel tidak melebar dan menutup kolom lain. */
+    .pt-detail .items-table td[data-judul="Subtotal"] { min-width: 132px; max-width: 170px; white-space: normal; }
+    .pt-harga-total { font-weight: 800; }
+    .pt-harga-ket { display: block; margin-top: 2px; font-size: .72rem !important; color: #6b7280; font-weight: 500; }
+    .pt-harga-ket s { color: #94a3b8; }
+    .pt-hemat { color: #16a34a; font-weight: 800; white-space: nowrap; }
+    .pt-harga-ket s { white-space: nowrap; }
     .pt-detail .items-table td[data-judul="Status"] small,
     .pt-detail .items-table td[data-judul="Masa Aktif"] small { font-size: .72rem !important; }
     .pt-detail .items-table .badge {
@@ -1557,9 +1565,8 @@ Detail Pesanan || lemon
                     <thead>
                         <tr>
                             <th>Produk</th>
-                            <th class="text-center">Jumlah</th>
                             <th class="text-center">Durasi</th>
-                            <th class="text-end">Harga</th>
+                            <th class="text-end">Harga Satuan</th>
                             <th class="text-end">Subtotal</th>
                             <th class="text-center">Status</th>
                             <th class="text-center">Masa Aktif</th>
@@ -1615,7 +1622,6 @@ Detail Pesanan || lemon
                                 </div>
                                 @endif
                             </td>
-                            <td class="text-center" data-judul="Jumlah">{{ $item->quantity }}</td>
                             <td class="text-center" data-judul="Durasi">
                                 {{-- Paket bundling tidak punya durasi tunggal:
                                      durasinya melekat pada tiap produk di dalamnya. --}}
@@ -1626,6 +1632,10 @@ Detail Pesanan || lemon
                                 @endif
                                 @if ($item->hasBonusDuration())
                                 <small class="d-block text-success fw-semibold">+ {{ $item->bonus_duration_value }} {{ $item->bonus_duration_type }} bonus</small>
+                                @endif
+                                {{-- Jumlah hanya ditulis bila lebih dari satu akun; ikut dihitung di Subtotal. --}}
+                                @if ($item->quantity != 1)
+                                <small class="d-block text-muted">× {{ $item->quantity }} akun</small>
                                 @endif
                             </td>
                             @php
@@ -1644,9 +1654,40 @@ Detail Pesanan || lemon
                                         $hargaAsli = (int) $item->price;
                                     }
                                 }
+
+                                // Rincian untuk admin: harga normal per satuan waktu, lalu
+                                // total = satuan × durasi — atau harga paket bila lebih murah.
+                                $qty = max(1, (int) $item->quantity);
+                                $durVal = max(1, (int) $item->duration_value);
+                                $durTipe = $item->duration_type;
+                                $satuan = 0;
+                                if ($prod && $durTipe) {
+                                    $satuan = (int) $prod->hargaUntuk(1, $durTipe);
+                                }
+                                $normal = $satuan * $durVal;
+                                $pakaiPaket = $satuan && $durVal !== 1 && $hargaAsli < $normal;
+                                $hemat = $pakaiPaket ? $normal - $hargaAsli : 0;
+                                $tampilSatuan = $satuan ?: $hargaAsli;
+                                $labelSatuan = $satuan ? 'per '.$durTipe : ($durTipe ? 'per '.$durVal.' '.$durTipe : 'per item');
+                                $rp = fn ($n) => 'Rp '.number_format((int) $n, 0, ',', '.');
+                                $rumus = $pakaiPaket
+                                    ? 'Harga paket '.$durVal.' '.$durTipe
+                                    : ($satuan && $durVal !== 1 ? $rp($satuan).' × '.$durVal.' '.$durTipe : '');
+                                if (1 < $qty) {
+                                    $rumus = trim(($rumus ?: $rp($hargaAsli)).' × '.$qty.' akun');
+                                }
                             @endphp
-                            <td class="text-end" data-judul="Harga">Rp {{ number_format($hargaAsli, 0, ',', '.') }}</td>
-                            <td class="text-end fw-semibold" data-judul="Subtotal">Rp {{ number_format($hargaAsli * $item->quantity, 0, ',', '.') }}</td>
+                            <td class="text-end" data-judul="Harga Satuan">
+                                <span class="pt-harga">{{ $rp($tampilSatuan) }}</span>
+                                <small class="pt-harga-ket">{{ $labelSatuan }}</small>
+                            </td>
+                            <td class="text-end" data-judul="Subtotal">
+                                <span class="pt-harga pt-harga-total">{{ $rp($hargaAsli * $qty) }}</span>
+                                <small class="pt-harga-ket">{{ $rumus }}</small>
+                                @if ($pakaiPaket)
+                                    <small class="pt-harga-ket"><s>{{ $rp($normal * $qty) }}</s> <span class="pt-hemat">hemat {{ $rp($hemat * $qty) }}</span></small>
+                                @endif
+                            </td>
                             <td class="text-center" data-judul="Status">
                                 {!! $item->getDeliveryStatusBadge() !!}
                                 @if ($item->processed_by && $item->processed_at)
@@ -1654,7 +1695,7 @@ Detail Pesanan || lemon
                                     <i class="bi bi-person-check"></i> {{ $item->processedBy->name ?? 'Admin' }}
                                 </small>
                                 <small class="d-block text-muted" style="font-size:.72rem;">
-                                    {{ \Carbon\Carbon::parse($item->processed_at)->locale('id')->translatedFormat('d M Y, H:i') }} WIB
+                                    {{ \Carbon\Carbon::parse($item->processed_at)->locale('id')->translatedFormat('d M Y, H:i') }}
                                 </small>
                                 @endif
                             </td>
@@ -1739,7 +1780,7 @@ Detail Pesanan || lemon
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5">
+                            <td colspan="7" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center justify-content-center">
                                     <div class="empty-state-icon-wrapper mb-3">
                                         <i class="bi bi-box-seam"></i>
