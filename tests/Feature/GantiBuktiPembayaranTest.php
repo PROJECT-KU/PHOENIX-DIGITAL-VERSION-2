@@ -248,12 +248,13 @@ it('form unggah hasil tampil sebagai jendela terpisah, bukan di dalam kartu berk
     ]);
 
     $t = Livewire::test(OrderDetail::class, ['order' => $order->fresh()]);
-    expect($t->html())->not->toContain('pcek-jendela');
+    $jendela = 'class="ts-modal-card dsb is-datar pcek pcek-jendela"';
+    expect($t->html())->not->toContain($jendela);
 
     $html = $t->call('bukaUploadHasil', $up->id)->html();
     expect($html)->toContain('class="ts-modal-card dsb is-datar pcek pcek-jendela"')
         ->and($html)->toContain('Ganti Hasil Pengecekan')
         ->and($html)->toContain('menggantikan');
 
-    expect($t->call('tutupUploadHasil')->html())->not->toContain('pcek-jendela');
+    expect($t->call('tutupUploadHasil')->html())->not->toContain($jendela);
 });
