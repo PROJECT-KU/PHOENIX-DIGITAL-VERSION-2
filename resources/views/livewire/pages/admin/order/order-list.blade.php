@@ -27,6 +27,7 @@ Data Pesanan || lemon
             'completed' => ['Selesai', 'bi-bag-check-fill', '#4f46e5'],
             'cancelled' => ['Dibatalkan', 'bi-x-circle-fill', '#e11d48'],
             'draft' => ['Draft', 'bi-inbox-fill', '#64748b'],
+            'catatan' => ['Ada Catatan', 'bi-sticky-fill', '#d97706'],
             'habis' => ['Akun Habis', 'bi-hourglass-bottom', '#dc2626'],
         ];
     @endphp
@@ -263,7 +264,9 @@ Data Pesanan || lemon
                                                 $urlDetail = route('admin.pesanantoko.detail', $order);
                                                 // Catatan terlihat dari daftar: admin tidak perlu membuka pesanan satu per satu.
                                                 $catatanPelanggan = trim((string) $order->customer_notes);
-                                                $catatanAdmin = $order->items->pluck('processing_notes')->map(fn ($c) => trim((string) $c))->filter()->implode(' · ');
+                                                $catatanAdmin = $order->items->pluck('processing_notes')->map(fn ($c) => trim((string) $c))->filter()->implode("\n");
+                                                $catatanUntuk = $order->items->pluck('account_notes')->map(fn ($c) => trim((string) $c))->filter()->implode("\n");
+                                                $adaCatatan = $catatanAdmin || $catatanPelanggan || $catatanUntuk;
                                             @endphp
                                             <tr wire:key="order-{{ $order->id }}" @class(['is-tanda' => $order->status === 'paid']) @if ($order->status === 'paid') style="--c: #16a34a" @endif>
                                                 <td>
@@ -283,20 +286,10 @@ Data Pesanan || lemon
                                                                         <i class="bi bi-gear-wide-connected"></i>{{ $order->pengecekan_diproses_count }} sedang dicek
                                                                     </span>
                                                                 @endif
-                                                                @if ($catatanAdmin)
-                                                                    <span class="dsb-lencana is-kuning" title="Catatan admin: {{ $catatanAdmin }}"><i class="bi bi-lock-fill"></i>Catatan admin</span>
-                                                                @endif
-                                                                @if ($catatanPelanggan)
-                                                                    <span class="dsb-lencana is-hijau" title="Catatan pelanggan: {{ $catatanPelanggan }}"><i class="bi bi-chat-left-text-fill"></i>Catatan pelanggan</span>
-                                                                @endif
                                                                 {{-- Salinan kolom yang disembunyikan di layar sempit. --}}
                                                                 <span class="dsb-tabel-samar"><i class="bi bi-clock"></i>{{ $order->created_at->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                                                             </span>
-                                                            @if ($catatanAdmin || $catatanPelanggan)
-                                                                <span class="pt-catatan-ringkas" title="{{ $catatanAdmin ?: $catatanPelanggan }}">
-                                                                    <i class="bi {{ $catatanAdmin ? 'bi-lock-fill' : 'bi-chat-left-text' }}"></i>{{ \Illuminate\Support\Str::limit($catatanAdmin ?: $catatanPelanggan, 90) }}
-                                                                </span>
-                                                            @endif
+
                                                         </span>
                                                     </a>
                                                 </td>
@@ -343,6 +336,15 @@ Data Pesanan || lemon
                                                                 <i class="bi bi-upload"></i><span>Unggah Bukti</span>
                                                             </a>
                                                         @endif
+                                                        {{-- Catatan dibuka sebagai jendela kecil, tidak memakan baris. --}}
+                                                        @if ($adaCatatan)
+                                                            <button type="button" class="dsb-tabel-btn pt-catatan-btn {{ $catatanAdmin ? 'is-admin' : 'is-pelanggan' }}"
+                                                                title="Lihat catatan" aria-label="Lihat catatan pesanan {{ $order->order_number }}"
+                                                                data-nomor="{{ $order->order_number }}" data-nama="{{ $order->customer->nama ?? '' }}"
+                                                                data-admin="{{ $catatanAdmin }}" data-pelanggan="{{ $catatanPelanggan }}" data-untuk="{{ $catatanUntuk }}">
+                                                                <i class="bi bi-sticky-fill"></i>
+                                                            </button>
+                                                        @endif
                                                         <a wire:navigate href="{{ $urlDetail }}" class="dsb-tabel-btn" title="Detail pesanan">
                                                             <i class="bi bi-eye"></i>
                                                         </a>
@@ -368,7 +370,52 @@ Data Pesanan || lemon
     @include('livewire.layout.sweetalert')
     <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
 
+
     @push('scripts')
+        <script>
+            // Jendela catatan pesanan (daftar). Satu pendengar di dokumen, dipasang
+            // sekali, karena halaman ini dibuka ulang lewat wire:navigate.
+            if (!window.__ptCatatanTerpasang) {
+                window.__ptCatatanTerpasang = true;
+                const esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                const tutup = () => document.getElementById('pt-catatan-jendela')?.remove();
+                document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.getElementById('pt-catatan-jendela')) { e.preventDefault(); tutup(); } });
+                document.addEventListener('livewire:navigating', tutup);
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-tutup-catatan]')) { tutup(); return; }
+                    const btn = e.target.closest('.pt-catatan-btn');
+                    if (!btn) return;
+                    e.preventDefault();
+                    const blok = (ikon, judul, teks, warna) => teks ? `
+                        <div class="pt-cj-blok" style="--c:${warna}">
+                            <div class="pt-cj-judul"><i class="bi ${ikon}"></i> ${judul}</div>
+                            <div class="pt-cj-isi">${esc(teks).replace(/\n/g, '<br>')}</div>
+                        </div>` : '';
+                    const wadah = document.createElement('div');
+                    wadah.id = 'pt-catatan-jendela';
+                    wadah.innerHTML = `
+                        <div class="ts-modal-back" data-tutup-catatan></div>
+                        <div class="ts-modal">
+                            <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" aria-label="Catatan pesanan" tabindex="-1" style="max-width:480px">
+                                <div class="dsb-jendela-kepala">
+                                    <span class="dsb-ikon is-kecil" style="--c:#d97706"><i class="bi bi-sticky-fill"></i></span>
+                                    <span class="dsb-jendela-teks">
+                                        <h5 class="dsb-jendela-judul">Catatan Pesanan</h5>
+                                        <span class="dsb-kartu-sub">${esc(btn.dataset.nomor)}${btn.dataset.nama ? ' · ' + esc(btn.dataset.nama) : ''}</span>
+                                    </span>
+                                    <button type="button" class="dsb-jendela-tutup" data-tutup-catatan title="Tutup"><i class="bi bi-x-lg"></i></button>
+                                </div>
+                                <div class="dsb-jendela-isi">
+                                    ${blok('bi-lock-fill', 'Catatan admin (internal)', btn.dataset.admin, '#d97706')}
+                                    ${blok('bi-chat-left-text-fill', 'Catatan dari pelanggan', btn.dataset.pelanggan, '#16a34a')}
+                                    ${blok('bi-chat-heart', 'Catatan untuk pelanggan', btn.dataset.untuk, '#0284c7')}
+                                </div>
+                            </div>
+                        </div>`;
+                    document.body.appendChild(wadah);
+                });
+            }
+        </script>
         <script>
             // Notifikasi saat pembayaran QRIS baru terdeteksi (dari polling watchNewPayments)
             if (!window.__orderPaidToastBound) {

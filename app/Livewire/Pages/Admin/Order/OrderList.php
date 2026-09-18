@@ -169,12 +169,30 @@ class OrderList extends Component
             ->when($this->activeTab === 'draft', function ($q) {
                 $q->where('status', 'draft');
             })
+            ->when($this->activeTab === 'catatan', function ($q) {
+                $this->punyaCatatan($q);
+            })
             // Draft hanya muncul di tab Draft, tidak di tab lain
             ->when($this->activeTab !== 'draft', function ($q) {
                 $q->where('status', '!=', 'draft');
             })
             ->latest()
             ->paginate(10);
+    }
+
+    /**
+     * Pesanan yang punya catatan: catatan pelanggan saat memesan, atau
+     * catatan internal/untuk pelanggan yang diisi admin di salah satu item.
+     */
+    protected function punyaCatatan($q)
+    {
+        return $q->where(function ($w) {
+            $w->where(fn ($c) => $c->whereNotNull('customer_notes')->where('customer_notes', '!=', ''))
+                ->orWhereHas('items', fn ($i) => $i->where(function ($x) {
+                    $x->where(fn ($n) => $n->whereNotNull('processing_notes')->where('processing_notes', '!=', ''))
+                        ->orWhere(fn ($n) => $n->whereNotNull('account_notes')->where('account_notes', '!=', ''));
+                }));
+        });
     }
 
     // Tab "Akun Habis" menampilkan ITEM yang habis (bukan order),
@@ -268,6 +286,7 @@ class OrderList extends Component
                 'completed' => $this->baseOrderQuery()->where('status', 'completed')->count(),
                 'cancelled' => $this->baseOrderQuery()->where('status', 'cancelled')->count(),
                 'draft' => $this->baseOrderQuery()->where('status', 'draft')->count(),
+                'catatan' => $this->punyaCatatan($this->baseOrderQuery()->where('status', '!=', 'draft'))->count(),
                 'habis' => $habisItemsCount,
             ],
         ]);

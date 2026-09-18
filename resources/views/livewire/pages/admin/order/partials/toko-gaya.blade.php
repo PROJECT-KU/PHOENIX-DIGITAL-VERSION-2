@@ -45,12 +45,13 @@
     @media (hover: hover) and (pointer: fine) {
         .pt-tautan:hover .dsb-tabel-judul { color: #6d28d9; }
     }
-    /* Potongan catatan di bawah nama pelanggan (daftar) */
-    .pt-catatan-ringkas {
-        display: flex; align-items: flex-start; gap: 5px; margin-top: 4px; max-width: 360px;
-        font-size: .74rem; font-weight: 500; line-height: 1.4; color: #92400e; white-space: normal;
-    }
-    .pt-catatan-ringkas i.bi { line-height: 1.4; flex-shrink: 0; }
+    /* Tombol & jendela catatan (daftar) */
+    .pt-catatan-btn.is-admin { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+    .pt-catatan-btn.is-pelanggan { color: #15803d; background: #f0fdf4; border-color: #bbf7d0; }
+    .pt-cj-blok { --c: #d97706; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--c) 25%, #fff); background: color-mix(in srgb, var(--c) 6%, #fff); }
+    .pt-cj-blok + .pt-cj-blok { margin-top: 10px; }
+    .pt-cj-judul { display: flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 800; color: var(--c); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .pt-cj-isi { font-size: .88rem; color: #1c1f26; line-height: 1.55; white-space: normal; overflow-wrap: anywhere; }
     .pt-total { font-weight: 800; color: var(--dsb-tinta, #1c1f26); white-space: nowrap; }
     .pt-halaman { padding: 12px clamp(14px, 2vw, 20px); border-top: 1px solid #f1f5f9; }
     .pt-halaman .pagination { margin: 0; justify-content: center; flex-wrap: wrap; }

@@ -295,7 +295,18 @@ it('catatan admin & pelanggan terlihat di detail dan di daftar tanpa membuka pop
 
     $daftar = Livewire::actingAs(\App\Models\User::factory()->create())
         ->test(\App\Livewire\Pages\Admin\Order\OrderList::class)->html();
-    expect($daftar)->toContain('Catatan admin')
-        ->and($daftar)->toContain('Catatan pelanggan')
-        ->and($daftar)->toContain('super ai error diganti chatgpt');
+    // Daftar: tombol catatan (isi di data-*, dibuka sebagai jendela), bukan
+    // teks yang memakan baris.
+    expect($daftar)->toContain('pt-catatan-btn is-admin')
+        ->and($daftar)->toContain('data-admin="super ai error diganti chatgpt"')
+        ->and($daftar)->toContain('data-pelanggan="Tolong kirim sore"')
+        ->and($daftar)->not->toContain('pt-catatan-ringkas');
+
+    // Tab "Ada Catatan" hanya berisi pesanan bercatatan.
+    orderBayar('transfer', 'processing'); // tanpa catatan
+    $tab = Livewire::actingAs(\App\Models\User::factory()->create())
+        ->test(\App\Livewire\Pages\Admin\Order\OrderList::class)
+        ->call('setTab', 'catatan');
+    expect($tab->viewData('orders')->pluck('id')->all())->toBe([$order->id])
+        ->and($tab->viewData('tabCounts')['catatan'])->toBe(1);
 });
