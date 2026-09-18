@@ -94,6 +94,37 @@ Detail Pesanan || lemon
        pengecekan bergantung padanya — tetapi tampil seperti dsb-kartu. */
     .pt-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 
+    /* ===== Blok jasa pengecekan ===== */
+    .pt-detail .pcek .pcek-head-row { padding-bottom: 16px; margin-bottom: 16px !important; border-bottom: 1px solid #f1f5f9; }
+    .pcek-kicker { display: block; color: #f26522; font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .pcek-kuota { margin-bottom: 16px; }
+    .pcek-kuota-angka { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+    .pcek-kuota-angka > div { padding: 10px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #eef2f7; }
+    .pcek-kuota-angka span { display: block; font-size: .7rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #6b7280; }
+    .pcek-kuota-angka b { display: block; font-size: 1.35rem; line-height: 1.2; color: #1c1f26; }
+    .pcek-kuota-angka .is-sisa { background: #f0fdf4; border-color: #bbf7d0; }
+    .pcek-kuota-angka .is-sisa b { color: #15803d; }
+    .pcek-kuota-angka .is-habis b { color: #94a3b8; }
+    .pcek-kuota-garis { height: 8px; border-radius: 99px; background: #f1f5f9; overflow: hidden; }
+    .pcek-kuota-garis span { display: block; height: 100%; border-radius: inherit; background: #f59e0b; }
+    .pcek-kuota-ket { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: .76rem; color: #b45309; }
+    .pcek-alat { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+    .pcek-alat .pcek-link-box { flex: 1 1 320px; min-width: 0; margin: 0 !important; }
+    .pcek-link-ic { display: inline-flex; align-items: center; padding: 0 0 0 .75rem; color: #94a3b8; background: #f8fafc; }
+    .pcek-alat-tombol { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pt-detail .pcek .pcek-btn.wa { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .pt-detail .pcek .pcek-btn.wa:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
+    .pcek-daftar-kepala { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 10px; }
+    .pcek-daftar-kepala b { font-size: .9rem; color: #1c1f26; }
+    .pcek-daftar-kepala span { font-size: .76rem; color: #6b7280; }
+    .pcek-daftar { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+    @media (min-width: 1200px) { .pcek-daftar:not(.is-tunggal) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .pcek-daftar > .pcek-item { margin: 0 !important; }
+    .pcek-daftar > .pcek-item.is-aktif, .pcek-daftar > .pcek-kosong { grid-column: 1 / -1; }
+    .pcek-kosong { text-align: center; color: #6b7280; padding: 26px 12px; border: 1px dashed #e2e8f0; border-radius: 14px; }
+    .pcek-kosong i.bi { display: block; font-size: 1.8rem; opacity: .45; margin-bottom: 6px; }
+    .pt-detail .pcek .pcek-actions-lanjut:empty { display: none; }
+
     /* Kotak bukti pembayaran */
     .pt-bukti {
         display: flex; align-items: center; gap: 12px; margin: 10px 0 4px;
@@ -766,6 +797,19 @@ Detail Pesanan || lemon
         // Dihitung sekali: dua kondisi "count(...)" dalam satu berkas membuat
         // Livewire salah memasang penanda morph pada yang kedua.
         $jJumlahJenisBonus = count($jJenisBonus);
+        // Judul & ikon mengikuti jasa yang dibeli (parafrase / cek plagiasi / cek AI).
+        $jJudul = $order->items
+            ->filter(fn ($it) => $it->product && $it->product->butuh_file)
+            ->map(fn ($it) => $it->product_name ?: $it->product->nama_akun)
+            ->filter()->unique()->implode(' · ') ?: 'Pengecekan Dokumen';
+        $jIkon = in_array('parafrase', $jJenisBonus, true) ? 'bi-pencil-square'
+            : ($jJenisBonus === ['ai'] ? 'bi-robot' : 'bi-shield-check');
+        $jPersen = $jKuota ? min(100, (int) round($jTerpakai / $jKuota * 100)) : 0;
+        $jAdaSisa = 0 < $jSisa;
+        $jRiwayatBonus = $order->riwayatBonusKuota();
+        $jTampilBonus = $jBonusTotal || $bonusBuka || ! empty($jRiwayatBonus);
+        $jBisaSelesai = $order->status !== 'completed' && $order->uploads->where('status', 'selesai')->isNotEmpty();
+        $jJumlahBerkas = $order->uploads->count();
         $jLabelJenis = [
             'ai' => 'Cek AI',
             'plagiasi' => 'Cek Plagiasi',
@@ -945,49 +989,76 @@ Detail Pesanan || lemon
     </style>
     <div class="card border-0 shadow-sm rounded-4 mb-4 pcek">
         <div class="card-body p-4">
-            {{-- Header --}}
-            <div class="d-flex align-items-center gap-3 mb-4 pcek-head-row">
-                <div class="pcek-head-ic"><i class="bi bi-shield-check"></i></div>
+            {{-- Header: nama jasa yang dibeli, bukan judul umum. --}}
+            <div class="d-flex align-items-center gap-3 pcek-head-row">
+                <div class="pcek-head-ic"><i class="bi {{ $jIkon }}"></i></div>
                 <div class="flex-grow-1" style="min-width:0;">
-                    <h5 class="fw-bold mb-0">Pengecekan Plagiasi</h5>
-                    <small class="text-muted">Kelola dokumen &amp; hasil pengecekan customer</small>
+                    <span class="pcek-kicker">Jasa pengecekan</span>
+                    <h5 class="fw-bold mb-0">{{ $jJudul }}</h5>
+                    <small class="text-muted">Dokumen dari customer, hasil pengecekan, dan kuotanya</small>
                 </div>
-                <span class="badge rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 flex-shrink-0 {{ $jSisa > 0 ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
-                    <i class="bi bi-collection"></i> {{ $jSisa }} sisa
-                </span>
             </div>
 
-            {{-- Kuota terpakai (progress) --}}
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <small class="text-muted d-inline-flex align-items-center gap-1"><i class="bi bi-graph-up-arrow"></i> Kuota terpakai</small>
-                    <small class="fw-semibold">{{ $jTerpakai }} / {{ $jKuota }}</small>
+            {{-- Kuota: tiga angka + garis kemajuan --}}
+            <div class="pcek-kuota">
+                <div class="pcek-kuota-angka">
+                    <div><span>Kuota</span><b>{{ $jKuota }}</b></div>
+                    <div><span>Terpakai</span><b>{{ $jTerpakai }}</b></div>
+                    <div class="{{ $jAdaSisa ? 'is-sisa' : 'is-habis' }}"><span>Sisa</span><b>{{ $jSisa }}</b></div>
                 </div>
-                <div class="progress" style="height:8px; border-radius:99px; background:#f1f5f9;">
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $jKuota > 0 ? round($jTerpakai / $jKuota * 100) : 0 }}%;"></div>
-                </div>
-                @if ($jBonusTotal > 0)
-                <small class="text-muted d-inline-flex align-items-center gap-1 mt-2" style="font-size:.76rem;">
-                    <i class="bi bi-gift"></i> Termasuk <b class="text-warning-emphasis">{{ $jBonusTotal }} bonus</b> dari admin.
-                </small>
+                <div class="pcek-kuota-garis"><span style="width: {{ $jPersen }}%"></span></div>
+                @if ($jBonusTotal)
+                <small class="pcek-kuota-ket"><i class="bi bi-gift"></i> Termasuk {{ $jBonusTotal }} bonus dari admin</small>
                 @endif
+            </div>
+
+            {{-- Satu baris alat: link customer, pengingat, bonus, penyelesaian. --}}
+            <div class="pcek-alat">
+                <div class="pcek-link-box">
+                    <span class="pcek-link-ic" title="Link customer (bila lupa / hilang)"><i class="bi bi-link-45deg"></i></span>
+                    <input type="text" id="cust-cek-link" readonly value="{{ url('/cek/'.$order->share_token) }}" aria-label="Link pengecekan customer">
+                    <button type="button" onclick="salinLinkCek()"><i class="bi bi-clipboard"></i> Salin</button>
+                </div>
+                <div class="pcek-alat-tombol">
+                    {{-- Ingatkan customer selagi kuotanya masih ada: link /cek mati
+                         24 jam setelah hasil terakhir diserahkan, jadi sisa kuota yang
+                         terlupa berujung keluhan. Kosong bila kuota habis / tanpa nomor. --}}
+                    @if ($this->waKuotaLink)
+                    <a href="{{ $this->waKuotaLink }}" target="_blank" rel="noopener" class="pcek-btn wa">
+                        <i class="bi bi-whatsapp"></i> Ingatkan sisa {{ $jSisa }}
+                    </a>
+                    @endif
+                    @if (! $bonusBuka)
+                    <button type="button" wire:click="bukaBonusKuota" class="pcek-btn ghost">
+                        <i class="bi bi-gift"></i> Tambah Bonus
+                    </button>
+                    @endif
+                    {{-- Penyelesaian manual: bila customer tak memakai seluruh kuota,
+                         supaya omset tetap masuk cash flow & tak menggantung. --}}
+                    @if ($jBisaSelesai)
+                    <button type="button" class="pcek-btn primary pcek-konfirmasi"
+                        data-action="selesaikanJasa"
+                        data-title="Selesaikan pesanan jasa?"
+                        data-text="{{ $jAdaSisa ? 'Masih ada '.$jSisa.' kuota tersisa. ' : '' }}Item akan ditandai terkirim dan omset dicatat ke cash flow."
+                        data-confirm="Ya, selesaikan"
+                        data-icon="question">
+                        <i class="bi bi-check2-circle"></i> Selesaikan Pesanan
+                    </button>
+                    @endif
+                </div>
             </div>
 
             {{-- ===== Bonus kuota (kompensasi bila customer terkendala) =====
                  Aditif: hanya menambah kuota pengecekan, tidak mengubah total
                  harga, status pembayaran, maupun cash flow pesanan. --}}
+            @if ($jTampilBonus)
             <div class="pcek-bonus">
                 <div class="pcek-bonus-head">
                     <span class="pcek-bonus-ic"><i class="bi bi-gift"></i></span>
                     <div class="flex-grow-1" style="min-width:0;">
                         <b>Bonus Kuota Pengecekan</b>
-                        <small>Beri kuota tambahan gratis bila pengecekan bermasalah. Sisa kuota di link customer langsung bertambah.</small>
+                        <small>Kuota tambahan gratis bila pengecekan bermasalah. Sisa kuota di link customer langsung bertambah.</small>
                     </div>
-                    @if (! $bonusBuka)
-                    <button type="button" wire:click="bukaBonusKuota" class="pcek-btn warn flex-shrink-0">
-                        <i class="bi bi-plus-lg"></i> Tambah Bonus
-                    </button>
-                    @endif
                 </div>
 
                 {{-- Bonus yang sedang berlaku --}}
@@ -1066,9 +1137,9 @@ Detail Pesanan || lemon
                 @endif
 
                 {{-- Jejak pemberian bonus --}}
-                @if (! empty($order->riwayatBonusKuota()))
+                @if (! empty($jRiwayatBonus))
                 <div class="pcek-bonus-log">
-                    @foreach (array_reverse($order->riwayatBonusKuota()) as $log)
+                    @foreach (array_reverse($jRiwayatBonus) as $log)
                     <div>
                         <i class="bi bi-dot"></i>
                         <span>
@@ -1083,70 +1154,25 @@ Detail Pesanan || lemon
                 </div>
                 @endif
             </div>
-
-            {{-- Penyelesaian manual: dipakai bila customer tak memakai seluruh
-                 kuotanya, supaya omset tetap masuk cash flow & tak menggantung. --}}
-            @if ($order->status !== 'completed' && $order->uploads->where('status', 'selesai')->isNotEmpty())
-            <div class="pcek-finish">
-                <div class="flex-grow-1" style="min-width:0;">
-                    <b>Selesaikan pesanan jasa ini?</b>
-                    <small>
-                        @if ($jSisa > 0)
-                            Masih ada <b>{{ $jSisa }}</b> kuota tersisa. Selesaikan bila customer tak akan memakainya lagi — omset akan tercatat di cash flow.
-                        @else
-                            Semua kuota terpakai. Pesanan akan diselesaikan otomatis setelah hasil terakhir diunggah.
-                        @endif
-                    </small>
-                </div>
-                <button type="button" class="pcek-btn primary flex-shrink-0 pcek-konfirmasi"
-                    data-action="selesaikanJasa"
-                    data-title="Selesaikan pesanan jasa?"
-                    data-text="Item akan ditandai terkirim dan omset dicatat ke cash flow."
-                    data-confirm="Ya, selesaikan"
-                    data-icon="question">
-                    <i class="bi bi-check2-circle"></i> Selesaikan Pesanan
-                </button>
-            </div>
             @endif
 
-            {{-- Link customer (jaga-jaga bila customer lupa/hilang link) --}}
-            <label class="form-label small text-muted mb-1 d-inline-flex align-items-center gap-1"><i class="bi bi-link-45deg"></i> Link customer (bila lupa / hilang)</label>
-            <div class="pcek-link-box mb-3">
-                <input type="text" id="cust-cek-link" readonly value="{{ url('/cek/'.$order->share_token) }}">
-                <button type="button" onclick="salinLinkCek()"><i class="bi bi-clipboard"></i> Salin</button>
+            {{-- Daftar dokumen --}}
+            <div class="pcek-daftar-kepala">
+                <b>Dokumen customer</b>
+                <span>{{ $jJumlahBerkas }} berkas · terbaru di atas</span>
             </div>
-
-            {{-- Ingatkan customer selagi kuotanya MASIH ada.
-
-                 Banyak customer membeli paket beberapa kali pengecekan, memakai
-                 sekali, lalu lupa sisanya. Link /cek sendiri mati 24 jam setelah
-                 HASIL TERAKHIR diserahkan, jadi sisa yang tak pernah dipakai berujung jadi
-                 keluhan — padahal sisanya sudah terlihat di layar ini sejak awal.
-
-                 Tautannya kosong bila kuota habis atau nomor HP customer tidak
-                 ada, dan tombolnya ikut disembunyikan. --}}
-            @if ($this->waKuotaLink)
-            <a href="{{ $this->waKuotaLink }}" target="_blank" rel="noopener"
-                class="btn btn-success w-100 rounded-pill mb-4 d-inline-flex align-items-center justify-content-center gap-2"
-                style="white-space:nowrap;">
-                <i class="bi bi-whatsapp"></i>
-                <span>Ingatkan via WhatsApp — sisa {{ $jSisa }} pengecekan</span>
-            </a>
-            @endif
-
+            <div class="pcek-daftar {{ $jJumlahBerkas === 1 ? 'is-tunggal' : '' }}">
             @forelse ($order->uploads->sortByDesc('created_at') as $up)
-            <div class="pcek-item mb-3" wire:key="adm-up-{{ $up->id }}">
+            <div class="pcek-item {{ $uploadAktifId === $up->id ? 'is-aktif' : '' }}" wire:key="adm-up-{{ $up->id }}">
                 <div class="d-flex align-items-start gap-3 pcek-file-row">
                     <div class="pcek-fileic"><i class="bi bi-file-earmark-text"></i></div>
                     <div class="flex-grow-1" style="min-width:0;">
-                        <div class="fw-semibold text-dark text-truncate">
-                            {{ $up->nama_asli }}
-                            @if ($up->jenisLabel())
-                            <span class="badge bg-{{ $up->jenisWarna() }}-subtle text-{{ $up->jenisWarna() }} rounded-pill ms-1" style="font-size:.68rem; vertical-align:middle;">{{ $up->jenisLabel() }}</span>
-                            @endif
-                        </div>
+                        <div class="fw-semibold text-dark text-truncate" title="{{ $up->nama_asli }}">{{ $up->nama_asli }}</div>
                         <div class="text-muted d-inline-flex align-items-center gap-2 flex-wrap" style="font-size:.8rem;">
-                            <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $up->created_at->format('d M Y H:i') }}</span>
+                            @if ($up->jenisLabel())
+                            <span class="badge bg-{{ $up->jenisWarna() }}-subtle text-{{ $up->jenisWarna() }} rounded-pill" style="font-size:.68rem;">{{ $up->jenisLabel() }}</span>
+                            @endif
+                            <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-clock"></i> {{ $up->created_at->locale('id')->translatedFormat('d M Y H:i') }}</span>
                             <span class="text-secondary">&middot;</span>
                             <span class="d-inline-flex align-items-center gap-1"><i class="bi bi-hdd"></i> {{ $up->ukuranLabel() }}</span>
                         </div>
@@ -1235,6 +1261,9 @@ Detail Pesanan || lemon
                         // Tanpa penjagaan ini tombolnya tetap tampil dan
                         // menjanjikan unduhan yang berujung 404.
                         $adaBerkasPelanggan = (bool) $up->path;
+                        // Sekali di sini: kondisi in_array(...) yang sama dua kali dalam
+                        // satu berkas membuat Livewire salah memasang penanda morph.
+                        $upBerjalan = in_array($up->status, ['menunggu', 'diproses'], true);
                         $adaHasil = $up->hasil_path || $up->hasil_ai_path || $up->hasil_docx_path;
                     @endphp
                     @if ($adaBerkasPelanggan)
@@ -1267,7 +1296,7 @@ Detail Pesanan || lemon
                     </button>
                     @endif
 
-                    @if (in_array($up->status, ['menunggu', 'diproses']))
+                    @if ($upBerjalan)
                     <button type="button" wire:click="bukaUploadHasil('{{ $up->id }}')"
                         class="pcek-btn {{ $up->status === 'diproses' ? 'primary' : 'ghost' }}">
                         <i class="bi bi-cloud-arrow-up"></i> Unggah Hasil
@@ -1334,9 +1363,8 @@ Detail Pesanan || lemon
                 </div>
                 @endif
 
+                @if ($upBerjalan)
                 <div class="pcek-actions pcek-actions-lanjut">
-
-                    @if (in_array($up->status, ['menunggu', 'diproses']))
                     <button type="button" class="pcek-btn danger pcek-push pcek-konfirmasi" title="Batalkan pengecekan"
                         data-action="batalkanPengecekan"
                         data-arg="{{ $up->id }}"
@@ -1346,8 +1374,8 @@ Detail Pesanan || lemon
                         data-icon="warning">
                         <i class="bi bi-x-lg"></i> Batalkan
                     </button>
-                    @endif
                 </div>
+                @endif
 
                 {{-- Form unggah hasil (inline, saat aktif) --}}
                 @if ($uploadAktifId === $up->id)
@@ -1537,12 +1565,13 @@ Detail Pesanan || lemon
                 @endif
             </div>
             @empty
-            <div class="text-center text-muted py-4">
-                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem; opacity:.45;"></i>
+            <div class="pcek-kosong">
+                <i class="bi bi-inbox"></i>
                 <div class="fw-semibold text-dark">Belum ada dokumen</div>
                 <small>Customer mengunggah lewat link pengecekan di atas.</small>
             </div>
             @endforelse
+            </div>{{-- /.pcek-daftar --}}
         </div>
     </div>
     @endif

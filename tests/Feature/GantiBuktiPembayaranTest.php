@@ -214,3 +214,24 @@ it('tabel item menampilkan harga satuan dan rincian harga paket', function () {
         ->and($html)->toContain('Rp 100.000')
         ->and($html)->toContain('hemat Rp 40.000');
 });
+
+it('blok jasa memakai nama jasa, angka kuota, dan tetap memuat aksi berkas yang menunggu', function () {
+    $order = orderBayar('qris_dinamis', 'paid');
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Cek Plagiasi Turnitin', 'butuh_file' => 1, 'harga_perbulan' => 5000]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Cek Plagiasi Turnitin',
+        'quantity' => 1, 'price' => 5000, 'subtotal' => 5000, 'duration_value' => 1, 'duration_type' => 'kali',
+    ]);
+    \App\Models\OrderUpload::create([
+        'order_id' => $order->id, 'jenis' => 'plagiasi', 'nama_asli' => 'naskah.docx', 'status' => 'menunggu',
+    ]);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+
+    expect($html)->toContain('Jasa pengecekan')
+        ->and($html)->toContain('<h5 class="fw-bold mb-0">Cek Plagiasi Turnitin</h5>')
+        ->and($html)->toContain('pcek-kuota-angka')
+        ->and($html)->toContain('Mulai Proses')
+        ->and($html)->toContain('data-action="batalkanPengecekan"')
+        ->and($html)->toContain('pcek-daftar is-tunggal');
+});
