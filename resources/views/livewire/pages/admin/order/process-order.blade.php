@@ -447,6 +447,13 @@ Proses Pesanan || lemon
         .pp-ring-baris small { display: block; font-size: .76rem; color: #6b7280; overflow-wrap: anywhere; }
         .pp-tombol { display: flex; flex-direction: column; gap: 8px; }
         .pt-proses .pp-tombol .btn-primary, .pt-proses .pp-tombol .btn-danger { border-radius: 14px; }
+        .pp-isi-tombol { display: inline-flex; align-items: center; justify-content: center; }
+        .pp-isi-muat { align-items: center; gap: 8px; }
+        .pp-putar {
+            display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid currentColor; border-right-color: transparent; animation: ppPutar .7s linear infinite;
+        }
+        @keyframes ppPutar { to { transform: rotate(360deg); } }
         .pp-admin { margin: 12px 0 0; font-size: .74rem; color: #6b7280; line-height: 1.5; text-align: center; }
         .ebook-pick { height: 100%; }
         @media (max-width: 575.98px) {
@@ -811,11 +818,15 @@ Proses Pesanan || lemon
             <div class="pp-tombol">
                 <button type="submit" class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center"
                     style="height: 50px;" wire:loading.attr="disabled" wire:target="processOrder">
-                    <span wire:loading.remove wire:target="processOrder" class="d-inline-flex align-items-center justify-content-center">
+                    {{-- Tanpa d-inline-flex (!important): kelas itu mengalahkan
+                         penyembunyi Livewire sehingga dua keadaan tampil bersamaan. --}}
+                    <span wire:loading.remove wire:target="processOrder" class="pp-isi-tombol">
                         <i class="bi bi-check2-circle me-2 fs-5"></i>
                         <span>Proses &amp; Lanjut ke Pengiriman</span>
                     </span>
-                    <span wire:loading wire:target="processOrder">Menyimpan…</span>
+                    <span wire:loading.inline-flex wire:target="processOrder" class="pp-isi-muat">
+                        <span class="pp-putar"></span> Menyimpan…
+                    </span>
                 </button>
                 <button type="button" wire:click="cancelProcessing"
                     class="btn btn-danger w-100 d-inline-flex align-items-center justify-content-center" style="height: 44px;">

@@ -462,6 +462,14 @@
             }
         }
 
+        .of-isi-tombol { display: inline-flex; align-items: center; }
+        .of-isi-muat { align-items: center; gap: 8px; }
+        .of-putar {
+            display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid currentColor; border-right-color: transparent; animation: ofPutar .7s linear infinite;
+        }
+        @keyframes ofPutar { to { transform: rotate(360deg); } }
+
         /* ===== Kulit dasbor (dsb-kartu) =====
            Markup & skrip form tidak berubah; hanya tampilannya diseragamkan
            dengan dasbor: kartu putih rata, ikon lembut berwarna di tengah. */
@@ -873,8 +881,12 @@
                     <button type="submit"
                         class="btn btn-primary w-100 mt-3 d-flex align-items-center justify-content-center"
                         style="height: 50px;" wire:loading.attr="disabled" wire:target="save">
-                        <span wire:loading.remove wire:target="save" class="d-inline-flex align-items-center">
+                        {{-- Tanpa d-inline-flex (!important) agar Livewire bisa menyembunyikannya. --}}
+                        <span wire:loading.remove wire:target="save" class="of-isi-tombol">
                             <i class="bi bi-check2-circle me-2 fs-5"></i> Buat Pesanan
+                        </span>
+                        <span wire:loading.inline-flex wire:target="save" class="of-isi-muat">
+                            <span class="of-putar"></span> Membuat pesanan…
                         </span>
                     </button>
                     <small class="text-muted d-block text-center mt-2">Setelah dibuat, Anda diarahkan ke <b>Detail

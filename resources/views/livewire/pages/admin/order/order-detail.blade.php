@@ -1000,6 +1000,19 @@ Detail Pesanan || lemon
         .pcek .pcek-drop-state .hint { font-size: .74rem; color: #94a3b8; width: 100%; }
         .pcek .pcek-drop-state .chg { font-size: .72rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 3px 9px; border-radius: 99px; }
         .pcek .pcek-spin { animation: pcekSpin 1s linear infinite; color: #16a34a; }
+        /* Keadaan memuat: TANPA properti display — Livewire yang menampilkannya
+           (wire:loading.flex / .inline-flex) hanya selama unggah/simpan berjalan. */
+        .pcek .pcek-drop-muat { flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        .pcek .pcek-drop-muat .nm { font-size: .84rem; font-weight: 600; color: #334155; }
+        .pcek .pcek-drop-muat i.bi { display: flex; line-height: 1; font-size: 1.15rem; }
+        .pcek .pcek-isi { display: inline-flex; align-items: center; gap: 6px; }
+        .pcek .pcek-isi-muat { align-items: center; gap: 8px; }
+        .pcek-putar {
+            display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid currentColor; border-right-color: transparent;
+            animation: pcekSpin .7s linear infinite; flex-shrink: 0;
+        }
+        @media (prefers-reduced-motion: reduce) { .pcek-putar { animation-duration: 2s; } }
         @keyframes pcekSpin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) { .pcek .pcek-spin { animation: none; } }
         /* Baris bawah form: persen di kiri, tombol rata kanan */
@@ -1185,8 +1198,9 @@ Detail Pesanan || lemon
                         <button type="button" wire:click="tutupBonusKuota" class="pcek-btn ghost">
                             Batal
                         </button>
-                        <button type="button" wire:click="simpanBonusKuota" wire:loading.attr="disabled" class="pcek-btn warn">
-                            <i class="bi bi-check2"></i> Simpan Bonus
+                        <button type="button" wire:click="simpanBonusKuota" wire:loading.attr="disabled" wire:target="simpanBonusKuota" class="pcek-btn warn">
+                            <span wire:loading.remove wire:target="simpanBonusKuota" class="pcek-isi"><i class="bi bi-check2"></i> Simpan Bonus</span>
+                            <span wire:loading.inline-flex wire:target="simpanBonusKuota" class="pcek-isi-muat"><span class="pcek-putar"></span> Menyimpan…</span>
                         </button>
                     </div>
                 </div>
@@ -1347,8 +1361,9 @@ Detail Pesanan || lemon
                     @endif
 
                     @if ($up->status === 'menunggu')
-                    <button type="button" wire:click="mulaiProses('{{ $up->id }}')" class="pcek-btn primary">
-                        <i class="bi bi-play-fill"></i> Mulai Proses
+                    <button type="button" wire:click="mulaiProses('{{ $up->id }}')" wire:loading.attr="disabled" wire:target="mulaiProses('{{ $up->id }}')" class="pcek-btn primary">
+                        <span wire:loading.remove wire:target="mulaiProses('{{ $up->id }}')" class="pcek-isi"><i class="bi bi-play-fill"></i> Mulai Proses</span>
+                        <span wire:loading.inline-flex wire:target="mulaiProses('{{ $up->id }}')" class="pcek-isi-muat"><span class="pcek-putar"></span> Memulai…</span>
                     </button>
                     @endif
 
@@ -1455,7 +1470,7 @@ Detail Pesanan || lemon
                             <div class="pcek-slot-berkas">
                             <label class="pcek-drop">
                                 <input type="file" wire:model="hasilFile" accept=".pdf,.docx" class="pcek-drop-input">
-                                <span wire:loading wire:target="hasilFile" class="pcek-drop-state">
+                                <span wire:loading.flex wire:target="hasilFile" class="pcek-drop-muat">
                                     <i class="bi bi-arrow-repeat pcek-spin"></i>
                                     <span class="nm">Mengunggah &amp; membaca…</span>
                                 </span>
@@ -1507,7 +1522,7 @@ Detail Pesanan || lemon
                             <div class="pcek-slot-berkas">
                             <label class="pcek-drop">
                                 <input type="file" wire:model="hasilAiFile" accept=".pdf" class="pcek-drop-input">
-                                <span wire:loading wire:target="hasilAiFile" class="pcek-drop-state">
+                                <span wire:loading.flex wire:target="hasilAiFile" class="pcek-drop-muat">
                                     <i class="bi bi-arrow-repeat pcek-spin"></i>
                                     <span class="nm">Mengunggah &amp; membaca…</span>
                                 </span>
@@ -1594,7 +1609,7 @@ Detail Pesanan || lemon
                             <label class="pcek-slot-lbl"><i class="bi bi-pencil-square"></i> Dokumen Hasil Parafrase <span>DOCX</span></label>
                             <label class="pcek-drop">
                                 <input type="file" wire:model="hasilDocxFile" accept=".docx" class="pcek-drop-input">
-                                <span wire:loading wire:target="hasilDocxFile" class="pcek-drop-state">
+                                <span wire:loading.flex wire:target="hasilDocxFile" class="pcek-drop-muat">
                                     <i class="bi bi-arrow-repeat pcek-spin"></i>
                                     <span class="nm">Mengunggah…</span>
                                 </span>
@@ -1623,8 +1638,11 @@ Detail Pesanan || lemon
                         <button type="button" wire:click="tutupUploadHasil" class="pcek-btn ghost">Batal</button>
                         <button type="button" wire:click="simpanHasil" wire:loading.attr="disabled"
                             wire:target="simpanHasil,hasilFile,hasilAiFile,hasilDocxFile" class="pcek-btn success">
-                            <span wire:loading.remove wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-check-lg"></i> Simpan Hasil</span>
-                            <span wire:loading wire:target="simpanHasil" class="d-inline-flex align-items-center gap-2"><i class="bi bi-hourglass-split"></i> Menyimpan…</span>
+                            {{-- Tanpa kelas display (mis. d-inline-flex yang !important): kelas
+                                 seperti itu mengalahkan penyembunyi Livewire, sehingga kedua
+                                 keadaan tampil bersamaan. Tampilan diatur .inline-flex. --}}
+                            <span wire:loading.remove wire:target="simpanHasil" class="pcek-isi"><i class="bi bi-check-lg"></i> Simpan Hasil</span>
+                            <span wire:loading.inline-flex wire:target="simpanHasil" class="pcek-isi-muat"><span class="pcek-putar"></span> Menyimpan…</span>
                         </button>
                     </div>
                 </div>

@@ -73,3 +73,30 @@ it('penanda morph di layar admin selalu berpasangan', function () {
 
     expect($timpang)->toBe([]);
 });
+
+it('elemen wire:loading di layar admin tidak membawa kelas display', function () {
+    // Livewire menyembunyikan elemen wire:loading dengan CSS berbobot rendah
+    // (0,2,0). Kelas yang mengatur display — d-inline-flex milik Bootstrap
+    // (!important) atau kelas halaman berbobot sama yang dimuat sesudahnya —
+    // mengalahkannya, sehingga spinner/"Menyimpan…" tampil terus. Tampilan
+    // saat memuat harus diatur modifier Livewire (.flex, .inline-flex).
+    $pelanggar = [];
+    foreach (berkasPenandaAdmin() as $jalur) {
+        $isi = file_get_contents($jalur);
+        preg_match_all('/<[a-z]+\b[^>]*>/i', $isi, $tag, PREG_OFFSET_CAPTURE);
+        foreach ($tag[0] as [$teks, $pos]) {
+            // wire:loading.remove disembunyikan lewat gaya inline, jadi hanya
+            // kelas !important (d-*) yang mengalahkannya; elemen wire:loading
+            // biasa kalah oleh kelas display apa pun.
+            $muat = preg_match('/\swire:loading[\s>=]/', $teks);
+            $hapus = preg_match('/\swire:loading\.remove[\s>=]/', $teks);
+            $kelasPenting = preg_match('/class="[^"]*\bd-(inline-flex|flex|block|inline|inline-block|grid)\b/', $teks);
+            $kelasDisplay = $kelasPenting || preg_match('/class="[^"]*\bpcek-drop-state\b/', $teks);
+            if (($muat && $kelasDisplay) || ($hapus && $kelasPenting)) {
+                $pelanggar[] = basename($jalur).':'.(substr_count(substr($isi, 0, $pos), "\n") + 1);
+            }
+        }
+    }
+
+    expect($pelanggar)->toBe([]);
+});
