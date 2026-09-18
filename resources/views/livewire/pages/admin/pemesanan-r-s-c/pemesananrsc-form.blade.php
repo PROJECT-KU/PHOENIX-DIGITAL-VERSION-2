@@ -33,6 +33,20 @@
         .of-form-label { font-weight: 700; color: #334155; font-size: .8rem; margin-bottom: 6px; }
 
         /* Isian Bootstrap dibuat serupa .dsb-isian */
+        /* Layout admin (templateindex) memaksa .form-control berpadding kiri
+           45px, tinggi 48px, dan bingkai 2px — semuanya !important — sehingga
+           isian tanpa ikon menjorok dan textarea terjepit. Ditimpa di sini
+           dengan pemilih yang lebih kuat. */
+        .rsc-form .form-control, .rsc-form .form-select {
+            padding: 9px 13px !important; height: auto !important; min-height: 42px;
+            border: 1px solid #e9edf3 !important; border-radius: 11px !important;
+        }
+        .rsc-form .form-select { padding-right: 32px !important; }
+        .rsc-form textarea.form-control { min-height: 84px; }
+        .rsc-form .form-control.rsc-has-ico { padding-left: 38px !important; }
+        .rsc-form #batch_camp { padding-left: 30px !important; }
+        .rsc-form #jumlah_pemesanan { padding-right: 58px !important; }
+
         .rsc-form .form-control, .rsc-form .form-select {
             min-height: 42px; border: 1px solid #e9edf3; border-radius: 11px !important;
             color: #1c1f26; font-size: .88rem; font-weight: 600; box-shadow: none;

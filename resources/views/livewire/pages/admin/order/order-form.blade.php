@@ -471,6 +471,17 @@
         @keyframes ofPutar { to { transform: rotate(360deg); } }
 
         /* ===== Kulit dasbor (dsb-kartu) =====
+        /* Layout admin (templateindex) memaksa .form-control berpadding kiri
+           45px, tinggi 48px, dan bingkai 2px — semuanya !important — sehingga
+           isian tanpa ikon menjorok dan textarea terjepit. Ditimpa di sini
+           dengan pemilih yang lebih kuat. */
+        .of-section .form-control, .of-section .form-select {
+            padding: 9px 13px !important; height: auto !important; min-height: 42px;
+            border: 1px solid #e9edf3 !important; border-radius: 11px !important;
+        }
+        .of-section .form-select { padding-right: 32px !important; }
+        .of-section textarea.form-control { min-height: 84px; }
+
            Markup & skrip form tidak berubah; hanya tampilannya diseragamkan
            dengan dasbor: kartu putih rata, ikon lembut berwarna di tengah. */
         .of-section, .of-summary {

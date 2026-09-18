@@ -396,6 +396,21 @@ Proses Pesanan || lemon
         }
 
         /* ===== Kulit dasbor ===== */
+        /* Layout admin (templateindex) memaksa .form-control berpadding kiri
+           45px, tinggi 48px, dan bingkai 2px — semuanya !important — sehingga
+           isian tanpa ikon menjorok dan textarea terjepit. Ditimpa di sini
+           dengan pemilih yang lebih kuat. */
+        .pt-proses .form-control, .pt-proses .form-select {
+            padding: 9px 13px !important; height: auto !important; min-height: 42px;
+            border: 1px solid #e9edf3 !important; border-radius: 11px !important;
+        }
+        .pt-proses .form-select { padding-right: 32px !important; }
+        .pt-proses textarea.form-control { min-height: 84px; }
+        .pt-proses form .btn-danger, .pt-proses .pp-tombol .btn-danger {
+            background: #fff !important; color: #dc2626 !important; border: 1px solid #fecaca !important;
+        }
+        .pt-proses form .btn-danger:hover, .pt-proses .pp-tombol .btn-danger:hover { background: #dc2626 !important; color: #fff !important; }
+
         .pt-proses-nilai { font-size: clamp(1.05rem, 2vw, 1.3rem) !important; }
         .pt-proses .proc-section {
             background: #fff !important; border: 1px solid #e9edf3 !important; border-radius: 18px !important; box-shadow: none !important;
