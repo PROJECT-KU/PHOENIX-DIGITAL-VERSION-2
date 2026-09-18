@@ -24,6 +24,12 @@ class SyncOrderPrivateCostAction
             // Produk jasa (butuh_file) juga punya modal (per pengecekan), walau
             // tipe_akun-nya bukan 'private' — ikutkan agar omset bersihnya benar.
             $adaModal = $product && ($product->tipe_akun === 'private' || $product->butuh_file);
+            // Item yang dibatalkan SEBELUM akunnya terkirim tidak memakan modal
+            // (App\Support\BatalItemPesanan). Yang dibatalkan sesudah terkirim
+            // tetap bermodal: akunnya sudah terlanjur dipakai.
+            if ($item->delivery_status === 'cancelled' && ! $item->batal_setelah_kirim) {
+                $adaModal = false;
+            }
 
             $amount = 0;
             $modalAddon = 0;

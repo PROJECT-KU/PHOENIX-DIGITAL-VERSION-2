@@ -395,7 +395,7 @@
                                         @endif
                                     </span>
                                     <div>
-                                        <div class="sks-item-nama">{{ $item->product_name }}</div>
+                                        <div class="sks-item-nama">{{ $item->product_name }} @if ($item->delivery_status === 'cancelled') <span style="color:#dc2626;font-weight:700;">· Dibatalkan</span> @endif</div>
                                         <div class="sks-item-ket">{{ $item->getDurationLabel() }} &times;{{ $item->quantity }}</div>
                                     </div>
                                     <span class="sks-item-harga">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>

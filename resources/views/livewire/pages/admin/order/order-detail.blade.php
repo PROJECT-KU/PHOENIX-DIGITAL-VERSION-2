@@ -41,6 +41,7 @@ Detail Pesanan || lemon
         $pblAdaWa = strlen($pblWa) >= 9;
         $pblBolehLihat = $pbl && (bool) auth()->user()?->hasPermission('view_customer');
         $hdBolehUbah = (bool) auth()->user()?->hasPermission('edit_pemesanantoko');
+        $hdBolehBuat = (bool) auth()->user()?->hasPermission('create_pemesanantoko');
         $hdCatatanDitangani = $order->catatan_ditangani_at;
         $hdBisaDiubah = ! \App\Support\EditPesanan::alasanTidakBisa($order);
         // Warna Bootstrap (statusWarna/jenisWarna) → lencana dasbor, supaya seragam.
@@ -99,6 +100,63 @@ Detail Pesanan || lemon
         </div>
     </header>
 
+    {{-- Jendela batal satu item (App\Support\BatalItemPesanan) --}}
+    @if ($batalItemId)
+        @php
+            $biItem = $order->items->firstWhere('id', $batalItemId);
+            $biRefund = \App\Support\BatalItemPesanan::mode($order) === 'refund';
+            $biSubtotal = (int) ($biItem->subtotal ?? 0);
+            $biRp = fn ($n) => 'Rp '.number_format((int) $n, 0, ',', '.');
+        @endphp
+        <div class="ts-modal-back" wire:click="tutupBatalItem"></div>
+        <div class="ts-modal" wire:key="batal-item-{{ $batalItemId }}">
+            <div class="ts-modal-card dsb is-datar" role="dialog" aria-modal="true" aria-label="Batalkan item" tabindex="-1"
+                style="max-width: 520px" x-on:keydown.escape.window="$wire.tutupBatalItem()">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #dc2626"><i class="bi bi-x-octagon"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Batalkan Item</h5>
+                        <span class="dsb-kartu-sub">{{ $biItem->product_name ?? '' }} · {{ $biRp($biSubtotal) }}</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupBatalItem" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi pt-bi">
+                    <div class="pt-bi-info {{ $biRefund ? 'is-refund' : 'is-kurangi' }}">
+                        <i class="bi {{ $biRefund ? 'bi-cash-coin' : 'bi-dash-circle' }}"></i>
+                        @if ($biRefund)
+                            <span><b>Pesanan sudah dibayar.</b> Total pesanan <b>tidak berubah</b>. Uang yang dikembalikan dicatat sebagai <b>Pengeluaran</b> (masuk cash flow). Modal item dilepas bila akunnya belum sempat dikirim.</span>
+                        @else
+                            <span><b>Pesanan belum dibayar.</b> Item dihapus dan total pesanan <b>berkurang {{ $biRp($biSubtotal) }}</b> menjadi {{ $biRp((int) $order->total - $biSubtotal) }}.</span>
+                        @endif
+                    </div>
+                    <div class="dsb-medan">
+                        <label class="dsb-label" for="bi-alasan">Alasan <span class="text-danger">*</span></label>
+                        <textarea id="bi-alasan" class="dsb-isian" rows="2" wire:model="batalAlasan" placeholder="Mis. stok akun habis, pelanggan minta ganti produk"></textarea>
+                        @error('batalAlasan') <small class="pt-bi-galat">{{ $message }}</small> @enderror
+                    </div>
+                    @if ($biRefund)
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="bi-refund">Uang dikembalikan <span class="text-danger">*</span></label>
+                            <div class="pt-bi-rp">
+                                <span>Rp</span>
+                                <input id="bi-refund" type="number" min="0" max="{{ $biSubtotal }}" class="dsb-isian" wire:model="batalRefund">
+                            </div>
+                            <small class="pt-bi-ket">Maksimal {{ $biRp($biSubtotal) }}. Isi 0 bila tidak ada uang yang dikembalikan.</small>
+                            @error('batalRefund') <small class="pt-bi-galat">{{ $message }}</small> @enderror
+                        </div>
+                    @endif
+                </div>
+                <div class="dsb-jendela-kaki">
+                    <button type="button" class="dsb-tombol is-lembut" wire:click="tutupBatalItem"><span>Kembali</span></button>
+                    <button type="button" class="dsb-tombol pt-bi-ya" wire:click="simpanBatalItem" wire:loading.attr="disabled" wire:target="simpanBatalItem">
+                        <span wire:loading.remove wire:target="simpanBatalItem" class="pt-isi-tombol"><i class="bi bi-x-octagon"></i><span>Batalkan Item</span></span>
+                        <span wire:loading.inline-flex wire:target="simpanBatalItem" class="pt-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Memproses…</span></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Jendela Riwayat Pesanan (App\Support\RiwayatPesanan) --}}
     @if ($lihatRiwayat)
         <div class="ts-modal-back" wire:click="$set('lihatRiwayat', false)"></div>
@@ -131,6 +189,28 @@ Detail Pesanan || lemon
        Markup kartu lama dipertahankan — skrip WA, bonus kuota, dan
        pengecekan bergantung padanya — tetapi tampil seperti dsb-kartu. */
     .pt-lencana-kepala { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+
+    /* ===== Batal per item ===== */
+    .pt-detail .items-table tr.pt-item-batal td { background: #fbfbfc !important; }
+    .pt-detail .items-table tr.pt-item-batal .pt-nama-item { text-decoration: line-through; color: #94a3b8; }
+    .pt-detail .items-table tr.pt-item-batal td:not(.pt-sel-produk):not(.pt-sel-aksi) { opacity: .55; }
+    .pt-batal-ket { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: .74rem; font-weight: 500; color: #64748b; }
+    .pt-batal-ket em { color: #475569; }
+    .pt-btn-batal-item { border: 1px solid #fecaca !important; color: #dc2626 !important; background: #fff !important; }
+    .pt-btn-batal-item:hover { background: #dc2626 !important; color: #fff !important; }
+    .pt-btn-perpanjang { border: 1px solid #ddd6fe !important; color: #6d28d9 !important; background: #f5f3ff !important; }
+    .pt-btn-perpanjang:hover { background: #7c3aed !important; color: #fff !important; }
+    .pt-bi { display: grid; gap: 14px; }
+    .pt-bi-info { display: flex; gap: 10px; padding: 11px 13px; border-radius: 12px; font-size: .84rem; line-height: 1.5; }
+    .pt-bi-info > i { font-size: 1.1rem; line-height: 1.3; }
+    .pt-bi-info.is-refund { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .pt-bi-info.is-kurangi { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .pt-bi-rp { display: flex; align-items: center; gap: 8px; }
+    .pt-bi-rp > span { font-weight: 800; color: #64748b; }
+    .pt-bi-ket { display: block; margin-top: 4px; font-size: .74rem; color: #94a3b8; }
+    .pt-bi-galat { display: block; margin-top: 4px; font-size: .76rem; color: #dc2626; }
+    .pt-bi-ya { background: #dc2626 !important; color: #fff !important; border-color: #dc2626 !important; }
+    .pt-bi-ya:hover { background: #b91c1c !important; }
 
     /* ===== Blok jasa pengecekan ===== */
     .pt-detail .pcek .pcek-head-row {margin-bottom: 16px !important;}
@@ -1741,12 +1821,29 @@ Detail Pesanan || lemon
                     </thead>
                     <tbody>
                         @forelse ($order->items as $item)
-                        <tr>
+                        @php
+                            $itemBatal = $item->delivery_status === 'cancelled';
+                            $bisaBatalItem = $hdBolehUbah && ! \App\Support\BatalItemPesanan::alasanTidakBisa($item);
+                            $bisaPerpanjang = $hdBolehBuat && ! $itemBatal && $item->product_id && $item->end_date;
+                        @endphp
+                        <tr @class(['pt-item-batal' => $itemBatal])>
                             <td class="fw-semibold pt-sel-produk">
                                 {{-- Salinan nama saat dipesan lebih dipercaya daripada relasi:
                                      item paket bundling menyimpan nama "[Paket] Produk", dan
                                      baris lama tetap benar walau produknya kelak diganti nama. --}}
-                                {{ $item->product_name ?: ($item->product->nama_akun ?? '-') }}
+                                <span class="pt-nama-item">{{ $item->product_name ?: ($item->product->nama_akun ?? '-') }}</span>
+                                @if ($itemBatal)
+                                    <span class="pt-batal-ket">
+                                        <span class="dsb-lencana is-merah"><i class="bi bi-x-octagon"></i>Dibatalkan</span>
+                                        {{ $item->dibatalkan_at?->locale('id')->translatedFormat('d M Y') }}
+                                        @if ($item->refund_nominal)
+                                            · refund Rp {{ number_format((int) $item->refund_nominal, 0, ',', '.') }} (Pengeluaran)
+                                        @endif
+                                        @if ($item->alasan_batal)
+                                            <em>“{{ $item->alasan_batal }}”</em>
+                                        @endif
+                                    </span>
+                                @endif
                                 {{-- Add-on & jumlah halaman (khusus produk jasa) --}}
                                 @if (! empty($item->addons) || $item->jumlah_halaman)
                                 {{-- Rata kiri, seragam dengan badge ebook/bonus di kolom yang sama --}}
@@ -1906,6 +2003,11 @@ Detail Pesanan || lemon
                                     <a href="#pengecekan" class="btn btn-sm btn-primary p-2" title="Buka bagian pengecekan dokumen">
                                         <i class="bi bi-arrow-up-circle"></i>
                                     </a>
+                                    @if ($bisaBatalItem)
+                                        <button type="button" class="btn btn-sm pt-btn-batal-item p-2" wire:click="bukaBatalItem('{{ $item->id }}')" title="Batalkan item ini">
+                                            <i class="bi bi-x-octagon"></i>
+                                        </button>
+                                    @endif
                                 </span>
                             </td>
                             @else
@@ -1947,6 +2049,9 @@ Detail Pesanan || lemon
                             </td>
                             <td class="text-center text-nowrap pt-sel-aksi" data-judul="Aksi">
                                 <span class="pt-aksi-deret">
+                                @if ($itemBatal)
+                                <span class="dsb-lencana is-abu">Tidak diproses</span>
+                                @else
                                 <button type="button" class="btn btn-sm btn-outline-primary p-2 notes-btn"
                                     title="lihat catatan" data-account="{{ $item->account_notes }}"
                                     data-processing="{{ $item->processing_notes }}">
@@ -1995,6 +2100,18 @@ Detail Pesanan || lemon
                                     data-ebooks="{{ $item->ebooks->map(fn ($e) => $e->judul . ' - ' . $e->getViewUrl())->implode('||') }}">
                                     <i class="bi bi-whatsapp"></i>
                                 </button>
+                                @endif
+                                @if ($bisaPerpanjang)
+                                <a wire:navigate href="{{ route('admin.pesanantoko.create', ['perpanjang' => $item->id]) }}"
+                                    class="btn btn-sm pt-btn-perpanjang p-2" title="Buat pesanan perpanjangan — pelanggan, produk & durasi terisi otomatis">
+                                    <i class="bi bi-calendar-plus"></i>
+                                </a>
+                                @endif
+                                @if ($bisaBatalItem)
+                                <button type="button" class="btn btn-sm pt-btn-batal-item p-2" wire:click="bukaBatalItem('{{ $item->id }}')" title="Batalkan item ini">
+                                    <i class="bi bi-x-octagon"></i>
+                                </button>
+                                @endif
                                 @endif
                                 </span>
                             </td>

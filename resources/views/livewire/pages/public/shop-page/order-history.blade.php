@@ -392,7 +392,7 @@
                                 @endif
                             </span>
                             <span class="rw-baris-isi">
-                                <span class="rw-produk">{{ $item->product_name }}</span>
+                                <span class="rw-produk">{{ $item->product_name }} @if ($item->delivery_status === 'cancelled') <span style="color:#dc2626;font-weight:700;">· Dibatalkan</span> @endif</span>
                                 <span class="rw-baris-meta">
                                     <span class="rw-tanda {{ $kelasItem }}"><i class="bi {{ $ikonItem }}"></i> {{ $tandaItem }}</span>
                                     <span class="rw-durasi">{{ number_format((int) $item->duration_value, 0, ',', '.') }} {{ ucfirst($item->duration_type) }}</span>

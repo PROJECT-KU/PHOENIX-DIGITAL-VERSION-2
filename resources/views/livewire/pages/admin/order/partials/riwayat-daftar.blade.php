@@ -11,6 +11,7 @@
         'catatan' => ['bi-sticky-fill', '#d97706'],
         'jasa' => ['bi-file-earmark-check-fill', '#ea580c'],
         'diubah' => ['bi-pencil-square', '#7c3aed'],
+        'batal' => ['bi-x-octagon-fill', '#dc2626'],
     ];
     $adaSusunan = $riwayat->contains('dari_data', true);
 @endphp

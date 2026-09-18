@@ -5,36 +5,11 @@
      .gitignore dan tidak ikut ter-deploy. --}}
 @once
 <style>
-    /* ===== Tab status (segmen yang bisa digulir mendatar) ===== */
-    .pt-tab-deret {
-        display: flex; gap: 6px; padding: 6px; overflow-x: auto; scrollbar-width: thin;
-        background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); border-radius: 16px;
-        -webkit-overflow-scrolling: touch;
-    }
-    .pt-tab {
-        --c: #7c3aed;
-        flex: 1 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        min-height: 42px; padding: 0 14px; border: 0; border-radius: 11px; cursor: pointer;
-        background: transparent; color: #64748b; font-size: .84rem; font-weight: 700; white-space: nowrap;
-        transition: background .15s ease, color .15s ease;
-    }
-    .pt-tab i.bi { color: var(--c); font-size: .95rem; line-height: 1; }
+    /* Lencana angka kecil (dipakai tombol "Saringan lanjutan"). */
     .pt-tab-jumlah {
         min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px;
         display: inline-flex; align-items: center; justify-content: center;
         background: #f1f5f9; color: #475569; font-size: .72rem; font-weight: 800;
-    }
-    .pt-tab.is-aktif { background: color-mix(in srgb, var(--c) 10%, #fff); color: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, #fff); }
-    .pt-tab.is-aktif .pt-tab-jumlah { background: var(--c); color: #fff; }
-    .pt-tab:focus-visible { outline: 2px solid #7c3aed; outline-offset: 1px; }
-    /* Layar lebar: tab membungkus ke baris kedua supaya semuanya terlihat
-       (10 tab tidak muat satu baris; yang di ujung kanan jadi tak terlihat). */
-    @media (min-width: 992px) {
-        .pt-tab-deret { flex-wrap: wrap; overflow: visible; }
-        .pt-tab { flex: 0 1 auto; }
-    }
-    @media (hover: hover) and (pointer: fine) {
-        .pt-tab:not(.is-aktif):hover { background: #f8fafc; color: #1c1f26; }
     }
 
     /* ===== Tab sebagai kartu status (dua kelompok) ===== */
@@ -112,6 +87,13 @@
         .pt-tabel-pesanan tbody td:nth-child(7) { grid-column: 3 / 5; grid-row: 3; text-align: right; }
         .pt-tabel-pesanan tbody td.is-kosong { display: none; }
         .pt-tabel-pesanan .dsb-tabel-samar { display: inline-flex !important; font-size: .74rem; }
+    }
+
+    /* HP: dua tombol kepala daftar berjajar satu baris, bukan bertumpuk. */
+    @media (max-width: 575.98px) {
+        .pt-hero-daftar .dsb-hero-aksi { flex-wrap: nowrap; gap: 8px; }
+        .pt-hero-daftar .dsb-hero-aksi .dsb-tombol { min-width: 0; padding-left: 10px; padding-right: 10px; }
+        .pt-hp-sembunyi { display: none; }
     }
 
     /* ===== Saringan ===== */

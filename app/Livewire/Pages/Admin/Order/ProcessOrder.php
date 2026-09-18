@@ -87,6 +87,13 @@ class ProcessOrder extends Component
         $this->orderItem = OrderItem::FindOrFail($id);
         $this->order = Order::FindOrFail($this->orderItem->order_id);
 
+        // Item yang sudah dibatalkan tidak diproses lagi (App\Support\BatalItemPesanan).
+        if ($this->orderItem->delivery_status === 'cancelled') {
+            session()->flash('error', 'Item ini sudah dibatalkan, jadi tidak bisa diproses.');
+
+            return $this->redirectRoute('admin.pesanantoko.detail', $this->order);
+        }
+
         $this->startDate = now()->format('Y-m-d');
         $this->calculateEndDate();
 

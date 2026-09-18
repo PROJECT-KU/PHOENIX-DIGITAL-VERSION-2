@@ -166,7 +166,7 @@ class OrderDetail extends Component
 
             $masihAdaBelumDelivered = $this->order
                 ->items()
-                ->where('delivery_status', '!=', 'delivered')
+                ->whereNotIn('delivery_status', ['delivered', 'cancelled'])
                 ->exists();
 
             if (! $masihAdaBelumDelivered) {
@@ -868,6 +868,55 @@ class OrderDetail extends Component
     }
 
     #[Layout('livewire.layout.templateindex')]
+    // ==== Batal per item (App\Support\BatalItemPesanan) ====
+    public ?string $batalItemId = null;
+
+    public string $batalAlasan = '';
+
+    public $batalRefund = null;
+
+    public function bukaBatalItem(string $itemId): void
+    {
+        $item = OrderItem::where('order_id', $this->order->id)->findOrFail($itemId);
+        $this->resetErrorBag();
+        $this->batalItemId = $item->id;
+        $this->batalAlasan = '';
+        $this->batalRefund = (int) $item->subtotal;
+    }
+
+    public function tutupBatalItem(): void
+    {
+        $this->batalItemId = null;
+    }
+
+    public function simpanBatalItem(): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_pemesanantoko'), 403);
+
+        $item = OrderItem::with('order', 'product')->where('order_id', $this->order->id)->findOrFail($this->batalItemId);
+        $refund = \App\Support\BatalItemPesanan::mode($this->order) === 'refund';
+
+        $this->validate([
+            'batalAlasan' => 'required|string|min:3|max:300',
+            'batalRefund' => $refund ? 'required|integer|min:0|max:'.(int) $item->subtotal : 'nullable',
+        ], [
+            'batalAlasan.required' => 'Tulis alasannya — tercatat di riwayat pesanan.',
+            'batalRefund.max' => 'Refund tidak boleh melebihi subtotal item.',
+        ]);
+
+        try {
+            $pesan = \App\Support\BatalItemPesanan::batalkan($item, $this->batalAlasan, $refund ? (int) $this->batalRefund : null);
+        } catch (\RuntimeException $e) {
+            $this->dispatch('swal-error', message: $e->getMessage());
+
+            return;
+        }
+
+        $this->batalItemId = null;
+        $this->order = $this->order->fresh()->load(['customer', 'items.product', 'items.ebooks', 'items.processedBy', 'uploads']);
+        $this->dispatch('order-updated', message: $pesan);
+    }
+
     /** Jendela Riwayat Pesanan terbuka? Jejaknya baru dimuat saat dibuka. */
     public bool $lihatRiwayat = false;
 

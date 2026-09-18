@@ -290,6 +290,7 @@ class OrderList extends Component
     {
         return $this->saringKueriItem(OrderItem::query()
             ->tap(fn ($x) => PengingatPerpanjangan::scopeBelumDiperpanjang($x))
+            ->where('delivery_status', '!=', 'cancelled')
             ->where(function ($q) {
                 $q->where('subscription_status', 'habis')
                     ->orWhere(function ($q2) {

@@ -412,7 +412,7 @@
                         @endif
                         @else
                         @php $item = $row->item; @endphp
-                        <div class="prod-name">{{ $item->product_name }}</div>
+                        <div class="prod-name">{{ $item->product_name }} @if ($item->delivery_status === 'cancelled') <span style="color:#dc2626;font-weight:700;">· Dibatalkan</span> @endif</div>
                         <div class="prod-sub">
                             Durasi: {{ $item->getFullDurationLabel() }}
                             @if ($item->start_date && $item->end_date)

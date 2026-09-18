@@ -38,7 +38,7 @@ class SelesaikanPesananJasa
 
             // 2) Pesanan hanya selesai bila TIDAK ADA item yang masih menunggu.
             //    Pesanan campuran (jasa + akun) tetap menunggu akunnya dikirim.
-            if ($order->items()->where('delivery_status', '!=', 'delivered')->exists()) {
+            if ($order->items()->whereNotIn('delivery_status', ['delivered', 'cancelled'])->exists()) {
                 return false;
             }
 

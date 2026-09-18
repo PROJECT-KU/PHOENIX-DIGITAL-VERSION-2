@@ -321,7 +321,7 @@
                                             @endif
                                         </span>
                                         <div>
-                                            <div class="lcp-item-nama">{{ $item->product_name }}</div>
+                                            <div class="lcp-item-nama">{{ $item->product_name }} @if ($item->delivery_status === 'cancelled') <span style="color:#dc2626;font-weight:700;">· Dibatalkan</span> @endif</div>
                                             <div class="lcp-item-ket">{{ $item->getDurationLabel() }} &times;{{ $item->quantity }}</div>
                                         </div>
                                         <span class="lcp-item-harga">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>

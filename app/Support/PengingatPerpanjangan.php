@@ -25,6 +25,7 @@ class PengingatPerpanjangan
             ->whereDate('end_date', '<=', today()->addDays(self::HARI))
             ->where(fn ($s) => $s->whereNull('subscription_status')->orWhere('subscription_status', '!=', 'habis'))
             ->whereHas('order', fn ($o) => $o->whereIn('status', ['paid', 'processing', 'completed']))
+            ->where('delivery_status', '!=', 'cancelled')
             ->tap(fn ($x) => self::scopeBelumDiperpanjang($x));
     }
 

@@ -25,7 +25,7 @@
                 <td>{{ $tgl($order->created_at) }}</td>
                 <td>{{ $order->customer->nama ?? '' }}</td>
                 <td>{{ $order->customer->no_hp ?? '' }}</td>
-                <td>{{ $order->items->map(fn ($i) => $i->product_name.' ('.$i->duration_value.' '.$i->duration_type.')')->implode(', ') }}</td>
+                <td>{{ $order->items->map(fn ($i) => $i->product_name.' ('.$i->duration_value.' '.$i->duration_type.')'.($i->delivery_status === 'cancelled' ? ' [dibatalkan]' : ''))->implode(', ') }}</td>
                 <td>{{ (int) $order->subtotal }}</td>
                 <td>{{ (int) $order->total_discount }}</td>
                 <td>{{ (int) $order->total }}</td>

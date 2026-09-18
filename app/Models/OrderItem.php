@@ -67,6 +67,12 @@ class OrderItem extends Model
         'habis_notified_at',
         'ingat_perpanjang_at',
         'diperpanjang_oleh_item_id',
+        'dibatalkan_at',
+        'dibatalkan_oleh',
+        'alasan_batal',
+        'refund_nominal',
+        'refund_spending_id',
+        'batal_setelah_kirim',
         'processed_by',
         'processed_at',
         'processing_notes',
@@ -85,6 +91,8 @@ class OrderItem extends Model
         'processed_at' => 'datetime',
         'habis_notified_at' => 'datetime',
         'ingat_perpanjang_at' => 'datetime',
+        'dibatalkan_at' => 'datetime',
+        'batal_setelah_kirim' => 'boolean',
     ];
 
     // Relationships

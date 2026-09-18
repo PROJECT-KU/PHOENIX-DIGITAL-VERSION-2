@@ -332,3 +332,110 @@ it('menu samping menandai akun toko yang segera habis dan belum diingatkan', fun
     expect($html)->toContain('sidebar-badge-segera')
         ->toContain('1 akun segera habis dan belum diingatkan');
 });
+
+function pesananDuaItem(array $isian = [], array $itemB = []): Order
+{
+    $order = tokoPesanan(array_merge(['subtotal' => 80000, 'total' => 80000], $isian), ['product_name' => 'Akun A', 'price' => 50000, 'subtotal' => 50000]);
+    OrderItem::create(array_merge([
+        'order_id' => $order->id, 'product_id' => Product::create(['nama_akun' => 'Akun B'])->id, 'product_name' => 'Akun B',
+        'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 30000, 'quantity' => 1, 'subtotal' => 30000,
+    ], $itemB));
+
+    return $order->fresh('items');
+}
+
+it('batal item BELUM dibayar: item dihapus dan total pesanan berkurang', function () {
+    $this->actingAs(tokoAdmin());
+    $order = pesananDuaItem(['status' => 'draft']);
+    $b = $order->items->firstWhere('product_name', 'Akun B');
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaBatalItem', $b->id)
+        ->assertSee('Pesanan belum dibayar')
+        ->set('batalAlasan', 'Stok habis')
+        ->call('simpanBatalItem');
+
+    $order->refresh();
+    expect(OrderItem::find($b->id))->toBeNull()
+        ->and((int) $order->total)->toBe(50000)
+        ->and((int) $order->subtotal)->toBe(50000)
+        ->and(\App\Models\Spending::count())->toBe(0)
+        ->and(OrderRiwayat::where('order_id', $order->id)->where('aksi', 'batal')->value('keterangan'))->toContain('total berkurang Rp 30.000');
+});
+
+it('batal item SUDAH dibayar: total tetap, refund dicatat sebagai pengeluaran & cash flow', function () {
+    $this->actingAs(tokoAdmin());
+    $order = pesananDuaItem(['status' => 'processing', 'paid_at' => now()], ['delivery_status' => 'pending']);
+    $order->items->firstWhere('product_name', 'Akun A')->update(['delivery_status' => 'delivered']);
+    $b = $order->items->firstWhere('product_name', 'Akun B');
+
+    Livewire::test(OrderDetail::class, ['order' => $order->fresh()])
+        ->call('bukaBatalItem', $b->id)
+        ->assertSee('Pesanan sudah dibayar')
+        ->set('batalAlasan', 'Akun tidak tersedia')
+        ->set('batalRefund', 25000)
+        ->call('simpanBatalItem');
+
+    $b->refresh();
+    $order->refresh();
+    $spending = \App\Models\Spending::first();
+    expect((int) $order->total)->toBe(80000)
+        ->and($b->delivery_status)->toBe('cancelled')
+        ->and((int) $b->refund_nominal)->toBe(25000)
+        ->and($b->batal_setelah_kirim)->toBeFalse()
+        ->and((int) $spending->nominal)->toBe(25000)
+        ->and($spending->jenis_pengeluaran)->toBe('lainnya')
+        ->and($spending->deskripsi)->toContain($order->order_number)
+        ->and($spending->cashFlow()->where('type', 'expense')->where('amount', 25000)->exists())->toBeTrue()
+        // Sisa item sudah terkirim → pesanan selesai, tidak menggantung.
+        ->and($order->status)->toBe('completed');
+});
+
+it('refund tidak boleh melebihi subtotal item, dan item terakhir tidak bisa dibatalkan', function () {
+    $this->actingAs(tokoAdmin());
+    $order = pesananDuaItem(['status' => 'paid', 'paid_at' => now()]);
+    $b = $order->items->firstWhere('product_name', 'Akun B');
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaBatalItem', $b->id)
+        ->set('batalAlasan', 'Salah input')
+        ->set('batalRefund', 99999)
+        ->call('simpanBatalItem')
+        ->assertHasErrors('batalRefund');
+    expect($b->fresh()->delivery_status)->not->toBe('cancelled');
+
+    $tunggal = tokoPesanan(['status' => 'paid']);
+    expect(\App\Support\BatalItemPesanan::alasanTidakBisa($tunggal->items->first()))->toContain('satu-satunya');
+});
+
+it('batal item ditolak tanpa izin ubah pesanan', function () {
+    $this->actingAs(tokoAdmin(['view_pemesanantoko']));
+    $order = pesananDuaItem(['status' => 'paid']);
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->call('bukaBatalItem', $order->items->last()->id)
+        ->set('batalAlasan', 'Coba')
+        ->call('simpanBatalItem')
+        ->assertForbidden();
+});
+
+it('item yang dibatalkan tidak bisa diproses dan tidak diingatkan perpanjangan', function () {
+    $this->actingAs(tokoAdmin());
+    $order = pesananDuaItem(['status' => 'paid'], ['end_date' => today()->addDays(2), 'delivery_status' => 'cancelled']);
+    $b = $order->items->firstWhere('product_name', 'Akun B');
+
+    Livewire::test(\App\Livewire\Pages\Admin\Order\ProcessOrder::class, ['id' => $b->id])
+        ->assertRedirect(route('admin.pesanantoko.detail', $order));
+
+    $segera = Livewire::test(OrderList::class)->call('setTab', 'segera')->viewData('segeraItems');
+    expect($segera->pluck('id')->all())->not->toContain($b->id);
+});
+
+it('detail menampilkan tombol Perpanjang & Batalkan item hanya bila berlaku', function () {
+    $this->actingAs(tokoAdmin());
+    $order = pesananDuaItem(['status' => 'completed'], ['end_date' => today()->addDays(5), 'delivery_status' => 'delivered']);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order])->html();
+    expect($html)->toContain('perpanjang='.$order->items->firstWhere('product_name', 'Akun B')->id)
+        ->toContain("bukaBatalItem('");
+});
