@@ -20,6 +20,7 @@ Detail Pesanan || lemon
             'COMPLETED' => 'Selesai', 'CANCELLED' => 'Dibatalkan', 'SEDANG DIPROSES' => 'Sedang dicek',
         ];
         $hdJumlahItem = $order->items->count();
+        $hdSemuaJasa = $hdJumlahItem && $order->items->every(fn ($it) => $it->product && $it->product->butuh_file);
         $hdBisaBatal = $order->status !== 'cancelled';
         $hdBuktiTercatat = (bool) $order->bukti_pembayaran;
         $hdBuktiTersedia = $hdBuktiTercatat && $this->buktiTersedia();
@@ -121,6 +122,7 @@ Detail Pesanan || lemon
     @media (min-width: 1200px) { .pcek-daftar:not(.is-tunggal) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .pcek-daftar > .pcek-item { margin: 0 !important; }
     .pcek-daftar > .pcek-kosong { grid-column: 1 / -1; }
+    #pengecekan { scroll-margin-top: 90px; }
     /* Jendela unggah hasil */
     .pcek-jendela { max-width: 760px !important; }
     .pcek-jendela .dsb-jendela-teks { min-width: 0; }
@@ -1067,7 +1069,7 @@ Detail Pesanan || lemon
         .pcek .pcek-auto i.bi { flex-shrink: 0; margin-top: .12rem; display: flex; line-height: 1; }
         .pcek .pcek-auto i.bi::before { display: block; line-height: 1; }
     </style>
-    <div class="card border-0 shadow-sm rounded-4 mb-4 pcek">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 pcek" id="pengecekan">
         <div class="card-body p-4">
             {{-- Header: nama jasa yang dibeli, bukan judul umum. --}}
             <div class="d-flex align-items-center gap-3 pcek-head-row">
@@ -1699,7 +1701,7 @@ Detail Pesanan || lemon
             <h2 class="dsb-judul">Item Pesanan</h2>
             <div class="dsb-chip-deret">
                 <span class="dsb-chip"><i class="bi bi-box-seam"></i>{{ $hdJumlahItem }} produk</span>
-                <span class="dsb-chip is-samar">Kirim akun & kabari pelanggan dari kolom Aksi</span>
+                <span class="dsb-chip is-samar">{{ $hdSemuaJasa ? 'Hasil jasa dikirim lewat bagian Pengecekan di atas' : 'Kirim akun & kabari pelanggan dari kolom Aksi' }}</span>
             </div>
         </div>
     </div>
@@ -1815,6 +1817,18 @@ Detail Pesanan || lemon
                                 $tampilSatuan = $satuan ?: $hargaAsli;
                                 $labelSatuan = $satuan ? 'per '.$durTipe : ($durTipe ? 'per '.$durVal.' '.$durTipe : 'per item');
                                 $rp = fn ($n) => 'Rp '.number_format((int) $n, 0, ',', '.');
+
+                                // Item JASA (cek plagiasi/AI/parafrase) tidak mengirim akun:
+                                // status kirim, masa aktif, dan halaman proses akun tidak berlaku.
+                                $itemJasa = (bool) ($prod && $prod->butuh_file);
+                                if ($itemJasa) {
+                                    $jsKuota = $jKuota ?? $order->kuotaPengecekan();
+                                    $jsPakai = $jTerpakai ?? $order->pekerjaanTerserah();
+                                    $jsSisa = $jSisa ?? $order->sisaKuota();
+                                    $jsSelesai = $order->status === 'completed' || $item->delivery_status === 'delivered';
+                                    $jsLencana = $jsSelesai ? ['is-hijau', 'bi-check2-circle', 'Selesai']
+                                        : ($jsSisa ? ['is-biru', 'bi-hourglass-split', 'Berjalan'] : ['is-kuning', 'bi-hourglass-bottom', 'Kuota terpakai semua']);
+                                }
                                 $rumus = $pakaiPaket
                                     ? 'Harga paket '.$durVal.' '.$durTipe
                                     : ($satuan && $durVal !== 1 ? $rp($satuan).' × '.$durVal.' '.$durTipe : '');
@@ -1833,6 +1847,25 @@ Detail Pesanan || lemon
                                     <small class="pt-harga-ket"><s>{{ $rp($normal * $qty) }}</s> <span class="pt-hemat">hemat {{ $rp($hemat * $qty) }}</span></small>
                                 @endif
                             </td>
+                            @if ($itemJasa)
+                            <td class="text-center" data-judul="Status">
+                                <span class="dsb-lencana {{ $jsLencana[0] }}"><i class="bi {{ $jsLencana[1] }}"></i>{{ $jsLencana[2] }}</span>
+                                <small class="d-block text-muted mt-1">{{ $jsPakai }} dari {{ $jsKuota }} kuota terpakai</small>
+                            </td>
+                            <td class="text-center" data-judul="Masa Aktif">
+                                <span class="text-muted">—</span>
+                                <small class="d-block text-muted">jasa, tanpa masa aktif</small>
+                            </td>
+                            <td class="text-center text-nowrap pt-sel-aksi" data-judul="Aksi">
+                                <span class="pt-aksi-deret">
+                                    {{-- Jasa dikerjakan per dokumen di bagian Pengecekan, bukan di
+                                         halaman proses akun. --}}
+                                    <a href="#pengecekan" class="btn btn-sm btn-primary p-2" title="Buka bagian pengecekan dokumen">
+                                        <i class="bi bi-arrow-up-circle"></i>
+                                    </a>
+                                </span>
+                            </td>
+                            @else
                             <td class="text-center" data-judul="Status">
                                 {!! $item->getDeliveryStatusBadge() !!}
                                 @if ($item->processed_by && $item->processed_at)
@@ -1922,6 +1955,7 @@ Detail Pesanan || lemon
                                 @endif
                                 </span>
                             </td>
+                            @endif
                         </tr>
                         @empty
                         <tr>

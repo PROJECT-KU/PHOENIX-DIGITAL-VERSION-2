@@ -258,3 +258,21 @@ it('form unggah hasil tampil sebagai jendela terpisah, bukan di dalam kartu berk
 
     expect($t->call('tutupUploadHasil')->html())->not->toContain($jendela);
 });
+
+it('baris item jasa menampilkan kemajuan pengecekan, bukan status kirim akun', function () {
+    $order = orderBayar('qris_dinamis', 'paid');
+    $produk = \App\Models\Product::factory()->create(['nama_akun' => 'Cek Plagiasi Turnitin', 'butuh_file' => 1, 'harga_perbulan' => 5000]);
+    $item = \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Cek Plagiasi Turnitin',
+        'quantity' => 1, 'price' => 5000, 'subtotal' => 5000, 'duration_value' => 1, 'duration_type' => 'kali',
+    ]);
+
+    $html = Livewire::test(OrderDetail::class, ['order' => $order->fresh()])->html();
+
+    expect($html)->toContain('kuota terpakai')
+        ->and($html)->toContain('jasa, tanpa masa aktif')
+        ->and($html)->toContain('href="#pengecekan"')
+        ->and($html)->toContain('Hasil jasa dikirim lewat bagian Pengecekan di atas')
+        // Halaman proses akun tidak ditawarkan untuk item jasa.
+        ->and($html)->not->toContain(route('admin.pesanantoko.process', $item->id));
+});
