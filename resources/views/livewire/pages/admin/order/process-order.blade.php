@@ -406,6 +406,16 @@ Proses Pesanan || lemon
         }
         .pt-proses .form-select { padding-right: 32px !important; }
         .pt-proses textarea.form-control { min-height: 84px; }
+        .pp-templat { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 10px; }
+        .pp-templat-judul { font-size: .74rem; font-weight: 700; color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; }
+        .pp-templat-judul i { color: #f59e0b; }
+        .pp-templat-btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+            border: 1px solid #ddd6fe; background: #f5f3ff; color: #6d28d9; font-size: .78rem; font-weight: 700;
+            cursor: pointer; transition: background .15s ease, color .15s ease;
+        }
+        .pp-templat-btn:hover:not(:disabled) { background: #7c3aed; color: #fff; }
+        .pp-templat-btn.is-dipakai { border-color: #bbf7d0; background: #f0fdf4; color: #15803d; cursor: default; }
         .pt-proses form .btn-danger, .pt-proses .pp-tombol .btn-danger {
             background: #fff !important; color: #dc2626 !important; border: 1px solid #fecaca !important;
         }
@@ -603,6 +613,19 @@ Proses Pesanan || lemon
 
             <div class="mb-0">
                 <label class="form-label">Catatan untuk Pelanggan</label>
+                {{-- Templat sekali klik; teksnya ikut terkirim di pesan WhatsApp akun. --}}
+                <div class="pp-templat">
+                    <span class="pp-templat-judul"><i class="bi bi-lightning-charge-fill"></i> Templat:</span>
+                    @foreach ($this::TEMPLAT_CATATAN as $kunci => $tpl)
+                        @php $tplDipakai = str_contains((string) $accountNotes, $tpl['teks']); @endphp
+                        <button type="button" class="pp-templat-btn {{ $tplDipakai ? 'is-dipakai' : '' }}"
+                            wire:click="pakaiTemplatCatatan('{{ $kunci }}')" @disabled($tplDipakai)
+                            title="{{ $tpl['teks'] }}">
+                            <i class="bi {{ $tplDipakai ? 'bi-check2' : $tpl['ikon'] }}"></i>
+                            <span>{{ $tpl['label'] }}{{ $tplDipakai ? ' · sudah ditambahkan' : '' }}</span>
+                        </button>
+                    @endforeach
+                </div>
                 <textarea class="form-control @error('accountNotes') is-invalid @enderror" wire:model="accountNotes" rows="3"
                     placeholder="Catatan tambahan untuk pelanggan (opsional)"></textarea>
                 @error('accountNotes')

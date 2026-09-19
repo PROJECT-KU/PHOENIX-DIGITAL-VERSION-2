@@ -511,3 +511,19 @@ it('pesanan dibayar yang semua itemnya batal pindah ke tab Dibatalkan, keluar da
     // Status tersimpan tidak berubah → omzet tetap.
     expect($semua->fresh()->status)->toBe('completed')->and($dibayar->fresh()->status)->toBe('paid');
 });
+
+it('templat catatan pelanggan "maks. 2 perangkat" ditambahkan sekali klik, tidak dobel', function () {
+    $this->actingAs(tokoAdmin());
+    $item = tokoPesanan(['status' => 'paid'])->items->first();
+    $teks = \App\Livewire\Pages\Admin\Order\ProcessOrder::TEMPLAT_CATATAN['dua_perangkat']['teks'];
+
+    $t = Livewire::test(\App\Livewire\Pages\Admin\Order\ProcessOrder::class, ['id' => $item->id])
+        ->assertSee('Maks. 2 perangkat')
+        ->set('accountNotes', 'Login lewat Google')
+        ->call('pakaiTemplatCatatan', 'dua_perangkat')
+        ->call('pakaiTemplatCatatan', 'dua_perangkat');
+
+    expect($t->get('accountNotes'))->toBe("Login lewat Google\n\n".$teks)
+        ->and(substr_count($t->get('accountNotes'), $teks))->toBe(1);
+    $t->assertSee('sudah ditambahkan');
+});

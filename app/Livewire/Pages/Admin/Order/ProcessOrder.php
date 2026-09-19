@@ -31,6 +31,29 @@ class ProcessOrder extends Component
 
     public $accountNotes;
 
+    /**
+     * Templat "Catatan untuk Pelanggan" — sekali klik, ditambahkan ke catatan
+     * (ikut terkirim di pesan WhatsApp akun). Tambah templat baru di sini.
+     */
+    public const TEMPLAT_CATATAN = [
+        'dua_perangkat' => [
+            'label' => 'Maks. 2 perangkat',
+            'ikon' => 'bi-phone',
+            'teks' => 'Akun ini hanya boleh digunakan maksimal di 2 perangkat. Jika digunakan lebih dari 2 perangkat, akun dapat terblokir dan hal tersebut di luar tanggung jawab kami.',
+        ],
+    ];
+
+    /** Tambahkan templat ke catatan pelanggan (tidak dobel bila sudah ada). */
+    public function pakaiTemplatCatatan(string $kunci): void
+    {
+        $teks = self::TEMPLAT_CATATAN[$kunci]['teks'] ?? null;
+        if (! $teks || str_contains((string) $this->accountNotes, $teks)) {
+            return;
+        }
+
+        $this->accountNotes = trim(trim((string) $this->accountNotes)."\n\n".$teks);
+    }
+
     #[Validate('required|date')]
     public $startDate;
 
