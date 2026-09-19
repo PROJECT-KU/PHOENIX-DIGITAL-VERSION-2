@@ -271,6 +271,11 @@
         }
         .ul-hitung { display: block; margin-top: 6px; text-align: right; font-size: .74rem; color: #9aa2ae; }
         .ul-err { display: block; margin-top: 6px; font-size: .78rem; color: #e11d48; }
+        .ul-nohp-label { display: block; margin-top: 12px; }
+        .ul-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
+        .ul-bantu { display: block; margin-top: 5px; font-size: .76rem; line-height: 1.5; color: #9aa1ad; }
+        .ul-asli { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; padding: 2px 9px; border-radius: 999px; background: #ecfdf5; color: #15803d; font-size: .72rem; font-weight: 700; vertical-align: middle; }
+        .ul-asli i.bi, .ul-asli i.bi::before { display: block; line-height: 1; }
         .ul-kaki {
             display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
             padding-top: 18px; border-top: 1px solid #f2f4f7;
@@ -481,6 +486,14 @@
                             <label for="ul-nama">Nama</label>
                             <input id="ul-nama" type="text" class="form-control" wire:model="nama" placeholder="Nama kamu" maxlength="60" autocomplete="name">
                             @error('nama') <span class="ul-err">{{ $message }}</span> @enderror
+
+                            {{-- Nomor OPSIONAL: hanya untuk mencocokkan pembeli
+                                 sungguhan, tidak pernah ditampilkan ke publik. --}}
+                            <label for="ul-nohp" class="ul-nohp-label">Nomor WhatsApp <span class="ul-opsional">(boleh dilewati)</span></label>
+                            <input id="ul-nohp" type="tel" inputmode="numeric" class="form-control" wire:model="no_hp"
+                                placeholder="08xxxxxxxxxx" maxlength="20" autocomplete="tel">
+                            <span class="ul-bantu">Kalau nomornya sama dengan pesananmu yang sudah selesai, ulasanmu mendapat label <b>Pembeli Asli</b>. Nomornya tidak ditampilkan.</span>
+                            @error('no_hp') <span class="ul-err">{{ $message }}</span> @enderror
                         </div>
                         <div class="ul-field">
                             <span class="ul-label" id="ul-rating-lbl">Rating</span>
@@ -559,7 +572,7 @@
                     <div class="ul-kepala">
                         <span class="ul-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr(trim($r->nama), 0, 1)) }}</span>
                         <div class="ul-siapa">
-                            <span class="ul-nama">{{ $r->nama }}</span>
+                            <span class="ul-nama">{{ $r->nama }}</span>@if ($r->pembeliAsli())<span class="ul-asli" title="Nomornya cocok dengan pesanan yang sudah selesai untuk produk ini"><i class="bi bi-patch-check-fill"></i>Pembeli Asli</span>@endif
                             <span class="ul-meta">
                                 <span class="ul-bintang" aria-label="{{ $r->rating }} dari 5 bintang">
                                     @for ($i = 1; $i <= 5; $i++)

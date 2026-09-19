@@ -44,6 +44,20 @@ class ReviewModeration extends Component
     /** Ulasan yang sedang dibuka di jendela detail. */
     public ?string $lihatId = null;
 
+    /** kartu | daftar — daftar memadatkan banyak ulasan dalam satu layar. */
+    #[Url(as: 'tampilan', except: 'kartu')]
+    public string $tampilan = 'kartu';
+
+    /** Menampilkan arsip (yang sudah dihapus) alih-alih data aktif. */
+    #[Url(as: 'arsip', except: false)]
+    public bool $arsip = false;
+
+    /** Jendela ringkasan per produk. */
+    public bool $lihatRingkasan = false;
+
+    /** Keputusan terakhir yang masih bisa diurungkan. */
+    public ?array $urungkan = null;
+
     /** Id ulasan yang dicentang untuk aksi massal. */
     public array $pilih = [];
 
@@ -59,7 +73,7 @@ class ReviewModeration extends Component
 
     public function updated($nama): void
     {
-        if (in_array($nama, ['fRating', 'fJenis', 'fDari', 'fSampai', 'urut', 'perHalaman'], true)) {
+        if (in_array($nama, ['fRating', 'fJenis', 'fDari', 'fSampai', 'urut', 'perHalaman', 'arsip'], true)) {
             $this->pilih = [];
             $this->resetPage();
         }
@@ -67,11 +81,47 @@ class ReviewModeration extends Component
         if ($nama === 'urut' && ! in_array($this->urut, self::URUT, true)) {
             $this->urut = 'baru';
         }
+
+        if ($nama === 'tampilan' && ! in_array($this->tampilan, ['kartu', 'daftar'], true)) {
+            $this->tampilan = 'kartu';
+        }
+    }
+
+    /** Izin memoderasi; memberi pesan yang jelas bila tidak punya. */
+    protected function bolehModerasi(): bool
+    {
+        if (auth()->user()?->hasPermission('edit_productreview')) {
+            return true;
+        }
+
+        $this->dispatch('swal-error', message: 'Anda tidak memiliki izin memoderasi ulasan.');
+
+        return false;
+    }
+
+    protected function bolehHapus(): bool
+    {
+        if (auth()->user()?->hasPermission('delete_productreview')) {
+            return true;
+        }
+
+        $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus ulasan.');
+
+        return false;
+    }
+
+    /** Catatan siapa & kapan meninjau. */
+    protected function jejakTinjau(array $tambahan = []): array
+    {
+        return array_merge(['ditinjau_at' => now(), 'ditinjau_oleh' => auth()->id()], $tambahan);
     }
 
     public function setFilter(string $f): void
     {
         $this->filter = in_array($f, self::STATUS, true) ? $f : 'pending';
+        // Memilih tab status selalu keluar dari arsip — kalau tidak, tabnya
+        // tampak berpindah tapi isinya tetap data terhapus.
+        $this->arsip = false;
         $this->pilih = [];
         $this->resetPage();
     }
@@ -157,7 +207,19 @@ class ReviewModeration extends Component
 
     public function approve($id): void
     {
-        ProductReview::whereKey($id)->update(['status' => 'approved']);
+        if (! $this->bolehModerasi()) {
+            return;
+        }
+
+        $u = ProductReview::find($id);
+        if (! $u) {
+            return;
+        }
+
+        $sebelum = $u->status;
+        $u->update($this->jejakTinjau(['status' => 'approved']));
+        $this->urungkan = ['id' => (string) $u->id, 'status' => $sebelum, 'nama' => $u->nama, 'aksi' => 'disetujui'];
+
         $this->dispatch('swal-success', message: 'Ulasan disetujui & kini tampil di halamannya.');
         // Sidebar komponen terpisah — beritahu agar badge langsung berkurang
         // tanpa perlu refresh halaman.
@@ -166,21 +228,92 @@ class ReviewModeration extends Component
 
     public function reject($id): void
     {
-        ProductReview::whereKey($id)->update(['status' => 'hidden']);
+        if (! $this->bolehModerasi()) {
+            return;
+        }
+
+        $u = ProductReview::find($id);
+        if (! $u) {
+            return;
+        }
+
+        $sebelum = $u->status;
+        $u->update($this->jejakTinjau(['status' => 'hidden']));
+        $this->urungkan = ['id' => (string) $u->id, 'status' => $sebelum, 'nama' => $u->nama, 'aksi' => 'disembunyikan'];
+
         $this->dispatch('swal-success', message: 'Ulasan disembunyikan.');
         $this->dispatch('sidebar-badge-updated');
     }
 
+    /** Kembalikan status ulasan ke sebelum keputusan terakhir. */
+    public function urungkanTerakhir(): void
+    {
+        if (! $this->bolehModerasi() || ! $this->urungkan) {
+            return;
+        }
+
+        $u = ProductReview::find($this->urungkan['id']);
+        if (! $u) {
+            $this->urungkan = null;
+
+            return;
+        }
+
+        $semula = $this->urungkan['status'];
+        $u->update([
+            'status' => $semula,
+            // Kembali menunggu berarti belum pernah ditinjau lagi.
+            'ditinjau_at' => $semula === 'pending' ? null : now(),
+            'ditinjau_oleh' => $semula === 'pending' ? null : auth()->id(),
+        ]);
+
+        $this->urungkan = null;
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Keputusan diurungkan.');
+    }
+
+    public function tutupUrungkan(): void
+    {
+        $this->urungkan = null;
+    }
+
+    /** Hapus = ARSIPKAN. Ulasan pembeli tidak hilang karena satu salah klik. */
     public function remove($id): void
     {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
         ProductReview::whereKey($id)->delete();
 
         if ($this->lihatId === (string) $id) {
             $this->lihatId = null;
         }
 
-        $this->dispatch('swal-success', message: 'Ulasan dihapus permanen.');
+        $this->dispatch('swal-success', message: 'Ulasan dipindahkan ke Arsip.');
         $this->dispatch('sidebar-badge-updated');
+    }
+
+    public function pulihkan(string $id): void
+    {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
+        ProductReview::onlyTrashed()->whereKey($id)->restore();
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Ulasan dikembalikan dari arsip.');
+    }
+
+    public function buangPermanen(string $id): void
+    {
+        if (! $this->bolehHapus()) {
+            return;
+        }
+
+        ProductReview::onlyTrashed()->whereKey($id)->forceDelete();
+        $this->lihatId = null;
+        $this->dispatch('swal-success', message: 'Ulasan dibuang permanen.');
     }
 
     // ===== Aksi massal =====
@@ -210,19 +343,20 @@ class ReviewModeration extends Component
 
     protected function massal(string $status, string $kata): void
     {
-        if ($this->pilih === []) {
+        if (! $this->bolehModerasi() || $this->pilih === []) {
             return;
         }
 
-        $jumlah = ProductReview::whereKey($this->pilih)->update(['status' => $status]);
+        $jumlah = ProductReview::whereKey($this->pilih)->update($this->jejakTinjau(['status' => $status]));
         $this->pilih = [];
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: $jumlah.' ulasan '.$kata.'.');
     }
 
+    /** Arsipkan yang dicentang (masih bisa dipulihkan). */
     public function hapusTerpilih(): void
     {
-        if ($this->pilih === []) {
+        if (! $this->bolehHapus() || $this->pilih === []) {
             return;
         }
 
@@ -230,7 +364,31 @@ class ReviewModeration extends Component
         $this->pilih = [];
         $this->lihatId = null;
         $this->dispatch('sidebar-badge-updated');
-        $this->dispatch('swal-success', message: $jumlah.' ulasan dihapus permanen.');
+        $this->dispatch('swal-success', message: $jumlah.' ulasan dipindahkan ke Arsip.');
+    }
+
+    public function pulihkanTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = ProductReview::onlyTrashed()->whereKey($this->pilih)->restore();
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' ulasan dikembalikan dari arsip.');
+    }
+
+    public function buangTerpilih(): void
+    {
+        if (! $this->bolehHapus() || $this->pilih === []) {
+            return;
+        }
+
+        $jumlah = ProductReview::onlyTrashed()->whereKey($this->pilih)->forceDelete();
+        $this->pilih = [];
+        $this->lihatId = null;
+        $this->dispatch('swal-success', message: $jumlah.' ulasan dibuang permanen.');
     }
 
     // ===== Unduhan =====
@@ -263,7 +421,7 @@ class ReviewModeration extends Component
     protected function dataEkspor()
     {
         $kueri = $this->pilih
-            ? ProductReview::whereKey($this->pilih)
+            ? ProductReview::withTrashed()->whereKey($this->pilih)
             : $this->kueri();
 
         return $kueri->with(['product', 'paket'])->get();
@@ -280,7 +438,10 @@ class ReviewModeration extends Component
         };
 
         return ProductReview::query()
-            ->when($this->filter !== 'all', fn ($q) => $q->where('status', $this->filter))
+            ->when($this->arsip, fn ($q) => $q->onlyTrashed())
+            // Di arsip, tab status TIDAK ikut menyaring: isinya campur semua
+            // status, jadi menyaring lagi membuat arsip tampak kosong.
+            ->when(! $this->arsip && $this->filter !== 'all', fn ($q) => $q->where('status', $this->filter))
             ->when($this->fRating !== '', fn ($q) => $q->where('rating', (int) $this->fRating))
             ->when($this->fJenis !== '', fn ($q) => $q->where('jenis', $this->fJenis))
             ->when($this->fDari !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fDari))
@@ -297,6 +458,35 @@ class ReviewModeration extends Component
             ->orderBy($urutan[0], $urutan[1]);
     }
 
+    /**
+     * Rekap per produk/paket dari ulasan yang DISETUJUI: jumlah & rata-rata,
+     * diurutkan dari bintang terendah supaya yang bermasalah muncul lebih dulu.
+     */
+    protected function ringkasanPerProduk()
+    {
+        return ProductReview::approved()
+            ->selectRaw('jenis, product_id, count(*) as jumlah, avg(rating) as rata')
+            ->groupBy('jenis', 'product_id')
+            ->orderBy('rata')
+            ->orderByDesc('jumlah')
+            ->limit(12)
+            ->get()
+            ->map(function ($baris) {
+                // namaTarget() butuh relasi; instans ringan ini hanya membawa
+                // jenis & product_id, jadi relasinya dimuat seperlunya.
+                $contoh = ProductReview::with(['product', 'paket'])
+                    ->where('jenis', $baris->jenis)->where('product_id', $baris->product_id)->first();
+
+                return [
+                    'nama' => $contoh?->namaTarget() ?? '—',
+                    'jenis' => $baris->jenis,
+                    'jumlah' => (int) $baris->jumlah,
+                    'rata' => round((float) $baris->rata, 1),
+                    'tautan' => $contoh?->tautanPublik(),
+                ];
+            });
+    }
+
     public function render()
     {
         // Ulasan bisa untuk produk atau paket; keduanya dimuat sekaligus.
@@ -311,6 +501,7 @@ class ReviewModeration extends Component
             'pending' => (int) ($perStatus['pending'] ?? 0),
             'approved' => (int) ($perStatus['approved'] ?? 0),
             'hidden' => (int) ($perStatus['hidden'] ?? 0),
+            'arsip' => ProductReview::onlyTrashed()->count(),
         ];
 
         // Sebaran bintang dari ulasan yang TAMPIL di halaman produk.
@@ -330,7 +521,12 @@ class ReviewModeration extends Component
                 'jumlah' => (int) ($sebaran[$b] ?? 0),
                 'persen' => round(((int) ($sebaran[$b] ?? 0)) / $totalSebaran * 100),
             ]]),
-            'detail' => $this->lihatId ? ProductReview::with(['product', 'paket'])->find($this->lihatId) : null,
+            'detail' => $this->lihatId
+                ? ProductReview::withTrashed()->with(['product', 'paket', 'peninjau', 'customer'])->find($this->lihatId)
+                : null,
+            // Produk mana yang paling banyak diulas & paling rendah bintangnya —
+            // sinyal yang perlu ditindaklanjuti, bukan sekadar daftar ulasan.
+            'ringkasanProduk' => $this->lihatRingkasan ? $this->ringkasanPerProduk() : collect(),
         ])->layout('livewire.layout.templateindex');
     }
 }

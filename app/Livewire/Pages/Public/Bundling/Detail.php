@@ -151,7 +151,9 @@ class Detail extends Component
                 'availability' => 'https://schema.org/InStock',
                 'url' => url()->current(),
             ],
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            // Bintang ulasan ikut ke hasil pencarian; kosong bila belum ada
+            // ulasan yang disetujui (Google menolak rating tanpa ulasan).
+        ] + \App\Support\RingkasanUlasan::jsonLd('paket', $p->id), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 
     #[Layout('layouts.guest')]

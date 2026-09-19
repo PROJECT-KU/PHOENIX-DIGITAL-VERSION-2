@@ -207,6 +207,48 @@
 
     .sorot-kata { background: #fef08a; color: inherit; padding: 0 2px; border-radius: 3px; }
 
+    .ul-tanda.is-asli { background: #ecfdf5; color: #15803d; }
+
+    /* ===== Saklar tampilan kartu/daftar ===== */
+    .ul-tampilan { display: inline-flex; padding: 3px; border-radius: 11px; background: #f1f5f9; }
+    .ul-tampilan button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 30px; border: 0; border-radius: 9px; background: none; color: #64748b; cursor: pointer; }
+    .ul-tampilan button.is-aktif { background: #fff; color: #6d28d9; box-shadow: 0 4px 10px -8px rgba(15, 23, 42, .8); }
+
+    /* ===== Tampilan daftar (padat) ===== */
+    .ul-rak.is-daftar { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .ul-rak.is-daftar .ul-kartu { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 12px 8px 16px; }
+    .ul-rak.is-daftar .ul-kepala { flex: 1 1 240px; padding: 0; align-items: center; }
+    .ul-rak.is-daftar .ul-gambar { flex-basis: 34px; width: 34px; height: 34px; font-size: .9rem; }
+    .ul-rak.is-daftar .ul-produk { -webkit-line-clamp: 1; }
+    .ul-rak.is-daftar .ul-bintang { font-size: .72rem; }
+    .ul-rak.is-daftar .ul-isi { flex: 2 1 260px; padding: 0; }
+    .ul-rak.is-daftar .ul-teks { padding: 0; background: none; font-size: .82rem; min-height: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ul-rak.is-daftar .ul-baca { display: none; }
+    .ul-rak.is-daftar .ul-penanda { margin: 0 0 4px; }
+    .ul-rak.is-daftar .ul-waktu { margin-top: 2px; }
+    .ul-rak.is-daftar .ul-aksi { flex: 0 0 auto; margin-top: 0; padding: 0; border-top: 0; }
+    .ul-rak.is-daftar .ul-aksi-lain { flex: 0 0 auto; }
+    .ul-rak.is-daftar .ul-aksi-lain .ul-btn-ikon { flex: 0 0 36px; }
+    @media (max-width: 767.98px) { .ul-rak.is-daftar .ul-kartu { flex-direction: column; align-items: stretch; padding: 14px 14px 12px 18px; } }
+
+    /* ===== Bilah urungkan ===== */
+    .ul-urungkan { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); font-size: .85rem; color: #475569; }
+    .ul-urungkan b { color: #1c1f26; }
+    .ul-urungkan .ul-btn { margin-left: auto; }
+    .ul-urungkan-tutup { width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: #94a3b8; cursor: pointer; }
+    .ul-urungkan-tutup:hover { background: #eef2f7; color: #475569; }
+
+    /* ===== Rekap per produk ===== */
+    .ul-rekap { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+    .ul-rekap li { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 10px 12px; border-radius: 13px; background: #f8fafc; border: 1px solid #eef2f7; }
+    .ul-rekap-ikon { flex: 0 0 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; background: #ede9fe; color: #6d28d9; font-size: .9rem; }
+    .ul-rekap-teks { flex: 1 1 auto; min-width: 0; }
+    .ul-rekap-teks b { display: block; font-size: .86rem; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ul-rekap-teks small { display: block; font-size: .74rem; color: #94a3b8; }
+    .ul-rekap-nilai { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 99px; background: #fff7ed; color: #b45309; font-size: .82rem; font-weight: 800; }
+    .ul-rekap-nilai i { font-size: .72rem; }
+    .ul-rekap-nilai.is-rendah { background: #fef2f2; color: #b91c1c; }
+
     /* ===== Fokus papan tik ===== */
     .ul-btn:focus-visible, .ul-status-btn:focus-visible, .ul-chip-lepas:focus-visible,
     .ul-gambar:focus-visible, .ul-centang input:focus-visible, .ul-halaman .page-link:focus-visible {

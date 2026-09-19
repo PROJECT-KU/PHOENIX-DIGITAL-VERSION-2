@@ -11,7 +11,7 @@ use Livewire\Livewire;
  * Layar Moderasi Ulasan Produk: kartu status (sekaligus tab), saringan,
  * jendela detail, aksi massal, dan unduhan.
  */
-function adminUlasan(array $izin = ['view_productreview']): \App\Models\User
+function adminUlasan(array $izin = ['view_productreview', 'edit_productreview', 'delete_productreview']): \App\Models\User
 {
     $peran = \App\Models\Role::create(['name' => 'uji-ul-'.Str::random(5), 'description' => 'uji']);
     foreach ($izin as $nama) {
@@ -249,4 +249,219 @@ it('nama target dan lencana status sesuai jenisnya', function () {
         ->and(ulasan(['status' => 'approved'])->tampilanStatus()[0])->toBe('Disetujui')
         ->and(ulasan(['status' => 'hidden'])->tampilanStatus()[0])->toBe('Disembunyikan')
         ->and(ulasan()->tampilanStatus()[0])->toBe('Menunggu');
+});
+
+// ===================== Izin terpisah =====================
+
+it('izin lihat saja tidak boleh memoderasi maupun menghapus', function () {
+    $u = ulasan();
+    $this->actingAs(adminUlasan(['view_productreview']));
+
+    $t = Livewire::test(ReviewModeration::class);
+    $t->call('approve', $u->id);
+    $t->call('reject', $u->id);
+    $t->call('remove', $u->id);
+
+    expect($u->fresh()->status)->toBe('pending')
+        ->and($u->fresh()->trashed())->toBeFalse();
+
+    // Aksi massal juga tertutup.
+    $t->set('pilih', [(string) $u->id])->call('setujuiTerpilih');
+    expect($u->fresh()->status)->toBe('pending');
+});
+
+it('izin moderasi tanpa izin hapus boleh setujui tapi tidak boleh mengarsipkan', function () {
+    $u = ulasan();
+    $this->actingAs(adminUlasan(['view_productreview', 'edit_productreview']));
+
+    Livewire::test(ReviewModeration::class)->call('approve', $u->id);
+    expect($u->fresh()->status)->toBe('approved');
+
+    Livewire::test(ReviewModeration::class)->call('remove', $u->id);
+    expect($u->fresh()->trashed())->toBeFalse();
+});
+
+// ===================== Arsip & urungkan =====================
+
+it('hapus mengarsipkan dulu, bisa dipulihkan, lalu dibuang permanen', function () {
+    $this->actingAs(adminUlasan());
+    $u = ulasan(['nama' => 'Mau Diarsip']);
+
+    Livewire::test(ReviewModeration::class)->call('remove', $u->id);
+    expect(ProductReview::find($u->id))->toBeNull()
+        ->and(ProductReview::onlyTrashed()->whereKey($u->id)->exists())->toBeTrue();
+
+    // Arsip mengabaikan tab status — kalau tidak, isinya tampak kosong.
+    Livewire::test(ReviewModeration::class)->set('arsip', true)->assertSee('Mau Diarsip');
+
+    Livewire::test(ReviewModeration::class)->call('pulihkan', $u->id);
+    expect(ProductReview::find($u->id))->not->toBeNull();
+
+    Livewire::test(ReviewModeration::class)->call('remove', $u->id);
+    Livewire::test(ReviewModeration::class)->call('buangPermanen', $u->id);
+    expect(ProductReview::withTrashed()->whereKey($u->id)->exists())->toBeFalse();
+});
+
+it('memilih tab status selalu keluar dari arsip', function () {
+    $this->actingAs(adminUlasan());
+
+    Livewire::test(ReviewModeration::class)
+        ->set('arsip', true)
+        ->call('setFilter', 'approved')
+        ->assertSet('arsip', false);
+});
+
+it('keputusan setujui & sembunyikan bisa diurungkan', function () {
+    $this->actingAs(adminUlasan());
+    $u = ulasan();
+
+    $t = Livewire::test(ReviewModeration::class)->call('approve', $u->id);
+    expect($u->fresh()->status)->toBe('approved')
+        ->and($t->get('urungkan')['status'])->toBe('pending');
+
+    $t->call('urungkanTerakhir')->assertSet('urungkan', null);
+    expect($u->fresh()->status)->toBe('pending')
+        // Kembali menunggu berarti belum pernah ditinjau.
+        ->and($u->fresh()->ditinjau_at)->toBeNull();
+
+    Livewire::test(ReviewModeration::class)->call('reject', $u->id)->call('urungkanTerakhir');
+    expect($u->fresh()->status)->toBe('pending');
+});
+
+it('setiap keputusan mencatat siapa yang meninjau dan kapan', function () {
+    $admin = adminUlasan();
+    $this->actingAs($admin);
+    $u = ulasan();
+
+    Livewire::test(ReviewModeration::class)->call('approve', $u->id);
+
+    expect($u->fresh()->ditinjau_oleh)->toEqual($admin->id)
+        ->and($u->fresh()->ditinjau_at)->not->toBeNull();
+});
+
+it('arsip & pulihkan massal bekerja', function () {
+    $this->actingAs(adminUlasan());
+    $a = ulasan();
+    $b = ulasan();
+
+    Livewire::test(ReviewModeration::class)->set('pilih', [(string) $a->id, (string) $b->id])->call('hapusTerpilih');
+    expect(ProductReview::onlyTrashed()->count())->toBe(2);
+
+    Livewire::test(ReviewModeration::class)->set('pilih', [(string) $a->id])->call('pulihkanTerpilih');
+    expect(ProductReview::find($a->id))->not->toBeNull();
+
+    Livewire::test(ReviewModeration::class)->set('pilih', [(string) $b->id])->call('buangTerpilih');
+    expect(ProductReview::withTrashed()->whereKey($b->id)->exists())->toBeFalse();
+});
+
+// ===================== Pembeli asli =====================
+
+it('ulasan ditautkan ke pelanggan hanya bila nomornya benar-benar membeli produk itu', function () {
+    $produk = produkUji('Canva Pro');
+    $lain = produkUji('Scopus Access');
+
+    $pelanggan = \App\Models\Customer::create(['nama' => 'Pembeli Setia', 'no_hp' => '081298765432']);
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-UL-1', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => $pelanggan->id,
+    ]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Canva Pro',
+        'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1,
+    ]);
+
+    expect(ProductReview::cariPembeli('081298765432', 'produk', $produk->id)?->id)->toBe($pelanggan->id)
+        // Produk lain: nomornya benar, tapi tidak pernah membelinya.
+        ->and(ProductReview::cariPembeli('081298765432', 'produk', $lain->id))->toBeNull()
+        // Tanpa nomor, tidak ada yang ditautkan.
+        ->and(ProductReview::cariPembeli('', 'produk', $produk->id))->toBeNull();
+});
+
+it('kiriman ulasan menyimpan nomor & tautan pembeli, dan tanpa nomor tetap diterima', function () {
+    $produk = produkUji('Canva Pro');
+    $pelanggan = \App\Models\Customer::create(['nama' => 'Pembeli Setia', 'no_hp' => '081277001100']);
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-UL-2', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => $pelanggan->id,
+    ]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => 'Canva Pro',
+        'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1,
+    ]);
+
+    Livewire::test(\App\Livewire\Components\ProductReviews::class, ['productId' => $produk->id])
+        ->set('nama', 'Pembeli Setia')
+        ->set('no_hp', '081277001100')
+        ->set('ulasan', 'Akunnya aktif cepat sekali, terima kasih.')
+        ->call('submit')
+        ->assertSet('submitted', true);
+
+    $ulasan = ProductReview::where('nama', 'Pembeli Setia')->first();
+    expect($ulasan->customer_id)->toBe($pelanggan->id)
+        ->and($ulasan->pembeliAsli())->toBeTrue()
+        ->and($ulasan->status)->toBe('pending');
+
+    // Tanpa nomor: tetap diterima, hanya tanpa label.
+    Livewire::test(\App\Livewire\Components\ProductReviews::class, ['productId' => $produk->id])
+        ->set('nama', 'Tanpa Nomor')
+        ->set('ulasan', 'Bagus dan cepat sekali pelayanannya.')
+        ->call('submit')
+        ->assertSet('submitted', true);
+
+    expect(ProductReview::where('nama', 'Tanpa Nomor')->first()->pembeliAsli())->toBeFalse();
+});
+
+it('nomor pengulas tidak ikut saat ulasan diserialisasi', function () {
+    $u = ulasan(['no_hp' => '081200001111']);
+
+    expect($u->toArray())->not->toHaveKey('no_hp');
+});
+
+// ===================== Data terstruktur produk =====================
+
+it('bintang produk ikut ke data terstruktur hanya bila ada ulasan disetujui', function () {
+    $produk = produkUji('Canva Pro');
+
+    expect(\App\Support\RingkasanUlasan::jsonLd('produk', $produk->id))->toBe([]);
+
+    ulasan(['product_id' => $produk->id, 'status' => 'approved', 'rating' => 5]);
+    ulasan(['product_id' => $produk->id, 'status' => 'approved', 'rating' => 4]);
+    // Yang menunggu tidak ikut dihitung.
+    ulasan(['product_id' => $produk->id, 'status' => 'pending', 'rating' => 1]);
+
+    $jsonLd = \App\Support\RingkasanUlasan::jsonLd('produk', $produk->id);
+    expect($jsonLd['aggregateRating']['ratingValue'])->toBe(4.5)
+        ->and($jsonLd['aggregateRating']['reviewCount'])->toBe(2);
+});
+
+it('halaman produk membawa aggregateRating di JSON-LD', function () {
+    $produk = produkUji('Canva Pro');
+    ulasan(['product_id' => $produk->id, 'status' => 'approved', 'rating' => 5]);
+
+    $this->get(route('shop.detail-product', $produk->id))->assertOk();
+
+    $jsonLd = json_decode(view()->shared('seoJsonLd'), true);
+    expect($jsonLd['@type'])->toBe('Product')
+        ->and($jsonLd['aggregateRating']['reviewCount'])->toBe(1);
+});
+
+// ===================== Ringkasan per produk =====================
+
+it('ringkasan per produk menaikkan bintang terendah lebih dulu', function () {
+    $this->actingAs(adminUlasan());
+    $bagus = produkUji('Produk Bagus');
+    $buruk = produkUji('Produk Buruk');
+
+    ulasan(['product_id' => $bagus->id, 'status' => 'approved', 'rating' => 5]);
+    ulasan(['product_id' => $buruk->id, 'status' => 'approved', 'rating' => 2]);
+    // Yang menunggu tidak masuk rekap.
+    ulasan(['product_id' => $bagus->id, 'status' => 'pending', 'rating' => 1]);
+
+    $rekap = Livewire::test(ReviewModeration::class)->set('lihatRingkasan', true)->viewData('ringkasanProduk');
+
+    expect($rekap->first()['nama'])->toBe('Produk Buruk')
+        ->and($rekap->first()['rata'])->toBe(2.0)
+        ->and($rekap->firstWhere('nama', 'Produk Bagus')['jumlah'])->toBe(1);
 });

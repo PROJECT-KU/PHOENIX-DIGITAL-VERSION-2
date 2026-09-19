@@ -7,6 +7,8 @@ Moderasi Ulasan Produk || lemon
     @include('livewire.pages.admin.product-review.partials.ulasan-gaya')
 
     @php
+        $bolehUbah = (bool) auth()->user()?->hasPermission('edit_productreview');
+        $bolehHapus = (bool) auth()->user()?->hasPermission('delete_productreview');
         $kartuStatus = [
             'pending' => ['Menunggu', 'bi-hourglass-split', '#d97706'],
             'approved' => ['Disetujui', 'bi-check-circle-fill', '#16a34a'],
@@ -35,6 +37,9 @@ Moderasi Ulasan Produk || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
+                <button type="button" class="dsb-tombol" wire:click="$set('lihatRingkasan', true)">
+                    <i class="bi bi-bar-chart-line"></i><span>Per Produk</span>
+                </button>
                 <button type="button" class="dsb-tombol" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
                     <span wire:loading.remove wire:target="unduhExcel" class="ul-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
                     <span wire:loading.inline-flex wire:target="unduhExcel" class="ul-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
@@ -55,6 +60,13 @@ Moderasi Ulasan Produk || lemon
                     <span class="ul-status-teks"><b>{{ $tabCounts[$nilai] }}</b><span>{{ $label }}</span></span>
                 </button>
             @endforeach
+            @if ($tabCounts['arsip'] || $arsip)
+                <button type="button" class="ul-status-btn {{ $arsip ? 'is-aktif' : '' }}" style="--c: #64748b"
+                    wire:click="$set('arsip', {{ $arsip ? 'false' : 'true' }})" aria-pressed="{{ $arsip ? 'true' : 'false' }}">
+                    <span class="ul-status-ikon"><i class="bi bi-archive-fill"></i></span>
+                    <span class="ul-status-teks"><b>{{ $tabCounts['arsip'] }}</b><span>Arsip</span></span>
+                </button>
+            @endif
         </nav>
 
         {{-- ================== SEBARAN BINTANG ================== --}}
@@ -115,6 +127,12 @@ Moderasi Ulasan Produk || lemon
                     @if ($this->adaSaring)<span class="ul-saring-titik"></span>@endif
                 </button>
 
+                {{-- Tampilan padat: meninjau puluhan ulasan lebih cepat lewat daftar. --}}
+                <span class="ul-tampilan" role="group" aria-label="Tampilan daftar">
+                    <button type="button" class="{{ $tampilan === 'kartu' ? 'is-aktif' : '' }}" wire:click="$set('tampilan', 'kartu')" title="Tampilan kartu" aria-label="Tampilan kartu"><i class="bi bi-grid"></i></button>
+                    <button type="button" class="{{ $tampilan === 'daftar' ? 'is-aktif' : '' }}" wire:click="$set('tampilan', 'daftar')" title="Tampilan daftar" aria-label="Tampilan daftar"><i class="bi bi-list-ul"></i></button>
+                </span>
+
                 <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $sasaranMuat }}">
                     <span class="dsb-putar is-kecil"></span>Memuat…
                 </span>
@@ -171,20 +189,47 @@ Moderasi Ulasan Produk || lemon
             <div class="ul-massal" role="region" aria-label="Aksi massal">
                 <span class="ul-massal-jumlah"><b>{{ count($pilih) }}</b> dipilih</span>
                 <div class="ul-massal-tombol">
-                    <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="setujuiTerpilih" data-icon="question"
-                        data-title="Setujui {{ count($pilih) }} ulasan?" data-text="Semuanya akan tampil di halaman produk masing-masing." data-confirm="Ya, setujui">
-                        <i class="bi bi-check-lg"></i><span>Setujui</span>
-                    </button>
-                    <button type="button" class="ul-btn is-sembunyi ul-konfirmasi" data-action="sembunyikanTerpilih" data-icon="warning"
-                        data-title="Sembunyikan {{ count($pilih) }} ulasan?" data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus." data-confirm="Ya, sembunyikan">
-                        <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
-                    </button>
-                    <button type="button" class="ul-btn is-bahaya ul-konfirmasi" data-action="hapusTerpilih" data-icon="warning"
-                        data-title="Hapus {{ count($pilih) }} ulasan permanen?" data-text="Ulasan yang dihapus tidak bisa dikembalikan." data-confirm="Ya, hapus">
-                        <i class="bi bi-trash3"></i><span>Hapus</span>
-                    </button>
+                    @if ($arsip)
+                        @if ($bolehHapus)
+                            <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="pulihkanTerpilih" data-icon="question"
+                                data-title="Pulihkan {{ count($pilih) }} ulasan?" data-text="Semuanya kembali dengan status terakhirnya." data-confirm="Ya, pulihkan">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Pulihkan</span>
+                            </button>
+                            <button type="button" class="ul-btn is-bahaya ul-konfirmasi" data-action="buangTerpilih" data-icon="warning"
+                                data-title="Buang {{ count($pilih) }} ulasan permanen?" data-text="Tidak bisa dikembalikan lagi." data-confirm="Ya, buang">
+                                <i class="bi bi-trash3"></i><span>Buang</span>
+                            </button>
+                        @endif
+                    @else
+                        @if ($bolehUbah)
+                            <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="setujuiTerpilih" data-icon="question"
+                                data-title="Setujui {{ count($pilih) }} ulasan?" data-text="Semuanya akan tampil di halaman produk masing-masing." data-confirm="Ya, setujui">
+                                <i class="bi bi-check-lg"></i><span>Setujui</span>
+                            </button>
+                            <button type="button" class="ul-btn is-sembunyi ul-konfirmasi" data-action="sembunyikanTerpilih" data-icon="warning"
+                                data-title="Sembunyikan {{ count($pilih) }} ulasan?" data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus." data-confirm="Ya, sembunyikan">
+                                <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
+                            </button>
+                        @endif
+                        @if ($bolehHapus)
+                            <button type="button" class="ul-btn is-bahaya ul-konfirmasi" data-action="hapusTerpilih" data-icon="warning"
+                                data-title="Arsipkan {{ count($pilih) }} ulasan?" data-text="Dipindahkan ke Arsip dan masih bisa dipulihkan." data-confirm="Ya, arsipkan">
+                                <i class="bi bi-archive"></i><span>Arsipkan</span>
+                            </button>
+                        @endif
+                    @endif
                     <button type="button" class="ul-btn" wire:click="lepasPilih"><i class="bi bi-x"></i><span>Lepas</span></button>
                 </div>
+            </div>
+        @endif
+
+        @if ($urungkan && $bolehUbah)
+            <div class="ul-urungkan" role="status">
+                <span>Ulasan <b>{{ $urungkan['nama'] }}</b> {{ $urungkan['aksi'] }}.</span>
+                <button type="button" class="ul-btn" wire:click="urungkanTerakhir">
+                    <i class="bi bi-arrow-counterclockwise"></i><span>Urungkan</span>
+                </button>
+                <button type="button" class="ul-urungkan-tutup" wire:click="tutupUrungkan" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
             </div>
         @endif
 
@@ -223,7 +268,7 @@ Moderasi Ulasan Produk || lemon
                     </label>
                 </div>
 
-                <div class="ul-rak">
+                <div class="ul-rak {{ $tampilan === 'daftar' ? 'is-daftar' : '' }}">
                     @foreach ($reviews as $item)
                         @php
                             [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
@@ -258,6 +303,9 @@ Moderasi Ulasan Produk || lemon
                                     <span class="ul-tanda {{ $item->jenis === 'paket' ? 'is-paket' : 'is-produk' }}">
                                         <i class="bi {{ $item->jenis === 'paket' ? 'bi-box-seam' : 'bi-bag' }}"></i>{{ $item->jenis === 'paket' ? 'Paket' : 'Produk' }}
                                     </span>
+                                    @if ($item->pembeliAsli())
+                                        <span class="ul-tanda is-asli"><i class="bi bi-patch-check-fill"></i>Pembeli Asli</span>
+                                    @endif
                                     @if ($item->status === 'approved')
                                         <span class="ul-tanda is-tayang"><i class="bi bi-shop"></i>Tampil di halaman produk</span>
                                     @endif
@@ -274,8 +322,22 @@ Moderasi Ulasan Produk || lemon
                             </div>
 
                             <div class="ul-aksi">
+                                @if ($arsip)
+                                    @if ($bolehHapus)
+                                        <div class="ul-aksi-moderasi">
+                                            <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="pulihkan" data-arg="{{ $item->id }}" data-icon="question"
+                                                data-title="Pulihkan ulasan ini?" data-text="Ulasan {{ $item->nama }} kembali dengan status terakhirnya." data-confirm="Ya, pulihkan">
+                                                <i class="bi bi-arrow-counterclockwise"></i><span>Pulihkan</span>
+                                            </button>
+                                            <button type="button" class="ul-btn is-bahaya ul-konfirmasi" data-action="buangPermanen" data-arg="{{ $item->id }}" data-icon="warning"
+                                                data-title="Buang permanen?" data-text="Ulasan {{ $item->nama }} tidak bisa dikembalikan." data-confirm="Ya, buang">
+                                                <i class="bi bi-trash3"></i><span>Buang</span>
+                                            </button>
+                                        </div>
+                                    @endif
+                                @else
                                 <div class="ul-aksi-moderasi">
-                                    @if ($item->status !== 'approved')
+                                    @if ($bolehUbah && $item->status !== 'approved')
                                         <button type="button" class="ul-btn is-setuju ul-konfirmasi"
                                             data-action="approve" data-arg="{{ $item->id }}" data-icon="question"
                                             data-title="Setujui ulasan ini?"
@@ -284,7 +346,7 @@ Moderasi Ulasan Produk || lemon
                                             <i class="bi bi-check-lg"></i><span>Setujui</span>
                                         </button>
                                     @endif
-                                    @if ($item->status !== 'hidden')
+                                    @if ($bolehUbah && $item->status !== 'hidden')
                                         <button type="button" class="ul-btn is-sembunyi ul-konfirmasi"
                                             data-action="reject" data-arg="{{ $item->id }}" data-icon="warning"
                                             data-title="Sembunyikan ulasan ini?"
@@ -299,11 +361,14 @@ Moderasi Ulasan Produk || lemon
                                     @if ($tautan = $item->tautanPublik())
                                         <a href="{{ $tautan }}" target="_blank" rel="noopener" class="ul-btn ul-btn-ikon" title="Buka halaman produknya" aria-label="Buka halaman produk"><i class="bi bi-box-arrow-up-right"></i></a>
                                     @endif
-                                    <button type="button" class="ul-btn ul-btn-ikon is-bahaya ul-konfirmasi"
-                                        data-action="remove" data-arg="{{ $item->id }}" data-icon="warning"
-                                        data-title="Hapus ulasan ini?" data-text="Ulasan dari {{ $item->nama }} dihapus permanen dan tidak bisa dikembalikan."
-                                        data-confirm="Ya, hapus" title="Hapus" aria-label="Hapus ulasan"><i class="bi bi-trash3"></i></button>
+                                    @if ($bolehHapus)
+                                        <button type="button" class="ul-btn ul-btn-ikon is-bahaya ul-konfirmasi"
+                                            data-action="remove" data-arg="{{ $item->id }}" data-icon="warning"
+                                            data-title="Arsipkan ulasan ini?" data-text="Ulasan dari {{ $item->nama }} dipindahkan ke Arsip dan masih bisa dipulihkan."
+                                            data-confirm="Ya, arsipkan" title="Arsipkan" aria-label="Arsipkan ulasan"><i class="bi bi-trash3"></i></button>
+                                    @endif
                                 </div>
+                                @endif
                             </div>
                         </article>
                     @endforeach
@@ -327,14 +392,20 @@ Moderasi Ulasan Produk || lemon
             <div class="ts-modal-card dsb is-datar ul-jendela" role="dialog" aria-modal="true" aria-label="Detail ulasan" tabindex="-1"
                 x-on:keydown.escape.window="$wire.tutupLihat()"
                 x-on:keydown.arrow-left.window="$wire.detailTetangga(-1)"
-                x-on:keydown.arrow-right.window="$wire.detailTetangga(1)">
+                x-on:keydown.arrow-right.window="$wire.detailTetangga(1)"
+                {{-- Pintasan hanya berlaku bila fokus tidak sedang di dalam isian. --}}
+                x-on:keydown.window="
+                    if (['INPUT','TEXTAREA','SELECT'].includes($event.target.tagName) || $event.metaKey || $event.ctrlKey) return;
+                    if ($event.key === 's' || $event.key === 'S') { $event.preventDefault(); $wire.approve(@js((string) $detail->id)); }
+                    if ($event.key === 't' || $event.key === 'T') { $event.preventDefault(); $wire.reject(@js((string) $detail->id)); }
+                ">
                 <div class="dsb-jendela-kepala">
                     <span class="dsb-ikon is-kecil" style="--c: {{ $dWarna }}"><i class="bi bi-star-fill"></i></span>
                     <span class="dsb-jendela-teks">
                         <h5 class="dsb-jendela-judul">Detail Ulasan</h5>
                         <span class="dsb-kartu-sub">{{ $detail->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                     </span>
-                    <span class="ul-pintasan" aria-hidden="true">← → pindah</span>
+                    <span class="ul-pintasan" aria-hidden="true">← → pindah · <b>S</b> setujui · <b>T</b> sembunyikan</span>
                     <span class="ul-jendela-nav">
                         <button type="button" class="ul-btn ul-btn-ikon" wire:click="detailTetangga(-1)" title="Sebelumnya (←)" aria-label="Ulasan sebelumnya"><i class="bi bi-chevron-left"></i></button>
                         <button type="button" class="ul-btn ul-btn-ikon" wire:click="detailTetangga(1)" title="Berikutnya (→)" aria-label="Ulasan berikutnya"><i class="bi bi-chevron-right"></i></button>
@@ -373,8 +444,30 @@ Moderasi Ulasan Produk || lemon
                     <blockquote class="ul-kutip">{{ $detail->ulasan }}</blockquote>
 
                     <div class="ul-info">
-                        <div><small>Ditulis oleh</small><b>{{ $detail->nama }}</b></div>
+                        <div>
+                            <small>Ditulis oleh</small>
+                            <b>{{ $detail->nama }}</b>
+                            @if ($detail->pembeliAsli())
+                                <span class="ul-tanda is-asli" style="margin-top: 5px;"><i class="bi bi-patch-check-fill"></i>Pembeli Asli</span>
+                            @endif
+                        </div>
                         <div><small>Tampil di halaman produk</small><b>{{ $detail->status === 'approved' ? 'Ya' : 'Tidak — '.$dLabel }}</b></div>
+                        <div>
+                            <small>Ditinjau admin</small>
+                            <b>
+                                @if ($detail->ditinjau_at)
+                                    {{ $detail->ditinjau_at->locale('id')->translatedFormat('d M Y, H:i') }}{{ $detail->peninjau ? ' · '.$detail->peninjau->name : '' }}
+                                @elseif ($detail->status === 'pending')
+                                    Belum ditinjau
+                                @else
+                                    {{-- Diputuskan sebelum jejak dicatat: "belum ditinjau" menyesatkan. --}}
+                                    Tidak tercatat
+                                @endif
+                            </b>
+                        </div>
+                        @if ($detail->customer)
+                            <div><small>Pelanggan terkait</small><b>{{ $detail->customer->nama }}</b></div>
+                        @endif
                     </div>
                 </div>
                 <div class="dsb-jendela-kaki ul-detail-kaki">
@@ -386,17 +479,62 @@ Moderasi Ulasan Produk || lemon
                             <i class="bi bi-box-arrow-up-right"></i><span>Buka halaman produk</span>
                         </a>
                     @endif
-                    @if ($detail->status !== 'hidden')
+                    @if ($bolehUbah && ! $detail->trashed() && $detail->status !== 'hidden')
                         <button type="button" class="ul-btn is-sembunyi ul-konfirmasi" data-action="reject" data-arg="{{ $detail->id }}" data-icon="warning"
                             data-title="Sembunyikan ulasan ini?" data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus." data-confirm="Ya, sembunyikan">
                             <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
                         </button>
                     @endif
-                    @if ($detail->status !== 'approved')
+                    @if ($bolehUbah && ! $detail->trashed() && $detail->status !== 'approved')
                         <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="approve" data-arg="{{ $detail->id }}" data-icon="question"
                             data-title="Setujui ulasan ini?" data-text="Ulasan {{ $detail->nama }} akan tampil di halaman {{ $detail->namaTarget() }}." data-confirm="Ya, setujui">
                             <i class="bi bi-check-lg"></i><span>Setujui</span>
                         </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ================== RINGKASAN PER PRODUK ================== --}}
+    @if ($lihatRingkasan)
+        <div class="ts-modal-back" wire:click="$set('lihatRingkasan', false)"></div>
+        <div class="ts-modal">
+            <div class="ts-modal-card dsb is-datar ul-jendela" role="dialog" aria-modal="true" aria-label="Ringkasan ulasan per produk"
+                x-on:keydown.escape.window="$wire.set('lihatRingkasan', false)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-bar-chart-line"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Ulasan per produk</h5>
+                        <span class="dsb-kartu-sub">Dari ulasan yang disetujui, bintang terendah lebih dulu.</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="$set('lihatRingkasan', false)" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi">
+                    @if ($ringkasanProduk->isEmpty())
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon"><i class="bi bi-bar-chart-line"></i></span>
+                            <p class="dsb-kosong-judul">Belum ada ulasan disetujui</p>
+                            <p class="dsb-kosong-ket">Rekap ini terisi setelah ada ulasan yang tampil di halaman produk.</p>
+                        </div>
+                    @else
+                        <ol class="ul-rekap">
+                            @foreach ($ringkasanProduk as $baris)
+                                <li>
+                                    <span class="ul-rekap-ikon"><i class="bi {{ $baris['jenis'] === 'paket' ? 'bi-box-seam' : 'bi-bag' }}"></i></span>
+                                    <span class="ul-rekap-teks">
+                                        <b>{{ $baris['nama'] }}</b>
+                                        <small>{{ $baris['jumlah'] }} ulasan · {{ $baris['jenis'] === 'paket' ? 'paket' : 'produk' }}</small>
+                                    </span>
+                                    <span class="ul-rekap-nilai {{ $baris['rata'] < 4 ? 'is-rendah' : '' }}">
+                                        {{ number_format($baris['rata'], 1, ',', '.') }}<i class="bi bi-star-fill"></i>
+                                    </span>
+                                    @if ($baris['tautan'])
+                                        <a href="{{ $baris['tautan'] }}" target="_blank" rel="noopener" class="ul-btn ul-btn-ikon" title="Buka halamannya"><i class="bi bi-box-arrow-up-right"></i></a>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
                     @endif
                 </div>
             </div>

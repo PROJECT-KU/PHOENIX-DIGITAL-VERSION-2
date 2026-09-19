@@ -49,6 +49,13 @@ class ProductReviews extends Component
 
     public $nama = '';
 
+    /**
+     * Nomor WhatsApp — OPSIONAL. Dipakai hanya untuk mencocokkan pembeli
+     * sungguhan (label "Pembeli Asli"); tidak pernah ditampilkan ke publik,
+     * dan ulasan tanpa nomor tetap diterima seperti sebelumnya.
+     */
+    public $no_hp = '';
+
     public $rating = 5;
 
     public $ulasan = '';
@@ -73,6 +80,7 @@ class ProductReviews extends Component
     {
         return [
             'nama' => 'required|string|min:2|max:60',
+            'no_hp' => 'nullable|string|min:8|max:20',
             'rating' => 'required|integer|min:1|max:5',
             'ulasan' => 'required|string|min:5|max:500',
         ];
@@ -116,16 +124,22 @@ class ProductReviews extends Component
         RateLimiter::hit($kunciTarget, self::JENDELA_DETIK);
         RateLimiter::hit($kunciTotal, self::JENDELA_DETIK);
 
+        // Nomor yang tidak cocok TIDAK menolak ulasannya — hanya label
+        // "Pembeli Asli" yang tidak muncul.
+        $pembeli = ProductReview::cariPembeli($this->no_hp, $this->jenis, $this->productId);
+
         ProductReview::create([
             'product_id' => $this->productId,
             'jenis' => $this->jenis,
             'nama' => trim($this->nama),
+            'no_hp' => trim($this->no_hp) ?: null,
+            'customer_id' => $pembeli?->id,
             'rating' => (int) $this->rating,
             'ulasan' => trim($this->ulasan),
             'status' => 'pending', // menunggu persetujuan admin
         ]);
 
-        $this->reset(['nama', 'ulasan']);
+        $this->reset(['nama', 'ulasan', 'no_hp']);
         $this->rating = 5;
         $this->submitted = true;
     }

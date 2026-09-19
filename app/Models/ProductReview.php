@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Ulasan pembeli — untuk produk satuan ATAU paket bundling.
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ProductReview extends Model
 {
+    use SoftDeletes;
+
     public const JENIS_PRODUK = 'produk';
 
     public const JENIS_PAKET = 'paket';
@@ -21,10 +24,24 @@ class ProductReview extends Model
         'product_id',
         'jenis',
         'nama',
+        'no_hp',
+        'customer_id',
         'rating',
         'ulasan',
         'status',
+        'ditinjau_at',
+        'ditinjau_oleh',
     ];
+
+    protected $casts = [
+        'ditinjau_at' => 'datetime',
+    ];
+
+    /**
+     * no_hp disembunyikan dari serialisasi — dipakai admin untuk mencocokkan
+     * pembeli, tapi tidak boleh ikut bocor ke keluaran publik.
+     */
+    protected $hidden = ['no_hp'];
 
     /** Nilai bawaan di sisi model juga, supaya instans baru sudah tahu jenisnya. */
     protected $attributes = [
@@ -136,5 +153,67 @@ class ProductReview extends Model
     public function scopeMenunggu($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    /** Pelanggan yang menulis ulasan ini (bila nomornya cocok saat dikirim). */
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
+
+    /** Admin yang terakhir menyetujui/menyembunyikan ulasan ini. */
+    public function peninjau()
+    {
+        return $this->belongsTo(User::class, 'ditinjau_oleh');
+    }
+
+    /**
+     * Pembeli sungguhan: nomornya cocok dengan pelanggan yang PESANANNYA
+     * SELESAI dan memuat produk/paket yang diulas.
+     */
+    public function pembeliAsli(): bool
+    {
+        return $this->customer_id !== null;
+    }
+
+    /**
+     * Cari pelanggan yang berhak atas label "Pembeli Asli" untuk target ini.
+     *
+     * Dipanggil saat ulasan dikirim; nomor yang tidak cocok TIDAK menolak
+     * ulasannya — hanya label kepercayaannya yang tidak muncul.
+     */
+    public static function cariPembeli(?string $noHp, string $jenis, $targetId): ?Customer
+    {
+        if (blank($noHp)) {
+            return null;
+        }
+
+        $pelanggan = Customer::cariDariNoHp($noHp);
+        if (! $pelanggan) {
+            return null;
+        }
+
+        // Paket DIPECAH jadi item produk saat checkout (lihat
+        // CheckoutPage::pecahPaketJadiItem), jadi tidak ada bundling_id di
+        // order_items. Pembelian paket dikenali dari pesanan selesai yang
+        // memuat SELURUH produk isi paket itu.
+        $produkTarget = $jenis === self::JENIS_PAKET
+            ? collect(ProductBundlings::find($targetId)?->bundleProducts() ?? [])->pluck('product_id')->filter()->all()
+            : [$targetId];
+
+        if ($produkTarget === []) {
+            return null;
+        }
+
+        $punya = $pelanggan->orders()
+            ->where('status', 'completed')
+            ->where(function ($q) use ($produkTarget) {
+                foreach ($produkTarget as $pid) {
+                    $q->whereHas('items', fn ($i) => $i->where('product_id', $pid));
+                }
+            })
+            ->exists();
+
+        return $punya ? $pelanggan : null;
     }
 }
