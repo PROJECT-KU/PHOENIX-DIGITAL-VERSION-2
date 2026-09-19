@@ -825,6 +825,23 @@ class Order extends Model
         ];
     }
 
+    /**
+     * Pesanan yang SEMUA itemnya dibatalkan (BatalItemPesanan) — statusnya
+     * sengaja tetap (omzet), tetapi di daftar ia tergolong "Dibatalkan".
+     */
+    public function scopeSemuaItemBatal($q)
+    {
+        return $q->whereHas('items')
+            ->whereDoesntHave('items', fn ($i) => $i->where('delivery_status', '!=', 'cancelled'));
+    }
+
+    /** Kebalikan scopeSemuaItemBatal (pesanan tanpa item tetap ikut). */
+    public function scopeMasihAdaItemAktif($q)
+    {
+        return $q->where(fn ($x) => $x->doesntHave('items')
+            ->orWhereHas('items', fn ($i) => $i->where('delivery_status', '!=', 'cancelled')));
+    }
+
     public function labelPembayaran(): ?array
     {
         return [

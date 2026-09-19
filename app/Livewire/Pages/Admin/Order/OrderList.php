@@ -231,18 +231,31 @@ class OrderList extends Component
     }
 
     /** Kueri pesanan untuk tab aktif (tanpa urutan & halaman) — dipakai daftar dan ekspor. */
-    protected function kueriTab()
+    /**
+     * Kueri pesanan untuk satu tab (bawaan: tab aktif). Dipakai daftar,
+     * penghitung tab, dan ekspor — satu aturan, supaya angka di kartu status
+     * selalu sama dengan isi daftarnya.
+     *
+     * Pesanan yang SEMUA itemnya dibatalkan setelah dibayar statusnya tetap
+     * (omzet), tetapi tergolong tab Dibatalkan, bukan Selesai/Diproses/Baru.
+     */
+    protected function kueriTab(?string $tab = null)
     {
+        $tab ??= $this->activeTab;
+        $tahapAktif = ['processing', 'completed', 'neworder', 'berjalan'];
+
         return $this->baseOrderQuery()
-            ->when($this->activeTab === 'processing', fn ($q) => $q->where('status', 'processing'))
-            ->when($this->activeTab === 'completed', fn ($q) => $q->where('status', 'completed'))
-            ->when($this->activeTab === 'neworder', fn ($q) => $q->whereIn('status', ['pending', 'paid'])
+            ->when($tab === 'processing', fn ($q) => $q->where('status', 'processing'))
+            ->when($tab === 'completed', fn ($q) => $q->where('status', 'completed'))
+            ->when($tab === 'neworder', fn ($q) => $q->whereIn('status', ['pending', 'paid'])
                 ->whereDoesntHave('uploads', fn ($u) => $u->where('status', 'selesai')))
-            ->when($this->activeTab === 'berjalan', fn ($q) => $q->pengecekanBerjalan())
-            ->when($this->activeTab === 'cancelled', fn ($q) => $q->where('status', 'cancelled'))
-            ->when($this->activeTab === 'draft', fn ($q) => $q->where('status', 'draft'))
-            ->when($this->activeTab === 'catatan', fn ($q) => $this->punyaCatatan($q))
-            ->when($this->activeTab !== 'draft', fn ($q) => $q->where('status', '!=', 'draft'));
+            ->when($tab === 'berjalan', fn ($q) => $q->pengecekanBerjalan())
+            ->when(in_array($tab, $tahapAktif, true), fn ($q) => $q->masihAdaItemAktif())
+            ->when($tab === 'cancelled', fn ($q) => $q->where(fn ($x) => $x->where('status', 'cancelled')
+                ->orWhere(fn ($y) => $y->semuaItemBatal())))
+            ->when($tab === 'draft', fn ($q) => $q->where('status', 'draft'))
+            ->when($tab === 'catatan', fn ($q) => $this->punyaCatatan($q))
+            ->when($tab !== 'draft', fn ($q) => $q->where('status', '!=', 'draft'));
     }
 
     public function getOrdersProperty()
@@ -451,15 +464,14 @@ class OrderList extends Component
             // Penghitung tab ikut menerapkan filter search + periode agar angka
             // berubah sesuai data yang ditampilkan saat difilter/dicari.
             'tabCounts' => [
-                'all' => $this->baseOrderQuery()->where('status', '!=', 'draft')->count(),
-                'neworder' => $this->baseOrderQuery()->whereIn('status', ['pending', 'paid'])
-                    ->whereDoesntHave('uploads', fn ($u) => $u->where('status', 'selesai'))->count(),
-                'berjalan' => $this->baseOrderQuery()->pengecekanBerjalan()->count(),
-                'processing' => $this->baseOrderQuery()->where('status', 'processing')->count(),
-                'completed' => $this->baseOrderQuery()->where('status', 'completed')->count(),
-                'cancelled' => $this->baseOrderQuery()->where('status', 'cancelled')->count(),
-                'draft' => $this->baseOrderQuery()->where('status', 'draft')->count(),
-                'catatan' => $this->punyaCatatan($this->baseOrderQuery()->where('status', '!=', 'draft'))->count(),
+                'all' => $this->kueriTab('all')->count(),
+                'neworder' => $this->kueriTab('neworder')->count(),
+                'berjalan' => $this->kueriTab('berjalan')->count(),
+                'processing' => $this->kueriTab('processing')->count(),
+                'completed' => $this->kueriTab('completed')->count(),
+                'cancelled' => $this->kueriTab('cancelled')->count(),
+                'draft' => $this->kueriTab('draft')->count(),
+                'catatan' => $this->kueriTab('catatan')->count(),
                 'segera' => $this->baseSegeraQuery()->count(),
                 'habis' => $habisItemsCount,
             ],

@@ -45,7 +45,7 @@ new class extends Component
         $u = $login ? auth()->user() : null;
 
         $pesananTokoPaid = $login && $u->hasPermission('view_pemesanantoko')
-            ? Order::paid()->count() : 0;
+            ? Order::paid()->masihAdaItemAktif()->count() : 0; // yang semua itemnya batal tidak perlu diproses
 
         // Testimoni menunggu moderasi (status 'pending'). Otomatis habis saat
         // admin menyetujui (active) atau menolak (non-active) — seragam

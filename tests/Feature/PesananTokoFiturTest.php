@@ -485,10 +485,29 @@ it('pesanan dibayar yang itemnya batal diberi label jujur, statusnya tetap (omze
 
     expect($semua->fresh()->status)->toBe('completed');
 
-    $html = Livewire::test(OrderList::class)->call('setTab', 'completed')->html();
-    expect($html)->toContain('Dibatalkan · refund')
-        ->toContain('1 item batal');
+    expect(Livewire::test(OrderList::class)->call('setTab', 'cancelled')->html())->toContain('Dibatalkan · refund');
+    expect(Livewire::test(OrderList::class)->call('setTab', 'completed')->html())->toContain('1 item batal');
 
     Livewire::test(OrderDetail::class, ['order' => $semua->fresh()])
         ->assertSee('Semua item dibatalkan · refund Rp 35.000');
+});
+
+it('pesanan dibayar yang semua itemnya batal pindah ke tab Dibatalkan, keluar dari Selesai', function () {
+    $this->actingAs(tokoAdmin());
+    $semua = tokoPesanan(['status' => 'completed', 'order_number' => 'INV-PINDAH-BATAL'], ['delivery_status' => 'delivered']);
+    \App\Support\BatalItemPesanan::batalkan($semua->items->first(), 'testing', 0);
+    $sebagian = pesananDuaItem(['status' => 'completed', 'order_number' => 'INV-TETAP-SELESAI'], ['delivery_status' => 'delivered']);
+    \App\Support\BatalItemPesanan::batalkan($sebagian->items->last(), 'stok habis', 0);
+    $dibayar = tokoPesanan(['status' => 'paid', 'order_number' => 'INV-PAID-BATAL']);
+    \App\Support\BatalItemPesanan::batalkan($dibayar->items->first(), 'testing', 0);
+
+    $t = Livewire::test(OrderList::class);
+    $angka = $t->viewData('tabCounts');
+    expect($angka['cancelled'])->toBe(2)->and($angka['completed'])->toBe(1)->and($angka['neworder'])->toBe(0);
+
+    $t->call('setTab', 'cancelled')->assertSee('INV-PINDAH-BATAL')->assertSee('INV-PAID-BATAL')->assertDontSee('INV-TETAP-SELESAI');
+    Livewire::test(OrderList::class)->call('setTab', 'completed')->assertSee('INV-TETAP-SELESAI')->assertDontSee('INV-PINDAH-BATAL');
+
+    // Status tersimpan tidak berubah → omzet tetap.
+    expect($semua->fresh()->status)->toBe('completed')->and($dibayar->fresh()->status)->toBe('paid');
 });
