@@ -20,19 +20,21 @@
                         <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-card-heading"></i></span>
                         <div>
                             <b>Informasi Banner</b>
-                            <span>Judul dipakai sebagai teks alternatif gambar dan untuk admin.</span>
+                            <span>Judul & deskripsi tampil sebagai teks besar di beranda, di samping gambar.</span>
                         </div>
                     </div>
 
                     <div class="bn-medan dsb-medan">
                         <label class="dsb-label" for="bn-judul">Judul Banner <span class="text-danger">*</span></label>
                         <input id="bn-judul" type="text" wire:model.defer="judul" class="dsb-isian" placeholder="Contoh: Promo Diskon 50%">
+                        <small class="bn-bantu">Tampil sebagai judul besar di beranda — singkat & menjual, idealnya di bawah 60 karakter.</small>
                         @error('judul') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
 
                     <div class="bn-medan dsb-medan">
                         <label class="dsb-label" for="bn-desk">Deskripsi</label>
-                        <textarea id="bn-desk" wire:model.defer="deskripsi" rows="4" class="dsb-isian bn-desk-isian" placeholder="Keterangan singkat isi banner (opsional)"></textarea>
+                        <textarea id="bn-desk" wire:model.defer="deskripsi" rows="4" class="dsb-isian bn-desk-isian" placeholder="Kalimat ajakan di bawah judul (opsional)"></textarea>
+                        <small class="bn-bantu">Tampil sebagai paragraf di bawah judul di beranda. Satu–dua kalimat cukup.</small>
                         @error('deskripsi') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
 

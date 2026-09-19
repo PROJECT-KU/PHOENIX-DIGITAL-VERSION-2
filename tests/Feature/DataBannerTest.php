@@ -109,3 +109,10 @@ it('tambah banner: gambar wajib, lalu tersimpan dan tampil di galeri', function 
     Storage::disk('public')->assertExists('img/banners/'.$b->gambar);
     Livewire::test(BannersList::class)->assertSee('Promo Baru')->assertSee('Tayang tanpa batas waktu');
 });
+
+it('form menjelaskan bahwa judul & deskripsi tampil di beranda', function () {
+    $this->actingAs(adminBanner());
+    Livewire::test(BannersForm::class)
+        ->assertSee('tampil sebagai teks besar di beranda')
+        ->assertDontSee('teks alternatif gambar dan untuk admin');
+});
