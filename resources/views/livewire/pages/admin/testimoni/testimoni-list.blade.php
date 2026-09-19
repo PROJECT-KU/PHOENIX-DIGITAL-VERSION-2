@@ -95,12 +95,15 @@ Data Testimoni || lemon
                     @endforeach
                 </div>
                 <div class="tm-sebaran-catatan">
+                    <span class="tm-sebaran-ikon"><i class="bi bi-display"></i></span>
+                    <div>
                     <p><b>{{ min($jumlahTampil, $maksBeranda) }}</b> dari {{ $jumlahTampil }} testimoni tampil di beranda.</p>
                     @if ($jumlahTampil > $maksBeranda)
                         <p class="tm-catatan-kecil">Beranda memuat {{ $maksBeranda }} kartu. Pakai <i class="bi bi-star-fill"></i> Sorot untuk menaikkan testimoni pilihan.</p>
                     @else
                         <p class="tm-catatan-kecil">Bintang di bawah {{ \App\Models\Testimoni::RATING_MIN_TAMPIL }} tidak tampil kecuali disorot.</p>
                     @endif
+                    </div>
                 </div>
             </div>
         </section>
