@@ -5,6 +5,14 @@
         $urlBaru = $gambarBaru ? \App\Support\PratinjauUnggahan::url($gambar) : null;
         $urlLama = $existingImage ? asset('storage/img/banners/'.$existingImage) : null;
         $urlTampil = $urlBaru ?: $urlLama;
+        $panjangJudul = mb_strlen(trim((string) $judul));
+        $opsiTautan = [
+            '' => ['Halaman Belanja', 'bi-shop'],
+            'produk' => ['Produk tertentu', 'bi-box-seam'],
+            'member' => ['Halaman Member', 'bi-person-badge'],
+            'bundling' => ['Paket Bundling', 'bi-boxes'],
+            'lain' => ['Tautan lain', 'bi-link-45deg'],
+        ];
         $statusOpsi = [
             'active' => ['Aktif', 'bi-broadcast', '#16a34a', 'Tampil di beranda sesuai jadwal di bawah'],
             'non-active' => ['Non-aktif', 'bi-eye-slash', '#64748b', 'Disembunyikan, apa pun jadwalnya'],
@@ -26,14 +34,17 @@
 
                     <div class="bn-medan dsb-medan">
                         <label class="dsb-label" for="bn-judul">Judul Banner <span class="text-danger">*</span></label>
-                        <input id="bn-judul" type="text" wire:model.defer="judul" class="dsb-isian" placeholder="Contoh: Promo Diskon 50%">
-                        <small class="bn-bantu">Tampil sebagai judul besar di beranda — singkat & menjual, idealnya di bawah 60 karakter.</small>
+                        <input id="bn-judul" type="text" wire:model.live.debounce.400ms="judul" class="dsb-isian" placeholder="Contoh: Promo Diskon 50%">
+                        <small class="bn-bantu bn-hitung-judul {{ 60 < $panjangJudul ? 'is-lebih' : '' }}">
+                            <span>Tampil sebagai judul besar di beranda — singkat & menjual. Kata setelah koma terakhir diwarnai jingga.</span>
+                            <b>{{ $panjangJudul }}/60</b>
+                        </small>
                         @error('judul') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
 
                     <div class="bn-medan dsb-medan">
                         <label class="dsb-label" for="bn-desk">Deskripsi</label>
-                        <textarea id="bn-desk" wire:model.defer="deskripsi" rows="4" class="dsb-isian bn-desk-isian" placeholder="Kalimat ajakan di bawah judul (opsional)"></textarea>
+                        <textarea id="bn-desk" wire:model.live.debounce.400ms="deskripsi" rows="4" class="dsb-isian bn-desk-isian" placeholder="Kalimat ajakan di bawah judul (opsional)"></textarea>
                         <small class="bn-bantu">Tampil sebagai paragraf di bawah judul di beranda. Satu–dua kalimat cukup.</small>
                         @error('deskripsi') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
@@ -51,6 +62,46 @@
                         </div>
                         @error('status') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
+                </div>
+            </div>
+
+            {{-- Tujuan klik: gambar banner & tombol "Belanja Sekarang" di beranda. --}}
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bn-form-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: #16a34a"><i class="bi bi-cursor-fill"></i></span>
+                        <div>
+                            <b>Tujuan Klik</b>
+                            <span>Ke mana pembeli dibawa saat mengeklik banner atau tombol "Belanja Sekarang".</span>
+                        </div>
+                    </div>
+                    <div class="bn-tautan-pilih" role="radiogroup" aria-label="Tujuan klik">
+                        @foreach ($opsiTautan as $nilai => [$label, $ikon])
+                            <label class="bn-tautan-opsi {{ $tautanJenis === $nilai ? 'is-pilih' : '' }}">
+                                <input type="radio" wire:model.live="tautanJenis" value="{{ $nilai }}">
+                                <i class="bi {{ $ikon }}"></i><span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @if ($tautanJenis === 'produk')
+                        <div class="dsb-medan" style="margin-top: 12px;">
+                            <label class="dsb-label" for="bn-produk">Produk</label>
+                            <select id="bn-produk" class="dsb-isian" wire:model.live="tautanProduk">
+                                <option value="">— Pilih produk —</option>
+                                @foreach ($daftarProduk as $p)
+                                    <option value="{{ $p->id }}">{{ $p->nama_akun }}</option>
+                                @endforeach
+                            </select>
+                            @error('tautanProduk') <small class="bn-galat">{{ $message }}</small> @enderror
+                        </div>
+                    @elseif ($tautanJenis === 'lain')
+                        <div class="dsb-medan" style="margin-top: 12px;">
+                            <label class="dsb-label" for="bn-tautan">Tautan</label>
+                            <input id="bn-tautan" type="text" class="dsb-isian" wire:model.live.debounce.400ms="tautanLain" placeholder="/shop?kategori=ai atau https://…">
+                            <small class="bn-bantu">Awali dengan "/" untuk halaman di situs ini, atau "https://".</small>
+                            @error('tautanLain') <small class="bn-galat">{{ $message }}</small> @enderror
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -99,6 +150,28 @@
 
         {{-- ================== KOLOM SAMPING ================== --}}
         <aside class="bn-form-samping">
+            {{-- Pratinjau mini hero beranda: judul (dengan sorotan jingga yang
+                 sama — Banners::judulBeraksen), deskripsi, tombol, dan gambar. --}}
+            <div class="bn-pratinjau" aria-label="Pratinjau di beranda">
+                <span class="bn-pratinjau-label"><i class="bi bi-display"></i> Pratinjau di beranda</span>
+                <div class="bn-pratinjau-isi">
+                    <div class="bn-pratinjau-teks">
+                        <p class="bn-pratinjau-judul">{!! \App\Models\Banners::judulBeraksen($judul ?: 'Judul banner Anda, tampil di sini', 'bn-aksen') !!}</p>
+                        @if ($deskripsi)
+                            <p class="bn-pratinjau-desk">{{ $deskripsi }}</p>
+                        @endif
+                        <span class="bn-pratinjau-tombol">Belanja Sekarang <i class="bi bi-arrow-right"></i></span>
+                    </div>
+                    <div class="bn-pratinjau-gambar">
+                        @if ($urlTampil)
+                            <img src="{{ $urlTampil }}" alt="">
+                        @else
+                            <i class="bi bi-image"></i>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
             <div class="dsb-kartu">
                 <div class="dsb-kartu-isi">
                     <div class="bn-form-kepala">

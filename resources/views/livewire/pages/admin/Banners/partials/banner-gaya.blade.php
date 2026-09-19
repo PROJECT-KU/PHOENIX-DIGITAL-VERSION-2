@@ -61,6 +61,13 @@
     .bn-aksi { display: flex; align-items: center; gap: 6px; padding: 12px 16px 14px; margin-top: 8px; border-top: 1px dashed #eef2f7; }
     .bn-aksi-utama { margin-right: auto; }
     .bn-saklar.is-hidup { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+    .bn-slide { position: absolute; right: 12px; top: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(15, 23, 42, .78); color: #fff; font-size: .7rem; font-weight: 800; letter-spacing: .02em; }
+    .bn-tujuan { margin-top: 3px; }
+    .bn-tujuan span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .bn-tujuan i { color: #94a3b8; }
+    .bn-geser { display: inline-flex; gap: 2px; }
+    .bn-geser .dsb-tabel-btn { width: 30px; }
+    .bn-geser .dsb-tabel-btn:disabled { opacity: .35; cursor: default; }
     .bn-halaman { margin-top: 18px; display: flex; justify-content: center; }
     .bn-halaman .pagination { margin: 0; flex-wrap: wrap; justify-content: center; }
     /* Lencana keadaan di badan kartu: hanya ponsel (di layar lebar ada di atas gambar).
@@ -69,11 +76,13 @@
     /* Ponsel: kartu mendatar — gambar persegi kecil di kiri. */
     @media (max-width: 575.98px) {
         .bn-galeri { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-        .bn-kartu { display: grid; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: 1fr auto; }
-        .bn-gambar { grid-row: 1 / 3; aspect-ratio: auto; height: 100%; min-height: 128px; }
+        .bn-kartu { display: grid; grid-template-columns: 104px minmax(0, 1fr); grid-template-rows: auto auto; }
+        .bn-gambar { grid-row: 1; aspect-ratio: 1; height: auto; align-self: start; }
+        .bn-slide { right: 6px; top: 6px; padding: 2px 7px; font-size: .64rem; }
         .bn-lencana-keadaan { display: none; }
         .bn-kartu-isi { padding: 12px 12px 4px; }
-        .bn-aksi { padding: 8px 12px 12px; margin-top: 0; border-top: 0; }
+        /* Baris tombol selebar kartu di bawah — di kolom kanan enam tombol berdesakan. */
+        .bn-aksi { grid-column: 1 / -1; padding: 10px 12px 12px; margin-top: 0; border-top: 1px dashed #eef2f7; }
         .bn-lencana-hp { display: inline-flex !important; margin-bottom: 6px; }
     }
 
@@ -153,5 +162,24 @@
     .bn-isi-tombol { display: inline-flex; align-items: center; gap: 8px; }
     .bn-kicker { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #f26522; margin-bottom: 10px; }
     .bn-tips { margin: 12px 0 0; padding-left: 18px; font-size: .78rem; color: #64748b; line-height: 1.6; }
+    .bn-hitung-judul { display: flex; gap: 10px; justify-content: space-between; }
+    .bn-hitung-judul b { flex: 0 0 auto; font-variant-numeric: tabular-nums; color: #64748b; }
+    .bn-hitung-judul.is-lebih b { color: #dc2626; }
+    .bn-tautan-pilih { display: flex; flex-wrap: wrap; gap: 8px; }
+    .bn-tautan-opsi { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border-radius: 12px; border: 1.5px solid #e9edf3; background: #fff; font-size: .82rem; font-weight: 700; color: #475569; cursor: pointer; }
+    .bn-tautan-opsi input { position: absolute; opacity: 0; pointer-events: none; }
+    .bn-tautan-opsi i { color: #16a34a; }
+    .bn-tautan-opsi.is-pilih { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+    @media (max-width: 575.98px) { .bn-tautan-opsi { flex: 1 1 calc(50% - 4px); justify-content: center; } }
+    /* Pratinjau mini hero — warna latar sama dengan .ph-hero-slide beranda */
+    .bn-pratinjau { border-radius: 18px; overflow: hidden; border: 1px solid #1f2937; background: radial-gradient(58% 78% at 88% 18%, rgba(251, 169, 25, .20) 0%, rgba(251, 169, 25, 0) 62%), radial-gradient(52% 70% at 60% 96%, rgba(242, 101, 34, .22) 0%, rgba(242, 101, 34, 0) 60%), linear-gradient(120deg, #1b2029 0%, #232937 58%, #1b2029 100%); }
+    .bn-pratinjau-label { display: flex; align-items: center; gap: 6px; padding: 9px 14px; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: rgba(255, 255, 255, .55); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+    .bn-pratinjau-isi { display: grid; grid-template-columns: minmax(0, 1fr) 104px; gap: 12px; align-items: center; padding: 16px 14px; }
+    .bn-pratinjau-judul { margin: 0 0 6px; font-size: 1.02rem; font-weight: 800; line-height: 1.15; letter-spacing: -.02em; color: #fff; overflow-wrap: anywhere; }
+    .bn-pratinjau-judul .bn-aksen { color: #fba919; }
+    .bn-pratinjau-desk { margin: 0 0 10px; font-size: .72rem; line-height: 1.5; color: rgba(255, 255, 255, .68); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .bn-pratinjau-tombol { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px; background: linear-gradient(135deg, #f26522, #fba919); color: #fff; font-size: .68rem; font-weight: 800; }
+    .bn-pratinjau-gambar { aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: rgba(255, 255, 255, .08); display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .35); font-size: 1.4rem; }
+    .bn-pratinjau-gambar img { width: 100%; height: 100%; object-fit: cover; }
 </style>
 @endonce

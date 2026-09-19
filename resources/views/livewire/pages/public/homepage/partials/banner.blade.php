@@ -13,31 +13,9 @@
      * Selalu mengembalikan HTML yang sudah di-escape: judulnya diketik manusia
      * lewat panel admin, dan tidak ada alasan mempercayainya mentah-mentah.
      */
-    $aksenJudul = function (?string $judul) {
-        $judul = trim((string) $judul);
-
-        if ($judul === '') {
-            return '';
-        }
-
-        if (str_contains($judul, ',')) {
-            $depan = Str::beforeLast($judul, ',').',';
-            $ekor = trim(Str::afterLast($judul, ','));
-        } else {
-            $kata = preg_split('/\s+/', $judul) ?: [];
-
-            // Judul sangat pendek tidak dipotong: menyorot dua dari tiga kata
-            // membuat warnanya terlihat asal, bukan disengaja.
-            if (count($kata) < 4) {
-                return e($judul);
-            }
-
-            $depan = implode(' ', array_slice($kata, 0, -2));
-            $ekor = implode(' ', array_slice($kata, -2));
-        }
-
-        return e($depan).' <span class="ph-aksen">'.e($ekor).'</span>';
-    };
+    // Aturannya kini di Banners::judulBeraksen(), supaya pratinjau di form
+    // admin menyorot kata yang sama persis.
+    $aksenJudul = fn (?string $judul) => \App\Models\Banners::judulBeraksen($judul);
 @endphp
 
 <style>
@@ -370,7 +348,7 @@
                             <p class="ph-hero-desc">{{ $banner->deskripsi }}</p>
                             @endif
                             <div class="ph-hero-actions">
-                                <a href="{{ route('shop.index') }}" class="ph-btn-primary">
+                                <a href="{{ $banner->tautanTujuan() }}" class="ph-btn-primary">
                                     Belanja Sekarang <i class="bi bi-arrow-right"></i>
                                 </a>
                                 <a href="{{ route('shop.index') }}" class="ph-btn-ghost">Lihat Katalog</a>
@@ -425,7 +403,7 @@
                                  Poster ini persegi; bingkai apa pun yang
                                  mendatar akan menyisakan bilah kosong di
                                  kiri-kanan dan mengecilkannya dua tingkat. --}}
-                            <a class="ph-poster-tautan" href="{{ route('shop.index') }}"
+                            <a class="ph-poster-tautan" href="{{ $banner->tautanTujuan() }}"
                                aria-label="{{ $banner->judul ?? 'Lihat promo' }}">
                                 <figure class="ph-poster"
                                     @if ($berikut) style="--berikut: url('{{ asset('storage/img/banners/'.$berikut->gambar) }}')" @endif>

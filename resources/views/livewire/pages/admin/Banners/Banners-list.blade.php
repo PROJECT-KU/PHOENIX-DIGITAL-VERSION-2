@@ -34,7 +34,7 @@ Data Banner || lemon
                 <h1 class="dsb-salam">Data Banner</h1>
                 <p class="dsb-hero-ket">
                     <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
-                    <span class="d-block">Banner pembuka di beranda toko — tayang otomatis sesuai status & jadwal.</span>
+                    <span class="d-block">Banner pembuka di beranda toko — tayang otomatis sesuai status & jadwal, berurutan seperti di bawah.</span>
                 </p>
             </div>
             @if ($bolehBuat)
@@ -96,6 +96,9 @@ Data Banner || lemon
                             [$lencanaKeadaan, $cKeadaan, $ikonKeadaan] = $gayaKeadaan[$warnaKeadaan] ?? $gayaKeadaan['secondary'];
                             $adaGambar = $item->gambarAda();
                             $hidup = $item->status === 'active';
+                            $slide = $nomorSlide[$item->id] ?? null;
+                            $bisaNaik = $bolehUbah && $item->id !== $idPertama;
+                            $bisaTurun = $bolehUbah && $item->id !== $idTerakhir;
                         @endphp
                         <article class="bn-kartu {{ $item->sedangTayang() ? '' : 'is-mati' }}" style="--c: {{ $cKeadaan }}" wire:key="banner-{{ $item->id }}">
                             <button type="button" class="bn-gambar" wire:click="lihat('{{ $item->id }}')" title="Lihat detail {{ $item->judul }}">
@@ -105,6 +108,9 @@ Data Banner || lemon
                                     <span class="bn-gambar-kosong"><span><i class="bi bi-image"></i></span>Gambar tidak ditemukan</span>
                                 @endif
                                 <span class="dsb-lencana {{ $lencanaKeadaan }} bn-lencana-keadaan"><i class="bi {{ $ikonKeadaan }}"></i>{{ $labelKeadaan }}</span>
+                                @if ($slide)
+                                    <span class="bn-slide" title="Urutan tampil di beranda">Slide {{ $slide }}</span>
+                                @endif
                             </button>
                             <div class="bn-kartu-isi">
                                 {{-- Di ponsel lencana di atas gambar disembunyikan; tampil di sini. --}}
@@ -114,12 +120,20 @@ Data Banner || lemon
                                     <i class="bi bi-calendar-range"></i>
                                     <span>{{ $item->keteranganWaktu() ?? 'Disembunyikan dari beranda' }}</span>
                                 </div>
+                                <div class="bn-waktu bn-tujuan" title="Tujuan klik">
+                                    <i class="bi bi-cursor"></i>
+                                    <span>{{ $item->tautan ?: 'Halaman Belanja' }}</span>
+                                </div>
                             </div>
                             <div class="bn-aksi">
                                 <button type="button" class="dsb-tombol is-lembut is-mungil bn-aksi-utama" wire:click="lihat('{{ $item->id }}')">
                                     <i class="bi bi-eye"></i><span>Detail</span>
                                 </button>
                                 @if ($bolehUbah)
+                                    <span class="bn-geser" role="group" aria-label="Ubah urutan">
+                                        <button type="button" class="dsb-tabel-btn" wire:click="geser('{{ $item->id }}', 'naik')" @disabled(! $bisaNaik) title="Tampilkan lebih dulu"><i class="bi bi-chevron-up"></i></button>
+                                        <button type="button" class="dsb-tabel-btn" wire:click="geser('{{ $item->id }}', 'turun')" @disabled(! $bisaTurun) title="Tampilkan belakangan"><i class="bi bi-chevron-down"></i></button>
+                                    </span>
                                     <button type="button" class="dsb-tabel-btn bn-saklar {{ $hidup ? 'is-hidup' : '' }}" wire:click="alihStatus('{{ $item->id }}')"
                                         wire:loading.attr="disabled" wire:target="alihStatus('{{ $item->id }}')"
                                         title="{{ $hidup ? 'Sembunyikan dari beranda' : 'Aktifkan' }}">
@@ -184,6 +198,10 @@ Data Banner || lemon
                                 <div><small>Mulai</small><b>{{ $fmt($detail->mulai_tayang) ?? 'Langsung' }}</b></div>
                                 <div><small>Selesai</small><b>{{ $fmt($detail->selesai_tayang) ?? 'Tanpa batas' }}</b></div>
                             </div>
+                        </div>
+                        <div>
+                            <span class="bn-detail-label">Tujuan klik</span>
+                            <p><a href="{{ $detail->tautanTujuan() }}" target="_blank" rel="noopener">{{ $detail->tautan ?: 'Halaman Belanja' }} <i class="bi bi-box-arrow-up-right"></i></a></p>
                         </div>
                         <div>
                             <span class="bn-detail-label">Deskripsi</span>

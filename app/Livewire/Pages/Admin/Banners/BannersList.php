@@ -72,6 +72,29 @@ class BannersList extends Component
             : 'Banner disembunyikan dari beranda.');
     }
 
+    /**
+     * Geser banner satu posisi (naik = tampil lebih dulu di beranda).
+     * Urutan dinormalkan dulu jadi 1..n supaya nilai kembar/berlubang dari
+     * data lama tidak membuat tombol tampak tidak bekerja.
+     */
+    public function geser(string $id, string $arah): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_banners'), 403);
+
+        $ids = Banners::orderBy('urutan')->orderBy('created_at')->pluck('id')->values();
+        $i = $ids->search($id);
+        $j = $arah === 'naik' ? $i - 1 : $i + 1;
+        if ($i === false || $j < 0 || $j >= $ids->count()) {
+            return;
+        }
+
+        $baru = $ids->all();
+        [$baru[$i], $baru[$j]] = [$baru[$j], $baru[$i]];
+        foreach ($baru as $posisi => $bid) {
+            Banners::whereKey($bid)->update(['urutan' => $posisi + 1]);
+        }
+    }
+
     // Hapus Banners
     public function deleteBanners($id)
     {
@@ -125,7 +148,8 @@ class BannersList extends Component
                 ->where('judul', 'like', "%{$this->searchBanners}%")
                 ->orWhere('deskripsi', 'like', "%{$this->searchBanners}%")))
             ->when($this->keadaan, fn ($q) => $this->saringKeadaan($q, $this->keadaan))
-            ->latest()
+            // Sama dengan urutan slide di beranda (kecil = lebih dulu).
+            ->orderBy('urutan')->orderBy('created_at')
             ->paginate(12);
 
         $hitung = ['semua' => Banners::count()];
@@ -137,6 +161,10 @@ class BannersList extends Component
             'Banners' => $Banners,
             'hitung' => $hitung,
             'detail' => $this->lihatId ? Banners::find($this->lihatId) : null,
+            // Posisi slide yang sedang tayang (1 = slide pertama di beranda).
+            'nomorSlide' => Banners::tayang()->pluck('id')->flip()->map(fn ($i) => $i + 1),
+            'idPertama' => Banners::orderBy('urutan')->orderBy('created_at')->value('id'),
+            'idTerakhir' => Banners::orderByDesc('urutan')->orderByDesc('created_at')->value('id'),
         ])
             ->layout('livewire.layout.templateindex');
     }

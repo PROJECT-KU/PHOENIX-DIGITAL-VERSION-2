@@ -33,6 +33,22 @@ class BannersForm extends Component
 
     public $mode = 'create';
 
+    /**
+     * Tujuan klik banner di beranda. '' = halaman Belanja (bawaan lama),
+     * member | bundling | produk | lain. Disimpan sebagai path relatif supaya
+     * tidak bergantung pada domain.
+     */
+    public string $tautanJenis = '';
+
+    public string $tautanProduk = '';
+
+    public string $tautanLain = '';
+
+    public const TAUTAN_TETAP = [
+        'member' => 'member.info',
+        'bundling' => 'bundling.index',
+    ];
+
     public function mount()
     {
         if ($this->banners) {
@@ -44,10 +60,46 @@ class BannersForm extends Component
             $this->mulai_tayang = $this->banners->mulai_tayang?->format('Y-m-d\TH:i') ?? '';
             $this->selesai_tayang = $this->banners->selesai_tayang?->format('Y-m-d\TH:i') ?? '';
             $this->mode = 'edit';
+            $this->bacaTautan((string) $this->banners->tautan);
         } else {
             // Banner baru biasanya langsung ingin tayang.
             $this->status = 'active';
         }
+    }
+
+    /** Pecah tautan tersimpan kembali ke pilihan form. */
+    protected function bacaTautan(string $tautan): void
+    {
+        if ($tautan === '') {
+            return;
+        }
+        foreach (self::TAUTAN_TETAP as $jenis => $rute) {
+            if ($tautan === route($rute, absolute: false)) {
+                $this->tautanJenis = $jenis;
+
+                return;
+            }
+        }
+        $awalan = rtrim(route('shop.detail-product', 'X', absolute: false), 'X');
+        if (str_starts_with($tautan, $awalan)) {
+            $this->tautanJenis = 'produk';
+            $this->tautanProduk = substr($tautan, strlen($awalan));
+
+            return;
+        }
+        $this->tautanJenis = 'lain';
+        $this->tautanLain = $tautan;
+    }
+
+    /** Tautan yang akan disimpan (null = halaman Belanja). */
+    protected function tautanSimpan(): ?string
+    {
+        return match ($this->tautanJenis) {
+            'member', 'bundling' => route(self::TAUTAN_TETAP[$this->tautanJenis], absolute: false),
+            'produk' => $this->tautanProduk ? route('shop.detail-product', $this->tautanProduk, absolute: false) : null,
+            'lain' => trim($this->tautanLain) ?: null,
+            default => null,
+        };
     }
 
     /** Isian cepat jadwal tayang. */
@@ -81,6 +133,10 @@ class BannersForm extends Component
             // after_or_equal hanya diperiksa bila mulai_tayang diisi; kalau
             // kosong, selesai_tayang berdiri sendiri sbg "tayang sampai".
             'selesai_tayang' => 'nullable|date'.($this->mulai_tayang ? '|after_or_equal:mulai_tayang' : ''),
+            'tautanJenis' => 'in:,member,bundling,produk,lain',
+            'tautanProduk' => $this->tautanJenis === 'produk' ? 'required|exists:products,id' : 'nullable',
+            // Hanya path di situs ini atau https — bukan javascript: dan sejenisnya.
+            'tautanLain' => $this->tautanJenis === 'lain' ? ['required', 'max:500', 'regex:#^(/[^/]|/$|https://)#'] : 'nullable',
         ];
 
         if ($this->mode === 'create') {
@@ -89,7 +145,11 @@ class BannersForm extends Component
             $rules['gambar'] = 'nullable|image|mimes:png,jpg,jpeg|max:5120';
         }
 
-        $this->validate($rules);
+        $this->validate($rules, [
+            'tautanProduk.required' => 'Pilih produknya.',
+            'tautanLain.required' => 'Isi tautan tujuannya.',
+            'tautanLain.regex' => 'Tautan harus diawali "/" (halaman di situs ini) atau "https://".',
+        ]);
 
         if ($this->mode === 'create') {
             $this->createBanners();
@@ -114,6 +174,9 @@ class BannersForm extends Component
                 'gambar' => $filename, // cuma nama file
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'tautan' => $this->tautanSimpan(),
+                // Banner baru masuk di slide terakhir; urutan diatur dari daftar.
+                'urutan' => (int) Banners::max('urutan') + 1,
                 'mulai_tayang' => $this->mulai_tayang ?: null,
                 'selesai_tayang' => $this->selesai_tayang ?: null,
             ]);
@@ -135,6 +198,7 @@ class BannersForm extends Component
                 'judul' => $this->judul,
                 'deskripsi' => $this->deskripsi,
                 'status' => $this->status,
+                'tautan' => $this->tautanSimpan(),
                 'mulai_tayang' => $this->mulai_tayang ?: null,
                 'selesai_tayang' => $this->selesai_tayang ?: null,
             ];
@@ -177,6 +241,10 @@ class BannersForm extends Component
 
     public function render()
     {
-        return view('livewire.pages.admin.Banners.Banners-form');
+        return view('livewire.pages.admin.Banners.Banners-form', [
+            'daftarProduk' => $this->tautanJenis === 'produk'
+                ? \App\Models\Product::orderBy('nama_akun')->get(['id', 'nama_akun'])
+                : collect(),
+        ]);
     }
 }

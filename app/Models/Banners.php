@@ -18,6 +18,8 @@ class Banners extends Model
         'gambar',
         'deskripsi',
         'status',
+        'urutan',
+        'tautan',
         'mulai_tayang',
         'selesai_tayang',
     ];
@@ -57,7 +59,51 @@ class Banners extends Model
 
         return $query->where('status', 'active')
             ->where(fn ($q) => $q->whereNull('mulai_tayang')->orWhere('mulai_tayang', '<=', $now))
-            ->where(fn ($q) => $q->whereNull('selesai_tayang')->orWhere('selesai_tayang', '>=', $now));
+            ->where(fn ($q) => $q->whereNull('selesai_tayang')->orWhere('selesai_tayang', '>=', $now))
+            // Urutan slide diatur admin (kecil = lebih dulu). Sebelumnya tanpa
+            // orderBy sama sekali: yang tampil pertama selalu banner TERTUA.
+            ->orderBy('urutan')->orderBy('created_at');
+    }
+
+    /** Tujuan klik banner & tombol utama di beranda. Kosong = halaman Belanja. */
+    public function tautanTujuan(): string
+    {
+        $t = trim((string) $this->tautan);
+
+        return $t !== '' ? $t : route('shop.index');
+    }
+
+    /**
+     * Judul hero dengan EKOR yang disorot jingga — satu aturan untuk beranda
+     * dan pratinjau admin: bagian setelah koma terakhir, atau dua kata
+     * terakhir bila tanpa koma (judul < 4 kata tidak disorot).
+     *
+     * Selalu mengembalikan HTML yang sudah di-escape: judulnya diketik manusia
+     * lewat panel admin, dan tidak ada alasan mempercayainya mentah-mentah.
+     */
+    public static function judulBeraksen(?string $judul, string $kelas = 'ph-aksen'): string
+    {
+        $judul = trim((string) $judul);
+
+        if ($judul === '') {
+            return '';
+        }
+
+        if (str_contains($judul, ',')) {
+            $depan = \Illuminate\Support\Str::beforeLast($judul, ',').',';
+            $ekor = trim(\Illuminate\Support\Str::afterLast($judul, ','));
+        } else {
+            $kata = preg_split('/\s+/', $judul) ?: [];
+
+            if (count($kata) < 4) {
+                return e($judul);
+            }
+
+            $depan = implode(' ', array_slice($kata, 0, -2));
+            $ekor = implode(' ', array_slice($kata, -2));
+        }
+
+        return e($depan).' <span class="'.e($kelas).'">'.e($ekor).'</span>';
     }
 
     /** Sedang tayang di publik sekarang? (versi per-baris dari scopeTayang) */

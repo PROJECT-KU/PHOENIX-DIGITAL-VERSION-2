@@ -116,3 +116,70 @@ it('form menjelaskan bahwa judul & deskripsi tampil di beranda', function () {
         ->assertSee('tampil sebagai teks besar di beranda')
         ->assertDontSee('teks alternatif gambar dan untuk admin');
 });
+
+it('urutan slide: beranda mengikuti urutan, dan tombol geser menukar posisi', function () {
+    $this->actingAs(adminBanner());
+    $a = banner(['judul' => 'Slide A', 'urutan' => 1]);
+    $b = banner(['judul' => 'Slide B', 'urutan' => 2]);
+    $c = banner(['judul' => 'Slide C', 'urutan' => 3]);
+
+    expect(Banners::tayang()->pluck('judul')->all())->toBe(['Slide A', 'Slide B', 'Slide C']);
+
+    Livewire::test(BannersList::class)->assertSee('Slide 1')->call('geser', $c->id, 'naik');
+    expect(Banners::tayang()->pluck('judul')->all())->toBe(['Slide A', 'Slide C', 'Slide B']);
+
+    // Batas atas: yang pertama tidak bisa naik lagi.
+    Livewire::test(BannersList::class)->call('geser', $a->id, 'naik');
+    expect(Banners::tayang()->first()->judul)->toBe('Slide A');
+
+    $this->actingAs(adminBanner(['view_banners']));
+    Livewire::test(BannersList::class)->call('geser', $b->id, 'naik')->assertForbidden();
+});
+
+it('tautan tujuan: pilihan produk/member/lain tersimpan relatif; tautan berbahaya ditolak', function () {
+    Storage::fake('public');
+    $this->actingAs(adminBanner());
+    $p = \App\Models\Product::create(['nama_akun' => 'Canva Pro']);
+    $b = banner(['judul' => 'Promo Canva']);
+
+    Livewire::test(BannersForm::class, ['banners' => $b])
+        ->set('tautanJenis', 'produk')->set('tautanProduk', (string) $p->id)->call('save');
+    expect($b->fresh()->tautan)->toBe('/shop/product/'.$p->id)
+        ->and($b->fresh()->tautanTujuan())->toBe('/shop/product/'.$p->id);
+
+    // Saat dibuka lagi, pilihannya terbaca kembali.
+    Livewire::test(BannersForm::class, ['banners' => $b->fresh()])
+        ->assertSet('tautanJenis', 'produk')->assertSet('tautanProduk', (string) $p->id)
+        ->set('tautanJenis', 'member')->call('save');
+    expect($b->fresh()->tautan)->toBe('/member');
+
+    foreach (['javascript:alert(1)', '//situs-lain.com', 'http://tidak-aman.com'] as $jahat) {
+        Livewire::test(BannersForm::class, ['banners' => $b->fresh()])
+            ->set('tautanJenis', 'lain')->set('tautanLain', $jahat)->call('save')->assertHasErrors('tautanLain');
+    }
+
+    Livewire::test(BannersForm::class, ['banners' => $b->fresh()])->set('tautanJenis', '')->call('save');
+    expect($b->fresh()->tautan)->toBeNull()->and($b->fresh()->tautanTujuan())->toBe(route('shop.index'));
+});
+
+it('pratinjau form menyorot judul sama persis dengan beranda', function () {
+    $this->actingAs(adminBanner());
+
+    Livewire::test(BannersForm::class)
+        ->set('judul', 'Gabung Jadi Member, Gratis & Untung!')
+        ->assertSeeHtml('Gabung Jadi Member, <span class="bn-aksen">Gratis &amp; Untung!</span>')
+        ->assertSee('36/60');
+
+    expect(Banners::judulBeraksen('Gabung Jadi Member, Gratis & Untung!'))
+        ->toBe('Gabung Jadi Member, <span class="ph-aksen">Gratis &amp; Untung!</span>');
+});
+
+it('beranda memakai tautan tujuan banner dan urutan slide', function () {
+    $p = \App\Models\Product::create(['nama_akun' => 'Canva Pro']);
+    banner(['judul' => 'Kedua Tampil', 'urutan' => 2]);
+    banner(['judul' => 'Pertama Tampil', 'urutan' => 1, 'tautan' => '/shop/product/'.$p->id]);
+
+    $html = view('livewire.pages.public.homepage.partials.banner', ['banners' => Banners::tayang()->get()])->render();
+    expect(strpos($html, 'Pertama Tampil'))->toBeLessThan(strpos($html, 'Kedua Tampil'))
+        ->and($html)->toContain('href="/shop/product/'.$p->id.'"');
+});
