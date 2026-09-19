@@ -867,7 +867,6 @@ class OrderDetail extends Component
         $this->dispatch('order-updated', message: 'Pesanan dibatalkan. Income & modal otomatis dilepas.');
     }
 
-    #[Layout('livewire.layout.templateindex')]
     // ==== Batal per item (App\Support\BatalItemPesanan) ====
     public ?string $batalItemId = null;
 
@@ -920,6 +919,7 @@ class OrderDetail extends Component
     /** Jendela Riwayat Pesanan terbuka? Jejaknya baru dimuat saat dibuka. */
     public bool $lihatRiwayat = false;
 
+    #[Layout('livewire.layout.templateindex')]
     public function render()
     {
         return view('livewire.pages.admin.order.order-detail', [

@@ -107,6 +107,7 @@ Detail Pesanan || lemon
             $biRefund = \App\Support\BatalItemPesanan::mode($order) === 'refund';
             $biSubtotal = (int) ($biItem->subtotal ?? 0);
             $biRp = fn ($n) => 'Rp '.number_format((int) $n, 0, ',', '.');
+            $biTerakhir = $biItem && \App\Support\BatalItemPesanan::itemTerakhir($biItem);
         @endphp
         <div class="ts-modal-back" wire:click="tutupBatalItem"></div>
         <div class="ts-modal" wire:key="batal-item-{{ $batalItemId }}">
@@ -126,7 +127,11 @@ Detail Pesanan || lemon
                         @if ($biRefund)
                             <span><b>Pesanan sudah dibayar.</b> Total pesanan <b>tidak berubah</b>. Uang yang dikembalikan dicatat sebagai <b>Pengeluaran</b> (masuk cash flow). Modal item dilepas bila akunnya belum sempat dikirim.</span>
                         @else
-                            <span><b>Pesanan belum dibayar.</b> Item dihapus dan total pesanan <b>berkurang {{ $biRp($biSubtotal) }}</b> menjadi {{ $biRp((int) $order->total - $biSubtotal) }}.</span>
+                            @if ($biTerakhir)
+                                <span><b>Pesanan belum dibayar dan ini satu-satunya item.</b> Tidak ada yang tersisa untuk dibayar, jadi <b>pesanan ikut dibatalkan</b>.</span>
+                            @else
+                                <span><b>Pesanan belum dibayar.</b> Item dihapus dan total pesanan <b>berkurang {{ $biRp($biSubtotal) }}</b> menjadi {{ $biRp((int) $order->total - $biSubtotal) }}.</span>
+                            @endif
                         @endif
                     </div>
                     <div class="dsb-medan">

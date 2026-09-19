@@ -41,16 +41,23 @@ class BatalItemPesanan
     public static function alasanTidakBisa(OrderItem $item): ?string
     {
         $order = $item->order;
-        $aktif = $order->items()->where('delivery_status', '!=', 'cancelled')->count();
 
         return match (true) {
             $item->delivery_status === 'cancelled' => 'Item ini sudah dibatalkan.',
             $order->status === 'cancelled' => 'Pesanannya sudah dibatalkan.',
-            $aktif <= 1 => 'Ini satu-satunya item — batalkan seluruh pesanan saja.',
             self::mode($order) === 'refund' && (bool) optional($item->product)->butuh_file => 'Item jasa dibatalkan per pengecekan, bukan di sini.',
             self::mode($order) === null => EditPesanan::alasanTidakBisa($order),
             default => null,
         };
+    }
+
+    /** Item ini satu-satunya yang belum dibatalkan di pesanannya? */
+    public static function itemTerakhir(OrderItem $item): bool
+    {
+        return ! $item->order->items()
+            ->where('id', '!=', $item->id)
+            ->where('delivery_status', '!=', 'cancelled')
+            ->exists();
     }
 
     /**
@@ -65,6 +72,19 @@ class BatalItemPesanan
         $order = $item->order;
         $rp = fn ($n) => 'Rp '.number_format((int) $n, 0, ',', '.');
         $nama = $item->product_name ?: 'item';
+
+        // Belum dibayar & tidak ada item lain: tidak ada yang tersisa untuk
+        // dibayar, jadi pesanannya sendiri yang dibatalkan (item tetap ada
+        // sebagai catatan isi pesanan).
+        if (self::mode($order) === 'kurangi' && self::itemTerakhir($item)) {
+            DB::transaction(function () use ($order) {
+                $order->payments()->where('status', 'pending')->update(['status' => 'expire']);
+                $order->update(['status' => 'cancelled', 'paid_at' => null]);
+            });
+            RiwayatPesanan::catat($order->id, 'batal', "Item terakhir {$nama} dibatalkan sebelum dibayar · pesanan dibatalkan ({$alasan})");
+
+            return "Item {$nama} dibatalkan. Karena itu satu-satunya item, pesanan ikut dibatalkan.";
+        }
 
         if (self::mode($order) === 'kurangi') {
             DB::transaction(function () use ($order, $item) {
@@ -119,8 +139,10 @@ class BatalItemPesanan
 
             // Semua item lain sudah terkirim → pesanan selesai. Pesanan yang
             // masih punya jasa diselesaikan lewat alur jasa, bukan di sini.
+            // Bila SEMUA item batal, status dibiarkan: tidak ada yang terkirim.
             $masih = $order->items()->whereNotIn('delivery_status', ['delivered', 'cancelled'])->exists();
-            if (! $masih && ! $order->butuhUpload() && $order->status !== 'completed') {
+            $adaTerkirim = $order->items()->where('delivery_status', 'delivered')->exists();
+            if (! $masih && $adaTerkirim && ! $order->butuhUpload() && $order->status !== 'completed') {
                 $order->update(['status' => 'completed', 'paid_at' => $order->paid_at ?: now()]);
             }
         });

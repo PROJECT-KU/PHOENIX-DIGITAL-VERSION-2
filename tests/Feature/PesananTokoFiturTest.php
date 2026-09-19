@@ -404,8 +404,29 @@ it('refund tidak boleh melebihi subtotal item, dan item terakhir tidak bisa diba
         ->assertHasErrors('batalRefund');
     expect($b->fresh()->delivery_status)->not->toBe('cancelled');
 
-    $tunggal = tokoPesanan(['status' => 'paid']);
-    expect(\App\Support\BatalItemPesanan::alasanTidakBisa($tunggal->items->first()))->toContain('satu-satunya');
+});
+
+it('satu-satunya item: sudah dibayar → refund seperti biasa; belum dibayar → pesanan ikut batal', function () {
+    $this->actingAs(tokoAdmin());
+
+    $lunas = tokoPesanan(['status' => 'completed', 'paid_at' => now()], ['delivery_status' => 'delivered']);
+    $pesan = \App\Support\BatalItemPesanan::batalkan($lunas->items->first(), 'Akun bermasalah', 50000);
+    $lunas->refresh();
+    expect($pesan)->toContain('Refund Rp 50.000')
+        ->and((int) $lunas->total)->toBe(50000)
+        ->and($lunas->status)->toBe('completed')
+        ->and($lunas->items->first()->delivery_status)->toBe('cancelled')
+        ->and(\App\Models\Spending::where('nominal', 50000)->exists())->toBeTrue();
+
+    $draft = tokoPesanan(['status' => 'draft']);
+    \App\Support\BatalItemPesanan::batalkan($draft->items->first(), 'Pelanggan batal');
+    expect($draft->fresh()->status)->toBe('cancelled')
+        ->and($draft->items()->count())->toBe(1);
+
+    // Pesanan dibayar yang SEMUA itemnya batal tidak dipaksa jadi "Selesai".
+    $diproses = tokoPesanan(['status' => 'processing', 'paid_at' => now()]);
+    \App\Support\BatalItemPesanan::batalkan($diproses->items->first(), 'Stok habis', 0);
+    expect($diproses->fresh()->status)->toBe('processing');
 });
 
 it('batal item ditolak tanpa izin ubah pesanan', function () {
