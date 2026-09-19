@@ -666,3 +666,26 @@ it('pembersih arsip tidak pernah menyebut nama pengirim di keluarannya', functio
         ->doesntExpectOutputToContain('Nama Sangat Pribadi')
         ->assertSuccessful();
 });
+
+it('kotak "ditinjau admin" jujur untuk data lama yang tanpa catatan', function () {
+    $this->actingAs(adminTestimoni());
+
+    // Disetujui sebelum jejak moderasi ada: ditinjau_at masih kosong.
+    $lama = testimoni(['nama' => 'Data Lama', 'status' => 'active']);
+    Livewire::test(TestimoniList::class)->call('lihat', $lama->id)
+        ->assertSee('Tidak tercatat')
+        ->assertSee('Diputuskan sebelum jejak moderasi dicatat.')
+        ->assertDontSee('Belum ditinjau');
+
+    // Masih menunggu: "Belum ditinjau" memang benar.
+    $menunggu = testimoni(['nama' => 'Masih Antre']);
+    Livewire::test(TestimoniList::class)->call('lihat', $menunggu->id)
+        ->assertSee('Belum ditinjau')
+        ->assertDontSee('Tidak tercatat');
+
+    // Sudah ditinjau: tanggal & nama peninjaunya yang tampil.
+    Livewire::test(TestimoniList::class)->call('approve', $menunggu->id);
+    Livewire::test(TestimoniList::class)->call('lihat', $menunggu->id)
+        ->assertSee(auth()->user()->name)
+        ->assertDontSee('Belum ditinjau');
+});

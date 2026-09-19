@@ -277,6 +277,7 @@
     .tm-detail-label { display: block; margin-bottom: 6px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
     .tm-info { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .tm-info > div { padding: 10px 12px; border-radius: 12px; background: #f8fafc; border: 1px solid #eef2f7; min-width: 0; }
+    .tm-info .tm-info-ket { display: block; margin-top: 3px; font-size: .72rem; font-weight: 600; color: #94a3b8; letter-spacing: 0; text-transform: none; }
     .tm-info small { display: block; font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
     .tm-info b { display: block; font-size: .84rem; color: #1c1f26; overflow-wrap: anywhere; }
     @media (max-width: 420px) { .tm-info { grid-template-columns: minmax(0, 1fr); } }

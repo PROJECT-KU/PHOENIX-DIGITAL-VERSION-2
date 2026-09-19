@@ -538,14 +538,21 @@ Data Testimoni || lemon
                             </b>
                         </div>
                         <div>
-                            <small>Ditinjau</small>
+                            <small>Ditinjau admin</small>
                             <b>
                                 @if ($detail->ditinjau_at)
                                     {{ $detail->ditinjau_at->locale('id')->translatedFormat('d M Y, H:i') }}{{ $detail->peninjau ? ' · '.$detail->peninjau->name : '' }}
-                                @else
+                                @elseif ($detail->status === 'pending')
                                     Belum ditinjau
+                                @else
+                                    {{-- Sudah disetujui/ditolak tapi tanpa catatan: keputusannya diambil
+                                         sebelum jejak moderasi ada. "Belum ditinjau" di sini menyesatkan. --}}
+                                    Tidak tercatat
                                 @endif
                             </b>
+                            @if (! $detail->ditinjau_at && $detail->status !== 'pending')
+                                <small class="tm-info-ket">Diputuskan sebelum jejak moderasi dicatat.</small>
+                            @endif
                         </div>
                     </div>
 
