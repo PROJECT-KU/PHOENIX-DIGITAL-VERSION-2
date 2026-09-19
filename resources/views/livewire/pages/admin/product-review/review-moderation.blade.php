@@ -2,276 +2,466 @@
 Moderasi Ulasan Produk || lemon
 @stop
 <div>
-    <div class="container-fluid">
-        {{-- Header --}}
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Moderasi Ulasan Produk</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                            @php $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Moderasi Ulasan Produk']]; @endphp
-                            <x-breadcrumb :items="$breadcrumbs" />
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*). Lihat partials/dasbor-gaya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.product-review.partials.ulasan-gaya')
+
+    @php
+        $kartuStatus = [
+            'pending' => ['Menunggu', 'bi-hourglass-split', '#d97706'],
+            'approved' => ['Disetujui', 'bi-check-circle-fill', '#16a34a'],
+            'hidden' => ['Disembunyikan', 'bi-eye-slash-fill', '#64748b'],
+            'all' => ['Semua', 'bi-star-fill', '#7c3aed'],
+        ];
+        $kosong = [
+            'pending' => ['bi-inbox', 'Tidak ada yang menunggu', 'Semua ulasan sudah ditinjau.'],
+            'approved' => ['bi-star', 'Belum ada ulasan disetujui', 'Ulasan yang disetujui tampil di halaman produknya.'],
+            'hidden' => ['bi-eye-slash', 'Tidak ada ulasan disembunyikan', 'Ulasan yang disembunyikan tidak tampil di halaman produk.'],
+            'all' => ['bi-star', 'Belum ada ulasan', 'Ulasan muncul setelah pembeli menulisnya di halaman produk.'],
+        ];
+        $idHalaman = $reviews->pluck('id')->map(fn ($i) => (string) $i)->all();
+        $semuaTercentang = $idHalaman && ! array_diff($idHalaman, $pilih);
+        $sasaranMuat = 'search,setFilter,gotoPage,nextPage,previousPage,fRating,fJenis,fDari,fSampai,urut,perHalaman,resetSaring';
+    @endphp
+
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Moderasi Ulasan Produk</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">Ulasan pembeli ditinjau di sini — yang disetujui tampil di halaman produk & paket.</span>
+                </p>
+            </div>
+            <div class="dsb-hero-aksi">
+                <button type="button" class="dsb-tombol" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
+                    <span wire:loading.remove wire:target="unduhExcel" class="ul-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
+                    <span wire:loading.inline-flex wire:target="unduhExcel" class="ul-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
+                </button>
+                <button type="button" class="dsb-tombol" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
+                    <span wire:loading.remove wire:target="unduhPdf" class="ul-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>PDF</span></span>
+                    <span wire:loading.inline-flex wire:target="unduhPdf" class="ul-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
+                </button>
+            </div>
+        </header>
+
+        {{-- ================== STATUS (sekaligus tab moderasi) ================== --}}
+        <nav class="ul-status" aria-label="Saring menurut status moderasi">
+            @foreach ($kartuStatus as $nilai => [$label, $ikon, $warna])
+                <button type="button" class="ul-status-btn {{ $filter === $nilai ? 'is-aktif' : '' }} {{ $nilai === 'pending' && 0 < $tabCounts['pending'] ? 'is-perlu' : '' }}"
+                    style="--c: {{ $warna }}" wire:click="setFilter('{{ $nilai }}')" aria-pressed="{{ $filter === $nilai ? 'true' : 'false' }}">
+                    <span class="ul-status-ikon"><i class="bi {{ $ikon }}"></i></span>
+                    <span class="ul-status-teks"><b>{{ $tabCounts[$nilai] }}</b><span>{{ $label }}</span></span>
+                </button>
+            @endforeach
+        </nav>
+
+        {{-- ================== SEBARAN BINTANG ================== --}}
+        <section class="dsb-kartu ul-sebaran">
+            <div class="dsb-kartu-isi ul-sebaran-isi">
+                <div class="ul-sebaran-nilai">
+                    <b>{{ $rataRating ? number_format($rataRating, 1, ',', '.') : '–' }}</b>
+                    <span class="ul-bintang" aria-hidden="true">
+                        @for ($i = 1; $i <= 5; $i++)<i class="bi bi-star-fill {{ $i <= round($rataRating) ? '' : 'is-kosong' }}"></i>@endfor
+                    </span>
+                    <small>Rata-rata dari {{ $tabCounts['approved'] }} ulasan disetujui</small>
+                </div>
+                <div class="ul-sebaran-bar">
+                    @foreach ($sebaran as $barBintang => $bar)
+                        <div class="ul-bar-baris">
+                            <span class="ul-bar-label">{{ $barBintang }}<i class="bi bi-star-fill"></i></span>
+                            <span class="ul-bar-alur"><span class="ul-bar-isi" style="width: {{ $bar['persen'] }}%"></span></span>
+                            <span class="ul-bar-nilai">{{ $bar['jumlah'] }}</span>
                         </div>
-                    </div>
-
-                    <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                        <div class="form-group position-relative flex-grow-1">
-                            <div class="form-control-icon">
-                                <i class="bi bi-search"></i>
-                            </div>
-
-                            <input wire:model.live.debounce.300ms="search" type="text"
-                                class="form-control ps-5 pe-5" placeholder="Cari produk, nama, atau isi ulasan...">
-
-                            @if ($search)
-                            <span wire:click="$set('search', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                            </span>
-                            @endif
-                        </div>
+                    @endforeach
+                </div>
+                <div class="ul-sebaran-catatan">
+                    <span class="ul-sebaran-ikon"><i class="bi bi-shop"></i></span>
+                    <div>
+                        <p><b>{{ $tabCounts['approved'] }}</b> ulasan tampil di halaman produk & paket.</p>
+                        <p class="ul-catatan-kecil">Ulasan yang menunggu atau disembunyikan tidak dilihat pengunjung.</p>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Tabs (seragam dengan Penjualan Toko) --}}
-        <style>
-            .customer-glossy-tabs {
-                display: flex;
-                width: 100%;
-                gap: .5rem;
-                padding: .5rem;
-                border-radius: 999px;
-                background: rgba(255, 255, 255, 0.55);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.6);
-                box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
-                overflow-x: auto;
-            }
-            .customer-glossy-tab {
-                flex: 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: .6rem;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                font-weight: 600;
-                font-size: 1.05rem;
-                line-height: 1;
-                padding: .95rem 1.5rem;
-                border-radius: 999px;
-                cursor: pointer;
-                transition: all .25s ease;
-                text-transform: capitalize;
-                white-space: nowrap;
-            }
-            .customer-glossy-tab i { font-size: 1.25rem; line-height: 1; display: inline-flex; align-items: center; }
-            .customer-glossy-tab:hover:not(.active) { color: #4e46e5; background: rgba(108, 99, 255, 0.10); }
-            .customer-glossy-tab.active { color: #fff; background: linear-gradient(135deg, #6c63ff, #4e46e5); box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45); transform: translateY(-1px); }
-            .customer-glossy-tab .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.75rem; height: 1.75rem; padding: 0 .55rem; font-size: .82rem; font-weight: 800; line-height: 1; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #7c73ff, #4e46e5); border: 1px solid rgba(255, 255, 255, 0.45); box-shadow: 0 4px 10px rgba(78, 70, 229, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.45); transition: all .25s ease; }
-            .customer-glossy-tab:hover:not(.active) .tab-count { transform: scale(1.08); }
-            .customer-glossy-tab.active .tab-count { color: #4e46e5; background: linear-gradient(135deg, #ffffff, #eef0ff); border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.9); }
-            @media (max-width: 575.98px) {
-                .customer-glossy-tab { flex: 0 0 auto; justify-content: center; padding: .6rem .9rem; font-size: .9rem; }
-            }
-        </style>
+        {{-- ================== CARI & SARING ================== --}}
+        <section class="dsb-kartu ul-saring" x-data="{ buka: @js($this->adaSaring) }">
+            <div class="dsb-kartu-isi ul-saring-isi">
+                <div class="dsb-cari">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="dsb-isian" wire:model.live.debounce.300ms="search" placeholder="Cari produk, nama pengulas, atau isi ulasan…" aria-label="Cari ulasan">
+                    @if ($search)
+                        <button type="button" class="dsb-cari-hapus" wire:click="$set('search', '')" title="Hapus pencarian"><i class="bi bi-x-lg"></i></button>
+                    @endif
+                </div>
 
-        <div class="mt-3 mb-3">
-            <div class="customer-glossy-tabs">
-                <button type="button" class="customer-glossy-tab @if ($filter === 'pending') active @endif" wire:click="setFilter('pending')">
-                    <i class="bi bi-hourglass-split"></i>
-                    <span>Menunggu</span>
-                    <span class="tab-count">{{ $tabCounts['pending'] }}</span>
+                <select class="dsb-isian ul-pilih" wire:model.live="urut" aria-label="Urutkan">
+                    <option value="baru" @selected($urut === 'baru')>Terbaru</option>
+                    <option value="lama" @selected($urut === 'lama')>Terlama</option>
+                    <option value="tinggi" @selected($urut === 'tinggi')>Bintang tertinggi</option>
+                    <option value="rendah" @selected($urut === 'rendah')>Bintang terendah</option>
+                </select>
+
+                <select class="dsb-isian ul-pilih is-sempit" wire:model.live="perHalaman" aria-label="Jumlah per halaman">
+                    @foreach ([12, 24, 48] as $n)
+                        <option value="{{ $n }}" @selected($perHalaman === $n)>{{ $n }}/halaman</option>
+                    @endforeach
+                </select>
+
+                <button type="button" class="ul-btn {{ $this->adaSaring ? 'is-aktif' : '' }}" x-on:click="buka = !buka" aria-label="Saringan lanjutan">
+                    <i class="bi bi-funnel"></i><span>Saring</span>
+                    @if ($this->adaSaring)<span class="ul-saring-titik"></span>@endif
                 </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'approved') active @endif" wire:click="setFilter('approved')">
-                    <i class="bi bi-check-circle"></i>
-                    <span>Disetujui</span>
-                    <span class="tab-count">{{ $tabCounts['approved'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'hidden') active @endif" wire:click="setFilter('hidden')">
-                    <i class="bi bi-eye-slash"></i>
-                    <span>Disembunyikan</span>
-                    <span class="tab-count">{{ $tabCounts['hidden'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'all') active @endif" wire:click="setFilter('all')">
-                    <i class="bi bi-list-check"></i>
-                    <span>Semua</span>
-                    <span class="tab-count">{{ $tabCounts['all'] }}</span>
-                </button>
+
+                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $sasaranMuat }}">
+                    <span class="dsb-putar is-kecil"></span>Memuat…
+                </span>
             </div>
+
+            @if ($pilih)
+                <p class="ul-ekspor-ket"><i class="bi bi-info-circle"></i> Unduhan akan berisi {{ count($pilih) }} ulasan yang dicentang saja.</p>
+            @endif
+
+            @if ($this->chipSaring)
+                <div class="ul-chip-saring">
+                    @foreach ($this->chipSaring as $chip)
+                        <button type="button" class="ul-chip-lepas" wire:click="lepasSaring('{{ $chip['nama'] }}')" title="Lepas saringan ini">
+                            {{ $chip['label'] }}<i class="bi bi-x-lg"></i>
+                        </button>
+                    @endforeach
+                    <button type="button" class="ul-chip-lepas is-semua" wire:click="resetSaring">Bersihkan semua</button>
+                </div>
+            @endif
+
+            <div class="ul-saring-lanjut" x-show="buka" x-collapse x-cloak>
+                <div class="ul-saring-baris">
+                    <label class="ul-saring-medan">
+                        <span>Bintang</span>
+                        <select class="dsb-isian" wire:model.live="fRating">
+                            <option value="">Semua bintang</option>
+                            @foreach (range(5, 1) as $b)
+                                <option value="{{ $b }}">{{ $b }} bintang</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="ul-saring-medan">
+                        <span>Jenis</span>
+                        <select class="dsb-isian" wire:model.live="fJenis">
+                            <option value="">Produk & paket</option>
+                            <option value="produk">Produk satuan</option>
+                            <option value="paket">Paket bundling</option>
+                        </select>
+                    </label>
+                    <label class="ul-saring-medan">
+                        <span>Ditulis dari</span>
+                        <input type="date" class="dsb-isian" wire:model.live="fDari" max="{{ now()->toDateString() }}">
+                    </label>
+                    <label class="ul-saring-medan">
+                        <span>Sampai</span>
+                        <input type="date" class="dsb-isian" wire:model.live="fSampai" max="{{ now()->toDateString() }}">
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        {{-- ================== BILAH AKSI MASSAL ================== --}}
+        @if ($pilih)
+            <div class="ul-massal" role="region" aria-label="Aksi massal">
+                <span class="ul-massal-jumlah"><b>{{ count($pilih) }}</b> dipilih</span>
+                <div class="ul-massal-tombol">
+                    <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="setujuiTerpilih" data-icon="question"
+                        data-title="Setujui {{ count($pilih) }} ulasan?" data-text="Semuanya akan tampil di halaman produk masing-masing." data-confirm="Ya, setujui">
+                        <i class="bi bi-check-lg"></i><span>Setujui</span>
+                    </button>
+                    <button type="button" class="ul-btn is-sembunyi ul-konfirmasi" data-action="sembunyikanTerpilih" data-icon="warning"
+                        data-title="Sembunyikan {{ count($pilih) }} ulasan?" data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus." data-confirm="Ya, sembunyikan">
+                        <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
+                    </button>
+                    <button type="button" class="ul-btn is-bahaya ul-konfirmasi" data-action="hapusTerpilih" data-icon="warning"
+                        data-title="Hapus {{ count($pilih) }} ulasan permanen?" data-text="Ulasan yang dihapus tidak bisa dikembalikan." data-confirm="Ya, hapus">
+                        <i class="bi bi-trash3"></i><span>Hapus</span>
+                    </button>
+                    <button type="button" class="ul-btn" wire:click="lepasPilih"><i class="bi bi-x"></i><span>Lepas</span></button>
+                </div>
+            </div>
+        @endif
+
+        {{-- Kerangka pemuatan: tanpa ini kartu lama cuma meredup dan sekilas
+             tampak seolah tidak ada yang berubah. --}}
+        <div class="ul-kerangka" wire:loading.grid wire:target="{{ $sasaranMuat }}">
+            @for ($i = 0; $i < 6; $i++)
+                <div class="ul-kerangka-kartu">
+                    <div class="ul-kerangka-kepala"><span class="ul-tulang is-kotak"></span><span class="ul-tulang" style="width: 55%"></span></div>
+                    <span class="ul-tulang" style="width: 100%; height: 54px; margin-top: 12px;"></span>
+                    <span class="ul-tulang" style="width: 42%; margin-top: 10px;"></span>
+                </div>
+            @endfor
         </div>
 
-        {{-- Tabel --}}
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr style="text-align: center;">
-                                <th style="width: 50px;">No</th>
-                                <th>Produk</th>
-                                <th>Nama</th>
-                                <th>Rating</th>
-                                <th>Ulasan</th>
-                                <th>Tanggal</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($reviews as $item)
-                            <tr style="text-align: center;">
-                                <td>{{ $loop->iteration + ($reviews->currentPage() - 1) * $reviews->perPage() }}</td>
-                                <td class="fw-bold text-start">{{ $item->namaTarget() }}@if ($item->jenis === 'paket') <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis ms-1">Paket</span>@endif</td>
-                                <td>{{ $item->nama }}</td>
-                                <td class="text-warning text-nowrap">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
-                                    @endfor
-                                </td>
-                                <td class="text-start" style="max-width: 260px;">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="text-truncate" style="min-width:0;">{{ $item->ulasan }}</span>
-                                        <button type="button"
-                                            class="btn btn-sm btn-outline-primary p-1 flex-shrink-0 review-read-trigger"
-                                            title="Baca ulasan lengkap"
-                                            data-ulasan="{{ $item->ulasan }}"
-                                            data-nama="{{ $item->nama }}"
-                                            data-produk="{{ $item->namaTarget() }}"
-                                            data-rating="{{ (int) $item->rating }}"
-                                            data-tanggal="{{ $item->created_at->translatedFormat('d M Y, H:i') }}">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td class="text-nowrap">{{ $item->created_at->translatedFormat('d M Y, H:i') }}</td>
-                                <td>
-                                    @if ($item->status === 'pending')
-                                        <span class="badge bg-warning text-dark">Menunggu</span>
-                                    @elseif ($item->status === 'approved')
-                                        <span class="badge bg-success">Disetujui</span>
+        {{-- ================== RAK ULASAN ================== --}}
+        <section wire:loading.class="ul-sembunyi" wire:target="{{ $sasaranMuat }}">
+            @if ($reviews->isEmpty())
+                @php
+                    [$kIkon, $kJudul, $kKet] = ($search || $this->adaSaring)
+                        ? ['bi-funnel', 'Tidak ada ulasan yang cocok', 'Coba ubah kata kunci atau bersihkan saringan.']
+                        : $kosong[$filter];
+                @endphp
+                <div class="dsb-kartu">
+                    <div class="dsb-kosong">
+                        <span class="dsb-kosong-ikon"><i class="bi {{ $kIkon }}"></i></span>
+                        <p class="dsb-kosong-judul">{{ $kJudul }}</p>
+                        <p class="dsb-kosong-ket">{{ $kKet }}</p>
+                    </div>
+                </div>
+            @else
+                <div class="ul-pilih-semua">
+                    <label class="ul-centang">
+                        <input type="checkbox" @checked($semuaTercentang) wire:click="pilihHalaman({{ \Illuminate\Support\Js::from($idHalaman) }})">
+                        <span>Pilih semua di halaman ini</span>
+                    </label>
+                </div>
+
+                <div class="ul-rak">
+                    @foreach ($reviews as $item)
+                        @php
+                            [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
+                            $curiga = $item->kecurigaan();
+                            $gambar = $item->gambarTarget();
+                        @endphp
+                        <article class="ul-kartu {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }}"
+                            style="--c: {{ $stWarna }}" wire:key="ulasan-{{ $item->id }}">
+                            <div class="ul-kepala">
+                                <label class="ul-centang is-kartu" title="Pilih untuk aksi massal">
+                                    <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
+                                </label>
+                                <button type="button" class="ul-gambar" wire:click="lihat('{{ $item->id }}')" title="Lihat detail ulasan">
+                                    @if ($gambar)
+                                        <img src="{{ $gambar }}" alt="" loading="lazy">
                                     @else
-                                        <span class="badge bg-secondary">Disembunyikan</span>
+                                        <i class="bi {{ $item->jenis === 'paket' ? 'bi-box-seam' : 'bi-bag' }}"></i>
                                     @endif
-                                </td>
-                                <td class="text-nowrap">
+                                </button>
+                                <div class="ul-kepala-teks">
+                                    <p class="ul-produk">{!! \App\Support\SorotKata::pada($item->namaTarget(), $search) !!}</p>
+                                    <span class="ul-pengulas">oleh {!! \App\Support\SorotKata::pada($item->nama, $search) !!}</span>
+                                    <span class="ul-bintang" aria-label="Rating {{ (int) $item->rating }} dari 5">
+                                        @for ($i = 1; $i <= 5; $i++)<i class="bi bi-star-fill {{ $i <= (int) $item->rating ? '' : 'is-kosong' }}"></i>@endfor
+                                    </span>
+                                </div>
+                                <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
+                            </div>
+
+                            <div class="ul-isi">
+                                <div class="ul-penanda">
+                                    <span class="ul-tanda {{ $item->jenis === 'paket' ? 'is-paket' : 'is-produk' }}">
+                                        <i class="bi {{ $item->jenis === 'paket' ? 'bi-box-seam' : 'bi-bag' }}"></i>{{ $item->jenis === 'paket' ? 'Paket' : 'Produk' }}
+                                    </span>
+                                    @if ($item->status === 'approved')
+                                        <span class="ul-tanda is-tayang"><i class="bi bi-shop"></i>Tampil di halaman produk</span>
+                                    @endif
+                                    @foreach ($curiga as $alasan)
+                                        <span class="ul-tanda is-curiga"><i class="bi bi-exclamation-triangle-fill"></i>{{ $alasan }}</span>
+                                    @endforeach
+                                </div>
+
+                                <p class="ul-teks">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->ulasan, 200), $search) !!}</p>
+                                @if (200 < mb_strlen((string) $item->ulasan))
+                                    <button type="button" class="ul-baca" wire:click="lihat('{{ $item->id }}')">Baca selengkapnya</button>
+                                @endif
+                                <div class="ul-waktu">Ditulis {{ $item->created_at?->locale('id')->diffForHumans() }}</div>
+                            </div>
+
+                            <div class="ul-aksi">
+                                <div class="ul-aksi-moderasi">
                                     @if ($item->status !== 'approved')
-                                        <button type="button" wire:click="approve('{{ $item->id }}')" class="btn btn-sm btn-success p-2" title="Setujui">
-                                            <i class="bi bi-check-circle"></i>
+                                        <button type="button" class="ul-btn is-setuju ul-konfirmasi"
+                                            data-action="approve" data-arg="{{ $item->id }}" data-icon="question"
+                                            data-title="Setujui ulasan ini?"
+                                            data-text="Ulasan {{ $item->nama }} akan tampil di halaman {{ $item->namaTarget() }}."
+                                            data-confirm="Ya, setujui">
+                                            <i class="bi bi-check-lg"></i><span>Setujui</span>
                                         </button>
                                     @endif
                                     @if ($item->status !== 'hidden')
-                                        <button type="button" wire:click="reject('{{ $item->id }}')" class="btn btn-sm btn-secondary p-2" title="Sembunyikan">
-                                            <i class="bi bi-eye-slash"></i>
+                                        <button type="button" class="ul-btn is-sembunyi ul-konfirmasi"
+                                            data-action="reject" data-arg="{{ $item->id }}" data-icon="warning"
+                                            data-title="Sembunyikan ulasan ini?"
+                                            data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus."
+                                            data-confirm="Ya, sembunyikan">
+                                            <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
                                         </button>
                                     @endif
-                                    <button type="button" class="btn btn-sm btn-danger delete-review-btn p-2" data-id="{{ $item->id }}" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="8" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-star"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">Tidak Ada Ulasan</h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">Belum ada ulasan pada filter ini.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                </div>
+                                <div class="ul-aksi-lain">
+                                    <button type="button" class="ul-btn ul-btn-ikon" wire:click="lihat('{{ $item->id }}')" title="Detail" aria-label="Detail ulasan"><i class="bi bi-eye"></i></button>
+                                    @if ($tautan = $item->tautanPublik())
+                                        <a href="{{ $tautan }}" target="_blank" rel="noopener" class="ul-btn ul-btn-ikon" title="Buka halaman produknya" aria-label="Buka halaman produk"><i class="bi bi-box-arrow-up-right"></i></a>
+                                    @endif
+                                    <button type="button" class="ul-btn ul-btn-ikon is-bahaya ul-konfirmasi"
+                                        data-action="remove" data-arg="{{ $item->id }}" data-icon="warning"
+                                        data-title="Hapus ulasan ini?" data-text="Ulasan dari {{ $item->nama }} dihapus permanen dan tidak bisa dikembalikan."
+                                        data-confirm="Ya, hapus" title="Hapus" aria-label="Hapus ulasan"><i class="bi bi-trash3"></i></button>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
-                <div class="mt-4">
-                    {{ $reviews->links('vendor.pagination') }}
+
+                @if ($reviews->hasPages())
+                    <div class="ul-halaman">{{ $reviews->links('vendor.pagination') }}</div>
+                @endif
+            @endif
+        </section>
+    </div>
+
+    {{-- ================== JENDELA DETAIL ================== --}}
+    @if ($detail)
+        @php
+            [$dLabel, $dLencana, $dWarna] = $detail->tampilanStatus();
+            $dGambar = $detail->gambarTarget();
+        @endphp
+        <div class="ts-modal-back" wire:click="tutupLihat"></div>
+        <div class="ts-modal" wire:key="ulasan-detail-{{ $detail->id }}">
+            <div class="ts-modal-card dsb is-datar ul-jendela" role="dialog" aria-modal="true" aria-label="Detail ulasan" tabindex="-1"
+                x-on:keydown.escape.window="$wire.tutupLihat()"
+                x-on:keydown.arrow-left.window="$wire.detailTetangga(-1)"
+                x-on:keydown.arrow-right.window="$wire.detailTetangga(1)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: {{ $dWarna }}"><i class="bi bi-star-fill"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Detail Ulasan</h5>
+                        <span class="dsb-kartu-sub">{{ $detail->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}</span>
+                    </span>
+                    <span class="ul-pintasan" aria-hidden="true">← → pindah</span>
+                    <span class="ul-jendela-nav">
+                        <button type="button" class="ul-btn ul-btn-ikon" wire:click="detailTetangga(-1)" title="Sebelumnya (←)" aria-label="Ulasan sebelumnya"><i class="bi bi-chevron-left"></i></button>
+                        <button type="button" class="ul-btn ul-btn-ikon" wire:click="detailTetangga(1)" title="Berikutnya (→)" aria-label="Ulasan berikutnya"><i class="bi bi-chevron-right"></i></button>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupLihat" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi ul-detail">
+                    <div class="ul-detail-profil">
+                        <span class="ul-gambar">
+                            @if ($dGambar)
+                                <img src="{{ $dGambar }}" alt="" loading="lazy">
+                            @else
+                                <i class="bi {{ $detail->jenis === 'paket' ? 'bi-box-seam' : 'bi-bag' }}"></i>
+                            @endif
+                        </span>
+                        <div>
+                            <b>{{ $detail->namaTarget() }}</b>
+                            <span>{{ $detail->jenis === 'paket' ? 'Paket bundling' : 'Produk satuan' }}</span>
+                            <span class="ul-bintang">
+                                @for ($i = 1; $i <= 5; $i++)<i class="bi bi-star-fill {{ $i <= (int) $detail->rating ? '' : 'is-kosong' }}"></i>@endfor
+                            </span>
+                        </div>
+                        <span class="dsb-lencana {{ $dLencana }}" style="margin-left: auto;">{{ $dLabel }}</span>
+                    </div>
+
+                    @if ($detail->kecurigaan())
+                        <div class="ul-peringatan">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>
+                                <b>Perlu diperiksa</b>
+                                <span>{{ implode(' · ', $detail->kecurigaan()) }}</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    <blockquote class="ul-kutip">{{ $detail->ulasan }}</blockquote>
+
+                    <div class="ul-info">
+                        <div><small>Ditulis oleh</small><b>{{ $detail->nama }}</b></div>
+                        <div><small>Tampil di halaman produk</small><b>{{ $detail->status === 'approved' ? 'Ya' : 'Tidak — '.$dLabel }}</b></div>
+                    </div>
+                </div>
+                <div class="dsb-jendela-kaki ul-detail-kaki">
+                    <button type="button" class="ul-btn ul-salin" data-teks="{{ $detail->ulasan }}" title="Salin isi ulasan">
+                        <i class="bi bi-clipboard"></i><span>Salin teks</span>
+                    </button>
+                    @if ($tautanDetail = $detail->tautanPublik())
+                        <a href="{{ $tautanDetail }}" target="_blank" rel="noopener" class="ul-btn">
+                            <i class="bi bi-box-arrow-up-right"></i><span>Buka halaman produk</span>
+                        </a>
+                    @endif
+                    @if ($detail->status !== 'hidden')
+                        <button type="button" class="ul-btn is-sembunyi ul-konfirmasi" data-action="reject" data-arg="{{ $detail->id }}" data-icon="warning"
+                            data-title="Sembunyikan ulasan ini?" data-text="Ulasannya tidak lagi tampil di halaman produk, tapi tidak dihapus." data-confirm="Ya, sembunyikan">
+                            <i class="bi bi-eye-slash"></i><span>Sembunyikan</span>
+                        </button>
+                    @endif
+                    @if ($detail->status !== 'approved')
+                        <button type="button" class="ul-btn is-setuju ul-konfirmasi" data-action="approve" data-arg="{{ $detail->id }}" data-icon="question"
+                            data-title="Setujui ulasan ini?" data-text="Ulasan {{ $detail->nama }} akan tampil di halaman {{ $detail->namaTarget() }}." data-confirm="Ya, setujui">
+                            <i class="bi bi-check-lg"></i><span>Setujui</span>
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>
-    </div>
+    @endif
 
-    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
     @include('livewire.layout.sweetalert')
-    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
-</div>
 
-<!--================== SWEET ALERT DELETE ==================-->
-<script>
-    const glossyConfigReview = {
-        background: 'rgba(255, 255, 255, 0.8)',
-        backdrop: 'rgba(139, 92, 246, 0.15)',
-        customClass: {
-            popup: 'swal-glossy-popup',
-            confirmButton: 'btn-glossy-confirm',
-            cancelButton: 'btn-glossy-cancel',
-            title: 'swal-glossy-title'
-        },
-        buttonsStyling: false
-    };
+    @push('scripts')
+        <script>
+            // Dipasang SEKALI di dokumen (bukan body): wire:navigate mengganti <body>.
+            if (!window.__ulasanModerasiTerpasang) {
+                window.__ulasanModerasiTerpasang = true;
+                const gaya = {
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel', title: 'swal-glossy-title' },
+                    buttonsStyling: false,
+                };
+                // execCommand: peramban lama & konteks tanpa HTTPS tidak punya
+                // navigator.clipboard, dan tombol Salin harus tetap bekerja.
+                const salinCadangan = (teks, selesai) => {
+                    const ta = document.createElement('textarea');
+                    ta.value = teks;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); selesai(); } catch (e) { /* diam: tak ada yang bisa dilakukan */ }
+                    document.body.removeChild(ta);
+                };
+                const panggil = (el, metode, arg) => {
+                    const komponen = el.closest('[wire\\:id]');
+                    if (!komponen) return;
+                    const hidup = Livewire.find(komponen.getAttribute('wire:id'));
+                    if (arg === undefined) hidup.call(metode); else hidup.call(metode, arg);
+                };
+                document.addEventListener('click', (e) => {
+                    if (typeof Swal === 'undefined') return;
 
-    // Popup baca ulasan LENGKAP (sel isi ulasan di tabel dipotong). Di-bind
-    // sekali via guard agar tak dobel saat Livewire re-render.
-    if (!window.__reviewReadBound) {
-        window.__reviewReadBound = true;
-        const escReview = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        document.body.addEventListener('click', function (event) {
-            const trg = event.target.closest('.review-read-trigger');
-            if (!trg) return;
-
-            let stars = '';
-            const rating = parseInt(trg.getAttribute('data-rating') || '0', 10);
-            for (let i = 1; i <= 5; i++) stars += (i <= rating ? '★' : '☆');
-
-            Swal.fire({
-                title: escReview(trg.getAttribute('data-produk')),
-                html: '<div style="text-align:left;">'
-                    + '<div style="color:#f59e0b;font-size:1.15rem;letter-spacing:2px;margin-bottom:.35rem;">' + stars + '</div>'
-                    + '<div style="font-weight:700;color:#1e293b;">' + escReview(trg.getAttribute('data-nama')) + '</div>'
-                    + '<div style="font-size:.78rem;color:#94a3b8;margin-bottom:.7rem;">' + escReview(trg.getAttribute('data-tanggal')) + '</div>'
-                    + '<div style="color:#334155;line-height:1.65;white-space:pre-wrap;word-break:break-word;">' + escReview(trg.getAttribute('data-ulasan')) + '</div>'
-                    + '</div>',
-                confirmButtonText: 'Tutup',
-                ...glossyConfigReview
-            });
-        });
-    }
-
-    document.addEventListener('livewire:navigated', function() {
-        document.body.addEventListener('click', function(event) {
-            const button = event.target.closest('.delete-review-btn');
-
-            if (button) {
-                event.preventDefault();
-                const reviewId = button.getAttribute('data-id');
-
-                Swal.fire({
-                    title: 'Yakin hapus ulasan?',
-                    text: "Ulasan ini akan dihapus permanen dan tidak bisa dikembalikan!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal',
-                    ...glossyConfigReview
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const component = button.closest('[wire\\:id]');
-                        if (component) {
-                            const livewireComponentId = component.getAttribute('wire:id');
-                            Livewire.find(livewireComponentId).call('remove', reviewId);
+                    const salin = e.target.closest('.ul-salin');
+                    if (salin) {
+                        e.preventDefault();
+                        const teks = salin.dataset.teks || '';
+                        const sudah = () => Swal.fire({ title: 'Tersalin', text: 'Isi ulasan sudah disalin.', icon: 'success', timer: 1600, showConfirmButton: false, ...gaya });
+                        if (navigator.clipboard?.writeText) {
+                            navigator.clipboard.writeText(teks).then(sudah).catch(() => salinCadangan(teks, sudah));
+                        } else {
+                            salinCadangan(teks, sudah);
                         }
+                        return;
+                    }
+
+                    const tombol = e.target.closest('.ul-konfirmasi');
+                    if (tombol) {
+                        e.preventDefault();
+                        Swal.fire({
+                            title: tombol.dataset.title || 'Lanjutkan?', text: tombol.dataset.text || '',
+                            icon: tombol.dataset.icon || 'question', showCancelButton: true,
+                            confirmButtonText: tombol.dataset.confirm || 'Ya', cancelButtonText: 'Batal', ...gaya,
+                        }).then((r) => { if (r.isConfirmed) panggil(tombol, tombol.dataset.action, tombol.dataset.arg); });
                     }
                 });
             }
-        });
-    });
-</script>
-<!--================== END SWEET ALERT DELETE ==================-->
+        </script>
+    @endpush
+</div>

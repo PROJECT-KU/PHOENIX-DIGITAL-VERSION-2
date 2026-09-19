@@ -960,7 +960,7 @@ it('foto bisa dihapus dari form tanpa menghapus testimoninya', function () {
 it('penyorot kata meng-escape isi testimoni sebelum menyisipkan mark', function () {
     $hasil = (string) \App\Support\SorotKata::pada('<b>bagus</b> sekali', 'bagus');
 
-    expect($hasil)->toContain('<mark class="tm-sorot-kata">bagus</mark>')
+    expect($hasil)->toContain('<mark class="sorot-kata">bagus</mark>')
         // Tag dari isi testimoni ikut ter-escape, bukan ikut dirender.
         ->toContain('&lt;b&gt;')
         ->not->toContain('<b>');
@@ -975,7 +975,7 @@ it('kata pencarian disorot di daftar', function () {
     testimoni(['nama' => 'Rina Kusuma', 'pesan' => 'Akun Grammarly-nya cepat dikirim.']);
 
     Livewire::test(TestimoniList::class)->set('searchTestimoni', 'Grammarly')
-        ->assertSee('<mark class="tm-sorot-kata">Grammarly</mark>', false);
+        ->assertSee('<mark class="sorot-kata">Grammarly</mark>', false);
 });
 
 it('halaman publik menyebut jumlah hasil yang sedang ditampilkan', function () {

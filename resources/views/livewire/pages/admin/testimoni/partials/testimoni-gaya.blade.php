@@ -45,7 +45,7 @@
     .tm-unggah.is-ringkas { padding: 12px; }
     .tm-foto-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .tm-foto-aksi .tm-btn { flex: 1 1 auto; }
-    .tm-sorot-kata { background: #fef08a; color: inherit; padding: 0 2px; border-radius: 3px; }
+    .sorot-kata { background: #fef08a; color: inherit; padding: 0 2px; border-radius: 3px; }
 
     /* Bilah urungkan & pintasan papan tik */
     .tm-urungkan { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); font-size: .85rem; color: #475569; }

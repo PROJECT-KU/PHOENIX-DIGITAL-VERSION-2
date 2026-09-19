@@ -105,7 +105,8 @@ it('moderasi admin menampilkan dan bisa mencari ulasan paket berdasarkan nama pa
 
     Livewire::test(ReviewModeration::class)
         ->assertSee('Combo Uji Ulasan')
-        ->assertSeeHtml('ms-1">Paket</span>')
+        // Lencana jenis kini bagian dari kartu moderasi (ul-tanda is-paket).
+        ->assertSeeHtml('ul-tanda is-paket')
         ->set('search', 'Combo Uji')
         ->assertSee('Mantap');
 });

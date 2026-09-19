@@ -24,6 +24,6 @@ class SorotKata
         $aman = e($teks);
         $pola = '/'.preg_quote(e($kata), '/').'/iu';
 
-        return new HtmlString((string) preg_replace($pola, '<mark class="tm-sorot-kata">$0</mark>', $aman));
+        return new HtmlString((string) preg_replace($pola, '<mark class="sorot-kata">$0</mark>', $aman));
     }
 }
