@@ -43,6 +43,9 @@
     .tm-sorot-teks b { display: block; font-size: .86rem; color: #1c1f26; }
     .tm-sorot-teks small { display: block; font-size: .75rem; color: #64748b; }
     .tm-unggah.is-ringkas { padding: 12px; }
+    .tm-foto-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .tm-foto-aksi .tm-btn { flex: 1 1 auto; }
+    .tm-sorot-kata { background: #fef08a; color: inherit; padding: 0 2px; border-radius: 3px; }
     .tm-unggah.is-ringkas .tm-avatar { flex-basis: 40px; width: 40px; height: 40px; font-size: .95rem; }
 
     /* ===== Sebaran bintang ===== */
@@ -110,6 +113,7 @@
     .tm-tanda.is-tunggu { background: #eff6ff; color: #1d4ed8; }
     .tm-tanda.is-lama { background: #ffedd5; color: #c2410c; }
     .tm-tanda.is-curiga { background: #fef2f2; color: #b91c1c; }
+    .tm-tanda.is-dihubungi { background: #ecfdf5; color: #15803d; }
     .tm-kartu.is-sorot { box-shadow: 0 0 0 1px #fcd34d inset, 0 10px 24px -20px rgba(180, 83, 9, .8); }
     .tm-kartu.is-dipilih { box-shadow: 0 0 0 2px #7c3aed inset; }
     .tm-geser { display: inline-flex; gap: 4px; }
@@ -199,9 +203,14 @@
 
     /* ===== Kepala kolom tampilan daftar ===== */
     .tm-daftar-kepala { display: none; gap: 10px; padding: 0 16px 8px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
-    .tm-daftar-kepala span:nth-child(1) { flex: 1 1 210px; }
-    .tm-daftar-kepala span:nth-child(2) { flex: 2 1 260px; }
-    .tm-daftar-kepala span:nth-child(3) { flex: 0 0 auto; }
+    .tm-daftar-kepala > * { text-align: left; }
+    .tm-daftar-kepala > *:nth-child(1) { flex: 1 1 210px; }
+    .tm-daftar-kepala > *:nth-child(2) { flex: 2 1 260px; }
+    .tm-daftar-kepala > *:nth-child(3) { flex: 0 0 auto; }
+    .tm-daftar-kepala button { padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+    .tm-daftar-kepala button:hover { color: #64748b; }
+    .tm-daftar-kepala button.is-aktif { color: #6d28d9; }
+    .tm-daftar-kepala i { font-size: .62rem; }
     @media (min-width: 768px) { .tm-daftar-kepala { display: flex; } }
 
     .tm-nomor-daftar { display: none; align-items: center; gap: 4px; margin-right: 8px; color: #15803d; font-weight: 700; }

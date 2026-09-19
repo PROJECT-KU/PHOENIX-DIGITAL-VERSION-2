@@ -337,9 +337,14 @@ Data Testimoni || lemon
                 @endif
 
                 @if ($tampilan === 'daftar')
-                    <div class="tm-daftar-kepala" aria-hidden="true">
-                        <span>Pengirim</span>
-                        <span>Isi testimoni</span>
+                    <div class="tm-daftar-kepala">
+                        <button type="button" class="{{ $urut === 'nama' ? 'is-aktif' : '' }}" wire:click="$set('urut', 'nama')">
+                            Pengirim @if ($urut === 'nama')<i class="bi bi-caret-down-fill"></i>@endif
+                        </button>
+                        <button type="button" class="{{ in_array($urut, ['baru', 'lama'], true) ? 'is-aktif' : '' }}" wire:click="$set('urut', '{{ $urut === 'baru' ? 'lama' : 'baru' }}')">
+                            Isi testimoni · {{ $urut === 'lama' ? 'terlama' : 'terbaru' }}
+                            @if (in_array($urut, ['baru', 'lama'], true))<i class="bi bi-caret-down-fill"></i>@endif
+                        </button>
                         <span>Tindakan</span>
                     </div>
                 @endif
@@ -350,7 +355,7 @@ Data Testimoni || lemon
                             [$stLencana, $stWarna, $stLabel] = $gayaStatus[$item->status] ?? ['is-abu', '#64748b', ucfirst($item->status)];
                             $posisi = $nomorTampil[$item->id] ?? null;
                             $tampilBeranda = $posisi && $posisi <= $maksBeranda;
-                            $curiga = $item->kecurigaan();
+                            $curiga = $item->kecurigaan($konteksCuriga);
                             $menungguHari = $item->menungguHari();
                         @endphp
                         <article class="tm-kartu {{ $item->sorot ? 'is-sorot' : '' }} {{ in_array($item->id, $pilih, true) ? 'is-dipilih' : '' }}"
@@ -365,7 +370,7 @@ Data Testimoni || lemon
                                     @include('livewire.pages.admin.testimoni.partials.avatar', ['item' => $item])
                                 </button>
                                 <div class="tm-kepala-teks">
-                                    <p class="tm-nama">{{ $item->nama }}</p>
+                                    <p class="tm-nama">{!! \App\Support\SorotKata::pada($item->nama, $searchTestimoni) !!}</p>
                                     @if ($item->peran)
                                         <span class="tm-peran">{{ $item->peran }}</span>
                                     @endif
@@ -391,6 +396,9 @@ Data Testimoni || lemon
                                             <span class="tm-tanda is-diam"><i class="bi bi-eye-slash"></i>Di luar {{ $maksBeranda }} teratas</span>
                                         @endif
                                     @endif
+                                    @if ($item->sudahDihubungi())
+                                        <span class="tm-tanda is-dihubungi"><i class="bi bi-whatsapp"></i>Sudah dihubungi</span>
+                                    @endif
                                     @if ($menungguHari >= 1)
                                         <span class="tm-tanda {{ $menungguHari >= 3 ? 'is-lama' : 'is-tunggu' }}">
                                             <i class="bi bi-clock-history"></i>Menunggu {{ $menungguHari }} hari
@@ -401,7 +409,7 @@ Data Testimoni || lemon
                                     @endforeach
                                 </div>
 
-                                <p class="tm-pesan">{{ \Illuminate\Support\Str::limit($item->pesan, 200) }}</p>
+                                <p class="tm-pesan">{!! \App\Support\SorotKata::pada(\Illuminate\Support\Str::limit($item->pesan, 200), $searchTestimoni) !!}</p>
                                 @if (200 < mb_strlen((string) $item->pesan))
                                     <button type="button" class="tm-baca" wire:click="lihat('{{ $item->id }}')">Baca selengkapnya</button>
                                 @endif
@@ -458,8 +466,9 @@ Data Testimoni || lemon
                                                 title="{{ $item->sorot ? 'Lepas sorotan' : 'Sorot ke beranda' }}" aria-label="Sorot testimoni">
                                                 <i class="bi {{ $item->sorot ? 'bi-star-fill' : 'bi-star' }}"></i>
                                             </button>
-                                            @if ($posisi)
+                                            @if (! $item->tersembunyiKarenaRating())
                                                 <span class="tm-geser">
+                                                    <button type="button" class="tm-btn tm-btn-ikon" wire:click="naikkanKeAtas('{{ $item->id }}')" title="Jadikan urutan pertama" aria-label="Jadikan urutan pertama di beranda"><i class="bi bi-chevron-double-up"></i></button>
                                                     <button type="button" class="tm-btn tm-btn-ikon" wire:click="geser('{{ $item->id }}', 'naik')" title="Naikkan urutan" aria-label="Naikkan urutan"><i class="bi bi-chevron-up"></i></button>
                                                     <button type="button" class="tm-btn tm-btn-ikon" wire:click="geser('{{ $item->id }}', 'turun')" title="Turunkan urutan" aria-label="Turunkan urutan"><i class="bi bi-chevron-down"></i></button>
                                                 </span>
@@ -628,6 +637,13 @@ Data Testimoni || lemon
                         <a href="{{ $detail->tautanWa('Halo '.$detail->nama.', terima kasih atas testimoninya untuk Phoenix Digital 🙏') }}" target="_blank" rel="noopener" class="tm-btn is-wa">
                             <i class="bi bi-whatsapp"></i><span>Balas WhatsApp</span>
                         </a>
+                        @if ($bolehUbah)
+                            <button type="button" class="tm-btn {{ $detail->sudahDihubungi() ? 'is-dihubungi' : '' }}" wire:click="alihDihubungi('{{ $detail->id }}')"
+                                title="{{ $detail->sudahDihubungi() ? 'Lepas penanda' : 'Tandai supaya tidak dihubungi dua kali' }}">
+                                <i class="bi {{ $detail->sudahDihubungi() ? 'bi-check2-circle' : 'bi-circle' }}"></i>
+                                <span>{{ $detail->sudahDihubungi() ? 'Sudah dihubungi' : 'Tandai dihubungi' }}</span>
+                            </button>
+                        @endif
                     @endif
                     @if ($detail->no_hp && $bolehPelanggan)
                         <a wire:navigate href="{{ route('admin.customer.index', ['searchCustomer' => $detail->no_hp_cari]) }}" class="tm-btn" title="Buka Data Pelanggan untuk nomor ini">

@@ -29,6 +29,8 @@ class Testimoni extends Model
         'ditinjau_at',
         'ditinjau_oleh',
         'alasan_tolak',
+        'dihubungi_at',
+        'dihubungi_oleh',
     ];
 
     protected $casts = [
@@ -37,6 +39,7 @@ class Testimoni extends Model
         'sorot' => 'boolean',
         'urutan' => 'integer',
         'ditinjau_at' => 'datetime',
+        'dihubungi_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -146,6 +149,7 @@ class Testimoni extends Model
      * Banyak kartu testimoni di beranda — bisa diubah admin dari layar Data
      * Testimoni. Dibatasi 3..24 supaya slidernya tetap masuk akal.
      */
+    /** Nilainya murah: Setting mengingat isinya selama satu permintaan. */
     public static function jumlahBeranda(): int
     {
         return max(3, min(24, (int) (Setting::get(self::SETELAN_BERANDA) ?: self::BERANDA_MAKS)));
@@ -186,9 +190,14 @@ class Testimoni extends Model
      * Penanda kiriman yang patut dicurigai — hanya PETUNJUK untuk admin,
      * tidak pernah menolak sendiri. Keputusan tetap di tangan manusia.
      *
+     * $konteks berisi hitungan nomor & isi pesan untuk SELURUH halaman daftar
+     * (lihat konteksKecurigaan). Tanpa itu tiap kartu menjalankan dua kueri
+     * sendiri — 12 kartu = 24 kueri tambahan sekali muat.
+     *
+     * @param  array{nomor: array<string, int>, pesan: array<string, int>}|null  $konteks
      * @return array<int, string> alasan yang terbaca manusia
      */
-    public function kecurigaan(): array
+    public function kecurigaan(?array $konteks = null): array
     {
         $alasan = [];
         $pesan = (string) $this->pesan;
@@ -202,15 +211,51 @@ class Testimoni extends Model
         }
 
         // Nomor yang sama mengirim berkali-kali, atau isi pesan persis kembar.
-        if (filled($this->no_hp) && static::where('no_hp', $this->no_hp)->whereKeyNot($this->getKey())->exists()) {
+        $nomorBanyak = $konteks
+            ? ($konteks['nomor'][(string) $this->no_hp] ?? 0) > 1
+            : filled($this->no_hp) && static::where('no_hp', $this->no_hp)->whereKeyNot($this->getKey())->exists();
+
+        if (filled($this->no_hp) && $nomorBanyak) {
             $alasan[] = 'Nomor pernah mengirim';
         }
 
-        if (static::where('pesan', $pesan)->whereKeyNot($this->getKey())->exists()) {
+        $pesanBanyak = $konteks
+            ? ($konteks['pesan'][$pesan] ?? 0) > 1
+            : static::where('pesan', $pesan)->whereKeyNot($this->getKey())->exists();
+
+        if ($pesanBanyak) {
             $alasan[] = 'Isi kembar';
         }
 
         return $alasan;
+    }
+
+    /**
+     * Hitungan nomor & isi pesan untuk sekumpulan testimoni — dua kueri untuk
+     * satu halaman penuh, bukan dua kueri per kartu.
+     *
+     * @param  \Illuminate\Support\Collection<int, static>  $daftar
+     * @return array{nomor: array<string, int>, pesan: array<string, int>}
+     */
+    public static function konteksKecurigaan($daftar): array
+    {
+        $nomor = $daftar->pluck('no_hp')->filter()->unique()->values();
+        $pesan = $daftar->pluck('pesan')->filter()->unique()->values();
+
+        return [
+            'nomor' => $nomor->isEmpty() ? [] : static::withTrashed()
+                ->whereIn('no_hp', $nomor)->selectRaw('no_hp, count(*) as jumlah')
+                ->groupBy('no_hp')->pluck('jumlah', 'no_hp')->all(),
+            'pesan' => $pesan->isEmpty() ? [] : static::withTrashed()
+                ->whereIn('pesan', $pesan)->selectRaw('pesan, count(*) as jumlah')
+                ->groupBy('pesan')->pluck('jumlah', 'pesan')->all(),
+        ];
+    }
+
+    /** Admin sudah membalas/berterima kasih ke pengirim lewat WhatsApp. */
+    public function sudahDihubungi(): bool
+    {
+        return $this->dihubungi_at !== null;
     }
 
     /** Tautan WhatsApp untuk membalas pengirim (kosong bila nomornya tidak ada). */

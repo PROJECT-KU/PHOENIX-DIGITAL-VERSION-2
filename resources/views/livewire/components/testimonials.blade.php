@@ -69,6 +69,9 @@
         }
         .tm-form .req { color: #dc2626; }
         .tm-perangkap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+        .tm-foto-baris { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .tm-foto-pratinjau { display: inline-flex; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; border: 1px solid #eceff4; }
+        .tm-foto-pratinjau img { width: 100%; height: 100%; object-fit: cover; }
         .tm-form .tm-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
         .tm-form .tm-form-bantu { display: block; margin-top: 5px; font-size: .78rem; color: #9aa1ad; }
 
@@ -361,7 +364,23 @@
                          sebagai avatar — jadi ini benar-benar boleh dilewati. --}}
                     <div class="tm-form-row">
                         <label>Foto <span class="tm-opsional">(boleh dilewati)</span></label>
-                        <input type="file" wire:model="foto" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                        {{-- Pratinjau dibuat DI PERAMBAN (createObjectURL), bukan lewat
+                             rute pratinjau admin: rute itu wajib login, jadi bagi
+                             pengunjung gambarnya cuma akan tampil rusak. --}}
+                        <div class="tm-foto-baris" x-data="{ pratinjau: null }"
+                            x-on:foto-kamera.window="pratinjau = $event.detail"
+                            x-on:testi-terkirim.window="pratinjau = null">
+                            <input type="file" wire:model="foto" class="form-control" accept="image/*" capture="user"
+                                x-on:change="pratinjau = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
+                            @include('partials.kamera-foto', ['target' => 'foto', 'class' => 'tm-tulis'])
+                            <template x-if="pratinjau">
+                                <span class="tm-foto-pratinjau"><img :src="pratinjau" alt="Pratinjau foto"></span>
+                            </template>
+                            <button type="button" class="tm-tulis" x-show="pratinjau" x-cloak
+                                x-on:click="pratinjau = null; $wire.set('foto', null)">
+                                <i class="bi bi-x-lg"></i> Hapus foto
+                            </button>
+                        </div>
                         <span class="tm-form-bantu">
                             <span wire:loading.remove wire:target="foto">JPG atau PNG, maksimal 5 MB. Tanpa foto, huruf depan nama Anda yang dipakai.</span>
                             <span wire:loading wire:target="foto">Mengunggah foto…</span>

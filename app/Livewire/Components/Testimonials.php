@@ -148,6 +148,7 @@ class Testimonials extends Component
         $this->reset(['nama', 'peran', 'no_hp', 'pesan', 'anonim', 'nomorDikenali', 'foto']);
         $this->rating = 5;
         $this->submitted = true;
+        $this->dispatch('testi-terkirim');
 
         // Slider tidak berubah (testimoni baru non-active), tapi pastikan Swiper tetap sehat
         $this->dispatch('tm-reinit');

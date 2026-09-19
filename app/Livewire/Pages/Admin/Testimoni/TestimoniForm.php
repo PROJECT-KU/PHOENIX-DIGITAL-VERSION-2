@@ -32,6 +32,9 @@ class TestimoniForm extends Component
 
     public $existingImage = null; // nama file lama di DB
 
+    /** Admin menekan "Hapus foto": fotonya dibuang saat disimpan. */
+    public bool $fotoDihapus = false;
+
     public $status = '';
 
     /** Sorot: naik ke barisan depan beranda, walau bintangnya di bawah ambang. */
@@ -56,6 +59,17 @@ class TestimoniForm extends Component
             // Testimoni yang diinput admin biasanya sudah layak tampil.
             $this->status = 'active';
         }
+    }
+
+    /**
+     * Lepas foto yang sedang terpasang. Sebelumnya foto hanya bisa DIGANTI —
+     * sejak pelanggan boleh mengunggah sendiri, foto tak pantas cuma bisa
+     * hilang dengan menghapus seluruh testimoninya.
+     */
+    public function hapusFoto(): void
+    {
+        $this->foto = null;
+        $this->fotoDihapus = true;
     }
 
     public function setRating(int $nilai): void
@@ -209,7 +223,12 @@ class TestimoniForm extends Component
                 $data['ditinjau_oleh'] = auth()->id();
             }
 
-            if ($this->foto && is_object($this->foto)) {
+            if ($this->fotoDihapus && ! ($this->foto && is_object($this->foto))) {
+                if ($this->existingImage && Storage::disk('public')->exists('img/testimoni/'.$this->existingImage)) {
+                    Storage::disk('public')->delete('img/testimoni/'.$this->existingImage);
+                }
+                $data['foto'] = null;
+            } elseif ($this->foto && is_object($this->foto)) {
                 if ($this->existingImage && Storage::disk('public')->exists('img/testimoni/'.$this->existingImage)) {
                     Storage::disk('public')->delete('img/testimoni/'.$this->existingImage);
                 }
@@ -248,6 +267,7 @@ class TestimoniForm extends Component
         $this->foto = '';
         $this->status = '';
         $this->sorot = false;
+        $this->fotoDihapus = false;
     }
 
     public function render()

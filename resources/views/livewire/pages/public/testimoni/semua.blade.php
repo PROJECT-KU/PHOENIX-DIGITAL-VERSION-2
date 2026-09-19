@@ -41,6 +41,8 @@
         .tms-chip.is-aktif { background: var(--ph-orange, #f26522); border-color: var(--ph-orange, #f26522); color: #fff; }
         .tms-chip i { color: #f5a623; font-size: .8rem; }
         .tms-chip.is-aktif i { color: #fff; }
+        .tms-jumlah { margin-left: auto; font-size: .82rem; color: var(--ph-muted, #6b7280); }
+        @media (max-width: 575.98px) { .tms-jumlah { margin-left: 0; flex-basis: 100%; } }
 
         /* Kartu memenuhi tinggi kolomnya — pola yang sama dipakai Bundling,
            supaya deret kartunya tidak bergerigi di tepi bawah. */
@@ -130,6 +132,14 @@
                             </button>
                         @endif
                     @endforeach
+
+                    {{-- Jumlah hasil setelah menyaring: tanpa ini pengunjung tidak
+                         tahu berapa banyak yang sedang ia lihat. --}}
+                    @if ($testimoni->total())
+                        <span class="tms-jumlah">
+                            Menampilkan {{ $testimoni->count() }} dari {{ $testimoni->total() }}{{ $bintang !== '' ? ' testimoni '.$bintang.' bintang' : ' testimoni' }}
+                        </span>
+                    @endif
                 </div>
             @endif
 
@@ -156,7 +166,7 @@
                                          tampil sebagai huruf depan namanya di halaman publik. --}}
                                     <span class="tm-avatar">
                                         @if ($t->foto && \Storage::disk('public')->exists('img/testimoni/'.$t->foto))
-                                            <img src="{{ asset('storage/img/testimoni/'.$t->foto) }}" alt="{{ $t->nama_publik }}">
+                                            <img src="{{ asset('storage/img/testimoni/'.$t->foto) }}" alt="{{ $t->nama_publik }}" loading="lazy">
                                         @else
                                             {{ strtoupper(mb_substr($t->nama_publik, 0, 1)) }}
                                         @endif

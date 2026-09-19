@@ -88,7 +88,7 @@ class TestimoniList extends Component
 
     public string $tolakAlasan = '';
 
-    public const URUT = ['baru', 'lama', 'tunggu', 'tinggi', 'rendah'];
+    public const URUT = ['baru', 'lama', 'tunggu', 'tinggi', 'rendah', 'nama'];
 
     public const ALASAN_TOLAK = [
         'Berisi promosi/tautan',
@@ -402,6 +402,55 @@ class TestimoniList extends Component
 
     // ===== Kendali tampil di beranda =====
 
+    /**
+     * Tandai sudah/belum dihubungi. Tombol Balas WhatsApp tidak meninggalkan
+     * jejak, jadi pengirim yang sama gampang diucapkan terima kasih dua kali.
+     */
+    public function alihDihubungi(string $id): void
+    {
+        if (! $this->bolehModerasi()) {
+            return;
+        }
+
+        $t = Testimoni::find($id);
+        if (! $t) {
+            return;
+        }
+
+        $sudah = $t->sudahDihubungi();
+        $t->update([
+            'dihubungi_at' => $sudah ? null : now(),
+            'dihubungi_oleh' => $sudah ? null : auth()->id(),
+        ]);
+
+        $this->dispatch('swal-success', message: $sudah ? 'Penanda dihubungi dilepas.' : 'Ditandai sudah dihubungi.');
+    }
+
+    /**
+     * Naikkan ke urutan teratas beranda. Tombol ↑ hanya menggeser satu posisi,
+     * jadi testimoni yang jauh di bawah butuh puluhan klik untuk sampai atas.
+     */
+    public function naikkanKeAtas(string $id): void
+    {
+        if (! $this->bolehModerasi()) {
+            return;
+        }
+
+        $ids = Testimoni::tampilPublik()->urutTampil()->pluck('id')->all();
+        $i = array_search($id, $ids, true);
+        if ($i === false) {
+            return;
+        }
+
+        array_splice($ids, $i, 1);
+        array_unshift($ids, $id);
+        foreach ($ids as $posisi => $tid) {
+            Testimoni::whereKey($tid)->update(['urutan' => $posisi + 1]);
+        }
+
+        $this->dispatch('swal-success', message: 'Dinaikkan ke urutan pertama beranda.');
+    }
+
     /** Sorot: naikkan ke barisan depan beranda (dan tampilkan walau bintangnya rendah). */
     public function alihSorot(string $id): void
     {
@@ -682,6 +731,7 @@ class TestimoniList extends Component
     protected function kueri()
     {
         $urutan = match ($this->urut) {
+            'nama' => ['nama', 'asc'],
             'lama', 'tunggu' => ['created_at', 'asc'],
             'tinggi' => ['rating', 'desc'],
             'rendah' => ['rating', 'asc'],
@@ -743,11 +793,18 @@ class TestimoniList extends Component
             ->with(['customer' => $pelangganHitung])
             ->paginate(max(6, min(48, $this->perHalaman)));
 
+        // Dibaca SEKALI per render; dulu tiga kali (setelan = satu kueri tiap
+        // dipanggil). Sengaja tidak di-cache statis: pekerja antrean berumur
+        // panjang akan memegang nilai basi berjam-jam.
+        $maksBeranda = Testimoni::jumlahBeranda();
+
+        // Satu kueri untuk semua hitungan tab; dulu lima kueri terpisah.
+        $perStatus = Testimoni::selectRaw('status, count(*) as jumlah')->groupBy('status')->pluck('jumlah', 'status');
         $tabCounts = [
-            'all' => Testimoni::count(),
-            'pending' => Testimoni::where('status', 'pending')->count(),
-            'active' => Testimoni::where('status', 'active')->count(),
-            'non-active' => Testimoni::where('status', 'non-active')->count(),
+            'all' => (int) $perStatus->sum(),
+            'pending' => (int) ($perStatus['pending'] ?? 0),
+            'active' => (int) ($perStatus['active'] ?? 0),
+            'non-active' => (int) ($perStatus['non-active'] ?? 0),
             'arsip' => Testimoni::onlyTrashed()->count(),
         ];
 
@@ -756,20 +813,29 @@ class TestimoniList extends Component
             ->selectRaw('rating, count(*) as jumlah')
             ->groupBy('rating')->pluck('jumlah', 'rating');
         $totalSebaran = max(1, (int) $sebaran->sum());
+        // Rata-rata & jumlah tampil dihitung dari sebaran yang sudah ada,
+        // bukan dua kueri agregat tambahan.
+        $jumlahDisetujui = (int) $sebaran->sum();
+        $rataRating = $jumlahDisetujui
+            ? round($sebaran->reduce(fn ($t, $n, $b) => $t + ($b * $n), 0) / $jumlahDisetujui, 1)
+            : 0.0;
 
         return view('livewire.pages.admin.testimoni.testimoni-list', [
             'Testimoni' => $Testimoni,
             'tabCounts' => $tabCounts,
             // Rata-rata rating yang TAMPIL di publik (hanya yang disetujui).
-            'rataRating' => round((float) Testimoni::where('status', 'active')->avg('rating'), 1),
+            'rataRating' => $rataRating,
             'sebaran' => collect(range(5, 1))->mapWithKeys(fn ($b) => [$b => [
                 'jumlah' => (int) ($sebaran[$b] ?? 0),
                 'persen' => round(((int) ($sebaran[$b] ?? 0)) / $totalSebaran * 100),
             ]]),
             'jumlahTampil' => Testimoni::tampilPublik()->count(),
-            // Posisi di beranda (1 = kartu pertama). Yang di luar BERANDA_MAKS
-            // tidak pernah dilihat pengunjung — itulah gunanya Sorot.
-            'nomorTampil' => Testimoni::tampilPublik()->urutTampil()->pluck('id')->flip()->map(fn ($i) => $i + 1),
+            // Hanya sebanyak yang MUAT di beranda: sisanya tidak pernah dilihat
+            // pengunjung, jadi tak perlu ditarik hanya untuk mencari nomornya.
+            'nomorTampil' => Testimoni::tampilPublik()->urutTampil()
+                ->limit($maksBeranda)->pluck('id')->flip()->map(fn ($i) => $i + 1),
+            // Dua kueri untuk satu halaman, bukan dua kueri per kartu.
+            'konteksCuriga' => Testimoni::konteksKecurigaan($Testimoni->getCollection()),
             'detail' => $detail = $this->lihatId
                 ? Testimoni::withTrashed()->with(['customer' => $pelangganHitung, 'peninjau'])->find($this->lihatId)
                 : null,
@@ -781,10 +847,10 @@ class TestimoniList extends Component
                     ->latest('id')->limit(4)->pluck('product_name')->unique()->values()
                 : collect(),
             'aktivitas' => $this->lihatAktivitas ? RiwayatTestimoni::terbaru() : collect(),
-            'maksBeranda' => Testimoni::jumlahBeranda(),
+            'maksBeranda' => $maksBeranda,
             // Sembilan (atau sebanyak setelan) testimoni teratas, untuk pratinjau urutan beranda.
             'urutanBeranda' => $this->pratinjauBeranda
-                ? Testimoni::tampilPublik()->urutTampil()->take(Testimoni::jumlahBeranda())->get()
+                ? Testimoni::tampilPublik()->urutTampil()->take($maksBeranda)->get()
                 : collect(),
             'tolak' => $this->tolakId && $this->tolakId !== 'massal' ? Testimoni::find($this->tolakId) : null,
         ])

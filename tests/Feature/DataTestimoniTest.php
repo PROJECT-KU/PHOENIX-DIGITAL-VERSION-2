@@ -836,3 +836,153 @@ it('penanda data lama hanya menyentuh yang belum punya jejak, dan --kering tidak
     $this->artisan('testimoni:tandai-lama')->assertSuccessful();
     expect(\App\Models\TestimoniRiwayat::where('testimoni_id', $lama->id)->count())->toBe(1);
 });
+
+// ===================== Beban kueri =====================
+
+it('daftar tidak menjalankan kueri per kartu untuk penanda kecurigaan', function () {
+    $this->actingAs(adminTestimoni());
+    foreach (range(1, 12) as $i) {
+        testimoni(['nama' => 'Kiriman '.$i, 'no_hp' => '08120000'.str_pad((string) $i, 4, '0', STR_PAD_LEFT)]);
+    }
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    Livewire::test(TestimoniList::class)->call('setFilter', 'all');
+    $kueri = \Illuminate\Support\Facades\DB::getQueryLog();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $perKartu = collect($kueri)
+        ->filter(fn ($q) => str_contains($q['query'], 'select exists') && str_contains($q['query'], 'testimonis'))
+        ->count();
+
+    // Dulu 2 kueri per kartu (12 kartu = 24). Kini dihitung sekali sehalaman.
+    expect($perKartu)->toBeLessThan(4)
+        ->and(count($kueri))->toBeLessThan(35);
+});
+
+it('konteks kecurigaan memberi hasil yang sama dengan pemeriksaan satuan', function () {
+    $a = testimoni(['pesan' => 'Isi yang persis sama.', 'no_hp' => '081299990000']);
+    $b = testimoni(['pesan' => 'Isi yang persis sama.', 'no_hp' => '081299990000']);
+    $sendiri = testimoni(['pesan' => 'Testimoni yang berdiri sendiri saja.', 'no_hp' => '081288887777']);
+
+    $konteks = Testimoni::konteksKecurigaan(collect([$a, $b, $sendiri]));
+
+    expect($a->kecurigaan($konteks))->toBe($a->kecurigaan())
+        ->and($a->kecurigaan($konteks))->toContain('Isi kembar')->toContain('Nomor pernah mengirim')
+        ->and($sendiri->kecurigaan($konteks))->toBe($sendiri->kecurigaan())
+        ->and($sendiri->kecurigaan($konteks))->toBe([]);
+});
+
+it('setelan jumlah beranda dibaca sekali saja saat daftar dirender', function () {
+    $this->actingAs(adminTestimoni());
+    \App\Models\Setting::set(Testimoni::SETELAN_BERANDA, 6);
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    Livewire::test(TestimoniList::class);
+    $jumlah = collect(\Illuminate\Support\Facades\DB::getQueryLog())
+        ->filter(fn ($q) => str_contains($q['query'], 'settings'))->count();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    // mount() + render() masing-masing sekali; dulu empat kali.
+    expect($jumlah)->toBeLessThanOrEqual(2)
+        ->and(Testimoni::jumlahBeranda())->toBe(6);
+});
+
+// ===================== Penanda dihubungi & urutan =====================
+
+it('penanda sudah dihubungi bisa dipasang & dilepas, dan butuh izin ubah', function () {
+    $t = testimoni(['no_hp' => '081234567890']);
+
+    $this->actingAs(adminTestimoni(['view_testimoni']));
+    Livewire::test(TestimoniList::class)->call('alihDihubungi', $t->id);
+    expect($t->fresh()->sudahDihubungi())->toBeFalse();
+
+    $admin = adminTestimoni();
+    $this->actingAs($admin);
+    Livewire::test(TestimoniList::class)->call('alihDihubungi', $t->id);
+    expect($t->fresh()->sudahDihubungi())->toBeTrue()
+        ->and($t->fresh()->dihubungi_oleh)->toEqual($admin->id);
+
+    Livewire::test(TestimoniList::class)->call('alihDihubungi', $t->id);
+    expect($t->fresh()->sudahDihubungi())->toBeFalse()
+        ->and($t->fresh()->dihubungi_oleh)->toBeNull();
+});
+
+it('naikkan ke atas memindahkan testimoni ke urutan pertama beranda', function () {
+    $this->actingAs(adminTestimoni());
+    $a = testimoni(['nama' => 'Satu', 'status' => 'active', 'created_at' => now()]);
+    $b = testimoni(['nama' => 'Dua', 'status' => 'active', 'created_at' => now()->subHour()]);
+    $c = testimoni(['nama' => 'Tiga', 'status' => 'active', 'created_at' => now()->subDay()]);
+
+    Livewire::test(TestimoniList::class)->call('naikkanKeAtas', $c->id);
+
+    expect(Testimoni::tampilPublik()->urutTampil()->pluck('id')->all())->toBe([$c->id, $a->id, $b->id]);
+});
+
+it('naikkan ke atas menolak pengguna tanpa izin ubah', function () {
+    $t = testimoni(['status' => 'active']);
+    $this->actingAs(adminTestimoni(['view_testimoni']));
+
+    Livewire::test(TestimoniList::class)->call('naikkanKeAtas', $t->id);
+    expect($t->fresh()->urutan)->toBe(0);
+});
+
+it('urutan menurut nama dipakai kepala kolom tampilan daftar', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Zulkifli']);
+    testimoni(['nama' => 'Ahmad']);
+
+    expect(Livewire::test(TestimoniList::class)->set('urut', 'nama')->viewData('Testimoni')->first()->nama)
+        ->toBe('Ahmad');
+});
+
+// ===================== Foto =====================
+
+it('foto bisa dihapus dari form tanpa menghapus testimoninya', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+    \Illuminate\Support\Facades\Storage::disk('public')->put('img/testimoni/lama.webp', 'isi');
+
+    $this->actingAs(adminTestimoni());
+    $t = testimoni(['nama' => 'Punya Foto', 'status' => 'active', 'foto' => 'lama.webp']);
+
+    Livewire::test(TestimoniForm::class, ['testimoni' => $t])
+        ->assertSet('existingImage', 'lama.webp')
+        ->call('hapusFoto')
+        ->assertSet('fotoDihapus', true)
+        ->call('save');
+
+    expect($t->fresh()->foto)->toBeNull()
+        ->and($t->fresh()->nama)->toBe('Punya Foto')
+        ->and(\Illuminate\Support\Facades\Storage::disk('public')->exists('img/testimoni/lama.webp'))->toBeFalse();
+});
+
+// ===================== Sorot kata pencarian =====================
+
+it('penyorot kata meng-escape isi testimoni sebelum menyisipkan mark', function () {
+    $hasil = (string) \App\Support\SorotKata::pada('<b>bagus</b> sekali', 'bagus');
+
+    expect($hasil)->toContain('<mark class="tm-sorot-kata">bagus</mark>')
+        // Tag dari isi testimoni ikut ter-escape, bukan ikut dirender.
+        ->toContain('&lt;b&gt;')
+        ->not->toContain('<b>');
+
+    // Kata terlalu pendek/kosong tidak menyorot apa pun.
+    expect((string) \App\Support\SorotKata::pada('Halo dunia', ''))->toBe('Halo dunia')
+        ->and((string) \App\Support\SorotKata::pada('Halo dunia', 'a'))->toBe('Halo dunia');
+});
+
+it('kata pencarian disorot di daftar', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Rina Kusuma', 'pesan' => 'Akun Grammarly-nya cepat dikirim.']);
+
+    Livewire::test(TestimoniList::class)->set('searchTestimoni', 'Grammarly')
+        ->assertSee('<mark class="tm-sorot-kata">Grammarly</mark>', false);
+});
+
+it('halaman publik menyebut jumlah hasil yang sedang ditampilkan', function () {
+    foreach (range(1, 3) as $i) {
+        testimoni(['nama' => 'Tampil '.$i, 'status' => 'active']);
+    }
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)
+        ->assertSee('Menampilkan 3 dari 3 testimoni');
+});
