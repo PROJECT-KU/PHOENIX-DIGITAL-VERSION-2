@@ -26,11 +26,18 @@ Ebook Bonus || lemon
                     <span class="d-block">Pustaka ebook yang dibagikan sebagai bonus pesanan — pelanggan membukanya view-only lewat tautan.</span>
                 </p>
             </div>
-            @if ($bolehBuat)
+            @if ($bolehBuat || ($bolehUbah && $jumlahSaran))
                 <div class="dsb-hero-aksi">
-                    <a wire:navigate href="{{ route('admin.ebook.create') }}" class="dsb-tombol is-utama">
-                        <i class="bi bi-plus-lg"></i><span>Tambah Ebook</span>
-                    </a>
+                    @if ($bolehUbah && $jumlahSaran)
+                        <button type="button" class="dsb-tombol is-lembut" wire:click="bukaSaran" title="Pasang ebook yang paling sering dikirim sebagai bawaan tiap produk">
+                            <i class="bi bi-magic"></i><span>Saran bawaan <b class="eb-hitung">{{ $jumlahSaran }}</b></span>
+                        </button>
+                    @endif
+                    @if ($bolehBuat)
+                        <a wire:navigate href="{{ route('admin.ebook.create') }}" class="dsb-tombol is-utama">
+                            <i class="bi bi-plus-lg"></i><span>Tambah Ebook</span>
+                        </a>
+                    @endif
                 </div>
             @endif
         </header>
@@ -159,6 +166,52 @@ Ebook Bonus || lemon
             @endif
         </section>
     </div>
+
+    {{-- ================== JENDELA SARAN EBOOK BAWAAN ================== --}}
+    @if ($saranBuka)
+        @php $jumlahDipilih = count($saranPilih); @endphp
+        <div class="ts-modal-back" wire:click="tutupSaran"></div>
+        <div class="ts-modal" wire:key="ebook-saran">
+            <div class="ts-modal-card dsb is-datar eb-jendela" role="dialog" aria-modal="true" aria-label="Saran ebook bawaan" tabindex="-1"
+                x-on:keydown.escape.window="$wire.tutupSaran()">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #ea580c"><i class="bi bi-magic"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Terapkan Ebook Bawaan</h5>
+                        <span class="dsb-kartu-sub">Dari riwayat: ebook yang paling sering dikirim untuk tiap produk</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupSaran" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi eb-saran-daftar">
+                    @forelse ($saran as $x)
+                        @php
+                            $pid = (string) $x['produk']->id;
+                            $dicentang = isset($saranPilih[$pid]);
+                        @endphp
+                        <button type="button" class="eb-saran-baris {{ $dicentang ? 'is-pilih' : '' }}" wire:click="alihSaran('{{ $pid }}', '{{ $x['ebook']->id }}')" wire:key="sb-{{ $pid }}">
+                            <span class="eb-produk-centang"><i class="bi bi-check-lg"></i></span>
+                            <span class="eb-saran-teks">
+                                <b>{{ $x['produk']->nama_akun }}</b>
+                                <span><i class="bi bi-arrow-right"></i> {{ $x['ebook']->judul }} · dikirim {{ $x['n'] }}×</span>
+                                @if ($x['sekarang'])
+                                    <small>Bawaan saat ini: {{ $x['sekarang']->judul }} — akan diganti bila dicentang</small>
+                                @endif
+                            </span>
+                        </button>
+                    @empty
+                        <p class="eb-kosong-kecil">Semua produk sudah sesuai saran.</p>
+                    @endforelse
+                    <p class="eb-detail-waktu">Hanya produk yang menerima ebook yang sama minimal {{ $this::SARAN_MIN }}×. Produk yang sudah punya bawaan lain tidak tercentang otomatis.</p>
+                </div>
+                <div class="dsb-jendela-kaki eb-detail-kaki">
+                    <button type="button" class="dsb-tombol is-lembut" wire:click="tutupSaran"><span>Batal</span></button>
+                    <button type="button" class="dsb-tombol is-utama" wire:click="terapkanSaran" wire:loading.attr="disabled" wire:target="terapkanSaran" @disabled(! $jumlahDipilih)>
+                        <i class="bi bi-check2-circle"></i><span>Terapkan ke {{ $jumlahDipilih }} produk</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- ================== JENDELA DETAIL ================== --}}
     @if ($detail)

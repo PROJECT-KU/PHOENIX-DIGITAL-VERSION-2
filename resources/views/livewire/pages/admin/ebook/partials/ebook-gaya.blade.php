@@ -166,6 +166,15 @@
     .eb-kicker { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #f26522; margin-bottom: 10px; }
     .eb-tips { margin: 0; padding-left: 18px; font-size: .78rem; color: #64748b; line-height: 1.6; }
     .eb-form-utama { display: grid; gap: 20px; min-width: 0; }
+    .eb-saran-daftar { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+    .eb-saran-baris { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 12px; text-align: left; border-radius: 13px; border: 1.5px solid #e9edf3; background: #fff; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+    .eb-saran-baris .eb-produk-centang { margin-top: 1px; }
+    .eb-saran-baris.is-pilih { border-color: #ea580c; background: #fff7ed; }
+    .eb-saran-baris.is-pilih .eb-produk-centang { background: #ea580c; border-color: #ea580c; color: #fff; }
+    .eb-saran-teks { min-width: 0; }
+    .eb-saran-teks b { display: block; font-size: .88rem; color: #1c1f26; }
+    .eb-saran-teks span { display: block; font-size: .8rem; color: #475569; }
+    .eb-saran-teks small { display: block; margin-top: 2px; font-size: .72rem; color: #c2410c; font-weight: 700; }
     .eb-hitung { display: inline-flex; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #fff7ed; color: #c2410c; font-size: .7rem; font-weight: 800; vertical-align: middle; }
     .eb-saran { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; }
     .eb-saran-judul { font-size: .76rem; font-weight: 700; color: #92400e; display: inline-flex; align-items: center; gap: 5px; }

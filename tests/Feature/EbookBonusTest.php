@@ -206,3 +206,64 @@ it('halaman baca memakai logo Phoenix dan membedakan berkas yang hilang', functi
         ->assertDontSee('favicon.png', false)
         ->assertSee('MissingPDFException', false);
 });
+
+it('saran ebook bawaan: dari riwayat, pratinjau dulu, hanya pasangan sah yang diterapkan', function () {
+    $this->actingAs(adminEbook());
+    $pGpt = \App\Models\Product::create(['nama_akun' => 'Chat Gpt Plus']);
+    $pGram = \App\Models\Product::create(['nama_akun' => 'Grammarly Premium']);
+    $pJarang = \App\Models\Product::create(['nama_akun' => 'Jarang']);
+    $eGpt = Ebook::create(['judul' => 'Panduan Chat GPT', 'status' => 'active', 'file' => 'a.pdf']);
+    $eGram = Ebook::create(['judul' => 'Panduan Grammarly', 'status' => 'active', 'file' => 'b.pdf']);
+    $eLain = Ebook::create(['judul' => 'Panduan Lain', 'status' => 'active', 'file' => 'c.pdf']);
+    $pGram->update(['ebook_bawaan_id' => $eLain->id]);
+
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-SARAN-2', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => \App\Models\Customer::create(['nama' => 'C', 'no_hp' => '081200000011'])->id,
+    ]);
+    $kirim = function ($produk, $ebook, $kali) use ($order) {
+        foreach (range(1, $kali) as $i) {
+            \App\Models\OrderItem::create(['order_id' => $order->id, 'product_id' => $produk->id, 'product_name' => $produk->nama_akun, 'duration_type' => 'bulan', 'duration_value' => 1, 'price' => 1, 'quantity' => 1, 'subtotal' => 1])->ebooks()->attach($ebook->id);
+        }
+    };
+    $kirim($pGpt, $eGpt, 4);
+    $kirim($pGram, $eGram, 3);
+    $kirim($pJarang, $eGpt, 2); // di bawah ambang
+
+    $t = Livewire::test(EbookList::class)->assertSee('Saran bawaan')->call('bukaSaran')
+        ->assertSee('Chat Gpt Plus')->assertSee('Bawaan saat ini: Panduan Lain')->assertDontSee('Jarang');
+    // Yang belum punya bawaan tercentang; yang sudah punya (berbeda) tidak.
+    expect($t->get('saranPilih'))->toBe([(string) $pGpt->id => (string) $eGpt->id]);
+
+    // Pasangan karangan dari peramban diabaikan.
+    $t->set('saranPilih', [(string) $pGpt->id => (string) $eGpt->id, (string) $pJarang->id => (string) $eGpt->id])
+        ->call('terapkanSaran');
+
+    expect($pGpt->fresh()->ebook_bawaan_id)->toBe($eGpt->id)
+        ->and($pGram->fresh()->ebook_bawaan_id)->toBe($eLain->id)
+        ->and($pJarang->fresh()->ebook_bawaan_id)->toBeNull();
+});
+
+it('perintah pembersih hanya menghapus PDF yatim yang cukup tua', function () {
+    Storage::fake('local');
+    $disk = Storage::disk('local');
+    Ebook::create(['judul' => 'Dipakai', 'status' => 'active', 'file' => 'dipakai.pdf']);
+    $sampah = Ebook::create(['judul' => 'Di sampah', 'status' => 'active', 'file' => 'sampah.pdf']);
+    $sampah->delete();
+    foreach (['dipakai.pdf', 'sampah.pdf', 'yatim.pdf', 'baru.pdf'] as $f) {
+        $disk->put('ebooks/'.$f, 'x');
+    }
+    touch($disk->path('ebooks/yatim.pdf'), now()->subDay()->getTimestamp());
+    touch($disk->path('ebooks/dipakai.pdf'), now()->subDay()->getTimestamp());
+    touch($disk->path('ebooks/sampah.pdf'), now()->subDay()->getTimestamp());
+
+    $this->artisan('ebook:bersihkan-berkas', ['--kering' => true])->assertSuccessful();
+    $disk->assertExists('ebooks/yatim.pdf');
+
+    $this->artisan('ebook:bersihkan-berkas')->assertSuccessful();
+    $disk->assertMissing('ebooks/yatim.pdf');
+    $disk->assertExists('ebooks/dipakai.pdf');
+    $disk->assertExists('ebooks/sampah.pdf');
+    $disk->assertExists('ebooks/baru.pdf'); // lebih muda dari 60 menit
+});
