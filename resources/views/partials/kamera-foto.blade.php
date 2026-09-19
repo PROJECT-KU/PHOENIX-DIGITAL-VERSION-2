@@ -1,4 +1,11 @@
-@props(['target' => 'foto'])
+@php
+    // Dipakai lewat @include, jadi kelasnya datang sebagai variabel biasa —
+    // $attributes hanya ada untuk komponen, dan dulu membuat tombol ini
+    // memakai kelas admin yang tidak dikenal halaman publik (tampil polos).
+    $kmTarget = $target ?? 'foto';
+    $kmKelas = $kelas ?? 'tm-btn';
+    $kmTeks = $teks ?? 'Ambil Foto';
+@endphp
 
 {{-- Pengambil foto lewat kamera, dipakai form testimoni admin & pelanggan.
 
@@ -120,7 +127,7 @@
     </script>
 @endonce
 
-<button type="button" class="{{ $attributes->get('class', 'tm-btn') }}" data-target="{{ $target }}"
+<button type="button" class="{{ $kmKelas }}" data-target="{{ $kmTarget }}"
     onclick="window.kameraFoto.buka(this)">
-    <i class="bi bi-camera"></i><span>Ambil Foto</span>
+    <i class="bi bi-camera"></i><span>{{ $kmTeks }}</span>
 </button>

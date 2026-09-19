@@ -184,7 +184,7 @@
                 </div>
                 <div class="tm-unggah-muat" wire:loading.flex wire:target="foto"><span class="dsb-putar is-kecil"></span> Mengunggah foto…</div>
                 <div class="tm-foto-aksi">
-                    @include('partials.kamera-foto', ['target' => 'foto', 'class' => 'tm-btn'])
+                    @include('partials.kamera-foto', ['target' => 'foto', 'kelas' => 'tm-btn'])
                     @if ($urlFoto)
                         <button type="button" class="tm-btn is-bahaya" wire:click="hapusFoto">
                             <i class="bi bi-trash3"></i><span>Hapus foto</span>

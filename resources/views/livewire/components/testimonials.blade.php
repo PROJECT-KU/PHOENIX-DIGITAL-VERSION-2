@@ -69,9 +69,28 @@
         }
         .tm-form .req { color: #dc2626; }
         .tm-perangkap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-        .tm-foto-baris { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
-        .tm-foto-pratinjau { display: inline-flex; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; border: 1px solid #eceff4; }
+        .tm-foto-baris { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        /* label.tm-foto-btn: aturan .tm-form label (0,1,1) mengalahkan
+           .tm-foto-btn (0,1,0) dan membuat ikon turun ke barisnya sendiri. */
+        .tm-form label.tm-foto-btn,
+        .tm-foto-btn {
+            flex: 1 1 130px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 0; padding: 12px 16px; cursor: pointer; white-space: nowrap;
+            background: #fff; border: 1px solid #eceff4; border-radius: 12px;
+            font-family: 'Plus Jakarta Sans', 'Poppins', sans-serif; font-weight: 700; font-size: .88rem; color: #4b5563;
+            transition: border-color .2s ease, color .2s ease, box-shadow .2s ease;
+        }
+        .tm-foto-btn:hover { border-color: #f26522; color: #f26522; box-shadow: 0 8px 20px rgba(242, 101, 34, .12); }
+        .tm-foto-btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .tm-foto-btn i.bi, .tm-foto-btn i.bi::before { display: block; line-height: 1; }
+        .tm-foto-btn.is-kamera { background: #fff7ed; border-color: #fde3cf; color: #d9550f; }
+        .tm-foto-btn.is-kamera:hover { border-color: #f26522; color: #f26522; }
+        .tm-foto-hasil { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+        .tm-foto-pratinjau { display: inline-flex; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; border: 1px solid #eceff4; flex: 0 0 auto; }
         .tm-foto-pratinjau img { width: 100%; height: 100%; object-fit: cover; }
+        .tm-foto-lepas { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid #fecaca; background: #fff; color: #dc2626; cursor: pointer; }
+        .tm-foto-lepas i.bi, .tm-foto-lepas i.bi::before { display: block; line-height: 1; font-size: .8rem; }
+        .tm-foto-lepas:hover { background: #fef2f2; }
         .tm-form .tm-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
         .tm-form .tm-form-bantu { display: block; margin-top: 5px; font-size: .78rem; color: #9aa1ad; }
 
@@ -366,20 +385,32 @@
                         <label>Foto <span class="tm-opsional">(boleh dilewati)</span></label>
                         {{-- Pratinjau dibuat DI PERAMBAN (createObjectURL), bukan lewat
                              rute pratinjau admin: rute itu wajib login, jadi bagi
-                             pengunjung gambarnya cuma akan tampil rusak. --}}
+                             pengunjung gambarnya cuma akan tampil rusak.
+
+                             Medan berkas bawaan disembunyikan dan diganti label
+                             bergaya tombol: "Choose file / No file chosen" bawaan
+                             peramban satu-satunya bagian formulir ini yang tidak
+                             mengikuti rupa halaman. --}}
                         <div class="tm-foto-baris" x-data="{ pratinjau: null }"
                             x-on:foto-kamera.window="pratinjau = $event.detail"
                             x-on:testi-terkirim.window="pratinjau = null">
-                            <input type="file" wire:model="foto" class="form-control" accept="image/*" capture="user"
-                                x-on:change="pratinjau = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
-                            @include('partials.kamera-foto', ['target' => 'foto', 'class' => 'tm-tulis'])
+                            <label class="tm-foto-btn">
+                                <input type="file" wire:model="foto" accept="image/*"
+                                    x-on:change="pratinjau = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
+                                <i class="bi bi-image"></i><span x-text="pratinjau ? 'Ganti foto' : 'Pilih foto'">Pilih foto</span>
+                            </label>
+                            @include('partials.kamera-foto', ['target' => 'foto', 'kelas' => 'tm-foto-btn is-kamera'])
+                            {{-- Pratinjau & tombol hapusnya satu kelompok, supaya tidak
+                                 terpisah ke baris sendiri saat barisnya melipat. --}}
                             <template x-if="pratinjau">
-                                <span class="tm-foto-pratinjau"><img :src="pratinjau" alt="Pratinjau foto"></span>
+                                <span class="tm-foto-hasil">
+                                    <span class="tm-foto-pratinjau"><img :src="pratinjau" alt="Pratinjau foto"></span>
+                                    <button type="button" class="tm-foto-lepas"
+                                        x-on:click="pratinjau = null; $wire.set('foto', null)" title="Hapus foto" aria-label="Hapus foto">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </span>
                             </template>
-                            <button type="button" class="tm-tulis" x-show="pratinjau" x-cloak
-                                x-on:click="pratinjau = null; $wire.set('foto', null)">
-                                <i class="bi bi-x-lg"></i> Hapus foto
-                            </button>
                         </div>
                         <span class="tm-form-bantu">
                             <span wire:loading.remove wire:target="foto">JPG atau PNG, maksimal 5 MB. Tanpa foto, huruf depan nama Anda yang dipakai.</span>
