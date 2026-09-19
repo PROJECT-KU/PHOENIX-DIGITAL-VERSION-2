@@ -142,9 +142,23 @@ Detail Pesanan || lemon
                     @if ($biRefund)
                         <div class="dsb-medan">
                             <label class="dsb-label" for="bi-refund">Uang dikembalikan <span class="text-danger">*</span></label>
-                            <div class="pt-bi-rp">
+                            {{-- Tampil "75.000"; nilai yang dikirim ke server tetap angka polos. --}}
+                            <div class="pt-bi-rp" x-data="{
+                                    batas: {{ $biSubtotal }},
+                                    angka: {{ (int) $batalRefund }},
+                                    get lebih() { return this.batas < this.angka },
+                                    rupiah(n) { return n ? new Intl.NumberFormat('id-ID').format(n) : '' },
+                                    ketik(e) {
+                                        this.angka = Number((e.target.value || '').replace(/[^0-9]/g, '')) || 0;
+                                        e.target.value = this.rupiah(this.angka);
+                                        $wire.batalRefund = this.angka;
+                                    }
+                                }">
                                 <span>Rp</span>
-                                <input id="bi-refund" type="number" min="0" max="{{ $biSubtotal }}" class="dsb-isian" wire:model="batalRefund">
+                                <input id="bi-refund" type="text" inputmode="numeric" autocomplete="off" class="dsb-isian"
+                                    :class="lebih && 'is-lebih'" x-init="$el.value = rupiah(angka)" x-on:input="ketik($event)"
+                                    x-on:focus="$event.target.select()" placeholder="0">
+                                <small class="pt-bi-galat pt-bi-lebih" x-show="lebih" x-cloak>Melebihi batas {{ $biRp($biSubtotal) }}</small>
                             </div>
                             <small class="pt-bi-ket">
                                 Maksimal {{ $biRp($biSubtotal) }} — uang yang dibayar pelanggan untuk item ini{{ preg_match('/^\[(.+?)\]/u', (string) ($biItem->product_name ?? ''), $mbi) ? ' (bagian harga paket '.$mbi[1].', bukan harga normal)' : '' }}.
@@ -213,7 +227,10 @@ Detail Pesanan || lemon
     .pt-bi-info > i { font-size: 1.1rem; line-height: 1.3; }
     .pt-bi-info.is-refund { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
     .pt-bi-info.is-kurangi { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
-    .pt-bi-rp { display: flex; align-items: center; gap: 8px; }
+    .pt-bi-rp { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pt-bi-rp .dsb-isian { flex: 1 1 200px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pt-bi-rp .dsb-isian.is-lebih { border-color: #fca5a5; background: #fef2f2; }
+    .pt-bi-lebih { flex-basis: 100%; margin-top: 0; }
     .pt-bi-rp > span { font-weight: 800; color: #64748b; }
     .pt-bi-ket { display: block; margin-top: 4px; font-size: .74rem; color: #94a3b8; }
     .pt-bi-galat { display: block; margin-top: 4px; font-size: .76rem; color: #dc2626; }
