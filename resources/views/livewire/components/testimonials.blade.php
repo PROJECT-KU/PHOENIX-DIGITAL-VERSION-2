@@ -118,10 +118,12 @@
         }
         .tm-tulis i.bi { font-size: .95rem; }
         a.tm-tulis { text-decoration: none; }
+        /* Tanpa max-width sendiri: lebarnya mengikuti .container halaman yang
+           memuatnya, supaya sejajar dengan kotak ajakan di bawahnya. */
         .tm-ajakan {
             display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: space-between;
-            max-width: 1140px; margin: 0 auto; padding: 22px 26px;
-            background: linear-gradient(135deg, #fff7ed, #fff); border: 1px solid #fde3cf; border-radius: 20px;
+            padding: 22px 26px;
+            background: linear-gradient(135deg, #fff7ed, #fff); border: 1px solid #fde3cf; border-radius: 18px;
         }
         .tm-ajakan b { display: block; font-size: 1.02rem; color: #1c1f26; }
         .tm-ajakan span { display: block; font-size: .88rem; color: #6b7280; }
