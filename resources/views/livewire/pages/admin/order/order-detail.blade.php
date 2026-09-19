@@ -141,7 +141,10 @@ Detail Pesanan || lemon
                                 <span>Rp</span>
                                 <input id="bi-refund" type="number" min="0" max="{{ $biSubtotal }}" class="dsb-isian" wire:model="batalRefund">
                             </div>
-                            <small class="pt-bi-ket">Maksimal {{ $biRp($biSubtotal) }}. Isi 0 bila tidak ada uang yang dikembalikan.</small>
+                            <small class="pt-bi-ket">
+                                Maksimal {{ $biRp($biSubtotal) }} — uang yang dibayar pelanggan untuk item ini{{ preg_match('/^\[(.+?)\]/u', (string) ($biItem->product_name ?? ''), $mbi) ? ' (bagian harga paket '.$mbi[1].', bukan harga normal)' : '' }}.
+                                Isi 0 bila tidak ada uang yang dikembalikan.
+                            </small>
                             @error('batalRefund') <small class="pt-bi-galat">{{ $message }}</small> @enderror
                         </div>
                     @endif
@@ -1975,16 +1978,34 @@ Detail Pesanan || lemon
                                 if (1 < $qty) {
                                     $rumus = trim(($rumus ?: $rp($hargaAsli)).' × '.$qty.' akun');
                                 }
+
+                                // Item dari PAKET BUNDLING ("[Nama Paket] Produk"): yang dibayar
+                                // pelanggan adalah BAGIAN harga paket (subtotal tersimpan), bukan
+                                // harga katalog. Tanpa ini tabel menulis Rp 90.000 padahal bagian
+                                // paketnya Rp 75.000 — dan batas refund terlihat tidak masuk akal.
+                                $subtotalTampil = $hargaAsli * $qty;
+                                $namaBundel = preg_match('/^\[(.+?)\]/u', (string) $item->product_name, $mb) ? $mb[1] : null;
+                                if ($namaBundel) {
+                                    $subtotalTampil = (int) $item->subtotal;
+                                    $normalBundel = $hargaAsli * $qty;
+                                    $pakaiPaket = $subtotalTampil < $normalBundel;
+                                    $hemat = $pakaiPaket ? $normalBundel - $subtotalTampil : 0;
+                                    $normal = $normalBundel;
+                                    $qtyTampil = 1;
+                                    $rumus = 'Bagian harga paket '.$namaBundel;
+                                } else {
+                                    $qtyTampil = $qty;
+                                }
                             @endphp
                             <td class="text-end" data-judul="Harga Satuan">
                                 <span class="pt-harga">{{ $rp($tampilSatuan) }}</span>
                                 <small class="pt-harga-ket">{{ $labelSatuan }}</small>
                             </td>
                             <td class="text-end" data-judul="Subtotal">
-                                <span class="pt-harga pt-harga-total">{{ $rp($hargaAsli * $qty) }}</span>
+                                <span class="pt-harga pt-harga-total">{{ $rp($subtotalTampil) }}</span>
                                 <small class="pt-harga-ket">{{ $rumus }}</small>
                                 @if ($pakaiPaket)
-                                    <small class="pt-harga-ket"><s>{{ $rp($normal * $qty) }}</s> <span class="pt-hemat">hemat {{ $rp($hemat * $qty) }}</span></small>
+                                    <small class="pt-harga-ket"><s>{{ $rp($normal * $qtyTampil) }}</s> <span class="pt-hemat">hemat {{ $rp($hemat * $qtyTampil) }}</span></small>
                                 @endif
                             </td>
                             @if ($itemJasa)

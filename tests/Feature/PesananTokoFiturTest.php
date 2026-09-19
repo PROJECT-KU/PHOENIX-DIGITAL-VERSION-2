@@ -439,3 +439,18 @@ it('detail menampilkan tombol Perpanjang & Batalkan item hanya bila berlaku', fu
     expect($html)->toContain('perpanjang='.$order->items->firstWhere('product_name', 'Akun B')->id)
         ->toContain("bukaBatalItem('");
 });
+
+it('item paket bundling menampilkan bagian harga paket yang dibayar, sama dengan batas refund', function () {
+    $this->actingAs(tokoAdmin());
+    $p = Product::create(['nama_akun' => 'DeepL Premium', 'harga_perbulan' => 50000]);
+    $order = pesananDuaItem(['status' => 'completed'], ['product_id' => $p->id, 'product_name' => '[Combo Hemat] DeepL Premium', 'price' => 30000, 'subtotal' => 30000]);
+    $item = $order->items->firstWhere('product_name', '[Combo Hemat] DeepL Premium');
+
+    Livewire::test(OrderDetail::class, ['order' => $order])
+        ->assertSee('Bagian harga paket Combo Hemat')
+        ->assertSee('Rp 30.000')
+        ->assertSee('hemat Rp 20.000')
+        ->call('bukaBatalItem', $item->id)
+        ->assertSet('batalRefund', 30000)
+        ->assertSee('bagian harga paket Combo Hemat, bukan harga normal');
+});
