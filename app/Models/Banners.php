@@ -102,6 +102,34 @@ class Banners extends Model
         return ['Tayang', 'success'];
     }
 
+    /** Berkas gambar ada di disk publik? */
+    public function gambarAda(): bool
+    {
+        return $this->gambar && \Illuminate\Support\Facades\Storage::disk('public')->exists('img/banners/'.$this->gambar);
+    }
+
+    public function gambarUrl(): ?string
+    {
+        return $this->gambar ? asset('storage/img/banners/'.$this->gambar) : null;
+    }
+
+    /**
+     * Keterangan waktu yang mudah dibaca untuk admin: kapan mulai / berakhir
+     * relatif dari sekarang. Null bila tidak ada yang perlu diberitahukan.
+     */
+    public function keteranganWaktu(): ?string
+    {
+        $rel = fn ($t) => $t->locale('id')->diffForHumans(['parts' => 1]);
+
+        return match (true) {
+            $this->status !== 'active' => null,
+            $this->menungguJadwal() => 'Mulai tayang '.$rel($this->mulai_tayang),
+            $this->sudahBerakhir() => 'Berakhir '.$rel($this->selesai_tayang),
+            $this->selesai_tayang !== null => 'Berakhir '.$rel($this->selesai_tayang),
+            default => 'Tayang tanpa batas waktu',
+        };
+    }
+
     /** Rentang jadwal untuk ditampilkan, mis. "12 Agt 2026 – 20 Agt 2026". */
     public function jadwalLabel(): string
     {

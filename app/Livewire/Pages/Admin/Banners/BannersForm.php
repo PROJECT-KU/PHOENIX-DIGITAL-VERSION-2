@@ -44,11 +44,35 @@ class BannersForm extends Component
             $this->mulai_tayang = $this->banners->mulai_tayang?->format('Y-m-d\TH:i') ?? '';
             $this->selesai_tayang = $this->banners->selesai_tayang?->format('Y-m-d\TH:i') ?? '';
             $this->mode = 'edit';
+        } else {
+            // Banner baru biasanya langsung ingin tayang.
+            $this->status = 'active';
         }
+    }
+
+    /** Isian cepat jadwal tayang. */
+    public function aturJadwal(string $pilihan): void
+    {
+        $f = fn ($t) => $t->format('Y-m-d\TH:i');
+        $mulai = $this->mulai_tayang ? \Illuminate\Support\Carbon::parse($this->mulai_tayang) : now();
+
+        match ($pilihan) {
+            'sekarang' => $this->mulai_tayang = $f(now()),
+            '7hari' => [$this->mulai_tayang = $f($mulai), $this->selesai_tayang = $f($mulai->copy()->addDays(7)->setTime(23, 59))],
+            '30hari' => [$this->mulai_tayang = $f($mulai), $this->selesai_tayang = $f($mulai->copy()->addDays(30)->setTime(23, 59))],
+            'akhirbulan' => [$this->mulai_tayang = $f($mulai), $this->selesai_tayang = $f($mulai->copy()->endOfMonth()->setTime(23, 59))],
+            'kosong' => [$this->mulai_tayang = '', $this->selesai_tayang = ''],
+            default => null,
+        };
+        $this->resetErrorBag(['mulai_tayang', 'selesai_tayang']);
     }
 
     public function save()
     {
+        // Rute sudah dijaga izin, tetapi komponen ini juga bisa dipanggil dari
+        // halaman lain — izin diperiksa di sini juga.
+        abort_unless(auth()->user()?->hasPermission($this->mode === 'create' ? 'create_banners' : 'edit_banners'), 403);
+
         $rules = [
             'judul' => 'required|min:3',
             'deskripsi' => 'nullable|string',

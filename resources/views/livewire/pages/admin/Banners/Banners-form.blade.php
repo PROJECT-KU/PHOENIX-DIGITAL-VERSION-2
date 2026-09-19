@@ -1,202 +1,182 @@
-<form wire:submit.prevent="save">
-    <div class="row g-4">
-        <div class="col-md-6">
-            <label class="form-label fw-bold text-secondary">Judul Banner <span class="text-danger">*</span></label>
-            <input type="text" wire:model.defer="judul" class="form-control @error('judul') is-invalid @enderror" placeholder="Contoh: Promo Diskon 50%">
-            @error('judul') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
+<div>
+    @php
+        $edit = $mode !== 'create';
+        $gambarBaru = $gambar && is_object($gambar) && ! $errors->has('gambar');
+        $urlBaru = $gambarBaru ? \App\Support\PratinjauUnggahan::url($gambar) : null;
+        $urlLama = $existingImage ? asset('storage/img/banners/'.$existingImage) : null;
+        $urlTampil = $urlBaru ?: $urlLama;
+        $statusOpsi = [
+            'active' => ['Aktif', 'bi-broadcast', '#16a34a', 'Tampil di beranda sesuai jadwal di bawah'],
+            'non-active' => ['Non-aktif', 'bi-eye-slash', '#64748b', 'Disembunyikan, apa pun jadwalnya'],
+        ];
+    @endphp
 
-        <div class="col-md-6">
-            <label class="form-label fw-bold text-secondary">Status <span class="text-danger">*</span></label>
-            <select wire:model.defer="status" class="form-control form-select @error('status') is-invalid @enderror">
-                <option value="">-- Pilih Status --</option>
-                <option value="active">Active</option>
-                <option value="non-active">Non-Active</option>
-            </select>
-            @error('status') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-        </div>
-
-        {{-- Jadwal tayang (opsional), seperti Promo. Dikosongkan = tanpa batas
-             waktu, jadi banner lama & banner biasa tetap berperilaku seperti
-             sebelumnya tanpa admin perlu mengisi apa pun. --}}
-        <div class="col-12">
-            <div class="p-3 rounded-4" style="background: rgba(124,58,237,.05); border: 1px solid rgba(124,58,237,.18);">
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <span class="stat-icon-wrapper bg-gradient-purple flex-shrink-0"
-                        style="width: 36px; height: 36px; font-size: 1rem; border-radius: 10px;">
-                        <i class="bi bi-calendar-range"></i>
-                    </span>
-                    <div>
-                        <div class="fw-bold text-dark">Jadwal Tayang <span class="text-muted fw-normal">(opsional)</span></div>
-                        <div class="text-muted" style="font-size:.78rem;">
-                            Banner otomatis muncul & hilang sendiri sesuai jadwal. Kosongkan bila ingin tayang terus tanpa batas waktu.
+    <form wire:submit.prevent="save" class="bn-form-tata">
+        {{-- ================== KOLOM UTAMA ================== --}}
+        <div class="bn-form-utama">
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bn-form-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-card-heading"></i></span>
+                        <div>
+                            <b>Informasi Banner</b>
+                            <span>Judul dipakai sebagai teks alternatif gambar dan untuk admin.</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">Mulai Tayang</label>
-                        <input type="datetime-local" wire:model.defer="mulai_tayang"
-                            class="form-control @error('mulai_tayang') is-invalid @enderror">
-                        <div class="form-text" style="font-size:.75rem;">Kosong = langsung tayang begitu status Active.</div>
-                        @error('mulai_tayang') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    <div class="bn-medan dsb-medan">
+                        <label class="dsb-label" for="bn-judul">Judul Banner <span class="text-danger">*</span></label>
+                        <input id="bn-judul" type="text" wire:model.defer="judul" class="dsb-isian" placeholder="Contoh: Promo Diskon 50%">
+                        @error('judul') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold text-secondary">Selesai Tayang</label>
-                        <input type="datetime-local" wire:model.defer="selesai_tayang"
-                            class="form-control @error('selesai_tayang') is-invalid @enderror">
-                        <div class="form-text" style="font-size:.75rem;">Kosong = tayang seterusnya.</div>
-                        @error('selesai_tayang') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                    <div class="bn-medan dsb-medan">
+                        <label class="dsb-label" for="bn-desk">Deskripsi</label>
+                        <textarea id="bn-desk" wire:model.defer="deskripsi" rows="4" class="dsb-isian bn-desk-isian" placeholder="Keterangan singkat isi banner (opsional)"></textarea>
+                        @error('deskripsi') <small class="bn-galat">{{ $message }}</small> @enderror
+                    </div>
+
+                    <div class="bn-medan dsb-medan">
+                        <span class="dsb-label">Status <span class="text-danger">*</span></span>
+                        <div class="bn-status-pilih" role="radiogroup" aria-label="Status banner">
+                            @foreach ($statusOpsi as $nilai => [$label, $ikon, $warna, $ket])
+                                <label class="bn-status-opsi {{ $status === $nilai ? 'is-pilih' : '' }}" style="--c: {{ $warna }}">
+                                    <input type="radio" wire:model.live="status" value="{{ $nilai }}">
+                                    <span><i class="bi {{ $ikon }}"></i></span>
+                                    <span><b>{{ $label }}</b><small>{{ $ket }}</small></span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('status') <small class="bn-galat">{{ $message }}</small> @enderror
                     </div>
                 </div>
+            </div>
 
-                <div class="text-muted mt-2" style="font-size:.75rem;">
-                    <i class="bi bi-info-circle me-1" style="vertical-align:-0.125em;"></i>Jadwal hanya berlaku bila status <b>Active</b>. Status <b>Non-Active</b> tetap menyembunyikan banner, apa pun jadwalnya.
+            {{-- Jadwal tayang (opsional). Kosong = tanpa batas waktu. --}}
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bn-form-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: #0284c7"><i class="bi bi-calendar-range"></i></span>
+                        <div>
+                            <b>Jadwal Tayang <span class="text-muted fw-normal">(opsional)</span></b>
+                            <span>Banner muncul & hilang sendiri sesuai jadwal. Kosongkan untuk tayang terus.</span>
+                        </div>
+                    </div>
+
+                    <div class="bn-jadwal-isian">
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="bn-mulai">Mulai tayang</label>
+                            <input id="bn-mulai" type="datetime-local" wire:model.live="mulai_tayang" class="dsb-isian">
+                            <small class="bn-bantu">Kosong = langsung tayang begitu Aktif.</small>
+                            @error('mulai_tayang') <small class="bn-galat">{{ $message }}</small> @enderror
+                        </div>
+                        <div class="dsb-medan">
+                            <label class="dsb-label" for="bn-selesai">Selesai tayang</label>
+                            <input id="bn-selesai" type="datetime-local" wire:model.live="selesai_tayang" class="dsb-isian">
+                            <small class="bn-bantu">Kosong = tayang seterusnya.</small>
+                            @error('selesai_tayang') <small class="bn-galat">{{ $message }}</small> @enderror
+                        </div>
+                    </div>
+
+                    <div class="bn-cepat">
+                        <span>Isi cepat:</span>
+                        <button type="button" wire:click="aturJadwal('sekarang')">Mulai sekarang</button>
+                        <button type="button" wire:click="aturJadwal('7hari')">7 hari</button>
+                        <button type="button" wire:click="aturJadwal('30hari')">30 hari</button>
+                        <button type="button" wire:click="aturJadwal('akhirbulan')">Sampai akhir bulan</button>
+                        <button type="button" wire:click="aturJadwal('kosong')">Tanpa batas</button>
+                    </div>
+
+                    <div class="bn-catatan">
+                        <i class="bi bi-info-circle"></i>
+                        <span>Jadwal hanya berlaku bila status <b>Aktif</b>. Status <b>Non-aktif</b> tetap menyembunyikan banner, apa pun jadwalnya.</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12">
-            <label class="form-label fw-bold text-secondary">
-                Gambar Banner
-            </label>
-
-            <div class="row g-4 align-items-start">
-                <div class="col-md-6">
-                    <div class="upload-container position-relative">
-                        <input type="file"
-                            id="gambarInput"
-                            wire:model="gambar"
-                            class="file-input @error('gambar') is-invalid @enderror"
-                            accept="image/png, image/jpeg, image/jpg">
-
-                        <div class="upload-overlay">
-                            <i class="bi bi-cloud-upload fs-2 text-primary"></i>
-                            <span class="text-muted fw-bold">Klik untuk unggah gambar</span>
+        {{-- ================== KOLOM SAMPING ================== --}}
+        <aside class="bn-form-samping">
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <div class="bn-form-kepala">
+                        <span class="dsb-ikon is-kecil" style="--c: #ea580c"><i class="bi bi-image"></i></span>
+                        <div>
+                            <b>Gambar Banner @if (! $edit)<span class="text-danger">*</span>@endif</b>
+                            <span>Persegi (1:1), mis. 1254×1254 · JPG/PNG maks. 5 MB</span>
                         </div>
                     </div>
-                    @error('gambar') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
-                    <small class="text-muted mt-2"><i class="bi bi-info-circle me-1"></i> JPG, PNG (Maks 5MB)</small>
-                </div>
 
-                <div class="col-md-6">
-                    <div class="preview-box border p-2 rounded-4 shadow-sm bg-white d-flex align-items-center justify-content-center" style="min-height: 150px;">
-                        @if ($gambar && is_object($gambar) && !$errors->has('gambar'))
-                        <!-- Preview untuk gambar yang baru di-upload (temporary) -->
-                        <img src="{{ \App\Support\PratinjauUnggahan::url($gambar) }}"
-                            class="rounded-3 img-fluid"
-                            style="cursor: pointer; max-height: 250px; object-fit: contain;"
-                            onclick="showGlossyPreview('{{ \App\Support\PratinjauUnggahan::url($gambar) }}')"
-                            title="Klik untuk memperbesar">
-
-                        @elseif ($existingImage)
-                        <!-- Preview untuk gambar lama dari database -->
-                        <img src="{{ asset('storage/img/banners/' . $existingImage) }}"
-                            class="rounded-3 img-fluid"
-                            style="cursor: pointer; max-height: 250px; object-fit: contain;"
-                            onclick="showGlossyPreview('{{ asset('storage/img/banners/' . $existingImage) }}')"
-                            title="Klik untuk memperbesar">
-
+                    {{-- Persegi: sama dengan potongan banner di beranda. --}}
+                    <div id="bnZona" class="bn-unggah {{ $urlTampil ? 'is-isi' : '' }} {{ $errors->has('gambar') ? 'is-galat' : '' }}">
+                        <input type="file" id="gambarInput" wire:model="gambar" accept="image/png, image/jpeg, image/jpg" aria-label="Pilih gambar banner">
+                        @if ($urlTampil)
+                            <img src="{{ $urlTampil }}" alt="Pratinjau banner">
+                            <span class="bn-unggah-ganti"><i class="bi bi-arrow-repeat"></i>{{ $gambarBaru ? 'Gambar baru · klik untuk ganti' : 'Klik untuk ganti gambar' }}</span>
                         @else
-                        <!-- Placeholder saat tidak ada gambar -->
-                        <div class="text-center text-muted p-3">
-                            <i class="bi bi-image fs-1 opacity-50"></i>
-                            <p class="small mb-0">Preview Gambar</p>
-                        </div>
+                            <span class="bn-unggah-ikon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+                            <b>Klik atau seret gambar ke sini</b>
+                            <small>Otomatis diperkecil ke WebP saat disimpan</small>
                         @endif
                     </div>
+                    <div class="bn-unggah-muat" wire:loading.flex wire:target="gambar">
+                        <span class="dsb-putar is-kecil"></span> Mengunggah gambar…
+                    </div>
+                    @error('gambar') <small class="bn-galat">{{ $message }}</small> @enderror
+                    @if ($edit)
+                        <small class="bn-bantu">Kosongkan bila tidak ingin mengganti gambar.</small>
+                    @endif
                 </div>
             </div>
-        </div>
 
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-end mb-2">
-                <label class="form-label fw-bold text-secondary mb-0">Deskripsi</label>
+            <div class="dsb-kartu">
+                <div class="dsb-kartu-isi">
+                    <span class="bn-kicker">{{ $edit ? 'Simpan perubahan' : 'Simpan banner' }}</span>
+                    <button type="submit" class="dsb-tombol is-utama bn-simpan" wire:loading.attr="disabled" wire:target="save,gambar">
+                        <span wire:loading.remove wire:target="save" class="bn-isi-tombol"><i class="bi bi-check2-circle"></i><span>{{ $edit ? 'Simpan Perubahan' : 'Simpan Banner' }}</span></span>
+                        <span wire:loading.inline-flex wire:target="save" class="bn-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyimpan…</span></span>
+                    </button>
+                    <ul class="bn-tips">
+                        <li>Taruh teks penting di tengah — tepi gambar bisa terpotong di layar kecil.</li>
+                        <li>Status di daftar menunjukkan keadaan <b>nyata</b> di beranda (Tayang / Terjadwal / Berakhir).</li>
+                    </ul>
+                </div>
             </div>
+        </aside>
+    </form>
 
-            <div class="textarea-wrapper">
-                <textarea
-                    wire:model.defer="deskripsi"
-                    rows="4"
-                    class="form-control description-input @error('deskripsi') is-invalid @enderror"
-                    placeholder="Ceritakan detail menarik tentang banner ini agar lebih memikat audiens..."></textarea>
-            </div>
-            @error('deskripsi') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
-    </div>
-
-    <div class="mt-4 pt-3 border-top d-flex gap-2">
-        <button type="submit"
-            class="btn btn-primary px-5 flex-grow-1 d-inline-flex align-items-center justify-content-center"
-            style="height: 52px;">
-            <i class="bi bi-check2-circle me-2 fs-5"></i>
-            <span>{{ $this->mode === 'create' ? 'Simpan Data' : 'Update Data' }}</span>
-        </button>
-    </div>
-</form>
-
-<!--================== SWEET ALERT IMAGE UPLOAD ==================-->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ToastGlossy = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 4000,
-            timerProgressBar: true,
-            background: 'rgba(255, 255, 255, 0.85)',
-            customClass: {
-                popup: 'swal-glossy-toast',
-                title: 'swal-toast-title',
-                timerProgressBar: 'swal-toast-progress'
-            },
-            didOpen: (toast) => {
-                toast.addEventListener('mouseenter', Swal.stopTimer)
-                toast.addEventListener('mouseleave', Swal.resumeTimer)
-            }
-        });
-
-        const gambarInput = document.getElementById('gambarInput');
-
-        if (gambarInput) {
-            gambarInput.addEventListener('change', function(e) {
+    <script>
+        // Validasi gambar sebelum diunggah. Dipasang SEKALI di dokumen (capture):
+        // versi lama memakai DOMContentLoaded, yang tidak berjalan saat halaman
+        // dibuka lewat wire:navigate — pengecekannya diam-diam tidak aktif.
+        if (!window.__bannerUnggahTerpasang) {
+            window.__bannerUnggahTerpasang = true;
+            const peringatan = (judul, teks) => {
+                if (typeof Swal === 'undefined') return;
+                Swal.fire({
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true,
+                    icon: 'error', title: judul, text: teks, background: 'rgba(255, 255, 255, 0.95)',
+                    customClass: { popup: 'swal-glossy-toast', title: 'swal-toast-title' },
+                });
+            };
+            document.addEventListener('change', function(e) {
+                if (!e.target || e.target.id !== 'gambarInput') return;
                 const file = e.target.files[0];
-
-                if (file) {
-                    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-
-                    if (!validImageTypes.includes(file.type)) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        e.target.value = '';
-
-                        ToastGlossy.fire({
-                            icon: 'error',
-                            title: 'Format tidak didukung!',
-                            text: 'Gunakan file gambar JPG atau PNG.'
-                        });
-                        return;
-                    }
-
-                    const maxSizeInBytes = 5 * 1024 * 1024;
-                    if (file.size > maxSizeInBytes) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        e.target.value = '';
-
-                        ToastGlossy.fire({
-                            icon: 'error',
-                            title: 'Ukuran Terlalu Besar!',
-                            text: 'Maksimal ukuran gambar adalah 5 MB.'
-                        });
-                        return;
-                    }
+                if (!file) return;
+                const tolak = (judul, teks) => {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    e.target.value = '';
+                    peringatan(judul, teks);
+                };
+                if (!['image/jpeg', 'image/jpg', 'image/png'].includes(file.type)) {
+                    tolak('Format tidak didukung', 'Gunakan gambar JPG atau PNG.');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    tolak('Ukuran terlalu besar', 'Maksimal ukuran gambar adalah 5 MB.');
                 }
             }, true);
         }
-
-    });
-</script>
-<!--================== END SWEET ALERT IMAGE UPLOAD ==================-->
+    </script>
+</div>

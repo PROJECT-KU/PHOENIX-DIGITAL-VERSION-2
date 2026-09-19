@@ -376,7 +376,8 @@ Route::middleware('permission:view_ebook')->group(function () {
 Route::middleware('permission:view_banners')->group(function () {
     Route::get('/admin/DataBanners', BannersList::class)->name('admin.Banners.index');
     Route::get('/admin/DataBanners/create', BannersCreate::class)->middleware('permission:create_banners')->name('admin.Banners.create');
-    Route::get('/admin/DataBanners/{Banners}', BannersEdit::class)->name('admin.Banners.show');
+    // Detail = jendela di halaman daftar (dulu memuat halaman UBAH hanya dengan izin lihat).
+    Route::get('/admin/DataBanners/{Banners}', BannersList::class)->name('admin.Banners.show');
     Route::get('/admin/DataBanners/{Banners}/edit', BannersEdit::class)->middleware('permission:edit_banners')->name('admin.Banners.edit');
 });
 
