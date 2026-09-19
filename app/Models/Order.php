@@ -802,6 +802,29 @@ class Order extends Model
      *
      * @return array{0:string,1:string,2:string}|null [teks, ikon, warna bootstrap]
      */
+    /**
+     * Ringkasan item yang dibatalkan (App\Support\BatalItemPesanan), untuk
+     * TAMPILAN saja. Status pesanan sengaja tidak diubah saat item batal pada
+     * pesanan yang sudah dibayar — omzet dihitung dari status — jadi tanpa
+     * label ini pesanan yang seluruh itemnya batal tetap terbaca "Selesai".
+     *
+     * @return array{jumlah: int, semua: bool, refund: int}|null
+     */
+    public function ringkasanBatalItem(): ?array
+    {
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+        $batal = $items->where('delivery_status', 'cancelled');
+        if ($batal->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'jumlah' => $batal->count(),
+            'semua' => $batal->count() === $items->count(),
+            'refund' => (int) $batal->sum('refund_nominal'),
+        ];
+    }
+
     public function labelPembayaran(): ?array
     {
         return [

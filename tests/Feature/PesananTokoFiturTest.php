@@ -475,3 +475,20 @@ it('item paket bundling menampilkan bagian harga paket yang dibayar, sama dengan
         ->assertSet('batalRefund', 30000)
         ->assertSee('bagian harga paket Combo Hemat, bukan harga normal');
 });
+
+it('pesanan dibayar yang itemnya batal diberi label jujur, statusnya tetap (omzet tidak hilang)', function () {
+    $this->actingAs(tokoAdmin());
+    $semua = tokoPesanan(['status' => 'completed', 'order_number' => 'INV-SEMUA-BATAL'], ['delivery_status' => 'delivered']);
+    \App\Support\BatalItemPesanan::batalkan($semua->items->first(), 'testing', 35000);
+    $sebagian = pesananDuaItem(['status' => 'completed', 'order_number' => 'INV-SEBAGIAN'], ['delivery_status' => 'delivered']);
+    \App\Support\BatalItemPesanan::batalkan($sebagian->items->last(), 'stok habis', 10000);
+
+    expect($semua->fresh()->status)->toBe('completed');
+
+    $html = Livewire::test(OrderList::class)->call('setTab', 'completed')->html();
+    expect($html)->toContain('Dibatalkan · refund')
+        ->toContain('1 item batal');
+
+    Livewire::test(OrderDetail::class, ['order' => $semua->fresh()])
+        ->assertSee('Semua item dibatalkan · refund Rp 35.000');
+});

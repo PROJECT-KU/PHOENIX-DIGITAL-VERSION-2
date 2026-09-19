@@ -338,7 +338,18 @@ Data Pesanan || lemon
                                                     @endif
                                                 </td>
                                                 <td data-judul="Status">
-                                                    <span class="dsb-lencana {{ $lencana[$stWarna] ?? 'is-abu' }}">{{ $namaStatus[$stTeks] ?? $stTeks }}</span>
+                                                    @php $batalItem = $order->ringkasanBatalItem(); @endphp
+                                                    {{-- Semua item batal: status tersimpan tetap (omzet), tapi yang tampil jujur. --}}
+                                                    @if ($batalItem && $batalItem['semua'])
+                                                        <span class="dsb-lencana is-merah" title="Semua item dibatalkan · refund Rp {{ number_format($batalItem['refund'], 0, ',', '.') }} dicatat di Pengeluaran">
+                                                            <i class="bi bi-x-octagon"></i>Dibatalkan · refund
+                                                        </span>
+                                                    @else
+                                                        <span class="dsb-lencana {{ $lencana[$stWarna] ?? 'is-abu' }}">{{ $namaStatus[$stTeks] ?? $stTeks }}</span>
+                                                        @if ($batalItem)
+                                                            <span class="dsb-lencana is-merah pt-lencana-kecil" title="Refund Rp {{ number_format($batalItem['refund'], 0, ',', '.') }}">{{ $batalItem['jumlah'] }} item batal</span>
+                                                        @endif
+                                                    @endif
                                                 </td>
                                                 <td class="k-lebar" data-judul="Tanggal">
                                                     <span class="dsb-tabel-teks">

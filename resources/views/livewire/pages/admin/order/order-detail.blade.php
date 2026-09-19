@@ -22,6 +22,7 @@ Detail Pesanan || lemon
         $hdJumlahItem = $order->items->count();
         $hdSemuaJasa = $hdJumlahItem && $order->items->every(fn ($it) => $it->product && $it->product->butuh_file);
         $hdBisaBatal = $order->status !== 'cancelled';
+        $hdBatalItem = $order->ringkasanBatalItem();
         $hdBuktiTercatat = (bool) $order->bukti_pembayaran;
         $hdBuktiTersedia = $hdBuktiTercatat && $this->buktiTersedia();
         $hdBolehGanti = $this->bolehGantiBukti();
@@ -58,7 +59,14 @@ Detail Pesanan || lemon
             <p class="dsb-hero-ket">
                 <span class="d-block"><i class="bi bi-calendar3 me-1"></i>Dipesan {{ $order->created_at->locale('id')->translatedFormat('l, d F Y · H:i') }}</span>
                 <span class="d-block pt-lencana-kepala">
-                    <span class="dsb-lencana {{ $hdLencana[$hdWarna] ?? 'is-abu' }}">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</span>
+                    @if ($hdBatalItem && $hdBatalItem['semua'])
+                        <span class="dsb-lencana is-merah"><i class="bi bi-x-octagon"></i>Semua item dibatalkan · refund Rp {{ number_format($hdBatalItem['refund'], 0, ',', '.') }}</span>
+                    @else
+                        <span class="dsb-lencana {{ $hdLencana[$hdWarna] ?? 'is-abu' }}">{{ $hdNamaStatus[$hdStatus] ?? $hdStatus }}</span>
+                        @if ($hdBatalItem)
+                            <span class="dsb-lencana is-merah"><i class="bi bi-x-octagon"></i>{{ $hdBatalItem['jumlah'] }} item batal · refund Rp {{ number_format($hdBatalItem['refund'], 0, ',', '.') }}</span>
+                        @endif
+                    @endif
                     @if ($hdBayar)
                         <span class="dsb-lencana {{ $hdLencana[$hdBayar[2]] ?? 'is-abu' }}"><i class="bi {{ $hdBayar[1] }}"></i>{{ $hdBayar[0] }}</span>
                     @endif

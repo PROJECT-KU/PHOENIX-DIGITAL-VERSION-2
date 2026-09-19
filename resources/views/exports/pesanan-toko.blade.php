@@ -30,7 +30,8 @@
                 <td>{{ (int) $order->total_discount }}</td>
                 <td>{{ (int) $order->total }}</td>
                 <td>{{ $order->labelPembayaran()[0] ?? $order->payment_method }}</td>
-                <td>{{ $status[$order->status] ?? $order->status }}</td>
+                @php $batalItem = $order->ringkasanBatalItem(); @endphp
+                <td>{{ $batalItem && $batalItem['semua'] ? 'Dibatalkan (refund Rp '.number_format($batalItem['refund'], 0, ',', '.').')' : ($status[$order->status] ?? $order->status).($batalItem ? ' · '.$batalItem['jumlah'].' item batal' : '') }}</td>
                 <td>{{ $tgl($order->paid_at) }}</td>
             </tr>
         @endforeach

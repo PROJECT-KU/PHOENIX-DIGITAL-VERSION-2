@@ -157,6 +157,7 @@
         .pt-urut .dsb-isian { flex: 1 1 0; min-width: 0; }
     }
     .pt-isi-tombol { display: inline-flex; align-items: center; gap: 8px; }
+    .pt-lencana-kecil { display: inline-flex; margin-top: 4px; font-size: .66rem; }
 
     /* ===== Linimasa riwayat pesanan ===== */
     .pt-riwayat { list-style: none; margin: 0; padding: 0; position: relative; }
