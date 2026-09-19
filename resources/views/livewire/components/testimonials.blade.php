@@ -68,6 +68,8 @@
             border-color: #f7c9ae; box-shadow: 0 0 0 3px rgba(242, 101, 34, .12); outline: none;
         }
         .tm-form .req { color: #dc2626; }
+        .tm-form .tm-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
+        .tm-form .tm-form-bantu { display: block; margin-top: 5px; font-size: .78rem; color: #9aa1ad; }
 
         /* ===== IKON BENAR-BENAR DI TENGAH =====
 
@@ -114,6 +116,7 @@
             box-shadow: 0 8px 20px rgba(242, 101, 34, .12);
         }
         .tm-tulis i.bi { font-size: .95rem; }
+        a.tm-tulis { text-decoration: none; }
 
         /* Kartu testimoni disamakan dengan kartu lain di beranda: angkat 3px,
            bayangan lembut. Lompatan 6px dengan bayangan pekat membuat kartu
@@ -144,6 +147,10 @@
                 judul="Apa Kata Pelanggan Kami"
                 sub="Cerita nyata dari mereka yang sudah merasakan layanan Phoenix Digital.">
                 <x-slot:aksi>
+                    {{-- Slider hanya memuat beberapa kartu; sisanya dibaca di /testimoni. --}}
+                    <a href="{{ route('testimoni.semua') }}" wire:navigate class="tm-tulis">
+                        <i class="bi bi-grid-3x3-gap"></i> Lihat Semua
+                    </a>
                     <button type="button" class="tm-tulis"
                         @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
                         <i class="bi bi-pencil-square"></i> Tulis Testimoni
@@ -316,6 +323,18 @@
                         <textarea wire:model.defer="pesan" rows="4" class="form-control" maxlength="500"
                             placeholder="Tuliskan testimoni Anda di sini..."></textarea>
                         @error('pesan') <span class="tm-err">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Foto opsional. Tanpa foto, huruf depan nama yang dipakai
+                         sebagai avatar — jadi ini benar-benar boleh dilewati. --}}
+                    <div class="tm-form-row">
+                        <label>Foto <span class="tm-opsional">(boleh dilewati)</span></label>
+                        <input type="file" wire:model="foto" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                        <span class="tm-form-bantu">
+                            <span wire:loading.remove wire:target="foto">JPG atau PNG, maksimal 5 MB. Tanpa foto, huruf depan nama Anda yang dipakai.</span>
+                            <span wire:loading wire:target="foto">Mengunggah foto…</span>
+                        </span>
+                        @error('foto') <span class="tm-err">{{ $message }}</span> @enderror
                     </div>
 
                     {{-- Opsi anonim: hanya huruf depan nama yang tampil di testimoni. --}}

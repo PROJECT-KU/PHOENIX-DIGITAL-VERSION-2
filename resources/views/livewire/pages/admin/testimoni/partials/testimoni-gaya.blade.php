@@ -128,6 +128,73 @@
     .tm-jendela-nav { display: inline-flex; gap: 4px; margin-left: auto; }
     @media (max-width: 575.98px) { .tm-jendela-nav { display: none; } }
 
+    /* ===== Chip saringan aktif ===== */
+    .tm-chip-saring { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 clamp(14px, 2vw, 20px) 13px; }
+    .tm-chip-lepas { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 99px; border: 1px solid #ddd6fe; background: #f5f3ff; color: #5b21b6; font-size: .75rem; font-weight: 700; cursor: pointer; }
+    .tm-chip-lepas:hover { background: #ede9fe; }
+    .tm-chip-lepas i { font-size: .6rem; }
+    .tm-chip-lepas.is-semua { border-color: #e5e7eb; background: #fff; color: #64748b; }
+
+    /* ===== Saklar tampilan kartu/daftar ===== */
+    .tm-tampilan { display: inline-flex; padding: 3px; border-radius: 11px; background: #f1f5f9; }
+    .tm-tampilan button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 30px; border: 0; border-radius: 9px; background: none; color: #64748b; cursor: pointer; }
+    .tm-tampilan button.is-aktif { background: #fff; color: #6d28d9; box-shadow: 0 4px 10px -8px rgba(15, 23, 42, .8); }
+
+    /* ===== Pengatur jumlah kartu beranda ===== */
+    .tm-beranda-atur { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .tm-beranda-atur label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: .76rem; font-weight: 700; color: #64748b; }
+    .tm-beranda-atur select.dsb-isian { height: 32px; padding: 0 26px 0 10px; font-size: .78rem; }
+
+    /* ===== Kerangka pemuatan ===== */
+    .tm-sembunyi { display: none !important; }
+    .tm-kerangka { display: none; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    .tm-kerangka-kartu { padding: 16px; border-radius: 18px; background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); }
+    .tm-kerangka-kepala { display: flex; align-items: center; gap: 12px; }
+    .tm-tulang { display: block; height: 12px; border-radius: 8px; background: linear-gradient(90deg, #f1f5f9 25%, #e8edf4 37%, #f1f5f9 63%); background-size: 400% 100%; animation: tm-kilau 1.3s ease infinite; }
+    .tm-tulang.is-bulat { flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; }
+    @keyframes tm-kilau { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+    @media (prefers-reduced-motion: reduce) { .tm-tulang { animation: none; } }
+
+    /* ===== Tampilan daftar (padat) ===== */
+    .tm-rak.is-daftar { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .tm-rak.is-daftar .tm-kartu { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 10px; padding: 8px 12px 8px 16px; }
+    .tm-rak.is-daftar .tm-kepala { flex: 1 1 210px; padding: 0; align-items: center; }
+    .tm-rak.is-daftar .tm-avatar { flex-basis: 34px; width: 34px; height: 34px; font-size: .82rem; }
+    .tm-rak.is-daftar .tm-bintang { font-size: .72rem; }
+    .tm-rak.is-daftar .tm-isi { flex: 2 1 260px; padding: 0; }
+    .tm-rak.is-daftar .tm-pesan { padding: 0; background: none; font-size: .82rem; min-height: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tm-rak.is-daftar .tm-chip-deret, .tm-rak.is-daftar .tm-pemilik, .tm-rak.is-daftar .tm-baca { display: none; }
+    .tm-rak.is-daftar .tm-waktu { margin-top: 2px; }
+    .tm-rak.is-daftar .tm-penanda { margin: 0 0 4px; }
+    .tm-rak.is-daftar .tm-aksi { flex: 0 0 auto; margin-top: 0; padding: 0; border-top: 0; }
+    .tm-rak.is-daftar .tm-aksi-lain { flex: 0 0 auto; }
+    .tm-rak.is-daftar .tm-aksi-lain .tm-btn-ikon { flex: 0 0 36px; }
+    @media (max-width: 767.98px) { .tm-rak.is-daftar .tm-kartu { flex-direction: column; align-items: stretch; padding: 14px 14px 12px 18px; } }
+
+    /* ===== Foto besar & jejak moderasi di jendela detail ===== */
+    .tm-foto-besar { display: block; width: 120px; height: 120px; border-radius: 16px; overflow: hidden; border: 1px solid #eef2f7; }
+    .tm-foto-besar img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-jejak { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+    .tm-jejak li { display: flex; gap: 10px; min-width: 0; }
+    .tm-jejak-ikon { flex: 0 0 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: color-mix(in srgb, var(--c) 13%, #fff); color: var(--c); font-size: .78rem; }
+    .tm-jejak-teks { min-width: 0; }
+    .tm-jejak-teks b { display: block; font-size: .84rem; color: #1c1f26; }
+    .tm-jejak-teks span { display: block; font-size: .78rem; color: #475569; }
+    .tm-jejak-teks small { display: block; font-size: .72rem; color: #94a3b8; }
+
+    /* ===== Pratinjau urutan beranda ===== */
+    .tm-pratinjau-daftar { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+    .tm-pratinjau-daftar li { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 9px 12px; border-radius: 13px; background: #f8fafc; border: 1px solid #eef2f7; }
+    .tm-pratinjau-no { flex: 0 0 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; background: #ede9fe; color: #6d28d9; font-size: .76rem; font-weight: 800; }
+    .tm-pratinjau-daftar .tm-avatar { flex-basis: 34px; width: 34px; height: 34px; font-size: .82rem; cursor: default; }
+    .tm-pratinjau-teks { min-width: 0; flex: 1 1 auto; }
+    .tm-pratinjau-teks b { display: block; font-size: .85rem; color: #1c1f26; }
+    .tm-pratinjau-teks .tm-bintang { display: block; font-size: .7rem; }
+    .tm-pratinjau-teks small { display: block; font-size: .74rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Tinggi minimum kotak pesan supaya dasar tiap baris kartu tidak bergerigi. */
+    .tm-rak:not(.is-daftar) .tm-pesan { min-height: 78px; }
+
     .tm-saring { margin-bottom: clamp(18px, 2.4vw, 26px); }
     .tm-saring-isi { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .tm-saring-isi .dsb-cari { flex: 1 1 280px; min-width: 0; }

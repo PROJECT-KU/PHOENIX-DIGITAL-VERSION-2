@@ -11,7 +11,6 @@ Data Testimoni || lemon
         $bolehUbah = (bool) auth()->user()?->hasPermission('edit_testimoni');
         $bolehHapus = (bool) auth()->user()?->hasPermission('delete_testimoni');
         $bolehPelanggan = (bool) auth()->user()?->hasPermission('view_customer');
-        $maksBeranda = \App\Models\Testimoni::BERANDA_MAKS;
         $kartuStatus = [
             'pending' => ['Menunggu', 'bi-hourglass-split', '#d97706'],
             'active' => ['Disetujui', 'bi-check-circle-fill', '#16a34a'],
@@ -46,8 +45,12 @@ Data Testimoni || lemon
             </div>
             <div class="dsb-hero-aksi">
                 <button type="button" class="dsb-tombol" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
-                    <span wire:loading.remove wire:target="unduhExcel" class="tm-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Ekspor</span></span>
+                    <span wire:loading.remove wire:target="unduhExcel" class="tm-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
                     <span wire:loading.inline-flex wire:target="unduhExcel" class="tm-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
+                </button>
+                <button type="button" class="dsb-tombol" wire:click="unduhPdf" wire:loading.attr="disabled" wire:target="unduhPdf">
+                    <span wire:loading.remove wire:target="unduhPdf" class="tm-isi-tombol"><i class="bi bi-file-earmark-pdf"></i><span>PDF</span></span>
+                    <span wire:loading.inline-flex wire:target="unduhPdf" class="tm-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
                 </button>
                 @if ($bolehBuat)
                     <a wire:navigate href="{{ route('admin.testimoni.create') }}" class="dsb-tombol is-utama">
@@ -99,10 +102,23 @@ Data Testimoni || lemon
                     <div>
                     <p><b>{{ min($jumlahTampil, $maksBeranda) }}</b> dari {{ $jumlahTampil }} testimoni tampil di beranda.</p>
                     @if ($jumlahTampil > $maksBeranda)
-                        <p class="tm-catatan-kecil">Beranda memuat {{ $maksBeranda }} kartu. Pakai <i class="bi bi-star-fill"></i> Sorot untuk menaikkan testimoni pilihan.</p>
+                        <p class="tm-catatan-kecil">Pakai <i class="bi bi-star-fill"></i> Sorot untuk menaikkan testimoni pilihan.</p>
                     @else
                         <p class="tm-catatan-kecil">Bintang di bawah {{ \App\Models\Testimoni::RATING_MIN_TAMPIL }} tidak tampil kecuali disorot.</p>
                     @endif
+                    <div class="tm-beranda-atur">
+                        @if ($bolehUbah)
+                            <label>
+                                <span>Muat</span>
+                                <select class="dsb-isian" wire:model.live="jumlahBeranda" aria-label="Banyak testimoni di beranda">
+                                    @foreach ([3, 6, 9, 12, 15, 18, 24] as $n)
+                                        <option value="{{ $n }}" @selected($jumlahBeranda === $n)>{{ $n }} kartu</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                        @endif
+                        <button type="button" class="tm-baca" wire:click="$set('pratinjauBeranda', true)">Lihat urutannya</button>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -120,15 +136,16 @@ Data Testimoni || lemon
                 </div>
 
                 <select class="dsb-isian tm-pilih" wire:model.live="urut" aria-label="Urutkan">
-                    <option value="baru">Terbaru</option>
-                    <option value="lama">Terlama</option>
-                    <option value="tinggi">Bintang tertinggi</option>
-                    <option value="rendah">Bintang terendah</option>
+                    <option value="baru" @selected($urut === 'baru')>Terbaru</option>
+                    <option value="lama" @selected($urut === 'lama')>Terlama</option>
+                    <option value="tunggu" @selected($urut === 'tunggu')>Paling lama menunggu</option>
+                    <option value="tinggi" @selected($urut === 'tinggi')>Bintang tertinggi</option>
+                    <option value="rendah" @selected($urut === 'rendah')>Bintang terendah</option>
                 </select>
 
                 <select class="dsb-isian tm-pilih is-sempit" wire:model.live="perHalaman" aria-label="Jumlah per halaman">
                     @foreach ([12, 24, 48] as $n)
-                        <option value="{{ $n }}">{{ $n }}/halaman</option>
+                        <option value="{{ $n }}" @selected($perHalaman === $n)>{{ $n }}/halaman</option>
                     @endforeach
                 </select>
 
@@ -137,10 +154,28 @@ Data Testimoni || lemon
                     @if ($this->adaSaring)<span class="tm-saring-titik"></span>@endif
                 </button>
 
+                {{-- Tampilan padat: meninjau puluhan kiriman lebih cepat lewat daftar. --}}
+                <span class="tm-tampilan" role="group" aria-label="Tampilan daftar">
+                    <button type="button" class="{{ $tampilan === 'kartu' ? 'is-aktif' : '' }}" wire:click="$set('tampilan', 'kartu')" title="Tampilan kartu" aria-label="Tampilan kartu"><i class="bi bi-grid"></i></button>
+                    <button type="button" class="{{ $tampilan === 'daftar' ? 'is-aktif' : '' }}" wire:click="$set('tampilan', 'daftar')" title="Tampilan daftar" aria-label="Tampilan daftar"><i class="bi bi-list-ul"></i></button>
+                </span>
+
                 <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="{{ $sasaranMuat }}">
                     <span class="dsb-putar is-kecil"></span>Memuat…
                 </span>
             </div>
+
+            @if ($this->chipSaring)
+                {{-- Saringan aktif tetap terlihat walau panel Saring ditutup. --}}
+                <div class="tm-chip-saring">
+                    @foreach ($this->chipSaring as $chip)
+                        <button type="button" class="tm-chip-lepas" wire:click="lepasSaring('{{ $chip['nama'] }}')" title="Lepas saringan ini">
+                            {{ $chip['label'] }}<i class="bi bi-x-lg"></i>
+                        </button>
+                    @endforeach
+                    <button type="button" class="tm-chip-lepas is-semua" wire:click="resetSaring">Bersihkan semua</button>
+                </div>
+            @endif
 
             <div class="tm-saring-lanjut" x-show="buka" x-collapse x-cloak>
                 <div class="tm-saring-baris">
@@ -178,6 +213,22 @@ Data Testimoni || lemon
                         </select>
                     </label>
                     <label class="tm-saring-medan">
+                        <span>Sorot</span>
+                        <select class="dsb-isian" wire:model.live="fSorot">
+                            <option value="">Semua</option>
+                            <option value="ya">Disorot</option>
+                            <option value="tidak">Tanpa sorot</option>
+                        </select>
+                    </label>
+                    <label class="tm-saring-medan">
+                        <span>Di beranda</span>
+                        <select class="dsb-isian" wire:model.live="fBeranda">
+                            <option value="">Semua</option>
+                            <option value="ya">Tampil di beranda</option>
+                            <option value="tidak">Tidak tampil</option>
+                        </select>
+                    </label>
+                    <label class="tm-saring-medan">
                         <span>Dikirim dari</span>
                         <input type="date" class="dsb-isian" wire:model.live="fDari" max="{{ now()->toDateString() }}">
                     </label>
@@ -195,25 +246,64 @@ Data Testimoni || lemon
         </section>
 
         {{-- ================== BILAH AKSI MASSAL ================== --}}
-        @if ($bolehUbah && $pilih && ! $arsip)
+        @if ($pilih && ($bolehUbah || $bolehHapus))
             <div class="tm-massal" role="region" aria-label="Aksi massal">
                 <span class="tm-massal-jumlah"><b>{{ count($pilih) }}</b> dipilih</span>
                 <div class="tm-massal-tombol">
-                    <button type="button" class="tm-btn is-setuju tm-konfirmasi" data-action="setujuiTerpilih" data-icon="question"
-                        data-title="Setujui {{ count($pilih) }} testimoni?" data-text="Semua yang dipilih akan tampil di publik. Pengirim yang berhak otomatis menjadi member."
-                        data-confirm="Ya, setujui semua">
-                        <i class="bi bi-check-lg"></i><span>Setujui terpilih</span>
-                    </button>
-                    <button type="button" class="tm-btn is-tolak" wire:click="bukaTolak('massal')">
-                        <i class="bi bi-x-lg"></i><span>Tolak terpilih</span>
-                    </button>
+                    @if ($arsip)
+                        @if ($bolehHapus)
+                            <button type="button" class="tm-btn is-setuju tm-konfirmasi" data-action="pulihkanTerpilih" data-icon="question"
+                                data-title="Pulihkan {{ count($pilih) }} testimoni?" data-text="Semuanya kembali dengan status terakhirnya." data-confirm="Ya, pulihkan">
+                                <i class="bi bi-arrow-counterclockwise"></i><span>Pulihkan terpilih</span>
+                            </button>
+                            <button type="button" class="tm-btn is-tolak tm-konfirmasi" data-action="buangTerpilih" data-icon="warning"
+                                data-title="Buang {{ count($pilih) }} testimoni permanen?" data-text="Beserta fotonya, dan tidak bisa dikembalikan." data-confirm="Ya, buang">
+                                <i class="bi bi-trash3"></i><span>Buang terpilih</span>
+                            </button>
+                        @endif
+                    @else
+                        @if ($bolehUbah)
+                            <button type="button" class="tm-btn is-setuju tm-konfirmasi" data-action="setujuiTerpilih" data-icon="question"
+                                data-title="Setujui {{ count($pilih) }} testimoni?" data-text="Semua yang dipilih akan tampil di publik. Pengirim yang berhak otomatis menjadi member."
+                                data-confirm="Ya, setujui semua">
+                                <i class="bi bi-check-lg"></i><span>Setujui</span>
+                            </button>
+                            <button type="button" class="tm-btn is-tolak" wire:click="bukaTolak('massal')">
+                                <i class="bi bi-x-lg"></i><span>Tolak</span>
+                            </button>
+                            <button type="button" class="tm-btn" wire:click="sorotTerpilih(true)" title="Naikkan ke barisan depan beranda">
+                                <i class="bi bi-star-fill"></i><span>Sorot</span>
+                            </button>
+                            <button type="button" class="tm-btn" wire:click="sorotTerpilih(false)">
+                                <i class="bi bi-star"></i><span>Lepas sorot</span>
+                            </button>
+                        @endif
+                        @if ($bolehHapus)
+                            <button type="button" class="tm-btn is-bahaya tm-konfirmasi" data-action="arsipkanTerpilih" data-icon="warning"
+                                data-title="Arsipkan {{ count($pilih) }} testimoni?" data-text="Dipindahkan ke Arsip dan masih bisa dipulihkan." data-confirm="Ya, arsipkan">
+                                <i class="bi bi-archive"></i><span>Arsipkan</span>
+                            </button>
+                        @endif
+                    @endif
                     <button type="button" class="tm-btn" wire:click="lepasPilih"><i class="bi bi-x"></i><span>Lepas</span></button>
                 </div>
             </div>
         @endif
 
         {{-- ================== RAK TESTIMONI ================== --}}
-        <section wire:loading.class="dsb-sedang-muat" wire:target="{{ $sasaranMuat }}">
+        {{-- Kerangka pemuatan: tanpa ini kartu lama cuma meredup dan sekilas
+             tampak seolah tidak ada yang berubah. --}}
+        <div class="tm-kerangka" wire:loading.grid wire:target="{{ $sasaranMuat }}">
+            @for ($i = 0; $i < 6; $i++)
+                <div class="tm-kerangka-kartu">
+                    <div class="tm-kerangka-kepala"><span class="tm-tulang is-bulat"></span><span class="tm-tulang" style="width: 55%"></span></div>
+                    <span class="tm-tulang" style="width: 100%; height: 54px; margin-top: 12px;"></span>
+                    <span class="tm-tulang" style="width: 42%; margin-top: 10px;"></span>
+                </div>
+            @endfor
+        </div>
+
+        <section wire:loading.class="tm-sembunyi" wire:target="{{ $sasaranMuat }}">
             @if ($Testimoni->isEmpty())
                 @php
                     [$kIkon, $kJudul, $kKet] = $arsip
@@ -230,7 +320,7 @@ Data Testimoni || lemon
                     </div>
                 </div>
             @else
-                @if ($bolehUbah && ! $arsip)
+                @if ($bolehUbah || ($arsip && $bolehHapus))
                     <div class="tm-pilih-semua">
                         <label class="tm-centang">
                             <input type="checkbox" @checked($semuaTercentang) wire:click="pilihHalaman({{ \Illuminate\Support\Js::from($idHalaman) }})">
@@ -239,7 +329,7 @@ Data Testimoni || lemon
                     </div>
                 @endif
 
-                <div class="tm-rak">
+                <div class="tm-rak {{ $tampilan === 'daftar' ? 'is-daftar' : '' }}">
                     @foreach ($Testimoni as $item)
                         @php
                             [$stLencana, $stWarna, $stLabel] = $gayaStatus[$item->status] ?? ['is-abu', '#64748b', ucfirst($item->status)];
@@ -251,7 +341,7 @@ Data Testimoni || lemon
                         <article class="tm-kartu {{ $item->sorot ? 'is-sorot' : '' }} {{ in_array($item->id, $pilih, true) ? 'is-dipilih' : '' }}"
                             style="--c: {{ $stWarna }}" wire:key="testi-{{ $item->id }}">
                             <div class="tm-kepala">
-                                @if ($bolehUbah && ! $arsip)
+                                @if ($bolehUbah || ($arsip && $bolehHapus))
                                     <label class="tm-centang is-kartu" title="Pilih untuk aksi massal">
                                         <input type="checkbox" value="{{ $item->id }}" wire:model.live="pilih">
                                     </label>
@@ -459,6 +549,34 @@ Data Testimoni || lemon
                         </div>
                     </div>
 
+                    @if ($detail->foto && \Storage::disk('public')->exists('img/testimoni/'.$detail->foto))
+                        <div>
+                            <span class="tm-detail-label">Foto pengirim</span>
+                            <a href="{{ asset('storage/img/testimoni/'.$detail->foto) }}" target="_blank" rel="noopener" class="tm-foto-besar" title="Buka ukuran penuh">
+                                <img src="{{ asset('storage/img/testimoni/'.$detail->foto) }}" alt="Foto {{ $detail->nama_publik }}">
+                            </a>
+                        </div>
+                    @endif
+
+                    @if ($riwayatDetail->isNotEmpty())
+                        <div>
+                            <span class="tm-detail-label">Jejak moderasi</span>
+                            <ol class="tm-jejak">
+                                @foreach ($riwayatDetail as $jejak)
+                                    @php [$jIkon, $jWarna, $jLabel] = $jejak->tampilan(); @endphp
+                                    <li>
+                                        <span class="tm-jejak-ikon" style="--c: {{ $jWarna }}"><i class="bi {{ $jIkon }}"></i></span>
+                                        <span class="tm-jejak-teks">
+                                            <b>{{ $jLabel }}</b>
+                                            @if ($jejak->keterangan)<span>{{ $jejak->keterangan }}</span>@endif
+                                            <small>{{ $jejak->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}{{ $jejak->user ? ' · '.$jejak->user->name : '' }}</small>
+                                        </span>
+                                    </li>
+                                @endforeach
+                            </ol>
+                        </div>
+                    @endif
+
                     @if ($detail->alasan_tolak)
                         <div class="tm-alasan">
                             <span class="tm-detail-label">Alasan penolakan</span>
@@ -528,6 +646,51 @@ Data Testimoni || lemon
                     <button type="button" class="tm-btn is-tolak is-tegas" wire:click="{{ $massal ? 'tolakTerpilih' : 'reject' }}">
                         <i class="bi bi-x-lg"></i><span>{{ $massal ? 'Tolak semua' : 'Tolak testimoni' }}</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ================== PRATINJAU URUTAN BERANDA ================== --}}
+    @if ($pratinjauBeranda)
+        <div class="ts-modal-back" wire:click="$set('pratinjauBeranda', false)"></div>
+        <div class="ts-modal">
+            <div class="ts-modal-card dsb is-datar tm-jendela" role="dialog" aria-modal="true" aria-label="Pratinjau urutan beranda"
+                x-on:keydown.escape.window="$wire.set('pratinjauBeranda', false)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #7c3aed"><i class="bi bi-display"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Urutan di beranda</h5>
+                        <span class="dsb-kartu-sub">Beginilah pengunjung melihatnya, dari kiri ke kanan.</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="$set('pratinjauBeranda', false)" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi">
+                    @if ($urutanBeranda->isEmpty())
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon"><i class="bi bi-display"></i></span>
+                            <p class="dsb-kosong-judul">Beranda belum menampilkan testimoni</p>
+                            <p class="dsb-kosong-ket">Setujui testimoni bintang {{ \App\Models\Testimoni::RATING_MIN_TAMPIL }} ke atas, atau sorot yang bintangnya lebih rendah.</p>
+                        </div>
+                    @else
+                        <ol class="tm-pratinjau-daftar">
+                            @foreach ($urutanBeranda as $i => $t)
+                                <li>
+                                    <span class="tm-pratinjau-no">{{ $i + 1 }}</span>
+                                    @include('livewire.pages.admin.testimoni.partials.avatar', ['item' => $t])
+                                    <span class="tm-pratinjau-teks">
+                                        <b>{{ $t->nama_publik }}</b>
+                                        <span class="tm-bintang">@for ($b = 1; $b <= 5; $b++)<i class="bi bi-star-fill {{ $b <= (int) $t->rating ? '' : 'is-kosong' }}"></i>@endfor</span>
+                                        <small>{{ \Illuminate\Support\Str::limit($t->pesan, 90) }}</small>
+                                    </span>
+                                    @if ($t->sorot)
+                                        <span class="tm-tanda is-sorot"><i class="bi bi-star-fill"></i>Disorot</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                        <p class="tm-catatan-kecil">Nama yang tampil sudah memperhitungkan pengirim anonim.</p>
+                    @endif
                 </div>
             </div>
         </div>

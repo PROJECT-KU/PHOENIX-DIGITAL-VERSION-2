@@ -5,9 +5,12 @@ namespace App\Livewire\Components;
 use App\Models\Customer;
 use App\Models\Testimoni;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Testimonials extends Component
 {
+    use WithFileUploads;
+
     public bool $submitted = false;
 
     public string $nama = '';
@@ -23,6 +26,9 @@ class Testimonials extends Component
 
     /** Dicentang pelanggan → di testimoni hanya huruf depan nama yang tampil. */
     public bool $anonim = false;
+
+    /** Foto pengirim (opsional). Tanpa ini kolom foto hanya bisa diisi admin. */
+    public $foto = null;
 
     /** True saat nomor cocok dgn pelanggan terdaftar (utk feedback + auto-isi nama). */
     public bool $nomorDikenali = false;
@@ -60,6 +66,7 @@ class Testimonials extends Component
             'no_hp' => 'required|string|min:8|max:20',
             'rating' => 'required|integer|min:1|max:5',
             'pesan' => 'required|string|min:10|max:500',
+            'foto' => 'nullable|image|mimes:png,jpg,jpeg|max:5120',
         ];
     }
 
@@ -69,6 +76,8 @@ class Testimonials extends Component
         'no_hp.min' => 'Nomor WhatsApp sepertinya kurang lengkap.',
         'pesan.required' => 'Pesan testimoni wajib diisi.',
         'pesan.min' => 'Ceritakan sedikit lebih detail (min. 10 karakter).',
+        'foto.image' => 'Berkasnya harus berupa gambar (JPG atau PNG).',
+        'foto.max' => 'Ukuran foto maksimal 5 MB.',
     ];
 
     public function submit(): void
@@ -96,6 +105,13 @@ class Testimonials extends Component
         // Dulu yang disimpan sudah tersamar ("B•••") sehingga nama asli hilang
         // permanen — admin pun ikut melihat "B•••" saat memoderasi, dan untuk
         // kiriman tamu tidak ada cara memulihkannya.
+        // Foto disimpan sebagai WebP 400 px — tampilnya kecil & bulat saja.
+        // Disimpan SETELAH validasi supaya kiriman gagal tidak meninggalkan berkas.
+        $namaFoto = null;
+        if ($this->foto && is_object($this->foto)) {
+            $namaFoto = rescue(fn () => \App\Support\GambarWebp::simpan($this->foto, 'img/testimoni', 'Testimoni_'.rand(10000, 99999), 400), null, report: false);
+        }
+
         Testimoni::create([
             'customer_id' => $berhak ? $pelanggan->id : null,
             'nama' => trim($this->nama),
@@ -104,12 +120,13 @@ class Testimonials extends Component
             'no_hp' => trim($this->no_hp),
             'pesan' => trim($this->pesan),
             'rating' => $this->rating,
+            'foto' => $namaFoto,
             'status' => 'pending',  // masuk antrian moderasi admin
             'source' => 'customer', // dikirim langsung oleh pelanggan
         ]);
 
         $this->terverifikasi = $berhak;
-        $this->reset(['nama', 'peran', 'no_hp', 'pesan', 'anonim', 'nomorDikenali']);
+        $this->reset(['nama', 'peran', 'no_hp', 'pesan', 'anonim', 'nomorDikenali', 'foto']);
         $this->rating = 5;
         $this->submitted = true;
 
@@ -129,7 +146,7 @@ class Testimonials extends Component
                 'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
             ])])
             ->urutTampil()
-            ->take(Testimoni::BERANDA_MAKS)
+            ->take(Testimoni::jumlahBeranda())
             ->get();
 
         return view('livewire.components.testimonials', [

@@ -3,7 +3,10 @@
 namespace App\Livewire\Pages\Admin\Testimoni;
 
 use App\Exports\TestimoniExport;
+use App\Models\Setting;
 use App\Models\Testimoni;
+use App\Support\RiwayatTestimoni;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -23,6 +26,9 @@ class TestimoniList extends Component
     /** Testimoni yang sedang dibuka di jendela detail. */
     public ?string $lihatId = null;
 
+    /** Jendela pratinjau urutan slider beranda. */
+    public bool $pratinjauBeranda = false;
+
     // ===== Saringan lanjutan =====
     #[Url(as: 'bintang', except: '')]
     public string $fRating = '';
@@ -39,15 +45,30 @@ class TestimoniList extends Component
     #[Url(as: 'anonim', except: '')]
     public string $fAnonim = '';
 
+    /** '' | ya (disorot) | tidak */
+    #[Url(as: 'sorot', except: '')]
+    public string $fSorot = '';
+
+    /** '' | ya (tampil di beranda) | tidak */
+    #[Url(as: 'tayang', except: '')]
+    public string $fBeranda = '';
+
     #[Url(as: 'dari', except: '')]
     public string $fDari = '';
 
     #[Url(as: 'sampai', except: '')]
     public string $fSampai = '';
 
-    /** baru | lama | tinggi | rendah */
+    /** baru | lama | tunggu | tinggi | rendah */
     #[Url(as: 'urut', except: 'baru')]
     public string $urut = 'baru';
+
+    /** kartu | daftar — daftar memadatkan banyak kiriman dalam satu layar. */
+    #[Url(as: 'tampilan', except: 'kartu')]
+    public string $tampilan = 'kartu';
+
+    /** Banyak kartu testimoni di beranda (tersimpan di tabel settings). */
+    public int $jumlahBeranda = 9;
 
     #[Url(as: 'per', except: 12)]
     public int $perHalaman = 12;
@@ -64,7 +85,7 @@ class TestimoniList extends Component
 
     public string $tolakAlasan = '';
 
-    public const URUT = ['baru', 'lama', 'tinggi', 'rendah'];
+    public const URUT = ['baru', 'lama', 'tunggu', 'tinggi', 'rendah'];
 
     public const ALASAN_TOLAK = [
         'Berisi promosi/tautan',
@@ -81,6 +102,8 @@ class TestimoniList extends Component
      */
     public function mount($testimoni = null): void
     {
+        $this->jumlahBeranda = Testimoni::jumlahBeranda();
+
         if ($testimoni) {
             $this->lihatId = Testimoni::whereKey($testimoni)->value('id');
             $this->filter = 'all';
@@ -105,7 +128,7 @@ class TestimoniList extends Component
     /** Setiap saringan/urutan berubah, kembali ke halaman 1 & lepas centang. */
     public function updated($nama): void
     {
-        if (in_array($nama, ['fRating', 'fSumber', 'fVerifikasi', 'fAnonim', 'fDari', 'fSampai', 'urut', 'perHalaman', 'arsip'], true)) {
+        if (in_array($nama, ['fRating', 'fSumber', 'fVerifikasi', 'fAnonim', 'fSorot', 'fBeranda', 'fDari', 'fSampai', 'urut', 'perHalaman', 'arsip'], true)) {
             $this->pilih = [];
             $this->resetPage();
         }
@@ -113,19 +136,89 @@ class TestimoniList extends Component
         if ($nama === 'urut' && ! in_array($this->urut, self::URUT, true)) {
             $this->urut = 'baru';
         }
+
+        if ($nama === 'tampilan' && ! in_array($this->tampilan, ['kartu', 'daftar'], true)) {
+            $this->tampilan = 'kartu';
+        }
+    }
+
+    /** Ubah banyak kartu testimoni yang tampil di beranda. */
+    public function updatedJumlahBeranda(): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_testimoni'), 403);
+
+        $this->jumlahBeranda = max(3, min(24, (int) $this->jumlahBeranda));
+        Setting::set(Testimoni::SETELAN_BERANDA, $this->jumlahBeranda);
+
+        $this->dispatch('swal-success', message: 'Beranda kini memuat '.$this->jumlahBeranda.' testimoni.');
     }
 
     public function resetSaring(): void
     {
-        $this->reset(['fRating', 'fSumber', 'fVerifikasi', 'fAnonim', 'fDari', 'fSampai', 'searchTestimoni', 'pilih']);
+        $this->reset(['fRating', 'fSumber', 'fVerifikasi', 'fAnonim', 'fSorot', 'fBeranda', 'fDari', 'fSampai', 'searchTestimoni', 'pilih']);
         $this->resetPage();
+    }
+
+    /** Lepas satu saringan lewat chip-nya. */
+    public function lepasSaring(string $nama): void
+    {
+        if (in_array($nama, ['fRating', 'fSumber', 'fVerifikasi', 'fAnonim', 'fSorot', 'fBeranda', 'fDari', 'fSampai', 'searchTestimoni'], true)) {
+            $this->$nama = '';
+            $this->pilih = [];
+            $this->resetPage();
+        }
+    }
+
+    /**
+     * Saringan yang sedang aktif, sebagai chip yang bisa dilepas satu-satu.
+     * Tanpa ini saringan aktif tidak terlihat begitu panel Saring ditutup.
+     */
+    public function getChipSaringProperty(): array
+    {
+        $chip = [];
+        // &$chip: arrow function menyalin nilai, jadi tanpa acuan ini
+        // penambahannya hilang dan chipnya selalu kosong.
+        $tambah = function ($nama, $label) use (&$chip) {
+            $chip[] = ['nama' => $nama, 'label' => $label];
+        };
+
+        if ($this->searchTestimoni !== '') {
+            $tambah('searchTestimoni', 'Cari: "'.$this->searchTestimoni.'"');
+        }
+        if ($this->fRating !== '') {
+            $tambah('fRating', $this->fRating.' bintang');
+        }
+        if ($this->fSumber !== '') {
+            $tambah('fSumber', $this->fSumber === 'customer' ? 'Kiriman pelanggan' : 'Diinput admin');
+        }
+        if ($this->fVerifikasi !== '') {
+            $tambah('fVerifikasi', $this->fVerifikasi === 'ya' ? 'Tertaut pelanggan' : 'Tidak tertaut');
+        }
+        if ($this->fAnonim !== '') {
+            $tambah('fAnonim', $this->fAnonim === 'ya' ? 'Anonim' : 'Nama tampil');
+        }
+        if ($this->fSorot !== '') {
+            $tambah('fSorot', $this->fSorot === 'ya' ? 'Disorot' : 'Tanpa sorot');
+        }
+        if ($this->fBeranda !== '') {
+            $tambah('fBeranda', $this->fBeranda === 'ya' ? 'Tampil di beranda' : 'Tidak tampil di beranda');
+        }
+        if ($this->fDari !== '') {
+            $tambah('fDari', 'Dari '.$this->fDari);
+        }
+        if ($this->fSampai !== '') {
+            $tambah('fSampai', 'Sampai '.$this->fSampai);
+        }
+
+        return $chip;
     }
 
     /** Ada saringan lanjutan yang aktif? (untuk lencana di tombol Saring) */
     public function getAdaSaringProperty(): bool
     {
         return filled($this->fRating) || filled($this->fSumber) || filled($this->fVerifikasi)
-            || filled($this->fAnonim) || filled($this->fDari) || filled($this->fSampai);
+            || filled($this->fAnonim) || filled($this->fSorot) || filled($this->fBeranda)
+            || filled($this->fDari) || filled($this->fSampai);
     }
 
     public function setFilter(string $f): void
@@ -174,6 +267,7 @@ class TestimoniList extends Component
         }
 
         $testimoni->update($this->jejakTinjau(['status' => 'active', 'alasan_tolak' => null]));
+        RiwayatTestimoni::catat($testimoni, 'disetujui');
         $this->dispatch('sidebar-badge-updated');
 
         // Pengirim jadi member otomatis bila nomornya cocok pelanggan yang
@@ -238,6 +332,7 @@ class TestimoniList extends Component
             'sorot' => false,
             'alasan_tolak' => trim($this->tolakAlasan) ?: null,
         ]));
+        RiwayatTestimoni::catat($testimoni, 'ditolak', trim($this->tolakAlasan) ?: null);
 
         $this->tutupTolak();
         $this->dispatch('sidebar-badge-updated');
@@ -270,6 +365,7 @@ class TestimoniList extends Component
         $member = 0;
         foreach ($daftar as $t) {
             $t->update($this->jejakTinjau(['status' => 'active', 'alasan_tolak' => null]));
+            RiwayatTestimoni::catat($t, 'disetujui', 'Lewat aksi massal');
             if ($t->customer && $t->customer->aktifkanMember()) {
                 $member++;
             }
@@ -287,12 +383,12 @@ class TestimoniList extends Component
             return;
         }
 
+        $alasan = trim($this->tolakAlasan) ?: null;
         $jumlah = Testimoni::whereKey($this->pilih)->get()
-            ->each(fn ($t) => $t->update($this->jejakTinjau([
-                'status' => 'non-active',
-                'sorot' => false,
-                'alasan_tolak' => trim($this->tolakAlasan) ?: null,
-            ])))
+            ->each(function ($t) use ($alasan) {
+                $t->update($this->jejakTinjau(['status' => 'non-active', 'sorot' => false, 'alasan_tolak' => $alasan]));
+                RiwayatTestimoni::catat($t, 'ditolak', $alasan ? $alasan.' (massal)' : 'Lewat aksi massal');
+            })
             ->count();
 
         $this->pilih = [];
@@ -316,10 +412,114 @@ class TestimoniList extends Component
         }
 
         $t->update(['sorot' => ! $t->sorot]);
+        RiwayatTestimoni::catat($t, $t->sorot ? 'disorot' : 'sorot-dilepas');
 
-        $this->dispatch('swal-success', message: $t->sorot
-            ? 'Disorot — tampil di barisan depan beranda.'
-            : 'Sorotan dilepas.');
+        if (! $t->sorot) {
+            $this->dispatch('swal-success', message: 'Sorotan dilepas.');
+
+            return;
+        }
+
+        // Menyorot lebih banyak daripada kapasitas beranda tidak menaikkan
+        // apa pun — yang kelebihan tetap tidak terlihat pengunjung.
+        $disorot = Testimoni::tampilPublik()->where('sorot', true)->count();
+        $muat = Testimoni::jumlahBeranda();
+
+        $this->dispatch('swal-success', message: $disorot > $muat
+            ? 'Disorot, tapi sudah ada '.$disorot.' testimoni disorot sedangkan beranda cuma memuat '.$muat.'. Lepas sebagian sorotan.'
+            : 'Disorot — tampil di barisan depan beranda.');
+    }
+
+    /** Sorot / lepas sorot semua yang dicentang sekaligus. */
+    public function sorotTerpilih(bool $nyala): void
+    {
+        if (! $this->bolehModerasi() || $this->pilih === []) {
+            return;
+        }
+
+        $daftar = Testimoni::whereKey($this->pilih)->where('status', 'active')->get();
+        foreach ($daftar as $t) {
+            $t->update(['sorot' => $nyala]);
+            RiwayatTestimoni::catat($t, $nyala ? 'disorot' : 'sorot-dilepas', 'Lewat aksi massal');
+        }
+
+        $lewat = count($this->pilih) - $daftar->count();
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $daftar->count().($nyala ? ' testimoni disorot.' : ' sorotan dilepas.')
+            .($lewat ? ' '.$lewat.' dilewati karena belum disetujui.' : ''));
+    }
+
+    /** Arsipkan semua yang dicentang. */
+    public function arsipkanTerpilih(): void
+    {
+        if (! auth()->user()?->hasPermission('delete_testimoni') || $this->pilih === []) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus testimoni.');
+
+            return;
+        }
+
+        $jumlah = Testimoni::whereKey($this->pilih)->get()
+            ->each(function ($t) {
+                RiwayatTestimoni::catat($t, 'diarsipkan', 'Lewat aksi massal');
+                $t->delete();
+            })
+            ->count();
+
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $jumlah.' testimoni dipindahkan ke Arsip.');
+    }
+
+    /** Pulihkan semua yang dicentang (dipakai di tampilan Arsip). */
+    public function pulihkanTerpilih(): void
+    {
+        if (! auth()->user()?->hasPermission('delete_testimoni') || $this->pilih === []) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin memulihkan testimoni.');
+
+            return;
+        }
+
+        $daftar = Testimoni::onlyTrashed()->whereKey($this->pilih)->get();
+        foreach ($daftar as $t) {
+            $t->restore();
+            RiwayatTestimoni::catat($t, 'dipulihkan', 'Lewat aksi massal');
+        }
+
+        $this->pilih = [];
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: $daftar->count().' testimoni dikembalikan dari arsip.');
+    }
+
+    /** Buang permanen semua yang dicentang, berikut fotonya. */
+    public function buangTerpilih(): void
+    {
+        if (! auth()->user()?->hasPermission('delete_testimoni') || $this->pilih === []) {
+            $this->dispatch('swal-error', message: 'Anda tidak memiliki izin menghapus testimoni.');
+
+            return;
+        }
+
+        $daftar = Testimoni::onlyTrashed()->whereKey($this->pilih)->get();
+        foreach ($daftar as $t) {
+            $this->hapusFoto($t);
+            $t->forceDelete();
+        }
+
+        $this->pilih = [];
+        $this->dispatch('swal-success', message: $daftar->count().' testimoni dibuang permanen.');
+    }
+
+    /** Hapus berkas foto dari disk (dipakai saat dibuang permanen). */
+    protected function hapusFoto(Testimoni $testimoni): void
+    {
+        if (! $testimoni->foto) {
+            return;
+        }
+
+        $filePath = storage_path('app/public/img/testimoni/'.$testimoni->foto);
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
     }
 
     /**
@@ -367,6 +567,7 @@ class TestimoniList extends Component
 
         // Arsip dulu (soft delete): fotonya BARU dihapus saat dibuang permanen,
         // supaya pemulihan tidak menghasilkan testimoni tanpa foto.
+        RiwayatTestimoni::catat($testimoni, 'diarsipkan');
         $testimoni->delete();
         $this->lihatId = null;
 
@@ -384,7 +585,12 @@ class TestimoniList extends Component
             return;
         }
 
-        Testimoni::onlyTrashed()->whereKey($id)->restore();
+        $testimoni = Testimoni::onlyTrashed()->find($id);
+        if ($testimoni) {
+            $testimoni->restore();
+            RiwayatTestimoni::catat($testimoni, 'dipulihkan');
+        }
+
         $this->dispatch('sidebar-badge-updated');
         $this->dispatch('swal-success', message: 'Testimoni dikembalikan dari arsip.');
     }
@@ -403,13 +609,7 @@ class TestimoniList extends Component
             return;
         }
 
-        if ($testimoni->foto) {
-            $filePath = storage_path('app/public/img/testimoni/'.$testimoni->foto);
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-        }
-
+        $this->hapusFoto($testimoni);
         $testimoni->forceDelete();
         $this->lihatId = null;
         $this->dispatch('swal-success', message: 'Testimoni dibuang permanen.');
@@ -445,11 +645,28 @@ class TestimoniList extends Component
         return Excel::download(new TestimoniExport($data), 'testimoni-'.now()->format('Ymd-His').'.xlsx');
     }
 
+    public function unduhPdf()
+    {
+        abort_unless(auth()->user()?->hasPermission('view_testimoni'), 403);
+
+        $data = $this->kueri()->with('peninjau')->get();
+
+        // Nomor WhatsApp sengaja tidak ikut: berkas laporan sering dibagikan.
+        $pdf = Pdf::loadView('exports.testimoni-pdf', [
+            'testimoni' => $data,
+            'judul' => $this->arsip ? 'Arsip Testimoni' : 'Data Testimoni',
+            'saringan' => collect($this->chipSaring)->pluck('label')->all(),
+            'rata' => round((float) $data->avg('rating'), 1),
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(fn () => print ($pdf->output()), 'testimoni-'.now()->format('Ymd-His').'.pdf');
+    }
+
     /** Kueri daftar (saringan + urutan) — dipakai tabel, ekspor, dan navigasi detail. */
     protected function kueri()
     {
         $urutan = match ($this->urut) {
-            'lama' => ['created_at', 'asc'],
+            'lama', 'tunggu' => ['created_at', 'asc'],
             'tinggi' => ['rating', 'desc'],
             'rendah' => ['rating', 'asc'],
             default => ['created_at', 'desc'],
@@ -468,18 +685,33 @@ class TestimoniList extends Component
                 ? $q->whereNotNull('customer_id')
                 : $q->whereNull('customer_id'))
             ->when($this->fAnonim !== '', fn ($q) => $q->where('anonim', $this->fAnonim === 'ya'))
+            ->when($this->fSorot !== '', fn ($q) => $q->where('sorot', $this->fSorot === 'ya'))
+            ->when($this->fBeranda !== '', fn ($q) => $this->fBeranda === 'ya'
+                ? $q->tampilPublik()
+                : $q->where(fn ($t) => $t->where('status', '!=', 'active')
+                    ->orWhere(fn ($r) => $r->where('rating', '<', Testimoni::RATING_MIN_TAMPIL)->where('sorot', false))))
             ->when($this->fDari !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fDari))
             ->when($this->fSampai !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->fSampai))
             ->when($this->searchTestimoni !== '', function ($q) {
                 $term = "%{$this->searchTestimoni}%";
-                $q->where(function ($sub) use ($term) {
+                // Nomor WhatsApp ikut dicari lewat bentuk INTI-nya: nomor yang
+                // sama bisa tersimpan "0895…" atau "62895…".
+                $inti = \App\Models\Customer::normalisasiNoHp($this->searchTestimoni);
+
+                $q->where(function ($sub) use ($term, $inti) {
                     $sub->where('nama', 'like', $term)
                         ->orWhere('peran', 'like', $term)
                         ->orWhere('pesan', 'like', $term);
+
+                    if ($inti !== '') {
+                        $sub->orWhere('no_hp', 'like', '%'.$inti.'%');
+                    }
                 });
             })
+            // "Paling lama menunggu": kiriman yang belum ditinjau naik dulu.
+            ->when($this->urut === 'tunggu', fn ($q) => $q->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END"))
             // Yang disorot selalu di atas, sisanya menurut pilihan pengurutan.
-            ->orderByDesc('sorot')
+            ->when($this->urut !== 'tunggu', fn ($q) => $q->orderByDesc('sorot'))
             ->orderBy($urutan[0], $urutan[1]);
     }
 
@@ -522,9 +754,15 @@ class TestimoniList extends Component
             // Posisi di beranda (1 = kartu pertama). Yang di luar BERANDA_MAKS
             // tidak pernah dilihat pengunjung — itulah gunanya Sorot.
             'nomorTampil' => Testimoni::tampilPublik()->urutTampil()->pluck('id')->flip()->map(fn ($i) => $i + 1),
-            'detail' => $this->lihatId
+            'detail' => $detail = $this->lihatId
                 ? Testimoni::withTrashed()->with(['customer' => $pelangganHitung, 'peninjau'])->find($this->lihatId)
                 : null,
+            'riwayatDetail' => $detail ? RiwayatTestimoni::untuk($detail) : collect(),
+            'maksBeranda' => Testimoni::jumlahBeranda(),
+            // Sembilan (atau sebanyak setelan) testimoni teratas, untuk pratinjau urutan beranda.
+            'urutanBeranda' => $this->pratinjauBeranda
+                ? Testimoni::tampilPublik()->urutTampil()->take(Testimoni::jumlahBeranda())->get()
+                : collect(),
             'tolak' => $this->tolakId && $this->tolakId !== 'massal' ? Testimoni::find($this->tolakId) : null,
         ])
             ->layout('livewire.layout.templateindex');

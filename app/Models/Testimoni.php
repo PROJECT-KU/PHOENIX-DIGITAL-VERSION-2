@@ -122,6 +122,12 @@ class Testimoni extends Model
         return $query->where('status', 'non-active');
     }
 
+    /** Jejak moderasi. Lihat App\Support\RiwayatTestimoni. */
+    public function riwayat()
+    {
+        return $this->hasMany(TestimoniRiwayat::class)->latest('created_at');
+    }
+
     /** Admin yang terakhir meninjau (menyetujui/menolak) testimoni ini. */
     public function peninjau()
     {
@@ -131,8 +137,19 @@ class Testimoni extends Model
     /** Rating minimum yang boleh tampil di beranda tanpa disorot manual. */
     public const RATING_MIN_TAMPIL = 4;
 
-    /** Banyak testimoni yang muat di slider beranda. */
+    /** Bawaan banyak testimoni yang muat di slider beranda. */
     public const BERANDA_MAKS = 9;
+
+    public const SETELAN_BERANDA = 'testimoni_beranda_maks';
+
+    /**
+     * Banyak kartu testimoni di beranda — bisa diubah admin dari layar Data
+     * Testimoni. Dibatasi 3..24 supaya slidernya tetap masuk akal.
+     */
+    public static function jumlahBeranda(): int
+    {
+        return max(3, min(24, (int) (Setting::get(self::SETELAN_BERANDA) ?: self::BERANDA_MAKS)));
+    }
 
     /**
      * Testimoni yang BENAR-BENAR tampil di beranda.

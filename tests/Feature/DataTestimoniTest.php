@@ -424,3 +424,245 @@ it('form menyimpan sorot hanya untuk testimoni yang disetujui', function () {
         ->set('status', 'non-active')->set('sorot', true)->call('save');
     expect($t->fresh()->sorot)->toBeFalse();
 });
+
+// ===================== Jumlah kartu beranda =====================
+
+it('jumlah kartu beranda mengikuti setelan, bukan angka mati', function () {
+    foreach (range(1, 12) as $i) {
+        testimoni(['nama' => 'Tayang '.$i, 'status' => 'active']);
+    }
+
+    expect(Testimoni::jumlahBeranda())->toBe(Testimoni::BERANDA_MAKS)
+        ->and(Livewire::test(\App\Livewire\Components\Testimonials::class)->viewData('testimonials'))->toHaveCount(9);
+
+    \App\Models\Setting::set(Testimoni::SETELAN_BERANDA, 3);
+    expect(Testimoni::jumlahBeranda())->toBe(3)
+        ->and(Livewire::test(\App\Livewire\Components\Testimonials::class)->viewData('testimonials'))->toHaveCount(3);
+
+    // Dibatasi 3..24 supaya slider beranda tetap masuk akal.
+    \App\Models\Setting::set(Testimoni::SETELAN_BERANDA, 99);
+    expect(Testimoni::jumlahBeranda())->toBe(24);
+});
+
+it('admin mengubah jumlah kartu beranda dan butuh izin ubah', function () {
+    $this->actingAs(adminTestimoni(['view_testimoni']));
+    Livewire::test(TestimoniList::class)->set('jumlahBeranda', 6)->assertForbidden();
+
+    $this->actingAs(adminTestimoni());
+    Livewire::test(TestimoniList::class)->set('jumlahBeranda', 6);
+    expect(Testimoni::jumlahBeranda())->toBe(6);
+});
+
+// ===================== Halaman publik =====================
+
+it('halaman semua testimoni memakai saringan yang sama dengan beranda', function () {
+    $tampil = testimoni(['nama' => 'Tampil Publik', 'status' => 'active', 'rating' => 5]);
+    testimoni(['nama' => 'Masih Menunggu', 'status' => 'pending']);
+    testimoni(['nama' => 'Bintang Rendah', 'status' => 'active', 'rating' => 2]);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)
+        ->assertSee('Tampil Publik')
+        ->assertDontSee('Masih Menunggu')
+        ->assertDontSee('Bintang Rendah');
+
+    expect(Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)->viewData('testimoni')->pluck('id'))
+        ->toContain($tampil->id);
+});
+
+it('halaman publik menyamarkan nama pengirim anonim', function () {
+    testimoni(['nama' => 'Rahasia Sekali', 'anonim' => true, 'status' => 'active']);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)
+        ->assertSee('R•••')
+        ->assertDontSee('Rahasia Sekali');
+});
+
+it('saringan bintang di halaman publik menolak nilai ngawur', function () {
+    testimoni(['nama' => 'Lima Bintang', 'status' => 'active', 'rating' => 5]);
+    testimoni(['nama' => 'Empat Bintang', 'status' => 'active', 'rating' => 4]);
+
+    $t = Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+    $t->call('setBintang', '4')->assertSee('Empat Bintang')->assertDontSee('Lima Bintang');
+    $t->call('setBintang', 'ngawur')->assertSet('bintang', '')->assertSee('Lima Bintang');
+});
+
+it('pelanggan bisa melampirkan foto saat mengirim testimoni', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Pengirim Berfoto')
+        ->set('no_hp', '081299998888')
+        ->set('pesan', 'Pelayanannya cepat sekali, terima kasih banyak.')
+        ->set('foto', \Illuminate\Http\UploadedFile::fake()->image('wajah.jpg', 600, 600))
+        ->call('submit')
+        ->assertSet('submitted', true);
+
+    $kiriman = Testimoni::where('nama', 'Pengirim Berfoto')->first();
+    expect($kiriman)->not->toBeNull()
+        ->and($kiriman->foto)->not->toBeNull()
+        ->and($kiriman->status)->toBe('pending');
+});
+
+it('kiriman pelanggan tanpa foto tetap diterima', function () {
+    Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Tanpa Foto')
+        ->set('no_hp', '081277776666')
+        ->set('pesan', 'Sudah dua kali beli di sini, aman semua.')
+        ->call('submit')
+        ->assertSet('submitted', true);
+
+    expect(Testimoni::where('nama', 'Tanpa Foto')->value('foto'))->toBeNull();
+});
+
+// ===================== Saringan & urutan tambahan =====================
+
+it('pencarian menjangkau nomor WhatsApp apa pun formatnya', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Pemilik Nomor', 'no_hp' => '0895'.'11223344']);
+    testimoni(['nama' => 'Orang Lain', 'no_hp' => '081200000000']);
+
+    $t = Livewire::test(TestimoniList::class);
+    $t->set('searchTestimoni', '089511223344')->assertSee('Pemilik Nomor')->assertDontSee('Orang Lain');
+    // Format lain dari nomor yang sama tetap ketemu.
+    $t->set('searchTestimoni', '+6289511223344')->assertSee('Pemilik Nomor')->assertDontSee('Orang Lain');
+});
+
+it('menyaring menurut sorot dan tampil di beranda', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Yang Disorot', 'status' => 'active', 'sorot' => true, 'rating' => 2]);
+    testimoni(['nama' => 'Bintang Rendah', 'status' => 'active', 'rating' => 2]);
+
+    $t = Livewire::test(TestimoniList::class)->call('setFilter', 'all');
+    $t->set('fSorot', 'ya')->assertSee('Yang Disorot')->assertDontSee('Bintang Rendah');
+    $t->set('fSorot', '')->set('fBeranda', 'ya')->assertSee('Yang Disorot')->assertDontSee('Bintang Rendah');
+    $t->set('fBeranda', 'tidak')->assertSee('Bintang Rendah')->assertDontSee('Yang Disorot');
+});
+
+it('urutan paling lama menunggu menaikkan kiriman yang belum ditinjau', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Sudah Disetujui', 'status' => 'active', 'sorot' => true]);
+    $menunggu = testimoni(['nama' => 'Masih Menunggu', 'created_at' => now()->subWeek()]);
+
+    expect(Livewire::test(TestimoniList::class)->call('setFilter', 'all')->set('urut', 'tunggu')
+        ->viewData('Testimoni')->first()->id)->toBe($menunggu->id);
+});
+
+it('chip saringan menampilkan saringan aktif dan bisa dilepas satu-satu', function () {
+    $this->actingAs(adminTestimoni());
+
+    $t = Livewire::test(TestimoniList::class)->set('fRating', '5')->set('fAnonim', 'ya');
+    expect(collect($t->instance()->chipSaring)->pluck('nama')->all())->toBe(['fRating', 'fAnonim']);
+
+    $t->call('lepasSaring', 'fRating')->assertSet('fRating', '')->assertSet('fAnonim', 'ya');
+    // Nama properti yang tidak dikenal diabaikan, bukan menimpa apa pun.
+    $t->call('lepasSaring', 'perHalaman')->assertSet('perHalaman', 12);
+});
+
+// ===================== Aksi massal tambahan =====================
+
+it('sorot massal hanya mengenai yang sudah disetujui', function () {
+    $this->actingAs(adminTestimoni());
+    $aktif = testimoni(['status' => 'active']);
+    $menunggu = testimoni(['status' => 'pending']);
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$aktif->id, $menunggu->id])->call('sorotTerpilih', true);
+    expect($aktif->fresh()->sorot)->toBeTrue()
+        ->and($menunggu->fresh()->sorot)->toBeFalse();
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$aktif->id])->call('sorotTerpilih', false);
+    expect($aktif->fresh()->sorot)->toBeFalse();
+});
+
+it('arsip massal, pulihkan massal, dan buang massal bekerja berurutan', function () {
+    $this->actingAs(adminTestimoni());
+    $a = testimoni();
+    $b = testimoni();
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$a->id, $b->id])->call('arsipkanTerpilih')->assertSet('pilih', []);
+    expect(Testimoni::onlyTrashed()->count())->toBe(2);
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$a->id])->call('pulihkanTerpilih');
+    expect(Testimoni::find($a->id))->not->toBeNull();
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$b->id])->call('buangTerpilih');
+    expect(Testimoni::withTrashed()->whereKey($b->id)->exists())->toBeFalse();
+});
+
+it('aksi massal arsip menolak pengguna tanpa izin hapus', function () {
+    $t = testimoni();
+    $this->actingAs(adminTestimoni(['view_testimoni', 'edit_testimoni']));
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$t->id])->call('arsipkanTerpilih');
+    expect(Testimoni::find($t->id))->not->toBeNull();
+});
+
+// ===================== Jejak moderasi =====================
+
+it('setiap keputusan moderasi meninggalkan jejak', function () {
+    $admin = adminTestimoni();
+    $this->actingAs($admin);
+    $t = testimoni();
+
+    Livewire::test(TestimoniList::class)->call('approve', $t->id);
+    Livewire::test(TestimoniList::class)->call('alihSorot', $t->id);
+    Livewire::test(TestimoniList::class)->call('bukaTolak', $t->id)->set('tolakAlasan', 'Kiriman ganda')->call('reject');
+    Livewire::test(TestimoniList::class)->call('deleteTestimoni', $t->id);
+
+    $jejak = \App\Models\TestimoniRiwayat::where('testimoni_id', $t->id)->orderBy('id')->get();
+    expect($jejak->pluck('aksi')->all())->toBe(['disetujui', 'disorot', 'ditolak', 'diarsipkan'])
+        ->and($jejak->firstWhere('aksi', 'ditolak')->keterangan)->toBe('Kiriman ganda')
+        ->and($jejak->first()->user_id)->toEqual($admin->id);
+});
+
+it('jejak moderasi tampil di jendela detail', function () {
+    $this->actingAs(adminTestimoni());
+    $t = testimoni();
+    Livewire::test(TestimoniList::class)->call('approve', $t->id);
+
+    Livewire::test(TestimoniList::class)->call('lihat', $t->id)->assertSee('Jejak moderasi');
+});
+
+// ===================== Ekspor PDF & pembersih arsip =====================
+
+it('ekspor PDF memakai saringan yang aktif dan butuh izin lihat', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['nama' => 'Ikut PDF', 'status' => 'active']);
+
+    Livewire::test(TestimoniList::class)
+        ->call('setFilter', 'active')
+        ->call('unduhPdf')
+        ->assertFileDownloaded();
+
+    // Tanpa izin lihat, unduhan ditolak.
+    $this->actingAs(\App\Models\User::factory()->create([
+        'role_id' => \App\Models\Role::create(['name' => 'uji-tm-nihil-'.Str::random(4), 'description' => 'uji'])->id,
+        'status' => 'active',
+    ]));
+    Livewire::test(TestimoniList::class)->call('unduhPdf')->assertForbidden();
+});
+
+it('pembersih arsip hanya membuang yang sudah lama, dan --kering tidak menghapus', function () {
+    $lama = testimoni(['nama' => 'Arsip Lama']);
+    $baru = testimoni(['nama' => 'Arsip Baru']);
+    $lama->delete();
+    $baru->delete();
+    // deleted_at tidak fillable — dimundurkan langsung supaya dianggap lama.
+    Testimoni::withTrashed()->whereKey($lama->id)->update(['deleted_at' => now()->subDays(120)]);
+
+    $this->artisan('testimoni:bersihkan-arsip', ['--hari' => 90, '--kering' => true])->assertSuccessful();
+    expect(Testimoni::onlyTrashed()->count())->toBe(2);
+
+    $this->artisan('testimoni:bersihkan-arsip', ['--hari' => 90])->assertSuccessful();
+    expect(Testimoni::withTrashed()->whereKey($lama->id)->exists())->toBeFalse()
+        ->and(Testimoni::onlyTrashed()->whereKey($baru->id)->exists())->toBeTrue();
+});
+
+it('pembersih arsip tidak pernah menyebut nama pengirim di keluarannya', function () {
+    $t = testimoni(['nama' => 'Nama Sangat Pribadi']);
+    $t->delete();
+    Testimoni::withTrashed()->whereKey($t->id)->update(['deleted_at' => now()->subDays(200)]);
+
+    $this->artisan('testimoni:bersihkan-arsip', ['--kering' => true])
+        ->doesntExpectOutputToContain('Nama Sangat Pribadi')
+        ->assertSuccessful();
+});

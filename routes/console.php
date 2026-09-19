@@ -181,6 +181,12 @@ $jadwalkan('points:reset-yearly')->yearlyOn(1, 1, '00:15');
  */
 $jadwalkan('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
 
+/*
+ * Arsip testimoni: buang yang sudah 90 hari di arsip berikut fotonya.
+ * Arsip cuma jaring pengaman untuk penghapusan keliru, bukan gudang permanen.
+ */
+$jadwalkan('testimoni:bersihkan-arsip --hari=90')->dailyAt('00:25');
+
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
  * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).
