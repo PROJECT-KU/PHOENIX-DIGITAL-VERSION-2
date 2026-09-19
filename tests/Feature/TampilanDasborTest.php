@@ -600,7 +600,10 @@ it('task berulang punya penanda anti-ganda', function () {
     $jadwal = file_get_contents(base_path('routes/console.php'));
 
     expect($perintah)->toContain('ulang_terakhir_at')
-        ->and($perintah)->toContain('addMonthNoOverflow')
+        ->and($perintah)->toContain('addMonthsNoOverflow')
+        // Salinan dibuat saat periode BERJALAN berakhir; syarat lama membuat
+        // task periode berikutnya baru muncul di hari jatuh temponya sendiri.
+        ->and($perintah)->toContain('$acuan->gt($sekarang)')
         // group_id baru: salinan adalah pekerjaan tersendiri; ikut grup induknya
         // akan memunculkan komentar periode lalu di task baru.
         ->and($perintah)->toContain("'group_id' => Str::uuid(),")

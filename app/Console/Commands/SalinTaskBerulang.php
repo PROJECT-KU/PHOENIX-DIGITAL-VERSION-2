@@ -33,12 +33,28 @@ class SalinTaskBerulang extends Command
         $induk = Task::where('ulang', '!=', 'tidak')->whereNotNull('deadline_selesai')->get();
 
         foreach ($induk as $t) {
-            $berikutnya = $this->tenggatBerikutnya($t);
+            $acuan = $t->ulang_terakhir_at ?: $t->deadline_selesai;
 
-            // Belum waktunya: tenggat salinan berikutnya masih di depan.
-            if ($berikutnya->gt($sekarang)) {
+            // Salinan dibuat begitu PERIODE BERJALAN berakhir.
+            //
+            // Dulu syaratnya "tenggat salinan berikutnya sudah lewat", jadi
+            // task periode 21 Sep–19 Okt baru muncul pada 19 Okt — tepat di
+            // hari jatuh temponya sendiri, saat tak ada lagi waktu
+            // mengerjakannya. Dilaporkan nyata: task bulanan 21 Agu–19 Sep
+            // tidak memunculkan periode berikutnya.
+            if ($acuan->gt($sekarang)) {
                 continue;
             }
+
+            // Berapa periode harus dimajukan supaya tenggatnya jatuh di depan.
+            // Task yang lama terbengkalai menghasilkan SATU salinan untuk
+            // periode berjalan, bukan tumpukan salinan yang sudah telat.
+            $lompatan = 1;
+            while ($lompatan < 60 && $this->majuPeriode($acuan, $t->ulang, $lompatan)->lte($sekarang)) {
+                $lompatan++;
+            }
+
+            $berikutnya = $this->majuPeriode($acuan, $t->ulang, $lompatan);
 
             // Penanda anti-ganda. Penjadwal berjalan tiap hari, dan tanpa ini
             // satu task berulang akan disalin berkali-kali dalam sehari.
@@ -54,7 +70,7 @@ class SalinTaskBerulang extends Command
                 continue;
             }
 
-            $this->salin($t, $berikutnya);
+            $this->salin($t, $berikutnya, $lompatan);
 
             // TONGKAT ESTAFETNYA PINDAH ke salinan. Induknya berhenti berulang.
             //
@@ -74,23 +90,27 @@ class SalinTaskBerulang extends Command
         return self::SUCCESS;
     }
 
-    /** Tenggat salinan berikutnya, dihitung dari tenggat induknya. */
-    protected function tenggatBerikutnya(Task $t): \Illuminate\Support\Carbon
+    /**
+     * Majukan satu tanggal sebanyak $kali periode.
+     *
+     * addMonthsNoOverflow: tenggat 31 Januari tidak boleh melompat ke
+     * 3 Maret hanya karena Februari lebih pendek.
+     */
+    protected function majuPeriode(\Illuminate\Support\Carbon $tanggal, string $ulang, int $kali): \Illuminate\Support\Carbon
     {
-        $acuan = $t->ulang_terakhir_at ?: $t->deadline_selesai;
-
-        // addMonthNoOverflow: tenggat 31 Januari tidak boleh melompat ke
-        // 3 Maret hanya karena Februari lebih pendek.
-        return $t->ulang === 'mingguan'
-            ? $acuan->copy()->addWeek()
-            : $acuan->copy()->addMonthNoOverflow();
+        return $ulang === 'mingguan'
+            ? $tanggal->copy()->addWeeks($kali)
+            : $tanggal->copy()->addMonthsNoOverflow($kali);
     }
 
-    protected function salin(Task $t, \Illuminate\Support\Carbon $tenggat): void
+    protected function salin(Task $t, \Illuminate\Support\Carbon $tenggat, int $lompatan): void
     {
-        $panjang = $t->deadline_mulai && $t->deadline_selesai
-            ? (int) $t->deadline_mulai->startOfDay()->diffInDays($t->deadline_selesai->startOfDay())
-            : 0;
+        // Tanggal MULAI ikut digeser satu periode, bukan dihitung mundur dari
+        // panjang harinya: 21 Agu–19 Sep harus jadi 21 Sep–19 Okt, sedangkan
+        // hitung-mundur 29 hari memberi 20 Sep karena Agustus lebih panjang.
+        $mulaiBaru = $t->deadline_mulai
+            ? $this->majuPeriode($t->deadline_mulai, $t->ulang, $lompatan)
+            : null;
 
         $periode = PeriodeGaji::dariTanggal($tenggat);
 
@@ -109,7 +129,7 @@ class SalinTaskBerulang extends Command
             'task_category_id' => $t->task_category_id,
             'task_category_label_id' => $t->task_category_label_id,
             'bobot' => $t->bobot,
-            'deadline_mulai' => $tenggat->copy()->subDays($panjang),
+            'deadline_mulai' => $mulaiBaru,
             'deadline_selesai' => $tenggat,
             'progress' => 'belum',
             // Salinannya ikut berulang, sehingga rantainya berlanjut sendiri.
