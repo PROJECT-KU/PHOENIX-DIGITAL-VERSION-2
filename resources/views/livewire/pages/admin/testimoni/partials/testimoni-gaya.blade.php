@@ -175,7 +175,9 @@
     .tm-foto-besar { display: block; width: 120px; height: 120px; border-radius: 16px; overflow: hidden; border: 1px solid #eef2f7; }
     .tm-foto-besar img { width: 100%; height: 100%; object-fit: cover; }
     .tm-jejak { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
-    .tm-jejak li { display: flex; gap: 10px; min-width: 0; }
+    .tm-jejak li { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+    .tm-jejak-teks { flex: 1 1 auto; }
+    .tm-jejak li .tm-btn-ikon { flex: 0 0 34px; width: 34px; height: 34px; margin-left: auto; }
     .tm-jejak-ikon { flex: 0 0 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: color-mix(in srgb, var(--c) 13%, #fff); color: var(--c); font-size: .78rem; }
     .tm-jejak-teks { min-width: 0; }
     .tm-jejak-teks b { display: block; font-size: .84rem; color: #1c1f26; }
@@ -194,6 +196,41 @@
 
     /* Tinggi minimum kotak pesan supaya dasar tiap baris kartu tidak bergerigi. */
     .tm-rak:not(.is-daftar) .tm-pesan { min-height: 78px; }
+
+    /* ===== Kepala kolom tampilan daftar ===== */
+    .tm-daftar-kepala { display: none; gap: 10px; padding: 0 16px 8px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+    .tm-daftar-kepala span:nth-child(1) { flex: 1 1 210px; }
+    .tm-daftar-kepala span:nth-child(2) { flex: 2 1 260px; }
+    .tm-daftar-kepala span:nth-child(3) { flex: 0 0 auto; }
+    @media (min-width: 768px) { .tm-daftar-kepala { display: flex; } }
+
+    .tm-nomor-daftar { display: none; align-items: center; gap: 4px; margin-right: 8px; color: #15803d; font-weight: 700; }
+    .tm-rak.is-daftar .tm-nomor-daftar { display: inline-flex; }
+    .tm-ekspor-ket { margin: 0; padding: 0 clamp(14px, 2vw, 20px) 12px; font-size: .78rem; color: #6d28d9; }
+
+    /* ===== Fokus papan tik: sebelumnya nyaris tak terlihat ===== */
+    .tm-btn:focus-visible,
+    .tm-status-btn:focus-visible,
+    .tm-chip-lepas:focus-visible,
+    .tm-alasan-chip:focus-visible,
+    .tm-avatar-tombol:focus-visible,
+    .tm-tampilan button:focus-visible,
+    .tm-centang input:focus-visible,
+    .tm-halaman .page-link:focus-visible {
+        outline: 2px solid #7c3aed; outline-offset: 2px; border-radius: 10px;
+    }
+
+    /* ===== Cetak: Ctrl+P menghasilkan daftar, bukan tangkapan layar admin ===== */
+    @media print {
+        .dsb-hero-aksi, .tm-saring, .tm-massal, .tm-pilih-semua, .tm-aksi, .tm-status,
+        .tm-halaman, .tm-daftar-kepala, .ts-modal, .ts-modal-back, .tm-kerangka { display: none !important; }
+        .dsb, .dsb-kartu, .tm-kartu { box-shadow: none !important; }
+        .tm-kartu { break-inside: avoid; border: 1px solid #cbd5e1 !important; }
+        .tm-rak { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        .tm-pesan { min-height: 0 !important; background: none !important; padding-left: 0 !important; }
+        .dsb-hero { border: 1px solid #cbd5e1; }
+        a[href]::after { content: ''; }
+    }
 
     .tm-saring { margin-bottom: clamp(18px, 2.4vw, 26px); }
     .tm-saring-isi { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

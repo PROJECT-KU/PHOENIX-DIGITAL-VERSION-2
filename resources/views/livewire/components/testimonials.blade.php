@@ -68,6 +68,7 @@
             border-color: #f7c9ae; box-shadow: 0 0 0 3px rgba(242, 101, 34, .12); outline: none;
         }
         .tm-form .req { color: #dc2626; }
+        .tm-perangkap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
         .tm-form .tm-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
         .tm-form .tm-form-bantu { display: block; margin-top: 5px; font-size: .78rem; color: #9aa1ad; }
 
@@ -117,6 +118,14 @@
         }
         .tm-tulis i.bi { font-size: .95rem; }
         a.tm-tulis { text-decoration: none; }
+        .tm-ajakan {
+            display: flex; align-items: center; gap: 18px; flex-wrap: wrap; justify-content: space-between;
+            max-width: 1140px; margin: 0 auto; padding: 22px 26px;
+            background: linear-gradient(135deg, #fff7ed, #fff); border: 1px solid #fde3cf; border-radius: 20px;
+        }
+        .tm-ajakan b { display: block; font-size: 1.02rem; color: #1c1f26; }
+        .tm-ajakan span { display: block; font-size: .88rem; color: #6b7280; }
+        @media (max-width: 575.98px) { .tm-ajakan { padding: 18px; } }
 
         /* Kartu testimoni disamakan dengan kartu lain di beranda: angkat 3px,
            bayangan lembut. Lompatan 6px dengan bayangan pekat membuat kartu
@@ -131,6 +140,7 @@
             .tm-tulis { width: 100%; justify-content: center; }
         }
     </style>
+    @if ($tampilkanDaftar)
     <section id="testimoni" class="tm-section section">
         <div class="container">
             {{-- Tombol "Tulis Testimoni" masuk ke SISI KANAN kepala bagian,
@@ -217,6 +227,20 @@
             @endif
         </div>
     </section>
+    @else
+        {{-- Halaman /testimoni: daftarnya sudah ada di halaman itu, di sini
+             cukup ajakan menulis supaya pengunjung tidak perlu balik ke beranda. --}}
+        <div class="tm-ajakan">
+            <div>
+                <b>Pernah memesan di Phoenix Digital?</b>
+                <span>Ceritakan pengalamanmu — testimoni tampil setelah ditinjau admin.</span>
+            </div>
+            <button type="button" class="tm-tulis"
+                @click="open = true; rating = 5; $wire.set('submitted', false, false); $wire.set('rating', 5, false)">
+                <i class="bi bi-pencil-square"></i> Tulis Testimoni
+            </button>
+        </div>
+    @endif
 
     {{-- ===== Modal: Tulis Testimoni (pelanggan) — kontrol Alpine, tak re-render slider ===== --}}
     {{-- Halaman di belakang DIKUNCI selama popup terbuka.
@@ -323,6 +347,12 @@
                         <textarea wire:model.defer="pesan" rows="4" class="form-control" maxlength="500"
                             placeholder="Tuliskan testimoni Anda di sini..."></textarea>
                         @error('pesan') <span class="tm-err">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Perangkap bot: manusia tidak pernah melihat medan ini. --}}
+                    <div class="tm-perangkap" aria-hidden="true">
+                        <label>Situs web</label>
+                        <input type="text" wire:model="situs" tabindex="-1" autocomplete="off">
                     </div>
 
                     {{-- Foto opsional. Tanpa foto, huruf depan nama yang dipakai

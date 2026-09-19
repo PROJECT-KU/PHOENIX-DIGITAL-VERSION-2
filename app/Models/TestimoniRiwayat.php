@@ -21,6 +21,11 @@ class TestimoniRiwayat extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function testimoni(): BelongsTo
+    {
+        return $this->belongsTo(Testimoni::class)->withTrashed();
+    }
+
     /** Warna & ikon per aksi, dipakai di jendela detail. */
     public function tampilan(): array
     {

@@ -29,6 +29,9 @@ class TestimoniList extends Component
     /** Jendela pratinjau urutan slider beranda. */
     public bool $pratinjauBeranda = false;
 
+    /** Jendela aktivitas moderasi (jejak lintas testimoni). */
+    public bool $lihatAktivitas = false;
+
     // ===== Saringan lanjutan =====
     #[Url(as: 'bintang', except: '')]
     public string $fRating = '';
@@ -640,7 +643,7 @@ class TestimoniList extends Component
     {
         abort_unless(auth()->user()?->hasPermission('view_testimoni'), 403);
 
-        $data = $this->kueri()->with('peninjau')->get();
+        $data = $this->dataEkspor();
 
         return Excel::download(new TestimoniExport($data), 'testimoni-'.now()->format('Ymd-His').'.xlsx');
     }
@@ -649,17 +652,30 @@ class TestimoniList extends Component
     {
         abort_unless(auth()->user()?->hasPermission('view_testimoni'), 403);
 
-        $data = $this->kueri()->with('peninjau')->get();
+        $data = $this->dataEkspor();
 
         // Nomor WhatsApp sengaja tidak ikut: berkas laporan sering dibagikan.
         $pdf = Pdf::loadView('exports.testimoni-pdf', [
             'testimoni' => $data,
             'judul' => $this->arsip ? 'Arsip Testimoni' : 'Data Testimoni',
-            'saringan' => collect($this->chipSaring)->pluck('label')->all(),
+            'saringan' => $this->pilih
+                ? ['hanya '.count($this->pilih).' testimoni terpilih']
+                : collect($this->chipSaring)->pluck('label')->all(),
             'rata' => round((float) $data->avg('rating'), 1),
         ])->setPaper('a4', 'landscape');
 
         return response()->streamDownload(fn () => print ($pdf->output()), 'testimoni-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    /**
+     * Isi berkas ekspor: yang DICENTANG bila ada, kalau tidak ikut saringan
+     * yang sedang tampil.
+     */
+    protected function dataEkspor()
+    {
+        return $this->pilih
+            ? Testimoni::withTrashed()->with('peninjau')->whereKey($this->pilih)->get()
+            : $this->kueri()->with('peninjau')->get();
     }
 
     /** Kueri daftar (saringan + urutan) — dipakai tabel, ekspor, dan navigasi detail. */
@@ -758,6 +774,13 @@ class TestimoniList extends Component
                 ? Testimoni::withTrashed()->with(['customer' => $pelangganHitung, 'peninjau'])->find($this->lihatId)
                 : null,
             'riwayatDetail' => $detail ? RiwayatTestimoni::untuk($detail) : collect(),
+            // Apa yang pernah dibeli pengirim — penilai kewajaran tercepat,
+            // sebelumnya harus buka Data Pelanggan dulu.
+            'produkDibeli' => $detail?->customer_id
+                ? \App\Models\OrderItem::whereHas('order', fn ($o) => $o->where('customer_id', $detail->customer_id)->where('status', 'completed'))
+                    ->latest('id')->limit(4)->pluck('product_name')->unique()->values()
+                : collect(),
+            'aktivitas' => $this->lihatAktivitas ? RiwayatTestimoni::terbaru() : collect(),
             'maksBeranda' => Testimoni::jumlahBeranda(),
             // Sembilan (atau sebanyak setelan) testimoni teratas, untuk pratinjau urutan beranda.
             'urutanBeranda' => $this->pratinjauBeranda

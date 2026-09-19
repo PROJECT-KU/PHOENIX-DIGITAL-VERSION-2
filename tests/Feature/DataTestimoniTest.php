@@ -689,3 +689,150 @@ it('kotak "ditinjau admin" jujur untuk data lama yang tanpa catatan', function (
         ->assertSee(auth()->user()->name)
         ->assertDontSee('Belum ditinjau');
 });
+
+// ===================== Penemuan halaman publik & SEO =====================
+
+it('halaman testimoni terdaftar di sitemap dan footer', function () {
+    $peta = $this->get('/sitemap.xml');
+    $peta->assertOk();
+    expect($peta->getContent())->toContain(route('testimoni.semua'));
+
+    // Footer memakai layout guest; beranda cukup untuk membuktikan tautannya ada.
+    expect(file_get_contents(resource_path('views/layouts/guest.blade.php')))
+        ->toContain("route('testimoni.semua')");
+});
+
+it('halaman publik mengirim rata-rata bintang sebagai data terstruktur', function () {
+    testimoni(['nama' => 'Bintang Lima', 'status' => 'active', 'rating' => 5]);
+    testimoni(['nama' => 'Bintang Empat', 'status' => 'active', 'rating' => 4]);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+
+    $jsonLd = json_decode(view()->shared('seoJsonLd'), true);
+    expect($jsonLd['@type'])->toBe('Store')
+        ->and($jsonLd['aggregateRating']['ratingValue'])->toBe(4.5)
+        ->and($jsonLd['aggregateRating']['reviewCount'])->toBe(2)
+        ->and($jsonLd['review'])->toHaveCount(2);
+});
+
+it('data terstruktur memakai nama publik, bukan nama asli pengirim anonim', function () {
+    testimoni(['nama' => 'Nama Asli Rahasia', 'anonim' => true, 'status' => 'active']);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+
+    expect(view()->shared('seoJsonLd'))
+        ->toContain('N•••')
+        ->not->toContain('Nama Asli Rahasia');
+});
+
+it('tanpa testimoni yang tampil, data terstruktur tidak dikirim', function () {
+    testimoni(['status' => 'pending']);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+
+    expect(view()->shared('seoJsonLd'))->toBeNull();
+});
+
+it('komponen testimoni bisa dipakai tanpa slider, hanya ajakan menulis', function () {
+    testimoni(['nama' => 'Ada di Slider', 'status' => 'active']);
+
+    Livewire::test(\App\Livewire\Components\Testimonials::class, ['tampilkanDaftar' => false])
+        ->assertSee('Tulis Testimoni')
+        ->assertDontSee('Ada di Slider');
+
+    Livewire::test(\App\Livewire\Components\Testimonials::class)->assertSee('Ada di Slider');
+});
+
+it('perangkap bot membuang kiriman tanpa memberi tahu botnya', function () {
+    Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Bot Spam')
+        ->set('no_hp', '081200001111')
+        ->set('pesan', 'Kunjungi situs promo saya sekarang juga ya.')
+        ->set('situs', 'https://situs-bot.example')
+        ->call('submit')
+        // Bot melihat "berhasil", padahal tidak ada yang tersimpan.
+        ->assertSet('submitted', true)
+        ->assertHasNoErrors();
+
+    expect(Testimoni::where('nama', 'Bot Spam')->exists())->toBeFalse();
+});
+
+// ===================== Ekspor terpilih & produk yang dibeli =====================
+
+it('ekspor memakai yang dicentang bila ada centangan', function () {
+    \Illuminate\Support\Carbon::setTestNow('2026-09-19 11:00:00');
+    \Maatwebsite\Excel\Facades\Excel::fake();
+    $this->actingAs(adminTestimoni());
+    $dipilih = testimoni(['nama' => 'Dicentang', 'status' => 'pending']);
+    testimoni(['nama' => 'Tidak Dicentang', 'status' => 'pending']);
+
+    Livewire::test(TestimoniList::class)->set('pilih', [$dipilih->id])->call('unduhExcel');
+
+    \Maatwebsite\Excel\Facades\Excel::assertDownloaded('testimoni-20260919-110000.xlsx', function (\App\Exports\TestimoniExport $ekspor) {
+        $nama = $ekspor->view()->getData()['testimoni']->pluck('nama');
+
+        return $nama->contains('Dicentang') && ! $nama->contains('Tidak Dicentang');
+    });
+
+    \Illuminate\Support\Carbon::setTestNow();
+});
+
+it('jendela detail menampilkan produk yang pernah dibeli pengirim', function () {
+    $this->actingAs(adminTestimoni());
+
+    $pelanggan = \App\Models\Customer::create(['nama' => 'Pembeli Setia', 'no_hp' => '081233334444']);
+    $order = \App\Models\Order::create([
+        'id' => Str::uuid(), 'order_number' => 'INV-TESTI-1', 'subtotal' => 1, 'total' => 1, 'unique_code' => 0,
+        'status' => 'completed', 'payment_method' => 'transfer', 'expired_at' => now(),
+        'customer_id' => $pelanggan->id,
+    ]);
+    \App\Models\OrderItem::create([
+        'order_id' => $order->id,
+        'product_id' => \App\Models\Product::create(['nama_akun' => 'Grammarly'])->id,
+        'product_name' => 'Grammarly Premium',
+        'duration_type' => 'bulan', 'duration_value' => 1,
+        'quantity' => 1, 'price' => 50000, 'subtotal' => 50000,
+    ]);
+
+    $t = testimoni(['customer_id' => $pelanggan->id]);
+
+    Livewire::test(TestimoniList::class)->call('lihat', $t->id)
+        ->assertSee('Pernah membeli')
+        ->assertSee('Grammarly Premium');
+});
+
+// ===================== Aktivitas & penanda data lama =====================
+
+it('jendela aktivitas memuat jejak dari semua testimoni', function () {
+    $this->actingAs(adminTestimoni());
+    $a = testimoni(['nama' => 'Kiriman Satu']);
+    $b = testimoni(['nama' => 'Kiriman Dua']);
+    Livewire::test(TestimoniList::class)->call('approve', $a->id);
+    Livewire::test(TestimoniList::class)->call('approve', $b->id);
+
+    Livewire::test(TestimoniList::class)->set('lihatAktivitas', true)
+        ->assertSee('Aktivitas moderasi')
+        ->assertSee('Kiriman Satu')
+        ->assertSee('Kiriman Dua');
+});
+
+it('penanda data lama hanya menyentuh yang belum punya jejak, dan --kering tidak menulis', function () {
+    $lama = testimoni(['nama' => 'Disetujui Dulu', 'status' => 'active']);
+    $menunggu = testimoni(['status' => 'pending']);
+
+    $this->artisan('testimoni:tandai-lama', ['--kering' => true])->assertSuccessful();
+    expect(\App\Models\TestimoniRiwayat::count())->toBe(0);
+
+    $this->artisan('testimoni:tandai-lama')->assertSuccessful();
+    $jejak = \App\Models\TestimoniRiwayat::where('testimoni_id', $lama->id)->first();
+    expect($jejak->aksi)->toBe('disetujui')
+        ->and($jejak->keterangan)->toContain('Perkiraan')
+        // Kiriman yang masih menunggu tidak ikut ditandai.
+        ->and(\App\Models\TestimoniRiwayat::where('testimoni_id', $menunggu->id)->exists())->toBeFalse()
+        // ditinjau_at dibiarkan kosong: waktunya memang tidak diketahui.
+        ->and($lama->fresh()->ditinjau_at)->toBeNull();
+
+    // Dijalankan dua kali tidak menggandakan jejak.
+    $this->artisan('testimoni:tandai-lama')->assertSuccessful();
+    expect(\App\Models\TestimoniRiwayat::where('testimoni_id', $lama->id)->count())->toBe(1);
+});

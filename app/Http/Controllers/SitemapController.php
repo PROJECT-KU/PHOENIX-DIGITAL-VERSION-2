@@ -23,6 +23,7 @@ class SitemapController extends Controller
         $add(route('about'), '0.5', 'monthly');
         $add(route('contact'), '0.5', 'monthly');
         $add(route('faq'), '0.5', 'monthly');
+        $add(route('testimoni.semua'), '0.6', 'weekly');
         $add(route('terms'), '0.3', 'yearly');
         $add(route('privacy'), '0.3', 'yearly');
         $add(route('blog.index'), '0.8', 'daily');

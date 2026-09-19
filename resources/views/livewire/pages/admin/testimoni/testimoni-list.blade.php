@@ -44,6 +44,9 @@ Data Testimoni || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
+                <button type="button" class="dsb-tombol" wire:click="$set('lihatAktivitas', true)">
+                    <i class="bi bi-clock-history"></i><span>Aktivitas</span>
+                </button>
                 <button type="button" class="dsb-tombol" wire:click="unduhExcel" wire:loading.attr="disabled" wire:target="unduhExcel">
                     <span wire:loading.remove wire:target="unduhExcel" class="tm-isi-tombol"><i class="bi bi-file-earmark-excel"></i><span>Excel</span></span>
                     <span wire:loading.inline-flex wire:target="unduhExcel" class="tm-isi-tombol"><span class="dsb-putar is-kecil"></span><span>Menyiapkan…</span></span>
@@ -164,6 +167,10 @@ Data Testimoni || lemon
                     <span class="dsb-putar is-kecil"></span>Memuat…
                 </span>
             </div>
+
+            @if ($pilih)
+                <p class="tm-ekspor-ket"><i class="bi bi-info-circle"></i> Ekspor akan berisi {{ count($pilih) }} testimoni yang dicentang saja.</p>
+            @endif
 
             @if ($this->chipSaring)
                 {{-- Saringan aktif tetap terlihat walau panel Saring ditutup. --}}
@@ -329,6 +336,14 @@ Data Testimoni || lemon
                     </div>
                 @endif
 
+                @if ($tampilan === 'daftar')
+                    <div class="tm-daftar-kepala" aria-hidden="true">
+                        <span>Pengirim</span>
+                        <span>Isi testimoni</span>
+                        <span>Tindakan</span>
+                    </div>
+                @endif
+
                 <div class="tm-rak {{ $tampilan === 'daftar' ? 'is-daftar' : '' }}">
                     @foreach ($Testimoni as $item)
                         @php
@@ -392,6 +407,9 @@ Data Testimoni || lemon
                                 @endif
                                 @include('livewire.pages.admin.testimoni.partials.lencana-keaslian', ['item' => $item])
                                 <div class="tm-waktu">
+                                    @if ($item->no_hp)
+                                        <span class="tm-nomor-daftar"><i class="bi bi-whatsapp"></i>{{ $item->no_hp }}</span>
+                                    @endif
                                     {{ $item->source === 'customer' ? 'Dikirim' : 'Diinput admin' }} {{ $item->created_at?->locale('id')->diffForHumans() }}
                                     @if ($arsip && $item->deleted_at)
                                         · diarsipkan {{ $item->deleted_at->locale('id')->diffForHumans() }}
@@ -519,6 +537,17 @@ Data Testimoni || lemon
                         @include('livewire.pages.admin.testimoni.partials.lencana-keaslian', ['item' => $detail])
                     </div>
 
+                    @if ($produkDibeli->isNotEmpty())
+                        <div>
+                            <span class="tm-detail-label">Pernah membeli</span>
+                            <div class="tm-chip-deret">
+                                @foreach ($produkDibeli as $produk)
+                                    <span class="dsb-lencana is-biru"><i class="bi bi-bag-check"></i>{{ $produk }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="tm-info">
                         <div><small>Tampil di publik sebagai</small><b>{{ $detail->nama_publik }}</b></div>
                         <div><small>Nomor WhatsApp</small><b>{{ $detail->no_hp ?: '—' }}</b></div>
@@ -592,6 +621,9 @@ Data Testimoni || lemon
                     @endif
                 </div>
                 <div class="dsb-jendela-kaki tm-detail-kaki">
+                    <button type="button" class="tm-btn tm-salin" data-teks="{{ $detail->pesan }}" title="Salin isi testimoni">
+                        <i class="bi bi-clipboard"></i><span>Salin teks</span>
+                    </button>
                     @if ($detail->tautanWa())
                         <a href="{{ $detail->tautanWa('Halo '.$detail->nama.', terima kasih atas testimoninya untuk Phoenix Digital 🙏') }}" target="_blank" rel="noopener" class="tm-btn is-wa">
                             <i class="bi bi-whatsapp"></i><span>Balas WhatsApp</span>
@@ -703,6 +735,50 @@ Data Testimoni || lemon
         </div>
     @endif
 
+    {{-- ================== AKTIVITAS MODERASI ================== --}}
+    @if ($lihatAktivitas)
+        <div class="ts-modal-back" wire:click="$set('lihatAktivitas', false)"></div>
+        <div class="ts-modal">
+            <div class="ts-modal-card dsb is-datar tm-jendela" role="dialog" aria-modal="true" aria-label="Aktivitas moderasi"
+                x-on:keydown.escape.window="$wire.set('lihatAktivitas', false)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-clock-history"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Aktivitas moderasi</h5>
+                        <span class="dsb-kartu-sub">Keputusan terbaru dari semua testimoni.</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="$set('lihatAktivitas', false)" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi">
+                    @if ($aktivitas->isEmpty())
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
+                            <p class="dsb-kosong-judul">Belum ada aktivitas</p>
+                            <p class="dsb-kosong-ket">Jejak tercatat sejak keputusan moderasi berikutnya.</p>
+                        </div>
+                    @else
+                        <ol class="tm-jejak">
+                            @foreach ($aktivitas as $jejak)
+                                @php [$aIkon, $aWarna, $aLabel] = $jejak->tampilan(); @endphp
+                                <li>
+                                    <span class="tm-jejak-ikon" style="--c: {{ $aWarna }}"><i class="bi {{ $aIkon }}"></i></span>
+                                    <span class="tm-jejak-teks">
+                                        <b>{{ $aLabel }} — {{ $jejak->testimoni?->nama ?? 'testimoni terhapus' }}</b>
+                                        @if ($jejak->keterangan)<span>{{ $jejak->keterangan }}</span>@endif
+                                        <small>{{ $jejak->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}{{ $jejak->user ? ' · '.$jejak->user->name : ' · sistem' }}</small>
+                                    </span>
+                                    @if ($jejak->testimoni)
+                                        <button type="button" class="tm-btn tm-btn-ikon" wire:click="$set('lihatAktivitas', false); lihat('{{ $jejak->testimoni->id }}')" title="Buka testimoninya"><i class="bi bi-box-arrow-up-right"></i></button>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ol>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @include('livewire.layout.sweetalert')
 
     @push('scripts')
@@ -715,6 +791,19 @@ Data Testimoni || lemon
                     backdrop: 'rgba(139, 92, 246, 0.15)',
                     customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel', title: 'swal-glossy-title' },
                     buttonsStyling: false,
+                };
+                // execCommand: peramban lama & konteks tanpa HTTPS tidak punya
+                // navigator.clipboard, dan tombol Salin harus tetap bekerja.
+                const salinCadangan = (teks, selesai) => {
+                    const ta = document.createElement('textarea');
+                    ta.value = teks;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); selesai(); } catch (e) { /* diam: tak ada yang bisa dilakukan */ }
+                    document.body.removeChild(ta);
                 };
                 const panggil = (el, metode, arg) => {
                     const komponen = el.closest('[wire\\:id]');
@@ -734,6 +823,18 @@ Data Testimoni || lemon
                             icon: tombol.dataset.icon || 'question', showCancelButton: true,
                             confirmButtonText: tombol.dataset.confirm || 'Ya', cancelButtonText: 'Batal', ...gaya,
                         }).then((r) => { if (r.isConfirmed) panggil(tombol, tombol.dataset.action, tombol.dataset.arg); });
+                        return;
+                    }
+                        const salin = e.target.closest('.tm-salin');
+                    if (salin) {
+                        e.preventDefault();
+                        const teks = salin.dataset.teks || '';
+                        const sudah = () => Swal.fire({ title: 'Tersalin', text: 'Isi testimoni sudah disalin.', icon: 'success', timer: 1600, showConfirmButton: false, ...gaya });
+                        if (navigator.clipboard?.writeText) {
+                            navigator.clipboard.writeText(teks).then(sudah).catch(() => salinCadangan(teks, sudah));
+                        } else {
+                            salinCadangan(teks, sudah);
+                        }
                         return;
                     }
                     const hapus = e.target.closest('.tm-hapus');

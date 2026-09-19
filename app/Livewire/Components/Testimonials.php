@@ -30,6 +30,17 @@ class Testimonials extends Component
     /** Foto pengirim (opsional). Tanpa ini kolom foto hanya bisa diisi admin. */
     public $foto = null;
 
+    /**
+     * Perangkap bot (honeypot). Medannya disembunyikan dari manusia, jadi kalau
+     * terisi hampir pasti bot — kirimannya dibuang diam-diam supaya bot tidak
+     * belajar dari pesan galat. Batas 3 kiriman/jam saja tidak cukup: bot bisa
+     * terus mengisi kuota itu sepanjang hari.
+     */
+    public string $situs = '';
+
+    /** Dipakai halaman /testimoni: cuma formulirnya, tanpa slider beranda. */
+    public bool $tampilkanDaftar = true;
+
     /** True saat nomor cocok dgn pelanggan terdaftar (utk feedback + auto-isi nama). */
     public bool $nomorDikenali = false;
 
@@ -82,6 +93,14 @@ class Testimonials extends Component
 
     public function submit(): void
     {
+        if (filled($this->situs)) {
+            // Berpura-pura berhasil: bot tidak perlu tahu perangkapnya kena.
+            $this->reset(['nama', 'peran', 'no_hp', 'pesan', 'anonim', 'nomorDikenali', 'foto', 'situs']);
+            $this->submitted = true;
+
+            return;
+        }
+
         // Batasi agar tidak bisa di-spam (walau sudah dimoderasi admin).
         $rlKey = 'testimoni-submit:'.request()->ip();
         if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($rlKey, 3)) {

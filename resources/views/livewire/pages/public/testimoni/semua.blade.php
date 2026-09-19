@@ -47,6 +47,19 @@
         .sts-peran { display: block; font-size: .78rem; color: var(--sts-muted); }
         .sts-asli { display: inline-flex; align-items: center; gap: 5px; margin-top: 5px; padding: 3px 9px; border-radius: 99px; background: #ecfdf5; color: #15803d; font-size: .72rem; font-weight: 700; }
 
+        .sts-ajakan { margin-top: 26px; }
+        .sts-lanjut { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-top: 16px; padding: 24px 26px; background: #fff; border: 1px solid var(--sts-line); border-radius: 20px; }
+        .sts-lanjut b { display: block; font-size: 1.02rem; color: var(--sts-ink); }
+        .sts-lanjut span { display: block; font-size: .88rem; color: var(--sts-muted); }
+        .sts-lanjut-tombol { display: flex; gap: 10px; flex-wrap: wrap; }
+        .sts-tombol { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 12px; border: 1px solid var(--sts-line); background: #fff; color: #4b5563; font-size: .88rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+        .sts-tombol:hover { border-color: #f7c9ae; color: var(--sts-jingga); }
+        .sts-tombol.is-utama { background: var(--sts-jingga); border-color: var(--sts-jingga); color: #fff; }
+        .sts-tombol.is-utama:hover { background: #d9550f; border-color: #d9550f; color: #fff; }
+
+        /* Tinggi minimum pesan: dasar tiap baris kartu jadi rata. */
+        .sts-pesan { min-height: 76px; }
+
         .sts-kosong { padding: 52px 20px; text-align: center; background: #fff; border: 1px dashed #e2e8f0; border-radius: 20px; }
         .sts-kosong i { font-size: 2rem; color: #cbd5e1; }
         .sts-kosong p { margin: 10px 0 0; color: var(--sts-muted); }
@@ -155,6 +168,23 @@
                     <div class="sts-halaman">{{ $testimoni->links('vendor.pagination') }}</div>
                 @endif
             @endif
+
+            {{-- Formulir kiriman ikut dibawa ke sini: pengunjung yang mendarat
+                 langsung di halaman ini dulu harus balik ke beranda dulu. --}}
+            <div class="sts-ajakan">
+                <livewire:components.testimonials :tampilkan-daftar="false" />
+            </div>
+
+            <div class="sts-lanjut">
+                <div>
+                    <b>Siap mencoba sendiri?</b>
+                    <span>Akun premium, tools AI, dan jasa cek plagiasi — semuanya bergaransi.</span>
+                </div>
+                <div class="sts-lanjut-tombol">
+                    <a href="{{ route('shop.index') }}" wire:navigate class="sts-tombol is-utama"><i class="bi bi-bag-check"></i> Lihat Produk</a>
+                    <a href="{{ route('homepage') }}" wire:navigate class="sts-tombol"><i class="bi bi-house"></i> Kembali ke Beranda</a>
+                </div>
+            </div>
         </div>
     </section>
 </main>
