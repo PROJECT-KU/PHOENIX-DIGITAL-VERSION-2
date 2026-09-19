@@ -209,6 +209,17 @@
 
     .ul-tanda.is-asli { background: #ecfdf5; color: #15803d; }
 
+    /* ===== Kepala kolom tampilan daftar ===== */
+    .ul-daftar-kepala { display: none; gap: 10px; padding: 0 16px 8px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
+    .ul-daftar-kepala > *:nth-child(1) { flex: 1 1 240px; }
+    .ul-daftar-kepala > *:nth-child(2) { flex: 2 1 260px; }
+    .ul-daftar-kepala > *:nth-child(3) { flex: 0 0 auto; }
+    .ul-daftar-kepala button { padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+    .ul-daftar-kepala button:hover { color: #64748b; }
+    .ul-daftar-kepala button.is-aktif { color: #6d28d9; }
+    .ul-daftar-kepala i { font-size: .62rem; }
+    @media (min-width: 768px) { .ul-daftar-kepala { display: flex; } }
+
     /* ===== Saklar tampilan kartu/daftar ===== */
     .ul-tampilan { display: inline-flex; padding: 3px; border-radius: 11px; background: #f1f5f9; }
     .ul-tampilan button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 30px; border: 0; border-radius: 9px; background: none; color: #64748b; cursor: pointer; }

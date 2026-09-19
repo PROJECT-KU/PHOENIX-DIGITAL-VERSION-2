@@ -37,6 +37,9 @@ Moderasi Ulasan Produk || lemon
                 </p>
             </div>
             <div class="dsb-hero-aksi">
+                <button type="button" class="dsb-tombol" wire:click="$set('lihatAktivitas', true)">
+                    <i class="bi bi-clock-history"></i><span>Aktivitas</span>
+                </button>
                 <button type="button" class="dsb-tombol" wire:click="$set('lihatRingkasan', true)">
                     <i class="bi bi-bar-chart-line"></i><span>Per Produk</span>
                 </button>
@@ -268,11 +271,27 @@ Moderasi Ulasan Produk || lemon
                     </label>
                 </div>
 
+                @if ($tampilan === 'daftar')
+                    <div class="ul-daftar-kepala">
+                        <button type="button" class="{{ in_array($urut, ['tinggi', 'rendah'], true) ? 'is-aktif' : '' }}"
+                            wire:click="$set('urut', '{{ $urut === 'tinggi' ? 'rendah' : 'tinggi' }}')">
+                            Produk & pengulas · bintang {{ $urut === 'rendah' ? 'terendah' : 'tertinggi' }}
+                            @if (in_array($urut, ['tinggi', 'rendah'], true))<i class="bi bi-caret-down-fill"></i>@endif
+                        </button>
+                        <button type="button" class="{{ in_array($urut, ['baru', 'lama'], true) ? 'is-aktif' : '' }}"
+                            wire:click="$set('urut', '{{ $urut === 'baru' ? 'lama' : 'baru' }}')">
+                            Isi ulasan · {{ $urut === 'lama' ? 'terlama' : 'terbaru' }}
+                            @if (in_array($urut, ['baru', 'lama'], true))<i class="bi bi-caret-down-fill"></i>@endif
+                        </button>
+                        <span>Tindakan</span>
+                    </div>
+                @endif
+
                 <div class="ul-rak {{ $tampilan === 'daftar' ? 'is-daftar' : '' }}">
                     @foreach ($reviews as $item)
                         @php
                             [$stLabel, $stLencana, $stWarna] = $item->tampilanStatus();
-                            $curiga = $item->kecurigaan();
+                            $curiga = $item->kecurigaan($konteksCuriga);
                             $gambar = $item->gambarTarget();
                         @endphp
                         <article class="ul-kartu {{ in_array((string) $item->id, $pilih, true) ? 'is-dipilih' : '' }}"
@@ -490,6 +509,53 @@ Moderasi Ulasan Produk || lemon
                             data-title="Setujui ulasan ini?" data-text="Ulasan {{ $detail->nama }} akan tampil di halaman {{ $detail->namaTarget() }}." data-confirm="Ya, setujui">
                             <i class="bi bi-check-lg"></i><span>Setujui</span>
                         </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ================== AKTIVITAS MODERASI ================== --}}
+    @if ($lihatAktivitas)
+        <div class="ts-modal-back" wire:click="$set('lihatAktivitas', false)"></div>
+        <div class="ts-modal">
+            <div class="ts-modal-card dsb is-datar ul-jendela" role="dialog" aria-modal="true" aria-label="Aktivitas moderasi"
+                x-on:keydown.escape.window="$wire.set('lihatAktivitas', false)">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: #0ea5e9"><i class="bi bi-clock-history"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Aktivitas moderasi</h5>
+                        <span class="dsb-kartu-sub">Keputusan terbaru dari semua ulasan.</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="$set('lihatAktivitas', false)" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi">
+                    @if ($aktivitas->isEmpty())
+                        <div class="dsb-kosong">
+                            <span class="dsb-kosong-ikon"><i class="bi bi-clock-history"></i></span>
+                            <p class="dsb-kosong-judul">Belum ada aktivitas</p>
+                            <p class="dsb-kosong-ket">Jejak tercatat sejak keputusan moderasi berikutnya.</p>
+                        </div>
+                    @else
+                        <ol class="ul-rekap">
+                            @foreach ($aktivitas as $jejak)
+                                @php [$jLabel, $jLencana, $jWarna] = $jejak->tampilanStatus(); @endphp
+                                <li>
+                                    <span class="ul-rekap-ikon" style="background: color-mix(in srgb, {{ $jWarna }} 13%, #fff); color: {{ $jWarna }}">
+                                        <i class="bi {{ $jejak->status === 'approved' ? 'bi-check-circle-fill' : ($jejak->status === 'hidden' ? 'bi-eye-slash-fill' : 'bi-hourglass-split') }}"></i>
+                                    </span>
+                                    <span class="ul-rekap-teks">
+                                        <b>{{ $jLabel }} — {{ $jejak->namaTarget() }}</b>
+                                        <small>
+                                            oleh {{ $jejak->nama }} ·
+                                            {{ $jejak->ditinjau_at?->locale('id')->translatedFormat('d M Y, H:i') }}{{ $jejak->peninjau ? ' · '.$jejak->peninjau->name : '' }}
+                                            {{ $jejak->trashed() ? ' · diarsipkan' : '' }}
+                                        </small>
+                                    </span>
+                                    <button type="button" class="ul-btn ul-btn-ikon" wire:click="$set('lihatAktivitas', false); lihat('{{ $jejak->id }}')" title="Buka ulasannya"><i class="bi bi-box-arrow-up-right"></i></button>
+                                </li>
+                            @endforeach
+                        </ol>
                     @endif
                 </div>
             </div>

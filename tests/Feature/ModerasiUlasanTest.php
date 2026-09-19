@@ -465,3 +465,112 @@ it('ringkasan per produk menaikkan bintang terendah lebih dulu', function () {
         ->and($rekap->first()['rata'])->toBe(2.0)
         ->and($rekap->firstWhere('nama', 'Produk Bagus')['jumlah'])->toBe(1);
 });
+
+// ===================== Perangkap bot & pembersih arsip =====================
+
+it('perangkap bot membuang kiriman ulasan tanpa memberi tahu botnya', function () {
+    $produk = produkUji('Canva Pro');
+
+    Livewire::test(\App\Livewire\Components\ProductReviews::class, ['productId' => $produk->id])
+        ->set('nama', 'Bot Spam')
+        ->set('ulasan', 'Kunjungi situs promo saya sekarang juga.')
+        ->set('situs', 'https://situs-bot.example')
+        ->call('submit')
+        // Bot melihat "berhasil", padahal tidak ada yang tersimpan.
+        ->assertSet('submitted', true)
+        ->assertHasNoErrors();
+
+    expect(ProductReview::where('nama', 'Bot Spam')->exists())->toBeFalse();
+});
+
+it('pembersih arsip hanya membuang yang sudah lama, dan --kering tidak menghapus', function () {
+    $lama = ulasan(['nama' => 'Arsip Lama']);
+    $baru = ulasan(['nama' => 'Arsip Baru']);
+    $lama->delete();
+    $baru->delete();
+    ProductReview::withTrashed()->whereKey($lama->id)->update(['deleted_at' => now()->subDays(120)]);
+
+    $this->artisan('ulasan:bersihkan-arsip', ['--hari' => 90, '--kering' => true])->assertSuccessful();
+    expect(ProductReview::onlyTrashed()->count())->toBe(2);
+
+    $this->artisan('ulasan:bersihkan-arsip', ['--hari' => 90])->assertSuccessful();
+    expect(ProductReview::withTrashed()->whereKey($lama->id)->exists())->toBeFalse()
+        ->and(ProductReview::onlyTrashed()->whereKey($baru->id)->exists())->toBeTrue();
+});
+
+it('pembersih arsip tidak menyebut nama atau isi ulasan di keluarannya', function () {
+    $u = ulasan(['nama' => 'Nama Sangat Pribadi', 'ulasan' => 'Isi ulasan yang sangat pribadi sekali.']);
+    $u->delete();
+    ProductReview::withTrashed()->whereKey($u->id)->update(['deleted_at' => now()->subDays(200)]);
+
+    $this->artisan('ulasan:bersihkan-arsip', ['--kering' => true])
+        ->doesntExpectOutputToContain('Nama Sangat Pribadi')
+        ->doesntExpectOutputToContain('Isi ulasan yang sangat pribadi')
+        ->assertSuccessful();
+});
+
+// ===================== Pencarian nomor & kiriman ganda =====================
+
+it('pencarian admin menjangkau nomor WhatsApp apa pun formatnya', function () {
+    $this->actingAs(adminUlasan());
+    ulasan(['nama' => 'Pemilik Nomor', 'no_hp' => '089511223344']);
+    ulasan(['nama' => 'Orang Lain', 'no_hp' => '081200000000']);
+
+    $t = Livewire::test(ReviewModeration::class);
+    $t->set('search', '089511223344')->assertSee('Pemilik Nomor')->assertDontSee('Orang Lain');
+    $t->set('search', '+6289511223344')->assertSee('Pemilik Nomor')->assertDontSee('Orang Lain');
+});
+
+it('penanda kecurigaan mengenali isi kembar dan nomor yang pernah mengirim', function () {
+    $a = ulasan(['ulasan' => 'Isi ulasan yang sama persis.', 'no_hp' => '081299990000']);
+    $b = ulasan(['ulasan' => 'Isi ulasan yang sama persis.', 'no_hp' => '081299990000']);
+    $sendiri = ulasan(['ulasan' => 'Ulasan yang berdiri sendiri saja.', 'no_hp' => '081288887777']);
+
+    expect($a->kecurigaan())->toContain('Isi kembar')->toContain('Nomor pernah mengirim')
+        ->and($sendiri->kecurigaan())->toBe([]);
+
+    // Hasil lewat konteks sehalaman harus sama dengan pemeriksaan satuan.
+    $konteks = ProductReview::konteksKecurigaan(collect([$a, $b, $sendiri]));
+    expect($a->kecurigaan($konteks))->toBe($a->kecurigaan())
+        ->and($sendiri->kecurigaan($konteks))->toBe([]);
+});
+
+it('daftar tidak menjalankan kueri kecurigaan per kartu', function () {
+    $this->actingAs(adminUlasan());
+    foreach (range(1, 12) as $i) {
+        ulasan(['nama' => 'Pengulas '.$i, 'no_hp' => '08120000'.str_pad((string) $i, 4, '0', STR_PAD_LEFT)]);
+    }
+
+    \Illuminate\Support\Facades\DB::enableQueryLog();
+    Livewire::test(ReviewModeration::class);
+    $kueri = \Illuminate\Support\Facades\DB::getQueryLog();
+    \Illuminate\Support\Facades\DB::disableQueryLog();
+
+    $perKartu = collect($kueri)
+        ->filter(fn ($q) => str_contains($q['query'], 'select exists') && str_contains($q['query'], 'product_reviews'))
+        ->count();
+
+    expect($perKartu)->toBeLessThan(4);
+});
+
+// ===================== Aktivitas moderasi =====================
+
+it('jendela aktivitas memuat keputusan terbaru lintas ulasan', function () {
+    $this->actingAs(adminUlasan());
+    $a = ulasan(['nama' => 'Pengulas Satu']);
+    $b = ulasan(['nama' => 'Pengulas Dua']);
+
+    Livewire::test(ReviewModeration::class)->call('approve', $a->id);
+    Livewire::test(ReviewModeration::class)->call('reject', $b->id);
+
+    $t = Livewire::test(ReviewModeration::class)->set('lihatAktivitas', true);
+    $t->assertSee('Aktivitas moderasi')->assertSee('Pengulas Satu')->assertSee('Pengulas Dua');
+
+    // Yang belum pernah ditinjau tidak ikut DI JEJAKNYA — memeriksa teks
+    // halaman akan keliru, karena ulasan itu tetap tampil di daftar belakang.
+    ulasan(['nama' => 'Belum Ditinjau']);
+    $aktivitas = Livewire::test(ReviewModeration::class)->set('lihatAktivitas', true)->viewData('aktivitas');
+
+    expect($aktivitas->pluck('nama')->all())->toContain('Pengulas Satu')
+        ->not->toContain('Belum Ditinjau');
+});

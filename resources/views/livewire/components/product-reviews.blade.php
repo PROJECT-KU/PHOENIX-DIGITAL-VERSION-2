@@ -271,6 +271,7 @@
         }
         .ul-hitung { display: block; margin-top: 6px; text-align: right; font-size: .74rem; color: #9aa2ae; }
         .ul-err { display: block; margin-top: 6px; font-size: .78rem; color: #e11d48; }
+        .ul-perangkap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
         .ul-nohp-label { display: block; margin-top: 12px; }
         .ul-opsional { font-weight: 600; font-size: .78rem; color: #9aa1ad; }
         .ul-bantu { display: block; margin-top: 5px; font-size: .76rem; line-height: 1.5; color: #9aa1ad; }
@@ -479,6 +480,12 @@
                             <h4>{{ $formLipat ? 'Bagikan pengalamanmu' : 'Tulis ulasan pertama' }}</h4>
                             <p>Ulasan yang jujur paling membantu pembeli berikutnya.</p>
                         </div>
+                    </div>
+
+                    {{-- Perangkap bot: manusia tidak pernah melihat medan ini. --}}
+                    <div class="ul-perangkap" aria-hidden="true">
+                        <label for="ul-situs">Situs web</label>
+                        <input id="ul-situs" type="text" wire:model="situs" tabindex="-1" autocomplete="off">
                     </div>
 
                     <div class="ul-baris">

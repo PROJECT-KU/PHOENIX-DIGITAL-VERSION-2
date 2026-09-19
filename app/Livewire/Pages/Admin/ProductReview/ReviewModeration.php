@@ -55,6 +55,9 @@ class ReviewModeration extends Component
     /** Jendela ringkasan per produk. */
     public bool $lihatRingkasan = false;
 
+    /** Jendela aktivitas moderasi (keputusan terbaru lintas ulasan). */
+    public bool $lihatAktivitas = false;
+
     /** Keputusan terakhir yang masih bisa diurungkan. */
     public ?array $urungkan = null;
 
@@ -448,11 +451,19 @@ class ReviewModeration extends Component
             ->when($this->fSampai !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->fSampai))
             ->when($this->search !== '', function ($q) {
                 $term = '%'.$this->search.'%';
-                $q->where(function ($sub) use ($term) {
+                // Nomor WhatsApp ikut dicari lewat bentuk INTI-nya: nomor yang
+                // sama bisa tersimpan "0895…" atau "62895…".
+                $inti = \App\Models\Customer::normalisasiNoHp($this->search);
+
+                $q->where(function ($sub) use ($term, $inti) {
                     $sub->where('nama', 'like', $term)
                         ->orWhere('ulasan', 'like', $term)
                         ->orWhereHas('product', fn ($p) => $p->where('nama_akun', 'like', $term))
                         ->orWhereHas('paket', fn ($p) => $p->where('nama_paket', 'like', $term));
+
+                    if ($inti !== '') {
+                        $sub->orWhere('no_hp', 'like', '%'.$inti.'%');
+                    }
                 });
             })
             ->orderBy($urutan[0], $urutan[1]);
@@ -521,12 +532,20 @@ class ReviewModeration extends Component
                 'jumlah' => (int) ($sebaran[$b] ?? 0),
                 'persen' => round(((int) ($sebaran[$b] ?? 0)) / $totalSebaran * 100),
             ]]),
+            // Dua kueri untuk satu halaman, bukan dua kueri per kartu.
+            'konteksCuriga' => ProductReview::konteksKecurigaan($reviews->getCollection()),
             'detail' => $this->lihatId
                 ? ProductReview::withTrashed()->with(['product', 'paket', 'peninjau', 'customer'])->find($this->lihatId)
                 : null,
             // Produk mana yang paling banyak diulas & paling rendah bintangnya —
             // sinyal yang perlu ditindaklanjuti, bukan sekadar daftar ulasan.
             'ringkasanProduk' => $this->lihatRingkasan ? $this->ringkasanPerProduk() : collect(),
+            // Jejak moderasi lintas ulasan, dari kolom ditinjau_* (tidak ada
+            // tabel riwayat terpisah untuk ulasan).
+            'aktivitas' => $this->lihatAktivitas
+                ? ProductReview::withTrashed()->with(['peninjau', 'product', 'paket'])
+                    ->whereNotNull('ditinjau_at')->orderByDesc('ditinjau_at')->limit(30)->get()
+                : collect(),
         ])->layout('livewire.layout.templateindex');
     }
 }

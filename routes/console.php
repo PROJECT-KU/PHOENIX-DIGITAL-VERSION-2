@@ -187,6 +187,9 @@ $jadwalkan('jasa:bersihkan-draft --hari=7')->dailyAt('00:20');
  */
 $jadwalkan('testimoni:bersihkan-arsip --hari=90')->dailyAt('00:25');
 
+/* Arsip ulasan produk: alasan yang sama dengan arsip testimoni. */
+$jadwalkan('ulasan:bersihkan-arsip --hari=90')->dailyAt('00:30');
+
 /**
  * Hapus BERKAS jasa pengecekan (unggahan customer + hasil admin) 7 hari setelah
  * link /cek kedaluwarsa (kuota habis → +24 jam link mati → +7 hari berkas dihapus).

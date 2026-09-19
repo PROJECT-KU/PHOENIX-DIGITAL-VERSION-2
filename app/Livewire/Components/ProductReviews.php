@@ -62,6 +62,13 @@ class ProductReviews extends Component
 
     public bool $submitted = false;
 
+    /**
+     * Perangkap bot (honeypot). Medannya disembunyikan dari manusia, jadi kalau
+     * terisi hampir pasti bot — kirimannya dibuang diam-diam supaya bot tidak
+     * belajar dari pesan galat. Batas per IP saja bisa dihabiskan bot tiap jam.
+     */
+    public string $situs = '';
+
     public int $tampil = self::PER_MUAT;
 
     /** Saring bintang 1–5, atau null untuk semua. */
@@ -88,6 +95,15 @@ class ProductReviews extends Component
 
     public function submit()
     {
+        if (filled($this->situs)) {
+            // Berpura-pura berhasil: bot tidak perlu tahu perangkapnya kena.
+            $this->reset(['nama', 'ulasan', 'no_hp', 'situs']);
+            $this->rating = 5;
+            $this->submitted = true;
+
+            return;
+        }
+
         $ip = request()->ip();
         // Format kunci per target sengaja tidak diubah, supaya hitungan yang
         // sedang berjalan saat kode ini dipasang tetap berlaku.

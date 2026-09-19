@@ -129,8 +129,15 @@ class ProductReview extends Model
         };
     }
 
-    /** Ulasan yang patut diperiksa lebih dulu — petunjuk, bukan penolakan. */
-    public function kecurigaan(): array
+    /**
+     * Ulasan yang patut diperiksa lebih dulu — petunjuk, bukan penolakan.
+     *
+     * $konteks berisi hitungan isi & nomor untuk SELURUH halaman daftar (lihat
+     * konteksKecurigaan); tanpa itu tiap kartu menjalankan kuerinya sendiri.
+     *
+     * @param  array{pesan: array<string, int>, nomor: array<string, int>}|null  $konteks
+     */
+    public function kecurigaan(?array $konteks = null): array
     {
         $alasan = [];
         $teks = (string) $this->ulasan;
@@ -147,7 +154,45 @@ class ProductReview extends Model
             $alasan[] = 'Produk sudah terhapus';
         }
 
+        $isiKembar = $konteks
+            ? ($konteks['pesan'][$teks] ?? 0) > 1
+            : static::where('ulasan', $teks)->whereKeyNot($this->getKey())->exists();
+
+        if ($isiKembar) {
+            $alasan[] = 'Isi kembar';
+        }
+
+        $nomorBerulang = filled($this->no_hp) && ($konteks
+            ? ($konteks['nomor'][(string) $this->no_hp] ?? 0) > 1
+            : static::where('no_hp', $this->no_hp)->whereKeyNot($this->getKey())->exists());
+
+        if ($nomorBerulang) {
+            $alasan[] = 'Nomor pernah mengirim';
+        }
+
         return $alasan;
+    }
+
+    /**
+     * Hitungan isi & nomor untuk sekumpulan ulasan — dua kueri untuk satu
+     * halaman penuh, bukan dua kueri per kartu.
+     *
+     * @param  \Illuminate\Support\Collection<int, static>  $daftar
+     * @return array{pesan: array<string, int>, nomor: array<string, int>}
+     */
+    public static function konteksKecurigaan($daftar): array
+    {
+        $isi = $daftar->pluck('ulasan')->filter()->unique()->values();
+        $nomor = $daftar->pluck('no_hp')->filter()->unique()->values();
+
+        return [
+            'pesan' => $isi->isEmpty() ? [] : static::withTrashed()
+                ->whereIn('ulasan', $isi)->selectRaw('ulasan, count(*) as jumlah')
+                ->groupBy('ulasan')->pluck('jumlah', 'ulasan')->all(),
+            'nomor' => $nomor->isEmpty() ? [] : static::withTrashed()
+                ->whereIn('no_hp', $nomor)->selectRaw('no_hp, count(*) as jumlah')
+                ->groupBy('no_hp')->pluck('jumlah', 'no_hp')->all(),
+        ];
     }
 
     public function scopeMenunggu($query)
