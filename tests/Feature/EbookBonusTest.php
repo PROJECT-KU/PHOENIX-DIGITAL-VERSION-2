@@ -196,3 +196,13 @@ it('batas unggah PDF kini 10 MB', function () {
         ->set('file', UploadedFile::fake()->create('raksasa.pdf', 11000, 'application/pdf'))
         ->call('save')->assertHasErrors('file');
 });
+
+it('halaman baca memakai logo Phoenix dan membedakan berkas yang hilang', function () {
+    $ebook = Ebook::create(['judul' => 'Panduan Logo', 'status' => 'active', 'file' => 'l.pdf']);
+
+    $this->get('/e/'.$ebook->share_token)
+        ->assertOk()
+        ->assertSee('icons/phoenix-192.png', false)
+        ->assertDontSee('favicon.png', false)
+        ->assertSee('MissingPDFException', false);
+});

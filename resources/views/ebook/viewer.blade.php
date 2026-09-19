@@ -6,11 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $ebook->judul }} · Phoenix Digital</title>
-    <link rel="icon" href="{{ asset('favicon.png') }}">
+    <link rel="icon" href="{{ asset('icons/phoenix-192.png') }}">
     <style>
         :root {
-            --ungu: #6d28d9;
-            --ungu-2: #4f46e5;
+            /* Warna merek Phoenix (oranye sayap logo) */
+            --aksen: #ea580c;
+            --aksen-2: #f59e0b;
+            --aksen-lembut: #fff7ed;
             --latar: #eef0f6;
             --tinta: #1c1f26;
             --redup: #64748b;
@@ -44,10 +46,9 @@
         .bilah-logo {
             flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px;
             display: inline-flex; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, var(--ungu-2), var(--ungu));
-            box-shadow: 0 6px 14px -6px rgba(79, 70, 229, .6);
+            background: var(--aksen-lembut); border: 1px solid #fed7aa;
         }
-        .bilah-logo img { width: 24px; height: 24px; object-fit: contain; }
+        .bilah-logo img { width: 26px; height: 26px; object-fit: contain; }
         .bilah-teks { flex: 1 1 auto; min-width: 0; }
         .bilah-judul { margin: 0; font-size: .98rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .bilah-sub { display: block; font-size: .72rem; color: var(--redup); }
@@ -56,14 +57,14 @@
             padding: 5px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap;
         }
         .chip-halaman { background: #f1f5f9; color: #334155; font-variant-numeric: tabular-nums; }
-        .chip-baca { background: #ede9fe; color: var(--ungu); }
+        .chip-baca { background: var(--aksen-lembut); color: var(--aksen); }
         @media (max-width: 575.98px) {
             .chip-baca { display: none; }
             .bilah-judul { font-size: .9rem; }
         }
 
         /* Garis kemajuan memuat, menempel di bawah bilah */
-        .kemajuan { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--ungu-2), #a78bfa); transition: width .2s ease; }
+        .kemajuan { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--aksen-2), var(--aksen)); transition: width .2s ease; }
 
         /* ===== Halaman PDF ===== */
         #halaman { max-width: 900px; margin: 18px auto; padding: 0 clamp(8px, 2vw, 14px) 48px; }
@@ -83,18 +84,18 @@
         .kotak-ikon {
             width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 18px;
             display: flex; align-items: center; justify-content: center; font-size: 1.6rem;
-            background: #ede9fe; color: var(--ungu);
+            background: var(--aksen-lembut); color: var(--aksen);
         }
         .kotak.is-galat .kotak-ikon { background: #fee2e2; color: #dc2626; }
         .kotak h2 { margin: 0 0 6px; font-size: 1.05rem; }
         .kotak p { margin: 0; font-size: .88rem; color: var(--redup); line-height: 1.55; }
-        .putar { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #ddd6fe; border-top-color: var(--ungu); animation: putar .8s linear infinite; }
+        .putar { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #fed7aa; border-top-color: var(--aksen); animation: putar .8s linear infinite; }
         @keyframes putar { to { transform: rotate(360deg); } }
         .tombol {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px;
             min-height: 44px; padding: 0 18px; border-radius: 12px; border: 0; cursor: pointer;
             font-size: .88rem; font-weight: 700; text-decoration: none;
-            background: linear-gradient(135deg, var(--ungu-2), var(--ungu)); color: #fff;
+            background: linear-gradient(135deg, var(--aksen-2), var(--aksen)); color: #fff;
         }
         .tombol.is-wa { background: #25d366; }
         .tombol-deret { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
@@ -104,7 +105,7 @@
 
 <body>
     <header class="bilah">
-        <span class="bilah-logo"><img src="{{ asset('favicon.png') }}" alt="Phoenix Digital"></span>
+        <span class="bilah-logo"><img src="{{ asset('icons/phoenix-192.png') }}" alt="Phoenix Digital"></span>
         <div class="bilah-teks">
             <h1 class="bilah-judul">{{ $ebook->judul }}</h1>
             <span class="bilah-sub">Ebook bonus · Phoenix Digital Warehouse</span>
@@ -148,7 +149,7 @@
             const penunjuk = document.getElementById('penunjuk');
             const WA = 'https://wa.me/6289505967995?text=' + encodeURIComponent('Halo Phoenix Digital, ebook "' + @json($ebook->judul) + '" tidak bisa saya buka.');
 
-            const galat = (judul, ket) => {
+            const galat = (judul, ket, bisaMuatUlang = true) => {
                 kemajuan.style.width = '0';
                 wadah.innerHTML =
                     '<div class="kotak is-galat"><div class="kotak-ikon">!</div><h2></h2><p></p>' +
@@ -157,6 +158,7 @@
                 wadah.querySelector('h2').textContent = judul;
                 wadah.querySelector('p').textContent = ket;
                 wadah.querySelector('a').href = WA;
+                if (!bisaMuatUlang) wadah.querySelector('button').remove();
             };
 
             if (typeof pdfjsLib === 'undefined') {
@@ -208,7 +210,12 @@
                     });
                 }, { rootMargin: '-45% 0px -45% 0px' });
                 kanvas.forEach((c) => amati.observe(c));
-            }).catch(() => {
+            }).catch((err) => {
+                // Berkas PDF tidak ada di server (404) — memuat ulang tidak akan menolong.
+                if (err && err.name === 'MissingPDFException') {
+                    galat('Berkas ebook sedang tidak tersedia', 'Kami sedang memperbaruinya. Hubungi kami lewat WhatsApp, kami kirimkan segera.', false);
+                    return;
+                }
                 galat('Ebook tidak dapat ditampilkan', 'Coba muat ulang halaman ini. Bila masih gagal, hubungi kami lewat WhatsApp.');
             });
         })();
