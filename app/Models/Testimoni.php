@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Testimoni extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $table = 'testimonis';
 
@@ -23,11 +24,19 @@ class Testimoni extends Model
         'foto',
         'status',
         'source',
+        'sorot',
+        'urutan',
+        'ditinjau_at',
+        'ditinjau_oleh',
+        'alasan_tolak',
     ];
 
     protected $casts = [
         'rating' => 'integer',
         'anonim' => 'boolean',
+        'sorot' => 'boolean',
+        'urutan' => 'integer',
+        'ditinjau_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -111,5 +120,92 @@ class Testimoni extends Model
     public function scopeDitolak($query)
     {
         return $query->where('status', 'non-active');
+    }
+
+    /** Admin yang terakhir meninjau (menyetujui/menolak) testimoni ini. */
+    public function peninjau()
+    {
+        return $this->belongsTo(User::class, 'ditinjau_oleh');
+    }
+
+    /** Rating minimum yang boleh tampil di beranda tanpa disorot manual. */
+    public const RATING_MIN_TAMPIL = 4;
+
+    /** Banyak testimoni yang muat di slider beranda. */
+    public const BERANDA_MAKS = 9;
+
+    /**
+     * Testimoni yang BENAR-BENAR tampil di beranda.
+     *
+     * Disetujui saja tidak cukup: bintang rendah tidak ikut tampil, kecuali
+     * admin sengaja menyorotnya. Dulu semua yang disetujui langsung terpampang,
+     * jadi satu klik keliru pada bintang 1 langsung terlihat pengunjung.
+     */
+    public function scopeTampilPublik($query)
+    {
+        return $query->where('status', 'active')
+            ->where(fn ($q) => $q->where('rating', '>=', self::RATING_MIN_TAMPIL)->orWhere('sorot', true));
+    }
+
+    /** Urutan beranda: yang disorot dulu, lalu urutan manual, lalu terbaru. */
+    public function scopeUrutTampil($query)
+    {
+        return $query->orderByDesc('sorot')->orderBy('urutan')->orderByDesc('created_at');
+    }
+
+    /** Sudah disetujui tapi tetap tidak tampil karena ratingnya rendah. */
+    public function tersembunyiKarenaRating(): bool
+    {
+        return $this->status === 'active' && ! $this->sorot && (int) $this->rating < self::RATING_MIN_TAMPIL;
+    }
+
+    /** Berapa hari kiriman ini menunggu ditinjau (0 = hari ini). */
+    public function menungguHari(): int
+    {
+        return $this->status === 'pending' ? (int) $this->created_at?->startOfDay()->diffInDays(now()->startOfDay()) : 0;
+    }
+
+    /**
+     * Penanda kiriman yang patut dicurigai — hanya PETUNJUK untuk admin,
+     * tidak pernah menolak sendiri. Keputusan tetap di tangan manusia.
+     *
+     * @return array<int, string> alasan yang terbaca manusia
+     */
+    public function kecurigaan(): array
+    {
+        $alasan = [];
+        $pesan = (string) $this->pesan;
+
+        if (preg_match('~(https?://|www\.|\b[a-z0-9-]+\.(com|net|id|co|xyz|shop|link|me)\b)~i', $pesan)) {
+            $alasan[] = 'Mengandung tautan';
+        }
+
+        if (mb_strlen(trim($pesan)) < 15) {
+            $alasan[] = 'Terlalu pendek';
+        }
+
+        // Nomor yang sama mengirim berkali-kali, atau isi pesan persis kembar.
+        if (filled($this->no_hp) && static::where('no_hp', $this->no_hp)->whereKeyNot($this->getKey())->exists()) {
+            $alasan[] = 'Nomor pernah mengirim';
+        }
+
+        if (static::where('pesan', $pesan)->whereKeyNot($this->getKey())->exists()) {
+            $alasan[] = 'Isi kembar';
+        }
+
+        return $alasan;
+    }
+
+    /** Tautan WhatsApp untuk membalas pengirim (kosong bila nomornya tidak ada). */
+    public function tautanWa(?string $pesan = null): ?string
+    {
+        $nomor = preg_replace('/\D+/', '', (string) $this->no_hp);
+        if ($nomor === '' || $nomor === null) {
+            return null;
+        }
+
+        $nomor = str_starts_with($nomor, '0') ? '62'.substr($nomor, 1) : $nomor;
+
+        return 'https://wa.me/'.$nomor.($pesan ? '?text='.rawurlencode($pesan) : '');
     }
 }

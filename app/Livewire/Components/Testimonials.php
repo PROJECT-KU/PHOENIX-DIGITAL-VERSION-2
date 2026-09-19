@@ -121,12 +121,15 @@ class Testimonials extends Component
     {
         // withCount di relasi customer.orders: label "Sudah belanja N×" dihitung
         // dalam 1 query utk semua kartu — bukan 9 query terpisah (N+1).
-        $testimonials = Testimoni::where('status', 'active')
+        // tampilPublik + urutTampil: admin yang menentukan mana yang naik
+        // (sorot/urutan) — dulu selalu 9 terbaru, jadi testimoni bagus yang
+        // lama tenggelam dan admin tidak punya cara menaikkannya kembali.
+        $testimonials = Testimoni::tampilPublik()
             ->with(['customer' => fn ($q) => $q->withCount([
                 'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
             ])])
-            ->latest()
-            ->take(9)
+            ->urutTampil()
+            ->take(Testimoni::BERANDA_MAKS)
             ->get();
 
         return view('livewire.components.testimonials', [

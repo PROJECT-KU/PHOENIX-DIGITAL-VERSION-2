@@ -115,6 +115,24 @@
                         <small class="tm-bantu" style="color: #7c3aed;"><i class="bi bi-star"></i> Pelanggan ini otomatis menjadi <b>Member</b> saat disimpan.</small>
                     @endif
                     @error('status') <small class="tm-galat">{{ $message }}</small> @enderror
+
+                    @if ($status === 'active')
+                        @php $ambang = \App\Models\Testimoni::RATING_MIN_TAMPIL; @endphp
+                        <label class="tm-sorot-saklar {{ $sorot ? 'is-nyala' : '' }}">
+                            <input type="checkbox" wire:model.live="sorot">
+                            <span class="tm-sorot-ikon"><i class="bi {{ $sorot ? 'bi-star-fill' : 'bi-star' }}"></i></span>
+                            <span class="tm-sorot-teks">
+                                <b>Sorot di beranda</b>
+                                <small>Naik ke barisan depan slider testimoni.</small>
+                            </span>
+                        </label>
+                        @if ((int) $rating < $ambang && ! $sorot)
+                            {{-- Jujur sejak awal: disetujui saja tidak cukup untuk tampil. --}}
+                            <small class="tm-bantu" style="color: #b45309;">
+                                <i class="bi bi-eye-slash"></i> Bintang {{ (int) $rating }} <b>tidak tampil di beranda</b> (minimal {{ $ambang }}). Nyalakan Sorot bila tetap ingin ditampilkan.
+                            </small>
+                        @endif
+                    @endif
                 </div>
             </div>
         </div>
@@ -147,10 +165,10 @@
             @endif
         </div>
 
-        <div class="dsb-kartu">
+        <div class="dsb-kartu tm-kartu-foto">
             <div class="dsb-kartu-isi">
                 <span class="tm-kicker">Foto pengirim <span class="text-muted fw-normal" style="text-transform: none; letter-spacing: 0;">(opsional)</span></span>
-                <div class="tm-unggah">
+                <div class="tm-unggah is-ringkas">
                     <input type="file" id="fotoInput" wire:model="foto" accept="image/png, image/jpeg, image/jpg" aria-label="Pilih foto">
                     <span class="tm-avatar" style="--av: {{ $avWarna }}">
                         @if ($urlFoto)
@@ -160,8 +178,8 @@
                         @endif
                     </span>
                     <div>
-                        <b>{{ $urlFoto ? 'Klik untuk ganti foto' : 'Klik untuk unggah foto' }}</b>
-                        <small>JPG/PNG, maks. 5 MB · tampil bulat</small>
+                        <b>{{ $urlFoto ? 'Ganti foto' : 'Unggah foto' }}</b>
+                        <small>JPG/PNG, maks. 5 MB. Tanpa foto, inisial nama yang dipakai.</small>
                     </div>
                 </div>
                 <div class="tm-unggah-muat" wire:loading.flex wire:target="foto"><span class="dsb-putar is-kecil"></span> Mengunggah foto…</div>
@@ -173,9 +191,15 @@
             <div class="dsb-kartu-isi">
                 <span class="tm-kicker">{{ $edit ? 'Selesai mengubah?' : 'Sudah lengkap?' }}</span>
                 <p class="tm-simpan-catatan">
-                    {{ $status === 'active'
-                        ? 'Testimoni ini akan langsung tampil di halaman depan.'
-                        : 'Testimoni ini disimpan tanpa tampil di halaman depan.' }}
+                    @if ($status !== 'active')
+                        Testimoni ini disimpan tanpa tampil di halaman depan.
+                    @elseif ($sorot)
+                        Disorot — tampil di barisan depan halaman depan.
+                    @elseif ((int) $rating < \App\Models\Testimoni::RATING_MIN_TAMPIL)
+                        Disetujui, tapi bintang {{ (int) $rating }} tidak ditampilkan di halaman depan.
+                    @else
+                        Testimoni ini akan tampil di halaman depan.
+                    @endif
                 </p>
                 <button type="submit" class="dsb-tombol is-utama tm-simpan" wire:loading.attr="disabled" wire:target="save,foto">
                     <span wire:loading.remove wire:target="save" class="tm-isi-tombol"><i class="bi bi-check2-circle"></i><span>{{ $edit ? 'Simpan Perubahan' : 'Simpan Testimoni' }}</span></span>

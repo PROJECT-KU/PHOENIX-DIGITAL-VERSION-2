@@ -34,6 +34,9 @@ class TestimoniForm extends Component
 
     public $status = '';
 
+    /** Sorot: naik ke barisan depan beranda, walau bintangnya di bawah ambang. */
+    public bool $sorot = false;
+
     public $mode = 'create';
 
     public function mount()
@@ -47,6 +50,7 @@ class TestimoniForm extends Component
             $this->rating = $this->testimoni->rating;
             $this->existingImage = $this->testimoni->foto;
             $this->status = $this->testimoni->status;
+            $this->sorot = (bool) $this->testimoni->sorot;
             $this->mode = 'edit';
         } else {
             // Testimoni yang diinput admin biasanya sudah layak tampil.
@@ -166,6 +170,10 @@ class TestimoniForm extends Component
                 'rating' => $this->rating,
                 'foto' => $filename,
                 'status' => $this->status,
+                'sorot' => $this->status === 'active' ? $this->sorot : false,
+                // Testimoni yang diinput admin sudah otomatis "ditinjau" olehnya.
+                'ditinjau_at' => now(),
+                'ditinjau_oleh' => auth()->id(),
             ]);
 
             $this->aktifkanMemberBilaPerlu();
@@ -191,7 +199,15 @@ class TestimoniForm extends Component
                 'pesan' => $this->pesan,
                 'rating' => $this->rating,
                 'status' => $this->status,
+                'sorot' => $this->status === 'active' ? $this->sorot : false,
             ];
+
+            // Jejak tinjauan hanya diperbarui saat statusnya benar-benar berubah,
+            // supaya mengoreksi salah ketik tidak menghapus riwayat moderasi asli.
+            if ($this->testimoni->status !== $this->status) {
+                $data['ditinjau_at'] = now();
+                $data['ditinjau_oleh'] = auth()->id();
+            }
 
             if ($this->foto && is_object($this->foto)) {
                 if ($this->existingImage && Storage::disk('public')->exists('img/testimoni/'.$this->existingImage)) {
@@ -231,6 +247,7 @@ class TestimoniForm extends Component
         $this->rating = 5;
         $this->foto = '';
         $this->status = '';
+        $this->sorot = false;
     }
 
     public function render()
