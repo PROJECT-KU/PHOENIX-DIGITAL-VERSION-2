@@ -385,7 +385,8 @@ Route::middleware('permission:view_banners')->group(function () {
 Route::middleware('permission:view_testimoni')->group(function () {
     Route::get('/admin/DataTestimoni', TestimoniList::class)->name('admin.testimoni.index');
     Route::get('/admin/DataTestimoni/create', TestimoniCreate::class)->middleware('permission:create_testimoni')->name('admin.testimoni.create');
-    Route::get('/admin/DataTestimoni/{testimoni}', TestimoniEdit::class)->name('admin.testimoni.show');
+    // Detail = jendela di halaman daftar (dulu memuat halaman UBAH hanya dengan izin lihat).
+    Route::get('/admin/DataTestimoni/{testimoni}', TestimoniList::class)->name('admin.testimoni.show');
     Route::get('/admin/DataTestimoni/{testimoni}/edit', TestimoniEdit::class)->middleware('permission:edit_testimoni')->name('admin.testimoni.edit');
 });
 

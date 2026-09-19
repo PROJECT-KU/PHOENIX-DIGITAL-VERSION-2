@@ -3,6 +3,7 @@
 namespace App\Livewire\Pages\Admin\Testimoni;
 
 use App\Models\Testimoni;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -10,10 +11,38 @@ class TestimoniList extends Component
 {
     use WithPagination;
 
+    #[Url(as: 'cari', except: '')]
     public $searchTestimoni = '';
 
     // Tab moderasi aktif: pending (menunggu) | active (disetujui) | non-active (ditolak) | all
+    #[Url(as: 'status', except: 'pending')]
     public string $filter = 'pending';
+
+    /** Testimoni yang sedang dibuka di jendela detail. */
+    public ?string $lihatId = null;
+
+    /**
+     * Rute admin.testimoni.show (/admin/DataTestimoni/{id}) membuka halaman ini
+     * dengan jendela detail. Dulu rute itu memuat HALAMAN UBAH hanya dengan
+     * izin melihat — dan simpannya tidak memeriksa izin.
+     */
+    public function mount($testimoni = null): void
+    {
+        if ($testimoni) {
+            $this->lihatId = Testimoni::whereKey($testimoni)->value('id');
+            $this->filter = 'all';
+        }
+    }
+
+    public function lihat(string $id): void
+    {
+        $this->lihatId = Testimoni::whereKey($id)->value('id');
+    }
+
+    public function tutupLihat(): void
+    {
+        $this->lihatId = null;
+    }
 
     public function updatedSearchTestimoni()
     {
@@ -22,7 +51,7 @@ class TestimoniList extends Component
 
     public function setFilter(string $f): void
     {
-        $this->filter = $f;
+        $this->filter = in_array($f, ['pending', 'active', 'non-active', 'all'], true) ? $f : 'pending';
         $this->resetPage();
     }
 
@@ -107,6 +136,7 @@ class TestimoniList extends Component
         }
 
         $testimoni->delete();
+        $this->lihatId = null;
 
         $this->dispatch('testimoni-deleted', id: $id);
         // Menghapus kiriman pelanggan yang belum ditinjau juga mengurangi badge.
@@ -140,9 +170,16 @@ class TestimoniList extends Component
             'non-active' => Testimoni::where('status', 'non-active')->count(),
         ];
 
+        $pelangganDetail = fn ($q) => $q->withCount([
+            'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
+        ]);
+
         return view('livewire.pages.admin.testimoni.testimoni-list', [
             'Testimoni' => $Testimoni,
             'tabCounts' => $tabCounts,
+            // Rata-rata rating yang TAMPIL di publik (hanya yang disetujui).
+            'rataRating' => round((float) Testimoni::where('status', 'active')->avg('rating'), 1),
+            'detail' => $this->lihatId ? Testimoni::with(['customer' => $pelangganDetail])->find($this->lihatId) : null,
         ])
             ->layout('livewire.layout.templateindex');
     }

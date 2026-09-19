@@ -1,608 +1,286 @@
-
 @section('title')
 Data Testimoni || lemon
 @stop
 <div>
-    <div class="container-fluid">
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-body p-4">
-                <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                    <div class="title-wrapper text-center text-md-start w-100">
-                        <h3 class="gradient-text fw-bold mb-1">Data Testimoni</h3>
-                        <div class="breadcrumb-custom d-flex justify-content-center justify-content-md-start">
-                            @php $breadcrumbs = [['name' => 'Beranda', 'url' => route('admin.dashboard')], ['name' => 'Data Testimoni']]; @endphp
-                            <x-breadcrumb :items="$breadcrumbs" />
-                        </div>
-                    </div>
+    {{-- Kerangka mengikuti dasbor (bahasa rupa dsb-*). Lihat partials/dasbor-gaya. --}}
+    @include('livewire.pages.admin.partials.dasbor-gaya')
+    @include('livewire.pages.admin.testimoni.partials.testimoni-gaya')
 
-                    <div class="d-flex flex-column flex-sm-row gap-2 w-100 header-action">
-                        <div class="form-group position-relative flex-grow-1">
-                            <div class="form-control-icon">
-                                <i class="bi bi-search"></i>
-                            </div>
+    @php
+        $bolehBuat = (bool) auth()->user()?->hasPermission('create_testimoni');
+        $bolehUbah = (bool) auth()->user()?->hasPermission('edit_testimoni');
+        $bolehHapus = (bool) auth()->user()?->hasPermission('delete_testimoni');
+        $bolehPelanggan = (bool) auth()->user()?->hasPermission('view_customer');
+        $kartuStatus = [
+            'pending' => ['Menunggu', 'bi-hourglass-split', '#d97706'],
+            'active' => ['Disetujui', 'bi-check-circle-fill', '#16a34a'],
+            'non-active' => ['Ditolak', 'bi-x-circle-fill', '#dc2626'],
+            'all' => ['Semua', 'bi-chat-quote-fill', '#7c3aed'],
+        ];
+        $gayaStatus = [
+            'pending' => ['is-kuning', '#d97706', 'Menunggu'],
+            'active' => ['is-hijau', '#16a34a', 'Disetujui'],
+            'non-active' => ['is-merah', '#dc2626', 'Ditolak'],
+        ];
+        $kosong = [
+            'pending' => ['bi-inbox', 'Tidak ada yang menunggu', 'Semua testimoni sudah ditinjau.'],
+            'active' => ['bi-chat-quote', 'Belum ada testimoni disetujui', 'Testimoni yang disetujui tampil di halaman publik.'],
+            'non-active' => ['bi-x-circle', 'Tidak ada testimoni ditolak', 'Testimoni yang ditolak disembunyikan dari publik.'],
+            'all' => ['bi-chat-quote', 'Belum ada testimoni', 'Tambahkan testimoni atau tunggu kiriman pelanggan.'],
+        ];
+    @endphp
 
-                            <input wire:model.live.debounce.300ms="searchTestimoni" type="text"
-                                class="form-control ps-5 pe-5" placeholder="Cari testimoni...">
+    <div class="dsb">
+        {{-- ================== KEPALA ================== --}}
+        <header class="dsb-hero">
+            <div class="dsb-hero-teks">
+                <h1 class="dsb-salam">Data Testimoni</h1>
+                <p class="dsb-hero-ket">
+                    <span class="d-block"><i class="bi bi-calendar3 me-1"></i>{{ now()->locale('id')->translatedFormat('l, d F Y') }}</span>
+                    <span class="d-block">Kiriman pelanggan ditinjau di sini — yang disetujui tampil di halaman publik.</span>
+                </p>
+            </div>
+            @if ($bolehBuat)
+                <div class="dsb-hero-aksi">
+                    <a wire:navigate href="{{ route('admin.testimoni.create') }}" class="dsb-tombol is-utama">
+                        <i class="bi bi-plus-lg"></i><span>Tambah Testimoni</span>
+                    </a>
+                </div>
+            @endif
+        </header>
 
-                            @if ($searchTestimoni)
-                            <span wire:click="$set('searchTestimoni', '')"
-                                class="position-absolute end-0 top-50 translate-middle-y pe-3"
-                                style="cursor: pointer; z-index: 10;" title="Bersihkan pencarian">
-                                <i class="bi bi-x-circle-fill text-secondary btn-clear-hover"></i>
-                            </span>
-                            @endif
-                        </div>
-                        @if (auth()->user()->hasPermission('create_testimoni'))
-                        <a wire:navigate href="{{ route('admin.testimoni.create') }}"
-                            class="btn btn-primary d-flex align-items-center justify-content-center px-4">
-                            <i class="bi bi-plus-lg"></i>
-                            <span class="ms-2">Tambah Data</span>
-                        </a>
-                        @endif
+        {{-- ================== STATUS (sekaligus tab moderasi) ================== --}}
+        <nav class="tm-status" aria-label="Saring menurut status moderasi">
+            @foreach ($kartuStatus as $nilai => [$label, $ikon, $warna])
+                <button type="button" class="tm-status-btn {{ $filter === $nilai ? 'is-aktif' : '' }} {{ $nilai === 'pending' && 0 < $tabCounts['pending'] ? 'is-perlu' : '' }}"
+                    style="--c: {{ $warna }}" wire:click="setFilter('{{ $nilai }}')" aria-pressed="{{ $filter === $nilai ? 'true' : 'false' }}">
+                    <span class="tm-status-ikon"><i class="bi {{ $ikon }}"></i></span>
+                    <span class="tm-status-teks"><b>{{ $tabCounts[$nilai] }}</b><span>{{ $label }}</span></span>
+                </button>
+            @endforeach
+            <div class="tm-status-btn is-info" style="--c: #f59e0b" title="Rata-rata rating testimoni yang tampil di publik">
+                <span class="tm-status-ikon"><i class="bi bi-star-fill"></i></span>
+                <span class="tm-status-teks"><b>{{ $rataRating ? number_format($rataRating, 1, ',', '.') : '–' }}</b><span>Rata-rata rating</span></span>
+            </div>
+        </nav>
+
+        {{-- ================== CARI ================== --}}
+        <section class="dsb-kartu tm-saring">
+            <div class="dsb-kartu-isi tm-saring-isi">
+                <div class="dsb-cari">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="dsb-isian" wire:model.live.debounce.300ms="searchTestimoni" placeholder="Cari nama, peran, atau isi testimoni…" aria-label="Cari testimoni">
+                    @if ($searchTestimoni)
+                        <button type="button" class="dsb-cari-hapus" wire:click="$set('searchTestimoni', '')" title="Hapus pencarian"><i class="bi bi-x-lg"></i></button>
+                    @endif
+                </div>
+                <span class="dsb-chip is-memuat" wire:loading.inline-flex wire:target="searchTestimoni,setFilter,gotoPage,nextPage,previousPage">
+                    <span class="dsb-putar is-kecil"></span>Memuat…
+                </span>
+            </div>
+        </section>
+
+        {{-- ================== RAK TESTIMONI ================== --}}
+        <section wire:loading.class="dsb-sedang-muat" wire:target="searchTestimoni,setFilter,gotoPage,nextPage,previousPage">
+            @if ($Testimoni->isEmpty())
+                @php [$kIkon, $kJudul, $kKet] = $searchTestimoni ? ['bi-funnel', 'Tidak ada testimoni yang cocok', 'Coba kata kunci lain.'] : $kosong[$filter]; @endphp
+                <div class="dsb-kartu">
+                    <div class="dsb-kosong">
+                        <span class="dsb-kosong-ikon"><i class="bi {{ $kIkon }}"></i></span>
+                        <p class="dsb-kosong-judul">{{ $kJudul }}</p>
+                        <p class="dsb-kosong-ket">{{ $kKet }}</p>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        {{-- Tabs moderasi (seragam dengan Moderasi Ulasan Produk) --}}
-        <style>
-            .customer-glossy-tabs {
-                display: flex;
-                width: 100%;
-                gap: .5rem;
-                padding: .5rem;
-                border-radius: 999px;
-                background: rgba(255, 255, 255, 0.55);
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-                border: 1px solid rgba(255, 255, 255, 0.6);
-                box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
-                overflow-x: auto;
-            }
-            .customer-glossy-tab {
-                flex: 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: .6rem;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                font-weight: 600;
-                font-size: 1.05rem;
-                line-height: 1;
-                padding: .95rem 1.5rem;
-                border-radius: 999px;
-                cursor: pointer;
-                transition: all .25s ease;
-                text-transform: capitalize;
-                white-space: nowrap;
-            }
-            .customer-glossy-tab i { font-size: 1.25rem; line-height: 1; display: inline-flex; align-items: center; }
-            .customer-glossy-tab:hover:not(.active) { color: #4e46e5; background: rgba(108, 99, 255, 0.10); }
-            .customer-glossy-tab.active { color: #fff; background: linear-gradient(135deg, #6c63ff, #4e46e5); box-shadow: 0 6px 16px rgba(78, 70, 229, 0.45); transform: translateY(-1px); }
-            .customer-glossy-tab .tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 1.75rem; height: 1.75rem; padding: 0 .55rem; font-size: .82rem; font-weight: 800; line-height: 1; border-radius: 999px; color: #fff; background: linear-gradient(135deg, #7c73ff, #4e46e5); border: 1px solid rgba(255, 255, 255, 0.45); box-shadow: 0 4px 10px rgba(78, 70, 229, 0.40), inset 0 1px 1px rgba(255, 255, 255, 0.45); transition: all .25s ease; }
-            .customer-glossy-tab:hover:not(.active) .tab-count { transform: scale(1.08); }
-            .customer-glossy-tab.active .tab-count { color: #4e46e5; background: linear-gradient(135deg, #ffffff, #eef0ff); border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.9); }
-            @media (max-width: 575.98px) {
-                .customer-glossy-tab { flex: 0 0 auto; justify-content: center; padding: .6rem .9rem; font-size: .9rem; }
-            }
-        </style>
-
-        <div class="mb-4">
-            <div class="customer-glossy-tabs">
-                <button type="button" class="customer-glossy-tab @if ($filter === 'pending') active @endif" wire:click="setFilter('pending')">
-                    <i class="bi bi-hourglass-split"></i>
-                    <span>Menunggu</span>
-                    <span class="tab-count">{{ $tabCounts['pending'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'active') active @endif" wire:click="setFilter('active')">
-                    <i class="bi bi-check-circle"></i>
-                    <span>Disetujui</span>
-                    <span class="tab-count">{{ $tabCounts['active'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'non-active') active @endif" wire:click="setFilter('non-active')">
-                    <i class="bi bi-eye-slash"></i>
-                    <span>Ditolak</span>
-                    <span class="tab-count">{{ $tabCounts['non-active'] }}</span>
-                </button>
-                <button type="button" class="customer-glossy-tab @if ($filter === 'all') active @endif" wire:click="setFilter('all')">
-                    <i class="bi bi-list-check"></i>
-                    <span>Semua</span>
-                    <span class="tab-count">{{ $tabCounts['all'] }}</span>
-                </button>
-            </div>
-        </div>
-
-        {{-- Kelegaan tabel: sebelumnya tiap sel hanya memakai padding bawaan
-             sementara kolom Nama menumpuk nama + 4 lencana + baris "Pemilik
-             nomor", sehingga barisnya terasa sesak & sulit dipindai. --}}
-        <style>
-            .tabel-testimoni>thead>tr>th {
-                padding: .85rem .9rem;
-                font-size: .78rem;
-                text-transform: uppercase;
-                letter-spacing: .4px;
-                color: #64748b;
-                white-space: nowrap;
-            }
-
-            .tabel-testimoni>tbody>tr>td {
-                padding: 1.1rem .9rem;
-                line-height: 1.55;
-                vertical-align: middle;
-            }
-
-            /* Garis pemisah antar baris yang lembut + sorotan saat disapu tikus,
-               supaya mata tidak kehilangan jejak baris pada tabel selebar ini. */
-            .tabel-testimoni>tbody>tr {
-                border-bottom: 1px solid rgba(148, 163, 184, .18);
-            }
-
-            .tabel-testimoni>tbody>tr:hover {
-                background: rgba(124, 58, 237, .04);
-            }
-
-            /* Lencana ringkas satu bentuk. Sebelumnya tiap lencana memakai
-               kombinasi kelas Bootstrap yang berbeda-beda dgn ukuran berbeda,
-               sehingga barisnya terlihat ramai & tingginya tidak rata. */
-            .chip-testi {
-                display: inline-flex;
-                align-items: center;
-                gap: .25rem;
-                padding: .2rem .5rem;
-                border-radius: 999px;
-                font-size: .68rem;
-                font-weight: 600;
-                line-height: 1.35;
-                white-space: nowrap;
-                border: 1px solid transparent;
-            }
-
-            .chip-testi i.bi {
-                font-size: .72rem;
-                line-height: 1;
-            }
-
-            .chip-biru   { background: rgba(14,165,233,.12);  color: #0369a1; border-color: rgba(14,165,233,.30); }
-            .chip-hijau  { background: rgba(16,185,129,.12);  color: #047857; border-color: rgba(16,185,129,.30); }
-            .chip-ungu   { background: rgba(124,58,237,.12);  color: #6d28d9; border-color: rgba(124,58,237,.30); }
-            .chip-kuning { background: rgba(245,158,11,.14);  color: #b45309; border-color: rgba(245,158,11,.32); }
-            .chip-merah  { background: rgba(239,68,68,.12);   color: #b91c1c; border-color: rgba(239,68,68,.30); }
-            .chip-abu    { background: rgba(100,116,139,.12); color: #475569; border-color: rgba(100,116,139,.28); }
-
-            /* Kolom pengirim: biarkan nama panjang membungkus, jangan memaksa
-               tabel melebar sampai perlu digeser ke samping. */
-            .tabel-testimoni .sel-testi {
-                white-space: normal;
-                word-break: break-word;
-            }
-
-            /* Ringkasan pesan: 2 baris lalu dipotong dgn elipsis. Tombol mata
-               tetap tersedia untuk membaca utuh. */
-            .tabel-testimoni .pesan-ringkas {
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                font-size: .86rem;
-                line-height: 1.5;
-                color: #475569;
-            }
-
-            /* Tombol aksi: jarak antar tombol supaya tidak mudah salah tekan. */
-            .tabel-testimoni .aksi-testimoni {
-                display: inline-flex;
-                align-items: center;
-                gap: .4rem;
-                white-space: nowrap;
-            }
-        </style>
-
-        <div class="card border-0 shadow-sm rounded-4">
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table align-middle tabel-testimoni">
-                        <thead>
-                            <tr style="text-align: center;">
-                                <th style="width: 46px;">No</th>
-                                <th class="text-start" style="min-width: 300px;">Pengirim</th>
-                                <th class="text-center" style="width: 110px;">Rating</th>
-                                <th class="text-start" style="min-width: 240px;">Pesan</th>
-                                <th class="text-center" style="width: 110px;">Status</th>
-                                @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
-                                <th class="text-center">Aksi</th>
-                                @endif
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($Testimoni as $item)
-                            {{-- wire:key WAJIB: tanpa ini Livewire mencocokkan baris berdasarkan
-                                 POSISI saat morph. Begitu satu baris berubah status, jumlah tombol
-                                 per baris ikut berubah dan DOM antar-baris bisa tertukar — tombol
-                                 yang tampak milik baris A bisa membawa id baris B. --}}
-                            <tr wire:key="testi-{{ $item->id }}" style="text-align: center;">
-                                <td>{{ $loop->iteration }}</td>
-
-                                {{-- Foto + Nama + Peran DIGABUNG jadi satu kolom.
-                                     Dulu tiga kolom terpisah: kolom Foto & Peran masing-masing hanya
-                                     berisi satu hal, sementara kolom Nama harus menampung nama + 4
-                                     lencana + baris "Pemilik nomor" di ruang sempit sehingga semuanya
-                                     menumpuk ke bawah (satu baris bisa 5 tingkat). Digabung, avatar
-                                     mengisi ruang vertikal yang tadinya kosong dan lencana punya
-                                     lebar untuk mengalir menyamping. --}}
-                                <td class="text-start sel-testi">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <div class="flex-shrink-0">
-                                            @if ($item->foto && \Storage::disk('public')->exists('img/testimoni/' . $item->foto))
-                                            <img src="{{ asset('storage/img/testimoni/' . $item->foto) }}"
-                                                class="rounded-circle shadow-sm"
-                                                style="width: 44px; height: 44px; object-fit: cover; cursor: pointer;"
-                                                onclick="showGlossyPreview('{{ asset('storage/img/testimoni/' . $item->foto) }}')">
-                                            @else
-                                            <span class="rounded-circle bg-light text-primary d-inline-block text-center shadow-sm"
-                                                style="width: 44px; height: 44px;"><i class="bi bi-person-fill" style="font-size: 1.3rem; line-height: 44px;"></i></span>
-                                            @endif
-                                        </div>
-
-                                        <div style="min-width: 0;">
-                                            <div class="d-flex align-items-center flex-wrap gap-1">
-                                                {{-- Admin melihat nama ASLI, termasuk untuk kiriman anonim —
-                                                     penyamaran hanya berlaku di halaman publik. --}}
-                                                <span class="fw-bold">{{ $item->nama }}</span>
-                                                @if ($item->anonim)
-                                                    <span class="chip-testi chip-abu"
-                                                        title="Pengirim memilih anonim — di publik tampil sebagai {{ $item->nama_publik }}">
-                                                        <i class="bi bi-incognito"></i>Anonim
-                                                    </span>
-                                                @endif
-                                            </div>
-
-                                            @if ($item->peran)
-                                                <div class="text-muted" style="font-size:.76rem; line-height:1.3;">{{ $item->peran }}</div>
-                                            @endif
-
-                                            {{-- Bekal admin menilai keaslian: sudah belanja berapa kali & sudah
-                                                 member atau belum, supaya penulis yang belum pernah belanja
-                                                 langsung ketahuan.
-                                                 Syaratnya ADA TAUTAN PELANGGAN atau kiriman pelanggan — bukan
-                                                 source-nya. Testimoni yang diinput admin dari WhatsApp tetap
-                                                 punya tautan pelanggan (source='admin'). --}}
-                                            @if ($item->customer_id || $item->source === 'customer')
-                                                <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
-                                                    @if ($item->source === 'customer')
-                                                        <span class="chip-testi chip-biru" title="Dikirim langsung oleh pelanggan lewat form testimoni">
-                                                            <i class="bi bi-person-heart"></i>Dari Pelanggan
-                                                        </span>
-                                                    @endif
-
-                                                    @if ($item->customer)
-                                                        <span class="chip-testi chip-hijau" title="Nomor WhatsApp cocok dgn pelanggan terdaftar">
-                                                            <i class="bi bi-bag-check-fill"></i>Belanja {{ $item->customer->belanja_selesai_count ?? 0 }}&times;
-                                                        </span>
-                                                        @if ($item->customer->status_member === 'active')
-                                                            <span class="chip-testi chip-ungu" title="Sudah menjadi Member">
-                                                                <i class="bi bi-star-fill"></i>Member
-                                                            </span>
-                                                        @else
-                                                            <span class="chip-testi chip-kuning" title="Akan otomatis jadi member begitu testimoni ini disetujui">
-                                                                <i class="bi bi-hourglass-split"></i>Belum member
-                                                            </span>
-                                                        @endif
-                                                    @elseif ($item->no_hp)
-                                                        <span class="chip-testi chip-merah" title="Nomor tidak cocok dgn pelanggan mana pun, atau pesanannya belum ada yang Selesai">
-                                                            <i class="bi bi-x-circle-fill"></i>Belum pernah belanja
-                                                        </span>
-                                                    @else
-                                                        <span class="chip-testi chip-abu" title="Testimoni lama — dikirim sebelum nomor WhatsApp diwajibkan">
-                                                            <i class="bi bi-question-circle"></i>Tanpa nomor
-                                                        </span>
-                                                    @endif
-                                                </div>
-
-                                                {{-- "Pemilik nomor" HANYA ditampilkan bila namanya BERBEDA dari
-                                                     yang diketik. Kalau sama, barisnya cuma mengulang nama di
-                                                     atasnya — itu yang membuat tiap baris bertambah tinggi
-                                                     tanpa memberi informasi baru. --}}
-                                                @if ($item->customer && mb_strtolower(trim($item->nama)) !== mb_strtolower(trim($item->customer->nama)))
-                                                    <div class="text-muted fw-normal mt-1" style="font-size:.7rem; line-height:1.35;"
-                                                        title="Orang lazim mengetik nama panggilan — ini info, bukan tanda kecurangan">
-                                                        <i class="bi bi-person-vcard me-1" style="vertical-align:-0.125em;"></i>Pemilik nomor: <b>{{ $item->customer->nama }}</b>
-                                                    </div>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-center text-warning text-nowrap">
-                                    @for ($i = 1; $i <= 5; $i++)
-                                        <i class="bi {{ $i <= (int) $item->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
-                                    @endfor
-                                </td>
-                                {{-- Pesan kini boleh 2 baris (dulu dipotong 1 baris pada lebar 200px,
-                                     jadi hampir selalu terpotong di kata pertama). Ruang untuk ini
-                                     didapat dari penggabungan kolom Foto & Peran. --}}
-                                <td class="text-start" style="max-width: 320px;">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <span class="pesan-ringkas" style="min-width:0;">{{ $item->pesan }}</span>
-                                        <button type="button"
-                                            class="btn btn-sm btn-outline-primary p-1 flex-shrink-0 testimoni-read-trigger"
-                                            title="Baca pesan lengkap"
-                                            data-pesan="{{ $item->pesan }}"
-                                            data-nama="{{ $item->nama }}"
-                                            data-peran="{{ $item->peran ?: '-' }}"
-                                            data-rating="{{ (int) $item->rating }}">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                                <td class="text-center">
-                                    @php
-                                        $stMap = [
-                                            'pending' => ['warning', 'Menunggu'],
-                                            'active' => ['success', 'Disetujui'],
-                                            'non-active' => ['danger', 'Ditolak'],
-                                        ];
-                                        [$stColor, $stLabel] = $stMap[$item->status] ?? ['secondary', ucfirst($item->status)];
-                                    @endphp
-                                    <span class="badge bg-{{ $stColor }}-subtle text-{{ $stColor }} border border-{{ $stColor }} rounded-pill px-3 py-2">
-                                        {{ $stLabel }}
+            @else
+                <div class="tm-rak">
+                    @foreach ($Testimoni as $item)
+                        @php [$stLencana, $stWarna, $stLabel] = $gayaStatus[$item->status] ?? ['is-abu', '#64748b', ucfirst($item->status)]; @endphp
+                        <article class="tm-kartu" style="--c: {{ $stWarna }}" wire:key="testi-{{ $item->id }}">
+                            <div class="tm-kepala">
+                                <button type="button" class="tm-avatar-tombol" wire:click="lihat('{{ $item->id }}')" style="border: 0; padding: 0; background: none;" title="Lihat detail">
+                                    @include('livewire.pages.admin.testimoni.partials.avatar', ['item' => $item])
+                                </button>
+                                <div class="tm-kepala-teks">
+                                    <p class="tm-nama">{{ $item->nama }}</p>
+                                    @if ($item->peran)
+                                        <span class="tm-peran">{{ $item->peran }}</span>
+                                    @endif
+                                    <span class="tm-bintang" aria-label="Rating {{ (int) $item->rating }} dari 5">
+                                        @for ($i = 1; $i <= 5; $i++)<i class="bi bi-star-fill {{ $i <= (int) $item->rating ? '' : 'is-kosong' }}"></i>@endfor
                                     </span>
-                                </td>
-                                @if (auth()->user()->hasAnyPermission(['edit_testimoni', 'delete_testimoni']))
-                                <td class="text-center">
-                                    <div class="aksi-testimoni">
-                                    @if (auth()->user()->hasPermission('edit_testimoni'))
-                                    {{-- Setujui & Tolak WAJIB lewat konfirmasi.
-                                         Dulu wire:click langsung: satu sentuhan tak sengaja pada
-                                         tabel yang padat langsung menerbitkan testimoni ke publik
-                                         DAN menjadikan pengirimnya member — tanpa peringatan &
-                                         tanpa cara membatalkan. --}}
-                                    @if ($item->status !== 'active')
-                                    <button type="button" class="btn btn-sm btn-success p-2 testimoni-konfirmasi"
-                                        title="Setujui (tampilkan di publik)"
-                                        data-action="approve"
-                                        data-arg="{{ $item->id }}"
-                                        data-icon="question"
-                                        data-title="Setujui testimoni ini?"
-                                        data-text="Testimoni {{ $item->nama }} akan TAMPIL DI PUBLIK{{ $item->customer && $item->customer->status_member !== 'active' ? ', dan pengirimnya otomatis menjadi Member' : '' }}."
-                                        data-confirm="Ya, setujui">
-                                        <i class="bi bi-check-circle"></i>
-                                    </button>
-                                    @endif
-                                    {{-- Tolak: tampil kecuali sudah ditolak --}}
-                                    @if ($item->status !== 'non-active')
-                                    <button type="button" class="btn btn-sm btn-secondary p-2 testimoni-konfirmasi"
-                                        title="Tolak (sembunyikan dari publik)"
-                                        data-action="reject"
-                                        data-arg="{{ $item->id }}"
-                                        data-icon="warning"
-                                        data-title="Tolak testimoni ini?"
-                                        data-text="Testimoni {{ $item->nama }} akan disembunyikan dari publik."
-                                        data-confirm="Ya, tolak">
-                                        <i class="bi bi-eye-slash"></i>
-                                    </button>
-                                    @endif
-                                    <a wire:navigate href="{{ route('admin.testimoni.edit', $item) }}"
-                                        class="btn btn-sm btn-warning text-white p-2" title="Edit">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    @endif
-                                    {{-- Lompat ke Data Pelanggan yang sudah tersaring nomor pengirim,
-                                         supaya admin cepat menemukan pelanggannya (status member,
-                                         poin, kode referral) lalu mengabari bahwa dia sudah jadi
-                                         member. Hanya tampil bila nomornya ada & admin berizin. --}}
-                                    @if ($item->no_hp && auth()->user()->hasPermission('view_customer'))
-                                    <a wire:navigate
-                                        href="{{ route('admin.customer.index', ['searchCustomer' => $item->no_hp_cari]) }}"
-                                        class="btn btn-sm btn-info text-white p-2"
-                                        title="Buka Data Pelanggan untuk nomor {{ $item->no_hp }}">
-                                        <i class="bi bi-person-lines-fill"></i>
-                                    </a>
-                                    @endif
-                                    @if (auth()->user()->hasPermission('delete_testimoni'))
-                                    <button type="button" class="btn btn-sm btn-danger delete-testimoni-btn p-2"
-                                        data-id="{{ $item->id }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    @endif
-                                    </div>
-                                </td>
+                                </div>
+                                <span class="dsb-lencana {{ $stLencana }}">{{ $stLabel }}</span>
+                            </div>
+                            <div class="tm-isi">
+                                <p class="tm-pesan">{{ \Illuminate\Support\Str::limit($item->pesan, 200) }}</p>
+                                @if (200 < mb_strlen((string) $item->pesan))
+                                    <button type="button" class="tm-baca" wire:click="lihat('{{ $item->id }}')">Baca selengkapnya</button>
                                 @endif
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <div class="empty-state-icon-wrapper mb-3">
-                                            <i class="bi bi-chat-quote"></i>
-                                        </div>
-                                        <h5 class="fw-bold text-dark mb-1" style="color: #1e293b !important;">
-                                            Belum Ada Data Testimoni
-                                        </h5>
-                                        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-                                            Silakan klik tombol tambah data untuk memasukkan testimoni baru.
-                                        </p>
+                                @include('livewire.pages.admin.testimoni.partials.lencana-keaslian', ['item' => $item])
+                                <div class="tm-waktu">{{ $item->source === 'customer' ? 'Dikirim' : 'Diinput admin' }} {{ $item->created_at?->locale('id')->diffForHumans() }}</div>
+                            </div>
+                            <div class="tm-aksi">
+                                @if ($bolehUbah)
+                                    {{-- Setujui/Tolak lewat konfirmasi: menyetujui menampilkan testimoni di
+                                         publik DAN bisa menjadikan pengirimnya member. --}}
+                                    <div class="tm-aksi-moderasi">
+                                        @if ($item->status !== 'active')
+                                            <button type="button" class="tm-btn is-setuju tm-konfirmasi"
+                                                data-action="approve" data-arg="{{ $item->id }}" data-icon="question"
+                                                data-title="Setujui testimoni ini?"
+                                                data-text="Testimoni {{ $item->nama }} akan TAMPIL DI PUBLIK{{ $item->customer && $item->customer->status_member !== 'active' ? ' dan pengirimnya otomatis menjadi MEMBER' : '' }}."
+                                                data-confirm="Ya, setujui">
+                                                <i class="bi bi-check-lg"></i><span>Setujui</span>
+                                            </button>
+                                        @endif
+                                        @if ($item->status !== 'non-active')
+                                            <button type="button" class="tm-btn is-tolak tm-konfirmasi"
+                                                data-action="reject" data-arg="{{ $item->id }}" data-icon="warning"
+                                                data-title="Tolak testimoni ini?"
+                                                data-text="Testimoni {{ $item->nama }} akan disembunyikan dari publik."
+                                                data-confirm="Ya, tolak">
+                                                <i class="bi bi-x-lg"></i><span>{{ $item->status === 'active' ? 'Sembunyikan' : 'Tolak' }}</span>
+                                            </button>
+                                        @endif
                                     </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                                @endif
+                                <div class="tm-aksi-lain">
+                                    <button type="button" class="tm-btn tm-btn-ikon" wire:click="lihat('{{ $item->id }}')" title="Detail" aria-label="Detail testimoni"><i class="bi bi-eye"></i></button>
+                                    @if ($bolehUbah)
+                                        <a wire:navigate href="{{ route('admin.testimoni.edit', $item) }}" class="tm-btn tm-btn-ikon" title="Ubah" aria-label="Ubah testimoni"><i class="bi bi-pencil"></i></a>
+                                    @endif
+                                    @if ($bolehHapus)
+                                        <button type="button" class="tm-btn tm-btn-ikon is-bahaya tm-hapus" data-id="{{ $item->id }}" data-nama="{{ $item->nama }}" title="Hapus" aria-label="Hapus testimoni"><i class="bi bi-trash3"></i></button>
+                                    @endif
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
-                <div class="mt-4">
-                    {{ $Testimoni->links('vendor.pagination') }}
-                </div>
-            </div>
-        </div>
+
+                @if ($Testimoni->hasPages())
+                    <div class="tm-halaman">{{ $Testimoni->links('vendor.pagination') }}</div>
+                @endif
+            @endif
+        </section>
     </div>
 
-    <!--================== SWEET ALERT SUCCESS & ERROR ==================-->
+    {{-- ================== JENDELA DETAIL ================== --}}
+    @if ($detail)
+        @php [$dLencana, $dWarna, $dLabel] = $gayaStatus[$detail->status] ?? ['is-abu', '#64748b', ucfirst($detail->status)]; @endphp
+        <div class="ts-modal-back" wire:click="tutupLihat"></div>
+        <div class="ts-modal" wire:key="testi-detail-{{ $detail->id }}">
+            <div class="ts-modal-card dsb is-datar tm-jendela" role="dialog" aria-modal="true" aria-label="Detail testimoni" tabindex="-1"
+                x-on:keydown.escape.window="$wire.tutupLihat()">
+                <div class="dsb-jendela-kepala">
+                    <span class="dsb-ikon is-kecil" style="--c: {{ $dWarna }}"><i class="bi bi-chat-quote-fill"></i></span>
+                    <span class="dsb-jendela-teks">
+                        <h5 class="dsb-jendela-judul">Detail Testimoni</h5>
+                        <span class="dsb-kartu-sub">{{ $detail->source === 'customer' ? 'Dikirim pelanggan' : 'Diinput admin' }} · {{ $detail->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}</span>
+                    </span>
+                    <button type="button" class="dsb-jendela-tutup" wire:click="tutupLihat" title="Tutup"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="dsb-jendela-isi tm-detail">
+                    <div class="tm-detail-profil">
+                        @include('livewire.pages.admin.testimoni.partials.avatar', ['item' => $detail])
+                        <div>
+                            <b>{{ $detail->nama }}</b>
+                            <span>{{ $detail->peran ?: 'Tanpa peran' }}</span>
+                            <span class="tm-bintang">
+                                @for ($i = 1; $i <= 5; $i++)<i class="bi bi-star-fill {{ $i <= (int) $detail->rating ? '' : 'is-kosong' }}"></i>@endfor
+                            </span>
+                        </div>
+                        <span class="dsb-lencana {{ $dLencana }}" style="margin-left: auto;">{{ $dLabel }}</span>
+                    </div>
+
+                    <blockquote class="tm-kutip">{{ $detail->pesan }}</blockquote>
+
+                    <div>
+                        <span class="tm-detail-label">Keaslian pengirim</span>
+                        @include('livewire.pages.admin.testimoni.partials.lencana-keaslian', ['item' => $detail])
+                    </div>
+
+                    <div class="tm-info">
+                        <div><small>Tampil di publik sebagai</small><b>{{ $detail->nama_publik }}</b></div>
+                        <div><small>Nomor WhatsApp</small><b>{{ $detail->no_hp ?: '—' }}</b></div>
+                    </div>
+                </div>
+                <div class="dsb-jendela-kaki tm-detail-kaki">
+                    @if ($detail->no_hp && $bolehPelanggan)
+                        <a wire:navigate href="{{ route('admin.customer.index', ['searchCustomer' => $detail->no_hp_cari]) }}" class="tm-btn" title="Buka Data Pelanggan untuk nomor ini">
+                            <i class="bi bi-person-lines-fill"></i><span>Data Pelanggan</span>
+                        </a>
+                    @endif
+                    @if ($bolehUbah)
+                        <a wire:navigate href="{{ route('admin.testimoni.edit', $detail) }}" class="tm-btn"><i class="bi bi-pencil"></i><span>Ubah</span></a>
+                        @if ($detail->status !== 'non-active')
+                            <button type="button" class="tm-btn is-tolak tm-konfirmasi" data-action="reject" data-arg="{{ $detail->id }}" data-icon="warning"
+                                data-title="Tolak testimoni ini?" data-text="Testimoni {{ $detail->nama }} akan disembunyikan dari publik." data-confirm="Ya, tolak">
+                                <i class="bi bi-x-lg"></i><span>{{ $detail->status === 'active' ? 'Sembunyikan' : 'Tolak' }}</span>
+                            </button>
+                        @endif
+                        @if ($detail->status !== 'active')
+                            <button type="button" class="tm-btn is-setuju tm-konfirmasi" data-action="approve" data-arg="{{ $detail->id }}" data-icon="question"
+                                data-title="Setujui testimoni ini?"
+                                data-text="Testimoni {{ $detail->nama }} akan TAMPIL DI PUBLIK{{ $detail->customer && $detail->customer->status_member !== 'active' ? ' dan pengirimnya otomatis menjadi MEMBER' : '' }}."
+                                data-confirm="Ya, setujui">
+                                <i class="bi bi-check-lg"></i><span>Setujui</span>
+                            </button>
+                        @endif
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     @include('livewire.layout.sweetalert')
-    <!--================== END SWEET ALERT SUCCESS & ERROR ==================-->
-</div>
 
-<!--================== SWEET ALERT DELETE ==================-->
-<script>
-    const glossyConfigTestimoni = {
-        background: 'rgba(255, 255, 255, 0.8)',
-        backdrop: 'rgba(139, 92, 246, 0.15)',
-        customClass: {
-            popup: 'swal-glossy-popup',
-            confirmButton: 'btn-glossy-confirm',
-            cancelButton: 'btn-glossy-cancel',
-            title: 'swal-glossy-title'
-        },
-        buttonsStyling: false
-    };
-
-    const escTesti = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    // Popup baca pesan testimoni LENGKAP (sel pesan dipotong).
-    //
-    // PENTING — dipasang pada `document`, BUKAN `document.body`.
-    // wire:navigate MENGGANTI seluruh <body> saat pindah halaman, sehingga
-    // listener yang menempel di body ikut hilang. Karena guard di bawah sudah
-    // terlanjur true, listener tak pernah dipasang ulang -> tombol mata mati
-    // dan baru hidup lagi setelah refresh penuh (yang me-reset window).
-    // `document` tidak pernah diganti, jadi sekali pasang cukup selamanya.
-    if (!window.__testimoniReadBound) {
-        window.__testimoniReadBound = true;
-        document.addEventListener('click', function (event) {
-            const trg = event.target.closest('.testimoni-read-trigger');
-            if (!trg) return;
-
-            let stars = '';
-            const rating = parseInt(trg.getAttribute('data-rating') || '0', 10);
-            for (let i = 1; i <= 5; i++) stars += (i <= rating ? '★' : '☆');
-
-            Swal.fire({
-                title: escTesti(trg.getAttribute('data-nama')),
-                html: '<div style="text-align:left;">'
-                    + (rating > 0 ? '<div style="color:#f59e0b;font-size:1.15rem;letter-spacing:2px;margin-bottom:.35rem;">' + stars + '</div>' : '')
-                    + '<div style="font-size:.8rem;color:#94a3b8;margin-bottom:.7rem;">' + escTesti(trg.getAttribute('data-peran')) + '</div>'
-                    + '<div style="color:#334155;line-height:1.65;white-space:pre-wrap;word-break:break-word;">' + escTesti(trg.getAttribute('data-pesan')) + '</div>'
-                    + '</div>',
-                confirmButtonText: 'Tutup',
-                ...glossyConfigTestimoni
-            });
-        });
-    }
-
-    // Panggil metode Livewire dari elemen mana pun di dalam komponen ini.
-    const panggilTestimoni = (el, metode, arg) => {
-        const komponen = el.closest('[wire\\:id]');
-        if (!komponen) return;
-        Livewire.find(komponen.getAttribute('wire:id')).call(metode, arg);
-    };
-
-    // Konfirmasi Setujui / Tolak. Sengaja SATU handler untuk keduanya, dengan
-    // teks dibaca dari data-* di tombolnya — supaya menambah aksi lain nanti
-    // tidak perlu menambah listener baru (dan tidak berisiko dobel-bind).
-    //
-    // Dipasang ke `document` + guard: lihat catatan tombol mata di atas.
-    if (!window.__testimoniKonfirmasiBound) {
-        window.__testimoniKonfirmasiBound = true;
-        document.addEventListener('click', function (event) {
-            const tombol = event.target.closest('.testimoni-konfirmasi');
-            if (!tombol) return;
-
-            event.preventDefault();
-
-            Swal.fire({
-                title: tombol.getAttribute('data-title') || 'Lanjutkan?',
-                text: tombol.getAttribute('data-text') || '',
-                icon: tombol.getAttribute('data-icon') || 'question',
-                showCancelButton: true,
-                confirmButtonText: tombol.getAttribute('data-confirm') || 'Ya',
-                cancelButtonText: 'Batal',
-                ...glossyConfigTestimoni
-            }).then((hasil) => {
-                if (hasil.isConfirmed) {
-                    panggilTestimoni(tombol, tombol.getAttribute('data-action'), tombol.getAttribute('data-arg'));
-                }
-            });
-        });
-    }
-
-    // Hapus. Dulu di-bind ulang pada SETIAP 'livewire:navigated' ke document.body;
-    // begitu body tidak ikut diganti, listener-nya menumpuk dan satu klik bisa
-    // memunculkan beberapa dialog sekaligus. Kini sekali pasang ke `document`.
-    if (!window.__testimoniHapusBound) {
-        window.__testimoniHapusBound = true;
-        document.addEventListener('click', function (event) {
-            const button = event.target.closest('.delete-testimoni-btn');
-            if (!button) return;
-
-            event.preventDefault();
-            const id = button.getAttribute('data-id');
-
-            Swal.fire({
-                title: 'Yakin hapus data?',
-                text: "Data testimoni ini tidak bisa dikembalikan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal',
-                ...glossyConfigTestimoni
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    panggilTestimoni(button, 'deleteTestimoni', id);
-                }
-            });
-        });
-    }
-
-    window.addEventListener('testimoni-deleted', () => {
-        Swal.fire({
-            title: 'Terhapus!',
-            text: 'Data testimoni berhasil dihapus.',
-            icon: 'success',
-            timer: 2500,
-            showConfirmButton: false,
-            ...glossyConfigTestimoni
-        });
-    });
-
-    window.addEventListener('testimoni-deleteError', (e) => {
-        Swal.fire({
-            title: 'Gagal!',
-            text: e.detail.message,
-            icon: 'error',
-            timer: 2500,
-            showConfirmButton: false,
-            ...glossyConfigTestimoni
-        });
-    });
-</script>
-<!--================== END SWEET ALERT DELETE ==================-->
-
-<!--================== SWEET ALERT PREVIEW IMAGE ==================-->
-<script>
-    function showGlossyPreview(imageUrl) {
-        Swal.fire({
-            imageUrl: imageUrl,
-            imageAlt: 'Preview Gambar',
-            showConfirmButton: false,
-            showCloseButton: true,
-            width: 'auto',
-            padding: '1em',
-            background: 'rgba(255, 255, 255, 0.65)',
-            backdrop: 'rgba(0, 0, 0, 0.4)',
-            didOpen: () => {
-                const popup = Swal.getPopup();
-                popup.style.backdropFilter = 'blur(15px)';
-                popup.style.WebkitBackdropFilter = 'blur(15px)';
-                popup.style.border = '1px solid rgba(255, 255, 255, 0.4)';
-                popup.style.borderRadius = '20px';
-                popup.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.2)';
-                const swalImage = Swal.getImage();
-                swalImage.style.borderRadius = '12px';
-                swalImage.style.maxHeight = '80vh';
-                swalImage.style.objectFit = 'contain';
+    @push('scripts')
+        <script>
+            // Dipasang SEKALI di dokumen (bukan body): wire:navigate mengganti <body>.
+            if (!window.__testimoniDaftarTerpasang) {
+                window.__testimoniDaftarTerpasang = true;
+                const gaya = {
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdrop: 'rgba(139, 92, 246, 0.15)',
+                    customClass: { popup: 'swal-glossy-popup', confirmButton: 'btn-glossy-confirm', cancelButton: 'btn-glossy-cancel', title: 'swal-glossy-title' },
+                    buttonsStyling: false,
+                };
+                const panggil = (el, metode, arg) => {
+                    const komponen = el.closest('[wire\\:id]');
+                    if (komponen) Livewire.find(komponen.getAttribute('wire:id')).call(metode, arg);
+                };
+                document.addEventListener('click', (e) => {
+                    if (typeof Swal === 'undefined') return;
+                    // Setujui / Tolak — teks dibaca dari data-* tombolnya.
+                    const tombol = e.target.closest('.tm-konfirmasi');
+                    if (tombol) {
+                        e.preventDefault();
+                        Swal.fire({
+                            title: tombol.dataset.title || 'Lanjutkan?', text: tombol.dataset.text || '',
+                            icon: tombol.dataset.icon || 'question', showCancelButton: true,
+                            confirmButtonText: tombol.dataset.confirm || 'Ya', cancelButtonText: 'Batal', ...gaya,
+                        }).then((r) => { if (r.isConfirmed) panggil(tombol, tombol.dataset.action, tombol.dataset.arg); });
+                        return;
+                    }
+                    const hapus = e.target.closest('.tm-hapus');
+                    if (hapus) {
+                        e.preventDefault();
+                        Swal.fire({
+                            title: 'Hapus testimoni ini?',
+                            text: 'Testimoni dari ' + (hapus.dataset.nama || '') + ' dihapus permanen beserta fotonya.',
+                            icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal', ...gaya,
+                        }).then((r) => { if (r.isConfirmed) panggil(hapus, 'deleteTestimoni', hapus.dataset.id); });
+                    }
+                });
+                window.addEventListener('testimoni-deleted', () => {
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Terhapus', text: 'Testimoni berhasil dihapus.', icon: 'success', timer: 2000, showConfirmButton: false, ...gaya });
+                });
+                window.addEventListener('testimoni-deleteError', (e) => {
+                    const d = Array.isArray(e.detail) ? (e.detail[0] || {}) : (e.detail || {});
+                    if (typeof Swal !== 'undefined') Swal.fire({ title: 'Gagal', text: d.message || 'Testimoni gagal dihapus.', icon: 'error', timer: 2500, showConfirmButton: false, ...gaya });
+                });
             }
-        });
-    }
-</script>
-<!--================== END SWEET ALERT PREVIEW IMAGE ==================-->
+        </script>
+    @endpush
+</div>

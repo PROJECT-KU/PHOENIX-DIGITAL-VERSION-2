@@ -48,7 +48,15 @@ class TestimoniForm extends Component
             $this->existingImage = $this->testimoni->foto;
             $this->status = $this->testimoni->status;
             $this->mode = 'edit';
+        } else {
+            // Testimoni yang diinput admin biasanya sudah layak tampil.
+            $this->status = 'active';
         }
+    }
+
+    public function setRating(int $nilai): void
+    {
+        $this->rating = max(1, min(5, $nilai));
     }
 
     /**
@@ -115,6 +123,10 @@ class TestimoniForm extends Component
 
     public function save()
     {
+        // Rute sudah dijaga izin, tetapi komponen ini juga bisa dipanggil dari
+        // halaman lain — izin diperiksa di sini juga.
+        abort_unless(auth()->user()?->hasPermission($this->mode === 'create' ? 'create_testimoni' : 'edit_testimoni'), 403);
+
         $rules = [
             'customer_id' => 'nullable|exists:customers,id',
             'nama' => 'required|min:3',
@@ -229,7 +241,9 @@ class TestimoniForm extends Component
         $pelanggan = Customer::withCount([
             'orders as belanja_selesai_count' => fn ($q) => $q->where('status', 'completed'),
         ])
-            ->having('belanja_selesai_count', '>', 0)
+            // whereHas, bukan having(): HAVING tanpa GROUP BY hanya dimaafkan
+            // MySQL — di mesin lain kuerinya langsung galat.
+            ->whereHas('orders', fn ($q) => $q->where('status', 'completed'))
             ->orderBy('nama')
             ->get();
 
