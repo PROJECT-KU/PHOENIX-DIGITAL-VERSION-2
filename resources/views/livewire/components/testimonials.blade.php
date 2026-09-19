@@ -69,6 +69,9 @@
         }
         .tm-form .req { color: #dc2626; }
         .tm-perangkap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+        /* Tombol kirim ikut turun bersama gulirannya, jadi selalu terjangkau
+           tanpa harus menggulir sampai dasar formulir yang panjang. */
+        .tm-kirim-lekat { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -10px 20px -14px rgba(15, 23, 42, .35); }
         .tm-foto-baris { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         /* label.tm-foto-btn: aturan .tm-form label (0,1,1) mengalahkan
            .tm-foto-btn (0,1,0) dan membuat ikon turun ke barisnya sendiri. */
@@ -430,7 +433,7 @@
                         @endif
                     </div>
 
-                    <button type="submit" class="ph-empty-btn w-100 justify-content-center" wire:loading.attr="disabled" wire:target="submit">
+                    <button type="submit" class="ph-empty-btn w-100 justify-content-center tm-kirim-lekat" wire:loading.attr="disabled" wire:target="submit">
                         <span wire:loading.remove wire:target="submit"><i class="bi bi-send"></i> Kirim Testimoni</span>
                         <span wire:loading wire:target="submit"><span class="spinner-border spinner-border-sm"></span> Mengirim...</span>
                     </button>

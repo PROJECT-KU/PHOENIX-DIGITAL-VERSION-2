@@ -92,7 +92,18 @@
         'addressCountry' => $biz['country'] ?? 'ID',
     ],
     'sameAs' => $biz['same_as'] ?? [],
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    // Rata-rata bintang testimoni ikut di SETIAP halaman, bukan hanya di
+    // /testimoni: beranda & halaman produk yang paling sering muncul di
+    // pencarian. Angkanya di-cache (lihat App\Support\RingkasanTestimoni).
+] + (($tmRingkas = \App\Support\RingkasanTestimoni::untukSeo())['jumlah'] > 0 ? [
+    'aggregateRating' => [
+        '@type' => 'AggregateRating',
+        'ratingValue' => $tmRingkas['nilai'],
+        'reviewCount' => $tmRingkas['jumlah'],
+        'bestRating' => 5,
+        'worstRating' => 1,
+    ],
+] : []), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 
 {{-- Structured data: BreadcrumbList --}}

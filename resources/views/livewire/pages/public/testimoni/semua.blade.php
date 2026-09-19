@@ -50,6 +50,16 @@
         .tms-kisi > [class*="col-"] > .tm-card { width: 100%; }
         .tms-kisi .tm-text { min-height: 78px; }
 
+        .tms-alat { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+        .tms-cari { flex: 1 1 260px; display: flex; align-items: center; gap: 9px; margin: 0; padding: 10px 15px; background: #fff; border: 1px solid var(--sts-line, #eceff4); border-radius: 12px; }
+        .tms-cari i { color: #9aa1ad; }
+        .tms-cari input { flex: 1 1 auto; min-width: 0; border: 0; outline: 0; background: none; font-size: .9rem; color: var(--sts-ink, #1c1f26); }
+        .tms-urut { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 8px 14px; background: #fff; border: 1px solid var(--sts-line, #eceff4); border-radius: 12px; font-size: .82rem; font-weight: 700; color: var(--sts-muted, #6b7280); }
+        .tms-urut select { border: 0; outline: 0; background: none; font-weight: 700; font-size: .85rem; color: var(--sts-ink, #1c1f26); }
+        .tms-baca { margin-top: 2px; padding: 0; border: 0; background: none; font-size: .82rem; font-weight: 700; color: var(--sts-jingga, #f26522); cursor: pointer; }
+        .tms-tanggal { display: block; font-size: .74rem; color: #9aa1ad; margin-top: 2px; }
+        [x-cloak] { display: none !important; }
+
         .tms-kosong { padding: 54px 20px; text-align: center; background: #fff; border: 1px dashed var(--ph-line, #eceff4); border-radius: 18px; }
         .tms-kosong i { font-size: 2rem; color: #cbd5e1; }
         .tms-kosong p { margin: 10px 0 0; color: var(--ph-muted, #6b7280); }
@@ -113,14 +123,32 @@
                         </div>
                     </div>
                     <div class="tms-bar">
-                        @foreach ($sebaran as $bintang => $jumlah)
+                        {{-- $barBintang, BUKAN $bintang: nama itu akan menimpa properti
+                             saringan komponen untuk sisa halaman — chip saringan jadi
+                             tidak pernah tampak aktif dan keterangan jumlahnya salah. --}}
+                        @foreach ($sebaran as $barBintang => $barJumlah)
                             <div class="tms-bar-baris">
-                                <span>{{ $bintang }} <i class="bi bi-star-fill" style="color:#f5a623"></i></span>
-                                <span class="tms-bar-alur"><span class="tms-bar-isi" style="width: {{ $total ? round($jumlah / $total * 100) : 0 }}%"></span></span>
-                                <span class="tms-bar-nilai">{{ $jumlah }}</span>
+                                <span>{{ $barBintang }} <i class="bi bi-star-fill" style="color:#f5a623"></i></span>
+                                <span class="tms-bar-alur"><span class="tms-bar-isi" style="width: {{ $total ? round($barJumlah / $total * 100) : 0 }}%"></span></span>
+                                <span class="tms-bar-nilai">{{ $barJumlah }}</span>
                             </div>
                         @endforeach
                     </div>
+                </div>
+
+                <div class="tms-alat">
+                    <label class="tms-cari">
+                        <i class="bi bi-search"></i>
+                        <input type="search" wire:model.live.debounce.400ms="cari" placeholder="Cari kata di testimoni…" aria-label="Cari testimoni">
+                    </label>
+                    <label class="tms-urut">
+                        <span>Urutkan</span>
+                        <select wire:model.live="urut" aria-label="Urutkan testimoni">
+                            <option value="pilihan" @selected($urut === 'pilihan')>Pilihan kami</option>
+                            <option value="baru" @selected($urut === 'baru')>Terbaru</option>
+                            <option value="tinggi" @selected($urut === 'tinggi')>Bintang tertinggi</option>
+                        </select>
+                    </label>
                 </div>
 
                 <div class="tms-saring" role="group" aria-label="Saring menurut bintang">
@@ -137,7 +165,7 @@
                          tahu berapa banyak yang sedang ia lihat. --}}
                     @if ($testimoni->total())
                         <span class="tms-jumlah">
-                            Menampilkan {{ $testimoni->count() }} dari {{ $testimoni->total() }}{{ $bintang !== '' ? ' testimoni '.$bintang.' bintang' : ' testimoni' }}
+                            Menampilkan {{ $testimoni->count() }} dari {{ $testimoni->total() }}{{ $bintang !== '' ? ' testimoni '.$bintang.' bintang' : ' testimoni' }}{{ $cari !== '' ? ' untuk "'.$cari.'"' : '' }}
                         </span>
                     @endif
                 </div>
@@ -160,7 +188,15 @@
                                         <i class="bi {{ $i <= (int) $t->rating ? 'bi-star-fill' : 'bi-star' }}"></i>
                                     @endfor
                                 </div>
-                                <p class="tm-text">{{ $t->pesan }}</p>
+                                @php $tmPanjang = mb_strlen((string) $t->pesan) > 180; @endphp
+                                <div x-data="{ penuh: false }">
+                                    <p class="tm-text" x-show="!penuh">{{ $tmPanjang ? \Illuminate\Support\Str::limit($t->pesan, 180) : $t->pesan }}</p>
+                                    @if ($tmPanjang)
+                                        <p class="tm-text" x-show="penuh" x-cloak>{{ $t->pesan }}</p>
+                                        <button type="button" class="tms-baca" x-on:click="penuh = !penuh"
+                                            x-text="penuh ? 'Tutup' : 'Baca selengkapnya'">Baca selengkapnya</button>
+                                    @endif
+                                </div>
                                 <div class="tm-person">
                                     {{-- WAJIB nama_publik, JANGAN $t->nama: pengirim anonim hanya boleh
                                          tampil sebagai huruf depan namanya di halaman publik. --}}
@@ -176,6 +212,7 @@
                                         @if ($t->peran)
                                             <span class="tm-role">{{ $t->peran }}</span>
                                         @endif
+                                        <span class="tms-tanggal">{{ $t->created_at?->locale('id')->translatedFormat('F Y') }}</span>
                                         @if ($t->customer_id && ($t->customer->belanja_selesai_count ?? 0) > 0)
                                             <span class="tm-verified" title="Pembeli asli — pesanannya sudah selesai">
                                                 <i class="bi bi-patch-check-fill"></i>

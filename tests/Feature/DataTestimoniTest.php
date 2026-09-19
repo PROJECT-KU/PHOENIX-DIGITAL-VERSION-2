@@ -986,3 +986,181 @@ it('halaman publik menyebut jumlah hasil yang sedang ditampilkan', function () {
     Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)
         ->assertSee('Menampilkan 3 dari 3 testimoni');
 });
+
+// ===================== Batas kiriman & kiriman ganda =====================
+
+it('nomor yang sama dibatasi walau berganti jaringan', function () {
+    $kirim = fn (string $pesan) => Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Pengirim Rajin')
+        ->set('no_hp', '081255667788')
+        ->set('pesan', $pesan)
+        ->call('submit');
+
+    foreach (range(1, 3) as $i) {
+        // Batas per IP dilewati dengan berpura-pura datang dari alamat lain.
+        \Illuminate\Support\Facades\RateLimiter::clear('testimoni-submit:'.request()->ip());
+        $kirim('Testimoni nomor '.$i.' yang isinya berbeda-beda.')->assertHasNoErrors();
+    }
+
+    \Illuminate\Support\Facades\RateLimiter::clear('testimoni-submit:'.request()->ip());
+    $kirim('Testimoni keempat dari nomor yang sama.')->assertHasErrors('pesan');
+
+    expect(Testimoni::where('nama', 'Pengirim Rajin')->count())->toBe(3);
+});
+
+it('kiriman dengan isi yang sama persis ditolak dengan halus', function () {
+    $pesan = 'Pelayanannya cepat sekali dan adminnya ramah.';
+
+    Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Budi')->set('no_hp', '081233221100')->set('pesan', $pesan)
+        ->call('submit')->assertSet('submitted', true);
+
+    \Illuminate\Support\Facades\RateLimiter::clear('testimoni-submit:'.request()->ip());
+
+    Livewire::test(\App\Livewire\Components\Testimonials::class)
+        ->set('nama', 'Budi')->set('no_hp', '081233221100')->set('pesan', $pesan)
+        ->call('submit')
+        ->assertHasErrors('pesan');
+
+    expect(Testimoni::where('pesan', $pesan)->count())->toBe(1);
+});
+
+// ===================== Ringkasan bintang untuk SEO =====================
+
+it('ringkasan bintang untuk SEO dihitung dari yang tampil publik saja', function () {
+    testimoni(['status' => 'active', 'rating' => 5]);
+    testimoni(['status' => 'active', 'rating' => 4]);
+    testimoni(['status' => 'pending', 'rating' => 1]);
+    \App\Support\RingkasanTestimoni::lupakan();
+
+    expect(\App\Support\RingkasanTestimoni::untukSeo())->toMatchArray(['jumlah' => 2, 'nilai' => 4.5]);
+});
+
+it('ringkasan bintang dilupakan begitu moderasi mengubah yang tampil', function () {
+    $this->actingAs(adminTestimoni());
+    testimoni(['status' => 'active', 'rating' => 4]);
+    \App\Support\RingkasanTestimoni::lupakan();
+    expect(\App\Support\RingkasanTestimoni::untukSeo()['jumlah'])->toBe(1);
+
+    $baru = testimoni(['rating' => 5]);
+    // Masih dari cache sampai ada moderasi.
+    expect(\App\Support\RingkasanTestimoni::untukSeo()['jumlah'])->toBe(1);
+
+    Livewire::test(TestimoniList::class)->call('approve', $baru->id);
+    expect(\App\Support\RingkasanTestimoni::untukSeo()['jumlah'])->toBe(2);
+});
+
+// ===================== Urungkan keputusan =====================
+
+it('keputusan setujui bisa diurungkan ke status semula', function () {
+    $this->actingAs(adminTestimoni());
+    $t = testimoni();
+
+    $daftar = Livewire::test(TestimoniList::class)->call('approve', $t->id);
+    expect($t->fresh()->status)->toBe('active')
+        ->and($daftar->get('urungkan')['status'])->toBe('pending');
+
+    $daftar->call('urungkanTerakhir')->assertSet('urungkan', null);
+    expect($t->fresh()->status)->toBe('pending')
+        // Kembali menunggu berarti belum pernah ditinjau.
+        ->and($t->fresh()->ditinjau_at)->toBeNull();
+});
+
+it('keputusan tolak bisa diurungkan dan alasannya ikut dibersihkan', function () {
+    $this->actingAs(adminTestimoni());
+    $t = testimoni(['status' => 'active']);
+
+    Livewire::test(TestimoniList::class)
+        ->call('bukaTolak', $t->id)
+        ->set('tolakAlasan', 'Kiriman ganda')
+        ->call('reject')
+        ->call('urungkanTerakhir');
+
+    expect($t->fresh()->status)->toBe('active')
+        ->and($t->fresh()->alasan_tolak)->toBeNull();
+});
+
+it('urungkan menolak pengguna tanpa izin ubah', function () {
+    $this->actingAs(adminTestimoni());
+    $t = testimoni();
+    $daftar = Livewire::test(TestimoniList::class)->call('approve', $t->id);
+    $urungkan = $daftar->get('urungkan');
+
+    $this->actingAs(adminTestimoni(['view_testimoni']));
+    Livewire::test(TestimoniList::class)->set('urungkan', $urungkan)->call('urungkanTerakhir');
+
+    expect($t->fresh()->status)->toBe('active');
+});
+
+// ===================== Putar foto =====================
+
+it('putar foto mengubah berkasnya dan butuh izin ubah', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    // Gambar 40x20 supaya perputarannya terlihat dari ukurannya.
+    $gambar = imagecreatetruecolor(40, 20);
+    imagefill($gambar, 0, 0, imagecolorallocate($gambar, 200, 30, 30));
+    ob_start();
+    imagejpeg($gambar);
+    $isi = ob_get_clean();
+    imagedestroy($gambar);
+    \Illuminate\Support\Facades\Storage::disk('public')->put('img/testimoni/uji.jpg', $isi);
+
+    $t = testimoni(['foto' => 'uji.jpg', 'status' => 'active']);
+    $jalur = \Illuminate\Support\Facades\Storage::disk('public')->path('img/testimoni/uji.jpg');
+
+    $this->actingAs(adminTestimoni(['view_testimoni']));
+    Livewire::test(TestimoniForm::class, ['testimoni' => $t])->call('putarFoto')->assertForbidden();
+
+    $this->actingAs(adminTestimoni());
+    Livewire::test(TestimoniForm::class, ['testimoni' => $t])->call('putarFoto');
+
+    [$lebar, $tinggi] = getimagesize($jalur);
+    expect($lebar)->toBe(20)->and($tinggi)->toBe(40);
+});
+
+// ===================== Halaman publik: cari, urut, tanggal =====================
+
+it('pengunjung bisa mencari dan mengurutkan testimoni', function () {
+    $lama = testimoni(['nama' => 'Kiriman Lama', 'pesan' => 'Akun Grammarly cepat sekali dikirim.', 'status' => 'active', 'created_at' => now()->subYear()]);
+    $baru = testimoni(['nama' => 'Kiriman Baru', 'pesan' => 'Jasa cek plagiasinya rapi.', 'status' => 'active']);
+
+    $hal = Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+    $hal->set('cari', 'plagiasi')->assertSee('Jasa cek plagiasinya rapi.')->assertDontSee('Akun Grammarly');
+
+    $hal->set('cari', '')->set('urut', 'baru');
+    expect($hal->viewData('testimoni')->first()->id)->toBe($baru->id);
+
+    $hal->set('urut', 'ngawur')->assertSet('urut', 'pilihan');
+    expect($lama->fresh())->not->toBeNull();
+});
+
+it('kartu publik menampilkan bulan kiriman', function () {
+    testimoni(['status' => 'active', 'created_at' => \Illuminate\Support\Carbon::parse('2026-03-15')]);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)->assertSee('Maret 2026');
+});
+
+it('testimoni panjang dipotong di halaman publik', function () {
+    $panjang = str_repeat('Pelayanannya benar-benar memuaskan sekali. ', 10);
+    testimoni(['status' => 'active', 'pesan' => $panjang]);
+
+    Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class)
+        ->assertSee('Baca selengkapnya');
+});
+
+it('bagan sebaran tidak menimpa saringan bintang yang sedang aktif', function () {
+    testimoni(['status' => 'active', 'rating' => 5, 'pesan' => 'Testimoni bintang lima.']);
+    testimoni(['status' => 'active', 'rating' => 4, 'pesan' => 'Testimoni bintang empat.']);
+
+    $hal = Livewire::test(\App\Livewire\Pages\Public\Testimoni\SemuaTestimoni::class);
+
+    // Perulangan bagan sempat memakai $bintang dan menimpa properti komponen:
+    // chip saringan tidak pernah tampak aktif dan keterangan jumlahnya salah.
+    $hal->assertSee('Menampilkan 2 dari 2 testimoni')
+        ->assertDontSee('dari 2 testimoni 1 bintang');
+
+    $hal->call('setBintang', '5')
+        ->assertSee('Menampilkan 1 dari 1 testimoni 5 bintang')
+        ->assertSet('bintang', '5');
+});

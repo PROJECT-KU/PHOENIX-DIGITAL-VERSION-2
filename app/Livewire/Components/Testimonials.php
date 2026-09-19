@@ -110,7 +110,33 @@ class Testimonials extends Component
         }
 
         $this->validate();
+
+        // Batas KEDUA, per nomor: batas per IP saja mudah dilewati dengan
+        // ganti jaringan, sekaligus menghukum satu kantor/warnet yang
+        // pemakainya berbagi IP.
+        $inti = Customer::normalisasiNoHp($this->no_hp);
+        $kunciNomor = 'testimoni-nomor:'.$inti;
+        if ($inti !== '' && \Illuminate\Support\Facades\RateLimiter::tooManyAttempts($kunciNomor, 3)) {
+            $this->addError('pesan', 'Nomor ini sudah beberapa kali mengirim testimoni hari ini. Coba lagi besok ya.');
+
+            return;
+        }
+
+        // Kiriman ganda (tombol tertekan dua kali / dikirim ulang): isinya
+        // sama persis dari nomor yang sama dalam sehari terakhir.
+        if ($inti !== '' && Testimoni::where('pesan', trim($this->pesan))
+            ->where('no_hp', 'like', '%'.$inti.'%')
+            ->where('created_at', '>=', now()->subDay())
+            ->exists()) {
+            $this->addError('pesan', 'Testimoni dengan isi yang sama sudah kami terima. Tidak perlu dikirim ulang — testimoninya sedang ditinjau admin.');
+
+            return;
+        }
+
         \Illuminate\Support\Facades\RateLimiter::hit($rlKey, 3600);
+        if ($inti !== '') {
+            \Illuminate\Support\Facades\RateLimiter::hit($kunciNomor, 86400);
+        }
 
         // Cocokkan nomor -> pelanggan. Hanya yang punya pesanan SELESAI yang
         // ditautkan; 'paid'/'pending'/'cancelled' belum berhak. Kalau tidak

@@ -298,6 +298,16 @@ Data Testimoni || lemon
         @endif
 
         {{-- ================== RAK TESTIMONI ================== --}}
+        @if ($urungkan && $bolehUbah)
+            <div class="tm-urungkan" role="status">
+                <span><b>{{ $urungkan['nama'] }}</b> {{ $urungkan['aksi'] }}.</span>
+                <button type="button" class="tm-btn" wire:click="urungkanTerakhir">
+                    <i class="bi bi-arrow-counterclockwise"></i><span>Urungkan</span>
+                </button>
+                <button type="button" class="tm-urungkan-tutup" wire:click="tutupUrungkan" aria-label="Tutup"><i class="bi bi-x-lg"></i></button>
+            </div>
+        @endif
+
         {{-- Kerangka pemuatan: tanpa ini kartu lama cuma meredup dan sekilas
              tampak seolah tidak ada yang berubah. --}}
         <div class="tm-kerangka" wire:loading.grid wire:target="{{ $sasaranMuat }}">
@@ -503,13 +513,20 @@ Data Testimoni || lemon
             <div class="ts-modal-card dsb is-datar tm-jendela" role="dialog" aria-modal="true" aria-label="Detail testimoni" tabindex="-1"
                 x-on:keydown.escape.window="$wire.tutupLihat()"
                 x-on:keydown.arrow-left.window="$wire.detailTetangga(-1)"
-                x-on:keydown.arrow-right.window="$wire.detailTetangga(1)">
+                x-on:keydown.arrow-right.window="$wire.detailTetangga(1)"
+                {{-- Pintasan hanya berlaku bila fokus tidak sedang di dalam isian. --}}
+                x-on:keydown.window="
+                    if (['INPUT','TEXTAREA','SELECT'].includes($event.target.tagName) || $event.metaKey || $event.ctrlKey) return;
+                    if ($event.key === 's' || $event.key === 'S') { $event.preventDefault(); $wire.approve(@js($detail->id)); }
+                    if ($event.key === 't' || $event.key === 'T') { $event.preventDefault(); $wire.bukaTolak(@js($detail->id)); }
+                ">
                 <div class="dsb-jendela-kepala">
                     <span class="dsb-ikon is-kecil" style="--c: {{ $dWarna }}"><i class="bi bi-chat-quote-fill"></i></span>
                     <span class="dsb-jendela-teks">
                         <h5 class="dsb-jendela-judul">Detail Testimoni</h5>
                         <span class="dsb-kartu-sub">{{ $detail->source === 'customer' ? 'Dikirim pelanggan' : 'Diinput admin' }} · {{ $detail->created_at?->locale('id')->translatedFormat('d M Y, H:i') }}</span>
                     </span>
+                    <span class="tm-pintasan" aria-hidden="true">← → pindah · <b>S</b> setujui · <b>T</b> tolak</span>
                     <span class="tm-jendela-nav">
                         <button type="button" class="tm-btn tm-btn-ikon" wire:click="detailTetangga(-1)" title="Sebelumnya (←)" aria-label="Testimoni sebelumnya"><i class="bi bi-chevron-left"></i></button>
                         <button type="button" class="tm-btn tm-btn-ikon" wire:click="detailTetangga(1)" title="Berikutnya (→)" aria-label="Testimoni berikutnya"><i class="bi bi-chevron-right"></i></button>

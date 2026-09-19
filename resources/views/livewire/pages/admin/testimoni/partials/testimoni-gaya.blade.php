@@ -46,6 +46,16 @@
     .tm-foto-aksi { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .tm-foto-aksi .tm-btn { flex: 1 1 auto; }
     .tm-sorot-kata { background: #fef08a; color: inherit; padding: 0 2px; border-radius: 3px; }
+
+    /* Bilah urungkan & pintasan papan tik */
+    .tm-urungkan { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 14px; border-radius: 14px; background: #f8fafc; border: 1px solid var(--dsb-tepi, #e9edf3); font-size: .85rem; color: #475569; }
+    .tm-urungkan b { color: #1c1f26; }
+    .tm-urungkan .tm-btn { margin-left: auto; }
+    .tm-urungkan-tutup { width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: #94a3b8; cursor: pointer; }
+    .tm-urungkan-tutup:hover { background: #eef2f7; color: #475569; }
+    .tm-pintasan { margin-left: auto; font-size: .72rem; color: #94a3b8; white-space: nowrap; }
+    .tm-pintasan b { color: #64748b; }
+    @media (max-width: 991.98px) { .tm-pintasan { display: none; } }
     .tm-unggah.is-ringkas .tm-avatar { flex-basis: 40px; width: 40px; height: 40px; font-size: .95rem; }
 
     /* ===== Sebaran bintang ===== */

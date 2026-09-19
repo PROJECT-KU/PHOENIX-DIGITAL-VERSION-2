@@ -24,6 +24,26 @@ class SemuaTestimoni extends Component
     #[Url(as: 'bintang', except: '')]
     public string $bintang = '';
 
+    #[Url(as: 'cari', except: '')]
+    public string $cari = '';
+
+    /** pilihan | baru | tinggi — 'pilihan' mengikuti urutan yang diatur admin. */
+    #[Url(as: 'urut', except: 'pilihan')]
+    public string $urut = 'pilihan';
+
+    public function updatedCari(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedUrut(): void
+    {
+        if (! in_array($this->urut, ['pilihan', 'baru', 'tinggi'], true)) {
+            $this->urut = 'pilihan';
+        }
+        $this->resetPage();
+    }
+
     public function setBintang(string $nilai): void
     {
         $this->bintang = in_array($nilai, ['5', '4', '3', '2', '1'], true) ? $nilai : '';
@@ -35,22 +55,31 @@ class SemuaTestimoni extends Component
     {
         $dasar = fn () => Testimoni::tampilPublik();
 
-        $this->bagikanSeo($dasar());
+        // Sebaran dihitung SEKALI, lalu dipakai untuk total, rata-rata, chip
+        // saringan, dan data terstruktur — dulu count & avg dijalankan dua kali.
+        $sebaran = $dasar()->selectRaw('rating, count(*) as jumlah')->groupBy('rating')->pluck('jumlah', 'rating');
+        $total = (int) $sebaran->sum();
+        $rata = $total ? round($sebaran->reduce(fn ($t, $n, $b) => $t + ($b * $n), 0) / $total, 1) : 0.0;
+
+        $this->bagikanSeo($total, $rata);
 
         $testimoni = $dasar()
             ->when($this->bintang !== '', fn ($q) => $q->where('rating', (int) $this->bintang))
+            ->when($this->cari !== '', fn ($q) => $q->where(fn ($s) => $s
+                ->where('pesan', 'like', '%'.$this->cari.'%')
+                ->orWhere('peran', 'like', '%'.$this->cari.'%')))
             ->with(['customer' => fn ($q) => $q->withCount([
                 'orders as belanja_selesai_count' => fn ($o) => $o->where('status', 'completed'),
             ])])
-            ->urutTampil()
+            ->when($this->urut === 'baru', fn ($q) => $q->orderByDesc('created_at'))
+            ->when($this->urut === 'tinggi', fn ($q) => $q->orderByDesc('rating')->orderByDesc('created_at'))
+            ->when($this->urut === 'pilihan', fn ($q) => $q->urutTampil())
             ->paginate(12);
-
-        $sebaran = $dasar()->selectRaw('rating, count(*) as jumlah')->groupBy('rating')->pluck('jumlah', 'rating');
 
         return view('livewire.pages.public.testimoni.semua', [
             'testimoni' => $testimoni,
-            'total' => (int) $sebaran->sum(),
-            'rata' => round((float) $dasar()->avg('rating'), 1),
+            'total' => $total,
+            'rata' => $rata,
             'sebaran' => collect(range(5, 1))->mapWithKeys(fn ($b) => [$b => (int) ($sebaran[$b] ?? 0)]),
         ]);
     }
@@ -62,15 +91,13 @@ class SemuaTestimoni extends Component
      * kuning di hasil pencarian tidak pernah muncul. Nama yang dikirim WAJIB
      * nama_publik — pengirim anonim tidak boleh bocor ke pihak ketiga.
      */
-    protected function bagikanSeo($kueri): void
+    protected function bagikanSeo(int $jumlah, float $rata): void
     {
-        $jumlah = (clone $kueri)->count();
         if ($jumlah < 1) {
             return;
         }
 
-        $rata = round((float) (clone $kueri)->avg('rating'), 1);
-        $contoh = (clone $kueri)->urutTampil()->take(5)->get();
+        $contoh = Testimoni::tampilPublik()->urutTampil()->take(5)->get();
 
         view()->share('seoTitle', 'Testimoni Pelanggan Phoenix Digital');
         view()->share('seoDescription', $jumlah.' testimoni pelanggan Phoenix Digital, rata-rata '.number_format($rata, 1, ',', '.').' dari 5 bintang. Semuanya ditinjau admin sebelum tampil.');

@@ -5,6 +5,7 @@ namespace App\Livewire\Pages\Admin\Testimoni;
 use App\Exports\TestimoniExport;
 use App\Models\Setting;
 use App\Models\Testimoni;
+use App\Support\RingkasanTestimoni;
 use App\Support\RiwayatTestimoni;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Attributes\Url;
@@ -31,6 +32,12 @@ class TestimoniList extends Component
 
     /** Jendela aktivitas moderasi (jejak lintas testimoni). */
     public bool $lihatAktivitas = false;
+
+    /**
+     * Keputusan terakhir yang masih bisa diurungkan: ['id', 'status', 'nama',
+     * 'aksi']. Salah klik dulu berarti mencari kembali testimoninya di tab lain.
+     */
+    public ?array $urungkan = null;
 
     // ===== Saringan lanjutan =====
     #[Url(as: 'bintang', except: '')]
@@ -249,6 +256,10 @@ class TestimoniList extends Component
     /** Catatan siapa & kapan meninjau — dipakai approve/reject/massal. */
     protected function jejakTinjau(array $tambahan = []): array
     {
+        // Apa yang tampil di publik berubah → ringkasan bintang untuk SEO ikut
+        // basi. Dibuang di sini supaya tidak ada jalur moderasi yang terlewat.
+        RingkasanTestimoni::lupakan();
+
         return array_merge(['ditinjau_at' => now(), 'ditinjau_oleh' => auth()->id()], $tambahan);
     }
 
@@ -269,8 +280,10 @@ class TestimoniList extends Component
             return;
         }
 
+        $sebelum = $testimoni->status;
         $testimoni->update($this->jejakTinjau(['status' => 'active', 'alasan_tolak' => null]));
         RiwayatTestimoni::catat($testimoni, 'disetujui');
+        $this->urungkan = ['id' => $testimoni->id, 'status' => $sebelum, 'nama' => $testimoni->nama, 'aksi' => 'disetujui'];
         $this->dispatch('sidebar-badge-updated');
 
         // Pengirim jadi member otomatis bila nomornya cocok pelanggan yang
@@ -291,6 +304,40 @@ class TestimoniList extends Component
         }
 
         $this->dispatch('swal-success', message: 'Testimoni disetujui & kini tampil di publik.');
+    }
+
+    /** Kembalikan status testimoni ke sebelum keputusan terakhir. */
+    public function urungkanTerakhir(): void
+    {
+        if (! $this->bolehModerasi() || ! $this->urungkan) {
+            return;
+        }
+
+        $t = Testimoni::find($this->urungkan['id']);
+        if (! $t) {
+            $this->urungkan = null;
+
+            return;
+        }
+
+        $semula = $this->urungkan['status'];
+        $t->update($this->jejakTinjau([
+            'status' => $semula,
+            // Kembali menunggu berarti belum pernah ditinjau lagi.
+            'ditinjau_at' => $semula === 'pending' ? null : now(),
+            'ditinjau_oleh' => $semula === 'pending' ? null : auth()->id(),
+            'alasan_tolak' => null,
+        ]));
+        RiwayatTestimoni::catat($t, 'diubah', 'Keputusan '.$this->urungkan['aksi'].' diurungkan');
+
+        $this->urungkan = null;
+        $this->dispatch('sidebar-badge-updated');
+        $this->dispatch('swal-success', message: 'Keputusan diurungkan.');
+    }
+
+    public function tutupUrungkan(): void
+    {
+        $this->urungkan = null;
     }
 
     /** Buka tanya-alasan sebelum menolak. */
@@ -330,12 +377,14 @@ class TestimoniList extends Component
 
         // Menolak TIDAK mencabut keanggotaan yang sudah terlanjur diberikan —
         // poin & kode referral tetap hak pelanggan.
+        $sebelum = $testimoni->status;
         $testimoni->update($this->jejakTinjau([
             'status' => 'non-active',
             'sorot' => false,
             'alasan_tolak' => trim($this->tolakAlasan) ?: null,
         ]));
         RiwayatTestimoni::catat($testimoni, 'ditolak', trim($this->tolakAlasan) ?: null);
+        $this->urungkan = ['id' => $testimoni->id, 'status' => $sebelum, 'nama' => $testimoni->nama, 'aksi' => 'ditolak'];
 
         $this->tutupTolak();
         $this->dispatch('sidebar-badge-updated');
@@ -464,6 +513,7 @@ class TestimoniList extends Component
         }
 
         $t->update(['sorot' => ! $t->sorot]);
+        RingkasanTestimoni::lupakan();
         RiwayatTestimoni::catat($t, $t->sorot ? 'disorot' : 'sorot-dilepas');
 
         if (! $t->sorot) {
@@ -568,10 +618,8 @@ class TestimoniList extends Component
             return;
         }
 
-        $filePath = storage_path('app/public/img/testimoni/'.$testimoni->foto);
-        if (file_exists($filePath)) {
-            unlink($filePath);
-        }
+        // Lewat disk 'public' supaya satu jalur dengan penyimpanannya.
+        \Illuminate\Support\Facades\Storage::disk('public')->delete('img/testimoni/'.$testimoni->foto);
     }
 
     /**
@@ -621,6 +669,7 @@ class TestimoniList extends Component
         // supaya pemulihan tidak menghasilkan testimoni tanpa foto.
         RiwayatTestimoni::catat($testimoni, 'diarsipkan');
         $testimoni->delete();
+        RingkasanTestimoni::lupakan();
         $this->lihatId = null;
 
         $this->dispatch('testimoni-deleted', id: $id);
@@ -640,6 +689,7 @@ class TestimoniList extends Component
         $testimoni = Testimoni::onlyTrashed()->find($id);
         if ($testimoni) {
             $testimoni->restore();
+            RingkasanTestimoni::lupakan();
             RiwayatTestimoni::catat($testimoni, 'dipulihkan');
         }
 

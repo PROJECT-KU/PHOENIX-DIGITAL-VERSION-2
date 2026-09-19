@@ -72,6 +72,55 @@ class TestimoniForm extends Component
         $this->fotoDihapus = true;
     }
 
+    /**
+     * Putar foto tersimpan 90° searah jarum jam.
+     *
+     * Foto dari kamera ponsel sering miring dan sebelumnya hanya bisa diterima
+     * apa adanya. Gagal-aman: bila GD tidak bisa memprosesnya, fotonya
+     * dibiarkan utuh dan admin diberi tahu.
+     */
+    public function putarFoto(): void
+    {
+        abort_unless(auth()->user()?->hasPermission('edit_testimoni'), 403);
+
+        if (! $this->existingImage) {
+            return;
+        }
+
+        // Lewat disk 'public', BUKAN storage_path: jalurnya bisa berbeda
+        // (mis. saat disknya dipalsukan di uji) dan berkasnya jadi tak ketemu.
+        $berkas = 'img/testimoni/'.$this->existingImage;
+        if (! Storage::disk('public')->exists($berkas)) {
+            return;
+        }
+
+        $berhasil = rescue(function () use ($berkas) {
+            $gambar = imagecreatefromstring(Storage::disk('public')->get($berkas));
+            if (! $gambar) {
+                return false;
+            }
+
+            $diputar = imagerotate($gambar, -90, 0);
+            imagedestroy($gambar);
+            if (! $diputar) {
+                return false;
+            }
+
+            ob_start();
+            $ditulis = str_ends_with(strtolower($berkas), '.webp') && function_exists('imagewebp')
+                ? imagewebp($diputar, null, 82)
+                : imagejpeg($diputar, null, 88);
+            $isi = ob_get_clean();
+            imagedestroy($diputar);
+
+            return $ditulis && $isi !== '' && Storage::disk('public')->put($berkas, $isi);
+        }, false, report: false);
+
+        $this->dispatch($berhasil ? 'swal-success' : 'swal-error', message: $berhasil
+            ? 'Foto diputar 90°.'
+            : 'Foto tidak bisa diputar di server ini.');
+    }
+
     public function setRating(int $nilai): void
     {
         $this->rating = max(1, min(5, $nilai));
@@ -243,6 +292,8 @@ class TestimoniForm extends Component
             }
 
             $this->testimoni->update($data);
+            // Status/sorot bisa berubah di sini juga — ringkasan SEO ikut basi.
+            \App\Support\RingkasanTestimoni::lupakan();
 
             $this->aktifkanMemberBilaPerlu();
 

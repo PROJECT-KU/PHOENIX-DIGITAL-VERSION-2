@@ -185,6 +185,11 @@
                 <div class="tm-unggah-muat" wire:loading.flex wire:target="foto"><span class="dsb-putar is-kecil"></span> Mengunggah foto…</div>
                 <div class="tm-foto-aksi">
                     @include('partials.kamera-foto', ['target' => 'foto', 'kelas' => 'tm-btn'])
+                    @if ($existingImage && ! $fotoBaru)
+                        <button type="button" class="tm-btn" wire:click="putarFoto" title="Foto dari kamera ponsel sering miring">
+                            <i class="bi bi-arrow-clockwise"></i><span>Putar</span>
+                        </button>
+                    @endif
                     @if ($urlFoto)
                         <button type="button" class="tm-btn is-bahaya" wire:click="hapusFoto">
                             <i class="bi bi-trash3"></i><span>Hapus foto</span>
