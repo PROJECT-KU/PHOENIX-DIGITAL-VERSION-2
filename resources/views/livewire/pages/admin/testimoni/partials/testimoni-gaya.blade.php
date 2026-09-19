@@ -147,7 +147,8 @@
     .tm-avatar { flex: 0 0 46px; width: 46px; height: 46px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 800; color: #fff; background: var(--av, #7c3aed); border: 0; padding: 0; cursor: pointer; }
     .tm-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .tm-kepala-teks { flex: 1 1 auto; min-width: 0; }
-    .tm-nama { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0; font-size: .95rem; font-weight: 800; color: #1c1f26; }
+    /* Nama panjang dipotong, bukan menabrak lencana status di kanannya. */
+    .tm-nama { margin: 0; font-size: .95rem; font-weight: 800; color: #1c1f26; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tm-peran { display: block; font-size: .76rem; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tm-bintang { color: #f59e0b; font-size: .8rem; letter-spacing: 1px; white-space: nowrap; }
     .tm-bintang .is-kosong { color: #e2e8f0; }
@@ -176,7 +177,10 @@
     .tm-btn.is-bahaya:hover { background: #fef2f2; border-color: #fecaca; }
     .tm-aksi-moderasi { display: flex; gap: 8px; flex: 1 1 auto; }
     .tm-aksi-moderasi .tm-btn { flex: 1 1 0; }
-    .tm-aksi-lain { display: flex; gap: 8px; margin-left: auto; }
+    /* Ikon membagi rata sisa lebar. Dulu hanya menempel ke kanan, jadi saat
+       barisnya turun sendiri sisi kirinya menganga kosong. */
+    .tm-aksi-lain { display: flex; gap: 8px; flex: 1 1 auto; margin-left: auto; }
+    .tm-aksi-lain .tm-btn-ikon { flex: 1 1 0; width: auto; min-width: 36px; }
     .tm-halaman { margin-top: 18px; padding: 12px 16px; border-radius: 16px; background: #fff; border: 1px solid var(--dsb-tepi, #e9edf3); }
     .tm-halaman .pagination-wrap { gap: 12px; }
     .tm-halaman .small { font-size: .8rem !important; color: #64748b !important; }
